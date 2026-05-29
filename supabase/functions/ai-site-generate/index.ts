@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v37";
+const DESIGN_BIBLE_VERSION = "v38";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -1213,8 +1213,8 @@ For weddings, anniversaries, engagements, formal events, and any event where the
 
 For WEDDINGS / ANNIVERSARIES / ENGAGEMENTS, DEFAULT to variant A — a REAL envelope the guest opens (this is the signature first moment and what people expect from a wedding invite). Only use B–E when the brief clearly fits them (garden→B, destination→C, nostalgic→D, black-tie→E).
 
-  A. REALISTIC ENVELOPE THAT OPENS (DEFAULT for weddings — use the REAL PHOTO envelope, not CSS shapes):
-     Use Vendora's hosted photorealistic envelope image — a deep burgundy wax-sealed envelope on ivory linen — as the cover visual. It looks real (CSS envelopes look fake). The couple's names sit above it and it gently lifts away on tap to reveal the site.
+  A. REALISTIC ENVELOPE THAT OPENS — a CARD SLIDES OUT of it (DEFAULT for weddings; use the REAL PHOTO envelope, not CSS shapes):
+     Use Vendora's hosted photorealistic envelope image — a deep burgundy wax-sealed envelope on ivory linen — as the cover. On tap, a cream invitation CARD rises UP out of the envelope (as if pulled from inside), holds for a beat, then the whole cover fades to reveal the menu. This "card emerging from the envelope" is the signature moment — do it exactly.
      Markup:
        <input type="checkbox" id="opener" class="opener-toggle" hidden>
        <label for="opener" class="cover-page">
@@ -1222,24 +1222,35 @@ For WEDDINGS / ANNIVERSARIES / ENGAGEMENTS, DEFAULT to variant A — a REAL enve
          <h1 class="cover-names">Isabella &amp; Theo</h1>
          <p class="cover-date">SEPTEMBER 12 · 2026 · SONOMA, CALIFORNIA</p>
          <div class="env-wrap">
+           <div class="env-letter">
+             <p class="el-eyebrow">YOU'RE INVITED</p>
+             <p class="el-script">Isabella &amp; Theo</p>
+             <p class="el-date">September 12, 2026</p>
+           </div>
            <img class="env-photo" src="https://eventvendora.com/wedding-envelope.png" alt="Wedding envelope" />
            <span class="env-mono">I&amp;T</span>   <!-- optional: couple initials overlaid on the wax seal -->
          </div>
          <p class="tap-hint">CLICK ENVELOPE TO OPEN</p>
        </label>
        <main class="invitation-body"> … all sections … </main>
-     CSS essentials (ivory background; the photo IS the envelope):
+     CSS essentials (ivory background; the photo IS the envelope; the card hides BEHIND it, then slides up and out):
        .opener-toggle:not(:checked) ~ .invitation-body{ display:none; }
-       .opener-toggle:checked ~ .cover-page{ animation:coverOut .8s .35s forwards; }
+       /* staged: card pulls out first (~1.1s), THEN the cover dismisses */
+       .opener-toggle:checked ~ .cover-page{ animation:coverOut .9s 1.15s forwards; }
        @keyframes coverOut{ to{ opacity:0; visibility:hidden; } }
-       .cover-page{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem; cursor:pointer; background:#f7f1e6; text-align:center; }
-       .env-wrap{ position:relative; margin-top:1.5rem; transition:transform .8s cubic-bezier(.5,.02,.2,1), opacity .8s ease; }
-       .env-photo{ width:min(440px,82vw); height:auto; display:block; border-radius:6px; filter:drop-shadow(0 24px 40px rgba(80,40,30,.22)); }
-       .env-mono{ position:absolute; left:50%; top:58%; transform:translate(-50%,-50%); font-family:'Allura',cursive; font-size:22px; color:#e9c98f; pointer-events:none; }  /* sits on the wax seal; OMIT if it doesn't align cleanly */
-       /* OPEN: envelope lifts + fades, then cover dismisses */
-       .opener-toggle:checked ~ .cover-page .env-wrap{ transform:translateY(-24px) scale(1.06); opacity:0; }
+       .cover-page{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem; cursor:pointer; background:#f7f1e6; text-align:center; overflow:hidden; }
+       .env-wrap{ position:relative; width:min(440px,82vw); margin-top:1.5rem; }
+       .env-photo{ position:relative; z-index:3; width:100%; height:auto; display:block; border-radius:6px; filter:drop-shadow(0 24px 40px rgba(80,40,30,.22)); }
+       .env-mono{ position:absolute; left:50%; top:58%; transform:translate(-50%,-50%); z-index:4; font-family:'Allura',cursive; font-size:22px; color:#e9c98f; pointer-events:none; }  /* sits on the wax seal; OMIT if it doesn't align cleanly */
+       /* the card starts hidden BEHIND the envelope photo (lower z-index, pushed down) */
+       .env-letter{ position:absolute; left:9%; right:9%; bottom:8%; z-index:1; background:#fcf7ed; border:1px solid #e8dcc2; border-radius:5px; padding:1.6rem 1.1rem; box-shadow:0 14px 30px rgba(80,50,20,.18); transform:translateY(8%); opacity:0; transition:transform 1.05s cubic-bezier(.42,0,.2,1), opacity .4s ease .15s; }
+       .el-eyebrow{ font-size:.62rem; letter-spacing:.32em; color:#9a7b35; margin:0 0 .5rem; }
+       .el-script{ font-family:'Allura',cursive; font-size:1.9rem; color:#7a1f2b; line-height:1; margin:.1rem 0; }
+       .el-date{ font-size:.72rem; letter-spacing:.14em; color:#6b5b48; margin:.5rem 0 0; }
+       /* OPEN: card rises up and out of the envelope's top */
+       .opener-toggle:checked ~ .cover-page .env-letter{ opacity:1; transform:translateY(-86%); }
        .tap-hint{ animation:tapBounce 2.2s ease-in-out infinite; }
-     Tap → the envelope lifts and fades, the cover dismisses, and .invitation-body is revealed. Keep the gentle bouncing .tap-hint so it's obviously tappable. (You may add a subtle pulsing ring behind the envelope.) Do NOT draw a CSS envelope — always use the hosted photo above.
+     Sequence: tap → the cream card slides UP out from behind the envelope photo (it emerges from the top, as if drawn out), pauses, then the cover crossfades away to reveal .invitation-body. The card MUST sit at a lower z-index than .env-photo so it's hidden inside until it rises. Keep the gentle bouncing .tap-hint. Do NOT draw a CSS envelope — always use the hosted photo above.
 
   B. PRESSED FLOWER UNDER GLASS (botanical, garden weddings) — dark wood/marble surface, a single pressed flower or eucalyptus sprig centered inside a thin gold rounded-rectangle "frame" (CSS border + inset shadow). The flower is the seal — user clicks it. Use for: garden, vineyard, spring weddings.
     Markup:
@@ -1276,8 +1287,10 @@ The most-loved wedding sites aren't one long scroll — they're a little SUITE: 
    • Couple's names + date in script, a wax-seal accent, a sprig of eucalyptus (inline SVG)
    • A burgundy COUNTDOWN band near the bottom (DD : HH : MM : SS · BEFORE THE BIG DAY) + one contact line
    The "CLICK HERE" cards ARE the navigation.
+   The menu is ONE screen, vertically centered, with the flat-lay arranged to fill the viewport — min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; — do NOT leave a large empty band below the cards; balance the composition so there's no obvious void.
 
-3) THE PAGES (Our Story · The Details · Travel & Stay · RSVP) — each a full-screen "page" with its own solid background (ivory; or a deep burgundy "curtain" for Our Story), a big script title, tight content, a framed photo or two, and a "‹ GO BACK" link to the menu. Keep each page short.
+3) THE PAGES (Our Story · The Details · Travel & Stay · RSVP) — each a "page" with its own solid background (ivory; or a deep burgundy "curtain" for Our Story), a big script title, tight content, a framed photo or two, and a "‹ GO BACK" link to the menu.
+   CRITICAL — NO EMPTY VOIDS: do NOT force these pages to min-height:100vh with content stranded at the top. That is the #1 thing that makes the site feel empty. Instead: each page is a CENTERED block that HUGS its content — min-height: auto; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: clamp(3rem,7vw,5rem) 1.25rem; max-width:760px; margin:0 auto; — a short page is simply short — never a tall empty canvas. Center content; never strand it at the top of a giant box. The MENU page may fill the viewport, but it must be ARRANGED to fill it (flat-lay using the whole screen), not a few items floating in a void.
 
 NO-JS NAVIGATION (hidden radios + labels — same family as MULTI-EVENT tabs):
   <input type="radio" name="nav" id="nav-menu" checked hidden>
