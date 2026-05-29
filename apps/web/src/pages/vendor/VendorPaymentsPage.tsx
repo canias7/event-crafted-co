@@ -429,6 +429,14 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     setSearchParams(params, { replace: true });
   };
 
+  // Upcoming appointments card on the Overview links here so a vendor
+  // can open the full calendar / appointments surface.
+  const goToCalendar = () => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", "calendar");
+    setSearchParams(params, { replace: true });
+  };
+
   const [status, setStatus] = useState<Status | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -896,6 +904,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               accountVendorIds={accountVendorIds}
               onViewExpenses={goToExpenses}
               onViewActivity={goToPayments}
+              onViewCalendar={goToCalendar}
             />
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
@@ -950,6 +959,7 @@ function OverviewTab({
   accountVendorIds,
   onViewExpenses,
   onViewActivity,
+  onViewCalendar,
 }: {
   balance: Balance | null;
   // Every listing the current user owns; every Supabase query on
@@ -964,6 +974,9 @@ function OverviewTab({
   // Click handler for "View all →" on the Recent activity card —
   // navigates to the Payments tab's incoming-payments ledger.
   onViewActivity: () => void;
+  // Click handler for "View all →" on the Upcoming appointments card —
+  // navigates to the Calendar tab.
+  onViewCalendar: () => void;
 }) {
   const currency = balance?.currency ?? "usd";
 
@@ -981,6 +994,9 @@ function OverviewTab({
   // Recent paid invoices across the whole account (replaces the
   // single-listing Stripe transactions table that used to live here).
   const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; invoice_number: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null }>>([]);
+  // Upcoming appointments across the whole account — confirmed and
+  // proposed meetings scheduled from now on, soonest first.
+  const [upcomingAppts, setUpcomingAppts] = useState<Array<{ id: string; kind: string; title: string | null; location: string | null; scheduled_at: string; status: string; host_name: string | null }>>([]);
 
   // Stable string key for the useEffect dep so we don't refire on
   // every render just because listings is re-derived.
@@ -994,6 +1010,7 @@ function OverviewTab({
       setRevenue30dPrev(0);
       setRevenueSeries([]);
       setRecentInvoices([]);
+      setUpcomingAppts([]);
       return;
     }
     let cancelled = false;
@@ -1010,6 +1027,7 @@ function OverviewTab({
         { data: paid30 },
         { data: paid60 },
         { data: recentPaid },
+        { data: upcomingApptRows },
       ] = await Promise.all([
         // Inbound inquiries in the last 30 days — drive the Leads card.
         // vendor_id + host_id come back too so we can collapse a host's
@@ -1053,6 +1071,19 @@ function OverviewTab({
           .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .order("paid_at", { ascending: false })
+          .limit(5),
+        // Upcoming appointments — confirmed (accepted) or still-proposed
+        // meetings scheduled from now on, soonest first. Mirrors the
+        // calendar's "upcoming" filter so the Overview agrees with it.
+        db
+          .from("appointments")
+          .select(
+            "id, kind, title, location, scheduled_at, status, host:profiles!appointments_host_id_fkey(display_name)",
+          )
+          .in("vendor_id", accountVendorIds)
+          .in("status", ["accepted", "proposed"])
+          .gte("scheduled_at", now.toISOString())
+          .order("scheduled_at", { ascending: true })
           .limit(5),
       ]);
       if (cancelled) return;
@@ -1140,6 +1171,26 @@ function OverviewTab({
           bill_to_name: string | null;
         }>,
       );
+
+      setUpcomingAppts(
+        ((upcomingApptRows ?? []) as Array<{
+          id: string;
+          kind: string;
+          title: string | null;
+          location: string | null;
+          scheduled_at: string;
+          status: string;
+          host: { display_name: string | null } | null;
+        }>).map((a) => ({
+          id: a.id,
+          kind: a.kind,
+          title: a.title,
+          location: a.location,
+          scheduled_at: a.scheduled_at,
+          status: a.status,
+          host_name: a.host?.display_name ?? null,
+        })),
+      );
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1214,7 +1265,117 @@ function OverviewTab({
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
         <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
       </div>
+
+      {/* Upcoming appointments — confirmed / proposed meetings across
+          every listing, soonest first. Links out to the Calendar tab. */}
+      <OverviewUpcomingAppointments appts={upcomingAppts} onViewAll={onViewCalendar} />
     </>
+  );
+}
+
+// Upcoming appointments card for the Overview — a compact "what's next
+// on the calendar" surface. Pulls confirmed (accepted) and proposed
+// meetings scheduled from now on, soonest first.
+const APPT_KIND_LABEL: Record<string, string> = {
+  consultation: "Consultation",
+  walkthrough: "Walkthrough",
+  tasting: "Tasting",
+  fitting: "Fitting",
+  phone_call: "Phone call",
+  other: "Meeting",
+};
+
+function OverviewUpcomingAppointments({
+  appts,
+  onViewAll,
+}: {
+  appts: Array<{
+    id: string;
+    kind: string;
+    title: string | null;
+    location: string | null;
+    scheduled_at: string;
+    status: string;
+    host_name: string | null;
+  }>;
+  onViewAll: () => void;
+}) {
+  const fmtWhen = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+  return (
+    <div className="cockpit-data-card mb-4">
+      <div className="cockpit-data-card-header">
+        <div>
+          <h3 className="text-sm font-semibold">Upcoming appointments</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Confirmed and proposed meetings across every listing
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onViewAll}
+          className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+        >
+          View all →
+        </button>
+      </div>
+      {appts.length === 0 ? (
+        <div className="px-5 py-6 text-sm text-muted-foreground text-center">
+          No upcoming appointments. Scheduled meetings will show up here.
+        </div>
+      ) : (
+        <table className="cockpit-data-table">
+          <thead>
+            <tr>
+              <th>Appointment</th>
+              <th>With</th>
+              <th>When</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {appts.map((a) => {
+              const label = a.title?.trim() || APPT_KIND_LABEL[a.kind] || "Meeting";
+              const confirmed = a.status === "accepted";
+              return (
+                <tr key={a.id}>
+                  <td className="font-medium truncate max-w-[260px]">
+                    {label}
+                    {a.location ? (
+                      <span className="block text-[11px] text-muted-foreground font-normal truncate">
+                        {a.location}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="text-muted-foreground truncate max-w-[160px]">
+                    {a.host_name ?? "—"}
+                  </td>
+                  <td className="text-muted-foreground whitespace-nowrap">{fmtWhen(a.scheduled_at)}</td>
+                  <td>
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                      style={{
+                        background: confirmed ? "rgba(34,197,94,0.12)" : "#f4ece7",
+                        color: confirmed ? "#0a7c4a" : "#7d5a4f",
+                      }}
+                    >
+                      {confirmed ? "Confirmed" : "Proposed"}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
 
