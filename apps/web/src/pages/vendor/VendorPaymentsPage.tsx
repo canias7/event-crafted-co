@@ -1524,11 +1524,12 @@ function OverviewMrrCard({
   mrr: { total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number };
   currency: string;
 }) {
+  // Monthly-only for now — collapse every billing cadence into a
+  // single "Monthly" bar equal to the normalized monthly total. The
+  // per-interval breakdown (weekly / quarterly / yearly) is parked
+  // until we bring it back.
   const rows: Array<{ label: string; cents: number; color: string }> = [
-    { label: "Monthly",   cents: mrr.monthly,   color: "#c8403a" },
-    { label: "Weekly",    cents: mrr.weekly,    color: "#b8693d" },
-    { label: "Quarterly", cents: mrr.quarterly, color: "#c89738" },
-    { label: "Yearly",    cents: mrr.yearly,    color: "#4a7c4a" },
+    { label: "Monthly", cents: mrr.total, color: "#c8403a" },
   ];
   const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
   return (
