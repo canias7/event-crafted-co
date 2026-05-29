@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v38";
+const DESIGN_BIBLE_VERSION = "v39";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -1233,24 +1233,25 @@ For WEDDINGS / ANNIVERSARIES / ENGAGEMENTS, DEFAULT to variant A — a REAL enve
          <p class="tap-hint">CLICK ENVELOPE TO OPEN</p>
        </label>
        <main class="invitation-body"> … all sections … </main>
-     CSS essentials (ivory background; the photo IS the envelope; the card hides BEHIND it, then slides up and out):
+     CSS essentials (ivory background; the photo IS the envelope; the card rises up and OUT of it on open):
        .opener-toggle:not(:checked) ~ .invitation-body{ display:none; }
+       /* ‼ THE COVER MUST BE A FIXED OVERLAY — never an in-flow block. If it stays in flow, after it fades (visibility:hidden) it still occupies a full viewport and leaves a HUGE empty band above the menu. position:fixed removes it from flow so the menu starts at the very top. */
+       .cover-page{ position:fixed; inset:0; z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem; cursor:pointer; background:#f7f1e6; text-align:center; overflow:hidden; }
        /* staged: card pulls out first (~1.1s), THEN the cover dismisses */
        .opener-toggle:checked ~ .cover-page{ animation:coverOut .9s 1.15s forwards; }
-       @keyframes coverOut{ to{ opacity:0; visibility:hidden; } }
-       .cover-page{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem; cursor:pointer; background:#f7f1e6; text-align:center; overflow:hidden; }
+       @keyframes coverOut{ to{ opacity:0; visibility:hidden; pointer-events:none; } }
        .env-wrap{ position:relative; width:min(440px,82vw); margin-top:1.5rem; }
        .env-photo{ position:relative; z-index:3; width:100%; height:auto; display:block; border-radius:6px; filter:drop-shadow(0 24px 40px rgba(80,40,30,.22)); }
        .env-mono{ position:absolute; left:50%; top:58%; transform:translate(-50%,-50%); z-index:4; font-family:'Allura',cursive; font-size:22px; color:#e9c98f; pointer-events:none; }  /* sits on the wax seal; OMIT if it doesn't align cleanly */
-       /* the card starts hidden BEHIND the envelope photo (lower z-index, pushed down) */
-       .env-letter{ position:absolute; left:9%; right:9%; bottom:8%; z-index:1; background:#fcf7ed; border:1px solid #e8dcc2; border-radius:5px; padding:1.6rem 1.1rem; box-shadow:0 14px 30px rgba(80,50,20,.18); transform:translateY(8%); opacity:0; transition:transform 1.05s cubic-bezier(.42,0,.2,1), opacity .4s ease .15s; }
+       /* the card sits OVER the envelope center, tucked down + invisible; on open it rises clearly ABOVE the envelope and fades in (looks pulled out). z-index ABOVE the photo so the whole motion is visible. */
+       .env-letter{ position:absolute; left:12%; right:12%; top:30%; z-index:5; background:#fcf7ed; border:1px solid #e8dcc2; border-radius:5px; padding:1.4rem 1.1rem; box-shadow:0 16px 34px rgba(80,50,20,.22); transform:translateY(26%) scale(.96); opacity:0; transition:transform 1.05s cubic-bezier(.42,0,.2,1), opacity .55s ease .1s; }
        .el-eyebrow{ font-size:.62rem; letter-spacing:.32em; color:#9a7b35; margin:0 0 .5rem; }
        .el-script{ font-family:'Allura',cursive; font-size:1.9rem; color:#7a1f2b; line-height:1; margin:.1rem 0; }
        .el-date{ font-size:.72rem; letter-spacing:.14em; color:#6b5b48; margin:.5rem 0 0; }
-       /* OPEN: card rises up and out of the envelope's top */
-       .opener-toggle:checked ~ .cover-page .env-letter{ opacity:1; transform:translateY(-86%); }
+       /* OPEN: card rises up and out of the envelope */
+       .opener-toggle:checked ~ .cover-page .env-letter{ opacity:1; transform:translateY(-112%) scale(1); }
        .tap-hint{ animation:tapBounce 2.2s ease-in-out infinite; }
-     Sequence: tap → the cream card slides UP out from behind the envelope photo (it emerges from the top, as if drawn out), pauses, then the cover crossfades away to reveal .invitation-body. The card MUST sit at a lower z-index than .env-photo so it's hidden inside until it rises. Keep the gentle bouncing .tap-hint. Do NOT draw a CSS envelope — always use the hosted photo above.
+     Sequence: tap → the cream invitation card rises UP out of the envelope and fades in (ending clearly above it), pauses, then the fixed cover crossfades away to reveal .invitation-body starting at the very top. TWO non-negotiables: (1) .cover-page is position:fixed (so no empty band remains); (2) the card travels far enough up (translateY ≈ -112%) to be clearly visible above the envelope. Keep the gentle bouncing .tap-hint. Do NOT draw a CSS envelope — always use the hosted photo above.
 
   B. PRESSED FLOWER UNDER GLASS (botanical, garden weddings) — dark wood/marble surface, a single pressed flower or eucalyptus sprig centered inside a thin gold rounded-rectangle "frame" (CSS border + inset shadow). The flower is the seal — user clicks it. Use for: garden, vineyard, spring weddings.
     Markup:
