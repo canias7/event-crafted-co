@@ -1125,11 +1125,55 @@ function OverviewTab({
 
   return (
     <>
-      {/* Revenue trend — the 30-day daily wave. Full width up to large
-          desktops, where it's pulled to half width so the chart isn't
-          stretched edge-to-edge on a wide monitor. */}
-      <div className="mb-4 xl:w-1/2">
-        <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
+      {/* Top row — the 30-day revenue wave on the left, recent
+          activity on the right. Each takes half the width on large
+          desktops; they stack full width below xl. */}
+      <div className="xl:flex xl:items-start xl:gap-4 mb-4">
+        <div className="xl:w-1/2 mb-4 xl:mb-0">
+          <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
+        </div>
+
+        {/* Recent activity — paid invoices across the whole account.
+            Capped to 6 rows so it stays a compact "what just landed"
+            surface; full payment history lives in the Payments tab. */}
+        <div className="xl:w-1/2">
+          <div className="cockpit-data-card">
+            <div className="cockpit-data-card-header">
+              <div>
+                <h3 className="text-sm font-semibold">Recent activity</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Latest paid invoices across every listing on the account
+                </p>
+              </div>
+            </div>
+            {recentInvoices.length === 0 ? (
+              <div className="px-5 py-6 text-sm text-muted-foreground text-center">
+                No paid invoices yet. When customers pay, they'll show up here.
+              </div>
+            ) : (
+              <table className="cockpit-data-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Invoice</th>
+                    <th>Date</th>
+                    <th className="num">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentInvoices.map((inv) => (
+                    <tr key={inv.id}>
+                      <td className="font-medium truncate max-w-[320px]">{inv.bill_to_name ?? "—"}</td>
+                      <td className="text-muted-foreground">{inv.invoice_number}</td>
+                      <td className="text-muted-foreground">{formatDate(inv.paid_at)}</td>
+                      <td className="num font-semibold">{formatMoney(inv.total_cents, inv.currency || currency)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Bar cards — Inquiries, Cash flow, Operating expenses. They
@@ -1140,46 +1184,6 @@ function OverviewTab({
         <OverviewLeadsCard leads={leads} />
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
         <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
-      </div>
-
-      {/* Recent activity — paid invoices across the whole account.
-          Capped to 6 rows so it stays a compact "what just landed"
-          surface; full payment history lives in the Payments tab. */}
-      <div className="cockpit-data-card">
-        <div className="cockpit-data-card-header">
-          <div>
-            <h3 className="text-sm font-semibold">Recent activity</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Latest paid invoices across every listing on the account
-            </p>
-          </div>
-        </div>
-        {recentInvoices.length === 0 ? (
-          <div className="px-5 py-6 text-sm text-muted-foreground text-center">
-            No paid invoices yet. When customers pay, they'll show up here.
-          </div>
-        ) : (
-          <table className="cockpit-data-table">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Invoice</th>
-                <th>Date</th>
-                <th className="num">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentInvoices.map((inv) => (
-                <tr key={inv.id}>
-                  <td className="font-medium truncate max-w-[320px]">{inv.bill_to_name ?? "—"}</td>
-                  <td className="text-muted-foreground">{inv.invoice_number}</td>
-                  <td className="text-muted-foreground">{formatDate(inv.paid_at)}</td>
-                  <td className="num font-semibold">{formatMoney(inv.total_cents, inv.currency || currency)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </div>
     </>
   );
