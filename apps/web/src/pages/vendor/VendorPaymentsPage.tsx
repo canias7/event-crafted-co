@@ -1005,9 +1005,11 @@ function OverviewTab({
           .in("vendor_id", accountVendorIds)
           .eq("active", true),
         // Inbound inquiries in the last 30 days — drive the Leads card.
+        // vendor_id + host_id come back too so we can collapse a host's
+        // messages into a single lead, matching the Inquiries page.
         db
           .from("inquiries")
-          .select("status")
+          .select("vendor_id, host_id, status")
           .in("vendor_id", accountVendorIds)
           .gte("created_at", since30.toISOString())
           .limit(10000),
@@ -1085,18 +1087,30 @@ function OverviewTab({
       }
       setMrr(breakdown);
 
-      // Leads pipeline — bin each inquiry status into one of four
-      // display buckets. drafted + replied collapse into "active"
-      // (the vendor's in conversation), expired collapses into "lost"
-      // (treat unanswered timeouts as missed deals so the bucket
-      // shows real churn).
-      const leadStatuses = ((leadRows ?? []) as Array<{ status: string }>).map((r) => r.status);
-      const leadCounts = { new: 0, active: 0, won: 0, lost: 0, total: leadStatuses.length };
-      for (const s of leadStatuses) {
-        if (s === "new") leadCounts.new += 1;
-        else if (s === "drafted" || s === "replied") leadCounts.active += 1;
-        else if (s === "won") leadCounts.won += 1;
-        else if (s === "lost" || s === "expired") leadCounts.lost += 1;
+      // Leads pipeline — count per LEAD, not per message, so these
+      // numbers stay in lockstep with the Inquiries page. A "lead" is
+      // one host on one listing (vendor_id + host_id); all of that
+      // host's inquiries collapse into a single aggregate status using
+      // the same priority the Inquiries page applies:
+      //   won > active (drafted/replied) > new > lost (lost/expired/etc).
+      const leadInquiries = (leadRows ?? []) as Array<{
+        vendor_id: string;
+        host_id: string;
+        status: string;
+      }>;
+      const statusesByLead = new Map<string, string[]>();
+      for (const r of leadInquiries) {
+        const key = `${r.vendor_id}:${r.host_id}`;
+        const arr = statusesByLead.get(key);
+        if (arr) arr.push(r.status);
+        else statusesByLead.set(key, [r.status]);
+      }
+      const leadCounts = { new: 0, active: 0, won: 0, lost: 0, total: statusesByLead.size };
+      for (const statuses of statusesByLead.values()) {
+        if (statuses.includes("won")) leadCounts.won += 1;
+        else if (statuses.some((s) => s === "replied" || s === "drafted")) leadCounts.active += 1;
+        else if (statuses.includes("new")) leadCounts.new += 1;
+        else leadCounts.lost += 1;
       }
       setLeads(leadCounts);
 
@@ -1652,14 +1666,14 @@ function OverviewLeadsCard({
               const pct = max > 0 ? (r.count / max) * 100 : 0;
               return (
                 <div key={r.label} className="flex items-center gap-2">
-                  <div className="w-20 text-xs text-muted-foreground shrink-0 truncate">{r.label}</div>
+                  <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
                   <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
                     />
                   </div>
-                  <div className="w-12 text-right text-xs cockpit-money tabular-nums shrink-0">
+                  <div className="w-12 text-right text-xs text-foreground font-bold tabular-nums shrink-0">
                     {r.count > 0 ? r.count : "—"}
                   </div>
                 </div>
