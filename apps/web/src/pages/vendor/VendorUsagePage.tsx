@@ -345,6 +345,7 @@ export default function VendorUsagePage() {
                     <Button
                       onClick={openPortal}
                       disabled={!vendorId || actingId !== null}
+                      title={!vendorId ? "Add a listing to manage billing" : undefined}
                       variant="outline"
                       size="sm"
                       className="rounded-full shrink-0"
@@ -362,6 +363,32 @@ export default function VendorUsagePage() {
                     </Button>
                   ) : null}
                 </div>
+
+                {/* Period usage — how much of the monthly grant has been
+                    consumed since the current billing period started.
+                    Computed from actual consume rows (see usedThisPeriod)
+                    so carried-over credits / top-ups can't skew it. */}
+                {credits.monthlyGrant > 0 && usagePct != null ? (
+                  <div className="mt-2.5">
+                    <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground mb-1">
+                      <span>This billing period</span>
+                      <span className="tnum">
+                        <span className="text-foreground font-medium">{usedThisPeriod.toLocaleString()}</span>
+                        {" / "}
+                        {credits.monthlyGrant.toLocaleString()} used
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-foreground/[0.08] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${usagePct}%`,
+                          background: "linear-gradient(90deg, #ff8a4c 0%, #c4541e 100%)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </Card>
 
               <Card className="flex-1 flex flex-col">
@@ -576,7 +603,14 @@ export default function VendorUsagePage() {
                     onClick={() => setActivityExpanded((v) => !v)}
                     className="text-xs text-foreground/70 hover:text-foreground font-medium"
                   >
-                    {activityExpanded ? "Show less" : `Show all (${ledger.length})`}
+                    {/* Ledger is capped at 25 rows, so once we hit that
+                        we can't honestly call it "all" — say "recent 25"
+                        instead of overstating completeness. */}
+                    {activityExpanded
+                      ? "Show less"
+                      : ledger.length >= 25
+                        ? "Show recent 25"
+                        : `Show all (${ledger.length})`}
                   </button>
                 ) : undefined}
               />
