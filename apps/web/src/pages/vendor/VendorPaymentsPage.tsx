@@ -1554,14 +1554,14 @@ function OverviewMrrCard({
               const pct = max > 0 ? (r.cents / max) * 100 : 0;
               return (
                 <div key={r.label} className="flex items-center gap-2">
-                  <div className="w-20 text-xs text-muted-foreground shrink-0 truncate">{r.label}</div>
+                  <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
                   <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
                     />
                   </div>
-                  <div className="w-20 text-right text-xs cockpit-money tabular-nums shrink-0">
+                  <div className="w-20 text-right text-xs text-foreground font-bold tabular-nums shrink-0">
                     {r.cents > 0 ? formatMoney(r.cents, currency) : "—"}
                   </div>
                 </div>
