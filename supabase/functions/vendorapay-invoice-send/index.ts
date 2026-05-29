@@ -8,6 +8,12 @@
 // Idempotent: re-sending a 'sent' invoice resends the email but
 // doesn't reset sent_at — vendors can nudge a host without
 // changing the issue timeline.
+//
+// Runs with verify_jwt=false (set in supabase/config.toml): it
+// self-authenticates, accepting EITHER a valid vendor user JWT OR the
+// service-role bearer (for internal/scheduled sends). With the
+// service-role key now in sb_secret_ format (not a JWT), verify_jwt=true
+// would 401 internal callers at the gateway before this check runs.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
