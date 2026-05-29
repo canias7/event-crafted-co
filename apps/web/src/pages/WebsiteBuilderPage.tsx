@@ -38,22 +38,14 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 // first (defense in depth) and only ever run this vetted bundle, which is
 // why enabling allow-scripts on the preview iframe is safe.
 const GSAP_CDN = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5";
-const LENIS_CDN = "https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js";
 const PREVIEW_MOTION_RUNTIME = `
 <script src="${GSAP_CDN}/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
 <script src="${GSAP_CDN}/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
-<script src="${LENIS_CDN}" integrity="sha384-tKsJDT6PlUI0pSBt9/sBKJluKgA19/a6mBrDsZaXotLB4ZYfMGM6xt6/WgGpYhTm" crossorigin="anonymous"></script>
 <script>
 (function(){
   var g = window.gsap; if (!g) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var ST = window.ScrollTrigger; if (ST) g.registerPlugin(ST);
-  if (window.Lenis) { try {
-    var lenis = new window.Lenis({ lerp: 0.09, smoothWheel: true });
-    if (ST) lenis.on('scroll', ST.update);
-    g.ticker.add(function(t){ lenis.raf(t * 1000); });
-    g.ticker.lagSmoothing(0);
-  } catch (e) {} }
   var P = { 'fade-up':{opacity:0,y:48},'fade':{opacity:0},'fade-down':{opacity:0,y:-48},'scale-in':{opacity:0,scale:0.9},'slide-left':{opacity:0,x:-64},'slide-right':{opacity:0,x:64},'blur-in':{opacity:0,y:30,filter:'blur(14px)'},'clip-reveal':{opacity:0,y:24,clipPath:'inset(0 0 100% 0)'} };
   function init(){
     document.querySelectorAll('[data-anim]').forEach(function(el){

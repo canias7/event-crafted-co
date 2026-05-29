@@ -76,11 +76,9 @@ function stripScripts(html: string): string {
 //   [data-parallax="0.2"]   → gentle vertical parallax on scroll
 //   .gsap-hero + [data-hero-item]  → on-load hero entrance timeline
 const GSAP_CDN = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5";
-const LENIS_CDN = "https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js";
 const ANIM_RUNTIME = `
 <script src="${GSAP_CDN}/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
 <script src="${GSAP_CDN}/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
-<script src="${LENIS_CDN}" integrity="sha384-tKsJDT6PlUI0pSBt9/sBKJluKgA19/a6mBrDsZaXotLB4ZYfMGM6xt6/WgGpYhTm" crossorigin="anonymous"></script>
 <script>
 (function(){
   var g = window.gsap;
@@ -88,15 +86,6 @@ const ANIM_RUNTIME = `
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var ST = window.ScrollTrigger;
   if (ST) g.registerPlugin(ST);
-  // Luxury momentum scrolling — desktop wheel/trackpad eased; native on touch
-  // (smoothTouch off by default avoids mobile jank). Synced to GSAP's ticker
-  // so ScrollTrigger stays perfectly in lockstep.
-  if (window.Lenis) { try {
-    var lenis = new window.Lenis({ lerp: 0.09, smoothWheel: true });
-    if (ST) lenis.on('scroll', ST.update);
-    g.ticker.add(function(t){ lenis.raf(t * 1000); });
-    g.ticker.lagSmoothing(0);
-  } catch (e) {} }
   var P = {
     'fade-up':    { opacity:0, y:48 },
     'fade':       { opacity:0 },
