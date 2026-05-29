@@ -412,6 +412,15 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     setSearchParams(params, { replace: true });
   };
 
+  // Recent activity card on the Overview links here so a vendor can
+  // see the full payments ledger.
+  const goToPayments = () => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", "transactions");
+    params.set("sub", "incoming");
+    setSearchParams(params, { replace: true });
+  };
+
   const [status, setStatus] = useState<Status | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -878,6 +887,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               balance={balance}
               accountVendorIds={accountVendorIds}
               onViewExpenses={goToExpenses}
+              onViewActivity={goToPayments}
             />
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
@@ -931,6 +941,7 @@ function OverviewTab({
   balance,
   accountVendorIds,
   onViewExpenses,
+  onViewActivity,
 }: {
   balance: Balance | null;
   // Every listing the current user owns; every Supabase query on
@@ -942,6 +953,9 @@ function OverviewTab({
   // Click handler for "View all →" on the Operating expenses card —
   // navigates to the Payments tab's Expenses sub-surface.
   onViewExpenses: () => void;
+  // Click handler for "View all →" on the Recent activity card —
+  // navigates to the Payments tab's incoming-payments ledger.
+  onViewActivity: () => void;
 }) {
   const currency = balance?.currency ?? "usd";
 
@@ -1031,7 +1045,7 @@ function OverviewTab({
           .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .order("paid_at", { ascending: false })
-          .limit(6),
+          .limit(5),
       ]);
       if (cancelled) return;
 
@@ -1145,6 +1159,13 @@ function OverviewTab({
                   Latest paid invoices across every listing on the account
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={onViewActivity}
+                className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+              >
+                View all →
+              </button>
             </div>
             {recentInvoices.length === 0 ? (
               <div className="px-5 py-6 text-sm text-muted-foreground text-center">
