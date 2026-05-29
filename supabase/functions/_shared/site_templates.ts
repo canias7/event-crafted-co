@@ -744,19 +744,35 @@ ${googleFontsLink(t)}
      ruled border (real envelopes have an inner liner edge). */
   .env-back{
     position:absolute;inset:0;
+    /* Real paper: warm cream base, soft large-scale tonal mottling
+       (organic clouds), and a faint fiber grain — all multiply-blended
+       so the surface reads as pressed pulp instead of flat digital
+       fill. The earlier single high-freq grain looked like static. */
     background:
-      linear-gradient(165deg, var(--surface) 0%, var(--surface2) 100%);
-    border-radius:2px;
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.11 0 0 0 0 0.06 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23f)'/%3E%3C/svg%3E") repeat,
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.22 0 0 0 0 0.15 0 0 0 0 0.07 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)'/%3E%3C/svg%3E") repeat,
+      linear-gradient(168deg, color-mix(in srgb, var(--surface) 92%, #fff 8%) 0%, var(--surface) 48%, var(--surface2) 100%);
+    background-size:160px 160px, 420px 420px, auto;
+    background-blend-mode:multiply, multiply, normal;
+    border-radius:3px;
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,0.7),
       inset 0 -1px 0 rgba(0,0,0,0.1),
-      inset 0 0 0 1px rgba(0,0,0,0.08);
+      inset 0 0 0 1px rgba(0,0,0,0.08),
+      /* cut edges of paper catch a soft warm shadow inward */
+      inset 0 0 70px rgba(120,80,40,0.10);
     z-index:1;
   }
   .env-back::before{
-    content:"";position:absolute;inset:0;
-    background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 0.15 0 0 0 0 0.10 0 0 0 0 0.05 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23b)'/%3E%3C/svg%3E");
-    mix-blend-mode:multiply;opacity:0.55;border-radius:inherit;
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    /* Surface light play: a soft sheen catching light at top-left and
+       a gentle warm falloff bottom-right, so the paper reads as a lit
+       3D surface rather than a flat swatch. */
+    background:
+      radial-gradient(125% 85% at 26% 20%, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0) 46%),
+      radial-gradient(150% 130% at 82% 96%, rgba(70,45,18,0.16) 0%, rgba(70,45,18,0) 56%);
+    mix-blend-mode:soft-light;
+    pointer-events:none;
   }
   /* Subtle ruled inner border on the envelope (cardstock detail). */
   .env-back::after{
@@ -771,10 +787,15 @@ ${googleFontsLink(t)}
   .env-letter{
     position:absolute;
     top:7%;left:7%;right:7%;bottom:7%;
-    background:#fefcf7;
-    background-image:
-      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' seed='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.12 0 0 0 0 0.06 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23l)'/%3E%3C/svg%3E");
-    background-blend-mode:multiply;
+    /* Bright letter stock: same layered pulp treatment as the
+       envelope but lighter, so it still reads as the brighter LETTER
+       sitting inside the cream envelope. */
+    background:
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='lf'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='6'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.13 0 0 0 0 0.07 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23lf)'/%3E%3C/svg%3E") repeat,
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='lm'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.016' numOctaves='4' seed='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.17 0 0 0 0 0.09 0 0 0 0.38 0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23lm)'/%3E%3C/svg%3E") repeat,
+      linear-gradient(160deg, #fffdf8 0%, #fbf5ea 100%);
+    background-size:150px 150px, 400px 400px, auto;
+    background-blend-mode:multiply, multiply, normal;
     color:var(--text);
     border-radius:2px;
     z-index:2;
@@ -783,6 +804,7 @@ ${googleFontsLink(t)}
     box-shadow:
       inset 0 0 0 1px rgba(0,0,0,0.06),
       inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 0 45px rgba(150,110,60,0.07),
       0 2px 6px rgba(0,0,0,0.08);
     transform:translateY(0);
     opacity:1;
@@ -840,8 +862,15 @@ ${googleFontsLink(t)}
     transform:rotateX(0deg);
     z-index:4;
     transition:transform 1.1s cubic-bezier(0.6,0.05,0.3,1) 0.45s;
+    /* Same pulp texture as the body, over a soft fold gradient that
+       darkens toward the bottom tip (the paper folds away from the
+       light there) — no hard digital banding. */
     background:
-      linear-gradient(180deg, var(--surface) 0%, var(--surface2) 65%, color-mix(in srgb, var(--surface2) 80%, #000 10%) 100%);
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='ff'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.11 0 0 0 0 0.06 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23ff)'/%3E%3C/svg%3E") repeat,
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='fm'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='4' seed='12'/%3E%3CfeColorMatrix values='0 0 0 0 0.22 0 0 0 0 0.15 0 0 0 0 0.07 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23fm)'/%3E%3C/svg%3E") repeat,
+      linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, #fff 6%) 0%, var(--surface) 42%, var(--surface2) 78%, color-mix(in srgb, var(--surface2) 82%, #000 12%) 100%);
+    background-size:160px 160px, 420px 420px, auto;
+    background-blend-mode:multiply, multiply, normal;
     clip-path:polygon(0 0, 100% 0, 50% 100%);
     box-shadow:
       inset 0 -14px 24px rgba(0,0,0,0.15),
