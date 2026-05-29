@@ -1,0 +1,29 @@
+{
+  "name": "@vendora/ads",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Remotion project for making Eventvendora video / animated ads (local use).",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render",
+    "render:square": "remotion render SquarePromo out/square-promo.mp4",
+    "render:story": "remotion render StoryPromo out/story-promo.mp4",
+    "render:lottie": "remotion render LottieDemo out/lottie-demo.mp4",
+    "still": "remotion still SquarePromo out/poster.png",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "@remotion/lottie": "^4.0.0",
+    "lottie-web": "^5.12.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.0",
+    "@types/react-dom": "~19.2.0",
+    "typescript": "^5.5.0"
+  }
+}
