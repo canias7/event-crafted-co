@@ -648,8 +648,20 @@ ${spec.event_end ? `<meta name="event-end" content="${esc(spec.event_end)}">` : 
 ${spec.venue ? `<meta name="event-location" content="${esc((spec.venue_address || spec.venue) ?? "")}">` : ""}
 <meta name="event-summary" content="${esc(spec.title)}">` : "";
 
+  // Editorial waterfall: tag each paper-card with a cascade slot
+  // (pc0..pc3, cycling) so the CSS floats them at alternating sides,
+  // widths, and rotations. Full-bleed sections (hero, quote, gallery
+  // strip) aren't paper-cards, so they stay centered and unscattered.
+  let cardSlot = 0;
   const sectionsHtml = (spec.sections || [])
-    .map((s) => renderSection(s, spec, t, rsvpEndpoint))
+    .map((s) => {
+      let html = renderSection(s, spec, t, rsvpEndpoint);
+      if (html.includes('class="paper-card')) {
+        html = html.replace('class="paper-card', `class="paper-card pc${cardSlot % 4}`);
+        cardSlot++;
+      }
+      return html;
+    })
     .join("\n");
 
   const html = `<!-- TITLE: ${esc(spec.title)} -->
@@ -891,12 +903,15 @@ ${googleFontsLink(t)}
   /* tap-hint fades immediately on tap */
   .opener-toggle:checked ~ .cover-page .tap-hint{opacity:0;transition:opacity 0.2s ease}
   /* === BODY === */
-  .invitation-body{max-width:920px;margin:0 auto;padding:3rem 1.5rem 4rem;position:relative;z-index:0}
+  /* Wider editorial canvas so cards have room to scatter sideways. */
+  .invitation-body{max-width:1160px;margin:0 auto;padding:3rem 1.5rem 4rem;position:relative;z-index:0}
   section{margin:3rem 0;opacity:1;transform:none;position:relative}
   @supports (animation-timeline: view()){
     section{animation:section-enter linear both;animation-timeline:view();animation-range:entry 0% cover 35%}
   }
-  @keyframes section-enter{from{opacity:0.4;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  /* Keep each card's resting rotation (--rot) through the scroll-in so
+     the entrance slides up WITHOUT flattening the editorial tilt. */
+  @keyframes section-enter{from{opacity:0.4;transform:translateY(20px) rotate(var(--rot,0deg))}to{opacity:1;transform:translateY(0) rotate(var(--rot,0deg))}}
   /* === PAPER CARD — layered shadows + paper-stack pseudos. ===
      Five stacked shadows for realistic depth (contact, ambient,
      mid, deep, long). Sepia-tinted instead of pure black so it
@@ -966,6 +981,22 @@ ${googleFontsLink(t)}
     inset 0 1px 0 rgba(255,255,255,0.5),
     /* Inset bottom edge shadow (paper has thickness) */
     inset 0 -1px 0 rgba(0,0,0,0.08)
+  }
+  /* === EDITORIAL WATERFALL ===
+     Instead of one rigid centered column, cards float across the wide
+     canvas at alternating sides, widths, and slight rotations, then
+     cascade down and overlap like a natural waterfall. The pc2 slot is
+     a wider centered "feature" card that breaks the rhythm so it reads
+     editorial, not mechanical. Below 880px it collapses to a clean,
+     untilted single column for readability. The compose() pass tags
+     each paper-card with pc0..pc3 in order. */
+  .paper-card{--rot:0deg;width:min(100%,620px);margin-left:auto;margin-right:auto}
+  @media (min-width:880px){
+    .paper-card{transform:rotate(var(--rot))}
+    .pc0{--rot:-1.3deg;width:48%;margin-left:0;margin-right:auto}
+    .pc1{--rot:1.1deg;width:46%;margin-left:auto;margin-right:0;margin-top:-4.5rem}
+    .pc2{--rot:-0.5deg;width:64%;margin-top:1.5rem}
+    .pc3{--rot:0.9deg;width:50%;margin-left:0;margin-right:auto;margin-top:-3.25rem}
   }
   .ornament-rule{width:60px;height:1px;background:var(--accent);opacity:0.5;margin:0 auto 1.5rem}
   /* Letterpress: titles sit slightly pressed into the paper. Subtle
