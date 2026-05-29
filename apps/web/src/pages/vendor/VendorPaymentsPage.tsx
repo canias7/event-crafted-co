@@ -4987,9 +4987,9 @@ function CustomersTab({
     existing: RecurringRule | null;
   } | null>(null);
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
-  const [sortField, setSortField] = useState<"name" | "balance">("name");
+  const [sortField, setSortField] = useState<"name" | "invoices">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const toggleSort = (field: "name" | "balance") => {
+  const toggleSort = (field: "name" | "invoices") => {
     if (field === sortField) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -5110,10 +5110,10 @@ function CustomersTab({
     return map;
   }, [invoices]);
 
-  // Per-contact rollup keyed by row id: how many invoices and how much
-  // has been paid. Drives the Invoices / Balance columns and sorting.
+  // Per-contact rollup keyed by row id: how many invoices the contact
+  // has actually received. Drives the Invoices column and sorting.
   const summaryById = useMemo(() => {
-    const m = new Map<string, { count: number; paid: number }>();
+    const m = new Map<string, { count: number }>();
     for (const c of rows) {
       const inv = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
       // Count only invoices the customer actually received — drafts
@@ -5123,18 +5123,7 @@ function CustomersTab({
       const real = inv.filter(
         (i) => i.status !== "draft" && i.status !== "cancelled",
       );
-      // Net collected: paid invoices count in full; partially-refunded
-      // ones (status "partial_refund") still collected money, so add
-      // the amount net of the refund instead of dropping the row.
-      // Fully-refunded ("refunded") nets to ~0 and is left out.
-      const paid = inv.reduce((s, i) => {
-        if (i.status === "paid") return s + i.total_cents;
-        if (i.status === "partial_refund") {
-          return s + Math.max(0, i.total_cents - (i.refunded_amount_cents ?? 0));
-        }
-        return s;
-      }, 0);
-      m.set(c.id, { count: real.length, paid });
+      m.set(c.id, { count: real.length });
     }
     return m;
   }, [rows, invoicesByEmail]);
@@ -5173,7 +5162,7 @@ function CustomersTab({
         const bn = (b.name?.trim() || b.email).toLowerCase();
         cmp = an.localeCompare(bn);
       } else {
-        cmp = (summaryById.get(a.id)?.paid ?? 0) - (summaryById.get(b.id)?.paid ?? 0);
+        cmp = (summaryById.get(a.id)?.count ?? 0) - (summaryById.get(b.id)?.count ?? 0);
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -5183,7 +5172,6 @@ function CustomersTab({
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / perPage));
   const safePage = Math.min(page, totalPages);
   const pageRows = sortedRows.slice((safePage - 1) * perPage, safePage * perPage);
-  const totalPaid = sortedRows.reduce((s, c) => s + (summaryById.get(c.id)?.paid ?? 0), 0);
 
   // Reset to page 1 whenever the search narrows the list so we don't
   // strand the view on an empty page.
@@ -5632,7 +5620,7 @@ function CustomersTab({
             <EmptyCard>No contacts match "{searchTerm.trim()}".</EmptyCard>
           ) : (
           <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
-            <table className="w-full min-w-[640px]">
+            <table className="w-full min-w-[820px]">
               <thead>
                 <tr className="bg-foreground/[0.03]">
                   <th className="w-10 px-4 py-3 text-left">
@@ -5653,19 +5641,22 @@ function CustomersTab({
                     ) : null}
                   </th>
                   <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                    Contact
+                    Email
+                  </th>
+                  <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Phone
                   </th>
                   <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                     Company
                   </th>
-                  <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                    Invoices
+                  <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Location
                   </th>
                   <th
                     className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
-                    onClick={() => toggleSort("balance")}
+                    onClick={() => toggleSort("invoices")}
                   >
-                    Paid {sortField === "balance" ? (
+                    Invoices {sortField === "invoices" ? (
                       <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                     ) : null}
                   </th>
@@ -5676,8 +5667,12 @@ function CustomersTab({
               </thead>
               <tbody>
                 {pageRows.map((c) => {
-                  const summary = summaryById.get(c.id) ?? { count: 0, paid: 0 };
+                  const summary = summaryById.get(c.id) ?? { count: 0 };
                   const custRecurring = recurringByCustomerId.get(c.id);
+                  const location =
+                    [c.billing_city, c.billing_state].filter(Boolean).join(", ") ||
+                    c.billing_country ||
+                    "—";
                   return (
                     <tr key={c.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
                       <td className="px-4 py-3">
@@ -5712,19 +5707,19 @@ function CustomersTab({
                         </div>
                       </td>
                       <td className="px-3 py-3 text-sm text-muted-foreground">
-                        <div className="leading-tight">
-                          <div>{c.email}</div>
-                          {c.phone ? <div className="text-xs">{c.phone}</div> : null}
-                        </div>
+                        {c.email}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                        {c.phone || "—"}
                       </td>
                       <td className="px-3 py-3 text-sm text-foreground">
                         {c.company || "—"}
                       </td>
+                      <td className="px-3 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                        {location}
+                      </td>
                       <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums">
                         {summary.count || "—"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums whitespace-nowrap">
-                        {summary.paid > 0 ? formatMoney(summary.paid) : "—"}
                       </td>
                       <td className="px-3 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center gap-1.5 justify-end">
@@ -5786,18 +5781,11 @@ function CustomersTab({
               </tbody>
               <tfoot>
                 <tr className="border-t border-foreground/10">
-                  <td colSpan={7} className="px-4 py-3">
+                  <td colSpan={8} className="px-4 py-3">
                     <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                       <span>
-                        Showing {pageRows.length} of {sortedRows.length} ·{" "}
-                        {searchTerm.trim() ? "Filtered total" : "Total"}{" "}
-                        <span
-                          className="text-foreground tabular-nums"
-                          style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
-                        >
-                          {formatMoney(totalPaid)}
-                        </span>{" "}
-                        paid
+                        Showing {pageRows.length} of {sortedRows.length} contact
+                        {sortedRows.length === 1 ? "" : "s"}
                       </span>
                       {totalPages > 1 ? (
                         <div className="flex items-center gap-1">
