@@ -1,8 +1,10 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -20,19 +22,22 @@ const INK = "#5b4a3a";
 const W = 460;
 const H = 312;
 
-// burgundy paper gradients (kept consistent across every part = looks like one object)
-const bodyGrad = "linear-gradient(150deg, #8a2533 0%, #75202c 48%, #631a25 100%)";
-const flapGrad = "linear-gradient(180deg, #8d2734 0%, #7a212d 70%, #6c1c27 100%)";
-const bottomGrad = "linear-gradient(0deg, #6d1d28 0%, #7a212d 100%)";
+const PAPER = staticFile("paper-burgundy.png"); // real gpt-image-2 burgundy paper texture
+
+// translucent shading overlays laid OVER the photo texture to fake the folds/light
+const bodyShade = "linear-gradient(160deg, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.58) 100%)";
+const flapShadeG = "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.05) 62%, rgba(0,0,0,0.22) 100%)";
+const bottomShade = "linear-gradient(0deg, rgba(0,0,0,0.24) 0%, rgba(255,255,255,0.04) 100%)";
+
+const TEX = { backgroundSize: "cover, 240px 240px", backgroundRepeat: "no-repeat, repeat" } as const;
 
 export const EnvelopeIntro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // hold: 0-12 | flap opens: 12-48 | letter rises: 36-76 | expand+wash: 80-end
   const flapOpen = spring({ frame: frame - 12, fps, config: { damping: 16, mass: 0.9 }, durationInFrames: 38 });
   const flapRot = interpolate(flapOpen, [0, 1], [0, -168]);
-  const flapShade = interpolate(flapOpen, [0, 0.5, 1], [1, 0.78, 0.9]); // brightness dip mid-rotation
+  const flapShade = interpolate(flapOpen, [0, 0.5, 1], [1, 0.8, 0.92]);
 
   const rise = spring({ frame: frame - 36, fps, config: { damping: 19, mass: 1 }, durationInFrames: 42 });
   const letterY = interpolate(rise, [0, 1], [30, -206]);
@@ -51,8 +56,8 @@ export const EnvelopeIntro: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: IVORY, alignItems: "center", justifyContent: "center", fontFamily: serif }}>
       <div style={{ position: "relative", width: W, height: H, transform: `translateY(${lift}px)`, transformStyle: "preserve-3d", opacity: envFade, perspective: 1800, filter: "drop-shadow(0 30px 46px rgba(70,25,28,0.30))" }}>
-        {/* back wall (interior, shows when flap lifts) */}
-        <div style={{ ...part, borderRadius: 12, background: "linear-gradient(160deg,#5e1922,#4d141c)", transform: "translateZ(-2px)" }} />
+        {/* back wall / interior (photo texture, darkened) */}
+        <div style={{ ...part, ...TEX, borderRadius: 12, backgroundImage: `${bodyShade}, url(${PAPER})`, transform: "translateZ(-2px)" }} />
 
         {/* letter — hidden behind flaps, rises out */}
         <div
@@ -71,22 +76,19 @@ export const EnvelopeIntro: React.FC = () => {
           </div>
         </div>
 
-        {/* bottom front flap (static) */}
-        <div style={{ ...part, background: bottomGrad, clipPath: "polygon(0% 100%, 100% 100%, 50% 34%)", transform: "translateZ(1px)" }} />
+        {/* bottom front flap (photo texture) */}
+        <div style={{ ...part, ...TEX, backgroundImage: `${bottomShade}, url(${PAPER})`, clipPath: "polygon(0% 100%, 100% 100%, 50% 34%)", transform: "translateZ(1px)" }} />
         {/* side seams for depth */}
-        <div style={{ ...part, background: "linear-gradient(135deg,rgba(255,255,255,0.05),transparent 40%)", clipPath: "polygon(0% 0%, 50% 50%, 0% 100%)", transform: "translateZ(1.1px)" }} />
-        <div style={{ ...part, background: "linear-gradient(225deg,rgba(0,0,0,0.10),transparent 40%)", clipPath: "polygon(100% 0%, 50% 50%, 100% 100%)", transform: "translateZ(1.1px)" }} />
+        <div style={{ ...part, background: "linear-gradient(135deg,rgba(255,255,255,0.06),transparent 40%)", clipPath: "polygon(0% 0%, 50% 50%, 0% 100%)", transform: "translateZ(1.1px)" }} />
+        <div style={{ ...part, background: "linear-gradient(225deg,rgba(0,0,0,0.12),transparent 40%)", clipPath: "polygon(100% 0%, 50% 50%, 100% 100%)", transform: "translateZ(1.1px)" }} />
 
         {/* TOP flap — hinged at the top edge, rotates open */}
         <div style={{ ...part, transformStyle: "preserve-3d", transformOrigin: "50% 0%", transform: `translateZ(3px) rotateX(${flapRot}deg)`, filter: `brightness(${flapShade})` }}>
-          <div style={{ ...part, background: flapGrad, clipPath: "polygon(0% 0%, 100% 0%, 50% 64%)", boxShadow: "inset 0 2px 0 rgba(255,255,255,0.06)" }} />
+          <div style={{ ...part, ...TEX, backgroundImage: `${flapShadeG}, url(${PAPER})`, clipPath: "polygon(0% 0%, 100% 0%, 50% 64%)" }} />
           {/* crease shadow along the hinge */}
-          <div style={{ ...part, background: "linear-gradient(180deg,rgba(0,0,0,0.18),transparent 12%)", clipPath: "polygon(0% 0%, 100% 0%, 50% 64%)" }} />
-          {/* wax seal at the flap point */}
-          <div style={{ position: "absolute", left: "50%", top: "55%", transform: "translate(-50%,-50%)", width: 62, height: 62, borderRadius: "50%", background: "radial-gradient(circle at 36% 30%, #a83a47, #7d2330 55%, #5c1822 100%)", boxShadow: "0 4px 10px rgba(0,0,0,0.35), inset 0 -3px 6px rgba(0,0,0,0.3), inset 0 3px 5px rgba(255,255,255,0.15)" }}>
-            <div style={{ position: "absolute", inset: 9, borderRadius: "50%", border: "1px solid rgba(255,225,180,0.25)" }} />
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: script, fontSize: 26, color: "rgba(238,205,150,0.85)" }}>&amp;</div>
-          </div>
+          <div style={{ ...part, background: "linear-gradient(180deg,rgba(0,0,0,0.20),transparent 12%)", clipPath: "polygon(0% 0%, 100% 0%, 50% 64%)" }} />
+          {/* photoreal wax seal at the flap point */}
+          <Img src={staticFile("wax-seal.png")} style={{ position: "absolute", left: "50%", top: "56%", width: 112, height: 112, transform: "translate(-50%,-50%)", filter: "drop-shadow(0 3px 6px rgba(40,10,12,0.4))" }} />
         </div>
       </div>
 
