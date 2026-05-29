@@ -20,6 +20,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { senderFrom } from "../_shared/sender.ts";
+import {
+  consumeCredits,
+  insufficientCreditsResponse,
+  refundCredits,
+} from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -190,6 +195,20 @@ serve(async (req) => {
       `${logoHtml}<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><p style="margin:0 0 4px;font-size:14px;">Issued ${formatDate(inv.issue_date as any)}${inv.due_date ? ` · Due ${formatDate(inv.due_date as any)}` : ""}</p><p style="margin:0 0 24px;font-size:32px;font-weight:600;line-height:1.2;">${formatMoney(inv.total_cents as number, currency)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececec;border-bottom:1px solid #ececec;padding:8px 0;margin:0 0 16px;">${rowsHtml}<tr><td style="padding-top:12px;font-size:13px;color:#777;">Subtotal</td><td style="padding-top:12px;font-size:13px;color:#777;text-align:right;">${formatMoney(inv.subtotal_cents as number, currency)}</td></tr>${taxRow}${lateFeeRow}<tr><td style="padding:6px 0;font-size:15px;font-weight:600;">Total</td><td style="padding:6px 0;font-size:15px;font-weight:600;text-align:right;">${formatMoney(inv.total_cents as number, currency)}</td></tr></table>${inv.notes ? `<p style="margin:0 0 24px;font-size:13px;color:#555;">${escapeHtml(inv.notes as string)}</p>` : ""}<p style="margin:0 0 24px;">${button(payUrl, `Pay ${formatMoney(inv.total_cents as number, currency)}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay. "VENDORAPAY" will appear on your statement.</p>`,
     );
 
+    // Bill the vendor one credit for this outbound client email
+    // (the platform pays Resend per send). Charge BEFORE the send so
+    // an out-of-credits vendor gets the standard 402 → top-up flow
+    // instead of a free email. Refunded below if Resend then fails.
+    const billUserId = vpRow?.user_id ?? null;
+    if (billUserId) {
+      const charged = await consumeCredits(billUserId, "email_send", invoiceId);
+      if (!charged.ok && charged.reason === "insufficient_credits") {
+        return insufficientCreditsResponse(charged.cost, cors);
+      }
+      // service_unavailable: don't hold the invoice hostage to a
+      // transient credits-ledger outage — fall through and send.
+    }
+
     // From header mirrors the buyer receipt — verified domain when
     // hooked up, platform fallback otherwise. Reply-To routes to
     // the vendor's account email so a buyer hitting Reply lands in
@@ -208,6 +227,10 @@ serve(async (req) => {
     if (!r.ok) {
       const txt = await r.text();
       console.error("[vendorapay-invoice-send] resend error", txt);
+      // Send failed after we debited — give the credit back.
+      if (billUserId) {
+        await refundCredits(billUserId, "email_send", invoiceId, "resend_failed");
+      }
       return json(500, { error: "email_failed", detail: txt.slice(0, 240) });
     }
 

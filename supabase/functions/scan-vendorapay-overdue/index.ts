@@ -13,6 +13,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { senderFrom } from "../_shared/sender.ts";
+import { consumeCredits } from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -211,6 +212,14 @@ serve(async (req: Request) => {
         );
         failed++;
         continue;
+      }
+
+      // Bill the vendor one credit for the reminder we just sent to
+      // their client. Best-effort and post-send: an empty balance
+      // never blocks a reminder, and a failed send (handled above)
+      // is never charged.
+      if (vpRow?.user_id) {
+        await consumeCredits(vpRow.user_id, "email_send", inv.id);
       }
 
       // Stamp the row AFTER the email lands. If the UPDATE fails the

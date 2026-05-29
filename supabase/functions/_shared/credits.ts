@@ -18,7 +18,11 @@ export type CreditAction =
   | "hilux_draft"
   | "axion_image"
   | "mux_minute"
-  | "email_parse";
+  | "email_parse"
+  // Outbound vendor→client email (invoice send, payment reminder,
+  // paid receipt). The platform pays Resend per send, so each
+  // billable email costs the vendor one credit.
+  | "email_send";
 
 // Per-action credit costs. Calibrated for ~80%+ gross margin per
 // action at measured upstream prices (see ai_call_usage telemetry).
@@ -35,6 +39,7 @@ export const CREDIT_COST: Record<CreditAction, number> = {
   axion_image: 10,
   mux_minute: 1,
   email_parse: 1,
+  email_send: 1,
 };
 
 function adminClient() {
