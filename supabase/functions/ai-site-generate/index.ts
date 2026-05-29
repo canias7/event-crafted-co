@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v30";
+const DESIGN_BIBLE_VERSION = "v31";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -595,6 +595,29 @@ NEVER PRODUCE:
 • Generic "card with rounded corner" UI components
 • "Powered by" / "Built with" footers
 • Decorative emojis everywhere (use sparingly, only when the event is playful)
+
+═══ RESTRAINT IS THE #1 RULE — LESS IS MORE (the most common failure is doing TOO MUCH) ═══
+This bible offers MANY techniques (particles, ornaments, stickers, cinemagraphs, paper-stacks, motifs, calligraphy draws…). They are a MENU, not a checklist. A real luxury studio uses 2–3 of them, deliberately — never all of them. Over-decoration looks busy and cheap, the OPPOSITE of luxury.
+• Choose AT MOST 2–3 decorative devices for the ENTIRE site. Leave everything else off.
+• Default to more negative space and fewer elements. When in doubt, remove it.
+• Particles/stickers are optional and must be subtle — or omit them. NEVER stack particles + stickers + heavy ornaments together.
+• Calm, confident, editorial — like a high-end PRINT invitation, not a feature-packed web page. Silence and space are luxurious.
+
+═══ FEWER, SMARTER PHOTOS — that MELT into the background ═══
+• Use FEWER photos: roughly 3–6 well-chosen images for the whole site, NOT one in every section. A calm page with two stunning, well-blended images beats a busy page with ten.
+• Images must BLEND into the dark/colored background — never sit as a hard-edged rectangle. Required treatment on every photo over a dark bg:
+    - Feather the edges with a mask so the image dissolves into the page:
+        .photo,.hero-photo,img.blend{ -webkit-mask-image:radial-gradient(125% 125% at 50% 42%,#000 52%,transparent 100%); mask-image:radial-gradient(125% 125% at 50% 42%,#000 52%,transparent 100%); }
+      (or a top/bottom linear-gradient mask for full-bleed bands).
+    - Add a palette-tinted overlay (a multiply layer of the dark base color at ~0.3–0.45) so photos share the page's mood, plus a subtle bottom-up gradient for text legibility.
+    - Prefer ATMOSPHERIC / textural imagery (candlelight, foliage, fabric, light haze, landscape) over literal scene snapshots — softer, moodier, de-saturated reads more luxe and blends far better.
+• PHOTO RELEVANCE (CRITICAL): only use images that clearly belong to THIS event's story and venue. NEVER vehicles, gadgets, logos, unrelated people/objects, or generic stock filler. If you are not confident an image fits, DO NOT use a literal photo — use a textural/moody neutral (linen, marble, candlelight, foliage, dark haze) instead. A tasteful texture never looks wrong; a mismatched literal photo (e.g. a car on a wedding page) ruins the entire feel.
+
+═══ RSVP — MAKE IT THE EMOTIONAL CENTERPIECE ═══
+The RSVP is the whole point of the site — treat it as the climactic moment, not a plain form bolted to the bottom.
+• Give it its own full-width, generously-spaced section with a beautiful heading ("Will you join us?", "Kindly Reply"), one line of warm copy, and a clear reply-by date.
+• Style the inputs to MATCH the palette — never default browser fields: soft 1px borders in the accent tint, refined focus states, elegant tracked labels, comfortable padding, a serif/script accent on the heading. This is a great place to spend ONE decorative touch (a small wax seal or ornament).
+• Make the submit button feel special ("Send our reply"), and place the live RSVP count nearby for warmth. It should feel like the most considered, inviting part of the page.
 
 TYPOGRAPHY — Google Fonts ARE ALLOWED and ENCOURAGED. Use this preconnect + link pattern in <head>:
 
@@ -1575,7 +1598,7 @@ D. ONE named color palette from the bible defined as CSS custom props in :root.
 E. For any DATED event: <meta name="event-start"> (ISO 8601 + timezone), <meta name="event-end">, <meta name="event-location">, <meta name="event-summary"> in <head>, AND an "Add to calendar" link wired to the ics endpoint near the hero/RSVP, AND the 3-cell COUNTDOWN ROW (days·date·year computed from TODAY) somewhere in the hero or top of body.
 F. For any NAMED REAL venue (Villa Cipressi, The Plaza, etc.): a static OpenStreetMap iframe with the real lat/lon. Web-search to find the address if needed (silent, cap 3 searches).
 G. PREMIUM MOTION hooks: a .gsap-hero cover with data-hero-item children, and data-anim (+ data-anim-delay) / data-stagger / data-parallax on body content for scroll choreography. Content stays opacity:1 in your CSS (the trusted runtime handles hidden→visible). No <script>.
-H. For COUPLE events (weddings, anniversaries, engagements, quinces): MONOGRAM CREST SVG instead of the plain wax seal, paper-stack ::before/::after depth on hero + RSVP cards, ambient particle field (12-18 spans).
+H. For COUPLE events (weddings, anniversaries, engagements, quinces): MONOGRAM CREST SVG instead of the plain wax seal. Paper-stack depth and an ambient particle field are OPTIONAL accents — use at most one, subtly, per the RESTRAINT rule (not both, not always).
 I. Engagement placeholders Claude must drop into the doc where they belong (server fills them at render):
    - __RSVP_COUNT__ inside or just below the RSVP form
    - __COMMENT_WALL__ near the end for weddings/anniversaries/engagements
@@ -1598,7 +1621,7 @@ Apply as many of these as fit the event mood. Don't sacrifice the MUST-HAVES to 
 8. Include the RSVP form exactly as specified above.
 9. For elegant events (wedding, anniversary, engagement, quince, formal birthday/gala) use PATTERN A (cover-page reveal). For casual events (BBQ, kids birthday, housewarming) use PATTERN B or D directly. ALWAYS pick a Google Font pairing and a named color palette from the PREMIUM DESIGN BIBLE.
 10. ALWAYS include the custom scrollbar CSS, the 5-step typography scale, and a darken overlay on any photo that has text on it.
-11. For elegant events, ALWAYS include a CSS-only ambient particle field (rose petals for weddings, snow for winter, stars for NYE, embers for Halloween, leaves for autumn). 12–18 spans, fixed-position, behind content.
+11. Ambient particles (rose petals, snow, stars, embers, leaves) are an OPTIONAL subtle accent, not a requirement — include them only if the page still feels calm and uncluttered (see RESTRAINT). If used: ~10–14 spans, fixed-position, low opacity, behind content. Never combine with stickers or heavy ornaments.
 12. The cover-page seal MUST pulse (sealPulse + sealRing animations from the design bible) and the tap hint MUST gently bounce (tapBounce animation). Subtle invitations don't get clicked.
 13. For weddings, anniversaries, engagements, quinces, and milestone events, the hero MUST include the 3-cell COUNTDOWN ROW (Days · Date · Year). Compute days from TODAY's date.
 14. ALTERNATE SECTION TEMPLATES (per SECTION RHYTHM): never 3 cream cards in a row. Break with full-bleed photo sections, dark moody quote interludes, photo strips. At LEAST 2 non-cream sections in the body.
