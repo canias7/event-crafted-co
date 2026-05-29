@@ -1125,17 +1125,18 @@ function OverviewTab({
 
   return (
     <>
-      {/* Revenue trend — the 30-day daily wave, full width across the
-          top of the dashboard. */}
-      <div className="mb-4">
+      {/* Revenue trend — the 30-day daily wave. Full width up to large
+          desktops, where it's pulled to half width so the chart isn't
+          stretched edge-to-edge on a wide monitor. */}
+      <div className="mb-4 xl:w-1/2">
         <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
       </div>
 
       {/* Bar cards — Inquiries, Cash flow, Operating expenses. They
           share the same horizontal-bars visual rhythm, so grouping
           them tightens the page. Three across on desktop, stacks on
-          narrow screens. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          narrow screens; nudged a touch narrower on wide monitors. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 xl:w-11/12">
         <OverviewLeadsCard leads={leads} />
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
         <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
