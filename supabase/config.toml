@@ -63,6 +63,18 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = true
   [functions.stripe-webhook]
     verify_jwt = false
+  # External webhooks: the caller (Stripe/Resend/Mux) authenticates via
+  # its own signed-payload header, not a Supabase JWT. They MUST run
+  # with verify_jwt = false or the gateway 401s the request before the
+  # handler's signature check ever runs. Without an entry here the CLI
+  # defaults verify_jwt to true — which silently broke payment, email,
+  # and live-stream event reconciliation.
+  [functions.vendorapay-webhook]
+    verify_jwt = false
+  [functions.resend-webhook]
+    verify_jwt = false
+  [functions.mux-webhook]
+    verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
   [functions.scan-daily-digests]
