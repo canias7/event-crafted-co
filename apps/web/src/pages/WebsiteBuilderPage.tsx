@@ -32,6 +32,63 @@ const EXAMPLE_PROMPTS = [
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// Trusted GSAP motion runtime for the live preview — mirrors what
+// ai-site-render injects on the published /s/<slug> page, so what you see
+// while building matches what guests get. We strip any author <script>
+// first (defense in depth) and only ever run this vetted bundle, which is
+// why enabling allow-scripts on the preview iframe is safe.
+const GSAP_CDN = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5";
+const PREVIEW_MOTION_RUNTIME = `
+<script src="${GSAP_CDN}/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script src="${GSAP_CDN}/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
+<script>
+(function(){
+  var g = window.gsap; if (!g) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var ST = window.ScrollTrigger; if (ST) g.registerPlugin(ST);
+  var P = { 'fade-up':{opacity:0,y:42},'fade':{opacity:0},'fade-down':{opacity:0,y:-42},'scale-in':{opacity:0,scale:0.92},'slide-left':{opacity:0,x:-54},'slide-right':{opacity:0,x:54} };
+  function init(){
+    document.querySelectorAll('[data-anim]').forEach(function(el){
+      var from = P[el.getAttribute('data-anim')] || P['fade-up'];
+      var v = Object.assign({}, from, { duration:0.9, delay:parseFloat(el.getAttribute('data-anim-delay'))||0, ease:'power3.out' });
+      if (ST) v.scrollTrigger = { trigger:el, start:'top 88%', once:true };
+      g.from(el, v);
+    });
+    document.querySelectorAll('[data-stagger]').forEach(function(c){
+      var v = { opacity:0, y:30, duration:0.8, ease:'power3.out', stagger:parseFloat(c.getAttribute('data-stagger'))||0.12 };
+      if (ST) v.scrollTrigger = { trigger:c, start:'top 85%', once:true };
+      g.from(c.children, v);
+    });
+    if (ST) document.querySelectorAll('[data-parallax]').forEach(function(el){
+      var s = parseFloat(el.getAttribute('data-parallax'))||0.2;
+      g.to(el, { yPercent:-s*100, ease:'none', scrollTrigger:{ trigger:el, start:'top bottom', end:'bottom top', scrub:true } });
+    });
+    document.querySelectorAll('.gsap-hero').forEach(function(hero){
+      var items = hero.querySelectorAll('[data-hero-item]');
+      if (items.length) g.from(items, { opacity:0, y:32, duration:1, ease:'power3.out', stagger:0.15, delay:0.15 });
+    });
+    if (ST) ST.refresh();
+  }
+  if (document.readyState === 'complete') requestAnimationFrame(init);
+  else window.addEventListener('load', function(){ requestAnimationFrame(init); });
+})();
+</script>`;
+
+function stripAuthorScripts(html: string): string {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<script\b[^>]*\/?>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, "")
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, "");
+}
+
+function injectPreviewMotion(html: string): string {
+  if (!/data-anim|data-stagger|data-parallax|gsap-hero/.test(html)) return html;
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${PREVIEW_MOTION_RUNTIME}\n</body>`);
+  return html + PREVIEW_MOTION_RUNTIME;
+}
+
 // deno-lint-ignore-file no-explicit-any — supabase types not regenerated
 // for ai_sites yet. Local casts cover the gap.
 const sb = supabase as unknown as {
@@ -103,7 +160,8 @@ export default function WebsiteBuilderPage() {
   // preview looks polished. The real placeholders get resolved
   // server-side when guests visit /s/<slug>.
   function previewClean(html: string): string {
-    return html
+    return injectPreviewMotion(
+      stripAuthorScripts(html)
       .replaceAll("__GUEST_BLOCK__", "")
       .replaceAll("__GUEST_NAME__", "friend")
       .replaceAll(
@@ -124,7 +182,8 @@ export default function WebsiteBuilderPage() {
       )
       .replaceAll("__RSVP_YES__", "0")
       .replaceAll("__RSVP_MAYBE__", "0")
-      .replaceAll("__RSVP_NO__", "0");
+      .replaceAll("__RSVP_NO__", "0"),
+    );
   }
 
   // After previewClean, scan for any remaining __FOO__ placeholders
@@ -1739,7 +1798,7 @@ export default function WebsiteBuilderPage() {
           <iframe
             ref={iframeRef}
             title={title ?? "Site preview"}
-            sandbox="allow-same-origin allow-forms"
+            sandbox="allow-same-origin allow-forms allow-scripts"
             className="w-full h-full max-w-[1400px] rounded-xl shadow-2xl bg-white"
             style={{
               minHeight: "70vh",

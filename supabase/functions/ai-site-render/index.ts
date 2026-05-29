@@ -63,6 +63,90 @@ function stripScripts(html: string): string {
     .replace(/href\s*=\s*'javascript:[^']*'/gi, "href='#'");
 }
 
+// Trusted animation runtime. We never let author/model JS execute (see
+// stripScripts above), but generated sites CAN opt into premium motion
+// declaratively via classes / data-attributes. After stripping, we inject
+// a pinned GSAP + ScrollTrigger (cdnjs, SRI-locked) plus our own vetted
+// initializer that reads those hooks. No author script ever runs.
+//
+// Declarative hooks the Design Bible tells the model to use:
+//   [data-anim="fade-up|fade|fade-down|scale-in|slide-left|slide-right"]
+//        → reveal-on-scroll (optional [data-anim-delay="0.2"])
+//   [data-stagger="0.12"]   → stagger-reveal the element's direct children
+//   [data-parallax="0.2"]   → gentle vertical parallax on scroll
+//   .gsap-hero + [data-hero-item]  → on-load hero entrance timeline
+const GSAP_CDN = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5";
+const ANIM_RUNTIME = `
+<script src="${GSAP_CDN}/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script src="${GSAP_CDN}/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
+<script>
+(function(){
+  var g = window.gsap;
+  if (!g) return; // CDN blocked/failed → page stays fully visible, no-op
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var ST = window.ScrollTrigger;
+  if (ST) g.registerPlugin(ST);
+  var P = {
+    'fade-up':    { opacity:0, y:42 },
+    'fade':       { opacity:0 },
+    'fade-down':  { opacity:0, y:-42 },
+    'scale-in':   { opacity:0, scale:0.92 },
+    'slide-left': { opacity:0, x:-54 },
+    'slide-right':{ opacity:0, x:54 }
+  };
+  function init(){
+    // reveal-on-scroll
+    document.querySelectorAll('[data-anim]').forEach(function(el){
+      var from = P[el.getAttribute('data-anim')] || P['fade-up'];
+      var delay = parseFloat(el.getAttribute('data-anim-delay')) || 0;
+      var v = Object.assign({}, from, { duration:0.9, delay:delay, ease:'power3.out' });
+      if (ST) v.scrollTrigger = { trigger:el, start:'top 88%', once:true };
+      g.from(el, v);
+    });
+    // staggered containers
+    document.querySelectorAll('[data-stagger]').forEach(function(c){
+      var v = { opacity:0, y:30, duration:0.8, ease:'power3.out',
+                stagger: parseFloat(c.getAttribute('data-stagger')) || 0.12 };
+      if (ST) v.scrollTrigger = { trigger:c, start:'top 85%', once:true };
+      g.from(c.children, v);
+    });
+    // parallax
+    if (ST) {
+      document.querySelectorAll('[data-parallax]').forEach(function(el){
+        var s = parseFloat(el.getAttribute('data-parallax')) || 0.2;
+        g.to(el, { yPercent: -s*100, ease:'none',
+          scrollTrigger:{ trigger:el, start:'top bottom', end:'bottom top', scrub:true } });
+      });
+    }
+    // hero entrance timeline (no scroll measurement needed)
+    document.querySelectorAll('.gsap-hero').forEach(function(hero){
+      var items = hero.querySelectorAll('[data-hero-item]');
+      if (items.length) g.from(items, { opacity:0, y:32, duration:1, ease:'power3.out', stagger:0.15, delay:0.15 });
+    });
+    if (ST) ST.refresh();
+  }
+  // Initialize after layout settles. Creating ScrollTriggers during parse
+  // mis-measures positions (once:true triggers fire instantly). Waiting for
+  // load (or running immediately if already loaded) gives correct geometry;
+  // we refresh again on full load for late-arriving images.
+  if (document.readyState === 'complete') {
+    requestAnimationFrame(init);
+  } else {
+    window.addEventListener('load', function(){ requestAnimationFrame(init); });
+  }
+})();
+</script>`;
+
+function injectAnimationRuntime(html: string): string {
+  // Only ship GSAP to pages that actually opt into motion, so existing /
+  // hook-free sites don't pay the runtime cost for nothing.
+  if (!/data-anim|data-stagger|data-parallax|gsap-hero/.test(html)) return html;
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, `${ANIM_RUNTIME}\n</body>`);
+  }
+  return html + ANIM_RUNTIME;
+}
+
 function findHeroImage(html: string): string | null {
   // Prefer an explicit Unsplash hero (the photo bank ones the model
   // picks), then any <img src> in the document.
@@ -329,6 +413,10 @@ serve(async (req) => {
     html = html.replaceAll("__RSVP_MAYBE__", String(maybe));
     html = html.replaceAll("__RSVP_NO__", String(no));
   }
+
+  // Inject the trusted GSAP animation runtime last, so it survives
+  // stripScripts and runs against the final DOM (incl. injected blocks).
+  html = injectAnimationRuntime(html);
 
   return htmlResponse(200, html);
 });
