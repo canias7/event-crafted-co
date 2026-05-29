@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
+
+// Ambient three.js backdrop for the empty / "Designing…" preview states.
+// Lazy so its WebGL bundle only loads when actually shown.
+const AmbientField = lazy(() => import("@/components/builder/AmbientField"));
 
 // AI Website Builder. Chat on the left, live HTML preview on the
 // right. First message creates a new site (slug minted server-side);
@@ -39,6 +44,7 @@ const sb = supabase as unknown as {
 
 export default function WebsiteBuilderPage() {
   const { session } = useAuth();
+  const reduceMotion = useReducedMotion();
   const [searchParams, setSearchParams] = useSearchParams();
   const resumeSiteId = searchParams.get("site");
 
@@ -1454,8 +1460,21 @@ export default function WebsiteBuilderPage() {
         <aside className="w-full md:w-[400px] md:min-w-[360px] max-h-[50vh] md:max-h-none border-b md:border-b-0 md:border-r border-white/10 flex flex-col bg-[#0c0c0e]">
           <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
             {conversation.length === 0 && !loading && (
-              <div className="space-y-5">
-                <div>
+              <motion.div
+                className="space-y-5"
+                initial="hidden"
+                animate="show"
+                variants={{
+                  hidden: {},
+                  show: { transition: { staggerChildren: reduceMotion ? 0 : 0.08, delayChildren: 0.05 } },
+                }}
+              >
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0, y: reduceMotion ? 0 : 14 },
+                    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.6, 0.02, 0.25, 1] } },
+                  }}
+                >
                   <div className="text-[20px] font-medium leading-tight">
                     Hey, I'm your site designer.
                   </div>
@@ -1464,36 +1483,53 @@ export default function WebsiteBuilderPage() {
                     it pretty — and add an RSVP form so guests can reply.
                     Then tell me what to tweak.
                   </div>
-                </div>
+                </motion.div>
                 <div className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-[2px] text-white/40">
+                  <motion.div
+                    className="text-[10px] uppercase tracking-[2px] text-white/40"
+                    variants={{
+                      hidden: { opacity: 0, y: reduceMotion ? 0 : 14 },
+                      show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+                    }}
+                  >
                     Try
-                  </div>
+                  </motion.div>
                   {EXAMPLE_PROMPTS.map((p) => (
-                    <button
+                    <motion.button
                       key={p}
                       onClick={() => submit(p)}
-                      className="block w-full text-left text-[13px] leading-relaxed text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl px-4 py-3 transition-colors"
+                      variants={{
+                        hidden: { opacity: 0, y: reduceMotion ? 0 : 14 },
+                        show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.6, 0.02, 0.25, 1] } },
+                      }}
+                      whileHover={reduceMotion ? undefined : { y: -2, backgroundColor: "rgba(255,255,255,0.10)" }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+                      className="block w-full text-left text-[13px] leading-relaxed text-white/80 hover:text-white bg-white/5 border border-white/10 rounded-2xl px-4 py-3 transition-colors"
                     >
                       {p}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {conversation.map((m, i) => (
-              <div
-                key={i}
-                className={
-                  m.role === "user"
-                    ? "ml-auto max-w-[85%] bg-white text-black rounded-2xl rounded-br-md px-4 py-2.5 text-[14px] leading-relaxed"
-                    : "mr-auto max-w-[85%] bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-2.5 text-[14px] leading-relaxed text-white/90"
-                }
-              >
-                {m.content}
-              </div>
-            ))}
+            <AnimatePresence initial={false}>
+              {conversation.map((m, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 10, x: reduceMotion ? 0 : m.role === "user" ? 12 : -12 }}
+                  animate={{ opacity: 1, y: 0, x: 0 }}
+                  transition={{ duration: 0.4, ease: [0.6, 0.02, 0.25, 1] }}
+                  className={
+                    m.role === "user"
+                      ? "ml-auto max-w-[85%] bg-white text-black rounded-2xl rounded-br-md px-4 py-2.5 text-[14px] leading-relaxed"
+                      : "mr-auto max-w-[85%] bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-2.5 text-[14px] leading-relaxed text-white/90"
+                  }
+                >
+                  {m.content}
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
             {loading && (
               <div className="mr-auto max-w-[85%] bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 text-[14px] text-white/60 inline-flex items-center gap-2">
@@ -1661,11 +1697,14 @@ export default function WebsiteBuilderPage() {
               >
                 🔗
               </button>
-              <button
+              <motion.button
                 onClick={() => submit(input)}
                 disabled={loading || (!input.trim() && !pendingImage)}
                 aria-label="Send"
-                className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-white text-black disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center hover:bg-white/90 transition-colors"
+                whileHover={reduceMotion ? undefined : { scale: 1.08 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-white text-black disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center hover:bg-white/90"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path
@@ -1676,7 +1715,7 @@ export default function WebsiteBuilderPage() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </button>
+              </motion.button>
             </div>
             {!session && siteId && (
               <div className="text-[11px] text-white/40 mt-2 px-1">
@@ -1690,7 +1729,13 @@ export default function WebsiteBuilderPage() {
         </aside>
 
         {/* Preview pane */}
-        <main className="flex-1 bg-[#1a1a1c] flex items-center justify-center p-5 min-h-[60vh] relative">
+        <main className="flex-1 bg-[#1a1a1c] flex items-center justify-center p-5 min-h-[60vh] relative overflow-hidden">
+          {/* Ambient three.js backdrop — only while there's nothing to preview */}
+          {!hasContent && !reduceMotion && (
+            <Suspense fallback={null}>
+              <AmbientField />
+            </Suspense>
+          )}
           <iframe
             ref={iframeRef}
             title={title ?? "Site preview"}
@@ -1702,7 +1747,7 @@ export default function WebsiteBuilderPage() {
             }}
           />
           {loading && !hasContent && (
-            <div className="absolute inset-0 flex items-center justify-center text-center text-white/60 max-w-md mx-auto px-6 pointer-events-none">
+            <div className="absolute inset-0 z-10 flex items-center justify-center text-center text-white/60 max-w-md mx-auto px-6 pointer-events-none">
               <div className="builder-preview-loader">
                 <div className="text-[11px] uppercase tracking-[3px] text-white/40 mb-4">
                   Designing
@@ -1719,7 +1764,7 @@ export default function WebsiteBuilderPage() {
             </div>
           )}
           {!loading && !hasContent && (
-            <div className="absolute inset-0 flex items-center justify-center text-center text-white/40 max-w-md mx-auto px-6 pointer-events-none">
+            <div className="absolute inset-0 z-10 flex items-center justify-center text-center text-white/40 max-w-md mx-auto px-6 pointer-events-none">
               <div>
                 <div className="text-[14px] uppercase tracking-[2px] mb-3">
                   Preview
