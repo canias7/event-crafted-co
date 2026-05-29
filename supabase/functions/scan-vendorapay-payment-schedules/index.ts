@@ -20,6 +20,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { consumeCredits } from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -120,10 +121,10 @@ serve(async () => {
       }
       const { data: vp } = await db
         .from("vendor_profiles")
-        .select("business_name, logo_url")
+        .select("user_id, business_name, logo_url")
         .eq("id", r.vendor_id)
         .maybeSingle();
-      const vpRow = vp as { business_name?: string | null; logo_url?: string | null } | null;
+      const vpRow = vp as { user_id?: string | null; business_name?: string | null; logo_url?: string | null } | null;
       if (vpRow?.business_name) businessName = vpRow.business_name;
       logoUrl = vpRow?.logo_url ?? null;
 
@@ -143,7 +144,15 @@ serve(async () => {
         `${logoHtml}<p style="margin:0 0 16px;">The remaining balance for <strong>${escapeHtml(r.title)}</strong> with ${escapeHtml(businessName)} is now due.</p><p style="margin:0 0 24px;font-size:28px;font-weight:600;">${amount}</p><p style="margin:0 0 24px;">${button(payUrl, `Pay ${amount}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay.</p>`,
       );
       const ok = await sendEmail(hostEmail, `Balance due (${amount}) — ${businessName}`, html);
-      if (ok) emailed++;
+      if (ok) {
+        emailed++;
+        // Bill the vendor one credit for the balance-due reminder we
+        // just sent their client. Best-effort, post-send: never blocks
+        // a reminder; failed sends aren't charged.
+        if (vpRow?.user_id) {
+          await consumeCredits(vpRow.user_id, "email_send", r.id);
+        }
+      }
     }
 
     // 2) Mark invoices overdue when due_date has passed. We KEEP

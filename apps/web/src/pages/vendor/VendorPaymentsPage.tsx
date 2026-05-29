@@ -32,6 +32,7 @@ function TabSkeleton() {
   );
 }
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { handleInsufficientCredits } from "@/lib/credits";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -4504,6 +4505,7 @@ function InvoicesTab({
   const { user } = useAuth();
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [lateFeeTarget, setLateFeeTarget] = useState<Invoice | null>(null);
   const [lateFeeAmount, setLateFeeAmount] = useState("");
   const [lateFeeSaving, setLateFeeSaving] = useState(false);
@@ -4730,12 +4732,13 @@ function InvoicesTab({
     });
     setSendingId(null);
     if (error) {
+      if (await handleInsufficientCredits(error, navigate)) return;
       toast.error("Couldn't send invoice", { description: error.message });
       return;
     }
     toast.success("Invoice email sent");
     onChanged();
-  }, [onChanged]);
+  }, [onChanged, navigate]);
 
   const cancelInvoice = useCallback(async (inv: Invoice) => {
     // Destructive + irreversible: status='cancelled' is terminal,
@@ -7608,6 +7611,7 @@ function SendInvoiceDialog({
   const defaultTax = listing?.default_tax_pct
     ? Number(listing.default_tax_pct).toString()
     : "";
+  const navigate = useNavigate();
   const [billToName, setBillToName] = useState(customer?.name ?? "");
   const [billToEmail, setBillToEmail] = useState(customer?.email ?? "");
   const [issueDate, setIssueDate] = useState(
@@ -7766,6 +7770,10 @@ function SendInvoiceDialog({
         toast.error("Email failed and rollback failed", {
           description: `${sendErr.message} (Invoice may be stuck as Sent — refresh and verify before resending.)`,
         });
+      } else if (await handleInsufficientCredits(sendErr, navigate)) {
+        // Out of credits: invoice is safely back to draft, and the
+        // helper already showed a "Top up" toast. Vendor can resend
+        // from the list once they've topped up.
       } else {
         toast.warning("Saved as draft — email failed", { description: sendErr.message });
       }
