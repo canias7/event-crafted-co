@@ -5540,27 +5540,6 @@ type RecurringInterval =
   | "quarterly"
   | "yearly";
 
-interface RecurringExpenseRule {
-  id: string;
-  vendor_id: string;
-  interval: RecurringInterval;
-  day_of_month: number | null;
-  amount_cents: number;
-  currency: string;
-  category: string;
-  description: string;
-  item_name: string | null;
-  quantity: string | null;
-  paid_to: string | null;
-  notes: string | null;
-  contractor_id: string | null;
-  active: boolean;
-  next_run_at: string;
-  last_run_at: string | null;
-  last_expense_id: string | null;
-  created_at: string;
-}
-
 const RECURRING_INTERVAL_LABELS: Record<RecurringInterval, string> = {
   weekly: "Weekly",
   biweekly: "Every 2 weeks",
@@ -5707,9 +5686,6 @@ function ExpensesTab({
     is_recurring: false,
     recurring_interval: "monthly",
   });
-  const [recurringRules, setRecurringRules] = useState<RecurringExpenseRule[]>([]);
-  const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
-  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
   const [contractorForm, setContractorForm] = useState<{
     name: string;
     email: string;
@@ -5768,7 +5744,6 @@ function ExpensesTab({
     const [
       { data: expData, error: expErr },
       { data: cData, error: cErr },
-      { data: rData, error: rErr },
     ] = await Promise.all([
       db
         .from("vendor_expenses")
@@ -5782,12 +5757,6 @@ function ExpensesTab({
         .in("vendor_id", accountVendorIds)
         .order("name", { ascending: true })
         .limit(500),
-      db
-        .from("vendor_recurring_expenses")
-        .select("id, vendor_id, interval, day_of_month, amount_cents, currency, category, description, item_name, quantity, paid_to, notes, contractor_id, active, next_run_at, last_run_at, last_expense_id, created_at")
-        .in("vendor_id", accountVendorIds)
-        .order("created_at", { ascending: false })
-        .limit(200),
     ]);
     if (expErr) {
       console.error("[ExpensesTab] expense fetch failed", expErr);
@@ -5799,11 +5768,6 @@ function ExpensesTab({
       console.error("[ExpensesTab] contractor fetch failed", cErr);
     } else {
       setContractors((cData ?? []) as Contractor[]);
-    }
-    if (rErr) {
-      console.error("[ExpensesTab] recurring fetch failed", rErr);
-    } else {
-      setRecurringRules((rData ?? []) as RecurringExpenseRule[]);
     }
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5971,43 +5935,6 @@ function ExpensesTab({
     setSaving(false);
     toast.success(editing === "new" ? "Expense added." : "Expense updated.");
     setEditing(null);
-    void refresh();
-  };
-
-  const toggleRuleActive = async (rule: RecurringExpenseRule) => {
-    setTogglingRuleId(rule.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    const { error } = await db
-      .from("vendor_recurring_expenses")
-      .update({ active: !rule.active })
-      .eq("id", rule.id);
-    setTogglingRuleId(null);
-    if (error) {
-      console.error("[ExpensesTab] rule toggle failed", error);
-      toast.error("Couldn't update the recurring rule.");
-      return;
-    }
-    toast.success(rule.active ? "Recurring rule paused." : "Recurring rule resumed.");
-    void refresh();
-  };
-
-  const deleteRule = async (rule: RecurringExpenseRule) => {
-    if (!confirm(`Stop this recurring expense (${formatMoney(rule.amount_cents, rule.currency)} — ${rule.description})? Past entries stay; no new ones will be auto-logged.`)) return;
-    setDeletingRuleId(rule.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    const { error } = await db
-      .from("vendor_recurring_expenses")
-      .delete()
-      .eq("id", rule.id);
-    setDeletingRuleId(null);
-    if (error) {
-      console.error("[ExpensesTab] rule delete failed", error);
-      toast.error("Couldn't delete the recurring rule.");
-      return;
-    }
-    toast.success("Recurring rule removed.");
     void refresh();
   };
 
@@ -6802,66 +6729,6 @@ function ExpensesTab({
         </div>
       )}
 
-      {/* Recurring expense rules — schedule + pause / resume / stop.
-          Hidden when there are zero rules so vendors who never opt
-          into recurring don't see an empty panel. */}
-      {recurringRules.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold flex items-center gap-1.5">
-            <RotateCcw className="w-3.5 h-3.5" /> Recurring expenses
-          </h3>
-          <div className="rounded-xl border border-foreground/10 bg-white divide-y divide-foreground/5">
-            {recurringRules.map((rule) => {
-              const nextRunDate = new Date(rule.next_run_at);
-              const nextRunLabel = nextRunDate.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              });
-              return (
-                <div key={rule.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium truncate">{rule.description}</span>
-                      {!rule.active ? (
-                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground">
-                          Paused
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {RECURRING_INTERVAL_LABELS[rule.interval]} · {formatMoney(rule.amount_cents, rule.currency)}
-                      {" · "}
-                      {rule.active ? `Next: ${nextRunLabel}` : "On hold"}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void toggleRuleActive(rule)}
-                    disabled={togglingRuleId === rule.id}
-                    className="text-[#d94f3d] hover:underline text-sm font-medium disabled:opacity-50"
-                  >
-                    {togglingRuleId === rule.id ? "…" : rule.active ? "Pause" : "Resume"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void deleteRule(rule)}
-                    disabled={deletingRuleId === rule.id}
-                    className="w-7 h-7 rounded-md text-muted-foreground hover:bg-foreground/5 inline-flex items-center justify-center disabled:opacity-50"
-                    title="Stop this recurring rule"
-                  >
-                    {deletingRuleId === rule.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
