@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v36";
+const DESIGN_BIBLE_VERSION = "v37";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -611,12 +611,13 @@ This bible offers MANY techniques (particles, ornaments, stickers, cinemagraphs,
 • Particles/stickers are optional and must be subtle — or omit them. NEVER stack particles + stickers + heavy ornaments together.
 • Calm, confident, editorial — like a high-end PRINT invitation, not a feature-packed web page. Silence and space are luxurious.
 
-═══ KEEP IT SHORT — about HALF the length you'd naturally make ═══
-A luxury invitation is a few elegant screens, NOT an endless scroll. Long pages feel like a generic template; short and considered feels bespoke.
-• Aim for 4–6 concise sections TOTAL — e.g. Hero/cover · a SHORT welcome or story (2–4 lines, not paragraphs) · Details/Schedule · Travel-or-Venue (only if truly needed) · RSVP · small footer.
-• Cut filler: no rambling story, no redundant sections, nothing that merely repeats info. If a section isn't essential, delete it.
-• Keep each section tight — most should be ~one viewport or less (only the hero is full-height). Trim copy hard; a few beautiful lines beat paragraphs.
-• Target roughly HALF the length you'd otherwise produce. When unsure whether to add a section, don't.
+═══ KEEP IT SHORT & TIGHT — HALF the length, NO big empty gaps (CRITICAL) ═══
+A luxury invitation is a few elegant screens, NOT an endless scroll. Long pages with big blank gaps feel broken and generic; short and tight feels bespoke. The #1 complaint is "too long with too much empty space" — DO NOT do that.
+• HARD RULE: after the envelope/cover, body sections must NOT be full-height. NEVER put min-height:100vh (or 100svh/90vh/large fixed heights) on body sections — that is what creates the huge empty gaps. Only the envelope/cover landing is full-screen.
+• Section vertical padding is MODEST: about clamp(2.5rem, 6vw, 4.5rem) top+bottom. Never giant 8–12rem paddings or empty spacer divs. Sections hug their content.
+• Aim for 4–6 tight sections TOTAL — e.g. envelope/cover · short welcome/story (2–4 lines) · details/schedule · travel-or-venue (only if needed) · RSVP · small footer. Cut anything non-essential.
+• The whole site after the envelope should be roughly 2–4 screens of scrolling MAX. If it's longer, you added too much — remove sections and trim copy.
+• Trim copy hard; a few beautiful lines beat paragraphs. When unsure whether to add a section, don't.
 
 ═══ FEWER, SMARTER PHOTOS — images sit ON a solid background, never AS it ═══
 • THE PAGE BACKGROUND IS ONE SOLID COLOR. The body uses a single ivory/cream tone (the palette's base) the whole way down. Do NOT use full-bleed photo backgrounds behind body sections, and do NOT switch background images section to section — that's the busy "bunch of background images" look we're removing.
@@ -1212,35 +1213,33 @@ For weddings, anniversaries, engagements, formal events, and any event where the
 
 For WEDDINGS / ANNIVERSARIES / ENGAGEMENTS, DEFAULT to variant A — a REAL envelope the guest opens (this is the signature first moment and what people expect from a wedding invite). Only use B–E when the brief clearly fits them (garden→B, destination→C, nostalgic→D, black-tie→E).
 
-  A. REALISTIC ENVELOPE THAT OPENS (DEFAULT for weddings — build a true envelope, NOT just a seal on a photo):
-     A real envelope sitting on a soft surface: an envelope BODY with a triangular FLAP, a wax seal at the flap, and the invitation card tucked inside. The guest taps it → the flap lifts open (rotateX), the card rises, and the cover fades to reveal the site. CSS-only via the #opener checkbox.
+  A. REALISTIC ENVELOPE THAT OPENS (DEFAULT for weddings — use the REAL PHOTO envelope, not CSS shapes):
+     Use Vendora's hosted photorealistic envelope image — a deep burgundy wax-sealed envelope on ivory linen — as the cover visual. It looks real (CSS envelopes look fake). The couple's names sit above it and it gently lifts away on tap to reveal the site.
      Markup:
        <input type="checkbox" id="opener" class="opener-toggle" hidden>
        <label for="opener" class="cover-page">
-         <div class="envelope">
-           <div class="env-card"><span class="env-mono">I&amp;T</span><span class="env-names">Isabella &amp; Theo</span></div>
-           <div class="env-pocket"></div>
-           <div class="env-flap"></div>
-           <div class="seal">I&amp;T</div>
+         <p class="cover-eyebrow">SEALED WITH LOVE FROM</p>
+         <h1 class="cover-names">Isabella &amp; Theo</h1>
+         <p class="cover-date">SEPTEMBER 12 · 2026 · SONOMA, CALIFORNIA</p>
+         <div class="env-wrap">
+           <img class="env-photo" src="https://eventvendora.com/wedding-envelope.png" alt="Wedding envelope" />
+           <span class="env-mono">I&amp;T</span>   <!-- optional: couple initials overlaid on the wax seal -->
          </div>
-         <p class="tap-hint">tap to open</p>
+         <p class="tap-hint">CLICK ENVELOPE TO OPEN</p>
        </label>
        <main class="invitation-body"> … all sections … </main>
-     CSS essentials (tune colors to the palette — ivory/kraft envelope on a soft ivory surface):
+     CSS essentials (ivory background; the photo IS the envelope):
        .opener-toggle:not(:checked) ~ .invitation-body{ display:none; }
-       .opener-toggle:checked ~ .cover-page{ animation:coverOut .7s .7s forwards; }
+       .opener-toggle:checked ~ .cover-page{ animation:coverOut .8s .35s forwards; }
        @keyframes coverOut{ to{ opacity:0; visibility:hidden; } }
-       .cover-page{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; background:#efe7d8; }
-       .envelope{ position:relative; width:min(440px,86vw); height:300px; perspective:1400px; filter:drop-shadow(0 28px 46px rgba(80,50,20,.28)); }
-       .env-pocket{ position:absolute; inset:0; border-radius:6px; background:linear-gradient(#e9d9bd,#dcc59c); clip-path:polygon(0 18%,50% 60%,100% 18%,100% 100%,0 100%); z-index:2; }
-       .env-card{ position:absolute; left:7%; right:7%; top:8%; bottom:14%; background:#fbf6ec; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35rem; box-shadow:0 8px 18px rgba(80,50,20,.15); transition:transform .8s cubic-bezier(.6,.02,.25,1) .15s; z-index:1; }
-       .env-flap{ position:absolute; inset:0; transform-origin:top center; background:linear-gradient(#efdfc2,#e3cea4); clip-path:polygon(0 0,50% 58%,100% 0); transition:transform .85s cubic-bezier(.7,.02,.3,1); z-index:3; backface-visibility:hidden; }
-       .seal{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:4; width:72px; height:72px; border-radius:50%; background:radial-gradient(circle at 32% 30%,#a83246,#7a1f2b 70%,#5e1622); color:#e9c98f; font-family:'Allura',cursive; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.3); transition:opacity .4s,transform .5s; }
-       /* OPEN STATE */
-       .opener-toggle:checked ~ .cover-page .env-flap{ transform:rotateX(178deg); }
-       .opener-toggle:checked ~ .cover-page .seal{ opacity:0; transform:translate(-50%,-50%) scale(.6); }
-       .opener-toggle:checked ~ .cover-page .env-card{ transform:translateY(-128px); }
-     The flap sits above the card while closed; tapping rotates it up, the card lifts, the seal fades, then the cover dismisses to reveal .invitation-body. Add the pulsing .seal ring + bouncing .tap-hint so it's obviously tappable.
+       .cover-page{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem; cursor:pointer; background:#f7f1e6; text-align:center; }
+       .env-wrap{ position:relative; margin-top:1.5rem; transition:transform .8s cubic-bezier(.5,.02,.2,1), opacity .8s ease; }
+       .env-photo{ width:min(440px,82vw); height:auto; display:block; border-radius:6px; filter:drop-shadow(0 24px 40px rgba(80,40,30,.22)); }
+       .env-mono{ position:absolute; left:50%; top:58%; transform:translate(-50%,-50%); font-family:'Allura',cursive; font-size:22px; color:#e9c98f; pointer-events:none; }  /* sits on the wax seal; OMIT if it doesn't align cleanly */
+       /* OPEN: envelope lifts + fades, then cover dismisses */
+       .opener-toggle:checked ~ .cover-page .env-wrap{ transform:translateY(-24px) scale(1.06); opacity:0; }
+       .tap-hint{ animation:tapBounce 2.2s ease-in-out infinite; }
+     Tap → the envelope lifts and fades, the cover dismisses, and .invitation-body is revealed. Keep the gentle bouncing .tap-hint so it's obviously tappable. (You may add a subtle pulsing ring behind the envelope.) Do NOT draw a CSS envelope — always use the hosted photo above.
 
   B. PRESSED FLOWER UNDER GLASS (botanical, garden weddings) — dark wood/marble surface, a single pressed flower or eucalyptus sprig centered inside a thin gold rounded-rectangle "frame" (CSS border + inset shadow). The flower is the seal — user clicks it. Use for: garden, vineyard, spring weddings.
     Markup:
