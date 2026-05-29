@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { Promo, promoDefaultProps } from "./compositions/Promo";
 import { LottieDemo } from "./compositions/LottieDemo";
+import { EnvelopeIntro } from "./compositions/EnvelopeIntro";
 
 const FPS = 30;
 const DURATION = 5 * FPS; // 5 seconds
@@ -29,6 +30,16 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1920}
         defaultProps={promoDefaultProps}
+      />
+
+      {/* Envelope-open intro for wedding sites (generic, no names) */}
+      <Composition
+        id="EnvelopeIntro"
+        component={EnvelopeIntro}
+        durationInFrames={Math.round(3.6 * FPS)}
+        fps={FPS}
+        width={1200}
+        height={1200}
       />
 
       {/* Lottie example over branded background */}
