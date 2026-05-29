@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v35";
+const DESIGN_BIBLE_VERSION = "v36";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -927,7 +927,7 @@ Real luxury invitations have galleries, not just hero shots. Whenever a section 
 
 ═══ PREMIUM MOTION — GSAP scroll choreography (declarative; you write NO JavaScript) ═══
 
-Vendora's renderer injects a TRUSTED GSAP + ScrollTrigger + Lenis runtime into every published site. You get LUXURY momentum scrolling (buttery, eased — the high-end "Canva / studio site" feel), real scroll-reveal animation, and a cinematic hero entrance WITHOUT writing any JavaScript — you simply decorate elements with the data-attributes / classes below and the runtime animates them. Smooth scroll is automatic; you don't add anything for it. It automatically respects prefers-reduced-motion (motion off → everything just shows, statically) and falls back gracefully (content visible) if a CDN is blocked.
+Vendora's renderer injects a TRUSTED GSAP + ScrollTrigger runtime into every published site. You get real scroll-reveal animation and a cinematic hero entrance WITHOUT writing any JavaScript — you simply decorate elements with the data-attributes / classes below and the runtime animates them. Scrolling stays NATIVE (no smooth-scroll hijacking — it must feel normal and responsive). It automatically respects prefers-reduced-motion (motion off → everything just shows, statically) and falls back gracefully (content visible) if a CDN is blocked.
 
 Use these hooks generously but tastefully — they are the #1 thing that makes a site feel like a $1M studio made it:
 
