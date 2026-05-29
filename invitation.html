@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Our Story — An Invitation</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Mr+De+Haviland&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  :root{
+    --paper:#f4ece0;
+    --kraft:#b79468;
+    --wine:#6e132b;
+    --wine-light:#a83b54;
+    --ink:#4a3526;
+    --gold:#b08a4f;
+  }
+
+  html,body{ min-height:100%; }
+
+  body{
+    background:
+      radial-gradient(120% 90% at 50% 30%, #efe6d6 0%, #e4d8c4 45%, #c9b99f 100%);
+    min-height:100vh;
+    font-family:'Cormorant Garamond', serif;
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:40px 20px 80px;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* soft studio vignette */
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background:radial-gradient(75% 60% at 50% 40%,
+      rgba(0,0,0,0) 40%, rgba(40,25,15,0.22) 100%);
+    pointer-events:none; z-index:50;
+  }
+
+  .eyebrow{
+    font-family:'Jost',sans-serif;
+    font-weight:400; font-size:12px; letter-spacing:6px;
+    color:var(--gold); text-transform:uppercase;
+    margin-bottom:6px; text-align:center;
+  }
+
+  h1{
+    font-family:'Mr De Haviland', cursive;
+    font-size:clamp(56px, 11vw, 104px);
+    line-height:0.9; font-weight:400; color:var(--ink);
+    text-align:center; text-shadow:0 1px 0 rgba(255,255,255,0.6);
+  }
+
+  .names{
+    font-family:'Jost',sans-serif; font-weight:300;
+    font-size:13px; letter-spacing:5px; text-transform:uppercase;
+    color:#9c8463; margin-top:12px; text-align:center;
+  }
+
+  /* ---- hero image (the gpt-image-2 render) ---- */
+  .hero{
+    position:relative;
+    width:min(900px, 94vw);
+    margin:34px 0 8px;
+    border-radius:10px;
+    overflow:hidden;
+    will-change:transform;
+    box-shadow:
+      0 40px 70px rgba(50,28,12,0.34),
+      0 8px 18px rgba(50,28,12,0.20);
+  }
+  .hero img{ display:block; width:100%; height:auto; }
+  /* slightly oversized so the parallax drift never reveals an edge */
+  .hero-inner{ position:relative; transform:scale(1.06); will-change:transform; }
+  /* fine grain over the photo to match the print aesthetic */
+  .hero::after{
+    content:''; position:absolute; inset:0;
+    background-image:var(--grain); background-size:160px 160px;
+    opacity:0.05; mix-blend-mode:multiply; pointer-events:none;
+  }
+
+  /* ---- action cards ---- */
+  .actions{
+    display:flex; gap:20px; flex-wrap:wrap; justify-content:center;
+    margin-top:30px;
+    opacity:0; transform:translateY(16px);
+    animation:rise 1.1s ease forwards 0.8s;
+  }
+  .card{
+    appearance:none; border:none; cursor:pointer;
+    background:linear-gradient(155deg,#fffdf8,#f3ead9);
+    border-radius:14px;
+    padding:18px 34px;
+    color:var(--ink);
+    font-family:'Jost',sans-serif;
+    font-size:12px; letter-spacing:3px; text-transform:uppercase;
+    box-shadow:0 18px 34px rgba(50,28,12,0.20), inset 0 1px 0 rgba(255,255,255,0.85);
+    transition:transform .35s ease, box-shadow .35s ease;
+  }
+  .card:hover{ transform:translateY(-4px); box-shadow:0 26px 44px rgba(50,28,12,0.28); }
+  .card.primary{
+    background:linear-gradient(155deg,var(--wine-light),var(--wine));
+    color:#fbeee2; box-shadow:0 18px 34px rgba(110,19,43,0.32);
+  }
+
+  /* ---- detail panel (height + reveal driven by GSAP) ---- */
+  .panel{
+    width:min(620px, 94vw);
+    height:0; overflow:hidden;
+  }
+  .panel-inner{
+    background:linear-gradient(155deg,#fbf6ec 0%, #f1e7d6 100%);
+    border-radius:10px; padding:42px 38px;
+    box-shadow:0 22px 44px rgba(50,28,12,0.18);
+    position:relative;
+    text-align:center;
+  }
+  .panel-inner .frame{ position:absolute; inset:14px; border:1px solid rgba(176,138,79,0.45); pointer-events:none; }
+  .panel-inner .frame::before{ content:''; position:absolute; inset:5px; border:1px solid rgba(176,138,79,0.22); }
+  .panel h2{
+    font-family:'Mr De Haviland', cursive; font-size:46px; font-weight:400;
+    color:var(--ink); margin-bottom:8px; position:relative; z-index:2;
+  }
+  .panel .row{ position:relative; z-index:2; margin:18px 0; }
+  .panel .label{
+    font-family:'Jost',sans-serif; font-size:11px; letter-spacing:4px;
+    text-transform:uppercase; color:var(--gold); margin-bottom:4px;
+  }
+  .panel .val{ font-size:22px; color:var(--ink); }
+
+  /* ---- RSVP form (height + reveal driven by GSAP) ---- */
+  .rsvp{
+    width:min(620px, 94vw);
+    height:0; overflow:hidden;
+  }
+  .rsvp-inner{
+    background:linear-gradient(155deg,#fbf6ec 0%, #f1e7d6 100%);
+    border-radius:10px; padding:40px 38px;
+    box-shadow:0 22px 44px rgba(50,28,12,0.18);
+    text-align:center;
+  }
+  .rsvp h2{ font-family:'Mr De Haviland', cursive; font-size:46px; font-weight:400; margin-bottom:18px; }
+  .rsvp input, .rsvp select{
+    width:100%; max-width:360px; margin:8px auto; display:block;
+    font-family:'Jost',sans-serif; font-size:13px; letter-spacing:1px;
+    padding:13px 16px; border:1px solid rgba(176,138,79,0.5);
+    border-radius:8px; background:#fffdf8; color:var(--ink);
+  }
+  .rsvp input:focus, .rsvp select:focus{ outline:none; border-color:var(--wine); }
+  .rsvp .thanks{ font-size:22px; color:var(--wine); margin-top:8px; display:none; }
+
+  footer{
+    margin-top:54px; font-family:'Jost',sans-serif; font-size:11px;
+    letter-spacing:3px; text-transform:uppercase; color:#8a7257; opacity:0.7;
+  }
+</style>
+</head>
+<body>
+
+  <div class="eyebrow">Together with their families</div>
+  <h1>Our Story</h1>
+  <div class="names">Bianca &amp; Sebastian</div>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <img src="./invitation-render.png" alt="Luxury wedding invitation — kraft envelope with wax seal and roses" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="card primary" id="btnRsvp">RSVP</button>
+    <button class="card" id="btnDetails">View Details</button>
+  </div>
+
+  <!-- details -->
+  <div class="panel" id="panel">
+    <div class="panel-inner">
+      <div class="frame"></div>
+      <h2>The Details</h2>
+      <div class="row"><div class="label">When</div><div class="val">Saturday, the Fourteenth of June · 4:30 in the afternoon</div></div>
+      <div class="row"><div class="label">Where</div><div class="val">The Rose Garden Estate · Napa Valley, California</div></div>
+      <div class="row"><div class="label">Attire</div><div class="val">Black tie · Garden formal</div></div>
+    </div>
+  </div>
+
+  <!-- rsvp -->
+  <div class="rsvp" id="rsvp">
+    <div class="rsvp-inner">
+      <h2>RSVP</h2>
+      <form id="rsvpForm">
+        <input type="text" name="name" placeholder="Your name" required />
+        <input type="email" name="email" placeholder="Email address" required />
+        <select name="attending" required>
+          <option value="" disabled selected>Will you attend?</option>
+          <option value="yes">Joyfully accepts</option>
+          <option value="no">Regretfully declines</option>
+        </select>
+        <input type="number" name="guests" min="0" max="6" placeholder="Number of guests" />
+        <button class="card primary" type="submit" style="margin-top:14px;">Send RSVP</button>
+      </form>
+      <div class="thanks" id="thanks">Thank you — we can&rsquo;t wait to celebrate with you.</div>
+    </div>
+  </div>
+
+  <footer>#OurStory2026</footer>
+
+  <!-- GSAP (vendored locally — see /vendor) -->
+  <script src="./vendor/gsap.min.js"></script>
+  <script src="./vendor/ScrollTrigger.min.js"></script>
+  <script>
+  /* grain texture (matches the original scene) */
+  (function(){
+    const c=document.createElement('canvas');c.width=c.height=120;
+    const x=c.getContext('2d');const d=x.createImageData(120,120);
+    for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;
+      d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}
+    x.putImageData(d,0,0);
+    document.documentElement.style.setProperty('--grain',`url(${c.toDataURL()})`);
+  })();
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const panel = document.getElementById('panel');
+  const rsvp  = document.getElementById('rsvp');
+  const heroInner = document.querySelector('.hero-inner');
+
+  if (window.gsap) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* ---- entrance timeline ---- */
+    if (!reduce) {
+      gsap.set(['.eyebrow','h1','.names','.hero','.actions'], { opacity:0, y:22 });
+      gsap.set('.hero', { scale:0.97 });
+
+      const intro = gsap.timeline({ defaults:{ ease:'power3.out' } });
+      intro
+        .to('.eyebrow', { opacity:1, y:0, duration:0.7 }, 0.15)
+        .to('h1',       { opacity:1, y:0, duration:1.0 }, 0.30)
+        .to('.names',   { opacity:1, y:0, duration:0.8 }, 0.55)
+        .to('.hero',    { opacity:1, y:0, scale:1, duration:1.2, ease:'expo.out' }, 0.55)
+        .to('.actions', { opacity:1, y:0, duration:0.7 }, 1.05);
+
+      /* buttons get a subtle stagger of their own */
+      gsap.from('.actions .card', { opacity:0, y:14, stagger:0.12, duration:0.6,
+        ease:'back.out(1.6)', delay:1.15 });
+    }
+
+    /* ---- hero parallax: gentle drift on scroll ---- */
+    if (!reduce) {
+      gsap.to(heroInner, {
+        yPercent: -6,
+        ease: 'none',
+        scrollTrigger: { trigger:'.hero', start:'top bottom', end:'bottom top', scrub:true }
+      });
+
+      /* ---- mouse parallax (desktop pointers only) ---- */
+      if (window.matchMedia('(pointer:fine)').matches) {
+        const heroBox = document.querySelector('.hero');
+        const xTo = gsap.quickTo(heroInner, 'x', { duration:0.6, ease:'power3' });
+        const yTo = gsap.quickTo(heroInner, 'y', { duration:0.6, ease:'power3' });
+        heroBox.addEventListener('mousemove', (e)=>{
+          const r = heroBox.getBoundingClientRect();
+          const dx = (e.clientX - (r.left + r.width/2)) / r.width;
+          const dy = (e.clientY - (r.top  + r.height/2)) / r.height;
+          xTo(dx * 18); yTo(dy * 18);
+        });
+        heroBox.addEventListener('mouseleave', ()=>{ xTo(0); yTo(0); });
+      }
+    }
+  }
+
+  /* ---- collapsible sections, animated with GSAP (height auto) ---- */
+  const state = { panel:false, rsvp:false };
+
+  function setOpen(el, inner, open){
+    if (!window.gsap || reduce){
+      el.style.height = open ? 'auto' : '0px';
+      gsap.set?.(inner, { opacity: open?1:0 });
+      if (open) el.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    gsap.killTweensOf([el, inner]);
+    if (open){
+      gsap.set(el, { height:'auto', marginTop:34 });
+      const h = el.offsetHeight;
+      gsap.fromTo(el, { height:0, marginTop:0 }, { height:h, marginTop:34, duration:0.6, ease:'power3.inOut',
+        onComplete:()=>{ gsap.set(el,{height:'auto'}); ScrollTrigger.refresh(); } });
+      gsap.fromTo(inner.children, { opacity:0, y:16 },
+        { opacity:1, y:0, duration:0.6, stagger:0.07, ease:'power2.out', delay:0.18 });
+      gsap.delayedCall(0.15, ()=> el.scrollIntoView({behavior:'smooth', block:'center'}));
+    } else {
+      gsap.to(el, { height:0, marginTop:0, duration:0.45, ease:'power3.inOut',
+        onComplete:()=>ScrollTrigger.refresh() });
+    }
+  }
+
+  document.getElementById('btnDetails').addEventListener('click', ()=>{
+    if (state.rsvp){ state.rsvp=false; setOpen(rsvp, document.querySelector('.rsvp-inner'), false); }
+    state.panel = !state.panel;
+    setOpen(panel, document.querySelector('.panel-inner'), state.panel);
+  });
+  document.getElementById('btnRsvp').addEventListener('click', ()=>{
+    if (state.panel){ state.panel=false; setOpen(panel, document.querySelector('.panel-inner'), false); }
+    state.rsvp = !state.rsvp;
+    setOpen(rsvp, document.querySelector('.rsvp-inner'), state.rsvp);
+  });
+
+  document.getElementById('rsvpForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const thanks = document.getElementById('thanks');
+    if (window.gsap && !reduce){
+      gsap.to(e.target, { opacity:0, y:-10, duration:0.35, ease:'power2.in',
+        onComplete:()=>{
+          e.target.style.display='none';
+          thanks.style.display='block';
+          gsap.fromTo(thanks, { opacity:0, scale:0.9 }, { opacity:1, scale:1, duration:0.6, ease:'back.out(1.7)' });
+          ScrollTrigger.refresh();
+        }});
+    } else {
+      e.target.style.display='none';
+      thanks.style.display='block';
+    }
+  });
+  </script>
+
+</body>
+</html>
