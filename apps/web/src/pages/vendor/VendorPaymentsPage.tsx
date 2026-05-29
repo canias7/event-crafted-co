@@ -162,7 +162,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   // moved here because they're the same act as invoices to a vendor
   // ("send a URL to get paid"), just flat-amount instead of itemized.
   { id: "files", label: "Files", icon: FileText },
-  { id: "customers", label: "Customers", icon: Users },
+  { id: "customers", label: "Contacts", icon: Users },
   // Settings now also hosts the Stripe Connect / bank / identity
   // surfaces that lived under a separate "Integrations" tab.
   { id: "settings", label: "Settings", icon: SettingsIcon },
@@ -5206,14 +5206,14 @@ function CustomersTab({
       <Card>
         <div className="p-5 flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h3 className="text-sm font-semibold">Customers</h3>
+            <h3 className="text-sm font-semibold">Contacts</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Everyone you've billed. Save a customer once and reuse them on every invoice.
+              Everyone you've billed. Save a contact once and reuse them on every invoice.
             </p>
           </div>
           <Button onClick={startNew} disabled={accountVendorIds.length === 0} className="rounded-full" size="sm">
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            New customer
+            New contact
           </Button>
         </div>
       </Card>
@@ -5222,7 +5222,7 @@ function CustomersTab({
         <Card>
           <div className="p-5 space-y-3">
             <h3 className="text-sm font-semibold">
-              {editing === "new" ? "New customer" : `Edit ${editing.name ?? editing.email}`}
+              {editing === "new" ? "New contact" : `Edit ${editing.name ?? editing.email}`}
             </h3>
             {/* Listing picker removed — account-level cockpit means
                 we default new customers to accountVendorIds[0] (see
@@ -5274,7 +5274,7 @@ function CustomersTab({
       {loading ? (
         <EmptyCard>Loading customers…</EmptyCard>
       ) : rows.length === 0 ? (
-        <EmptyCard>No customers yet. Click "New customer" to add your first.</EmptyCard>
+        <EmptyCard>No contacts yet. Click "New contact" to add your first.</EmptyCard>
       ) : (
         <Card>
           {rows.map((c, idx) => {
