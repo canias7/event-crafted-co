@@ -39,11 +39,11 @@ export const EnvelopeIntro: React.FC = () => {
   const flapRot = interpolate(flapOpen, [0, 1], [0, -168]);
   const flapShade = interpolate(flapOpen, [0, 0.5, 1], [1, 0.8, 0.92]);
 
-  const rise = spring({ frame: frame - 36, fps, config: { damping: 19, mass: 1 }, durationInFrames: 42 });
-  const letterY = interpolate(rise, [0, 1], [30, -206]);
-  const letterOp = interpolate(frame, [36, 48], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-
-  const cardZ = interpolate(rise, [0, 0.25, 1], [0, 90, 90], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const rise = spring({ frame: frame - 36, fps, config: { damping: 19, mass: 1 }, durationInFrames: 46 });
+  const letterY = interpolate(rise, [0, 1], [6, -250]);   // starts tucked inside, slides up out of the slot
+  const letterOp = 1;                                       // masked by the front pocket while inside
+  // z-index flip: behind the pocket/flap while inside, in front once it has cleared the mouth (pulled OUT of the slot)
+  const cardZi = rise > 0.62 ? 9 : 1;
   const expand = spring({ frame: frame - 80, fps, config: { damping: 23, mass: 1.15 }, durationInFrames: 34 });
   const letterScale = interpolate(rise, [0, 1], [0.94, 1]) * interpolate(expand, [0, 1], [1, 9]);
   const envFade = interpolate(frame, [80, 100], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
@@ -55,17 +55,17 @@ export const EnvelopeIntro: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: IVORY, alignItems: "center", justifyContent: "center", fontFamily: serif }}>
-      <div style={{ position: "relative", width: W, height: H, transform: `translateY(${lift}px)`, transformStyle: "preserve-3d", opacity: envFade, perspective: 1800, filter: "drop-shadow(0 30px 46px rgba(70,25,28,0.30))" }}>
+      <div style={{ position: "relative", width: W, height: H, transform: `translateY(${lift}px)`, opacity: envFade, perspective: 1800, filter: "drop-shadow(0 30px 46px rgba(70,25,28,0.30))" }}>
         {/* back wall / interior (photo texture, darkened) */}
-        <div style={{ ...part, ...TEX, borderRadius: 12, backgroundImage: `${bodyShade}, url(${PAPER})`, transform: "translateZ(-2px)" }} />
+        <div style={{ ...part, ...TEX, borderRadius: 12, backgroundImage: `${bodyShade}, url(${PAPER})`, zIndex: 0 }} />
 
         {/* letter — hidden behind flaps, rises out */}
         <div
           style={{
-            position: "absolute", left: "11%", right: "11%", top: "20%", zIndex: 2,
+            position: "absolute", left: "13%", right: "13%", top: "54%", zIndex: cardZi,
             background: "linear-gradient(180deg,#fffdf8,#fbf5ea)", border: "1px solid #e8dcc2", borderRadius: 7,
             padding: "20px 14px", textAlign: "center", boxShadow: "0 20px 40px rgba(60,25,25,0.28)",
-            opacity: letterOp, transform: `translateY(${letterY}px) translateZ(${cardZ}px) scale(${letterScale})`, transformOrigin: "50% 50%",
+            opacity: letterOp, transform: `translateY(${letterY}px) scale(${letterScale})`, transformOrigin: "50% 50%",
           }}
         >
           <div style={{ opacity: contentFade }}>
@@ -76,14 +76,14 @@ export const EnvelopeIntro: React.FC = () => {
           </div>
         </div>
 
-        {/* bottom front flap (photo texture) */}
-        <div style={{ ...part, ...TEX, backgroundImage: `${bottomShade}, url(${PAPER})`, clipPath: "polygon(0% 100%, 100% 100%, 50% 34%)", transform: "translateZ(1px)" }} />
-        {/* side seams for depth */}
-        <div style={{ ...part, background: "linear-gradient(135deg,rgba(255,255,255,0.06),transparent 40%)", clipPath: "polygon(0% 0%, 50% 50%, 0% 100%)", transform: "translateZ(1.1px)" }} />
-        <div style={{ ...part, background: "linear-gradient(225deg,rgba(0,0,0,0.12),transparent 40%)", clipPath: "polygon(100% 0%, 50% 50%, 100% 100%)", transform: "translateZ(1.1px)" }} />
+        {/* SOLID front pocket (photo texture) — full width, masks the card so it reads as sliding out of the slot */}
+        <div style={{ ...part, ...TEX, backgroundImage: `${bottomShade}, url(${PAPER})`, clipPath: "polygon(0% 100%, 0% 44%, 50% 50%, 100% 44%, 100% 100%)", zIndex: 2 }} />
+        {/* diagonal fold seams on the pocket for the envelope look */}
+        <div style={{ ...part, background: "linear-gradient(135deg,rgba(255,255,255,0.05),transparent 38%)", clipPath: "polygon(0% 44%, 50% 50%, 50% 100%, 0% 100%)", zIndex: 2 }} />
+        <div style={{ ...part, background: "linear-gradient(225deg,rgba(0,0,0,0.12),transparent 38%)", clipPath: "polygon(100% 44%, 50% 50%, 50% 100%, 100% 100%)", zIndex: 2 }} />
 
         {/* TOP flap — hinged at the top edge, rotates open */}
-        <div style={{ ...part, transformStyle: "preserve-3d", transformOrigin: "50% 0%", transform: `translateZ(3px) rotateX(${flapRot}deg)`, filter: `brightness(${flapShade})` }}>
+        <div style={{ ...part, zIndex: 3, transformOrigin: "50% 0%", transform: `rotateX(${flapRot}deg)`, filter: `brightness(${flapShade})` }}>
           <div style={{ ...part, ...TEX, backgroundImage: `${flapShadeG}, url(${PAPER})`, clipPath: "polygon(0% 0%, 100% 0%, 50% 64%)" }} />
           {/* crease shadow along the hinge */}
           <div style={{ ...part, background: "linear-gradient(180deg,rgba(0,0,0,0.20),transparent 12%)", clipPath: "polygon(0% 0%, 100% 0%, 50% 64%)" }} />
