@@ -5123,13 +5123,31 @@ function CustomersTab({
       const real = inv.filter(
         (i) => i.status !== "draft" && i.status !== "cancelled",
       );
-      const paid = inv
-        .filter((i) => i.status === "paid")
-        .reduce((s, i) => s + i.total_cents, 0);
+      // Net collected: paid invoices count in full; partially-refunded
+      // ones (status "partial_refund") still collected money, so add
+      // the amount net of the refund instead of dropping the row.
+      // Fully-refunded ("refunded") nets to ~0 and is left out.
+      const paid = inv.reduce((s, i) => {
+        if (i.status === "paid") return s + i.total_cents;
+        if (i.status === "partial_refund") {
+          return s + Math.max(0, i.total_cents - (i.refunded_amount_cents ?? 0));
+        }
+        return s;
+      }, 0);
       m.set(c.id, { count: real.length, paid });
     }
     return m;
   }, [rows, invoicesByEmail]);
+
+  // Recurring rule per customer id, built once so the row render
+  // doesn't run a linear find() for every contact on every paint.
+  const recurringByCustomerId = useMemo(() => {
+    const m = new Map<string, RecurringRule>();
+    for (const r of recurringRules) {
+      if (r.customer_id) m.set(r.customer_id, r);
+    }
+    return m;
+  }, [recurringRules]);
 
   // Free-text filter across the fields a vendor would look someone up
   // by — display name, email, phone, company. Applied before sort so
@@ -5583,6 +5601,7 @@ function CustomersTab({
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">⌕</span>
             <input
               type="text"
+              aria-label="Search contacts"
               placeholder="Search name, email, phone, company…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -5612,8 +5631,8 @@ function CustomersTab({
           {sortedRows.length === 0 ? (
             <EmptyCard>No contacts match "{searchTerm.trim()}".</EmptyCard>
           ) : (
-          <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
-            <table className="w-full">
+          <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-foreground/[0.03]">
                   <th className="w-10 px-4 py-3 text-left">
@@ -5658,7 +5677,7 @@ function CustomersTab({
               <tbody>
                 {pageRows.map((c) => {
                   const summary = summaryById.get(c.id) ?? { count: 0, paid: 0 };
-                  const custRecurring = recurringRules.find((r) => r.customer_id === c.id);
+                  const custRecurring = recurringByCustomerId.get(c.id);
                   return (
                     <tr key={c.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
                       <td className="px-4 py-3">
@@ -6904,8 +6923,8 @@ function ExpensesTab({
           No expenses match the current search or filter. Adjust the controls above or clear them to see everything again.
         </EmptyCard>
       ) : (
-        <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
-          <table className="w-full">
+        <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+          <table className="w-full min-w-[640px]">
             <thead>
               <tr className="bg-foreground/[0.03]">
                 <th className="w-10 px-4 py-3 text-left">
