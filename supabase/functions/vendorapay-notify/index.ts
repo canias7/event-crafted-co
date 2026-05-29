@@ -10,10 +10,13 @@
 // payment flow can ship/iterate without touching that 700-line file.
 //
 // Caller (vendorapay-webhook) sends Authorization: Bearer
-// ${SUPABASE_SERVICE_ROLE_KEY} on every call. This endpoint runs
-// with verify_jwt=false (Supabase JWT verifier off) BUT enforces
-// service-role bearer manually so anonymous callers can't spoof
-// "$X received" emails impersonating any vendor.
+// ${SUPABASE_SERVICE_ROLE_KEY} on every call. This endpoint MUST run
+// with verify_jwt=false (set in supabase/config.toml) BUT enforces
+// the service-role bearer manually (see handler below) so anonymous
+// callers can't spoof "$X received" emails impersonating any vendor.
+// NOTE: the service-role key is now the sb_secret_ format (not a JWT),
+// so leaving verify_jwt=true makes the gateway 401 the caller before
+// this self-auth check runs — silently killing receipt emails.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
