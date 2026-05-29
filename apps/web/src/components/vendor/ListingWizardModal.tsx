@@ -21,6 +21,8 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -742,7 +744,7 @@ function PhotoTile({
   isCover: boolean;
   onRemove: () => void;
   onMakeCover?: () => void;
-  dragHandle?: { attributes: Record<string, unknown>; listeners: Record<string, unknown> };
+  dragHandle?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners };
 }) {
   // Revoke the object URL on unmount / file change. The previous
   // useMemo created the URL once and held it forever — with 100

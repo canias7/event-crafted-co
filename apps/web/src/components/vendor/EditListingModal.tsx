@@ -15,6 +15,8 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -440,7 +442,7 @@ export function EditListingModal({
       let nextFaqOrder =
         originalFaqsRef.current.reduce((m, o) => Math.max(m, o.order), -1) + 1;
       const faqPayload = faqs.map((f) => {
-        const row: Record<string, unknown> = {
+        const row: { question: string; answer: string; id?: string; display_order?: number } = {
           question: f.question.trim(),
           answer: f.answer.trim(),
         };
@@ -846,7 +848,7 @@ function PhotoTile({
   isCover: boolean;
   onRemove: () => void;
   onMakeCover?: () => void;
-  dragHandle?: { attributes: Record<string, unknown>; listeners: Record<string, unknown> };
+  dragHandle?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners };
 }) {
   return (
     <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">

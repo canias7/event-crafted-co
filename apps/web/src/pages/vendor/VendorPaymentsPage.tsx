@@ -3959,9 +3959,9 @@ function DocumentCanvas({
         <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
           <header className="flex items-start justify-between gap-6 flex-wrap">
             <div className="flex items-center gap-4 min-w-0">
-              {listing?.logo_url ? (
+              {templateListing?.logo_url ? (
                 <img
-                  src={listing.logo_url}
+                  src={templateListing.logo_url}
                   alt={displayName}
                   className="w-14 h-14 rounded-full object-cover ring-1 ring-foreground/10 shrink-0"
                 />
@@ -4028,7 +4028,7 @@ function DocumentCanvas({
         <div className="p-4 flex justify-end">
           <Button
             onClick={save}
-            disabled={saving || !dirty || !vendorId}
+            disabled={saving || !dirty || !templateVendorId}
             className="rounded-full"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
@@ -5686,7 +5686,6 @@ function ExpensesTab({
     if (accountVendorIds.length === 0) {
       setRows([]);
       setContractors([]);
-      setRecurringRules([]);
       setLoading(false);
       return;
     }
@@ -7529,7 +7528,7 @@ function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
           </div>
           <Button
             onClick={openExpress}
-            disabled={!vendorId || opening}
+            disabled={!primaryVendorId || opening}
             className="rounded-full"
             size="sm"
           >
