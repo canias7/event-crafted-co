@@ -49,6 +49,7 @@ import {
   Link2,
   Loader2,
   Mail,
+  MoreHorizontal,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -65,6 +66,13 @@ import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -4904,6 +4912,17 @@ interface Customer {
   name: string | null;
   phone: string | null;
   notes: string | null;
+  // QuickBooks-style contact fields. name stays the "display name";
+  // first/last/company are the optional structured pieces, and the
+  // billing_* columns hold the address shown on invoices/statements.
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  billing_line1: string | null;
+  billing_city: string | null;
+  billing_state: string | null;
+  billing_postal_code: string | null;
+  billing_country: string | null;
   created_at: string;
 }
 
@@ -4927,11 +4946,32 @@ function CustomersTab({
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Customer | "new" | null>(null);
-  const [form, setForm] = useState<{ email: string; name: string; phone: string; notes: string }>({
+  const [form, setForm] = useState<{
+    email: string;
+    name: string;
+    phone: string;
+    notes: string;
+    first_name: string;
+    last_name: string;
+    company: string;
+    billing_line1: string;
+    billing_city: string;
+    billing_state: string;
+    billing_postal_code: string;
+    billing_country: string;
+  }>({
     email: "",
     name: "",
     phone: "",
     notes: "",
+    first_name: "",
+    last_name: "",
+    company: "",
+    billing_line1: "",
+    billing_city: "",
+    billing_state: "",
+    billing_postal_code: "",
+    billing_country: "",
   });
   // Which listing a freshly-created customer should be attached to.
   // Defaults to the primary listing; the New-customer dialog renders
@@ -5074,7 +5114,7 @@ function CustomersTab({
     const [{ data: cs, error: csErr }, { data: rrs }, { data: invs }] = await Promise.all([
       db
         .from("vendor_customers")
-        .select("id, vendor_id, email, name, phone, notes, created_at")
+        .select("id, vendor_id, email, name, phone, notes, first_name, last_name, company, billing_line1, billing_city, billing_state, billing_postal_code, billing_country, created_at")
         .in("vendor_id", accountVendorIds)
         .order("created_at", { ascending: false }),
       db
@@ -5116,7 +5156,12 @@ function CustomersTab({
   }, [accountKey]);
 
   const startNew = () => {
-    setForm({ email: "", name: "", phone: "", notes: "" });
+    setForm({
+      email: "", name: "", phone: "", notes: "",
+      first_name: "", last_name: "", company: "",
+      billing_line1: "", billing_city: "", billing_state: "",
+      billing_postal_code: "", billing_country: "",
+    });
     setNewCustomerVendorId(accountVendorIds[0] ?? null);
     setEditing("new");
   };
@@ -5127,6 +5172,14 @@ function CustomersTab({
       name: c.name ?? "",
       phone: c.phone ?? "",
       notes: c.notes ?? "",
+      first_name: c.first_name ?? "",
+      last_name: c.last_name ?? "",
+      company: c.company ?? "",
+      billing_line1: c.billing_line1 ?? "",
+      billing_city: c.billing_city ?? "",
+      billing_state: c.billing_state ?? "",
+      billing_postal_code: c.billing_postal_code ?? "",
+      billing_country: c.billing_country ?? "",
     });
     setEditing(c);
   };
@@ -5139,9 +5192,26 @@ function CustomersTab({
       return;
     }
     setSaving(true);
-    const name = form.name.trim() || null;
-    const phone = form.phone.trim() || null;
-    const notes = form.notes.trim() || null;
+    const clean = (v: string) => v.trim() || null;
+    // Display name falls back to "First Last" → company → email so a
+    // row always has something human to show even if the vendor only
+    // filled the structured fields.
+    const firstLast = [form.first_name.trim(), form.last_name.trim()]
+      .filter(Boolean)
+      .join(" ");
+    const name = form.name.trim() || firstLast || form.company.trim() || null;
+    const phone = clean(form.phone);
+    const notes = clean(form.notes);
+    const contactFields = {
+      first_name: clean(form.first_name),
+      last_name: clean(form.last_name),
+      company: clean(form.company),
+      billing_line1: clean(form.billing_line1),
+      billing_city: clean(form.billing_city),
+      billing_state: clean(form.billing_state),
+      billing_postal_code: clean(form.billing_postal_code),
+      billing_country: clean(form.billing_country),
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const { error } =
@@ -5160,6 +5230,7 @@ function CustomersTab({
                 name,
                 phone,
                 notes,
+                ...contactFields,
               },
               { onConflict: "vendor_id,email" },
             )
@@ -5168,7 +5239,7 @@ function CustomersTab({
           // email (the unique key).
           await db
             .from("vendor_customers")
-            .update({ name, phone, notes })
+            .update({ name, phone, notes, ...contactFields })
             .eq("id", (editing as Customer).id);
     setSaving(false);
     if (error) {
@@ -5227,41 +5298,136 @@ function CustomersTab({
             {/* Listing picker removed — account-level cockpit means
                 we default new customers to accountVendorIds[0] (see
                 save()) without asking the vendor to pick. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <input
-                type="email"
-                placeholder="email@example.com (required)"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                disabled={editing !== "new"}
-                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none disabled:opacity-60"
-              />
-              <input
-                type="text"
-                placeholder="Name (optional)"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-              <input
-                type="tel"
-                placeholder="Phone (optional)"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none md:col-span-2"
+            {/* Name + company. Display name is what shows on invoices
+                and statements; if left blank it auto-fills from the
+                first/last name (then company, then email) on save. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">First name</label>
+                <input
+                  type="text"
+                  value={form.first_name}
+                  onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">Last name</label>
+                <input
+                  type="text"
+                  value={form.last_name}
+                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">Company</label>
+                <input
+                  type="text"
+                  value={form.company}
+                  onChange={(e) => setForm({ ...form, company: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">Display name</label>
+                <input
+                  type="text"
+                  placeholder="How they appear on invoices"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                  Email <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="email@example.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  disabled={editing !== "new"}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Billing address — shows on this contact's invoices and
+                statements. */}
+            <div className="pt-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Billing address
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Street address"
+                  value={form.billing_line1}
+                  onChange={(e) => setForm({ ...form, billing_line1: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <input
+                    type="text"
+                    placeholder="City"
+                    value={form.billing_city}
+                    onChange={(e) => setForm({ ...form, billing_city: e.target.value })}
+                    className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={form.billing_state}
+                    onChange={(e) => setForm({ ...form, billing_state: e.target.value })}
+                    className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="ZIP"
+                    value={form.billing_postal_code}
+                    onChange={(e) => setForm({ ...form, billing_postal_code: e.target.value })}
+                    className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Country"
+                  value={form.billing_country}
+                  onChange={(e) => setForm({ ...form, billing_country: e.target.value })}
+                  className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1">Notes</label>
+              <textarea
+                placeholder="Venue contacts, dietary, preferences, …"
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
               />
             </div>
-            <textarea
-              placeholder="Notes (optional — venue contacts, dietary, preferences, …)"
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={2}
-              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
-            />
             <div className="flex gap-2">
               <Button onClick={save} disabled={saving} className="rounded-full">
                 {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                Save customer
+                Save contact
               </Button>
               <Button variant="ghost" onClick={() => setEditing(null)} className="rounded-full">
                 Cancel
@@ -5272,7 +5438,7 @@ function CustomersTab({
       )}
 
       {loading ? (
-        <EmptyCard>Loading customers…</EmptyCard>
+        <EmptyCard>Loading contacts…</EmptyCard>
       ) : rows.length === 0 ? (
         <EmptyCard>No contacts yet. Click "New contact" to add your first.</EmptyCard>
       ) : (
@@ -5286,121 +5452,112 @@ function CustomersTab({
             const custRecurring = recurringRules.find(
               (r) => r.customer_id === c.id,
             );
+            const subLine = [c.email, c.phone, c.company].filter(Boolean).join(" · ");
             return (
               <div
                 key={c.id}
-                className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+                className={idx > 0 ? "border-t border-foreground/5" : ""}
               >
-                <div className="flex items-start justify-between gap-3 flex-wrap">
+                {/* Compact table row — name + contact on the left, the
+                    paid balance in the middle, actions tucked into a
+                    ⋯ menu. Clicking the row toggles the invoice list. */}
+                <div className="flex items-center gap-3 px-4 py-2.5">
                   <button
                     type="button"
                     onClick={() => setExpandedId(expanded ? null : c.id)}
                     className="text-left min-w-0 flex-1 hover:opacity-80 transition-opacity"
                   >
-                    <p className="text-sm font-semibold">
-                      {c.name?.trim() || c.email}
-                    </p>
-                    {c.name && (
-                      <p className="text-xs text-muted-foreground">{c.email}</p>
-                    )}
-                    {c.phone && (
-                      <p className="text-xs text-muted-foreground">{c.phone}</p>
-                    )}
-                    {c.notes && (
-                      <p className="text-xs text-muted-foreground mt-1 max-w-md">{c.notes}</p>
-                    )}
-                    {custInvoices.length > 0 && (
-                      <p className="text-[11px] mt-1 text-muted-foreground">
-                        {custInvoices.length} invoice{custInvoices.length === 1 ? "" : "s"}
-                        {paidTotal > 0 ? ` · ${formatMoney(paidTotal)} paid` : ""}
-                        <span className="ml-2 text-[10px] uppercase tracking-wider">
-                          {expanded ? "▾" : "▸"}
-                        </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {c.name?.trim() || c.email}
                       </p>
-                    )}
-                    {custRecurring && (
-                      <p
-                        className="text-[11px] mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5"
-                        style={{
-                          background: custRecurring.active
-                            ? "rgba(34,197,94,0.12)"
-                            : "rgba(125,119,110,0.12)",
-                          color: custRecurring.active ? "#0a7c4a" : "#6b6259",
-                        }}
-                      >
-                        <span className="font-semibold uppercase tracking-wider">
+                      {custRecurring && (
+                        <span
+                          className="text-[10px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 shrink-0"
+                          style={{
+                            background: custRecurring.active
+                              ? "rgba(34,197,94,0.12)"
+                              : "rgba(125,119,110,0.12)",
+                            color: custRecurring.active ? "#0a7c4a" : "#6b6259",
+                          }}
+                          title={
+                            custRecurring.active
+                              ? `Recurring ${custRecurring.interval} · next ${new Date(custRecurring.next_run_at).toLocaleDateString()}`
+                              : "Recurring paused"
+                          }
+                        >
                           {custRecurring.active ? "Recurring" : "Paused"}
                         </span>
-                        <span>
-                          {custRecurring.interval} ·{" "}
-                          {custRecurring.active
-                            ? `next ${new Date(custRecurring.next_run_at).toLocaleDateString()}`
-                            : "no upcoming"}
-                        </span>
-                      </p>
+                      )}
+                    </div>
+                    {subLine && (
+                      <p className="text-xs text-muted-foreground truncate">{subLine}</p>
                     )}
                   </button>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      size="sm"
-                      onClick={() => setSendTarget(c)}
-                      className="rounded-full"
-                    >
-                      <Mail className="w-3.5 h-3.5 mr-1" />
-                      Send invoice
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setRecurringTarget({ customer: c, existing: custRecurring ?? null })
-                      }
-                      className="rounded-full"
-                      title={custRecurring ? "Edit recurring" : "Set up recurring"}
-                    >
-                      {custRecurring ? "Recurring" : "Recurring…"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadStatement(c)}
-                      disabled={statementId === c.id || custInvoices.length === 0}
-                      className="rounded-full"
-                      title="Download a statement PDF of this customer's full invoice history"
-                    >
-                      {statementId === c.id ? (
-                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                      ) : (
-                        <Download className="w-3.5 h-3.5 mr-1" />
-                      )}
-                      Statement
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => startEdit(c)}
-                      className="rounded-full"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => void remove(c)}
-                      disabled={deletingId === c.id}
-                      className="rounded-full text-muted-foreground hover:text-destructive"
-                    >
-                      {deletingId === c.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                    </Button>
+                  <div className="text-right shrink-0 w-28 hidden sm:block">
+                    {custInvoices.length > 0 ? (
+                      <>
+                        <p className="text-sm font-semibold tabular-nums">
+                          {formatMoney(paidTotal)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {custInvoices.length} invoice{custInvoices.length === 1 ? "" : "s"}
+                          <span className="ml-1 text-[10px]">{expanded ? "▾" : "▸"}</span>
+                        </p>
+                      </>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">No invoices</span>
+                    )}
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="shrink-0 w-8 h-8 rounded-md inline-flex items-center justify-center text-muted-foreground hover:bg-foreground/5 outline-none"
+                        title="Actions"
+                      >
+                        {deletingId === c.id || statementId === c.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MoreHorizontal className="w-4 h-4" />
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => setSendTarget(c)}>
+                        <Mail className="w-3.5 h-3.5 mr-2" /> Send invoice
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setRecurringTarget({ customer: c, existing: custRecurring ?? null })
+                        }
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                        {custRecurring ? "Edit recurring" : "Set up recurring"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => downloadStatement(c)}
+                        disabled={statementId === c.id || custInvoices.length === 0}
+                      >
+                        <Download className="w-3.5 h-3.5 mr-2" /> Statement
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => startEdit(c)}>
+                        <FileEdit className="w-3.5 h-3.5 mr-2" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => void remove(c)}
+                        disabled={deletingId === c.id}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 {expanded && custInvoices.length > 0 && (
                   <div
-                    className="mt-3 rounded-lg overflow-hidden"
+                    className="mx-4 mb-3 rounded-lg overflow-hidden"
                     style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
                   >
                     {custInvoices.map((inv, ii) => (
