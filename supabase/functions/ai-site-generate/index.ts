@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v33";
+const DESIGN_BIBLE_VERSION = "v34";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -1255,6 +1255,39 @@ For WEDDINGS / ANNIVERSARIES / ENGAGEMENTS, DEFAULT to variant A — a REAL enve
     CSS hint: .embossed { color: var(--accent); text-shadow: 0 1px 0 rgba(255,255,255,0.15), 0 -1px 1px rgba(0,0,0,0.6); background: radial-gradient(ellipse at center, #3d1414 0%, #1a0808 100%); }
 
   For a standard wedding/anniversary/engagement, USE A (the openable envelope) — it's the expected, signature moment. Reach for B–E only when the brief clearly fits: "garden / vineyard" → B (or A), "Tulum / Bali / destination" → C, "grandparents' 50th / nostalgic" → D, "black tie / gala" → E.
+
+═══ FLAGSHIP WEDDING LAYOUT — THE INVITATION SUITE (DEFAULT for weddings) ═══
+The most-loved wedding sites aren't one long scroll — they're a little SUITE: an envelope you open, then a flat-lay "menu" of pretty cards you tap to visit each part. Build weddings this way BY DEFAULT, CSS-only (no JS). Three layers, all inside ONE html document:
+
+1) ENVELOPE LANDING (first screen) — solid ivory/white background, perfectly centered. Small tracked caps "SEALED WITH LOVE FROM", the couple's names BIG in calligraphy script, a burgundy wax-sealed envelope (use the openable-envelope recipe above), and "CLICK ENVELOPE TO OPEN" beneath. Tapping opens the flap and reveals the MENU.
+
+2) THE MENU / HOME (flat-lay collage) — solid ivory background with elements arranged AROUND, slightly tilted, like a flat-lay on a table — NOT stacked full-width sections:
+   • 2–3 tilted polaroid-style B&W photos (white border, soft shadow, rotate -4deg / 3deg)
+   • An ARCHED burgundy panel for "Our Story" with a small line-art motif (two swans, rings, or a eucalyptus sprig) and a "CLICK HERE"
+   • An ornate filigree-framed card "The Details — CLICK HERE"
+   • A small envelope/card "Kindly RSVP — CLICK HERE"
+   • Couple's names + date in script, a wax-seal accent, a sprig of eucalyptus (inline SVG)
+   • A burgundy COUNTDOWN band near the bottom (DD : HH : MM : SS · BEFORE THE BIG DAY) + one contact line
+   The "CLICK HERE" cards ARE the navigation.
+
+3) THE PAGES (Our Story · The Details · Travel & Stay · RSVP) — each a full-screen "page" with its own solid background (ivory; or a deep burgundy "curtain" for Our Story), a big script title, tight content, a framed photo or two, and a "‹ GO BACK" link to the menu. Keep each page short.
+
+NO-JS NAVIGATION (hidden radios + labels — same family as MULTI-EVENT tabs):
+  <input type="radio" name="nav" id="nav-menu" checked hidden>
+  <input type="radio" name="nav" id="nav-story" hidden>
+  <input type="radio" name="nav" id="nav-details" hidden>
+  … one per page …
+  Place ALL radios at the top of <main>. "CLICK HERE" cards and "‹ GO BACK" are <label for="nav-…">.
+  CSS: .page{display:none} #nav-menu:checked~.page-menu{display:block} #nav-story:checked~.page-story{display:block} … (one rule per page). Scroll resets naturally since only one page shows.
+  (The envelope #opener checkbox still gates the whole suite: closed = envelope landing; open = the menu/pages.)
+
+MOTIFS (use sparingly, per RESTRAINT — pick a few):
+• Tilted POLAROID: .polaroid{background:#fff;padding:10px 10px 34px;box-shadow:0 12px 30px rgba(80,50,20,.22);transform:rotate(-4deg)} with img{filter:grayscale(1) contrast(1.05)} for B&W.
+• ARCHED panel: border-radius:50% 50% 10px 10px / 26% 26% 10px 10px; background:var(--burgundy); color:var(--ivory).
+• Ornate FRAME: thin double gold border (1px outline + 4px ivory gap + 1px gold via box-shadow rings) or an inline-SVG filigree corner set.
+• LINE-ART SVG motifs: delicate single-stroke gold drawings (two swans forming a heart, wedding rings, eucalyptus sprig, champagne-coupe tower). Thin strokes, no fill.
+• DRESS-CODE SWATCHES: a row of small arched color chips (the palette) under a "Dress Code" heading.
+Keep the whole suite calm — a few exquisite elements on lots of ivory space.
 
 ═══ REVEAL TRANSITIONS — animated cover-to-body transition (no JS, CSS-only) ═══
 
