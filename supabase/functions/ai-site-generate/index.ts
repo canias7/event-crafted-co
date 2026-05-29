@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v32";
+const DESIGN_BIBLE_VERSION = "v33";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -610,8 +610,11 @@ A luxury invitation is a few elegant screens, NOT an endless scroll. Long pages 
 • Keep each section tight — most should be ~one viewport or less (only the hero is full-height). Trim copy hard; a few beautiful lines beat paragraphs.
 • Target roughly HALF the length you'd otherwise produce. When unsure whether to add a section, don't.
 
-═══ FEWER, SMARTER PHOTOS — that MELT into the background ═══
-• Use FEWER photos: roughly 3–6 well-chosen images for the whole site, NOT one in every section. A calm page with two stunning, well-blended images beats a busy page with ten.
+═══ FEWER, SMARTER PHOTOS — images sit ON a solid background, never AS it ═══
+• THE PAGE BACKGROUND IS ONE SOLID COLOR. The body uses a single ivory/cream tone (the palette's base) the whole way down. Do NOT use full-bleed photo backgrounds behind body sections, and do NOT switch background images section to section — that's the busy "bunch of background images" look we're removing.
+• Photos are DISCRETE, FRAMED ELEMENTS placed AROUND the layout — a contained photo beside text, a small framed cluster, a tidy image card with a thin border/soft shadow — resting on the solid ivory background. Think a printed invitation with a couple of inset photos, not a slideshow of backgrounds.
+• The ONLY place a full-bleed image is allowed is the cover/hero (and even there it's optional). Everything below the cover = solid ivory background + framed photos on top.
+• Use FEWER photos: roughly 3–6 well-chosen images for the whole site, NOT one in every section. A calm page with two stunning images beats a busy page with ten.
 • Images must BLEND into the dark/colored background — never sit as a hard-edged rectangle. Required treatment on every photo over a dark bg:
     - Feather the edges with a mask so the image dissolves into the page:
         .photo,.hero-photo,img.blend{ -webkit-mask-image:radial-gradient(125% 125% at 50% 42%,#000 52%,transparent 100%); mask-image:radial-gradient(125% 125% at 50% 42%,#000 52%,transparent 100%); }
@@ -1199,9 +1202,37 @@ For weddings, anniversaries, engagements, formal events, and any event where the
 
 ═══ COVER-PAGE VARIANTS — pick ONE per generation (don't always default to envelope+seal) ═══
 
-The envelope-with-wax-seal cover is the safe default. But every elegant wedding looks the same when it's the ONLY option. Rotate between these five variants based on event mood:
+For WEDDINGS / ANNIVERSARIES / ENGAGEMENTS, DEFAULT to variant A — a REAL envelope the guest opens (this is the signature first moment and what people expect from a wedding invite). Only use B–E when the brief clearly fits them (garden→B, destination→C, nostalgic→D, black-tie→E).
 
-  A. ENVELOPE + WAX SEAL / MONOGRAM (default, classic elegant) — moody full-bleed photo, cream invitation envelope centered, seal or monogram at the flap. Use for: formal weddings, anniversaries.
+  A. REALISTIC ENVELOPE THAT OPENS (DEFAULT for weddings — build a true envelope, NOT just a seal on a photo):
+     A real envelope sitting on a soft surface: an envelope BODY with a triangular FLAP, a wax seal at the flap, and the invitation card tucked inside. The guest taps it → the flap lifts open (rotateX), the card rises, and the cover fades to reveal the site. CSS-only via the #opener checkbox.
+     Markup:
+       <input type="checkbox" id="opener" class="opener-toggle" hidden>
+       <label for="opener" class="cover-page">
+         <div class="envelope">
+           <div class="env-card"><span class="env-mono">I&amp;T</span><span class="env-names">Isabella &amp; Theo</span></div>
+           <div class="env-pocket"></div>
+           <div class="env-flap"></div>
+           <div class="seal">I&amp;T</div>
+         </div>
+         <p class="tap-hint">tap to open</p>
+       </label>
+       <main class="invitation-body"> … all sections … </main>
+     CSS essentials (tune colors to the palette — ivory/kraft envelope on a soft ivory surface):
+       .opener-toggle:not(:checked) ~ .invitation-body{ display:none; }
+       .opener-toggle:checked ~ .cover-page{ animation:coverOut .7s .7s forwards; }
+       @keyframes coverOut{ to{ opacity:0; visibility:hidden; } }
+       .cover-page{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; background:#efe7d8; }
+       .envelope{ position:relative; width:min(440px,86vw); height:300px; perspective:1400px; filter:drop-shadow(0 28px 46px rgba(80,50,20,.28)); }
+       .env-pocket{ position:absolute; inset:0; border-radius:6px; background:linear-gradient(#e9d9bd,#dcc59c); clip-path:polygon(0 18%,50% 60%,100% 18%,100% 100%,0 100%); z-index:2; }
+       .env-card{ position:absolute; left:7%; right:7%; top:8%; bottom:14%; background:#fbf6ec; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35rem; box-shadow:0 8px 18px rgba(80,50,20,.15); transition:transform .8s cubic-bezier(.6,.02,.25,1) .15s; z-index:1; }
+       .env-flap{ position:absolute; inset:0; transform-origin:top center; background:linear-gradient(#efdfc2,#e3cea4); clip-path:polygon(0 0,50% 58%,100% 0); transition:transform .85s cubic-bezier(.7,.02,.3,1); z-index:3; backface-visibility:hidden; }
+       .seal{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:4; width:72px; height:72px; border-radius:50%; background:radial-gradient(circle at 32% 30%,#a83246,#7a1f2b 70%,#5e1622); color:#e9c98f; font-family:'Allura',cursive; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.3); transition:opacity .4s,transform .5s; }
+       /* OPEN STATE */
+       .opener-toggle:checked ~ .cover-page .env-flap{ transform:rotateX(178deg); }
+       .opener-toggle:checked ~ .cover-page .seal{ opacity:0; transform:translate(-50%,-50%) scale(.6); }
+       .opener-toggle:checked ~ .cover-page .env-card{ transform:translateY(-128px); }
+     The flap sits above the card while closed; tapping rotates it up, the card lifts, the seal fades, then the cover dismisses to reveal .invitation-body. Add the pulsing .seal ring + bouncing .tap-hint so it's obviously tappable.
 
   B. PRESSED FLOWER UNDER GLASS (botanical, garden weddings) — dark wood/marble surface, a single pressed flower or eucalyptus sprig centered inside a thin gold rounded-rectangle "frame" (CSS border + inset shadow). The flower is the seal — user clicks it. Use for: garden, vineyard, spring weddings.
     Markup:
@@ -1223,7 +1254,7 @@ The envelope-with-wax-seal cover is the safe default. But every elegant wedding 
   E. EMBOSSED VELVET (luxe, black-tie, NYE, galas, milestone birthdays) — deep velvet background (radial gradient #2a0f0f → #0a0303), raised monogram or initials in gold using CSS box-shadow tricks (inset shadow + outer glow to mimic embossing). The monogram is the tap target. Use for: black tie, gala, formal milestone.
     CSS hint: .embossed { color: var(--accent); text-shadow: 0 1px 0 rgba(255,255,255,0.15), 0 -1px 1px rgba(0,0,0,0.6); background: radial-gradient(ellipse at center, #3d1414 0%, #1a0808 100%); }
 
-  Vary which variant you pick based on event mood, season, venue. Don't reach for A by reflex. If the user describes the wedding as "garden" → B. "Tulum / Bali" → C. "Grandparents 50th anniversary" → D. "Black tie at the Plaza" → E.
+  For a standard wedding/anniversary/engagement, USE A (the openable envelope) — it's the expected, signature moment. Reach for B–E only when the brief clearly fits: "garden / vineyard" → B (or A), "Tulum / Bali / destination" → C, "grandparents' 50th / nostalgic" → D, "black tie / gala" → E.
 
 ═══ REVEAL TRANSITIONS — animated cover-to-body transition (no JS, CSS-only) ═══
 
