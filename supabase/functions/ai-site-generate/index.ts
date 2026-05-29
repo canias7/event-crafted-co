@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v29";
+const DESIGN_BIBLE_VERSION = "v30";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -882,14 +882,16 @@ Real luxury invitations have galleries, not just hero shots. Whenever a section 
 
 ═══ PREMIUM MOTION — GSAP scroll choreography (declarative; you write NO JavaScript) ═══
 
-Vendora's renderer injects a TRUSTED GSAP + ScrollTrigger runtime into every published site. You get real, buttery scroll animation and a cinematic hero entrance WITHOUT writing any JavaScript — you simply decorate elements with the data-attributes / classes below and the runtime animates them. It automatically respects prefers-reduced-motion (motion off → everything just shows, statically).
+Vendora's renderer injects a TRUSTED GSAP + ScrollTrigger + Lenis runtime into every published site. You get LUXURY momentum scrolling (buttery, eased — the high-end "Canva / studio site" feel), real scroll-reveal animation, and a cinematic hero entrance WITHOUT writing any JavaScript — you simply decorate elements with the data-attributes / classes below and the runtime animates them. Smooth scroll is automatic; you don't add anything for it. It automatically respects prefers-reduced-motion (motion off → everything just shows, statically) and falls back gracefully (content visible) if a CDN is blocked.
 
 Use these hooks generously but tastefully — they are the #1 thing that makes a site feel like a $1M studio made it:
 
-• data-anim="fade-up | fade | fade-down | scale-in | slide-left | slide-right"
+• data-anim="fade-up | fade | fade-down | scale-in | slide-left | slide-right | blur-in | clip-reveal"
     → the element reveals (animating in from hidden) as it scrolls into view.
     Add data-anim-delay="0.15" to offset neighbours for a cascade.
     Put it on section headings, paragraphs, cards, images, dividers, quotes — most things BELOW the hero.
+    Mix presets for variety (don't fade-up everything): "blur-in" for headings/quotes (soft focus-pull),
+    "clip-reveal" for images/dividers (elegant curtain wipe), "scale-in" for cards, "slide-*" for asides.
 • data-stagger="0.12"  (on a CONTAINER element)
     → its DIRECT children reveal one-after-another. Perfect for schedule rows, gallery tiles,
       detail cards, FAQ items, menu courses.

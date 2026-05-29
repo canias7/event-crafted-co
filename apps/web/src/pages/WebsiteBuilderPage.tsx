@@ -38,25 +38,33 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 // first (defense in depth) and only ever run this vetted bundle, which is
 // why enabling allow-scripts on the preview iframe is safe.
 const GSAP_CDN = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5";
+const LENIS_CDN = "https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js";
 const PREVIEW_MOTION_RUNTIME = `
 <script src="${GSAP_CDN}/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
 <script src="${GSAP_CDN}/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
+<script src="${LENIS_CDN}" integrity="sha384-tKsJDT6PlUI0pSBt9/sBKJluKgA19/a6mBrDsZaXotLB4ZYfMGM6xt6/WgGpYhTm" crossorigin="anonymous"></script>
 <script>
 (function(){
   var g = window.gsap; if (!g) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var ST = window.ScrollTrigger; if (ST) g.registerPlugin(ST);
-  var P = { 'fade-up':{opacity:0,y:42},'fade':{opacity:0},'fade-down':{opacity:0,y:-42},'scale-in':{opacity:0,scale:0.92},'slide-left':{opacity:0,x:-54},'slide-right':{opacity:0,x:54} };
+  if (window.Lenis) { try {
+    var lenis = new window.Lenis({ lerp: 0.09, smoothWheel: true });
+    if (ST) lenis.on('scroll', ST.update);
+    g.ticker.add(function(t){ lenis.raf(t * 1000); });
+    g.ticker.lagSmoothing(0);
+  } catch (e) {} }
+  var P = { 'fade-up':{opacity:0,y:48},'fade':{opacity:0},'fade-down':{opacity:0,y:-48},'scale-in':{opacity:0,scale:0.9},'slide-left':{opacity:0,x:-64},'slide-right':{opacity:0,x:64},'blur-in':{opacity:0,y:30,filter:'blur(14px)'},'clip-reveal':{opacity:0,y:24,clipPath:'inset(0 0 100% 0)'} };
   function init(){
     document.querySelectorAll('[data-anim]').forEach(function(el){
       var from = P[el.getAttribute('data-anim')] || P['fade-up'];
-      var v = Object.assign({}, from, { duration:0.9, delay:parseFloat(el.getAttribute('data-anim-delay'))||0, ease:'power3.out' });
-      if (ST) v.scrollTrigger = { trigger:el, start:'top 88%', once:true };
+      var v = Object.assign({}, from, { duration:1.1, delay:parseFloat(el.getAttribute('data-anim-delay'))||0, ease:'power3.out', clearProps:'filter,clipPath' });
+      if (ST) v.scrollTrigger = { trigger:el, start:'top 86%', once:true };
       g.from(el, v);
     });
     document.querySelectorAll('[data-stagger]').forEach(function(c){
-      var v = { opacity:0, y:30, duration:0.8, ease:'power3.out', stagger:parseFloat(c.getAttribute('data-stagger'))||0.12 };
-      if (ST) v.scrollTrigger = { trigger:c, start:'top 85%', once:true };
+      var v = { opacity:0, y:36, duration:0.95, ease:'power3.out', stagger:parseFloat(c.getAttribute('data-stagger'))||0.14 };
+      if (ST) v.scrollTrigger = { trigger:c, start:'top 84%', once:true };
       g.from(c.children, v);
     });
     if (ST) document.querySelectorAll('[data-parallax]').forEach(function(el){
@@ -65,7 +73,7 @@ const PREVIEW_MOTION_RUNTIME = `
     });
     document.querySelectorAll('.gsap-hero').forEach(function(hero){
       var items = hero.querySelectorAll('[data-hero-item]');
-      if (items.length) g.from(items, { opacity:0, y:32, duration:1, ease:'power3.out', stagger:0.15, delay:0.15 });
+      if (items.length) g.from(items, { opacity:0, y:40, filter:'blur(8px)', duration:1.3, ease:'expo.out', stagger:0.18, delay:0.2, clearProps:'filter' });
     });
     if (ST) ST.refresh();
   }
