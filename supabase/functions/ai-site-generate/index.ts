@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v31";
+const DESIGN_BIBLE_VERSION = "v32";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -580,8 +580,8 @@ Every site you build must feel like a $1,000,000 design studio made it. Think Pa
 
 THE LOOK YOU'RE GOING FOR (memorize this):
 • Cinematic 16:9 first-screen "cover page" — feels like an envelope or invitation card laying on a textured surface
-• Cream paper card floating over a moody dark or richly-colored background (slate, velvet, marble, linen)
-• Burgundy / wine / forest-green / navy / champagne accents
+• DEFAULT THEME IS LIGHT: a soft IVORY / CREAM background (warm paper, subtle texture) with burgundy + gold accents and dark ink text — bright, airy, and elegant, like a fine printed "burgundy & ivory" wedding invitation. This is the default for weddings and classic events. Use a moody DARK background (slate / charcoal / velvet) ONLY when the brief explicitly asks for dark, dramatic, black-tie, moody, or noir.
+• Burgundy / wine / forest-green / navy / champagne accents over the ivory base
 • Real-material details: wax seals, ribbons, gold leaf, lace edges, eucalyptus, dried florals
 • Elegant typography: serif display for headings, italic script for couple names / honored names, refined sans for body
 • Generous whitespace. Restrained color palette (3 colors max + neutrals). Heavy use of asymmetric layered composition
@@ -609,9 +609,10 @@ This bible offers MANY techniques (particles, ornaments, stickers, cinemagraphs,
     - Feather the edges with a mask so the image dissolves into the page:
         .photo,.hero-photo,img.blend{ -webkit-mask-image:radial-gradient(125% 125% at 50% 42%,#000 52%,transparent 100%); mask-image:radial-gradient(125% 125% at 50% 42%,#000 52%,transparent 100%); }
       (or a top/bottom linear-gradient mask for full-bleed bands).
-    - Add a palette-tinted overlay (a multiply layer of the dark base color at ~0.3–0.45) so photos share the page's mood, plus a subtle bottom-up gradient for text legibility.
+    - Add a palette-tinted overlay so photos share the page's mood: on a LIGHT/ivory theme, a soft warm-ivory wash (e.g. rgba(247,241,230,0.18–0.3)) so photos feel airy and de-saturated; on a dark theme, a dark veil (~0.3–0.45). Add a subtle gradient only where text overlaps the image, for legibility.
     - Prefer ATMOSPHERIC / textural imagery (candlelight, foliage, fabric, light haze, landscape) over literal scene snapshots — softer, moodier, de-saturated reads more luxe and blends far better.
-• PHOTO RELEVANCE (CRITICAL): only use images that clearly belong to THIS event's story and venue. NEVER vehicles, gadgets, logos, unrelated people/objects, or generic stock filler. If you are not confident an image fits, DO NOT use a literal photo — use a textural/moody neutral (linen, marble, candlelight, foliage, dark haze) instead. A tasteful texture never looks wrong; a mismatched literal photo (e.g. a car on a wedding page) ruins the entire feel.
+• PHOTO RELEVANCE (CRITICAL): only use images that clearly belong to THIS event's story and venue. NEVER vehicles, cars, gadgets, logos, unrelated people/objects, or generic stock filler. If you are not confident an image fits, DO NOT use a literal photo — use a textural neutral (linen, marble, candlelight, soft florals, foliage) instead. A tasteful texture never looks wrong; a mismatched literal photo (e.g. a car on a wedding page) ruins the entire feel.
+• MATCH THE VENUE TYPE — do NOT use city / urban / skyline / rooftop / downtown / street imagery unless the venue is EXPLICITLY a city or rooftop venue. A vineyard, garden, barn, beach, or estate wedding must use ONLY vineyard / garden / landscape / florals / soft natural imagery — never an urban/street shot (that is exactly how a stray "car downtown" photo sneaks in). When in doubt, florals and the venue's own landscape are always safe.
 
 ═══ RSVP — MAKE IT THE EMOTIONAL CENTERPIECE ═══
 The RSVP is the whole point of the site — treat it as the climactic moment, not a plain form bolted to the bottom.
@@ -653,9 +654,12 @@ PREMIUM FONT PAIRINGS — pick ONE pairing per site, never mix more than 2 fonts
   ART DECO / SPEAKEASY — Cinzel (display) + Roboto Slab (body)
   CINEMATIC / NOIR — Bodoni Moda (display, high-contrast) + Inter (body)
 
-COLOR PALETTES — pick ONE per site. Use exact hex codes. Use 3 colors plus neutrals (cream/ivory/black):
+COLOR PALETTES — pick ONE per site. Use exact hex codes. Use 3 colors plus neutrals. DEFAULT to a LIGHT (ivory-background) palette for weddings and classic events; only use a dark/moody palette when the brief explicitly calls for dark / dramatic / black-tie / noir:
 
-  MOODY BURGUNDY (default elegant) — #1a1a1a slate · #f5ead5 cream · #8b2c2c burgundy · #c9a86a gold
+  IVORY & BURGUNDY (DEFAULT — light, airy, classic wedding) — #f7f1e6 ivory bg · #ffffff warm white cards · #7a1f2b burgundy · #b08a4f gold · #4a3526 ink text. Dark ink/burgundy text on the ivory base; gold for fine lines/ornaments.
+  IVORY & SAGE (light garden) — #f6f3ea ivory · #ffffff white · #6f7d5e sage · #b08a4f gold · #3f3a30 ink
+  BLUSH & GOLD (soft romantic) — #fbf3ee blush-ivory · #ffffff white · #b86b6b dusty rose · #c2a25a gold · #4a3a36 ink
+  MOODY BURGUNDY (dark / dramatic OPTION — only when asked) — #1a1a1a slate · #f5ead5 cream · #8b2c2c burgundy · #c9a86a gold
   FOREST GARDEN — #1f3327 forest · #f5f0e6 ivory · #8b2c2c burgundy · #b9a76d antique gold
   TUSCAN DUSK — #2a1810 deep brown · #f7ebd9 cream · #a8341e terracotta · #d4a857 sun gold
   NAVY & CHAMPAGNE — #14213d navy · #fefae0 champagne · #d4a957 gold · #6d6875 dusty plum
