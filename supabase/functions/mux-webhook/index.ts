@@ -6,8 +6,9 @@
 //   MUX_WEBHOOK_SECRET    — from Mux dashboard → Settings → Webhooks
 //                            ("signing secret" on the endpoint detail)
 //
-// Deployed with verify_jwt=false — Mux doesn't send a Supabase JWT;
-// the signature header is what authenticates the request.
+// Deployed with verify_jwt=false (set in supabase/config.toml) — Mux
+// doesn't send a Supabase JWT; the signature header is what
+// authenticates the request.
 //
 // Endpoint URL to register in Mux:
 //   https://pahpjjubhbcbwqjpamwv.functions.supabase.co/mux-webhook
