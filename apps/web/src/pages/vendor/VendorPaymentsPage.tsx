@@ -1211,14 +1211,14 @@ function OverviewTab({
         </div>
       </div>
 
-      {/* Three bar cards in a row — MRR, Leads, Operating expenses.
+      {/* Bar cards — MRR, Inquiries, Cash flow, Operating expenses.
           They share the same horizontal-bars visual rhythm, so
-          grouping them tightens the page and keeps the dashboard
-          above the fold on a standard laptop viewport. Stacks on
-          narrow screens via the lg breakpoint. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          grouping them tightens the page. Two-up on tablets, four
+          across on wide screens; stacks on narrow phones. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
         <OverviewMrrCard mrr={mrr} currency={currency} />
         <OverviewLeadsCard leads={leads} />
+        <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
         <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
       </div>
 
@@ -1684,6 +1684,85 @@ function OverviewLeadsCard({
             {leads.won > 0
               ? `${wonRate}% conversion · ${leads.won} of ${leads.total} won`
               : `${leads.total} inquir${leads.total === 1 ? "y" : "ies"} this period`}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Cash flow card — money in (paid invoices) vs money out (operating
+// expenses) over the last 30 days, with the net underneath. Same
+// label + bar + right-aligned value rhythm as the MRR / Inquiries /
+// OPEX cards so the row reads as one editorial system. Money in is
+// green, money out crimson; the net flips green → crimson when the
+// vendor spends more than they collected, so a cash crunch is
+// obvious at a glance.
+function OverviewCashflowCard({
+  moneyIn,
+  moneyOut,
+  currency,
+}: {
+  moneyIn: number;
+  moneyOut: number;
+  currency: string;
+}) {
+  const net = moneyIn - moneyOut;
+  const netPositive = net >= 0;
+  const rows: Array<{ label: string; value: number; color: string }> = [
+    { label: "Money in",  value: moneyIn,  color: "#4a7c4a" },
+    { label: "Money out", value: moneyOut, color: "#c8403a" },
+  ];
+  const max = Math.max(moneyIn, moneyOut, 1);
+  // Net margin — net as a share of money in. Only meaningful once the
+  // vendor has actually collected something this period.
+  const marginPct = moneyIn > 0 ? Math.round((net / moneyIn) * 100) : null;
+  return (
+    <div className="cockpit-chart">
+      <div className="flex items-baseline justify-between mb-3">
+        <div>
+          <div className="cockpit-chart-title">Cash flow</div>
+          <div className="cockpit-chart-sub">Money in vs out · last 30 days</div>
+        </div>
+        <div className="text-right">
+          <div className="cockpit-kpi-label">Net</div>
+          <div
+            className="cockpit-money cockpit-money--lg"
+            style={{ color: netPositive ? "#3f7a3f" : "#c8403a" }}
+          >
+            {netPositive ? "" : "−"}{formatMoney(Math.abs(net), currency)}
+          </div>
+        </div>
+      </div>
+      {moneyIn === 0 && moneyOut === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          No money in or out in the last 30 days.
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {rows.map((r) => {
+              const pct = (r.value / max) * 100;
+              return (
+                <div key={r.label} className="flex items-center gap-2">
+                  <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                    <div
+                      className="h-full transition-all"
+                      style={{ width: `${pct}%`, background: r.color, opacity: r.value > 0 ? 1 : 0 }}
+                    />
+                  </div>
+                  <div className="w-24 text-right text-xs text-foreground font-bold tabular-nums shrink-0">
+                    {formatMoney(r.value, currency)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 text-[11px] text-muted-foreground">
+            {marginPct !== null
+              ? `${marginPct}% net margin · ${formatMoney(moneyOut, currency)} spent`
+              : `${formatMoney(moneyOut, currency)} spent, nothing collected yet`}
           </div>
         </>
       )}
