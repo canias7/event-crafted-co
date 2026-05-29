@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v34";
+const DESIGN_BIBLE_VERSION = "v35";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -575,6 +575,14 @@ Before generating, identify the event type from the user's prompt and apply the 
 === END EVENT PLAYBOOKS ===`;
 
 const PREMIUM_DESIGN_BIBLE = `=== PREMIUM DESIGN BIBLE (READ FIRST — THIS DEFINES THE LOOK) ===
+
+★★★ TOP PRIORITY — WEDDING / ENGAGEMENT / ANNIVERSARY STRUCTURE (overrides everything below) ★★★
+For these events you MUST build the INVITATION SUITE, NOT a single scrolling page:
+  (1) an OPENABLE ENVELOPE landing (ivory bg, "SEALED WITH LOVE FROM", names in big calligraphy, a burgundy wax-sealed envelope, "CLICK ENVELOPE TO OPEN"; tapping opens the flap),
+  (2) which reveals a FLAT-LAY MENU on solid ivory — tilted polaroid photos, an arched burgundy "Our Story" panel, ornate-framed "The Details" and "Kindly RSVP" cards, line-art motifs, a burgundy countdown band — where each card is a "CLICK HERE" link,
+  (3) and CSS-radio multi-"pages" (Our Story / The Details / Travel / RSVP), each with a "‹ GO BACK".
+See "FLAGSHIP WEDDING LAYOUT — THE INVITATION SUITE" below for the full recipe and the openable-envelope CSS. Do NOT produce a single full-bleed-photo cover + long scroll for a wedding — that is the old style and is NOT what we want. The envelope→menu→pages suite is mandatory for weddings.
+When you read "cover page" / "PATTERN A" / single-page guidance below, for WEDDINGS it means the envelope landing of the SUITE — not a one-page scroll.
 
 Every site you build must feel like a $1,000,000 design studio made it. Think Paperless Post, Greenvelope, Joy, Withjoy — premium digital invitations, not generic web pages. The aesthetic vocabulary:
 
