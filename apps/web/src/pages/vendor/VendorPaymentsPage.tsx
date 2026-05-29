@@ -177,12 +177,10 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 ];
 
 // Sub-tabs inside the Payments tab.
-type PaymentsTabId = "incoming" | "payouts" | "disputes" | "expenses" | "reports";
+type PaymentsTabId = "incoming" | "expenses" | "reports";
 
 const PAYMENTS_TABS: Array<{ id: PaymentsTabId; label: string; icon: typeof Wallet }> = [
   { id: "incoming", label: "Incoming", icon: CreditCard },
-  { id: "payouts", label: "Payouts", icon: Banknote },
-  { id: "disputes", label: "Disputes", icon: AlertTriangle },
   { id: "expenses", label: "Expenses", icon: Wallet },
   { id: "reports", label: "Reports", icon: ScrollText },
 ];
@@ -1957,12 +1955,7 @@ function PaymentsTab({
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSub = searchParams.get("sub");
   const sub: PaymentsTabId =
-    rawSub === "payouts" ||
-    rawSub === "disputes" ||
-    rawSub === "expenses" ||
-    rawSub === "reports"
-      ? rawSub
-      : "incoming";
+    rawSub === "expenses" || rawSub === "reports" ? rawSub : "incoming";
   const setSub = (next: PaymentsTabId) => {
     const params = new URLSearchParams(searchParams);
     if (next === "incoming") params.delete("sub");
@@ -1974,10 +1967,9 @@ function PaymentsTab({
     <div className="space-y-5">
       {/* Sub-tab strip wrapped in a relative box so the right-edge
           fade overlay can sit on top of any overflowing tabs on
-          narrow viewports. With 5 sub-tabs (Incoming · Payouts ·
-          Disputes · Expenses · Reports) the strip wraps on small
-          phones; without the fade, vendors might not realize there
-          are more tabs scrolled off to the right. */}
+          narrow viewports (Incoming · Expenses · Reports); without
+          the fade, vendors might not realize there are more tabs
+          scrolled off to the right. */}
       <div className="relative -mt-1">
         <nav className="flex gap-1 overflow-x-auto scrollbar-hide pr-10 sm:pr-0">
           {PAYMENTS_TABS.map((t) => {
@@ -2011,10 +2003,6 @@ function PaymentsTab({
           vendorId={vendorId}
           onRefunded={onRefunded}
         />
-      ) : sub === "payouts" ? (
-        <PayoutsTab data={payouts} status={status} accountVendorIds={accountVendorIds} />
-      ) : sub === "disputes" ? (
-        <DisputesTab accountVendorIds={accountVendorIds} />
       ) : sub === "expenses" ? (
         <ExpensesTab accountVendorIds={accountVendorIds} listings={listings} />
       ) : (
