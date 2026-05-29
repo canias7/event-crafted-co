@@ -4987,7 +4987,20 @@ function CustomersTab({
     existing: RecurringRule | null;
   } | null>(null);
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<"name" | "balance">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const toggleSort = (field: "name" | "balance") => {
+    if (field === sortField) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir(field === "name" ? "asc" : "desc");
+    }
+  };
+  const [page, setPage] = useState(1);
+  const perPage = 10;
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [statementId, setStatementId] = useState<string | null>(null);
   const { user } = useAuth();
 
@@ -5096,6 +5109,88 @@ function CustomersTab({
     return map;
   }, [invoices]);
 
+  // Per-contact rollup keyed by row id: how many invoices and how much
+  // has been paid. Drives the Invoices / Balance columns and sorting.
+  const summaryById = useMemo(() => {
+    const m = new Map<string, { count: number; paid: number }>();
+    for (const c of rows) {
+      const inv = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
+      const paid = inv
+        .filter((i) => i.status === "paid")
+        .reduce((s, i) => s + i.total_cents, 0);
+      m.set(c.id, { count: inv.length, paid });
+    }
+    return m;
+  }, [rows, invoicesByEmail]);
+
+  const sortedRows = useMemo(() => {
+    const copy = [...rows];
+    copy.sort((a, b) => {
+      let cmp: number;
+      if (sortField === "name") {
+        const an = (a.name?.trim() || a.email).toLowerCase();
+        const bn = (b.name?.trim() || b.email).toLowerCase();
+        cmp = an.localeCompare(bn);
+      } else {
+        cmp = (summaryById.get(a.id)?.paid ?? 0) - (summaryById.get(b.id)?.paid ?? 0);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return copy;
+  }, [rows, sortField, sortDir, summaryById]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedRows.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = sortedRows.slice((safePage - 1) * perPage, safePage * perPage);
+  const totalPaid = rows.reduce((s, c) => s + (summaryById.get(c.id)?.paid ?? 0), 0);
+
+  // Keep selection scoped to the page actually on screen (mirrors the
+  // Expenses table) so paging away then bulk-deleting can't reach rows
+  // the vendor isn't looking at.
+  const pageIdsKey = pageRows.map((r) => r.id).join(",");
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const visible = new Set(pageRows.map((r) => r.id));
+      const next = new Set<string>();
+      for (const id of prev) if (visible.has(id)) next.add(id);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIdsKey]);
+
+  const toggleRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const allSelected = pageRows.length > 0 && pageRows.every((r) => prev.has(r.id));
+      if (allSelected) return new Set();
+      return new Set(pageRows.map((r) => r.id));
+    });
+  };
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Remove ${selectedIds.size} contact${selectedIds.size === 1 ? "" : "s"}?`)) return;
+    setBulkDeleting(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const ids = Array.from(selectedIds);
+    const { error } = await db.from("vendor_customers").delete().in("id", ids);
+    setBulkDeleting(false);
+    if (error) {
+      toast.error("Couldn't remove the selected contacts.", { description: error.message });
+      return;
+    }
+    toast.success(`Removed ${ids.length} contact${ids.length === 1 ? "" : "s"}.`);
+    setSelectedIds(new Set());
+    void refresh();
+  };
+
   // Stable string key for the useEffect dep so we don't refire on
   // every render just because the listings array is re-derived.
   const accountKey = accountVendorIds.join(",");
@@ -5151,7 +5246,8 @@ function CustomersTab({
     setEditing(null);
     setSendTarget(null);
     setRecurringTarget(null);
-    setExpandedId(null);
+    setSelectedIds(new Set());
+    setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountKey]);
 
@@ -5442,174 +5538,236 @@ function CustomersTab({
       ) : rows.length === 0 ? (
         <EmptyCard>No contacts yet. Click "New contact" to add your first.</EmptyCard>
       ) : (
-        <Card>
-          {rows.map((c, idx) => {
-            const custInvoices = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
-            const paidTotal = custInvoices
-              .filter((i) => i.status === "paid")
-              .reduce((s, i) => s + i.total_cents, 0);
-            const expanded = expandedId === c.id;
-            const custRecurring = recurringRules.find(
-              (r) => r.customer_id === c.id,
-            );
-            const subLine = [c.email, c.phone, c.company].filter(Boolean).join(" · ");
-            return (
-              <div
-                key={c.id}
-                className={idx > 0 ? "border-t border-foreground/5" : ""}
-              >
-                {/* Compact table row — name + contact on the left, the
-                    paid balance in the middle, actions tucked into a
-                    ⋯ menu. Clicking the row toggles the invoice list. */}
-                <div className="flex items-center gap-3 px-4 py-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(expanded ? null : c.id)}
-                    className="text-left min-w-0 flex-1 hover:opacity-80 transition-opacity"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-sm font-semibold truncate">
-                        {c.name?.trim() || c.email}
-                      </p>
-                      {custRecurring && (
-                        <span
-                          className="text-[10px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5 shrink-0"
-                          style={{
-                            background: custRecurring.active
-                              ? "rgba(34,197,94,0.12)"
-                              : "rgba(125,119,110,0.12)",
-                            color: custRecurring.active ? "#0a7c4a" : "#6b6259",
-                          }}
-                          title={
-                            custRecurring.active
-                              ? `Recurring ${custRecurring.interval} · next ${new Date(custRecurring.next_run_at).toLocaleDateString()}`
-                              : "Recurring paused"
-                          }
-                        >
-                          {custRecurring.active ? "Recurring" : "Paused"}
-                        </span>
-                      )}
-                    </div>
-                    {subLine && (
-                      <p className="text-xs text-muted-foreground truncate">{subLine}</p>
-                    )}
-                  </button>
-                  <div className="text-right shrink-0 w-28 hidden sm:block">
-                    {custInvoices.length > 0 ? (
-                      <>
-                        <p className="text-sm font-semibold tabular-nums">
-                          {formatMoney(paidTotal)}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {custInvoices.length} invoice{custInvoices.length === 1 ? "" : "s"}
-                          <span className="ml-1 text-[10px]">{expanded ? "▾" : "▸"}</span>
-                        </p>
-                      </>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground">No invoices</span>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="shrink-0 w-8 h-8 rounded-md inline-flex items-center justify-center text-muted-foreground hover:bg-foreground/5 outline-none"
-                        title="Actions"
-                      >
-                        {deletingId === c.id || statementId === c.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <MoreHorizontal className="w-4 h-4" />
-                        )}
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
-                      <DropdownMenuItem onClick={() => setSendTarget(c)}>
-                        <Mail className="w-3.5 h-3.5 mr-2" /> Send invoice
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setRecurringTarget({ customer: c, existing: custRecurring ?? null })
-                        }
-                      >
-                        <RotateCcw className="w-3.5 h-3.5 mr-2" />
-                        {custRecurring ? "Edit recurring" : "Set up recurring"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => downloadStatement(c)}
-                        disabled={statementId === c.id || custInvoices.length === 0}
-                      >
-                        <Download className="w-3.5 h-3.5 mr-2" /> Statement
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => startEdit(c)}>
-                        <FileEdit className="w-3.5 h-3.5 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => void remove(c)}
-                        disabled={deletingId === c.id}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                {expanded && custInvoices.length > 0 && (
-                  <div
-                    className="mx-4 mb-3 rounded-lg overflow-hidden"
-                    style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
-                  >
-                    {custInvoices.map((inv, ii) => (
-                      <div
-                        key={inv.id}
-                        className={`px-3 py-2 flex items-center justify-between gap-2 text-xs ${
-                          ii > 0 ? "border-t border-foreground/5" : ""
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold tnum">
-                              {inv.invoice_number || "—"}
-                            </span>
-                            <InvoiceStatusPill status={inv.status} />
-                            {inv.payment_failed_at && !inv.paid_at && (
-                              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-rose-100 text-rose-700">
-                                Card declined
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-muted-foreground">
-                            {formatDate(inv.issue_date)}
-                            {inv.due_date ? ` · due ${formatDate(inv.due_date)}` : ""}
-                          </span>
-                          {inv.payment_failed_at && !inv.paid_at && inv.payment_failure_message && (
-                            <p className="text-[11px] text-rose-700 mt-1">
-                              {inv.payment_failure_message}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-semibold tnum">
-                            {formatMoney(inv.total_cents, inv.currency)}
-                          </span>
-                          <a
-                            href={`/pay/invoice/${inv.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] font-medium text-foreground/70 hover:text-foreground"
-                          >
-                            View
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+        <>
+          {selectedIds.size > 0 ? (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-foreground/10 bg-white px-4 py-2.5">
+              <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void bulkDelete()}
+                  disabled={bulkDeleting}
+                  className="rounded-lg text-[#d94f3d]"
+                >
+                  {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 mr-1.5" />}
+                  Remove
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="rounded-lg">
+                  Clear
+                </Button>
               </div>
-            );
-          })}
-        </Card>
+            </div>
+          ) : null}
+          <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-foreground/[0.03]">
+                  <th className="w-10 px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id))}
+                      onChange={toggleAllOnPage}
+                      aria-label="Select all rows on this page"
+                      className="cursor-pointer"
+                    />
+                  </th>
+                  <th
+                    className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    onClick={() => toggleSort("name")}
+                  >
+                    Name {sortField === "name" ? (
+                      <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                    ) : null}
+                  </th>
+                  <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Contact
+                  </th>
+                  <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Company
+                  </th>
+                  <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Invoices
+                  </th>
+                  <th
+                    className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    onClick={() => toggleSort("balance")}
+                  >
+                    Paid {sortField === "balance" ? (
+                      <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                    ) : null}
+                  </th>
+                  <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((c) => {
+                  const summary = summaryById.get(c.id) ?? { count: 0, paid: 0 };
+                  const custRecurring = recurringRules.find((r) => r.customer_id === c.id);
+                  return (
+                    <tr key={c.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleRow(c.id)}
+                          aria-label={`Select contact ${c.name ?? c.email}`}
+                          className="cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-3 py-3 text-sm text-foreground font-bold">
+                        <div className="flex items-center gap-1.5">
+                          <span>{c.name?.trim() || c.email}</span>
+                          {custRecurring ? (
+                            <span
+                              title={
+                                custRecurring.active
+                                  ? `Recurring ${custRecurring.interval} · next ${new Date(custRecurring.next_run_at).toLocaleDateString()}`
+                                  : "Recurring paused"
+                              }
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                              style={{
+                                background: custRecurring.active ? "rgba(34,197,94,0.12)" : "#f4ece7",
+                                color: custRecurring.active ? "#0a7c4a" : "#7d5a4f",
+                              }}
+                            >
+                              <RotateCcw className="w-2.5 h-2.5" />
+                              {custRecurring.active ? "Recurring" : "Paused"}
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-sm text-muted-foreground">
+                        <div className="leading-tight">
+                          <div>{c.email}</div>
+                          {c.phone ? <div className="text-xs">{c.phone}</div> : null}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-sm text-foreground">
+                        {c.company || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums">
+                        {summary.count || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums whitespace-nowrap">
+                        {summary.paid > 0 ? formatMoney(summary.paid) : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(c)}
+                            className="text-[#d94f3d] hover:underline text-sm font-medium"
+                          >
+                            Edit
+                          </button>
+                          <span aria-hidden className="text-foreground/15">|</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="w-7 h-7 rounded-md text-muted-foreground hover:bg-foreground/5 inline-flex items-center justify-center outline-none"
+                                title="More actions"
+                              >
+                                {deletingId === c.id || statementId === c.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <MoreHorizontal className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => setSendTarget(c)}>
+                                <Mail className="w-3.5 h-3.5 mr-2" /> Send invoice
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setRecurringTarget({ customer: c, existing: custRecurring ?? null })
+                                }
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                                {custRecurring ? "Edit recurring" : "Set up recurring"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => downloadStatement(c)}
+                                disabled={statementId === c.id || summary.count === 0}
+                              >
+                                <Download className="w-3.5 h-3.5 mr-2" /> Statement
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => void remove(c)}
+                                disabled={deletingId === c.id}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-foreground/10">
+                  <td colSpan={7} className="px-4 py-3">
+                    <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
+                      <span>
+                        Showing {pageRows.length} of {sortedRows.length} · Total{" "}
+                        <span
+                          className="text-foreground tabular-nums"
+                          style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
+                        >
+                          {formatMoney(totalPaid)}
+                        </span>{" "}
+                        paid
+                      </span>
+                      {totalPages > 1 ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPage(Math.max(1, safePage - 1))}
+                            disabled={safePage === 1}
+                            className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                          >
+                            ‹
+                          </button>
+                          {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => {
+                            const p = i + 1;
+                            const active = p === safePage;
+                            return (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setPage(p)}
+                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#d94f3d] text-white border-[#d94f3d]" : "border-foreground/10 hover:border-accent"}`}
+                              >
+                                {p}
+                              </button>
+                            );
+                          })}
+                          {totalPages > 5 ? <span className="text-muted-foreground">…</span> : null}
+                          <button
+                            type="button"
+                            onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                            disabled={safePage === totalPages}
+                            className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                          >
+                            ›
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </>
       )}
 
       <SendInvoiceDialog
