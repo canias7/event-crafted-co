@@ -3,7 +3,7 @@
     { "source": "/preview/:path*", "destination": "/preview/:path*" },
     {
       "source": "/s/:slug",
-      "destination": "https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/ai-site-render?slug=:slug"
+      "destination": "/api/render?slug=:slug"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
