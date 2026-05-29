@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v28";
+const DESIGN_BIBLE_VERSION = "v29";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -880,26 +880,46 @@ Real luxury invitations have galleries, not just hero shots. Whenever a section 
 
   Use this for: engagement gallery sections, venue tour sections, "details" lookbook, "food / menu" preview, "decor inspiration" boards. Pick 3-5 photos from the matching event bank — never all from the same close-up category (mix wide + close + people if available).
 
-═══ SCROLL ANIMATIONS — sections fade-in as they enter view (CSS-only) ═══
+═══ PREMIUM MOTION — GSAP scroll choreography (declarative; you write NO JavaScript) ═══
 
-Sites feel static when everything appears at once. Add a subtle slide-up + fade on every section as it scrolls into view. Use modern animation-timeline with @supports fallback so older browsers stay safe:
+Vendora's renderer injects a TRUSTED GSAP + ScrollTrigger runtime into every published site. You get real, buttery scroll animation and a cinematic hero entrance WITHOUT writing any JavaScript — you simply decorate elements with the data-attributes / classes below and the runtime animates them. It automatically respects prefers-reduced-motion (motion off → everything just shows, statically).
 
-  /* base: visible state (also the fallback for browsers without animation-timeline) */
-  section, .invitation-body > * { opacity: 1; transform: none; }
+Use these hooks generously but tastefully — they are the #1 thing that makes a site feel like a $1M studio made it:
 
-  @supports (animation-timeline: view()) {
-    section, .invitation-body > * {
-      animation: section-enter linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 35%;
-    }
-  }
-  @keyframes section-enter {
-    from { opacity: 0; transform: translateY(40px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+• data-anim="fade-up | fade | fade-down | scale-in | slide-left | slide-right"
+    → the element reveals (animating in from hidden) as it scrolls into view.
+    Add data-anim-delay="0.15" to offset neighbours for a cascade.
+    Put it on section headings, paragraphs, cards, images, dividers, quotes — most things BELOW the hero.
+• data-stagger="0.12"  (on a CONTAINER element)
+    → its DIRECT children reveal one-after-another. Perfect for schedule rows, gallery tiles,
+      detail cards, FAQ items, menu courses.
+• data-parallax="0.2"  (on a hero/background image or decorative layer)
+    → gentle vertical drift on scroll for depth. 0.1 = subtle, 0.4 = dramatic. Great on big imagery.
+• class="gsap-hero"  on the cover/hero section, with  data-hero-item  on each child to enter on load
+    → an elegant staggered entrance timeline the instant the page opens (eyebrow, couple names, date, seal).
 
-Apply to every top-level section. The hero / cover-page should NOT use this (it's the first paint). Effect is most pronounced in Chrome/Edge; Safari/Firefox no-op gracefully.
+HARD RULES (read carefully):
+- You STILL write NO <script>, NO on* handlers, NO inline JS. All motion is 100% declarative via the hooks above; the platform's trusted runtime does the work.
+- Do NOT use CSS animation-timeline / scroll @keyframes for reveals on these elements — GSAP is the single source of motion (double-animating looks broken).
+- Content must be VISIBLE BY DEFAULT in your CSS (opacity:1). NEVER set opacity:0 yourself on animated elements — the runtime sets the hidden start state and animates to visible, so if the runtime ever fails the page still reads perfectly.
+- Hero/cover uses .gsap-hero + data-hero-item. Do NOT also put data-anim on hero content (it would stay hidden until a scroll that never comes).
+
+EXAMPLE:
+  <section class="cover gsap-hero">
+    <p class="eyebrow" data-hero-item>Together with their families</p>
+    <h1 class="couple" data-hero-item>Eleanor &amp; Marcus</h1>
+    <p class="date" data-hero-item>August 15, 2026</p>
+  </section>
+  <section class="story">
+    <h2 data-anim="fade-up">Our Story</h2>
+    <p data-anim="fade-up" data-anim-delay="0.1">How we met…</p>
+    <img class="hero-photo" data-parallax="0.25" src="…" alt="">
+  </section>
+  <section class="schedule" data-stagger="0.12">
+    <div class="event">Ceremony · 4:30</div>
+    <div class="event">Dinner · 6:00</div>
+    <div class="event">Dancing · 8:00</div>
+  </section>
 
 ═══ STATIC MAP — embed venue location for in-person events ═══
 
@@ -939,7 +959,7 @@ Real luxury invitations don't stack 8 cream-card sections. They alternate. Enfor
     • Use full-bleed photo or dark sections to break up rhythm at LEAST 2x in the body
     • Dark sections look great as "quote interludes" — pull a line from the couple's story, format in serif italic ~2rem, center-aligned, on a dark background with subtle ornament
 
-  Each section gets the section-enter scroll animation (per the SCROLL ANIMATIONS recipe above).
+  Each body section's content gets premium reveal motion via the GSAP hooks (data-anim / data-stagger / data-parallax) — see PREMIUM MOTION above.
 
 ═══ MULTI-LANGUAGE TOGGLE — CSS-only English / second-language swap ═══
 
@@ -1552,7 +1572,7 @@ C. ONE Google Fonts <link> with a real font pairing from the PREMIUM DESIGN BIBL
 D. ONE named color palette from the bible defined as CSS custom props in :root.
 E. For any DATED event: <meta name="event-start"> (ISO 8601 + timezone), <meta name="event-end">, <meta name="event-location">, <meta name="event-summary"> in <head>, AND an "Add to calendar" link wired to the ics endpoint near the hero/RSVP, AND the 3-cell COUNTDOWN ROW (days·date·year computed from TODAY) somewhere in the hero or top of body.
 F. For any NAMED REAL venue (Villa Cipressi, The Plaza, etc.): a static OpenStreetMap iframe with the real lat/lon. Web-search to find the address if needed (silent, cap 3 searches).
-G. animation-timeline: view() scroll-entry animation applied to every body section, wrapped in @supports so older browsers stay visible (CRITICAL VISIBILITY RULE from the bible).
+G. PREMIUM MOTION hooks: a .gsap-hero cover with data-hero-item children, and data-anim (+ data-anim-delay) / data-stagger / data-parallax on body content for scroll choreography. Content stays opacity:1 in your CSS (the trusted runtime handles hidden→visible). No <script>.
 H. For COUPLE events (weddings, anniversaries, engagements, quinces): MONOGRAM CREST SVG instead of the plain wax seal, paper-stack ::before/::after depth on hero + RSVP cards, ambient particle field (12-18 spans).
 I. Engagement placeholders Claude must drop into the doc where they belong (server fills them at render):
    - __RSVP_COUNT__ inside or just below the RSVP form
@@ -1581,7 +1601,7 @@ Apply as many of these as fit the event mood. Don't sacrifice the MUST-HAVES to 
 13. For weddings, anniversaries, engagements, quinces, and milestone events, the hero MUST include the 3-cell COUNTDOWN ROW (Days · Date · Year). Compute days from TODAY's date.
 14. ALTERNATE SECTION TEMPLATES (per SECTION RHYTHM): never 3 cream cards in a row. Break with full-bleed photo sections, dark moody quote interludes, photo strips. At LEAST 2 non-cream sections in the body.
 15. ALWAYS include a static OpenStreetMap embed for events with a real venue address (skip for "our place" / private homes).
-16. ALWAYS include the scroll-entry animation (animation-timeline: view() with @supports fallback) on every body section.
+16. ALWAYS add PREMIUM MOTION hooks (see that section): .gsap-hero + data-hero-item on the cover, and data-anim / data-stagger / data-parallax across body content. The trusted GSAP runtime animates them; you write no JS and keep content opacity:1 by default.
 17. When 3+ themed photos fit a section's purpose, use the PHOTO STRIP scroll-snap pattern instead of a single image.
 18. MULTI-LANGUAGE TOGGLE — REQUIRED for QUINCEAÑERAS (English/Spanish), BAR/BAT MITZVAHS (English/Hebrew with RTL), and destination weddings where the venue country speaks a language other than English (Italy → Italian, France → French, Mexico → Spanish, India → Hindi). Optional but encouraged whenever the user mentions bilingual families. Translate ALL guest-facing copy — never leave a half-translated page. Translations must read like a native speaker wrote them, not literal word-for-word. Use phrasing real invitations in that culture use ("Junto con sus familias" for Spanish, not "Together with their families" word-by-word).
 19. WEB SEARCH — when the user mentions a NAMED REAL venue ("Villa Cipressi", "The Plaza Hotel", "Marin Country Club"), CALL the web_search tool once to confirm: (a) full address, (b) approximate lat/lon for the map embed (NOT a generic city center), (c) one or two historical/architectural facts to weave into the Our Story or Venue section ("a 15th-century lakeside villa..."). For vague venues ("our backyard", "a friend's place") skip the search. Cap at 3 searches per generation. Use search results SILENTLY — never narrate "I searched for...", just emit the HTML.
