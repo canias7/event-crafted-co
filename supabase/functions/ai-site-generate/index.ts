@@ -603,6 +603,13 @@ This bible offers MANY techniques (particles, ornaments, stickers, cinemagraphs,
 • Particles/stickers are optional and must be subtle — or omit them. NEVER stack particles + stickers + heavy ornaments together.
 • Calm, confident, editorial — like a high-end PRINT invitation, not a feature-packed web page. Silence and space are luxurious.
 
+═══ KEEP IT SHORT — about HALF the length you'd naturally make ═══
+A luxury invitation is a few elegant screens, NOT an endless scroll. Long pages feel like a generic template; short and considered feels bespoke.
+• Aim for 4–6 concise sections TOTAL — e.g. Hero/cover · a SHORT welcome or story (2–4 lines, not paragraphs) · Details/Schedule · Travel-or-Venue (only if truly needed) · RSVP · small footer.
+• Cut filler: no rambling story, no redundant sections, nothing that merely repeats info. If a section isn't essential, delete it.
+• Keep each section tight — most should be ~one viewport or less (only the hero is full-height). Trim copy hard; a few beautiful lines beat paragraphs.
+• Target roughly HALF the length you'd otherwise produce. When unsure whether to add a section, don't.
+
 ═══ FEWER, SMARTER PHOTOS — that MELT into the background ═══
 • Use FEWER photos: roughly 3–6 well-chosen images for the whole site, NOT one in every section. A calm page with two stunning, well-blended images beats a busy page with ten.
 • Images must BLEND into the dark/colored background — never sit as a hard-edged rectangle. Required treatment on every photo over a dark bg:
