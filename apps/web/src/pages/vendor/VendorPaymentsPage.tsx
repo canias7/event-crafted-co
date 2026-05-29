@@ -950,7 +950,6 @@ function OverviewTab({
   // plus MRR (broken down by recurring interval), the Leads pipeline
   // (new vs active vs won vs lost in the last 30d) and a 30-bucket
   // daily revenue series for the wave chart.
-  const [mrr, setMrr] = useState<{ total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number }>({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
   const [leads, setLeads] = useState<{ new: number; active: number; won: number; lost: number; total: number }>({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
   const [expenses, setExpenses] = useState<{ total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> }>({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
   const [revenue30d, setRevenue30d] = useState<number>(0);
@@ -967,7 +966,6 @@ function OverviewTab({
 
   useEffect(() => {
     if (accountVendorIds.length === 0) {
-      setMrr({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
       setRevenue30d(0);
@@ -985,19 +983,12 @@ function OverviewTab({
       const since60 = new Date(now.getTime() - 60 * 24 * 3600 * 1000);
 
       const [
-        { data: rrs },
         { data: leadRows },
         { data: expenseRows },
         { data: paid30 },
         { data: paid60 },
         { data: recentPaid },
       ] = await Promise.all([
-        // Active recurring invoices — drive the MRR breakdown.
-        db
-          .from("vendor_recurring_invoices")
-          .select("interval, line_items, tax_pct")
-          .in("vendor_id", accountVendorIds)
-          .eq("active", true),
         // Inbound inquiries in the last 30 days — drive the Leads card.
         // vendor_id + host_id come back too so we can collapse a host's
         // messages into a single lead, matching the Inquiries page.
@@ -1043,33 +1034,6 @@ function OverviewTab({
           .limit(6),
       ]);
       if (cancelled) return;
-
-      // MRR breakdown — normalize each active subscription to a
-      // monthly contribution, then bin by display interval. weekly
-      // and biweekly are bucketed under the same "weekly" display
-      // row to keep the chart to four bars.
-      const rrsRows = (rrs ?? []) as Array<{ interval: string; line_items: Array<{ qty: number; unit_price_cents: number; total_cents?: number }>; tax_pct: number }>;
-      const breakdown = { total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: rrsRows.length };
-      for (const r of rrsRows) {
-        const subtotal = (r.line_items ?? []).reduce(
-          (s, it) => s + (it.total_cents ?? it.qty * it.unit_price_cents),
-          0,
-        );
-        const taxBps = Math.round((r.tax_pct ?? 0) * 100);
-        const totalWithTax = subtotal + Math.round((subtotal * taxBps) / 10_000);
-        let perMonth = 0;
-        let bin: "weekly" | "monthly" | "quarterly" | "yearly" | null = null;
-        if (r.interval === "weekly") { perMonth = (totalWithTax * 52) / 12; bin = "weekly"; }
-        else if (r.interval === "biweekly") { perMonth = (totalWithTax * 26) / 12; bin = "weekly"; }
-        else if (r.interval === "monthly") { perMonth = totalWithTax; bin = "monthly"; }
-        else if (r.interval === "quarterly") { perMonth = totalWithTax / 3; bin = "quarterly"; }
-        else if (r.interval === "yearly") { perMonth = totalWithTax / 12; bin = "yearly"; }
-        if (bin) {
-          breakdown[bin] += Math.round(perMonth);
-          breakdown.total += Math.round(perMonth);
-        }
-      }
-      setMrr(breakdown);
 
       // Leads pipeline — count per LEAD, not per message, so these
       // numbers stay in lockstep with the Inquiries page. A "lead" is
@@ -1167,12 +1131,11 @@ function OverviewTab({
         <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
       </div>
 
-      {/* Bar cards — MRR, Inquiries, Cash flow, Operating expenses.
-          They share the same horizontal-bars visual rhythm, so
-          grouping them tightens the page. Two-up on tablets, four
-          across on wide screens; stacks on narrow phones. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
-        <OverviewMrrCard mrr={mrr} currency={currency} />
+      {/* Bar cards — Inquiries, Cash flow, Operating expenses. They
+          share the same horizontal-bars visual rhythm, so grouping
+          them tightens the page. Three across on desktop, stacks on
+          narrow screens. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <OverviewLeadsCard leads={leads} />
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
         <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
@@ -1517,67 +1480,6 @@ function OverviewRevenueChart({
 // the crimson revenue line: Monthly = crimson accent (the biggest
 // expected contributor), Weekly = terra, Quarterly = amber,
 // Yearly = green.
-function OverviewMrrCard({
-  mrr,
-  currency,
-}: {
-  mrr: { total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number };
-  currency: string;
-}) {
-  // Monthly-only for now — collapse every billing cadence into a
-  // single "Monthly" bar equal to the normalized monthly total. The
-  // per-interval breakdown (weekly / quarterly / yearly) is parked
-  // until we bring it back.
-  const rows: Array<{ label: string; cents: number; color: string }> = [
-    { label: "Monthly", cents: mrr.total, color: "#c8403a" },
-  ];
-  const max = rows.reduce((m, r) => (r.cents > m ? r.cents : m), 0);
-  return (
-    <div className="cockpit-chart">
-      <div className="flex items-baseline justify-between mb-3">
-        <div>
-          <div className="cockpit-chart-title">MRR</div>
-          <div className="cockpit-chart-sub">Recurring revenue, normalized to monthly</div>
-        </div>
-        <div className="text-right">
-          <div className="cockpit-kpi-label">Per month</div>
-          <div className="cockpit-money cockpit-money--lg">{formatMoney(mrr.total, currency)}</div>
-        </div>
-      </div>
-      {mrr.count === 0 ? (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          No recurring invoices yet. Set one up to start tracking MRR.
-        </div>
-      ) : (
-        <>
-          <div className="space-y-2">
-            {rows.map((r) => {
-              const pct = max > 0 ? (r.cents / max) * 100 : 0;
-              return (
-                <div key={r.label} className="flex items-center gap-2">
-                  <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
-                    <div
-                      className="h-full transition-all"
-                      style={{ width: `${pct}%`, background: r.color, opacity: r.cents > 0 ? 1 : 0 }}
-                    />
-                  </div>
-                  <div className="w-20 text-right text-xs text-foreground font-bold tabular-nums shrink-0">
-                    {r.cents > 0 ? formatMoney(r.cents, currency) : "—"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-3 text-[11px] text-muted-foreground">
-            {mrr.count} active subscription{mrr.count === 1 ? "" : "s"}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // Leads pipeline card — horizontal bars showing the count of
 // inbound inquiries in each pipeline state over the last 30 days.
 // Same visual rhythm as the MRR / A/R aging cards (label + colored
