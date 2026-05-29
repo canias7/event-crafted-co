@@ -16,8 +16,10 @@
 // (Reuses the existing stripe_events log so we don't double-process
 // across the legacy stripe-webhook and this one.)
 //
-// Deployed with verify_jwt=false — the provider doesn't send a
-// Supabase JWT; signature verification IS the authentication.
+// Deployed with verify_jwt=false (set in supabase/config.toml) — the
+// provider doesn't send a Supabase JWT; signature verification IS the
+// authentication. Without that config entry the gateway 401s Stripe's
+// webhook before this handler runs, silently breaking reconciliation.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";

@@ -6,6 +6,11 @@
 // before trusting any data. If RESEND_WEBHOOK_SECRET isn't set we
 // reject — fail closed.
 //
+// Deployed with verify_jwt=false (set in supabase/config.toml) —
+// Resend doesn't send a Supabase JWT; the signature header is the
+// authentication. Without that config entry the gateway 401s the
+// webhook before this handler runs.
+//
 // Operator setup: Resend dashboard → Webhooks → add endpoint with URL
 //   <SUPABASE_URL>/functions/v1/resend-webhook
 // Copy the signing secret + set RESEND_WEBHOOK_SECRET in Supabase
