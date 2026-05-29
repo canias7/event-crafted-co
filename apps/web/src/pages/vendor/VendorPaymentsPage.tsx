@@ -4999,6 +4999,7 @@ function CustomersTab({
   };
   const [page, setPage] = useState(1);
   const perPage = 10;
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [statementId, setStatementId] = useState<string | null>(null);
@@ -5115,16 +5116,38 @@ function CustomersTab({
     const m = new Map<string, { count: number; paid: number }>();
     for (const c of rows) {
       const inv = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
+      // Count only invoices the customer actually received — drafts
+      // are in-progress and cancelled ones were pulled, so neither
+      // belongs in a "how many invoices" tally (mirrors the statement
+      // download filter).
+      const real = inv.filter(
+        (i) => i.status !== "draft" && i.status !== "cancelled",
+      );
       const paid = inv
         .filter((i) => i.status === "paid")
         .reduce((s, i) => s + i.total_cents, 0);
-      m.set(c.id, { count: inv.length, paid });
+      m.set(c.id, { count: real.length, paid });
     }
     return m;
   }, [rows, invoicesByEmail]);
 
+  // Free-text filter across the fields a vendor would look someone up
+  // by — display name, email, phone, company. Applied before sort so
+  // the count/total in the footer reflect what's on screen.
+  const filteredRows = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((c) => {
+      const hay = [c.name, c.email, c.phone, c.company, c.first_name, c.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rows, searchTerm]);
+
   const sortedRows = useMemo(() => {
-    const copy = [...rows];
+    const copy = [...filteredRows];
     copy.sort((a, b) => {
       let cmp: number;
       if (sortField === "name") {
@@ -5137,12 +5160,28 @@ function CustomersTab({
       return sortDir === "asc" ? cmp : -cmp;
     });
     return copy;
-  }, [rows, sortField, sortDir, summaryById]);
+  }, [filteredRows, sortField, sortDir, summaryById]);
 
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / perPage));
   const safePage = Math.min(page, totalPages);
   const pageRows = sortedRows.slice((safePage - 1) * perPage, safePage * perPage);
-  const totalPaid = rows.reduce((s, c) => s + (summaryById.get(c.id)?.paid ?? 0), 0);
+  const totalPaid = sortedRows.reduce((s, c) => s + (summaryById.get(c.id)?.paid ?? 0), 0);
+
+  // Reset to page 1 whenever the search narrows the list so we don't
+  // strand the view on an empty page.
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  // Windowed page numbers centered on the current page so deep lists
+  // stay navigable (the bare slice(0,5) stranded you after page 5).
+  const pageWindow = useMemo(() => {
+    const span = 5;
+    let start = Math.max(1, safePage - Math.floor(span / 2));
+    const end = Math.min(totalPages, start + span - 1);
+    start = Math.max(1, end - span + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [safePage, totalPages]);
 
   // Keep selection scoped to the page actually on screen (mirrors the
   // Expenses table) so paging away then bulk-deleting can't reach rows
@@ -5343,7 +5382,7 @@ function CustomersTab({
       return;
     }
     setEditing(null);
-    toast.success(editing === "new" ? "Customer added" : "Customer updated");
+    toast.success(editing === "new" ? "Contact added" : "Contact updated");
     await refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountKey, saving, form, editing, newCustomerVendorId, refresh]);
@@ -5362,7 +5401,7 @@ function CustomersTab({
         toast.error("Couldn't remove", { description: error.message });
         return;
       }
-      toast.success("Customer removed");
+      toast.success("Contact removed");
       await refresh();
     },
     [refresh],
@@ -5539,6 +5578,17 @@ function CustomersTab({
         <EmptyCard>No contacts yet. Click "New contact" to add your first.</EmptyCard>
       ) : (
         <>
+          {/* Search — name, email, phone, or company. */}
+          <div className="relative max-w-md">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">⌕</span>
+            <input
+              type="text"
+              placeholder="Search name, email, phone, company…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm focus:outline-none focus:border-accent"
+            />
+          </div>
           {selectedIds.size > 0 ? (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-foreground/10 bg-white px-4 py-2.5">
               <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
@@ -5559,6 +5609,9 @@ function CustomersTab({
               </div>
             </div>
           ) : null}
+          {sortedRows.length === 0 ? (
+            <EmptyCard>No contacts match "{searchTerm.trim()}".</EmptyCard>
+          ) : (
           <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
             <table className="w-full">
               <thead>
@@ -5717,7 +5770,8 @@ function CustomersTab({
                   <td colSpan={7} className="px-4 py-3">
                     <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                       <span>
-                        Showing {pageRows.length} of {sortedRows.length} · Total{" "}
+                        Showing {pageRows.length} of {sortedRows.length} ·{" "}
+                        {searchTerm.trim() ? "Filtered total" : "Total"}{" "}
                         <span
                           className="text-foreground tabular-nums"
                           style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
@@ -5736,8 +5790,8 @@ function CustomersTab({
                           >
                             ‹
                           </button>
-                          {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => {
-                            const p = i + 1;
+                          {pageWindow[0] > 1 ? <span className="text-muted-foreground">…</span> : null}
+                          {pageWindow.map((p) => {
                             const active = p === safePage;
                             return (
                               <button
@@ -5750,7 +5804,7 @@ function CustomersTab({
                               </button>
                             );
                           })}
-                          {totalPages > 5 ? <span className="text-muted-foreground">…</span> : null}
+                          {pageWindow[pageWindow.length - 1] < totalPages ? <span className="text-muted-foreground">…</span> : null}
                           <button
                             type="button"
                             onClick={() => setPage(Math.min(totalPages, safePage + 1))}
@@ -5767,6 +5821,7 @@ function CustomersTab({
               </tfoot>
             </table>
           </div>
+          )}
         </>
       )}
 
