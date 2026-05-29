@@ -953,10 +953,8 @@ function OverviewTab({
   const [mrr, setMrr] = useState<{ total: number; weekly: number; monthly: number; quarterly: number; yearly: number; count: number }>({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
   const [leads, setLeads] = useState<{ new: number; active: number; won: number; lost: number; total: number }>({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
   const [expenses, setExpenses] = useState<{ total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> }>({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
-  const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [revenue30d, setRevenue30d] = useState<number>(0);
   const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
-  const [newCustomers30d, setNewCustomers30d] = useState<number>(0);
   // Daily revenue series for the last 30 days — drives the line chart.
   const [revenueSeries, setRevenueSeries] = useState<number[]>([]);
   // Recent paid invoices across the whole account (replaces the
@@ -972,10 +970,8 @@ function OverviewTab({
       setMrr({ total: 0, weekly: 0, monthly: 0, quarterly: 0, yearly: 0, count: 0 });
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
-      setCustomerCount(null);
       setRevenue30d(0);
       setRevenue30dPrev(0);
-      setNewCustomers30d(0);
       setRevenueSeries([]);
       setRecentInvoices([]);
       return;
@@ -992,10 +988,8 @@ function OverviewTab({
         { data: rrs },
         { data: leadRows },
         { data: expenseRows },
-        { count: cc },
         { data: paid30 },
         { data: paid60 },
-        { count: newCust30 },
         { data: recentPaid },
       ] = await Promise.all([
         // Active recurring invoices — drive the MRR breakdown.
@@ -1020,10 +1014,6 @@ function OverviewTab({
           .in("vendor_id", accountVendorIds)
           .gte("occurred_on", since30.toISOString().slice(0, 10))
           .limit(10000),
-        db
-          .from("vendor_customers")
-          .select("id", { count: "exact", head: true })
-          .in("vendor_id", accountVendorIds),
         // Paid invoices in the last 30 days (current period)
         db
           .from("invoices")
@@ -1042,12 +1032,6 @@ function OverviewTab({
           .gte("paid_at", since60.toISOString())
           .lt("paid_at", since30.toISOString())
           .limit(10000),
-        // New customers in last 30 days — feeds the Customers card sub
-        db
-          .from("vendor_customers")
-          .select("id", { count: "exact", head: true })
-          .in("vendor_id", accountVendorIds)
-          .gte("created_at", since30.toISOString()),
         // Recent paid invoices across the whole account — replaces
         // the Stripe transactions feed for the Recent activity table.
         db
@@ -1144,13 +1128,10 @@ function OverviewTab({
         topCategories,
       });
 
-      setCustomerCount(typeof cc === "number" ? cc : 0);
-
       const paid30Rows = (paid30 ?? []) as Array<{ total_cents: number; paid_at: string }>;
       const paid60Rows = (paid60 ?? []) as Array<{ total_cents: number }>;
       setRevenue30d(paid30Rows.reduce((s, r) => s + r.total_cents, 0));
       setRevenue30dPrev(paid60Rows.reduce((s, r) => s + r.total_cents, 0));
-      setNewCustomers30d(newCust30 ?? 0);
 
       // Build daily revenue series — 30 buckets, today-29 → today.
       const series = new Array<number>(30).fill(0);
@@ -1180,35 +1161,10 @@ function OverviewTab({
 
   return (
     <>
-      {/* Top row — two KPI tiles + the wave chart, all on one line.
-          The wave gets twice the width (col-span-2) so the SVG still
-          has room to breathe; the KPI tiles stretch to match its
-          height with label/value at top and the sub line anchored to
-          the bottom (see .cockpit-kpi-tile's flex layout in CSS). On
-          narrow viewports the row stacks via the lg: breakpoint. */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4 items-start">
-        <div className="cockpit-kpi-tile">
-          <div className="cockpit-kpi-label">Revenue · 30d</div>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <div className="cockpit-kpi-value">{formatMoney(revenue30d, currency)}</div>
-            <TrendDelta currentCents={revenue30d} previousCents={revenue30dPrev} />
-          </div>
-          <div className="cockpit-kpi-sub">
-            vs {formatMoney(revenue30dPrev, currency)} prior 30 days
-          </div>
-        </div>
-        <div className="cockpit-kpi-tile">
-          <div className="cockpit-kpi-label">Customers</div>
-          <div className="cockpit-kpi-value">{customerCount == null ? "—" : customerCount}</div>
-          <div className="cockpit-kpi-sub">
-            {newCustomers30d > 0
-              ? `${newCustomers30d} new in last 30 days`
-              : "No new customers in the last 30 days"}
-          </div>
-        </div>
-        <div className="lg:col-span-2">
-          <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
-        </div>
+      {/* Revenue trend — the 30-day daily wave, full width across the
+          top of the dashboard. */}
+      <div className="mb-4">
+        <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
       </div>
 
       {/* Bar cards — MRR, Inquiries, Cash flow, Operating expenses.
