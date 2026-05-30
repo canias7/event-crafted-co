@@ -458,21 +458,18 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
       }
       if (!silent) setRefreshing(true);
       try {
-        // First identify which of the user's listings actually have
-        // a Stripe connected account. We fan out the per-account
-        // Stripe edge functions only over those — calling
-        // vendorapay-transactions for a listing without Stripe just
-        // returns an empty list, but skipping them saves a round-
-        // trip per non-connected listing (most vendors have 1–3
-        // connected, not 36).
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: secretsData } = await (supabase as any)
-          .from("vendor_payment_secrets")
-          .select("vendor_id, stripe_account_id")
-          .in("vendor_id", accountVendorIds)
-          .not("stripe_account_id", "is", null);
-        const stripeConnectedIds = ((secretsData ?? []) as Array<{ vendor_id: string }>)
-          .map((r) => r.vendor_id);
+        // Fan out the per-listing Stripe transactions call over every
+        // listing on the account. We used to first query
+        // vendor_payment_secrets client-side to skip non-connected
+        // listings, but that table is RLS-locked to service-role
+        // (no vendor-readable policy), so the query always returned
+        // empty — which meant the transactions call was NEVER made and
+        // the Incoming tab showed nothing for every vendor. The edge
+        // function itself safely returns an empty list for a listing
+        // without a connected account, so fanning out over
+        // accountVendorIds is correct; at typical 1–3 listings the
+        // extra round-trips are negligible.
+        const stripeConnectedIds = accountVendorIds;
 
         const [statusRes, balanceRes, txResultsRaw, payoutRes, linksRes, invoicesRes] = await Promise.all([
           // Status / balance / payouts schedule are still scoped to
