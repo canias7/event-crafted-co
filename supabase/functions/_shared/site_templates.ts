@@ -230,6 +230,60 @@ function paperTextureCss(t: Theme): string {
   }
 }
 
+// Ornate vintage frame drawn as a border-image: a bold double rule with
+// curvy filigree scrollwork in each corner, a light bevel highlight, and
+// a soft dark offset copy behind it for dimension. Returns the CSS
+// properties to drop inside a rule. Rendered on a transparent border but
+// drawn thicker and outset, so it floats around the card edge without
+// resizing the box or disturbing the paper-stack pseudos.
+function vintageFrame(t: Theme): string {
+  const g = t.gold;
+  // viewBox 320×320, sliced at 132 → big ornate corners + straight
+  // double-rule edges that stretch cleanly between them.
+  // Top-left corner flourish, defined once and mirrored to all 4 corners:
+  // a bold bracket sweeping into a double scroll-curl, with leaves and
+  // dots — an ornate engraved-stationery corner that reads at full size.
+  const corner =
+    `<path d='M18 96 C18 52 52 18 96 18'/>` +                         // outer sweep
+    `<path d='M30 92 C30 58 58 30 92 30'/>` +                         // inner sweep (double rule)
+    // long scroll curling down the left edge, ending in a spiral
+    `<path d='M24 120 C30 78 50 60 78 60 C58 66 48 84 50 116 C50 132 38 138 30 130 C24 124 28 114 38 116'/>` +
+    // mirrored scroll along the top edge
+    `<path d='M120 24 C78 30 60 50 60 78 C66 58 84 48 116 50 C132 50 138 38 130 30 C124 24 114 28 116 38'/>` +
+    // central diagonal flourish with leaves
+    `<path d='M64 64 C82 70 96 84 102 102'/>` +
+    `<path d='M96 88 q14 -4 24 4 q-4 -14 -24 -4 Z' fill='${g}' stroke='none'/>` + // leaf
+    `<path d='M88 96 q-4 14 4 24 q-14 -4 -4 -24 Z' fill='${g}' stroke='none'/>` + // leaf
+    `<circle cx='62' cy='62' r='4.5' fill='${g}' stroke='none'/>` +
+    `<circle cx='106' cy='106' r='3' fill='${g}' stroke='none'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320' fill='none'>` +
+    // dark offset copy (depth / drop)
+    `<g stroke='rgba(0,0,0,0.32)' stroke-linecap='round' transform='translate(2,2.2)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/>` +
+    `<rect x='22' y='22' width='276' height='276' rx='9' stroke-width='1.4'/></g>` +
+    // light bevel highlight (sits up-left of the gold = catches light)
+    `<g stroke='rgba(255,250,235,0.55)' stroke-linecap='round' transform='translate(-1,-1.2)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='2'/></g>` +
+    // gold double rule
+    `<g stroke='${g}' stroke-linecap='round'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/>` +
+    `<rect x='22' y='22' width='276' height='276' rx='9' stroke-width='1.4' opacity='0.8'/></g>` +
+    // corner filigree, mirrored to all four corners
+    `<g id='fl' stroke='${g}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>${corner}</g>` +
+    `<use href='#fl' transform='translate(320,0) scale(-1,1)'/>` +
+    `<use href='#fl' transform='translate(320,320) scale(-1,-1)'/>` +
+    `<use href='#fl' transform='translate(0,320) scale(1,-1)'/>` +
+    `</svg>`;
+  const uri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  return `
+    border:3px solid transparent;
+    border-image-source:url("${uri}");
+    border-image-slice:132;
+    border-image-width:42px;
+    border-image-outset:11px;
+    border-image-repeat:stretch;`;
+}
+
 function particleField(t: Theme): string {
   if (t.particle === "none") return "";
   const colors: Record<string, string> = {
@@ -910,6 +964,7 @@ ${googleFontsLink(t)}
     background-blend-mode:multiply,normal;
     ${paperTextureCss(t)}
     border-radius:6px;
+    ${vintageFrame(t)}
     padding:clamp(2.25rem,4.5vw,3.25rem);
     position:relative;
     /* No isolation — z-index:-1 pseudos need to escape behind. */
