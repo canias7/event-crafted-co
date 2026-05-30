@@ -259,18 +259,18 @@ function vintageFrame(t: Theme): string {
     `<circle cx='120' cy='120' r='3.2' fill='${g}' stroke='none'/>`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320' fill='none'>` +
     // deep dark drop: two offset copies for a thicker raised shadow
-    `<g stroke='rgba(0,0,0,0.38)' stroke-linecap='round' transform='translate(3.2,3.6)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3.4'/>` +
-    `<rect x='22' y='22' width='276' height='276' rx='9' stroke-width='1.6'/></g>` +
-    `<g stroke='rgba(0,0,0,0.20)' stroke-linecap='round' transform='translate(1.6,1.8)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3.2'/></g>` +
+    `<g stroke='rgba(0,0,0,0.38)' stroke-linecap='round' transform='translate(3.4,3.8)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.4'/>` +
+    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2.2'/></g>` +
+    `<g stroke='rgba(0,0,0,0.20)' stroke-linecap='round' transform='translate(1.8,2)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.2'/></g>` +
     // bright bevel highlight (sits up-left of the gold = catches light)
-    `<g stroke='rgba(255,252,242,0.8)' stroke-linecap='round' transform='translate(-1.6,-1.8)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='2.2'/></g>` +
-    // gold double rule
+    `<g stroke='rgba(255,252,242,0.8)' stroke-linecap='round' transform='translate(-1.8,-2)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/></g>` +
+    // gold double rule — bold outer band + thin inner rule
     `<g stroke='${g}' stroke-linecap='round'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/>` +
-    `<rect x='22' y='22' width='276' height='276' rx='9' stroke-width='1.4' opacity='0.8'/></g>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6'/>` +
+    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2' opacity='0.85'/></g>` +
     // corner filigree: dark drop copy first (depth), then gold on top
     `<g id='dl' stroke='rgba(0,0,0,0.32)' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' transform='translate(2.4,2.6)'>${corner}</g>` +
     `<use href='#dl' transform='translate(320,0) scale(-1,1)'/>` +
@@ -283,11 +283,11 @@ function vintageFrame(t: Theme): string {
     `</svg>`;
   const uri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
   return `
-    border:3px solid transparent;
+    border:6px solid transparent;
     border-image-source:url("${uri}");
     border-image-slice:132;
-    border-image-width:42px;
-    border-image-outset:11px;
+    border-image-width:46px;
+    border-image-outset:9px;
     border-image-repeat:stretch;`;
 }
 
@@ -987,36 +987,7 @@ ${googleFontsLink(t)}
       0 60px 120px rgba(0,0,0,0.22),
       0 0 80px ${t.gold}1f;
   }
-  /* Inner gold border — thin line ~10px in from the edge, mimics
-     the ornamental ruled border of premium stationery. */
   .paper-card > *:first-child{position:relative}
-  .paper-card::after,
-  .paper-card::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:6px;
-    z-index:-1;
-  }
-  /* Paper-stack: two slightly rotated sheets that peek out from
-     behind the main card. Big offsets so the layers are visibly
-     stacked. */
-  .paper-card::before{
-    background:var(--surface2);
-    transform:rotate(-1.8deg) translate(-14px,9px);
-    opacity:0.95;
-    box-shadow:0 8px 18px rgba(0,0,0,0.30),0 24px 40px rgba(0,0,0,0.22);
-  }
-  .paper-card::after{
-    background:color-mix(in srgb, var(--surface2) 80%, #000 15%);
-    transform:rotate(1.4deg) translate(12px,6px);
-    opacity:0.85;
-    box-shadow:0 6px 14px rgba(0,0,0,0.25);
-  }
-  /* Inner ruled border, drawn via an outline-styled child layer.
-     We attach it to .ornament-rule's parent without adding markup
-     by using a fixed-position pseudo from a wrapper. Cheap trick:
-     a fourth pseudo on the section element instead. */
   section.paper-card{box-shadow:
     0 1px 2px rgba(0,0,0,0.45),
     0 4px 10px rgba(0,0,0,0.25),
