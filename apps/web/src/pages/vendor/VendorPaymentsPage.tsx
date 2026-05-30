@@ -278,6 +278,7 @@ interface PaymentLink {
   amount_cents: number;
   currency: string;
   status: "active" | "paid" | "cancelled" | "expired" | "scheduled";
+  host_email: string | null;
   paid_at: string | null;
   expires_at: string | null;
   activate_at: string | null;
@@ -2112,6 +2113,12 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
   // Same period = cash-flow view, matching how a CPA reconciles
   // against bank deposits.
   const [paidInRange, setPaidInRange] = useState<Invoice[]>([]);
+  // Paid payment links in the window. These are real revenue (e.g. a
+  // deposit collected via a Pay link rather than an invoice) and their
+  // Stripe charges ARE counted by vendorapay-fees-report below — so
+  // they MUST be folded into gross, or NET TO BANK (gross − refunds −
+  // fees) understates by the link revenue while still paying its fee.
+  const [paidLinksInRange, setPaidLinksInRange] = useState<PaymentLink[]>([]);
   const [refundedInRange, setRefundedInRange] = useState<Invoice[]>([]);
   const [stripeFees, setStripeFees] = useState<{ fees_cents: number; gross_cents: number; net_cents: number; count: number } | null>(null);
   // Aging report = "as of today" snapshot of unpaid invoices, NOT
@@ -2137,6 +2144,7 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
   useEffect(() => {
     if (accountVendorIds.length === 0) {
       setPaidInRange([]);
+      setPaidLinksInRange([]);
       setRefundedInRange([]);
       setStripeFees(null);
       setUnpaidNow([]);
@@ -2151,10 +2159,23 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       const db = supabase as any;
       const cols =
         "id, vendor_id, slug, invoice_number, bill_to_name, bill_to_email, bill_to_state, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, sent_at, paid_at, refunded_at, refunded_amount_cents, late_fee_cents, late_fee_added_at, created_at";
-      const [paidRes, refundedRes, feesRes, unpaidRes, expensesRes] = await Promise.all([
+      const [paidRes, paidLinksRes, refundedRes, feesRes, unpaidRes, expensesRes] = await Promise.all([
         db
           .from("invoices")
           .select(cols)
+          .in("vendor_id", accountVendorIds)
+          .eq("status", "paid")
+          .gte("paid_at", range.start.toISOString())
+          .lt("paid_at", range.end.toISOString())
+          .order("paid_at", { ascending: false })
+          .limit(5000),
+        // Paid payment links in the window (cash-basis on paid_at).
+        // Revenue collected outside the invoice flow — deposits, ad-hoc
+        // Pay links. Folded into gross so Reports matches the Stripe
+        // fees, which already include these charges.
+        db
+          .from("payment_links")
+          .select("id, vendor_id, slug, title, amount_cents, currency, status, host_email, paid_at, created_at")
           .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .gte("paid_at", range.start.toISOString())
@@ -2211,6 +2232,7 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       ]);
       if (cancelled) return;
       setPaidInRange((paidRes.data ?? []) as Invoice[]);
+      setPaidLinksInRange((paidLinksRes.data ?? []) as PaymentLink[]);
       setRefundedInRange((refundedRes.data ?? []) as Invoice[]);
       setUnpaidNow((unpaidRes.data ?? []) as Invoice[]);
       setExpensesInRange((expensesRes.data ?? []) as Expense[]);
@@ -2234,10 +2256,20 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       const windowMs = range.end.getTime() - range.start.getTime();
       const prevEnd = range.start;
       const prevStart = new Date(range.start.getTime() - windowMs);
-      const [prevPaidRes, prevRefundedRes, prevExpensesRes] = await Promise.all([
+      const [prevPaidRes, prevPaidLinksRes, prevRefundedRes, prevExpensesRes] = await Promise.all([
         db
           .from("invoices")
           .select("total_cents, currency")
+          .in("vendor_id", accountVendorIds)
+          .eq("status", "paid")
+          .gte("paid_at", prevStart.toISOString())
+          .lt("paid_at", prevEnd.toISOString())
+          .limit(5000),
+        // Paid links in the prior window — folded into prev gross so
+        // the KPI trend deltas stay consistent with the live totals.
+        db
+          .from("payment_links")
+          .select("amount_cents, currency")
           .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .gte("paid_at", prevStart.toISOString())
@@ -2261,9 +2293,12 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       ]);
       if (cancelled) return;
       const prevPaid = (prevPaidRes.data ?? []) as Array<{ total_cents: number; currency: string }>;
+      const prevPaidLinks = (prevPaidLinksRes.data ?? []) as Array<{ amount_cents: number; currency: string }>;
       const prevRefunded = (prevRefundedRes.data ?? []) as Array<{ total_cents: number; refunded_amount_cents: number | null; currency: string }>;
       const prevExpenses = (prevExpensesRes.data ?? []) as Array<{ amount_cents: number; currency: string }>;
-      const pGross = prevPaid.reduce((s, r) => s + r.total_cents, 0);
+      const pGross =
+        prevPaid.reduce((s, r) => s + r.total_cents, 0) +
+        prevPaidLinks.reduce((s, r) => s + r.amount_cents, 0);
       const pRefunds = prevRefunded.reduce((s, r) => s + (r.refunded_amount_cents ?? r.total_cents), 0);
       const pExpenses = prevExpenses.reduce((s, r) => s + r.amount_cents, 0);
       // Net profit baseline excludes Stripe fees (we don't fetch
@@ -2303,6 +2338,28 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
         });
       }
     }
+    // The report currency: first paid invoice, then paid link, then
+    // refunded invoice, else usd. Computed here (before folding link
+    // revenue into gross) so we only add same-currency link amounts.
+    const reportCurrency = (
+      paidInRange[0]?.currency ??
+      paidLinksInRange[0]?.currency ??
+      refundedInRange[0]?.currency ??
+      "usd"
+    ).toLowerCase();
+    // Fold paid payment-link revenue into gross. Links have no tax /
+    // line items, so they only move the top-line gross (and the
+    // unique-buyer count via host_email). Without this, gross excludes
+    // link revenue while Stripe fees include the link's charge, leaving
+    // NET TO BANK understated.
+    let linkRevenue = 0;
+    for (const link of paidLinksInRange) {
+      if ((link.currency ?? "usd").toLowerCase() !== reportCurrency) continue;
+      gross += link.amount_cents;
+      subtotal += link.amount_cents;
+      linkRevenue += link.amount_cents;
+      if (link.host_email) customers.add(link.host_email.toLowerCase());
+    }
     let refunds = 0;
     for (const inv of refundedInRange) {
       // refunded_amount_cents tracks the cumulative Stripe-reported
@@ -2319,10 +2376,8 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     // cents to GBP cents — would produce a nonsense Net Profit
     // headline. Off-currency expenses are intentionally dropped
     // from the rollup; they still appear on the Expenses tab and
-    // count toward YTD spend in their own currency.
-    const reportCurrency = (
-      paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd"
-    ).toLowerCase();
+    // count toward YTD spend in their own currency. (reportCurrency
+    // is computed above, before the link-revenue fold.)
     let expenses = 0;
     const expensesByCategoryMap = new Map<string, { cents: number; count: number }>();
     for (const e of expensesInRange) {
@@ -2348,7 +2403,7 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     // business), not just Stripe's cut. This is the number the
     // vendor's CPA actually cares about at year-end.
     const netProfit = netToBank - expenses;
-    const currency = paidInRange[0]?.currency ?? refundedInRange[0]?.currency ?? "usd";
+    const currency = reportCurrency;
     const taxByState = Array.from(taxByStateMap.entries())
       .map(([state, agg]) => ({ state, ...agg }))
       .sort((a, b) => b.taxCents - a.taxCents);
@@ -2364,13 +2419,14 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       expensesByCategory,
       expenseCount: expensesInRange.length,
       netProfit,
+      linkRevenue,
       customers: customers.size,
-      count: paidInRange.length,
+      count: paidInRange.length + paidLinksInRange.length,
       refundCount: refundedInRange.length,
       taxByState,
       currency,
     };
-  }, [paidInRange, refundedInRange, stripeFees, expensesInRange]);
+  }, [paidInRange, paidLinksInRange, refundedInRange, stripeFees, expensesInRange]);
 
   // Bucket paid invoices by day for the sparkline. For ranges
   // A/R aging — bucket unpaid invoices by days past due. "Current"
@@ -2429,19 +2485,23 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
       120, // hard cap so all-time doesn't blow up
     );
     const values = new Array<number>(buckets).fill(0);
-    for (const inv of paidInRange) {
-      if (!inv.paid_at) continue;
-      const t = Date.parse(inv.paid_at);
-      if (Number.isNaN(t)) continue;
+    const addToBucket = (paidAt: string | null | undefined, cents: number) => {
+      if (!paidAt) return;
+      const t = Date.parse(paidAt);
+      if (Number.isNaN(t)) return;
       const idx = Math.min(
         buckets - 1,
         Math.floor((t - range.start.getTime()) / bucketMs),
       );
-      if (idx >= 0) values[idx] += inv.total_cents;
-    }
+      if (idx >= 0) values[idx] += cents;
+    };
+    for (const inv of paidInRange) addToBucket(inv.paid_at, inv.total_cents);
+    // Paid links contribute to the same trend so the sparkline total
+    // matches the GROSS headline (which now includes link revenue).
+    for (const link of paidLinksInRange) addToBucket(link.paid_at, link.amount_cents);
     const max = values.reduce((m, v) => (v > m ? v : m), 0);
     return { values, max, buckets, weekly: bucketMs !== 24 * 60 * 60 * 1000 };
-  }, [paidInRange, range]);
+  }, [paidInRange, paidLinksInRange, range]);
 
   const downloadCsv = useCallback(() => {
     const headers = [
@@ -2472,6 +2532,16 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
         eventAt: inv.refunded_at ?? null,
       })),
     ];
+    // Paid payment links export as 'payment' rows so the CSV total
+    // reconciles with the GROSS headline. They carry no invoice
+    // number / tax / line items, so those columns are blank; the link
+    // title rides in the bill_to_name slot for readability.
+    type LinkRow = { kind: "link"; link: PaymentLink; eventAt: string | null };
+    const linkRows: LinkRow[] = paidLinksInRange.map((link) => ({
+      kind: "link",
+      link,
+      eventAt: link.paid_at ?? null,
+    }));
     type ExpenseRow = { kind: "expense"; expense: Expense; eventAt: string };
     const expenseRows: ExpenseRow[] = expensesInRange.map((e) => ({
       kind: "expense",
@@ -2481,13 +2551,33 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     // Sort the union by event date so a CPA reading the CSV gets a
     // chronological cashflow ledger: payment → expense → refund →
     // expense, in whatever order they happened.
-    const allRows: Array<InvoiceRow | ExpenseRow> = [
+    const allRows: Array<InvoiceRow | LinkRow | ExpenseRow> = [
       ...invoiceRows,
+      ...linkRows,
       ...expenseRows,
     ].sort((a, b) =>
       a.eventAt && b.eventAt ? a.eventAt.localeCompare(b.eventAt) : 0,
     );
     const lines = allRows.map((row) => {
+      if (row.kind === "link") {
+        return [
+          "payment",
+          "", // invoice_number
+          "", // issue_date
+          row.eventAt ?? "",
+          row.link.title, // bill_to_name slot — link title for context
+          "", // bill_to_email
+          "", // bill_to_state
+          row.link.amount_cents, // subtotal (no tax on links)
+          0, // tax_cents
+          row.link.amount_cents,
+          0, // refunded_amount_cents
+          row.link.currency,
+          row.link.status,
+        ]
+          .map(csvEscape)
+          .join(",");
+      }
       if (row.kind === "expense") {
         return [
           "expense",
@@ -2537,7 +2627,7 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [paidInRange, refundedInRange, expensesInRange, rangeId]);
+  }, [paidInRange, paidLinksInRange, refundedInRange, expensesInRange, rangeId]);
 
   // QuickBooks Online "Invoice CSV" import. QBO's importer expects
   // these exact column headers (case + spacing matters):
@@ -2755,7 +2845,7 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
             value={formatMoney(totals.tax, totals.currency)}
           />
           <StatCard
-            label="Invoices paid"
+            label="Payments received"
             sub={`${totals.customers} unique buyer${totals.customers === 1 ? "" : "s"}`}
             value={totals.count.toLocaleString()}
           />
