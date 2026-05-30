@@ -26,6 +26,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import {
   getBillingStateForPI,
+  getContactForPI,
   getReceiptEmailForPI,
   handleWebhookEvent,
 } from "../_shared/payments.ts";
@@ -153,6 +154,18 @@ serve(async (req: Request) => {
             try { hostEmailForLink = await getReceiptEmailForPI(pi.id); }
             catch (err) { console.error("[vendorapay-webhook] PI email lookup failed", err); }
           }
+          // Capture the host's name/phone if the link collected them
+          // (fields.billingDetails name/phone = 'auto' on the Element).
+          // Best-effort — a failure here must not block the paid write.
+          let hostName: string | null = null;
+          let hostPhone: string | null = null;
+          try {
+            const contact = await getContactForPI(pi.id);
+            hostName = contact.name;
+            hostPhone = contact.phone;
+          } catch (err) {
+            console.error("[vendorapay-webhook] PI contact lookup failed", err);
+          }
           const { data: linkRow } = await db
             .from("payment_links")
             .update({
@@ -160,6 +173,10 @@ serve(async (req: Request) => {
               paid_at: new Date().toISOString(),
               paid_payment_intent_id: pi.id,
               host_email: hostEmailForLink,
+              // Only overwrite when we actually got a value, so a re-run
+              // or a method without billing details doesn't null them out.
+              ...(hostName ? { host_name: hostName } : {}),
+              ...(hostPhone ? { host_phone: hostPhone } : {}),
               updated_at: new Date().toISOString(),
             })
             .eq("id", paymentLinkId)
