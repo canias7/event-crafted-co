@@ -247,11 +247,12 @@ serve(async (req) => {
       return json(500, { error: "email_failed", detail: txt.slice(0, 240) });
     }
 
-    // The "Send to" override is a pure send — just email the invoice
-    // to the typed address. No status change, no sent_at stamp, no
-    // billing side-effects. The automatic-delivery flow (no override)
-    // still flips a draft to 'sent' on first send.
-    if (!toOverride && inv.status === "draft") {
+    // Flip draft -> sent once the email goes out (whether it was the
+    // automated flow or a manual "Send to"). The .eq('status','draft')
+    // guard means a paid/sent/refunded invoice is never touched — a
+    // platform sale that auto-sent stays 'paid'. Nothing else changes:
+    // no billing, no re-stamp of an already-set sent_at.
+    if (inv.status === "draft") {
       await admin
         .from("invoices")
         .update({ status: "sent", sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
