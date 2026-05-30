@@ -7720,14 +7720,14 @@ function PayLinksTab({
       {links.length === 0 ? (
         <EmptyCard>No pay links yet. Click "New pay link" to create one.</EmptyCard>
       ) : (
-        <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
+        <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md shadow-sm overflow-hidden">
           <div className="max-h-[520px] overflow-y-auto scrollbar-hide">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-white">
-                <tr className="border-b border-foreground/10 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="text-left font-semibold px-4 py-2.5">Name</th>
-                  <th className="text-left font-semibold px-3 py-2.5">Price</th>
-                  <th className="text-left font-semibold px-3 py-2.5">Created</th>
+              <thead className="sticky top-0 z-10 bg-white/50 backdrop-blur-md">
+                <tr className="border-b border-black/10 text-[11px] uppercase tracking-wider text-black font-bold">
+                  <th className="text-left font-bold px-4 py-2.5">Name</th>
+                  <th className="text-left font-bold px-3 py-2.5">Price</th>
+                  <th className="text-left font-bold px-3 py-2.5">Created</th>
                   <th className="px-3 py-2.5 w-10" aria-label="Actions" />
                 </tr>
               </thead>
@@ -7738,29 +7738,29 @@ function PayLinksTab({
                   return (
                     <tr
                       key={l.id}
-                      className="group border-b border-foreground/[0.06] last:border-b-0 hover:bg-foreground/[0.02]"
+                      className="group border-b border-black/10 last:border-b-0 hover:bg-white/30"
                     >
                       {/* Name + status badge inline (Stripe-style) + description */}
                       <td className="px-4 py-3 align-middle">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-semibold truncate max-w-[220px]">{l.title}</span>
+                          <span className="font-bold text-black truncate max-w-[220px]">{l.title}</span>
                           <LinkStatusPill status={l.status} />
                         </div>
                         {l.description ? (
-                          <div className="text-[11px] text-muted-foreground truncate max-w-[280px] mt-0.5">{l.description}</div>
+                          <div className="text-[11px] font-semibold text-black truncate max-w-[280px] mt-0.5">{l.description}</div>
                         ) : null}
                       </td>
                       {/* Price */}
-                      <td className="px-3 py-3 align-middle whitespace-nowrap tabular-nums">
+                      <td className="px-3 py-3 align-middle whitespace-nowrap tabular-nums font-bold text-black">
                         {formatMoney(l.amount_cents, l.currency)} {l.currency.toUpperCase()}
                       </td>
                       {/* Created — date + time, like Stripe */}
-                      <td className="px-3 py-3 align-middle whitespace-nowrap text-muted-foreground">
+                      <td className="px-3 py-3 align-middle whitespace-nowrap font-bold text-black">
                         {formatDateTime(l.created_at)}
                         {l.paid_at ? (
-                          <span className="block text-[11px] text-emerald-700">Paid {formatDate(l.paid_at)}</span>
+                          <span className="block text-[11px] font-semibold text-emerald-700">Paid {formatDate(l.paid_at)}</span>
                         ) : l.status === "scheduled" && l.activate_at ? (
-                          <span className="block text-[11px]">Activates {formatDate(l.activate_at)}</span>
+                          <span className="block text-[11px] font-semibold text-black">Activates {formatDate(l.activate_at)}</span>
                         ) : null}
                       </td>
                       {/* Hover actions: Copy URL + overflow menu */}
