@@ -304,59 +304,16 @@ function paperTextureCss(t: Theme): string {
 // properties to drop inside a rule. Rendered on a transparent border but
 // drawn thicker and outset, so it floats around the card edge without
 // resizing the box or disturbing the paper-stack pseudos.
-function vintageFrame(t: Theme): string {
-  const g = t.gold;
-  // viewBox 320×320, sliced at 132 → big ornate corners + straight
-  // double-rule edges that stretch cleanly between them.
-  // Top-left corner flourish, defined once and mirrored to all 4 corners:
-  // long, flowing S-curves that sweep along each edge and resolve into
-  // spiral curls — a more flowing, calligraphic vintage corner (vs the
-  // tighter bracket). Leaves and dots accent the scrolls.
-  const corner =
-    `<path d='M16 104 C16 54 54 16 104 16'/>` +                         // outer sweep
-    `<path d='M28 100 C28 60 60 28 100 28'/>` +                         // inner sweep (double rule)
-    // flowing scroll sweeping down the left edge into a spiral curl
-    `<path d='M22 150 C24 96 44 64 80 58 C52 70 46 104 54 140 C58 160 42 168 32 158 C24 150 30 138 42 142'/>` +
-    // mirrored flowing scroll sweeping along the top edge
-    `<path d='M150 22 C96 24 64 44 58 80 C70 52 104 46 140 54 C160 58 168 42 158 32 C150 24 138 30 142 42'/>` +
-    // calligraphic diagonal flourish that tapers toward the center
-    `<path d='M60 60 C86 66 108 90 116 124'/>` +
-    `<path d='M104 96 q18 -5 30 5 q-5 -18 -30 -5 Z' fill='${g}' stroke='none'/>` + // leaf
-    `<path d='M96 104 q-5 18 5 30 q-18 -5 -5 -30 Z' fill='${g}' stroke='none'/>` + // leaf
-    `<circle cx='58' cy='58' r='5' fill='${g}' stroke='none'/>` +
-    `<circle cx='120' cy='120' r='3.2' fill='${g}' stroke='none'/>`;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320' fill='none'>` +
-    // deep dark drop: two offset copies for a thicker raised shadow
-    `<g stroke='rgba(0,0,0,0.38)' stroke-linecap='round' transform='translate(3.4,3.8)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.4'/>` +
-    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2.2'/></g>` +
-    `<g stroke='rgba(0,0,0,0.20)' stroke-linecap='round' transform='translate(1.8,2)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.2'/></g>` +
-    // bright bevel highlight (sits up-left of the gold = catches light)
-    `<g stroke='rgba(255,252,242,0.8)' stroke-linecap='round' transform='translate(-1.8,-2)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/></g>` +
-    // gold double rule — bold outer band + thin inner rule
-    `<g stroke='${g}' stroke-linecap='round'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6'/>` +
-    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2' opacity='0.85'/></g>` +
-    // corner filigree: dark drop copy first (depth), then gold on top
-    `<g id='dl' stroke='rgba(0,0,0,0.32)' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' transform='translate(2.4,2.6)'>${corner}</g>` +
-    `<use href='#dl' transform='translate(320,0) scale(-1,1)'/>` +
-    `<use href='#dl' transform='translate(320,320) scale(-1,-1)'/>` +
-    `<use href='#dl' transform='translate(0,320) scale(1,-1)'/>` +
-    `<g id='fl' stroke='${g}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>${corner}</g>` +
-    `<use href='#fl' transform='translate(320,0) scale(-1,1)'/>` +
-    `<use href='#fl' transform='translate(320,320) scale(-1,-1)'/>` +
-    `<use href='#fl' transform='translate(0,320) scale(1,-1)'/>` +
-    `</svg>`;
-  const uri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+// Ornate gold picture-frame border. Uses the hand-designed frame asset
+// (apps/web/public/vintage-frame.png) sliced as a CSS border-image so the
+// ornate corners + edge medallions stay crisp at any card size and never
+// smear. The asset's interior is white, and `fill` paints that white
+// through, so the inside of the frame is a single solid color.
+function vintageFrame(_t: Theme): string {
+  const url = "https://eventvendora.com/vintage-frame.png";
   return `
-    border:6px solid transparent;
-    border-image-source:url("${uri}");
-    border-image-slice:132;
-    border-image-width:46px;
-    border-image-outset:9px;
-    border-image-repeat:stretch;`;
+    border:34px solid transparent;
+    border-image:url("${url}") 132 fill / 34px / 0 stretch;`;
 }
 
 function particleField(t: Theme): string {
