@@ -4242,46 +4242,54 @@ interface DomainRow {
   dns_records: DomainDnsRecord[];
 }
 
-// Per-listing opt-in for sending emails to clients (invoices, paid
-// receipts, payment reminders). Until a vendor turns this on, those
-// client emails are blocked server-side and never billed. Writes
-// vendor_profiles.email_sending_enabled (RLS-gated to the owner).
-function EmailSendingOptInCard({ vendorId }: { vendorId: string | null }) {
+// Account-wide opt-in for sending emails to clients (invoices, paid
+// receipts, payment reminders). Until the account owner turns this on,
+// those client emails are blocked server-side and never billed. The
+// setting applies across every listing on the account. Writes
+// vendor_email_settings (RLS-gated to the owner).
+function EmailSendingOptInCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!vendorId) {
-      setEnabled(null);
-      return;
-    }
     let cancelled = false;
     void (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth?.user?.id ?? null;
+      if (cancelled) return;
+      setUserId(uid);
+      if (!uid) {
+        setEnabled(false);
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)
-        .from("vendor_profiles")
-        .select("email_sending_enabled")
-        .eq("id", vendorId)
+        .from("vendor_email_settings")
+        .select("sending_enabled")
+        .eq("user_id", uid)
         .maybeSingle();
       if (cancelled) return;
       setEnabled(
-        Boolean((data as { email_sending_enabled?: boolean } | null)?.email_sending_enabled),
+        Boolean((data as { sending_enabled?: boolean } | null)?.sending_enabled),
       );
     })();
     return () => {
       cancelled = true;
     };
-  }, [vendorId]);
+  }, []);
 
   const toggle = useCallback(
     async (next: boolean) => {
-      if (!vendorId || saving) return;
+      if (!userId || saving) return;
       setSaving(true);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
-        .from("vendor_profiles")
-        .update({ email_sending_enabled: next })
-        .eq("id", vendorId);
+        .from("vendor_email_settings")
+        .upsert(
+          { user_id: userId, sending_enabled: next, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" },
+        );
       setSaving(false);
       if (error) {
         toast.error("Couldn't update email setting", { description: error.message });
@@ -4294,7 +4302,7 @@ function EmailSendingOptInCard({ vendorId }: { vendorId: string | null }) {
           : "Invoices, receipts, and reminders won't email your clients until you re-enable.",
       });
     },
-    [vendorId, saving],
+    [userId, saving],
   );
 
   return (
@@ -4307,12 +4315,12 @@ function EmailSendingOptInCard({ vendorId }: { vendorId: string | null }) {
               Turn this on to email invoices, paid receipts, and payment
               reminders to your clients. Each email costs{" "}
               <strong>1 credit</strong>. While off, these client emails are
-              paused and you won't be charged.
+              paused and you won't be charged. Applies to your whole account.
             </p>
           </div>
           <Switch
             checked={Boolean(enabled)}
-            disabled={enabled === null || saving || !vendorId}
+            disabled={enabled === null || saving || !userId}
             onCheckedChange={toggle}
             aria-label="Enable sending emails to clients"
           />
@@ -4903,7 +4911,7 @@ function InvoicesTab({
         </div>
       </Card>
 
-      <EmailSendingOptInCard vendorId={vendorId} />
+      <EmailSendingOptInCard />
 
       <SenderDomainCard vendorId={vendorId} />
 

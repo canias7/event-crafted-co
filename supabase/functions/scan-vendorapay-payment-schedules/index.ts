@@ -121,13 +121,18 @@ serve(async () => {
       }
       const { data: vp } = await db
         .from("vendor_profiles")
-        .select("user_id, business_name, logo_url, email_sending_enabled")
+        .select("user_id, business_name, logo_url")
         .eq("id", r.vendor_id)
         .maybeSingle();
-      const vpRow = vp as { user_id?: string | null; business_name?: string | null; logo_url?: string | null; email_sending_enabled?: boolean | null } | null;
-      // Opt-in gate: skip (and don't bill) reminders for vendors who
-      // haven't enabled client email sending.
-      if (!vpRow?.email_sending_enabled) continue;
+      const vpRow = vp as { user_id?: string | null; business_name?: string | null; logo_url?: string | null } | null;
+      // Account-wide opt-in gate: skip (and don't bill) reminders for
+      // accounts that haven't enabled client email sending.
+      const { data: esRow } = await db
+        .from("vendor_email_settings")
+        .select("sending_enabled")
+        .eq("user_id", vpRow?.user_id ?? "")
+        .maybeSingle();
+      if (!(esRow as { sending_enabled?: boolean } | null)?.sending_enabled) continue;
       if (vpRow?.business_name) businessName = vpRow.business_name;
       logoUrl = vpRow?.logo_url ?? null;
 

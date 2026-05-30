@@ -187,7 +187,7 @@ serve(async (req) => {
 
     const { data: vp } = await db
       .from("vendor_profiles")
-      .select("user_id, business_name, logo_url, location, default_tax_pct, email_sending_enabled")
+      .select("user_id, business_name, logo_url, location, default_tax_pct")
       .eq("id", body.vendor_id)
       .maybeSingle();
     const vpRow = vp as {
@@ -196,8 +196,19 @@ serve(async (req) => {
       logo_url?: string | null;
       location?: string | null;
       default_tax_pct?: number | null;
-      email_sending_enabled?: boolean | null;
     } | null;
+
+    // Account-wide opt-in: only email the client receipt if the
+    // account owner has enabled client email sending. Admin
+    // notifications below are unaffected.
+    const { data: esRow } = await db
+      .from("vendor_email_settings")
+      .select("sending_enabled")
+      .eq("user_id", vpRow?.user_id ?? "")
+      .maybeSingle();
+    const sendingEnabled = Boolean(
+      (esRow as { sending_enabled?: boolean } | null)?.sending_enabled,
+    );
     const businessName = vpRow?.business_name ?? "Your business";
     const logoUrl = vpRow?.logo_url ?? null;
     const businessLocation = vpRow?.location ?? null;
@@ -332,7 +343,7 @@ serve(async (req) => {
     //    actual line items from the sale. From-name is the vendor's
     //    business so the buyer's inbox shows their brand; replies
     //    route to the vendor's account email via Reply-To.
-    if (body.host_email && vpRow?.email_sending_enabled) {
+    if (body.host_email && sendingEnabled) {
       const paidAt = new Date().toLocaleDateString("en-US", {
         month: "long", day: "numeric", year: "numeric",
       });
@@ -483,7 +494,7 @@ serve(async (req) => {
     return json(200, {
       ok: true,
       admins_notified: adminRows.length,
-      host_emailed: Boolean(body.host_email && vpRow?.email_sending_enabled),
+      host_emailed: Boolean(body.host_email && sendingEnabled),
     });
   } catch (err) {
     console.error("[vendorapay-notify] error", err);
