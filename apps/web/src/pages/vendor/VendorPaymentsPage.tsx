@@ -2837,10 +2837,11 @@ function InvoiceCanvas({
   return (
     <div className="max-w-2xl">
     <Card>
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-foreground/5">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-foreground/5">
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
           Invoice template
         </p>
+        <EmailSendingOptInCard />
       </div>
 
       <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
@@ -3337,27 +3338,42 @@ function EmailSendingOptInCard() {
     [userId, saving],
   );
 
+  // Compact inline control — sits in the invoice template header next to
+  // the title. Label + info popover + toggle only (no long sentence).
   return (
-    <Card>
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-semibold">Send emails to clients</h3>
-            <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
-              Turn this on to email invoices, paid receipts, and payment
-              reminders to your clients — <strong>free</strong>. While off,
-              these client emails are paused. Applies to your whole account.
-            </p>
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground whitespace-nowrap">
+        Automated invoice delivery
+      </span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="What is automated invoice delivery?"
+            className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors"
+          >
+            <Info className="w-3.5 h-3.5" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-64 p-3 text-left">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground mb-1.5">
+            Automated invoice delivery
           </div>
-          <Switch
-            checked={Boolean(enabled)}
-            disabled={enabled === null || saving || !userId}
-            onCheckedChange={toggle}
-            aria-label="Enable sending emails to clients"
-          />
-        </div>
-      </div>
-    </Card>
+          <p className="text-xs text-muted-foreground leading-snug">
+            When on, VendoraPay automatically emails your clients their
+            invoices, paid receipts, and payment reminders — <strong>free</strong>.
+            While off, those client emails are paused and you'd send them
+            yourself. Applies to your whole account.
+          </p>
+        </PopoverContent>
+      </Popover>
+      <Switch
+        checked={Boolean(enabled)}
+        disabled={enabled === null || saving || !userId}
+        onCheckedChange={toggle}
+        aria-label="Enable automated invoice delivery"
+      />
+    </div>
   );
 }
 
@@ -3905,8 +3921,6 @@ function InvoicesTab({
         onPickLogo={uploadLogo}
         uploadingLogo={uploadingLogo}
       />
-
-      <EmailSendingOptInCard />
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
