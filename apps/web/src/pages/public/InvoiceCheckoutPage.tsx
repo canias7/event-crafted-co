@@ -316,7 +316,7 @@ export default function InvoiceCheckoutPage() {
                 </tr>
               </thead>
               <tbody>
-                {invoice.line_items.map((li, idx) => (
+                {(invoice.line_items ?? []).map((li, idx) => (
                   <tr key={idx} className="border-b border-foreground/5 align-top">
                     <td className="py-3 pr-2">
                       <div className="font-medium">{li.name}</div>
