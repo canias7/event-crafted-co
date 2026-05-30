@@ -2809,6 +2809,8 @@ function InvoiceCanvas({
   category,
   onPickLogo,
   uploadingLogo,
+  vendorId,
+  onSaved,
 }: {
   brandName: string;
   setBrandName: (v: string) => void;
@@ -2820,6 +2822,8 @@ function InvoiceCanvas({
   category: string | null;
   onPickLogo: (file: File) => void | Promise<void>;
   uploadingLogo: boolean;
+  vendorId: string | null;
+  onSaved: () => void;
 }) {
   const accent = "rgb(30,80,180)";
   const displayName = brandName.trim() || "[Your Business Name]";
@@ -2834,14 +2838,125 @@ function InvoiceCanvas({
   // upload handler. Cancel discards.
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+  // Composer state — the template's fields are now editable so the
+  // vendor fills out a real invoice here and Saves it (created as a
+  // 'draft' that shows in the list; they send it from the Send box).
+  const [billToName, setBillToName] = useState("");
+  const [billToEmail, setBillToEmail] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [rows, setRows] = useState<Array<{ name: string; qty: string; price: string }>>([
+    { name: "", qty: "1", price: "" },
+    { name: "", qty: "1", price: "" },
+    { name: "", qty: "1", price: "" },
+  ]);
+  const [savingInvoice, setSavingInvoice] = useState(false);
+  const updateRow = (i: number, key: "name" | "qty" | "price", v: string) =>
+    setRows((r) => r.map((row, idx) => (idx === i ? { ...row, [key]: v } : row)));
+  const addRow = () => setRows((r) => [...r, { name: "", qty: "1", price: "" }]);
+  // Live totals (integer cents). Mirrors the modal composer's math.
+  const subtotalCents = rows.reduce((sum, it) => {
+    const q = parseInt(it.qty || "0", 10);
+    const p = Math.round(parseFloat(it.price || "0") * 100);
+    return sum + (Number.isFinite(q) && Number.isFinite(p) ? q * p : 0);
+  }, 0);
+  const taxRateBps = Math.round(parseFloat(brandTaxPct || "0") * 100);
+  const taxCents = Math.round((subtotalCents * taxRateBps) / 10_000);
+  const totalCents = subtotalCents + taxCents;
+  const money = (cents: number) => formatMoney(cents, "usd");
+
+  const saveInvoice = useCallback(async () => {
+    if (savingInvoice) return;
+    if (!vendorId) {
+      toast.error("No listing selected");
+      return;
+    }
+    const email = billToEmail.trim().toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid client email");
+      return;
+    }
+    const parsedItems = rows
+      .map((it) => ({
+        name: it.name.trim(),
+        qty: parseInt(it.qty || "0", 10),
+        unit_price_cents: Math.round(parseFloat(it.price || "0") * 100),
+      }))
+      .filter((it) => it.name && it.qty > 0)
+      .map((it) => ({ ...it, total_cents: it.qty * it.unit_price_cents }));
+    if (parsedItems.length === 0) {
+      toast.error("Add at least one line item (name + qty)");
+      return;
+    }
+    setSavingInvoice(true);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      setSavingInvoice(false);
+      toast.error("Sign in required");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const trimmedName = billToName.trim();
+    if (email) {
+      const customerPayload: Record<string, unknown> = { vendor_id: vendorId, email };
+      if (trimmedName) customerPayload.name = trimmedName;
+      await db.from("vendor_customers").upsert(customerPayload, { onConflict: "vendor_id,email" });
+    }
+    // Create as a DRAFT so it lands in the list; the vendor sends it
+    // from the Send box. invoice_number is assigned by the DB trigger.
+    const { error } = await db
+      .from("invoices")
+      .insert({
+        vendor_id: vendorId,
+        bill_to_name: trimmedName || null,
+        bill_to_email: email || null,
+        issue_date: new Date().toISOString().slice(0, 10),
+        due_date: dueDate || null,
+        notes: notes.trim() || null,
+        line_items: parsedItems,
+        subtotal_cents: subtotalCents,
+        tax_rate_bps: taxRateBps,
+        tax_cents: taxCents,
+        total_cents: totalCents,
+        status: "draft",
+        invoice_number: "",
+        created_by: userData.user.id,
+      });
+    setSavingInvoice(false);
+    if (error) {
+      toast.error("Couldn't save invoice", { description: error.message });
+      return;
+    }
+    toast.success("Invoice saved", { description: "It's in your list — pick it in the Send box to email it." });
+    // Reset the composer for the next one.
+    setBillToName("");
+    setBillToEmail("");
+    setDueDate("");
+    setNotes("");
+    setRows([{ name: "", qty: "1", price: "" }, { name: "", qty: "1", price: "" }, { name: "", qty: "1", price: "" }]);
+    onSaved();
+  }, [savingInvoice, vendorId, billToEmail, billToName, dueDate, notes, rows, subtotalCents, taxRateBps, taxCents, totalCents, onSaved]);
+
   return (
     <div className="w-full">
     <Card>
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-foreground/5">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-foreground/5 flex-wrap">
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
-          Invoice template
+          New invoice
         </p>
-        <EmailSendingOptInCard />
+        <div className="flex items-center gap-3 flex-wrap">
+          <EmailSendingOptInCard />
+          <Button
+            size="sm"
+            className="rounded-full"
+            onClick={() => void saveInvoice()}
+            disabled={savingInvoice || !vendorId}
+          >
+            {savingInvoice ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+            Save invoice
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
@@ -2891,9 +3006,37 @@ function InvoiceCanvas({
               className={`block w-full mt-0.5 text-xs text-muted-foreground ${editableCls}`}
             />
           </div>
-          <StaticMeta label="Bill to" value="[Client name]" sub="[client@email.com]" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Bill to
+            </p>
+            <input
+              type="text"
+              value={billToName}
+              onChange={(e) => setBillToName(e.target.value)}
+              placeholder="[Client name]"
+              className={`block w-full mt-1.5 text-sm font-medium ${editableCls}`}
+            />
+            <input
+              type="email"
+              value={billToEmail}
+              onChange={(e) => setBillToEmail(e.target.value)}
+              placeholder="[client@email.com]"
+              className={`block w-full mt-0.5 text-xs text-muted-foreground ${editableCls}`}
+            />
+          </div>
           <StaticMeta label="Issued" value="[Today]" />
-          <StaticMeta label="Due" value="[Due date]" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Due
+            </p>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={`block w-full mt-1.5 text-sm ${editableCls}`}
+            />
+          </div>
         </section>
 
         {/* Items — static placeholder rows */}
@@ -2916,18 +3059,53 @@ function InvoiceCanvas({
               </div>
             ))}
           </div>
-          {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="grid grid-cols-[1fr_64px_120px_120px] gap-2 py-2.5 items-center text-muted-foreground"
-              style={{ borderBottom: "1px solid rgba(232,227,221,0.6)" }}
-            >
-              <span className="text-sm">[Service or product {n}]</span>
-              <span className="text-sm text-right tabular-nums">1</span>
-              <span className="text-sm text-right tabular-nums">$0.00</span>
-              <span className="text-sm text-right tabular-nums font-semibold">$0.00</span>
-            </div>
-          ))}
+          {rows.map((row, i) => {
+            const q = parseInt(row.qty || "0", 10);
+            const p = Math.round(parseFloat(row.price || "0") * 100);
+            const lineCents = Number.isFinite(q) && Number.isFinite(p) ? q * p : 0;
+            return (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_64px_120px_120px] gap-2 py-2.5 items-center"
+                style={{ borderBottom: "1px solid rgba(232,227,221,0.6)" }}
+              >
+                <input
+                  type="text"
+                  value={row.name}
+                  onChange={(e) => updateRow(i, "name", e.target.value)}
+                  placeholder={`[Service or product ${i + 1}]`}
+                  className={`text-sm ${editableCls}`}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  value={row.qty}
+                  onChange={(e) => updateRow(i, "qty", e.target.value)}
+                  className={`text-sm text-right tabular-nums ${editableCls}`}
+                />
+                <div className="flex items-center justify-end gap-0.5">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.price}
+                    onChange={(e) => updateRow(i, "price", e.target.value)}
+                    placeholder="0.00"
+                    className={`w-20 text-sm text-right tabular-nums ${editableCls}`}
+                  />
+                </div>
+                <span className="text-sm text-right tabular-nums font-semibold">{money(lineCents)}</span>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            onClick={addRow}
+            className="mt-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            + Add line
+          </button>
         </section>
 
         {/* Totals — static */}
@@ -2935,7 +3113,7 @@ function InvoiceCanvas({
           <div className="w-full sm:w-[280px] text-sm space-y-1.5">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
-              <span className="tabular-nums">$0.00</span>
+              <span className="tabular-nums">{money(subtotalCents)}</span>
             </div>
             <div className="flex justify-between items-center text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -2951,7 +3129,7 @@ function InvoiceCanvas({
                 />
                 <span>%</span>
               </span>
-              <span className="tabular-nums">$0.00</span>
+              <span className="tabular-nums">{money(taxCents)}</span>
             </div>
             <div
               className="flex items-center justify-between pt-3 mt-2"
@@ -2967,7 +3145,7 @@ function InvoiceCanvas({
                 className="font-bold tabular-nums text-lg"
                 style={{ color: accent }}
               >
-                $0.00
+                {money(totalCents)}
               </span>
             </div>
           </div>
@@ -2978,9 +3156,13 @@ function InvoiceCanvas({
           <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
             Notes
           </p>
-          <p className="text-sm leading-relaxed mt-2 text-muted-foreground">
-            [Add any scope details, delivery notes, or schedule expectations here so the recipient knows what's included.]
-          </p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="[Add any scope details, delivery notes, or schedule expectations here so the recipient knows what's included.]"
+            rows={3}
+            className={`block w-full text-sm leading-relaxed mt-2 resize-none ${editableCls}`}
+          />
         </section>
 
         <footer
@@ -3903,6 +4085,8 @@ function InvoicesTab({
         category={listing?.category ?? null}
         onPickLogo={uploadLogo}
         uploadingLogo={uploadingLogo}
+        vendorId={vendorId}
+        onSaved={onChanged}
       />
 
       {/* Right column: invoice list + Send box stacked together as ONE
