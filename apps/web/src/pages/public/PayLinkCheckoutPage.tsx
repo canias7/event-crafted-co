@@ -41,6 +41,7 @@ interface LinkDetails {
   status: string;
   vendor_business_name: string | null;
   vendor_logo_url: string | null;
+  collect_contact?: boolean | null;
 }
 
 interface IntentResult {
@@ -383,6 +384,7 @@ export default function PayLinkCheckoutPage() {
             <PayForm
               slug={slug!}
               amountLabel={formatMoney(link.amount_cents, link.currency)}
+              collectContact={Boolean(link.collect_contact)}
               onNeedsHosted={() => setUseHosted(true)}
             />
           </Elements>
@@ -401,10 +403,12 @@ export default function PayLinkCheckoutPage() {
 function PayForm({
   slug,
   amountLabel,
+  collectContact,
   onNeedsHosted,
 }: {
   slug: string;
   amountLabel: string;
+  collectContact: boolean;
   onNeedsHosted: () => void;
 }) {
   const stripe = useStripe();
@@ -445,6 +449,16 @@ function PayForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <PaymentElement
+        options={{
+          // Collect the host's name + phone in-form when the vendor
+          // opted in. 'auto' makes Stripe render AND submit them with the
+          // charge automatically — no manual confirmParams.payment_method_data
+          // needed (which 'never' would require, and getting that wrong
+          // throws at confirm). Webhook reads them off billing_details.
+          fields: collectContact
+            ? { billingDetails: { name: "auto", phone: "auto" } }
+            : undefined,
+        }}
         onReady={() => setReady(true)}
         onLoadError={(e) => {
           // The Element couldn't load (network, blocked script, bad

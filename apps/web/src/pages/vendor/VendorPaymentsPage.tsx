@@ -7398,6 +7398,65 @@ function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
   );
 }
 
+// Live preview of the host-facing /pay/link page, mirroring its layout
+// (brand row → amount-due card → contact-collection hint). Updates as the
+// vendor fills the form so they see what they're sending before creating.
+function PayLinkPreview({
+  title,
+  amountDollars,
+  description,
+  businessName,
+  expiresDate,
+  collectContact,
+}: {
+  title: string;
+  amountDollars: string;
+  description: string;
+  businessName: string | null;
+  expiresDate: string;
+  collectContact: boolean;
+}) {
+  const cents = Math.round(parseFloat(amountDollars) * 100);
+  const amountLabel = Number.isFinite(cents) && cents > 0
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
+    : "$0.00";
+  return (
+    <div className="rounded-lg p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-2">
+        Preview · what the host sees
+      </div>
+      <div
+        className="rounded-xl p-4"
+        style={{ background: "rgba(255,253,250,0.9)", border: "0.5px solid rgba(255,138,76,0.22)" }}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-full bg-foreground/5 inline-flex items-center justify-center">
+            <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold truncate">{businessName || "VendoraPay"}</div>
+            <div className="text-[9px] text-muted-foreground">Powered by VendoraPay</div>
+          </div>
+        </div>
+        <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+          Amount due
+        </div>
+        <div className="text-2xl font-editorial mt-0.5">{amountLabel}</div>
+        <div className="text-xs mt-1.5">{title.trim() || "Untitled charge"}</div>
+        {description.trim() ? (
+          <p className="text-[11px] text-muted-foreground mt-1 whitespace-pre-wrap">{description.trim()}</p>
+        ) : null}
+        {collectContact ? (
+          <p className="text-[10px] text-muted-foreground mt-2">+ asks for the host's name &amp; phone</p>
+        ) : null}
+        {expiresDate ? (
+          <p className="text-[10px] text-muted-foreground mt-1">Expires {expiresDate}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function PayLinksTab({
   accountVendorIds,
   listings,
@@ -7427,6 +7486,9 @@ function PayLinksTab({
   const [splitDeposit, setSplitDeposit] = useState(false);
   const [depositDollars, setDepositDollars] = useState("");
   const [balanceDueDate, setBalanceDueDate] = useState("");
+  // Stripe-style extras: optional expiry + opt-in contact collection.
+  const [expiresDate, setExpiresDate] = useState("");
+  const [collectContact, setCollectContact] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const create = useCallback(async () => {
@@ -7440,6 +7502,21 @@ function PayLinksTab({
     if (!Number.isFinite(totalCents) || totalCents < 50) {
       toast.error("Amount must be at least $0.50");
       return;
+    }
+
+    // Optional expiry (single-charge only — the split flow schedules its
+    // own balance leg). Must be a future date if provided.
+    let expiresIso: string | null = null;
+    if (!splitDeposit && expiresDate) {
+      const exp = new Date(expiresDate);
+      if (Number.isNaN(exp.getTime()) || exp.getTime() <= Date.now()) {
+        toast.error("Expiration date must be in the future");
+        return;
+      }
+      // End of the chosen day, so a link set to "expires Aug 14" works
+      // through Aug 14 rather than dying at midnight.
+      exp.setHours(23, 59, 59, 999);
+      expiresIso = exp.toISOString();
     }
 
     let depositCents: number | null = null;
@@ -7485,6 +7562,8 @@ function PayLinksTab({
         title: title.trim(),
         description: description.trim() || null,
         amount_cents: totalCents,
+        collect_contact: collectContact,
+        expires_at: expiresIso,
         created_by: userData.user.id,
       });
       setSubmitting(false);
@@ -7504,6 +7583,7 @@ function PayLinksTab({
           title: `${title.trim()} — deposit`,
           description: description.trim() || null,
           amount_cents: depositCents,
+          collect_contact: collectContact,
           created_by: userData.user.id,
         })
         .select("id")
@@ -7519,6 +7599,7 @@ function PayLinksTab({
         title: `${title.trim()} — balance`,
         description: description.trim() || null,
         amount_cents: balanceCents,
+        collect_contact: collectContact,
         status: "scheduled",
         activate_at: balanceDueIso,
         parent_link_id: depositRow.id,
@@ -7553,6 +7634,8 @@ function PayLinksTab({
     setSplitDeposit(false);
     setDepositDollars("");
     setBalanceDueDate("");
+    setExpiresDate("");
+    setCollectContact(false);
     setCreating(false);
     onChanged();
   }, [
@@ -7564,6 +7647,8 @@ function PayLinksTab({
     splitDeposit,
     depositDollars,
     balanceDueDate,
+    expiresDate,
+    collectContact,
     submitting,
     onChanged,
   ]);
@@ -7677,6 +7762,46 @@ function PayLinksTab({
               </div>
             ) : null}
 
+            {/* Expiration — single-charge only (the split flow schedules
+                its own balance leg, so an extra expiry would conflict). */}
+            {!splitDeposit ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-24 shrink-0">Expires (optional)</span>
+                <input
+                  type="date"
+                  value={expiresDate}
+                  onChange={(e) => setExpiresDate(e.target.value)}
+                  min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                  className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+              </div>
+            ) : null}
+
+            {/* Collect host contact at checkout */}
+            <label className="flex items-center gap-2 text-sm text-foreground/80">
+              <input
+                type="checkbox"
+                checked={collectContact}
+                onChange={(e) => setCollectContact(e.target.checked)}
+                className="rounded"
+              />
+              Collect host's name &amp; phone at checkout
+            </label>
+
+            {/* Live preview of the host-facing payment page */}
+            <PayLinkPreview
+              title={title}
+              amountDollars={amountDollars}
+              description={description}
+              businessName={
+                listings.find((l) => l.id === (pickedVendorId ?? defaultVendorId))?.business_name ??
+                listings[0]?.business_name ??
+                null
+              }
+              expiresDate={!splitDeposit ? expiresDate : ""}
+              collectContact={collectContact}
+            />
+
             <div className="flex gap-2">
               <Button onClick={create} disabled={submitting} className="rounded-full">
                 {submitting ? (
@@ -7694,6 +7819,8 @@ function PayLinksTab({
                   setSplitDeposit(false);
                   setDepositDollars("");
                   setBalanceDueDate("");
+                  setExpiresDate("");
+                  setCollectContact(false);
                 }}
                 className="rounded-full"
               >

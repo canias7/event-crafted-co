@@ -470,6 +470,36 @@ export async function getReceiptEmailForPI(
   return null;
 }
 
+/**
+ * Pull the buyer's name + phone off a PaymentIntent's charge.
+ *
+ * The Payment Element collects these into billing_details when the
+ * link opted into contact collection (fields.billingDetails.name/phone
+ * = 'auto'). Used by vendorapay-webhook to stamp payment_links.host_name
+ * / host_phone so the vendor sees who paid — same pattern as host_email.
+ *
+ * Returns nulls when nothing was collected (link without collect_contact,
+ * ACH, etc.). Best-effort: a failed retrieve must not block the paid write.
+ */
+export async function getContactForPI(
+  pi_id: string,
+): Promise<{ name: string | null; phone: string | null }> {
+  const pi = await client().paymentIntents.retrieve(pi_id, {
+    expand: ["latest_charge"],
+  });
+  const charge = pi.latest_charge as unknown;
+  if (charge && typeof charge === "object") {
+    const ch = charge as {
+      billing_details?: { name?: string | null; phone?: string | null };
+    };
+    return {
+      name: ch.billing_details?.name ?? null,
+      phone: ch.billing_details?.phone ?? null,
+    };
+  }
+  return { name: null, phone: null };
+}
+
 // US state name → 2-letter code. Stripe stores whatever the buyer
 // typed into Checkout's billing-address form, so both "CA" and
 // "California" land in billing_details.address.state. Without
