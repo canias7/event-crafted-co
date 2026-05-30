@@ -2841,13 +2841,13 @@ function InvoiceCanvas({
   // Composer state — the template's fields are now editable so the
   // vendor fills out a real invoice here and Saves it (created as a
   // 'draft' that shows in the list; they send it from the Send box).
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [billToName, setBillToName] = useState("");
   const [billToEmail, setBillToEmail] = useState("");
+  const [issueDate, setIssueDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<Array<{ name: string; qty: string; price: string }>>([
-    { name: "", qty: "1", price: "" },
-    { name: "", qty: "1", price: "" },
     { name: "", qty: "1", price: "" },
   ]);
   const [savingInvoice, setSavingInvoice] = useState(false);
@@ -2904,14 +2904,15 @@ function InvoiceCanvas({
       await db.from("vendor_customers").upsert(customerPayload, { onConflict: "vendor_id,email" });
     }
     // Create as a DRAFT so it lands in the list; the vendor sends it
-    // from the Send box. invoice_number is assigned by the DB trigger.
+    // from the Send box. invoice_number uses the typed value when given,
+    // else "" so the DB trigger assigns one when the invoice is sent.
     const { error } = await db
       .from("invoices")
       .insert({
         vendor_id: vendorId,
         bill_to_name: trimmedName || null,
         bill_to_email: email || null,
-        issue_date: new Date().toISOString().slice(0, 10),
+        issue_date: issueDate || new Date().toISOString().slice(0, 10),
         due_date: dueDate || null,
         notes: notes.trim() || null,
         line_items: parsedItems,
@@ -2920,7 +2921,7 @@ function InvoiceCanvas({
         tax_cents: taxCents,
         total_cents: totalCents,
         status: "draft",
-        invoice_number: "",
+        invoice_number: invoiceNumber.trim(),
         created_by: userData.user.id,
       });
     setSavingInvoice(false);
@@ -2930,13 +2931,15 @@ function InvoiceCanvas({
     }
     toast.success("Invoice saved", { description: "It's in your list — pick it in the Send box to email it." });
     // Reset the composer for the next one.
+    setInvoiceNumber("");
     setBillToName("");
     setBillToEmail("");
+    setIssueDate(new Date().toISOString().slice(0, 10));
     setDueDate("");
     setNotes("");
-    setRows([{ name: "", qty: "1", price: "" }, { name: "", qty: "1", price: "" }, { name: "", qty: "1", price: "" }]);
+    setRows([{ name: "", qty: "1", price: "" }]);
     onSaved();
-  }, [savingInvoice, vendorId, billToEmail, billToName, dueDate, notes, rows, subtotalCents, taxRateBps, taxCents, totalCents, onSaved]);
+  }, [savingInvoice, vendorId, invoiceNumber, billToEmail, billToName, issueDate, dueDate, notes, rows, subtotalCents, taxRateBps, taxCents, totalCents, onSaved]);
 
   return (
     <div className="w-full">
@@ -2985,9 +2988,13 @@ function InvoiceCanvas({
             >
               INVOICE
             </p>
-            <p className="text-base font-bold mt-1 tabular-nums text-muted-foreground">
-              VND-XXXX
-            </p>
+            <input
+              type="text"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              placeholder="VND-XXXX"
+              className={`block w-32 text-right text-base font-bold mt-1 tabular-nums ${editableCls}`}
+            />
           </div>
         </header>
 
@@ -3025,7 +3032,17 @@ function InvoiceCanvas({
               className={`block w-full mt-0.5 text-xs text-muted-foreground ${editableCls}`}
             />
           </div>
-          <StaticMeta label="Issued" value="[Today]" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Issued
+            </p>
+            <input
+              type="date"
+              value={issueDate}
+              onChange={(e) => setIssueDate(e.target.value)}
+              className={`block w-full mt-1.5 text-sm ${editableCls}`}
+            />
+          </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
               Due
