@@ -100,6 +100,16 @@
   display: none;
 }
 
+/* Hide the up/down stepper arrow buttons WebKit/Chromium render at the
+   ends of a scrollbar track (the little arrows that showed at the right
+   edge of the My Vendora content area). Hides only the buttons, not the
+   scrollbar thumb/track or scrolling. */
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Print stylesheet — opt-in via the .printable class on the page <main>.
    Hides chrome (sidebar, mobile nav, sticky headers, action buttons),
    forces black-on-white for cost reasons, opens columns/grids into a
