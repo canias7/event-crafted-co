@@ -195,6 +195,34 @@ export default function PayLinkCheckoutPage() {
     [publishableKey],
   );
 
+  // Stripe.js can fail to load — blocked by a privacy extension
+  // (Brave Shields, uBlock) or a flaky network — in which case
+  // loadStripe(pk) resolves to null and <PaymentElement> can never
+  // mount, leaving the page on an infinite spinner. Watch the promise:
+  // if it resolves null (or hasn't resolved in 8s), fall back to the
+  // hosted Checkout redirect, which doesn't depend on us loading
+  // Stripe.js in this page.
+  useEffect(() => {
+    if (!stripePromise || useHosted) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) setUseHosted(true);
+    }, 8000);
+    stripePromise
+      .then((s) => {
+        if (cancelled) return;
+        if (!s) setUseHosted(true);
+        else clearTimeout(timer);
+      })
+      .catch(() => {
+        if (!cancelled) setUseHosted(true);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [stripePromise, useHosted]);
+
   if (loading) {
     return (
       <Shell>
