@@ -8397,8 +8397,13 @@ function PayLinksTab({
     let balanceDueIso: string | null = null;
     if (splitDeposit) {
       depositCents = Math.round(parseFloat(depositDollars) * 100);
-      if (!Number.isFinite(depositCents) || depositCents < 50 || depositCents >= totalCents) {
-        toast.error("Deposit must be between $0.50 and less than the total");
+      // Deposit must be >= $0.50 AND leave a balance of >= $0.50 — both
+      // links hit payment_links' CHECK (amount_cents >= 50). Without the
+      // upper bound, a deposit within 49¢ of the total produces a sub-50¢
+      // balance: the deposit link inserts fine, then the balance insert
+      // fails the constraint, orphaning the deposit link.
+      if (!Number.isFinite(depositCents) || depositCents < 50 || depositCents > totalCents - 50) {
+        toast.error("Deposit must be at least $0.50 and leave at least $0.50 for the balance");
         return;
       }
       if (!balanceDueDate) {
@@ -8469,11 +8474,25 @@ function PayLinksTab({
         parent_link_id: depositRow.id,
         created_by: userData.user.id,
       });
-      setSubmitting(false);
       if (balErr) {
+        // The two inserts aren't a transaction. If the balance leg
+        // fails, roll back the deposit link so the vendor doesn't end
+        // up with a live half-schedule (a deposit with no balance to
+        // follow). payment_links has no client DELETE policy, so cancel
+        // it instead (admin UPDATE is allowed; 'cancelled' isn't a
+        // settled state so the settlement-protect trigger permits it).
+        // It's still 'active' and unpaid, so cancelling is safe.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("payment_links")
+          .update({ status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("id", depositRow.id)
+          .eq("status", "active");
+        setSubmitting(false);
         toast.error("Couldn't create balance link", { description: balErr.message });
         return;
       }
+      setSubmitting(false);
       toast.success("Payment schedule created", {
         description: "Deposit link is live; balance link emails on the due date.",
       });
