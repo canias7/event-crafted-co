@@ -32,7 +32,8 @@ function TabSkeleton() {
   );
 }
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { handleInsufficientCredits } from "@/lib/credits";
+import { handleEmailBillingError } from "@/lib/credits";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -4241,6 +4242,86 @@ interface DomainRow {
   dns_records: DomainDnsRecord[];
 }
 
+// Per-listing opt-in for sending emails to clients (invoices, paid
+// receipts, payment reminders). Until a vendor turns this on, those
+// client emails are blocked server-side and never billed. Writes
+// vendor_profiles.email_sending_enabled (RLS-gated to the owner).
+function EmailSendingOptInCard({ vendorId }: { vendorId: string | null }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!vendorId) {
+      setEnabled(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_profiles")
+        .select("email_sending_enabled")
+        .eq("id", vendorId)
+        .maybeSingle();
+      if (cancelled) return;
+      setEnabled(
+        Boolean((data as { email_sending_enabled?: boolean } | null)?.email_sending_enabled),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId]);
+
+  const toggle = useCallback(
+    async (next: boolean) => {
+      if (!vendorId || saving) return;
+      setSaving(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_profiles")
+        .update({ email_sending_enabled: next })
+        .eq("id", vendorId);
+      setSaving(false);
+      if (error) {
+        toast.error("Couldn't update email setting", { description: error.message });
+        return;
+      }
+      setEnabled(next);
+      toast.success(next ? "Client emails enabled" : "Client emails paused", {
+        description: next
+          ? "Invoices, receipts, and reminders will now email your clients. Each send costs 1 credit."
+          : "Invoices, receipts, and reminders won't email your clients until you re-enable.",
+      });
+    },
+    [vendorId, saving],
+  );
+
+  return (
+    <Card>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold">Send emails to clients</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+              Turn this on to email invoices, paid receipts, and payment
+              reminders to your clients. Each email costs{" "}
+              <strong>1 credit</strong>. While off, these client emails are
+              paused and you won't be charged.
+            </p>
+          </div>
+          <Switch
+            checked={Boolean(enabled)}
+            disabled={enabled === null || saving || !vendorId}
+            onCheckedChange={toggle}
+            aria-label="Enable sending emails to clients"
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 // Lets a vendor connect their own email domain so buyer receipts go
 // out from noreply@<their-domain> instead of the platform default.
 // Talks to vendorapay-email-domain (which proxies Resend) and to
@@ -4732,7 +4813,7 @@ function InvoicesTab({
     });
     setSendingId(null);
     if (error) {
-      if (await handleInsufficientCredits(error, navigate)) return;
+      if (await handleEmailBillingError(error, navigate)) return;
       toast.error("Couldn't send invoice", { description: error.message });
       return;
     }
@@ -4821,6 +4902,8 @@ function InvoicesTab({
           </Button>
         </div>
       </Card>
+
+      <EmailSendingOptInCard vendorId={vendorId} />
 
       <SenderDomainCard vendorId={vendorId} />
 
@@ -7770,10 +7853,11 @@ function SendInvoiceDialog({
         toast.error("Email failed and rollback failed", {
           description: `${sendErr.message} (Invoice may be stuck as Sent — refresh and verify before resending.)`,
         });
-      } else if (await handleInsufficientCredits(sendErr, navigate)) {
-        // Out of credits: invoice is safely back to draft, and the
-        // helper already showed a "Top up" toast. Vendor can resend
-        // from the list once they've topped up.
+      } else if (await handleEmailBillingError(sendErr, navigate)) {
+        // Out of credits or email sending not enabled: invoice is
+        // safely back to draft and the helper already showed the
+        // right toast (top-up / enable). Vendor can resend from the
+        // list once they've resolved it.
       } else {
         toast.warning("Saved as draft — email failed", { description: sendErr.message });
       }
