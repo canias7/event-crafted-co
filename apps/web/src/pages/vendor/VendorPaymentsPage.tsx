@@ -4190,33 +4190,6 @@ function InvoicesTab({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => sendInvoice(inv.id)}
-                    disabled={sendingId === inv.id || !inv.bill_to_email}
-                    className="rounded-full"
-                  >
-                    {sendingId === inv.id ? (
-                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                    ) : (
-                      <Mail className="w-3.5 h-3.5 mr-1" />
-                    )}
-                    Resend
-                  </Button>
-                ) : null}
-                {(inv.status === "sent" || inv.status === "overdue") ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyInvoiceLink(inv.slug)}
-                    className="rounded-full"
-                  >
-                    <Copy className="w-3.5 h-3.5 mr-1" />
-                    Copy link
-                  </Button>
-                ) : null}
-                {(inv.status === "sent" || inv.status === "overdue") ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => window.open(`/pay/invoice/${inv.slug}`, "_blank")}
                     className="rounded-full"
                   >
@@ -4238,19 +4211,6 @@ function InvoicesTab({
                       <Download className="w-3.5 h-3.5 mr-1" />
                     )}
                     PDF
-                  </Button>
-                ) : null}
-                {(inv.status === "sent" || inv.status === "overdue") ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openLateFeeModal(inv)}
-                    className="rounded-full"
-                    title="Add a late fee — the Pay page and the next reminder will reflect the new total"
-                  >
-                    {inv.late_fee_cents && inv.late_fee_cents > 0
-                      ? "Add more"
-                      : "Late fee"}
                   </Button>
                 ) : null}
                 {(inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") ? (
