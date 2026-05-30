@@ -2029,6 +2029,183 @@ async function callClaudeForSpec(
   return last;
 }
 
+// ────────────────────────────────────────────────────────────────────
+// FAST EDIT (compose-built sites)
+// An edit of a compose-built site mutates the stored JSON spec and
+// re-runs the template engine, instead of re-writing ~18k tokens of HTML
+// through the slow legacy path. ~10s vs ~3min.
+// ────────────────────────────────────────────────────────────────────
+
+interface SpecEditSite {
+  id: string;
+  slug: string;
+  html: string;
+  owner_user_id: string | null;
+  edit_count: number;
+  spec: Spec;
+}
+
+const SPEC_EDIT_SYSTEM_PROMPT = `You are a content director editing an existing event microsite. You are given the site's CURRENT spec (a JSON object) and the user's requested change. Output the COMPLETE updated spec as a single JSON object — and NOTHING else.
+
+RULES:
+1. Output VALID JSON only. First char "{", last char "}". No prose, no markdown fences.
+2. Return the WHOLE spec, not a diff. Preserve every field the user did not ask to change.
+3. Keep the same overall structure unless the user explicitly asks to add/remove/reorder sections. Don't drop sections the user didn't mention.
+4. Only change the theme if the user asks for a different look/color/mood. Valid themes: moody-burgundy, garden-floral, tuscan-dusk, navy-champagne, dusty-pink-sage, black-tie-velvet, baby-pastel, evergreen-holiday, tropical-boho, corporate-mono.
+5. The spec must still satisfy the Spec type: required fields event_type, theme, title, and a non-empty sections array. event_start (if present) keeps its timezone offset.
+6. Honor the user's tone and wording for any copy they ask to change. Keep existing copy verbatim where untouched.
+
+OUTPUT FORMAT: a single JSON object (the full updated spec). Nothing else.`;
+
+// One attempt at mutating the spec. Returns the updated spec or a
+// retryable/hard failure. Mirrors callClaudeForSpecOnce's classification.
+async function callClaudeForSpecEditOnce(
+  currentSpec: Spec,
+  userPrompt: string,
+  conversation: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<SpecResult & { retryable?: boolean }> {
+  const userMessage =
+    `CURRENT SPEC:\n${JSON.stringify(currentSpec)}\n\nREQUESTED CHANGE:\n${userPrompt}`;
+  let res: Response;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "extended-cache-ttl-2025-04-11",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4000,
+        system: [{ type: "text", text: SPEC_EDIT_SYSTEM_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
+        messages: [...conversation, { role: "user", content: userMessage }],
+      }),
+    });
+  } catch (e) {
+    return { ok: false, retryable: true, error: `fetch_error: ${(e as Error).message}` };
+  }
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    const retryable = res.status === 408 || res.status === 409 || res.status === 429 || res.status >= 500;
+    return { ok: false, retryable, error: `anthropic_${res.status}: ${t.slice(0, 200)}` };
+  }
+  const body = await res.json().catch(() => null) as any;
+  const text = body?.content?.[0]?.text ?? "";
+  const json = extractJsonObject(text);
+  if (!json) return { ok: false, retryable: true, raw: text, error: "no_json_in_reply" };
+  try {
+    const spec = JSON.parse(json);
+    if (!spec.title || !spec.theme || !spec.event_type || !Array.isArray(spec.sections) || spec.sections.length === 0) {
+      return { ok: false, retryable: true, raw: json, error: "spec_missing_required_fields" };
+    }
+    return { ok: true, spec: spec as Spec, raw: json };
+  } catch (e) {
+    return { ok: false, retryable: true, raw: json, error: `parse_error: ${(e as Error).message}` };
+  }
+}
+
+async function callClaudeForSpecEdit(
+  currentSpec: Spec,
+  userPrompt: string,
+  conversation: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<SpecResult> {
+  const maxAttempts = 4;
+  let last: SpecResult & { retryable?: boolean } = { ok: false, error: "no_attempt" };
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    last = await callClaudeForSpecEditOnce(currentSpec, userPrompt, conversation);
+    if (last.ok) return last;
+    if (!last.retryable || attempt === maxAttempts) break;
+    console.warn(`[ai-site-generate] spec edit attempt ${attempt}/${maxAttempts} failed (${last.error}), retrying…`);
+    await sleep(500 * 2 ** (attempt - 1) + Math.floor(Math.random() * 400));
+  }
+  return last;
+}
+
+// Attempt a fast spec-based edit. Returns a streaming Response on
+// success, or null to signal the caller to fall back to the legacy HTML
+// edit path (e.g. the spec mutation failed after retries).
+async function handleSpecEdit(
+  site: SpecEditSite,
+  userPrompt: string,
+  conversation: Array<{ role: "user" | "assistant"; content: string }>,
+  admin: ReturnType<typeof createClient>,
+): Promise<Response | null> {
+  const result = await callClaudeForSpecEdit(site.spec, userPrompt, conversation);
+  if (!result.ok || !result.spec) {
+    console.error("[ai-site-generate] spec edit error", result.error, result.raw?.slice(0, 400));
+    return null;
+  }
+  const newSpec = result.spec;
+
+  // Re-render. Slug never changes on edit (guest links + RSVP endpoint
+  // depend on it), so reuse the existing slug.
+  let html = compose({ spec: newSpec, supabaseUrl: SUPABASE_URL, designBibleVersion: "tpl-v2" });
+  html = html.replaceAll("__SUPABASE_URL__", SUPABASE_URL);
+  html = html.replaceAll("__SLUG__", site.slug);
+
+  const ogDescription = newSpec.meta_description ?? `${newSpec.title} — RSVP and event details.`;
+  const newVersionNumber = site.edit_count + 2;
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      try {
+        const { error: updateErr } = await admin
+          .from("ai_sites")
+          .update({
+            title: newSpec.title,
+            prompt: userPrompt,
+            html,
+            og_description: ogDescription,
+            spec: newSpec,
+            edit_count: site.edit_count + 1,
+          })
+          .eq("id", site.id);
+        if (updateErr) {
+          console.error("[ai-site-generate] spec edit save error", updateErr);
+          send({ type: "error", message: "save_failed" });
+          controller.close();
+          return;
+        }
+
+        // Snapshot this version (best-effort).
+        const versionRes = await admin.from("ai_site_versions").insert({
+          site_id: site.id,
+          version_number: newVersionNumber,
+          html,
+          title: newSpec.title,
+          prompt: userPrompt,
+          og_description: ogDescription,
+        });
+        if (versionRes.error) console.warn("[ai-site-generate] spec edit version snapshot", versionRes.error);
+
+        send({ type: "chunk", text: html });
+        send({
+          type: "done",
+          slug: site.slug,
+          title: newSpec.title,
+          site_id: site.id,
+          version_number: newVersionNumber,
+          mode: "edit",
+          validation: { ok: true, issues: [] },
+        });
+      } catch (e) {
+        console.error("[ai-site-generate] spec edit exception", e);
+        send({ type: "error", message: "compose_failed" });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { ...cors, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
+  });
+}
+
 async function handleComposeMode(
   req: Request,
   payload: any,
@@ -2108,6 +2285,10 @@ async function handleComposeMode(
             html,
             og_description: ogDescription,
             owner_user_id: authedUserId,
+            // Persist the structured spec so later edits can mutate it
+            // and re-compose (~10s) instead of re-writing all the HTML
+            // through the slow legacy path (~3min).
+            spec,
           })
           .select("id")
           .maybeSingle();
@@ -2274,11 +2455,12 @@ serve(async (req) => {
     html: string;
     owner_user_id: string | null;
     edit_count: number;
+    spec: Spec | null;
   } | null = null;
   if (editSiteId) {
     const { data, error } = await admin
       .from("ai_sites")
-      .select("id, slug, html, owner_user_id, edit_count")
+      .select("id, slug, html, owner_user_id, edit_count, spec")
       .eq("id", editSiteId)
       .maybeSingle();
     if (error || !data) {
@@ -2295,6 +2477,18 @@ serve(async (req) => {
     ) {
       return jsonResponse(403, { error: "not_owner" });
     }
+  }
+
+  // Fast edit path: if this is an edit of a compose-built site (it has
+  // a stored spec), mutate the spec + re-run the template engine (~10s)
+  // instead of re-writing all the HTML through the slow legacy path
+  // (~3min). Falls through to legacy on any failure or for older sites
+  // that have no stored spec.
+  if (currentSite && currentSite.spec) {
+    const fast = await handleSpecEdit(currentSite as SpecEditSite, userPrompt, conversation, admin);
+    if (fast) return fast;
+    // Spec mutation failed — fall through to the legacy HTML edit path.
+    console.warn("[ai-site-generate] spec edit unavailable, falling back to legacy HTML edit");
   }
 
   // Rate-limit anonymous new generations so a runaway script can't
