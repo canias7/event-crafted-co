@@ -4146,7 +4146,7 @@ function InvoicesTab({
               <div className="flex items-start gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold">{inv.invoice_number}</h3>
+                    <span className="text-sm font-semibold tabular-nums tracking-tight">{inv.invoice_number}</span>
                     <InvoiceStatusPill status={inv.status} />
                     {inv.payment_failed_at && !inv.paid_at && (
                       <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-rose-100 text-rose-700">
