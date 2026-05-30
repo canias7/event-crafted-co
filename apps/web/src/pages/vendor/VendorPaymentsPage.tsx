@@ -3841,70 +3841,6 @@ function InvoicesTab({
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [lateFeeTarget, setLateFeeTarget] = useState<Invoice | null>(null);
-  const [lateFeeAmount, setLateFeeAmount] = useState("");
-  const [lateFeeSaving, setLateFeeSaving] = useState(false);
-
-  const openLateFeeModal = (inv: Invoice) => {
-    // Suggest 5% of the ORIGINAL engagement amount — not 5% of the
-    // already-bumped total. Using inv.total_cents directly compounds
-    // the fee on each "Add more" cycle (5% → 5.25% → 5.51% …) which
-    // the vendor never signed up for. Subtract any prior late fees
-    // to recover the pre-fee base.
-    const base = inv.total_cents - (inv.late_fee_cents ?? 0);
-    const suggested = Math.round(base * 0.05) / 100;
-    setLateFeeAmount(suggested.toFixed(2));
-    setLateFeeTarget(inv);
-  };
-  const saveLateFee = async () => {
-    if (!lateFeeTarget) return;
-    const amountNum = Number(lateFeeAmount);
-    if (!Number.isFinite(amountNum) || amountNum <= 0) {
-      toast.error("Enter a positive late-fee amount.");
-      return;
-    }
-    // Cap at $1M per fee — total_cents is an int4 column so the sum
-    // (original + accumulated late fees) maxes around $21M before
-    // Postgres overflows with an opaque "integer out of range".
-    // Far above any real late-fee, well below the column ceiling.
-    if (amountNum > 1_000_000) {
-      toast.error("Late fee can't exceed $1,000,000.");
-      return;
-    }
-    const feeCents = Math.round(amountNum * 100);
-    setLateFeeSaving(true);
-    // Atomic SQL increment via the invoice_add_late_fee RPC. The
-    // previous read-(stale-state)-modify-write path lost updates
-    // when two admins added a fee at once. The RPC's UPDATE row-
-    // locks so concurrent calls serialize correctly and rejects
-    // out-of-status invoices (e.g. one just paid by the buyer).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("invoice_add_late_fee", {
-      p_invoice_id: lateFeeTarget.id,
-      p_fee_cents: feeCents,
-    });
-    setLateFeeSaving(false);
-    if (error) {
-      console.error("[InvoicesTab] late fee save failed", error);
-      // Surface the RPC's message when it's actionable (status
-      // changed, not authorized) instead of swallowing as generic
-      // failure. Postgres errors like "integer out of range" still
-      // get a friendly summary.
-      const detail = typeof error?.message === "string" ? error.message : undefined;
-      const friendly = detail?.includes("status changed")
-        ? "This invoice was just paid — refresh and the late-fee button will disappear."
-        : detail?.includes("out of range")
-          ? "Late fee is too large for this invoice's total."
-          : undefined;
-      toast.error("Couldn't add late fee.", friendly ? { description: friendly } : undefined);
-      return;
-    }
-    const row = Array.isArray(data) ? data[0] : data;
-    const newTotal = (row?.total_cents as number | undefined) ?? lateFeeTarget.total_cents;
-    toast.success(`Late fee added · new total ${formatMoney(newTotal, lateFeeTarget.currency)}`);
-    setLateFeeTarget(null);
-    onChanged();
-  };
 
   // Lazy-imports jspdf + jspdf-autotable so the dashboard's initial
   // bundle stays slim — vendors only ever click Download on demand.
@@ -4068,21 +4004,6 @@ function InvoicesTab({
     onChanged();
   }, [vendorId, savingBrand, brandDirty, brandName, brandLocation, brandLogoUrl, brandTaxPct, onChanged]);
 
-  const sendInvoice = useCallback(async (id: string) => {
-    setSendingId(id);
-    const { error } = await supabase.functions.invoke("vendorapay-invoice-send", {
-      body: { invoice_id: id },
-    });
-    setSendingId(null);
-    if (error) {
-      if (await handleEmailBillingError(error, navigate)) return;
-      toast.error("Couldn't send invoice", { description: error.message });
-      return;
-    }
-    toast.success("Invoice email sent");
-    onChanged();
-  }, [onChanged, navigate]);
-
   // Manual "Send an invoice" — pick a saved invoice + type a recipient,
   // then send. Pure send: no billing, no status change (the backend
   // skips the sent_at stamp when a to_email override is present). Lets a
@@ -4131,12 +4052,6 @@ function InvoicesTab({
     toast.success("Invoice cancelled");
     onChanged();
   }, [onChanged]);
-
-  const copyInvoiceLink = useCallback((slug: string) => {
-    const url = `${window.location.origin}/pay/invoice/${slug}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied", { description: url });
-  }, []);
 
   // Persist current composer state as the vendor's default for this
   return (
@@ -4316,54 +4231,6 @@ function InvoicesTab({
       ) : null}
       </div>
       </div>
-
-      {lateFeeTarget && (
-        <Dialog open onOpenChange={(open) => { if (!open) setLateFeeTarget(null); }}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add late fee · {lateFeeTarget.invoice_number}</DialogTitle>
-              <DialogDescription>
-                Original total {formatMoney(lateFeeTarget.total_cents - (lateFeeTarget.late_fee_cents ?? 0), lateFeeTarget.currency)}
-                {lateFeeTarget.late_fee_cents
-                  ? ` · current late fee ${formatMoney(lateFeeTarget.late_fee_cents, lateFeeTarget.currency)}`
-                  : ""}
-                . Suggested = 5% of the original. Override below.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <div>
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1">
-                  Late fee amount
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={lateFeeAmount}
-                    onChange={(e) => setLateFeeAmount(e.target.value)}
-                    className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                  />
-                </div>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                The Pay page, the next overdue reminder email, and the receipt all use the updated total. The
-                buyer sees "Late fee" as its own line so there are no surprises.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button onClick={() => setLateFeeTarget(null)} variant="ghost" size="sm" className="rounded-full">
-                  Cancel
-                </Button>
-                <Button onClick={() => void saveLateFee()} disabled={lateFeeSaving} size="sm" className="rounded-full">
-                  {lateFeeSaving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
-                  Add fee
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
