@@ -3002,11 +3002,6 @@ function InvoiceCanvas({
                 placeholder="[Your Business Name]"
                 className={`block w-full text-xl font-bold tracking-tight ${editableCls}`}
               />
-              {category && (
-                <p className="text-[11px] mt-1 font-semibold text-muted-foreground tracking-wider">
-                  {category}
-                </p>
-              )}
               <div className="mt-2" style={{ width: 36, height: 2, background: accent }} />
             </div>
           </div>
