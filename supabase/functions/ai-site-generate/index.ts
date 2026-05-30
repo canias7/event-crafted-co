@@ -19,7 +19,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { compose, type Spec } from "../_shared/site_templates.ts";
+import { compose, type Section, type Spec } from "../_shared/site_templates.ts";
 
 // Pre-flight content filter. Anthropic + OpenAI both have safety
 // layers; this is a cheap upfront gate to reject obvious abuse
@@ -1860,6 +1860,131 @@ async function generateHeroIllustration(
   return data?.publicUrl ?? null;
 }
 
+// ────────────────────────────────────────────────────────────────────
+// COMPOSE-PATH GPT IMAGERY
+// The fast (spec/compose) path ships with Unsplash photos for an instant
+// first paint, then — in the background — swaps in custom gpt-image-2
+// imagery (hero + a couple of section photos) and re-composes the saved
+// HTML. Mood-matched: elegant/couple events get a painted watercolor,
+// everything else gets an editorial photograph.
+// ────────────────────────────────────────────────────────────────────
+
+// Event types that read best as a soft painted illustration vs. a photo.
+const PAINTED_EVENTS = new Set([
+  "wedding", "engagement", "anniversary", "vow_renewal",
+  "quinceanera", "gala", "bar_mitzvah", "bat_mitzvah",
+]);
+
+function imageStyleFor(eventType: string): "painted" | "photo" {
+  return PAINTED_EVENTS.has(eventType) ? "painted" : "photo";
+}
+
+// Generate one gpt-image-2 image, upload it, return the public URL (or
+// null on any failure → caller keeps the existing Unsplash photo).
+async function generateSpecImage(
+  subject: string,
+  style: "painted" | "photo",
+  slug: string,
+  admin: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  if (!OPENAI_API_KEY) return null;
+  const preface = style === "painted"
+    ? "Soft watercolor illustration for an elegant event invitation. " +
+      "Hand-painted, atmospheric, painterly, no text or letters anywhere. Subject: "
+    : "Editorial photograph for an event website — beautiful, warm natural " +
+      "lighting, professional composition, photorealistic, no text or letters. Subject: ";
+  const fullPrompt = preface + subject.slice(0, 800);
+
+  async function call(model: string) {
+    return await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, prompt: fullPrompt, n: 1, size: "1536x1024", quality: "high" }),
+    });
+  }
+
+  let res = await call("gpt-image-2");
+  if (!res.ok) {
+    const detail = await res.clone().text().catch(() => "");
+    if (/model_not_found|invalid_model|does not exist/i.test(detail)) res = await call("gpt-image-1");
+  }
+  if (!res.ok) {
+    console.warn("[ai-site-generate] spec image gen failed", res.status);
+    return null;
+  }
+  const body = await res.json().catch(() => null) as any;
+  const b64: string | undefined = body?.data?.[0]?.b64_json;
+  if (!b64) return null;
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const filename = `${slug}/gpt-${crypto.randomUUID()}.png`;
+  const { error: upErr } = await admin.storage
+    .from("ai-site-images")
+    .upload(filename, bytes, { contentType: "image/png", upsert: false });
+  if (upErr) {
+    console.warn("[ai-site-generate] spec image upload failed", upErr);
+    return null;
+  }
+  const { data } = admin.storage.from("ai-site-images").getPublicUrl(filename);
+  return data?.publicUrl ?? null;
+}
+
+// Fill a spec's hero + section photos with freshly generated GPT imagery.
+// Returns { spec, changed } — `changed` is false if nothing was generated
+// (e.g. OpenAI down) so the caller can skip the re-compose. Caps the
+// number of images so a big wedding doesn't fan out to a dozen calls.
+async function generateSpecImages(
+  spec: Spec,
+  slug: string,
+  admin: ReturnType<typeof createClient>,
+  maxImages = 4,
+): Promise<{ spec: Spec; changed: boolean }> {
+  const style = imageStyleFor(spec.event_type);
+  const venue = spec.venue ? ` at ${spec.venue}` : "";
+  const moodBits = [spec.title, spec.subtitle].filter(Boolean).join(", ");
+
+  // Build a work list: hero first, then story/gallery section photos.
+  const jobs: Array<{ apply: (url: string) => void; subject: string }> = [];
+
+  jobs.push({
+    subject: `${spec.event_type.replace(/_/g, " ")} hero scene${venue}. ${moodBits}. ` +
+      `${spec.theme.replace(/-/g, " ")} color palette, romantic atmospheric mood.`,
+    apply: (url) => { spec.hero_image = url; },
+  });
+
+  for (const sec of spec.sections) {
+    if (jobs.length >= maxImages) break;
+    if (sec.type === "story") {
+      const story = sec as Extract<Section, { type: "story" }>;
+      const t = story.title ?? "our story";
+      jobs.push({
+        subject: `${t} — ${spec.event_type.replace(/_/g, " ")}${venue}, ` +
+          `${spec.theme.replace(/-/g, " ")} palette, intimate detail shot.`,
+        apply: (url) => { story.image = url; },
+      });
+    } else if (sec.type === "gallery_strip") {
+      const gal = sec as Extract<Section, { type: "gallery_strip" }>;
+      const n = Math.min(gal.images?.length || 0, maxImages - jobs.length);
+      for (let i = 0; i < n; i++) {
+        const idx = i;
+        jobs.push({
+          subject: `${spec.event_type.replace(/_/g, " ")} moment${venue}, ` +
+            `${spec.theme.replace(/-/g, " ")} palette, candid editorial photo ${idx + 1}.`,
+          apply: (url) => { gal.images[idx] = url; },
+        });
+      }
+    }
+  }
+
+  // Generate sequentially (image models are heavy; parallel risks rate
+  // limits). Each failure just leaves that slot's Unsplash photo.
+  let changed = false;
+  for (const job of jobs.slice(0, maxImages)) {
+    const url = await generateSpecImage(job.subject, style, slug, admin);
+    if (url) { job.apply(url); changed = true; }
+  }
+  return { spec, changed };
+}
+
 function stripCodeFences(text: string): string {
   let t = text.trim();
   if (t.startsWith("```")) {
@@ -2289,6 +2414,31 @@ async function handleComposeMode(
           timing_ms: { spec: tSpec, total: Date.now() - t0 },
           validation: { ok: true, issues: [] },
         });
+
+        // Background: swap the Unsplash photos for custom gpt-image-2
+        // imagery (hero + section photos), re-compose, and patch the row.
+        // waitUntil keeps the function alive after the response closes.
+        // Best-effort: any failure leaves the Unsplash photos in place.
+        if (OPENAI_API_KEY) {
+          // @ts-ignore — EdgeRuntime is provided by the Supabase runtime
+          EdgeRuntime.waitUntil((async () => {
+            try {
+              const { spec: imgSpec, changed } = await generateSpecImages(
+                structuredClone(spec), slug, admin,
+              );
+              if (!changed) return;
+              let newHtml = compose({ spec: imgSpec, supabaseUrl: SUPABASE_URL, designBibleVersion: "tpl-v2" });
+              newHtml = newHtml.replaceAll("__SUPABASE_URL__", SUPABASE_URL).replaceAll("__SLUG__", slug);
+              const { error: patchErr } = await admin
+                .from("ai_sites")
+                .update({ html: newHtml, spec: imgSpec })
+                .eq("id", savedSiteId);
+              if (patchErr) console.warn("[ai-site-generate compose] image patch failed", patchErr);
+            } catch (e) {
+              console.warn("[ai-site-generate compose] background image gen error", e);
+            }
+          })());
+        }
       } catch (e) {
         console.error("[ai-site-generate compose] exception", e);
         send({ type: "error", message: "compose_failed" });
