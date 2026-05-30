@@ -4186,7 +4186,7 @@ function InvoicesTab({
               </div>
 
               <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {(inv.status === "sent" || inv.status === "overdue") ? (
+                {inv.status !== "cancelled" ? (
                   <Button
                     variant="outline"
                     size="sm"
