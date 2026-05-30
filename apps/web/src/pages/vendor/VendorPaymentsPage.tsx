@@ -3828,11 +3828,12 @@ function InvoicesTab({
     onChanged();
   }, [onChanged, navigate]);
 
-  // Manual "Send to" — emails the invoice to a typed address. Pure
-  // send: no billing, no status change (the backend skips the sent_at
-  // stamp when a to_email override is present). Lets a vendor hand-send
-  // a receipt if they'd rather not automate it.
-  const [sendToEmail, setSendToEmail] = useState<Record<string, string>>({});
+  // Manual "Send an invoice" — pick a saved invoice + type a recipient,
+  // then send. Pure send: no billing, no status change (the backend
+  // skips the sent_at stamp when a to_email override is present). Lets a
+  // vendor hand-send an invoice/receipt instead of relying on automation.
+  const [sendPickId, setSendPickId] = useState<string>("");
+  const [sendPickEmail, setSendPickEmail] = useState<string>("");
   const sendInvoiceTo = useCallback(async (id: string, email: string) => {
     const to = email.trim();
     if (!to) return;
@@ -3851,7 +3852,8 @@ function InvoicesTab({
       return;
     }
     toast.success(`Invoice sent to ${to}`);
-    setSendToEmail((m) => ({ ...m, [id]: "" }));
+    setSendPickEmail("");
+    setSendPickId("");
   }, [navigate]);
 
   const cancelInvoice = useCallback(async (inv: Invoice) => {
@@ -3903,6 +3905,58 @@ function InvoicesTab({
         uploadingLogo={uploadingLogo}
       />
 
+      {/* Send an invoice — pick a saved invoice, type the recipient,
+          hit Send. Separate from the list so the flow reads:
+          fill the template → Save → it shows in the list → select it
+          here and send. Pure send (no billing / status change). */}
+      {invoices.length > 0 ? (
+        <Card>
+          <div className="p-4 space-y-2">
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              Send an invoice
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={sendPickId}
+                onChange={(e) => setSendPickId(e.target.value)}
+                className="rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none min-w-[150px]"
+              >
+                <option value="">Select invoice…</option>
+                {invoices.map((inv) => (
+                  <option key={inv.id} value={inv.id}>
+                    {inv.invoice_number} · {inv.bill_to_name || inv.bill_to_email || "—"} · {formatMoney(inv.total_cents, inv.currency)}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="email"
+                inputMode="email"
+                placeholder="Send to email…"
+                value={sendPickEmail}
+                onChange={(e) => setSendPickEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && sendPickId) void sendInvoiceTo(sendPickId, sendPickEmail);
+                }}
+                className="flex-1 min-w-[160px] rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <Button
+                size="sm"
+                className="rounded-full shrink-0"
+                onClick={() => sendPickId && void sendInvoiceTo(sendPickId, sendPickEmail)}
+                disabled={!sendPickId || !sendPickEmail.trim() || sendingId === sendPickId}
+              >
+                {sendingId === sendPickId && sendPickId ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Mail className="w-3.5 h-3.5 mr-1" />
+                )}
+                Send
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       {/* Invoice list */}
       {invoices.length === 0 ? (
         <EmptyCard>
@@ -3951,35 +4005,6 @@ function InvoicesTab({
                 </div>
               </div>
 
-              {/* Manual "Send to" — email this invoice to any address.
-                  Just sends; no billing, no status change. */}
-              <div className="flex items-center gap-2 mt-3">
-                <input
-                  type="email"
-                  inputMode="email"
-                  placeholder="Send to email…"
-                  value={sendToEmail[inv.id] ?? ""}
-                  onChange={(e) => setSendToEmail((m) => ({ ...m, [inv.id]: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void sendInvoiceTo(inv.id, sendToEmail[inv.id] ?? "");
-                  }}
-                  className="flex-1 min-w-0 max-w-xs rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full shrink-0"
-                  onClick={() => void sendInvoiceTo(inv.id, sendToEmail[inv.id] ?? "")}
-                  disabled={sendingId === inv.id || !(sendToEmail[inv.id] ?? "").trim()}
-                >
-                  {sendingId === inv.id ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <Mail className="w-3.5 h-3.5 mr-1" />
-                  )}
-                  Send
-                </Button>
-              </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {inv.status === "draft" ? (
                   <Button
