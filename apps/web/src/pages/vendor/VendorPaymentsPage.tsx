@@ -3264,6 +3264,28 @@ function TransactionsTab({
   onRefunded: () => void;
 }) {
   const [refundFor, setRefundFor] = useState<Transaction | null>(null);
+
+  // KPI strip — money in, net after fees, and a count. Mirrors the
+  // Expenses tab's tile treatment (white card, foreground/10 border,
+  // Fraunces numerals) so the two surfaces read as siblings.
+  const kpis = useMemo(() => {
+    const currency = transactions[0]?.currency ?? "usd";
+    let grossInCents = 0;
+    let netInCents = 0;
+    let inCount = 0;
+    let feeCents = 0;
+    for (const t of transactions) {
+      const meta = kindLabel(t.kind);
+      if (meta.tone === "in") {
+        grossInCents += t.amount_cents;
+        netInCents += t.net_cents;
+        feeCents += t.fee_cents;
+        inCount++;
+      }
+    }
+    return { currency, grossInCents, netInCents, inCount, feeCents, total: transactions.length };
+  }, [transactions]);
+
   if (transactions.length === 0) {
     return (
       <EmptyCard>
@@ -3274,66 +3296,123 @@ function TransactionsTab({
     );
   }
   return (
-    <>
-      <Card>
-        <div className="hidden md:grid md:grid-cols-[1fr_120px_120px_140px_100px] gap-4 px-5 py-3 border-b border-foreground/5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
-          <div>Description</div>
-          <div>Type</div>
-          <div>Date</div>
-          <div className="text-right">Amount</div>
-          <div className="text-right">Action</div>
+    <div className="space-y-4">
+      {/* KPI strip — matches the Expenses tab tiles. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+            Money in
+          </div>
+          <div
+            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {formatMoney(kpis.grossInCents, kpis.currency)}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {kpis.inCount} payment{kpis.inCount === 1 ? "" : "s"}
+          </div>
         </div>
-        {transactions.map((t) => {
-          const meta = kindLabel(t.kind);
-          // Only refund actual card charges that resolved to a PI.
-          // Adjustments / fees / payouts don't refund through this
-          // flow, and a charge without an exposed PI id (legacy or
-          // not-yet-resolved) can't be refunded either.
-          const canRefund = t.kind === "charge" && t.amount_cents > 0 && Boolean(t.payment_intent_id);
-          return (
-            <div
-              key={t.id}
-              className="grid grid-cols-1 md:grid-cols-[1fr_120px_120px_140px_100px] gap-4 px-5 py-4 border-b border-foreground/5 last:border-b-0 items-center"
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{t.description ?? meta.label}</div>
-                <div className="text-[11px] text-muted-foreground md:hidden">
-                  {meta.label} · {formatDate(t.created_at)} · {t.status}
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground hidden md:block">{meta.label}</div>
-              <div className="text-xs text-muted-foreground hidden md:block">{formatDate(t.created_at)}</div>
-              <div className="text-right">
-                <div
-                  className={`text-sm font-semibold ${
-                    meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
-                  }`}
-                >
-                  {meta.tone === "out" ? "-" : "+"}
-                  {formatMoney(Math.abs(t.amount_cents), t.currency)}
-                </div>
-                {t.fee_cents > 0 ? (
-                  <div className="text-[10px] text-muted-foreground">
-                    Net {formatMoney(t.net_cents, t.currency)}
-                  </div>
-                ) : null}
-              </div>
-              <div className="text-right">
-                {canRefund ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setRefundFor(t)}
-                    className="rounded-full text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    Refund
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </Card>
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+            Net to bank
+          </div>
+          <div
+            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {formatMoney(kpis.netInCents, kpis.currency)}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
+            {kpis.feeCents > 0 ? <>{formatMoney(kpis.feeCents, kpis.currency)} fees</> : "After processing fees"}
+          </div>
+        </div>
+        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+            Transactions
+          </div>
+          <div
+            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+          >
+            {kpis.total}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Most recent {transactions.length} shown
+          </div>
+        </div>
+      </div>
+
+      {/* Ledger table — same white-card table treatment as Expenses. */}
+      <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+        <table className="w-full min-w-[640px]">
+          <thead>
+            <tr className="bg-foreground/[0.03]">
+              <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Description
+              </th>
+              <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Type
+              </th>
+              <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Date
+              </th>
+              <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Amount
+              </th>
+              <th className="px-4 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((t) => {
+              const meta = kindLabel(t.kind);
+              // Only refund actual card charges that resolved to a PI.
+              // Adjustments / fees / payouts don't refund through this
+              // flow, and a charge without an exposed PI id (legacy or
+              // not-yet-resolved) can't be refunded either.
+              const canRefund = t.kind === "charge" && t.amount_cents > 0 && Boolean(t.payment_intent_id);
+              return (
+                <tr key={t.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
+                  <td className="px-4 py-3">
+                    <div className="text-sm font-medium truncate max-w-[280px]">{t.description ?? meta.label}</div>
+                  </td>
+                  <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">{meta.label}</td>
+                  <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(t.created_at)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap">
+                    <div
+                      className={`text-sm font-semibold tabular-nums ${
+                        meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
+                      }`}
+                    >
+                      {meta.tone === "out" ? "-" : "+"}
+                      {formatMoney(Math.abs(t.amount_cents), t.currency)}
+                    </div>
+                    {t.fee_cents > 0 ? (
+                      <div className="text-[10px] text-muted-foreground tabular-nums">
+                        Net {formatMoney(t.net_cents, t.currency)}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {canRefund ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRefundFor(t)}
+                        className="rounded-full text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        Refund
+                      </Button>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       {refundFor ? (
         <RefundModal
           tx={refundFor}
@@ -3349,7 +3428,7 @@ function TransactionsTab({
           }}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
