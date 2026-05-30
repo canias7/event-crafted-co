@@ -156,9 +156,11 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
   const tableStart = y + 28;
   autoTable(doc, {
     startY: tableStart,
-    margin: { left: MARGIN, right: MARGIN },
+    // bottom margin reserves footer space so a multi-page line-item
+    // table breaks before overrunning the footer band.
+    margin: { left: MARGIN, right: MARGIN, bottom: 72 },
     head: [["Item", "Qty", "Unit price", "Amount"]],
-    body: invoice.line_items.map((li) => [
+    body: (invoice.line_items ?? []).map((li) => [
       li.name,
       String(li.qty),
       money(li.unit_price_cents, currency),
@@ -192,7 +194,21 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
   // ---- Totals (right-aligned) -------------------------------------
   // deno-lint-ignore no-explicit-any
   const tableEndY: number = (doc as any).lastAutoTable?.finalY ?? tableStart;
+  // Footer sits near the page bottom; keep content above it. If the
+  // running y gets within `need` pts of the footer, start a new page so
+  // the totals/notes never overlap the footer (long invoices spill the
+  // line-item table across pages via autoTable already).
+  const FOOTER_Y = 760;
+  const CONTENT_LIMIT = FOOTER_Y - 40;
+  const ensureSpace = (currentY: number, need: number): number => {
+    if (currentY + need > CONTENT_LIMIT) {
+      doc.addPage();
+      return MARGIN + 24;
+    }
+    return currentY;
+  };
   let ty = tableEndY + 16;
+  ty = ensureSpace(ty, 100); // totals block needs ~100pt
   const labelX = PAGE_W - MARGIN - 100;
   const valueX = PAGE_W - MARGIN;
 
@@ -257,7 +273,9 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
 
   // ---- Notes -----------------------------------------------------
   if (invoice.notes) {
-    ty += 36;
+    const wrapped = doc.splitTextToSize(invoice.notes, PAGE_W - MARGIN * 2);
+    // Make sure the heading + the wrapped note body fit; else new page.
+    ty = ensureSpace(ty + 36, 28 + wrapped.length * 14);
     doc
       .setFont("helvetica", "bold")
       .setFontSize(8)
@@ -268,22 +286,23 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
       .setFont("helvetica", "normal")
       .setFontSize(10)
       .setTextColor(...TEXT);
-    const wrapped = doc.splitTextToSize(invoice.notes, PAGE_W - MARGIN * 2);
     doc.text(wrapped, MARGIN, ty);
     ty += wrapped.length * 14;
   }
 
   // ---- Footer (mirrors the template: thank-you left, Powered-by right)
+  // Drawn at the bottom of whatever page we ended on (addPage above keeps
+  // the running content above CONTENT_LIMIT, so the footer never overlaps).
   doc
     .setDrawColor(...RULE)
     .setLineWidth(0.5)
-    .line(MARGIN, 744, PAGE_W - MARGIN, 744);
+    .line(MARGIN, FOOTER_Y - 16, PAGE_W - MARGIN, FOOTER_Y - 16);
   doc
     .setFont("helvetica", "normal")
     .setFontSize(8)
     .setTextColor(...MUTED);
-  doc.text("Thank you for your business.", MARGIN, 760);
-  doc.text("Powered by VendoraPay", PAGE_W - MARGIN, 760, { align: "right" });
+  doc.text("Thank you for your business.", MARGIN, FOOTER_Y);
+  doc.text("Powered by VendoraPay", PAGE_W - MARGIN, FOOTER_Y, { align: "right" });
 
   return doc;
 }
