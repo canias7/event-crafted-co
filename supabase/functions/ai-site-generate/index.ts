@@ -1953,39 +1953,80 @@ function extractJsonObject(text: string): string | null {
   return text.slice(start, end + 1);
 }
 
-async function callClaudeForSpec(userPrompt: string, conversation: Array<{ role: "user" | "assistant"; content: string }>): Promise<SpecResult> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "extended-cache-ttl-2025-04-11",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4000,
-      system: [{ type: "text", text: SPEC_SYSTEM_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
-      messages: [...conversation, { role: "user", content: userPrompt }],
-    }),
-  });
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// One attempt at the spec call. Separated from the retry wrapper so the
+// caller can re-roll on either a transient transport error (Anthropic
+// 429/5xx/network) or a flaky model output (no JSON / bad JSON / missing
+// fields) — both are recoverable by simply asking again.
+async function callClaudeForSpecOnce(
+  userPrompt: string,
+  conversation: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<SpecResult & { retryable?: boolean }> {
+  let res: Response;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "extended-cache-ttl-2025-04-11",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4000,
+        system: [{ type: "text", text: SPEC_SYSTEM_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
+        messages: [...conversation, { role: "user", content: userPrompt }],
+      }),
+    });
+  } catch (e) {
+    // Network/transport failure — always worth a retry.
+    return { ok: false, retryable: true, error: `fetch_error: ${(e as Error).message}` };
+  }
   if (!res.ok) {
     const t = await res.text().catch(() => "");
-    return { ok: false, error: `anthropic_${res.status}: ${t.slice(0, 200)}` };
+    // 408 timeout, 409 conflict, 429 rate limit, 5xx server, 529 overloaded.
+    const retryable = res.status === 408 || res.status === 409 || res.status === 429 || res.status >= 500;
+    return { ok: false, retryable, error: `anthropic_${res.status}: ${t.slice(0, 200)}` };
   }
   const body = await res.json().catch(() => null) as any;
   const text = body?.content?.[0]?.text ?? "";
   const json = extractJsonObject(text);
-  if (!json) return { ok: false, raw: text, error: "no_json_in_reply" };
+  // A malformed / empty reply is flaky model output — re-roll once more.
+  if (!json) return { ok: false, retryable: true, raw: text, error: "no_json_in_reply" };
   try {
     const spec = JSON.parse(json);
     if (!spec.title || !spec.theme || !spec.event_type || !Array.isArray(spec.sections)) {
-      return { ok: false, raw: json, error: "spec_missing_required_fields" };
+      return { ok: false, retryable: true, raw: json, error: "spec_missing_required_fields" };
     }
     return { ok: true, spec: spec as Spec, raw: json };
   } catch (e) {
-    return { ok: false, raw: json, error: `parse_error: ${(e as Error).message}` };
+    return { ok: false, retryable: true, raw: json, error: `parse_error: ${(e as Error).message}` };
   }
+}
+
+// Resilient spec call. Anthropic occasionally returns a transient
+// overload/5xx (or the model emits non-JSON), which previously surfaced
+// to the builder UI as an instant "spec_failed" and a broken generation.
+// Retry up to 4 attempts with exponential backoff + jitter. Backoff is
+// kept short because this runs inside a live SSE request the user is
+// waiting on.
+async function callClaudeForSpec(
+  userPrompt: string,
+  conversation: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<SpecResult> {
+  const maxAttempts = 4;
+  let last: SpecResult & { retryable?: boolean } = { ok: false, error: "no_attempt" };
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    last = await callClaudeForSpecOnce(userPrompt, conversation);
+    if (last.ok) return last;
+    if (!last.retryable || attempt === maxAttempts) break;
+    console.warn(`[ai-site-generate compose] spec attempt ${attempt}/${maxAttempts} failed (${last.error}), retrying…`);
+    // 0.5s, 1s, 2s base, plus up to 400ms jitter to avoid thundering herd.
+    await sleep(500 * 2 ** (attempt - 1) + Math.floor(Math.random() * 400));
+  }
+  return last;
 }
 
 async function handleComposeMode(
