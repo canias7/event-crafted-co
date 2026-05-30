@@ -4298,7 +4298,7 @@ function EmailSendingOptInCard() {
       setEnabled(next);
       toast.success(next ? "Client emails enabled" : "Client emails paused", {
         description: next
-          ? "Invoices, receipts, and reminders will now email your clients. Each send costs 1 credit."
+          ? "Invoices, receipts, and reminders will now email your clients."
           : "Invoices, receipts, and reminders won't email your clients until you re-enable.",
       });
     },
@@ -4313,9 +4313,8 @@ function EmailSendingOptInCard() {
             <h3 className="text-sm font-semibold">Send emails to clients</h3>
             <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
               Turn this on to email invoices, paid receipts, and payment
-              reminders to your clients. Each email costs{" "}
-              <strong>1 credit</strong>. While off, these client emails are
-              paused and you won't be charged. Applies to your whole account.
+              reminders to your clients — <strong>free</strong>. While off,
+              these client emails are paused. Applies to your whole account.
             </p>
           </div>
           <Switch

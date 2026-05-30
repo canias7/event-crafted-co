@@ -23,7 +23,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { senderFrom } from "../_shared/sender.ts";
-import { consumeCredits } from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -463,18 +462,6 @@ serve(async (req) => {
 
         <p style="margin:24px 0 0;font-size:12px;color:#6b6259;">Questions about this charge? Reply to this email — it goes straight to ${escapeHtml(businessName)}.</p>`,
       );
-      // Bill the vendor one credit for the client-facing receipt
-      // (the admin self-notification above is free). Best-effort: a
-      // paying customer must always get their receipt, so we never
-      // block the send on an empty balance — just record the debit
-      // when there's room. Ref ties the charge to the invoice/link.
-      if (vpRow?.user_id) {
-        await consumeCredits(
-          vpRow.user_id,
-          "email_send",
-          body.invoice_id ?? body.payment_link_id ?? null,
-        );
-      }
       await sendEmail(
         body.host_email,
         invoiceCtx?.number

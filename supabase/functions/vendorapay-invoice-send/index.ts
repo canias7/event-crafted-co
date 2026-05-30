@@ -20,11 +20,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { senderFrom } from "../_shared/sender.ts";
-import {
-  consumeCredits,
-  insufficientCreditsResponse,
-  refundCredits,
-} from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -212,20 +207,6 @@ serve(async (req) => {
       });
     }
 
-    // Bill the vendor one credit for this outbound client email
-    // (the platform pays Resend per send). Charge BEFORE the send so
-    // an out-of-credits vendor gets the standard 402 → top-up flow
-    // instead of a free email. Refunded below if Resend then fails.
-    const billUserId = vpRow?.user_id ?? null;
-    if (billUserId) {
-      const charged = await consumeCredits(billUserId, "email_send", invoiceId);
-      if (!charged.ok && charged.reason === "insufficient_credits") {
-        return insufficientCreditsResponse(charged.cost, cors);
-      }
-      // service_unavailable: don't hold the invoice hostage to a
-      // transient credits-ledger outage — fall through and send.
-    }
-
     // From header mirrors the buyer receipt — verified domain when
     // hooked up, platform fallback otherwise. Reply-To routes to
     // the vendor's account email so a buyer hitting Reply lands in
@@ -244,10 +225,6 @@ serve(async (req) => {
     if (!r.ok) {
       const txt = await r.text();
       console.error("[vendorapay-invoice-send] resend error", txt);
-      // Send failed after we debited — give the credit back.
-      if (billUserId) {
-        await refundCredits(billUserId, "email_send", invoiceId, "resend_failed");
-      }
       return json(500, { error: "email_failed", detail: txt.slice(0, 240) });
     }
 
