@@ -190,6 +190,74 @@ function esc(s: string): string {
   ));
 }
 
+// ───────────────────────────────────────────────────────────────────
+// IMAGE OPTIMIZATION
+// Crisper + faster images without any new dependency. For Unsplash URLs
+// we rewrite the query to request modern formats, the right width, and
+// auto compression. For other hosts we leave the URL untouched. A width
+// of `w` is the CSS display width; we also emit a 2x srcset for retina.
+// ───────────────────────────────────────────────────────────────────
+
+// Rewrite an Unsplash image URL to a given pixel width (and optional
+// height for fixed cover-cropped boxes) with auto-format (WebP/AVIF when
+// the browser supports it), sensible quality, and crop.
+function unsplashAt(url: string, w: number, q = 80, h?: number): string {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)images\.unsplash\.com$/.test(u.hostname)) return url;
+    u.searchParams.set("w", String(w));
+    u.searchParams.set("q", String(q));
+    u.searchParams.set("auto", "format,compress");
+    u.searchParams.set("fit", "crop");
+    if (h) u.searchParams.set("h", String(h));
+    else u.searchParams.delete("h"); // let width + fit drive it
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+const isUnsplash = (url: string): boolean => {
+  try { return /(^|\.)images\.unsplash\.com$/.test(new URL(url).hostname); }
+  catch { return false; }
+};
+
+// Build a responsive <img> with srcset (1x/2x/3x) + sizes for crisp,
+// fast-loading photos. `displayW` is the rendered CSS width in px; `sizes`
+// is the CSS sizes attribute. Falls back to a plain optimized img for
+// non-Unsplash hosts (e.g. our own Supabase uploads).
+function responsiveImg(
+  src: string,
+  opts: { displayW: number; displayH?: number; sizes: string; cls?: string; eager?: boolean; alt?: string },
+): string {
+  const { displayW, displayH, sizes, cls = "", eager = false, alt = "" } = opts;
+  const loading = eager ? "" : ` loading="lazy"`;
+  const decoding = ` decoding="async"`;
+  const cl = cls ? ` class="${cls}"` : "";
+  if (isUnsplash(src)) {
+    const srcset = [1, 2, 3]
+      .map((d) => `${unsplashAt(src, Math.round(displayW * d), 80, displayH ? Math.round(displayH * d) : undefined)} ${d}x`)
+      .join(", ");
+    return `<img src="${esc(unsplashAt(src, displayW, 80, displayH))}" srcset="${esc(srcset)}" sizes="${esc(sizes)}" alt="${esc(alt)}"${cl}${loading}${decoding}>`;
+  }
+  return `<img src="${esc(src)}" alt="${esc(alt)}"${cl}${loading}${decoding}>`;
+}
+
+// CSS background value for a hero/full-bleed image. Emits an
+// image-set() so retina screens pull a 2x asset, with a 1x fallback.
+// `w` is the 1x target width (heroes are wide → use viewport-scale).
+function bgImageSet(url: string, overlay: number, w = 2000): string {
+  const grad = `linear-gradient(rgba(0,0,0,${overlay}),rgba(0,0,0,${overlay}))`;
+  if (isUnsplash(url)) {
+    const x1 = unsplashAt(url, w, 80);
+    const x2 = unsplashAt(url, Math.round(w * 1.5), 70);
+    // Fallback first (older browsers), then image-set for modern ones.
+    return `background:${grad},url('${esc(x1)}') center/cover;` +
+      `background:${grad},image-set(url('${esc(x1)}') 1x, url('${esc(x2)}') 2x) center/cover;`;
+  }
+  return `background:${grad},url('${esc(url)}') center/cover;`;
+}
+
 function fmtDateISO(iso?: string): { day: number; date: string; year: number; time: string } | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -228,6 +296,67 @@ function paperTextureCss(t: Theme): string {
     default:
       return "";
   }
+}
+
+// Ornate vintage frame drawn as a border-image: a bold double rule with
+// curvy filigree scrollwork in each corner, a light bevel highlight, and
+// a soft dark offset copy behind it for dimension. Returns the CSS
+// properties to drop inside a rule. Rendered on a transparent border but
+// drawn thicker and outset, so it floats around the card edge without
+// resizing the box or disturbing the paper-stack pseudos.
+function vintageFrame(t: Theme): string {
+  const g = t.gold;
+  // viewBox 320×320, sliced at 132 → big ornate corners + straight
+  // double-rule edges that stretch cleanly between them.
+  // Top-left corner flourish, defined once and mirrored to all 4 corners:
+  // long, flowing S-curves that sweep along each edge and resolve into
+  // spiral curls — a more flowing, calligraphic vintage corner (vs the
+  // tighter bracket). Leaves and dots accent the scrolls.
+  const corner =
+    `<path d='M16 104 C16 54 54 16 104 16'/>` +                         // outer sweep
+    `<path d='M28 100 C28 60 60 28 100 28'/>` +                         // inner sweep (double rule)
+    // flowing scroll sweeping down the left edge into a spiral curl
+    `<path d='M22 150 C24 96 44 64 80 58 C52 70 46 104 54 140 C58 160 42 168 32 158 C24 150 30 138 42 142'/>` +
+    // mirrored flowing scroll sweeping along the top edge
+    `<path d='M150 22 C96 24 64 44 58 80 C70 52 104 46 140 54 C160 58 168 42 158 32 C150 24 138 30 142 42'/>` +
+    // calligraphic diagonal flourish that tapers toward the center
+    `<path d='M60 60 C86 66 108 90 116 124'/>` +
+    `<path d='M104 96 q18 -5 30 5 q-5 -18 -30 -5 Z' fill='${g}' stroke='none'/>` + // leaf
+    `<path d='M96 104 q-5 18 5 30 q-18 -5 -5 -30 Z' fill='${g}' stroke='none'/>` + // leaf
+    `<circle cx='58' cy='58' r='5' fill='${g}' stroke='none'/>` +
+    `<circle cx='120' cy='120' r='3.2' fill='${g}' stroke='none'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320' fill='none'>` +
+    // deep dark drop: two offset copies for a thicker raised shadow
+    `<g stroke='rgba(0,0,0,0.38)' stroke-linecap='round' transform='translate(3.4,3.8)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.4'/>` +
+    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2.2'/></g>` +
+    `<g stroke='rgba(0,0,0,0.20)' stroke-linecap='round' transform='translate(1.8,2)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.2'/></g>` +
+    // bright bevel highlight (sits up-left of the gold = catches light)
+    `<g stroke='rgba(255,252,242,0.8)' stroke-linecap='round' transform='translate(-1.8,-2)'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/></g>` +
+    // gold double rule — bold outer band + thin inner rule
+    `<g stroke='${g}' stroke-linecap='round'>` +
+    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6'/>` +
+    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2' opacity='0.85'/></g>` +
+    // corner filigree: dark drop copy first (depth), then gold on top
+    `<g id='dl' stroke='rgba(0,0,0,0.32)' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' transform='translate(2.4,2.6)'>${corner}</g>` +
+    `<use href='#dl' transform='translate(320,0) scale(-1,1)'/>` +
+    `<use href='#dl' transform='translate(320,320) scale(-1,-1)'/>` +
+    `<use href='#dl' transform='translate(0,320) scale(1,-1)'/>` +
+    `<g id='fl' stroke='${g}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>${corner}</g>` +
+    `<use href='#fl' transform='translate(320,0) scale(-1,1)'/>` +
+    `<use href='#fl' transform='translate(320,320) scale(-1,-1)'/>` +
+    `<use href='#fl' transform='translate(0,320) scale(1,-1)'/>` +
+    `</svg>`;
+  const uri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  return `
+    border:6px solid transparent;
+    border-image-source:url("${uri}");
+    border-image-slice:132;
+    border-image-width:46px;
+    border-image-outset:9px;
+    border-image-repeat:stretch;`;
 }
 
 function particleField(t: Theme): string {
@@ -449,7 +578,7 @@ function renderHero(spec: Spec, t: Theme): string {
     : "";
 
   return `
-<section class="hero" style="background:linear-gradient(rgba(0,0,0,${overlay}),rgba(0,0,0,${overlay})),url('${esc(img)}') center/cover">
+<section class="hero" style="${bgImageSet(img, overlay, 2000)}">
   ${spec.subtitle ? `<div class="hero-eyebrow">${esc(spec.subtitle)}</div>` : ""}
   __GUEST_BLOCK__
   ${spec.honorees && spec.honorees.length
@@ -467,7 +596,7 @@ function renderStory(s: Extract<Section, { type: "story" }>, t: Theme): string {
 <section class="paper-card story" data-section="story">
   <div class="ornament-rule"></div>
   <h2 class="section-title">${esc(s.title ?? "Our Story")}</h2>
-  ${s.image ? `<img src="${esc(s.image)}" alt="" class="story-image" loading="lazy">` : ""}
+  ${s.image ? responsiveImg(s.image, { displayW: 840, sizes: "(max-width:920px) 92vw, 840px", cls: "story-image" }) : ""}
   <div class="section-body">${esc(s.body).replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br>").replace(/^/, "<p>").replace(/$/, "</p>")}</div>
 </section>`;
 }
@@ -588,7 +717,7 @@ function renderQuote(s: Extract<Section, { type: "quote" }>, t: Theme): string {
 
 function renderGalleryStrip(s: Extract<Section, { type: "gallery_strip" }>, t: Theme): string {
   const imgs = (s.images || []).map((src) =>
-    `<img src="${esc(src)}" alt="" loading="lazy" class="strip-img">`
+    responsiveImg(src, { displayW: 480, displayH: 520, sizes: "(max-width:800px) 60vw, 480px", cls: "strip-img" })
   ).join("");
   return `
 <section class="gallery-strip" data-section="gallery_strip">
@@ -910,6 +1039,7 @@ ${googleFontsLink(t)}
     background-blend-mode:multiply,normal;
     ${paperTextureCss(t)}
     border-radius:6px;
+    ${vintageFrame(t)}
     padding:clamp(2.25rem,4.5vw,3.25rem);
     position:relative;
     /* No isolation — z-index:-1 pseudos need to escape behind. */
@@ -925,36 +1055,7 @@ ${googleFontsLink(t)}
       0 60px 120px rgba(0,0,0,0.22),
       0 0 80px ${t.gold}1f;
   }
-  /* Inner gold border — thin line ~10px in from the edge, mimics
-     the ornamental ruled border of premium stationery. */
   .paper-card > *:first-child{position:relative}
-  .paper-card::after,
-  .paper-card::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:6px;
-    z-index:-1;
-  }
-  /* Paper-stack: two slightly rotated sheets that peek out from
-     behind the main card. Big offsets so the layers are visibly
-     stacked. */
-  .paper-card::before{
-    background:var(--surface2);
-    transform:rotate(-1.8deg) translate(-14px,9px);
-    opacity:0.95;
-    box-shadow:0 8px 18px rgba(0,0,0,0.30),0 24px 40px rgba(0,0,0,0.22);
-  }
-  .paper-card::after{
-    background:color-mix(in srgb, var(--surface2) 80%, #000 15%);
-    transform:rotate(1.4deg) translate(12px,6px);
-    opacity:0.85;
-    box-shadow:0 6px 14px rgba(0,0,0,0.25);
-  }
-  /* Inner ruled border, drawn via an outline-styled child layer.
-     We attach it to .ornament-rule's parent without adding markup
-     by using a fixed-position pseudo from a wrapper. Cheap trick:
-     a fourth pseudo on the section element instead. */
   section.paper-card{box-shadow:
     0 1px 2px rgba(0,0,0,0.45),
     0 4px 10px rgba(0,0,0,0.25),

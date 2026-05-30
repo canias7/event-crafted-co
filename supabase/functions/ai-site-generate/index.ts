@@ -222,8 +222,9 @@ function validateGenerated(html: string, userPrompt: string): {
 const VERIFIED_PHOTOS = `
 EVERY PHOTO LISTED HERE IS HEAD-CHECKED AND WORKS. NEVER invent a photo ID — only use what's listed.
 
-URL format: https://images.unsplash.com/photo-<id>?w=1600&auto=format&fit=crop
-For backgrounds: ?w=2000&q=80&fit=crop. For square: &h=1600 too.
+URL format: https://images.unsplash.com/photo-<id>?w=1600&q=80&auto=format,compress&fit=crop
+For backgrounds: ?w=2000&q=80&auto=format,compress&fit=crop. For square: &h=1600 too.
+(The renderer re-optimizes widths + adds retina srcset automatically, so just pick a relevant photo.)
 
 ═══ WEDDING / ENGAGEMENT / ANNIVERSARY ═══
 
@@ -1824,7 +1825,9 @@ async function generateHeroIllustration(
         prompt: fullPrompt,
         n: 1,
         size: "1536x1024",
-        quality: "medium",
+        // High quality for a crisp, detailed painted hero. The medium
+        // setting produced soft/low-detail results on large screens.
+        quality: "high",
       }),
     });
   }
