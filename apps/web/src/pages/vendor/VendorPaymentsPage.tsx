@@ -2847,54 +2847,6 @@ function InvoiceCanvas({
       <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
         <header className="flex items-start justify-between gap-6 flex-wrap">
           <div className="flex items-center gap-4 min-w-0">
-            {/* Editable logo — click the avatar to pick a new image */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingLogo}
-              className="relative group w-14 h-14 rounded-full ring-1 ring-foreground/10 shrink-0 overflow-hidden disabled:opacity-60"
-              title="Change logo"
-              aria-label="Change logo"
-            >
-              {brandLogoUrl ? (
-                <img
-                  src={brandLogoUrl}
-                  alt={displayName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div
-                  className="w-full h-full inline-flex items-center justify-center"
-                  style={{ background: "rgba(30,80,180,0.10)" }}
-                >
-                  <CreditCard className="w-6 h-6" style={{ color: accent }} />
-                </div>
-              )}
-              <span className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100">
-                {uploadingLogo ? "…" : "Change"}
-              </span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) setPendingFile(f);
-                e.target.value = "";
-              }}
-            />
-            {pendingFile && (
-              <LogoCropperModal
-                file={pendingFile}
-                onCancel={() => setPendingFile(null)}
-                onApply={(cropped) => {
-                  setPendingFile(null);
-                  void onPickLogo(cropped);
-                }}
-              />
-            )}
             <div className="min-w-0">
               <input
                 type="text"
