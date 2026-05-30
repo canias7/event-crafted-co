@@ -2913,34 +2913,6 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
             }
           />
         </div>
-        {totals.expensesByCategory.length > 0 && (
-          <Card>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-6 gap-y-1 p-5 text-sm mt-4">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold pb-2 border-b border-foreground/[0.06]">
-                Category
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
-                Entries
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
-                Spend
-              </div>
-              {(() => {
-                const maxCents = totals.expensesByCategory[0]?.cents ?? 0;
-                return totals.expensesByCategory.map((row) => (
-                  <div key={row.category} className="contents">
-                    <div className="py-2 font-medium flex items-center gap-2">
-                      <InlineBar value={row.cents} max={maxCents} />
-                      {expenseCategoryLabel(row.category)}
-                    </div>
-                    <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
-                    <div className="py-2 text-right tabular-nums">{formatMoney(row.cents, totals.currency)}</div>
-                  </div>
-                ));
-              })()}
-            </div>
-          </Card>
-        )}
       </section>
 
       {aging.totalCount > 0 && (
@@ -2982,16 +2954,113 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
         </section>
       )}
 
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Revenue trend ({sparkline.weekly ? "weekly" : "daily"})
-        </h2>
-        <Card>
-          <div className="p-5">
-            <RevenueSparkline data={sparkline} currency={totals.currency} />
-          </div>
-        </Card>
-      </section>
+      {/* Category breakdown, revenue trend, and paid invoices laid out
+          a third each, side by side (stacked on mobile). items-start so
+          the cards stay top-aligned when their heights differ. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+        {totals.expensesByCategory.length > 0 ? (
+          <section>
+            <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+              Expenses by category
+            </h2>
+            <Card>
+              <div className="grid grid-cols-[1fr_auto_auto] gap-x-6 gap-y-1 p-5 text-sm">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold pb-2 border-b border-foreground/[0.06]">
+                  Category
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                  Entries
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold text-right pb-2 border-b border-foreground/[0.06]">
+                  Spend
+                </div>
+                {(() => {
+                  const maxCents = totals.expensesByCategory[0]?.cents ?? 0;
+                  return totals.expensesByCategory.map((row) => (
+                    <div key={row.category} className="contents">
+                      <div className="py-2 font-medium flex items-center gap-2">
+                        <InlineBar value={row.cents} max={maxCents} />
+                        {expenseCategoryLabel(row.category)}
+                      </div>
+                      <div className="py-2 text-right tabular-nums text-muted-foreground">{row.count}</div>
+                      <div className="py-2 text-right tabular-nums">{formatMoney(row.cents, totals.currency)}</div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </Card>
+          </section>
+        ) : null}
+
+        <section>
+          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+            Revenue trend ({sparkline.weekly ? "weekly" : "daily"})
+          </h2>
+          <Card>
+            <div className="p-5">
+              <RevenueSparkline data={sparkline} currency={totals.currency} />
+            </div>
+          </Card>
+        </section>
+
+        <section>
+          <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+            Paid invoices ({range.label.toLowerCase()})
+          </h2>
+          {loading ? (
+            <EmptyCard>
+              <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
+              Loading…
+            </EmptyCard>
+          ) : paidInRange.length === 0 ? (
+            <EmptyCard>
+              No invoices paid in this range. Try widening the window or check the All time view.
+            </EmptyCard>
+          ) : (
+            <Card>
+              <div className="divide-y divide-foreground/[0.05]">
+                {paidInRange
+                  .slice()
+                  .sort((a, b) =>
+                    a.paid_at && b.paid_at ? b.paid_at.localeCompare(a.paid_at) : 0,
+                  )
+                  .slice(0, 50)
+                  .map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="p-4 flex items-start justify-between gap-3 flex-wrap"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">
+                          {inv.invoice_number}
+                          <span className="text-muted-foreground"> · {inv.bill_to_name ?? inv.bill_to_email ?? "—"}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          Paid {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : "—"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold font-variant-numeric tabular-nums">
+                          {formatMoney(inv.total_cents, inv.currency)}
+                        </div>
+                        {inv.tax_cents > 0 ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            incl. {formatMoney(inv.tax_cents, inv.currency)} tax
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </Card>
+          )}
+          {paidInRange.length > 50 ? (
+            <p className="text-xs text-muted-foreground mt-2">
+              Showing 50 most recent. Export the CSV for the full list.
+            </p>
+          ) : null}
+        </section>
+      </div>
 
       {totals.taxByState.length > 0 && (
         <section>
@@ -3035,63 +3104,6 @@ function ReportsTab({ accountVendorIds }: { accountVendorIds: string[] }) {
         </section>
       )}
 
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Paid invoices ({range.label.toLowerCase()})
-        </h2>
-        {loading ? (
-          <EmptyCard>
-            <Loader2 className="w-4 h-4 mr-2 inline animate-spin" />
-            Loading…
-          </EmptyCard>
-        ) : paidInRange.length === 0 ? (
-          <EmptyCard>
-            No invoices paid in this range. Try widening the window or check the All time view.
-          </EmptyCard>
-        ) : (
-          <Card>
-            <div className="divide-y divide-foreground/[0.05]">
-              {paidInRange
-                .slice()
-                .sort((a, b) =>
-                  a.paid_at && b.paid_at ? b.paid_at.localeCompare(a.paid_at) : 0,
-                )
-                .slice(0, 50)
-                .map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="p-4 flex items-start justify-between gap-3 flex-wrap"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium">
-                        {inv.invoice_number}
-                        <span className="text-muted-foreground"> · {inv.bill_to_name ?? inv.bill_to_email ?? "—"}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        Paid {inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : "—"}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold font-variant-numeric tabular-nums">
-                        {formatMoney(inv.total_cents, inv.currency)}
-                      </div>
-                      {inv.tax_cents > 0 ? (
-                        <div className="text-[11px] text-muted-foreground">
-                          incl. {formatMoney(inv.tax_cents, inv.currency)} tax
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </Card>
-        )}
-        {paidInRange.length > 50 ? (
-          <p className="text-xs text-muted-foreground mt-2">
-            Showing 50 most recent. Export the CSV for the full list.
-          </p>
-        ) : null}
-      </section>
     </div>
   );
 }
