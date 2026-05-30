@@ -4105,6 +4105,9 @@ function InvoicesTab({
         </EmptyCard>
       ) : (
         <Card>
+          {/* Scrollable list — caps the height to ~5 rows so a long
+              invoice history scrolls instead of pushing the page down. */}
+          <div className="max-h-[560px] overflow-y-auto">
           {invoices.map((inv, idx) => (
             <div key={inv.id} className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}>
               <div className="flex items-start gap-4 flex-wrap">
@@ -4187,6 +4190,7 @@ function InvoicesTab({
               </div>
             </div>
           ))}
+          </div>
         </Card>
       )}
 
