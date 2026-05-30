@@ -2939,7 +2939,18 @@ function InvoiceCanvas({
     if (email) {
       const customerPayload: Record<string, unknown> = { vendor_id: vendorId, email };
       if (trimmedName) customerPayload.name = trimmedName;
-      await db.from("vendor_customers").upsert(customerPayload, { onConflict: "vendor_id,email" });
+      // Surface upsert failures instead of swallowing them: if the
+      // customer-directory write fails, the invoice's bill_to_email
+      // wouldn't join to any customer row and the CustomersTab
+      // per-customer list would silently miss this invoice.
+      const { error: custErr } = await db
+        .from("vendor_customers")
+        .upsert(customerPayload, { onConflict: "vendor_id,email" });
+      if (custErr) {
+        setSavingInvoice(false);
+        toast.error("Couldn't save customer", { description: custErr.message });
+        return;
+      }
     }
     // Totals derived from the FILTERED parsedItems (not the raw rows) so
     // line_items, subtotal_cents, tax_cents and total_cents always
@@ -3921,7 +3932,7 @@ function InvoicesTab({
             issue_date: inv.issue_date,
             due_date: inv.due_date,
             notes: inv.notes,
-            line_items: inv.line_items.map((li) => ({
+            line_items: (inv.line_items ?? []).map((li) => ({
               name: li.name,
               qty: li.qty,
               unit_price_cents: li.unit_price_cents,
@@ -4191,7 +4202,7 @@ function InvoicesTab({
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {inv.bill_to_name || inv.bill_to_email || "No recipient"} ·{" "}
-                    {inv.line_items.length} line{inv.line_items.length === 1 ? "" : "s"} ·{" "}
+                    {(inv.line_items?.length ?? 0)} line{(inv.line_items?.length ?? 0) === 1 ? "" : "s"} ·{" "}
                     Issued {formatDate(inv.issue_date)}
                     {inv.due_date ? ` · Due ${formatDate(inv.due_date)}` : ""}
                     {inv.reminder_sent_at && (inv.status === "sent" || inv.status === "overdue")
