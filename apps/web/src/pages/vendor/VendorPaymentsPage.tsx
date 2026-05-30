@@ -586,7 +586,10 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          // INSERT + UPDATE so newly-created invoices (e.g. a
+          // cron-generated recurring invoice, or one saved in another
+          // tab) appear live, not just status changes on existing rows.
+          event: "*",
           schema: "public",
           table: "invoices",
           filter: `vendor_id=eq.${vendorId}`,
