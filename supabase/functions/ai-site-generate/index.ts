@@ -2056,6 +2056,8 @@ RULES:
 3. cover_variant: "monogram" for weddings/anniversaries/engagements/vow_renewal (any couple event). "envelope" for everything else.
 3b. frame — the ornate border around each section card. Pick the one whose vibe best fits the event; omit to use the default. Options:
    • "gold-baroque" — ornate antique gold baroque frame; formal, luxurious (weddings, galas, anniversaries, black-tie).
+   • "garden-botanical" — soft watercolor eucalyptus + blush florals; airy, romantic (garden weddings, bridal/baby showers, spring & outdoor events).
+   • "art-deco" — gold geometric 1920s Gatsby frame; glamorous (galas, NYE, cocktail parties, milestone birthdays, black-tie).
 4. event_start MUST include a timezone offset (-04:00 for ET, +01:00 for CET, -07:00 for PT, etc). Pick the right one for the venue.
 5. venue_lat/lng: include when you know the venue. Lake Como: 46.012, 9.288. The Plaza NYC: 40.764, -73.974. Napa Valley: 38.297, -122.286. Tulum: 20.214, -87.466. Skip for "our backyard" / vague locations.
 6. hero_image: pick a real Unsplash photo ID matching the mood (wedding couple, garden, vineyard, beach, etc). Don't invent IDs — when unsure, use https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=80&fit=crop (versatile couple shot) as fallback.

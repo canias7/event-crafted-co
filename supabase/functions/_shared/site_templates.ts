@@ -311,7 +311,7 @@ function paperTextureCss(t: Theme): string {
 // entry here. `slice` is the border-image slice in source px (how far the
 // ornament reaches from each edge); `width` is the rendered band width.
 // `desc` is the vibe hint Claude uses to pick a fitting frame per event.
-export type FrameId = "gold-baroque";
+export type FrameId = "gold-baroque" | "garden-botanical" | "art-deco";
 
 export interface FrameDef {
   id: FrameId;
@@ -328,6 +328,20 @@ export const FRAMES: Record<FrameId, FrameDef> = {
     slice: 132,
     width: 34,
     desc: "ornate antique gold baroque frame — formal, luxurious; weddings, galas, anniversaries, black-tie",
+  },
+  "garden-botanical": {
+    id: "garden-botanical",
+    url: "https://eventvendora.com/frames/garden-botanical.png",
+    slice: 150,
+    width: 38,
+    desc: "soft watercolor eucalyptus-and-blush-floral frame — airy, romantic; garden weddings, bridal/baby showers, spring/outdoor events",
+  },
+  "art-deco": {
+    id: "art-deco",
+    url: "https://eventvendora.com/frames/art-deco.png",
+    slice: 150,
+    width: 34,
+    desc: "gold geometric Art Deco / Gatsby frame — glamorous, 1920s; galas, NYE, cocktail parties, milestone birthdays, black-tie",
   },
 };
 
