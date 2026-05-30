@@ -3905,57 +3905,6 @@ function InvoicesTab({
         uploadingLogo={uploadingLogo}
       />
 
-      {/* Send an invoice — pick a saved invoice, type the recipient,
-          hit Send. Separate from the list so the flow reads:
-          fill the template → Save → it shows in the list → select it
-          here and send. Pure send (no billing / status change). */}
-      {invoices.length > 0 ? (
-        <Card>
-          <div className="p-4 space-y-2">
-            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-              Send an invoice
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                value={sendPickId}
-                onChange={(e) => setSendPickId(e.target.value)}
-                className="rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none min-w-[150px]"
-              >
-                <option value="">Select invoice…</option>
-                {invoices.map((inv) => (
-                  <option key={inv.id} value={inv.id}>
-                    {inv.invoice_number} · {inv.bill_to_name || inv.bill_to_email || "—"} · {formatMoney(inv.total_cents, inv.currency)}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="email"
-                inputMode="email"
-                placeholder="Send to email…"
-                value={sendPickEmail}
-                onChange={(e) => setSendPickEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && sendPickId) void sendInvoiceTo(sendPickId, sendPickEmail);
-                }}
-                className="flex-1 min-w-[160px] rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-              <Button
-                size="sm"
-                className="rounded-full shrink-0"
-                onClick={() => sendPickId && void sendInvoiceTo(sendPickId, sendPickEmail)}
-                disabled={!sendPickId || !sendPickEmail.trim() || sendingId === sendPickId}
-              >
-                {sendingId === sendPickId && sendPickId ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                ) : (
-                  <Mail className="w-3.5 h-3.5 mr-1" />
-                )}
-                Send
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ) : null}
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
@@ -4103,6 +4052,57 @@ function InvoicesTab({
           ))}
         </Card>
       )}
+
+      {/* Send an invoice — sits below the list. Flow: fill the template
+          → Save → the invoice shows in the list above → pick it from the
+          dropdown here, type the recipient, Send. Pure send. */}
+      {invoices.length > 0 ? (
+        <Card>
+          <div className="p-4 space-y-2">
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              Send an invoice
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={sendPickId}
+                onChange={(e) => setSendPickId(e.target.value)}
+                className="rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none min-w-[150px]"
+              >
+                <option value="">Select invoice…</option>
+                {invoices.map((inv) => (
+                  <option key={inv.id} value={inv.id}>
+                    {inv.invoice_number} · {inv.bill_to_name || inv.bill_to_email || "—"} · {formatMoney(inv.total_cents, inv.currency)}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="email"
+                inputMode="email"
+                placeholder="Send to email…"
+                value={sendPickEmail}
+                onChange={(e) => setSendPickEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && sendPickId) void sendInvoiceTo(sendPickId, sendPickEmail);
+                }}
+                className="flex-1 min-w-[160px] rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <Button
+                size="sm"
+                className="rounded-full shrink-0"
+                onClick={() => sendPickId && void sendInvoiceTo(sendPickId, sendPickEmail)}
+                disabled={!sendPickId || !sendPickEmail.trim() || sendingId === sendPickId}
+              >
+                {sendingId === sendPickId && sendPickId ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Mail className="w-3.5 h-3.5 mr-1" />
+                )}
+                Send
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : null}
       </div>
 
       {lateFeeTarget && (
