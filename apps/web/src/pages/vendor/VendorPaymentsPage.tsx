@@ -7787,14 +7787,20 @@ function PayLinksTab({
 }
 
 function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
-  const map: Record<PaymentLink["status"], { label: string; className: string }> = {
+  // refunded / partial_refund are set by the webhook when a paid link is
+  // refunded; they must be in the map or `m.className` is undefined and
+  // crashes the row. Fallback below is the final guard against any
+  // unmapped status (mirrors InvoiceStatusPill).
+  const map: Record<string, { label: string; className: string }> = {
     active: { label: "Active", className: "bg-emerald-100 text-emerald-700" },
     paid: { label: "Paid", className: "bg-sky-100 text-sky-700" },
     cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700" },
     expired: { label: "Expired", className: "bg-amber-100 text-amber-800" },
     scheduled: { label: "Scheduled", className: "bg-violet-100 text-violet-700" },
+    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800" },
+    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800" },
   };
-  const m = map[status];
+  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700" };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
       {m.label}
