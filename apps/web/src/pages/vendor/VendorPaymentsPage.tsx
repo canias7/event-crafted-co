@@ -3905,24 +3905,8 @@ function InvoicesTab({
         onPickLogo={uploadLogo}
         uploadingLogo={uploadingLogo}
       />
-      <Card>
-        <div className="p-4 flex justify-end">
-          <Button
-            onClick={saveBrand}
-            disabled={savingBrand || !brandDirty || !vendorId}
-            className="rounded-full"
-          >
-            {savingBrand ? (
-              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-            ) : null}
-            Save template
-          </Button>
-        </div>
-      </Card>
 
       <EmailSendingOptInCard />
-
-      <SenderDomainCard vendorId={vendorId} />
 
       {/* Invoice list */}
       {invoices.length === 0 ? (
