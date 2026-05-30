@@ -360,13 +360,20 @@ export async function aggregateFeesForPeriod(args: {
   // Hard cap on pages so a runaway loop can't bill us into oblivion.
   // 50 pages × 100 rows = 5000 transactions per period — enough for
   // any realistic month / quarter / year for a single vendor.
+  // Money-in balance-transaction types. VendoraPay uses Stripe
+  // DESTINATION charges (transfer_data.destination), which land on the
+  // connected account as type "payment" — NOT "charge" (that's only for
+  // direct charges). The old filter `type: "charge"` matched nothing on
+  // a connected account, so fees/gross came back 0 and NET TO BANK was
+  // wrong. We can't pass an array to the API's `type` param, so omit it
+  // and filter in code to the incoming types.
+  const INCOMING_TYPES = new Set(["charge", "payment"]);
   for (let page = 0; page < 50; page++) {
     // deno-lint-ignore no-explicit-any
     const list: any = await client().balanceTransactions.list(
       {
         limit: 100,
         starting_after,
-        type: "charge",
         created: {
           gte: Math.floor(args.since.getTime() / 1000),
           lt: Math.floor(args.until.getTime() / 1000),
@@ -375,6 +382,7 @@ export async function aggregateFeesForPeriod(args: {
       { stripeAccount: args.account_id },
     );
     for (const t of list.data) {
+      if (!INCOMING_TYPES.has(t.type)) continue;
       gross_cents += t.amount;
       fees_cents += t.fee;
       net_cents += t.net;
