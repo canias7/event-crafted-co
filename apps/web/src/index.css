@@ -179,6 +179,23 @@
 }
 
 @layer utilities {
+  /* Hide the scrollbar (and its native Windows stepper ▲▼ arrows) while
+     keeping scroll behavior. The .scrollbar-hide class was referenced on
+     the horizontal tab strips (e.g. the Files sub-nav) but only ever
+     defined inside the print block — so in normal view those navs kept
+     the OS scrollbar, and on Windows that meant the little up/down arrow
+     buttons showed at the strip's right edge. Defining it here for real
+     removes them. */
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* old Edge/IE */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chromium/Safari — also kills the stepper buttons */
+    width: 0;
+    height: 0;
+  }
+
   .font-display {
     font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
     font-weight: 700;
