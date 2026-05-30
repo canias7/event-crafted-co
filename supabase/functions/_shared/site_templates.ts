@@ -190,6 +190,74 @@ function esc(s: string): string {
   ));
 }
 
+// ───────────────────────────────────────────────────────────────────
+// IMAGE OPTIMIZATION
+// Crisper + faster images without any new dependency. For Unsplash URLs
+// we rewrite the query to request modern formats, the right width, and
+// auto compression. For other hosts we leave the URL untouched. A width
+// of `w` is the CSS display width; we also emit a 2x srcset for retina.
+// ───────────────────────────────────────────────────────────────────
+
+// Rewrite an Unsplash image URL to a given pixel width (and optional
+// height for fixed cover-cropped boxes) with auto-format (WebP/AVIF when
+// the browser supports it), sensible quality, and crop.
+function unsplashAt(url: string, w: number, q = 80, h?: number): string {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)images\.unsplash\.com$/.test(u.hostname)) return url;
+    u.searchParams.set("w", String(w));
+    u.searchParams.set("q", String(q));
+    u.searchParams.set("auto", "format,compress");
+    u.searchParams.set("fit", "crop");
+    if (h) u.searchParams.set("h", String(h));
+    else u.searchParams.delete("h"); // let width + fit drive it
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+const isUnsplash = (url: string): boolean => {
+  try { return /(^|\.)images\.unsplash\.com$/.test(new URL(url).hostname); }
+  catch { return false; }
+};
+
+// Build a responsive <img> with srcset (1x/2x/3x) + sizes for crisp,
+// fast-loading photos. `displayW` is the rendered CSS width in px; `sizes`
+// is the CSS sizes attribute. Falls back to a plain optimized img for
+// non-Unsplash hosts (e.g. our own Supabase uploads).
+function responsiveImg(
+  src: string,
+  opts: { displayW: number; displayH?: number; sizes: string; cls?: string; eager?: boolean; alt?: string },
+): string {
+  const { displayW, displayH, sizes, cls = "", eager = false, alt = "" } = opts;
+  const loading = eager ? "" : ` loading="lazy"`;
+  const decoding = ` decoding="async"`;
+  const cl = cls ? ` class="${cls}"` : "";
+  if (isUnsplash(src)) {
+    const srcset = [1, 2, 3]
+      .map((d) => `${unsplashAt(src, Math.round(displayW * d), 80, displayH ? Math.round(displayH * d) : undefined)} ${d}x`)
+      .join(", ");
+    return `<img src="${esc(unsplashAt(src, displayW, 80, displayH))}" srcset="${esc(srcset)}" sizes="${esc(sizes)}" alt="${esc(alt)}"${cl}${loading}${decoding}>`;
+  }
+  return `<img src="${esc(src)}" alt="${esc(alt)}"${cl}${loading}${decoding}>`;
+}
+
+// CSS background value for a hero/full-bleed image. Emits an
+// image-set() so retina screens pull a 2x asset, with a 1x fallback.
+// `w` is the 1x target width (heroes are wide → use viewport-scale).
+function bgImageSet(url: string, overlay: number, w = 2000): string {
+  const grad = `linear-gradient(rgba(0,0,0,${overlay}),rgba(0,0,0,${overlay}))`;
+  if (isUnsplash(url)) {
+    const x1 = unsplashAt(url, w, 80);
+    const x2 = unsplashAt(url, Math.round(w * 1.5), 70);
+    // Fallback first (older browsers), then image-set for modern ones.
+    return `background:${grad},url('${esc(x1)}') center/cover;` +
+      `background:${grad},image-set(url('${esc(x1)}') 1x, url('${esc(x2)}') 2x) center/cover;`;
+  }
+  return `background:${grad},url('${esc(url)}') center/cover;`;
+}
+
 function fmtDateISO(iso?: string): { day: number; date: string; year: number; time: string } | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -510,7 +578,7 @@ function renderHero(spec: Spec, t: Theme): string {
     : "";
 
   return `
-<section class="hero" style="background:linear-gradient(rgba(0,0,0,${overlay}),rgba(0,0,0,${overlay})),url('${esc(img)}') center/cover">
+<section class="hero" style="${bgImageSet(img, overlay, 2000)}">
   ${spec.subtitle ? `<div class="hero-eyebrow">${esc(spec.subtitle)}</div>` : ""}
   __GUEST_BLOCK__
   ${spec.honorees && spec.honorees.length
@@ -528,7 +596,7 @@ function renderStory(s: Extract<Section, { type: "story" }>, t: Theme): string {
 <section class="paper-card story" data-section="story">
   <div class="ornament-rule"></div>
   <h2 class="section-title">${esc(s.title ?? "Our Story")}</h2>
-  ${s.image ? `<img src="${esc(s.image)}" alt="" class="story-image" loading="lazy">` : ""}
+  ${s.image ? responsiveImg(s.image, { displayW: 840, sizes: "(max-width:920px) 92vw, 840px", cls: "story-image" }) : ""}
   <div class="section-body">${esc(s.body).replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br>").replace(/^/, "<p>").replace(/$/, "</p>")}</div>
 </section>`;
 }
@@ -649,7 +717,7 @@ function renderQuote(s: Extract<Section, { type: "quote" }>, t: Theme): string {
 
 function renderGalleryStrip(s: Extract<Section, { type: "gallery_strip" }>, t: Theme): string {
   const imgs = (s.images || []).map((src) =>
-    `<img src="${esc(src)}" alt="" loading="lazy" class="strip-img">`
+    responsiveImg(src, { displayW: 480, displayH: 520, sizes: "(max-width:800px) 60vw, 480px", cls: "strip-img" })
   ).join("");
   return `
 <section class="gallery-strip" data-section="gallery_strip">
