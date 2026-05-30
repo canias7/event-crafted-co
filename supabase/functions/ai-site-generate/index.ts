@@ -2031,6 +2031,7 @@ type Spec = {
   hero_image?: string;       // Unsplash URL: https://images.unsplash.com/photo-XXXX?w=2000&q=80&fit=crop
   cover_variant?: "envelope" | "monogram";  // monogram for couples, envelope otherwise
   cover_eyebrow?: string;    // "Together with our families" / "You're invited to"
+  frame?: "gold-baroque";    // ornate border on section cards — see FRAMES below
   sections: Section[];
   meta_description?: string;
 };
@@ -2053,6 +2054,8 @@ RULES:
 1. Output VALID JSON only. First char "{", last char "}". No prose. No markdown fences.
 2. Pick ONE theme that matches the mood. moody-burgundy = formal wedding. garden-floral = outdoor spring/summer. tuscan-dusk = Italy/wine country. navy-champagne = classic ballroom. dusty-pink-sage = soft modern romance. black-tie-velvet = formal gala/NYE. baby-pastel = shower/kids. evergreen-holiday = Christmas. tropical-boho = beach/destination. corporate-mono = business event.
 3. cover_variant: "monogram" for weddings/anniversaries/engagements/vow_renewal (any couple event). "envelope" for everything else.
+3b. frame — the ornate border around each section card. Pick the one whose vibe best fits the event; omit to use the default. Options:
+   • "gold-baroque" — ornate antique gold baroque frame; formal, luxurious (weddings, galas, anniversaries, black-tie).
 4. event_start MUST include a timezone offset (-04:00 for ET, +01:00 for CET, -07:00 for PT, etc). Pick the right one for the venue.
 5. venue_lat/lng: include when you know the venue. Lake Como: 46.012, 9.288. The Plaza NYC: 40.764, -73.974. Napa Valley: 38.297, -122.286. Tulum: 20.214, -87.466. Skip for "our backyard" / vague locations.
 6. hero_image: pick a real Unsplash photo ID matching the mood (wedding couple, garden, vineyard, beach, etc). Don't invent IDs — when unsure, use https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=80&fit=crop (versatile couple shot) as fallback.

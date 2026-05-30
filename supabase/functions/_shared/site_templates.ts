@@ -176,6 +176,7 @@ export interface Spec {
   cover_variant?: "envelope" | "monogram" | "magazine";
   cover_eyebrow?: string;
   cover_seal_text?: string;
+  frame?: FrameId; // ornate border on section cards; defaults to gold-baroque
   sections: Section[];
   meta_description?: string;
 }
@@ -298,22 +299,54 @@ function paperTextureCss(t: Theme): string {
   }
 }
 
-// Ornate vintage frame drawn as a border-image: a bold double rule with
-// curvy filigree scrollwork in each corner, a light bevel highlight, and
-// a soft dark offset copy behind it for dimension. Returns the CSS
-// properties to drop inside a rule. Rendered on a transparent border but
-// drawn thicker and outset, so it floats around the card edge without
-// resizing the box or disturbing the paper-stack pseudos.
-// Ornate gold picture-frame border. Uses the hand-designed frame asset
-// (apps/web/public/vintage-frame.png) sliced as a CSS border-image so the
-// ornate corners + edge medallions stay crisp at any card size and never
-// smear. The asset's interior is white, and `fill` paints that white
-// through, so the inside of the frame is a single solid color.
-function vintageFrame(_t: Theme): string {
-  const url = "https://eventvendora.com/vintage-frame.png";
+// ── Frame registry ──────────────────────────────────────────────────
+// Ornate picture-frame borders. Each frame is a hand-designed asset
+// (apps/web/public/frames/<id>.png, or the legacy /vintage-frame.png)
+// sliced as a CSS border-image so the corners + edge medallions stay
+// crisp at any card size. Each asset's interior is WHITE and `fill`
+// paints it through, so the inside of every card is one solid color.
+//
+// To add a frame: process the image (flood-fill interior white, optimize
+// to ~130KB), drop it at apps/web/public/frames/<id>.png, and add one
+// entry here. `slice` is the border-image slice in source px (how far the
+// ornament reaches from each edge); `width` is the rendered band width.
+// `desc` is the vibe hint Claude uses to pick a fitting frame per event.
+export type FrameId = "gold-baroque";
+
+export interface FrameDef {
+  id: FrameId;
+  url: string;
+  slice: number; // border-image-slice (source px)
+  width: number; // border-image-width (rendered px)
+  desc: string;  // vibe hint for the spec prompt
+}
+
+export const FRAMES: Record<FrameId, FrameDef> = {
+  "gold-baroque": {
+    id: "gold-baroque",
+    url: "https://eventvendora.com/vintage-frame.png",
+    slice: 132,
+    width: 34,
+    desc: "ornate antique gold baroque frame — formal, luxurious; weddings, galas, anniversaries, black-tie",
+  },
+};
+
+const DEFAULT_FRAME: FrameId = "gold-baroque";
+
+// Resolve a (possibly user/AI-supplied) frame id to a definition, falling
+// back to the default if it's missing or unknown.
+function resolveFrame(id?: string): FrameDef {
+  return (id && FRAMES[id as FrameId]) ? FRAMES[id as FrameId] : FRAMES[DEFAULT_FRAME];
+}
+
+// CSS for the `.paper-card{}` rule: a transparent border painted by the
+// chosen frame's border-image. `fill` paints the asset's white interior
+// through, so the card interior is a single solid color.
+function vintageFrame(frameId?: string): string {
+  const f = resolveFrame(frameId);
   return `
-    border:34px solid transparent;
-    border-image:url("${url}") 132 fill / 34px / 0 stretch;`;
+    border:${f.width}px solid transparent;
+    border-image:url("${f.url}") ${f.slice} fill / ${f.width}px / 0 stretch;`;
 }
 
 function particleField(t: Theme): string {
@@ -996,7 +1029,7 @@ ${googleFontsLink(t)}
     background-blend-mode:multiply,normal;
     ${paperTextureCss(t)}
     border-radius:6px;
-    ${vintageFrame(t)}
+    ${vintageFrame(spec.frame)}
     padding:clamp(2.25rem,4.5vw,3.25rem);
     position:relative;
     /* No isolation — z-index:-1 pseudos need to escape behind. */
