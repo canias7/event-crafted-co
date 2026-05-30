@@ -3885,28 +3885,6 @@ function InvoicesTab({
   // Persist current composer state as the vendor's default for this
   return (
     <div className="space-y-4">
-      {/* Listing picker — the brand-editable invoice template below
-          edits ONE listing's profile (business name + city + logo +
-          default tax %). When the account has multiple listings,
-          the vendor picks which one's brand to edit here; the
-          brand state hydrates from that listing's vendor_profile
-          row. New-invoice creation also stamps against the picked
-          listing. Hidden when the account has only one listing. */}
-      {accountVendorIds.length > 1 ? (
-        <Card>
-          <div className="p-4 flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-muted-foreground shrink-0">Brand for listing</span>
-            <ListingPickerField
-              accountVendorIds={accountVendorIds}
-              listings={listings}
-              value={vendorId}
-              onChange={setVendorId}
-              label=""
-            />
-          </div>
-        </Card>
-      ) : null}
-
       {/* Brand-editable invoice template — only the Bill From block
           (business name + city) and the Logo are interactive. The
           rest is a static visual reference for the vendor so they
