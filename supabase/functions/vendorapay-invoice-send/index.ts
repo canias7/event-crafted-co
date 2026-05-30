@@ -206,21 +206,24 @@ serve(async (req) => {
       `${logoHtml}<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><p style="margin:0 0 4px;font-size:14px;">Issued ${formatDate(inv.issue_date as any)}${inv.due_date ? ` · Due ${formatDate(inv.due_date as any)}` : ""}</p><p style="margin:0 0 24px;font-size:32px;font-weight:600;line-height:1.2;">${formatMoney(inv.total_cents as number, currency)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececec;border-bottom:1px solid #ececec;padding:8px 0;margin:0 0 16px;">${rowsHtml}<tr><td style="padding-top:12px;font-size:13px;color:#777;">Subtotal</td><td style="padding-top:12px;font-size:13px;color:#777;text-align:right;">${formatMoney(inv.subtotal_cents as number, currency)}</td></tr>${taxRow}${lateFeeRow}<tr><td style="padding:6px 0;font-size:15px;font-weight:600;">Total</td><td style="padding:6px 0;font-size:15px;font-weight:600;text-align:right;">${formatMoney(inv.total_cents as number, currency)}</td></tr></table>${inv.notes ? `<p style="margin:0 0 24px;font-size:13px;color:#555;">${escapeHtml(inv.notes as string)}</p>` : ""}<p style="margin:0 0 24px;">${button(payUrl, `Pay ${formatMoney(inv.total_cents as number, currency)}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay. "VENDORAPAY" will appear on your statement.</p>`,
     );
 
-    // Account-wide opt-in gate: the account owner must enable client
-    // email sending (in the Email settings section) before any
-    // invoice/receipt/reminder goes out to their clients. Blocks here
-    // — and isn't billed — until they sign up.
-    const { data: esRow } = await admin
-      .from("vendor_email_settings")
-      .select("sending_enabled")
-      .eq("user_id", vpRow?.user_id ?? "")
-      .maybeSingle();
-    if (!(esRow as { sending_enabled?: boolean } | null)?.sending_enabled) {
-      return json(403, {
-        error: "email_not_enabled",
-        message:
-          "Enable client email sending in your Email settings to send invoices.",
-      });
+    // Account-wide opt-in gate: the "Automated invoice delivery" toggle
+    // governs AUTOMATIC client emails. A manual "Send to" (to_email
+    // override) is the vendor deliberately sending this one email, so it
+    // bypasses the gate — pausing automation shouldn't block a hand-sent
+    // copy. The automated path (no override) still requires the opt-in.
+    if (!toOverride) {
+      const { data: esRow } = await admin
+        .from("vendor_email_settings")
+        .select("sending_enabled")
+        .eq("user_id", vpRow?.user_id ?? "")
+        .maybeSingle();
+      if (!(esRow as { sending_enabled?: boolean } | null)?.sending_enabled) {
+        return json(403, {
+          error: "email_not_enabled",
+          message:
+            "Enable client email sending in your Email settings to send invoices.",
+        });
+      }
     }
 
     // From header mirrors the buyer receipt — verified domain when
