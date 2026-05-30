@@ -32,6 +32,8 @@ function TabSkeleton() {
   );
 }
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { handleEmailBillingError } from "@/lib/credits";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -177,12 +179,10 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 ];
 
 // Sub-tabs inside the Payments tab.
-type PaymentsTabId = "incoming" | "payouts" | "disputes" | "expenses" | "reports";
+type PaymentsTabId = "incoming" | "expenses" | "reports";
 
 const PAYMENTS_TABS: Array<{ id: PaymentsTabId; label: string; icon: typeof Wallet }> = [
   { id: "incoming", label: "Incoming", icon: CreditCard },
-  { id: "payouts", label: "Payouts", icon: Banknote },
-  { id: "disputes", label: "Disputes", icon: AlertTriangle },
   { id: "expenses", label: "Expenses", icon: Wallet },
   { id: "reports", label: "Reports", icon: ScrollText },
 ];
@@ -426,6 +426,14 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     const params = new URLSearchParams(searchParams);
     params.set("tab", "transactions");
     params.set("sub", "incoming");
+    setSearchParams(params, { replace: true });
+  };
+
+  // Upcoming appointments card on the Overview links here so a vendor
+  // can open the full calendar / appointments surface.
+  const goToCalendar = () => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", "calendar");
     setSearchParams(params, { replace: true });
   };
 
@@ -896,6 +904,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               accountVendorIds={accountVendorIds}
               onViewExpenses={goToExpenses}
               onViewActivity={goToPayments}
+              onViewCalendar={goToCalendar}
             />
           ) : tab === "calendar" ? (
             <Suspense fallback={<TabSkeleton />}>
@@ -950,6 +959,7 @@ function OverviewTab({
   accountVendorIds,
   onViewExpenses,
   onViewActivity,
+  onViewCalendar,
 }: {
   balance: Balance | null;
   // Every listing the current user owns; every Supabase query on
@@ -964,6 +974,9 @@ function OverviewTab({
   // Click handler for "View all →" on the Recent activity card —
   // navigates to the Payments tab's incoming-payments ledger.
   onViewActivity: () => void;
+  // Click handler for "View all →" on the Upcoming appointments card —
+  // navigates to the Calendar tab.
+  onViewCalendar: () => void;
 }) {
   const currency = balance?.currency ?? "usd";
 
@@ -981,6 +994,9 @@ function OverviewTab({
   // Recent paid invoices across the whole account (replaces the
   // single-listing Stripe transactions table that used to live here).
   const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; invoice_number: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null }>>([]);
+  // Upcoming appointments across the whole account — confirmed and
+  // proposed meetings scheduled from now on, soonest first.
+  const [upcomingAppts, setUpcomingAppts] = useState<Array<{ id: string; kind: string; title: string | null; location: string | null; scheduled_at: string; status: string; host_name: string | null }>>([]);
 
   // Stable string key for the useEffect dep so we don't refire on
   // every render just because listings is re-derived.
@@ -994,6 +1010,7 @@ function OverviewTab({
       setRevenue30dPrev(0);
       setRevenueSeries([]);
       setRecentInvoices([]);
+      setUpcomingAppts([]);
       return;
     }
     let cancelled = false;
@@ -1010,6 +1027,7 @@ function OverviewTab({
         { data: paid30 },
         { data: paid60 },
         { data: recentPaid },
+        { data: upcomingApptRows },
       ] = await Promise.all([
         // Inbound inquiries in the last 30 days — drive the Leads card.
         // vendor_id + host_id come back too so we can collapse a host's
@@ -1053,6 +1071,19 @@ function OverviewTab({
           .in("vendor_id", accountVendorIds)
           .eq("status", "paid")
           .order("paid_at", { ascending: false })
+          .limit(5),
+        // Upcoming appointments — confirmed (accepted) or still-proposed
+        // meetings scheduled from now on, soonest first. Mirrors the
+        // calendar's "upcoming" filter so the Overview agrees with it.
+        db
+          .from("appointments")
+          .select(
+            "id, kind, title, location, scheduled_at, status, host:profiles!appointments_host_id_fkey(display_name)",
+          )
+          .in("vendor_id", accountVendorIds)
+          .in("status", ["accepted", "proposed"])
+          .gte("scheduled_at", now.toISOString())
+          .order("scheduled_at", { ascending: true })
           .limit(5),
       ]);
       if (cancelled) return;
@@ -1140,6 +1171,26 @@ function OverviewTab({
           bill_to_name: string | null;
         }>,
       );
+
+      setUpcomingAppts(
+        ((upcomingApptRows ?? []) as Array<{
+          id: string;
+          kind: string;
+          title: string | null;
+          location: string | null;
+          scheduled_at: string;
+          status: string;
+          host: { display_name: string | null } | null;
+        }>).map((a) => ({
+          id: a.id,
+          kind: a.kind,
+          title: a.title,
+          location: a.location,
+          scheduled_at: a.scheduled_at,
+          status: a.status,
+          host_name: a.host?.display_name ?? null,
+        })),
+      );
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1214,7 +1265,117 @@ function OverviewTab({
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
         <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
       </div>
+
+      {/* Upcoming appointments — confirmed / proposed meetings across
+          every listing, soonest first. Links out to the Calendar tab. */}
+      <OverviewUpcomingAppointments appts={upcomingAppts} onViewAll={onViewCalendar} />
     </>
+  );
+}
+
+// Upcoming appointments card for the Overview — a compact "what's next
+// on the calendar" surface. Pulls confirmed (accepted) and proposed
+// meetings scheduled from now on, soonest first.
+const APPT_KIND_LABEL: Record<string, string> = {
+  consultation: "Consultation",
+  walkthrough: "Walkthrough",
+  tasting: "Tasting",
+  fitting: "Fitting",
+  phone_call: "Phone call",
+  other: "Meeting",
+};
+
+function OverviewUpcomingAppointments({
+  appts,
+  onViewAll,
+}: {
+  appts: Array<{
+    id: string;
+    kind: string;
+    title: string | null;
+    location: string | null;
+    scheduled_at: string;
+    status: string;
+    host_name: string | null;
+  }>;
+  onViewAll: () => void;
+}) {
+  const fmtWhen = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+  return (
+    <div className="cockpit-data-card mb-4">
+      <div className="cockpit-data-card-header">
+        <div>
+          <h3 className="text-sm font-semibold">Upcoming appointments</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Confirmed and proposed meetings across every listing
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onViewAll}
+          className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+        >
+          View all →
+        </button>
+      </div>
+      {appts.length === 0 ? (
+        <div className="px-5 py-6 text-sm text-muted-foreground text-center">
+          No upcoming appointments. Scheduled meetings will show up here.
+        </div>
+      ) : (
+        <table className="cockpit-data-table">
+          <thead>
+            <tr>
+              <th>Appointment</th>
+              <th>With</th>
+              <th>When</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {appts.map((a) => {
+              const label = a.title?.trim() || APPT_KIND_LABEL[a.kind] || "Meeting";
+              const confirmed = a.status === "accepted";
+              return (
+                <tr key={a.id}>
+                  <td className="font-medium truncate max-w-[260px]">
+                    {label}
+                    {a.location ? (
+                      <span className="block text-[11px] text-muted-foreground font-normal truncate">
+                        {a.location}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="text-muted-foreground truncate max-w-[160px]">
+                    {a.host_name ?? "—"}
+                  </td>
+                  <td className="text-muted-foreground whitespace-nowrap">{fmtWhen(a.scheduled_at)}</td>
+                  <td>
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                      style={{
+                        background: confirmed ? "rgba(34,197,94,0.12)" : "#f4ece7",
+                        color: confirmed ? "#0a7c4a" : "#7d5a4f",
+                      }}
+                    >
+                      {confirmed ? "Confirmed" : "Proposed"}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
 
@@ -1796,12 +1957,7 @@ function PaymentsTab({
   const [searchParams, setSearchParams] = useSearchParams();
   const rawSub = searchParams.get("sub");
   const sub: PaymentsTabId =
-    rawSub === "payouts" ||
-    rawSub === "disputes" ||
-    rawSub === "expenses" ||
-    rawSub === "reports"
-      ? rawSub
-      : "incoming";
+    rawSub === "expenses" || rawSub === "reports" ? rawSub : "incoming";
   const setSub = (next: PaymentsTabId) => {
     const params = new URLSearchParams(searchParams);
     if (next === "incoming") params.delete("sub");
@@ -1813,10 +1969,9 @@ function PaymentsTab({
     <div className="space-y-5">
       {/* Sub-tab strip wrapped in a relative box so the right-edge
           fade overlay can sit on top of any overflowing tabs on
-          narrow viewports. With 5 sub-tabs (Incoming · Payouts ·
-          Disputes · Expenses · Reports) the strip wraps on small
-          phones; without the fade, vendors might not realize there
-          are more tabs scrolled off to the right. */}
+          narrow viewports (Incoming · Expenses · Reports); without
+          the fade, vendors might not realize there are more tabs
+          scrolled off to the right. */}
       <div className="relative -mt-1">
         <nav className="flex gap-1 overflow-x-auto scrollbar-hide pr-10 sm:pr-0">
           {PAYMENTS_TABS.map((t) => {
@@ -1850,10 +2005,6 @@ function PaymentsTab({
           vendorId={vendorId}
           onRefunded={onRefunded}
         />
-      ) : sub === "payouts" ? (
-        <PayoutsTab data={payouts} status={status} accountVendorIds={accountVendorIds} />
-      ) : sub === "disputes" ? (
-        <DisputesTab accountVendorIds={accountVendorIds} />
       ) : sub === "expenses" ? (
         <ExpensesTab accountVendorIds={accountVendorIds} listings={listings} />
       ) : (
@@ -4091,6 +4242,93 @@ interface DomainRow {
   dns_records: DomainDnsRecord[];
 }
 
+// Account-wide opt-in for sending emails to clients (invoices, paid
+// receipts, payment reminders). Until the account owner turns this on,
+// those client emails are blocked server-side and never billed. The
+// setting applies across every listing on the account. Writes
+// vendor_email_settings (RLS-gated to the owner).
+function EmailSendingOptInCard() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth?.user?.id ?? null;
+      if (cancelled) return;
+      setUserId(uid);
+      if (!uid) {
+        setEnabled(false);
+        return;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_email_settings")
+        .select("sending_enabled")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (cancelled) return;
+      setEnabled(
+        Boolean((data as { sending_enabled?: boolean } | null)?.sending_enabled),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggle = useCallback(
+    async (next: boolean) => {
+      if (!userId || saving) return;
+      setSaving(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_email_settings")
+        .upsert(
+          { user_id: userId, sending_enabled: next, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" },
+        );
+      setSaving(false);
+      if (error) {
+        toast.error("Couldn't update email setting", { description: error.message });
+        return;
+      }
+      setEnabled(next);
+      toast.success(next ? "Client emails enabled" : "Client emails paused", {
+        description: next
+          ? "Invoices, receipts, and reminders will now email your clients."
+          : "Invoices, receipts, and reminders won't email your clients until you re-enable.",
+      });
+    },
+    [userId, saving],
+  );
+
+  return (
+    <Card>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold">Send emails to clients</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+              Turn this on to email invoices, paid receipts, and payment
+              reminders to your clients — <strong>free</strong>. While off,
+              these client emails are paused. Applies to your whole account.
+            </p>
+          </div>
+          <Switch
+            checked={Boolean(enabled)}
+            disabled={enabled === null || saving || !userId}
+            onCheckedChange={toggle}
+            aria-label="Enable sending emails to clients"
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 // Lets a vendor connect their own email domain so buyer receipts go
 // out from noreply@<their-domain> instead of the platform default.
 // Talks to vendorapay-email-domain (which proxies Resend) and to
@@ -4355,6 +4593,7 @@ function InvoicesTab({
   const { user } = useAuth();
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [lateFeeTarget, setLateFeeTarget] = useState<Invoice | null>(null);
   const [lateFeeAmount, setLateFeeAmount] = useState("");
   const [lateFeeSaving, setLateFeeSaving] = useState(false);
@@ -4581,12 +4820,13 @@ function InvoicesTab({
     });
     setSendingId(null);
     if (error) {
+      if (await handleEmailBillingError(error, navigate)) return;
       toast.error("Couldn't send invoice", { description: error.message });
       return;
     }
     toast.success("Invoice email sent");
     onChanged();
-  }, [onChanged]);
+  }, [onChanged, navigate]);
 
   const cancelInvoice = useCallback(async (inv: Invoice) => {
     // Destructive + irreversible: status='cancelled' is terminal,
@@ -4669,6 +4909,8 @@ function InvoicesTab({
           </Button>
         </div>
       </Card>
+
+      <EmailSendingOptInCard />
 
       <SenderDomainCard vendorId={vendorId} />
 
@@ -4987,9 +5229,9 @@ function CustomersTab({
     existing: RecurringRule | null;
   } | null>(null);
   const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
-  const [sortField, setSortField] = useState<"name" | "balance">("name");
+  const [sortField, setSortField] = useState<"name" | "invoices">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const toggleSort = (field: "name" | "balance") => {
+  const toggleSort = (field: "name" | "invoices") => {
     if (field === sortField) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -4999,6 +5241,7 @@ function CustomersTab({
   };
   const [page, setPage] = useState(1);
   const perPage = 10;
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [statementId, setStatementId] = useState<string | null>(null);
@@ -5109,22 +5352,51 @@ function CustomersTab({
     return map;
   }, [invoices]);
 
-  // Per-contact rollup keyed by row id: how many invoices and how much
-  // has been paid. Drives the Invoices / Balance columns and sorting.
+  // Per-contact rollup keyed by row id: how many invoices the contact
+  // has actually received. Drives the Invoices column and sorting.
   const summaryById = useMemo(() => {
-    const m = new Map<string, { count: number; paid: number }>();
+    const m = new Map<string, { count: number }>();
     for (const c of rows) {
       const inv = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
-      const paid = inv
-        .filter((i) => i.status === "paid")
-        .reduce((s, i) => s + i.total_cents, 0);
-      m.set(c.id, { count: inv.length, paid });
+      // Count only invoices the customer actually received — drafts
+      // are in-progress and cancelled ones were pulled, so neither
+      // belongs in a "how many invoices" tally (mirrors the statement
+      // download filter).
+      const real = inv.filter(
+        (i) => i.status !== "draft" && i.status !== "cancelled",
+      );
+      m.set(c.id, { count: real.length });
     }
     return m;
   }, [rows, invoicesByEmail]);
 
+  // Recurring rule per customer id, built once so the row render
+  // doesn't run a linear find() for every contact on every paint.
+  const recurringByCustomerId = useMemo(() => {
+    const m = new Map<string, RecurringRule>();
+    for (const r of recurringRules) {
+      if (r.customer_id) m.set(r.customer_id, r);
+    }
+    return m;
+  }, [recurringRules]);
+
+  // Free-text filter across the fields a vendor would look someone up
+  // by — display name, email, phone, company. Applied before sort so
+  // the count/total in the footer reflect what's on screen.
+  const filteredRows = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((c) => {
+      const hay = [c.name, c.email, c.phone, c.company, c.first_name, c.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rows, searchTerm]);
+
   const sortedRows = useMemo(() => {
-    const copy = [...rows];
+    const copy = [...filteredRows];
     copy.sort((a, b) => {
       let cmp: number;
       if (sortField === "name") {
@@ -5132,17 +5404,32 @@ function CustomersTab({
         const bn = (b.name?.trim() || b.email).toLowerCase();
         cmp = an.localeCompare(bn);
       } else {
-        cmp = (summaryById.get(a.id)?.paid ?? 0) - (summaryById.get(b.id)?.paid ?? 0);
+        cmp = (summaryById.get(a.id)?.count ?? 0) - (summaryById.get(b.id)?.count ?? 0);
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
     return copy;
-  }, [rows, sortField, sortDir, summaryById]);
+  }, [filteredRows, sortField, sortDir, summaryById]);
 
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / perPage));
   const safePage = Math.min(page, totalPages);
   const pageRows = sortedRows.slice((safePage - 1) * perPage, safePage * perPage);
-  const totalPaid = rows.reduce((s, c) => s + (summaryById.get(c.id)?.paid ?? 0), 0);
+
+  // Reset to page 1 whenever the search narrows the list so we don't
+  // strand the view on an empty page.
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  // Windowed page numbers centered on the current page so deep lists
+  // stay navigable (the bare slice(0,5) stranded you after page 5).
+  const pageWindow = useMemo(() => {
+    const span = 5;
+    let start = Math.max(1, safePage - Math.floor(span / 2));
+    const end = Math.min(totalPages, start + span - 1);
+    start = Math.max(1, end - span + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [safePage, totalPages]);
 
   // Keep selection scoped to the page actually on screen (mirrors the
   // Expenses table) so paging away then bulk-deleting can't reach rows
@@ -5343,7 +5630,7 @@ function CustomersTab({
       return;
     }
     setEditing(null);
-    toast.success(editing === "new" ? "Customer added" : "Customer updated");
+    toast.success(editing === "new" ? "Contact added" : "Contact updated");
     await refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountKey, saving, form, editing, newCustomerVendorId, refresh]);
@@ -5362,7 +5649,7 @@ function CustomersTab({
         toast.error("Couldn't remove", { description: error.message });
         return;
       }
-      toast.success("Customer removed");
+      toast.success("Contact removed");
       await refresh();
     },
     [refresh],
@@ -5539,6 +5826,18 @@ function CustomersTab({
         <EmptyCard>No contacts yet. Click "New contact" to add your first.</EmptyCard>
       ) : (
         <>
+          {/* Search — name, email, phone, or company. */}
+          <div className="relative max-w-md">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">⌕</span>
+            <input
+              type="text"
+              aria-label="Search contacts"
+              placeholder="Search name, email, phone, company…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm focus:outline-none focus:border-accent"
+            />
+          </div>
           {selectedIds.size > 0 ? (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-foreground/10 bg-white px-4 py-2.5">
               <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
@@ -5559,8 +5858,11 @@ function CustomersTab({
               </div>
             </div>
           ) : null}
-          <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
-            <table className="w-full">
+          {sortedRows.length === 0 ? (
+            <EmptyCard>No contacts match "{searchTerm.trim()}".</EmptyCard>
+          ) : (
+          <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+            <table className="w-full min-w-[820px]">
               <thead>
                 <tr className="bg-foreground/[0.03]">
                   <th className="w-10 px-4 py-3 text-left">
@@ -5581,19 +5883,22 @@ function CustomersTab({
                     ) : null}
                   </th>
                   <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                    Contact
+                    Email
+                  </th>
+                  <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Phone
                   </th>
                   <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                     Company
                   </th>
-                  <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                    Invoices
+                  <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Location
                   </th>
                   <th
                     className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
-                    onClick={() => toggleSort("balance")}
+                    onClick={() => toggleSort("invoices")}
                   >
-                    Paid {sortField === "balance" ? (
+                    Invoices {sortField === "invoices" ? (
                       <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                     ) : null}
                   </th>
@@ -5604,8 +5909,12 @@ function CustomersTab({
               </thead>
               <tbody>
                 {pageRows.map((c) => {
-                  const summary = summaryById.get(c.id) ?? { count: 0, paid: 0 };
-                  const custRecurring = recurringRules.find((r) => r.customer_id === c.id);
+                  const summary = summaryById.get(c.id) ?? { count: 0 };
+                  const custRecurring = recurringByCustomerId.get(c.id);
+                  const location =
+                    [c.billing_city, c.billing_state].filter(Boolean).join(", ") ||
+                    c.billing_country ||
+                    "—";
                   return (
                     <tr key={c.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
                       <td className="px-4 py-3">
@@ -5640,19 +5949,19 @@ function CustomersTab({
                         </div>
                       </td>
                       <td className="px-3 py-3 text-sm text-muted-foreground">
-                        <div className="leading-tight">
-                          <div>{c.email}</div>
-                          {c.phone ? <div className="text-xs">{c.phone}</div> : null}
-                        </div>
+                        {c.email}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                        {c.phone || "—"}
                       </td>
                       <td className="px-3 py-3 text-sm text-foreground">
                         {c.company || "—"}
                       </td>
+                      <td className="px-3 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                        {location}
+                      </td>
                       <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums">
                         {summary.count || "—"}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-foreground font-bold text-right tabular-nums whitespace-nowrap">
-                        {summary.paid > 0 ? formatMoney(summary.paid) : "—"}
                       </td>
                       <td className="px-3 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center gap-1.5 justify-end">
@@ -5714,17 +6023,11 @@ function CustomersTab({
               </tbody>
               <tfoot>
                 <tr className="border-t border-foreground/10">
-                  <td colSpan={7} className="px-4 py-3">
+                  <td colSpan={8} className="px-4 py-3">
                     <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                       <span>
-                        Showing {pageRows.length} of {sortedRows.length} · Total{" "}
-                        <span
-                          className="text-foreground tabular-nums"
-                          style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
-                        >
-                          {formatMoney(totalPaid)}
-                        </span>{" "}
-                        paid
+                        Showing {pageRows.length} of {sortedRows.length} contact
+                        {sortedRows.length === 1 ? "" : "s"}
                       </span>
                       {totalPages > 1 ? (
                         <div className="flex items-center gap-1">
@@ -5736,8 +6039,8 @@ function CustomersTab({
                           >
                             ‹
                           </button>
-                          {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => {
-                            const p = i + 1;
+                          {pageWindow[0] > 1 ? <span className="text-muted-foreground">…</span> : null}
+                          {pageWindow.map((p) => {
                             const active = p === safePage;
                             return (
                               <button
@@ -5750,7 +6053,7 @@ function CustomersTab({
                               </button>
                             );
                           })}
-                          {totalPages > 5 ? <span className="text-muted-foreground">…</span> : null}
+                          {pageWindow[pageWindow.length - 1] < totalPages ? <span className="text-muted-foreground">…</span> : null}
                           <button
                             type="button"
                             onClick={() => setPage(Math.min(totalPages, safePage + 1))}
@@ -5767,6 +6070,7 @@ function CustomersTab({
               </tfoot>
             </table>
           </div>
+          )}
         </>
       )}
 
@@ -6849,8 +7153,8 @@ function ExpensesTab({
           No expenses match the current search or filter. Adjust the controls above or clear them to see everything again.
         </EmptyCard>
       ) : (
-        <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
-          <table className="w-full">
+        <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+          <table className="w-full min-w-[640px]">
             <thead>
               <tr className="bg-foreground/[0.03]">
                 <th className="w-10 px-4 py-3 text-left">
@@ -7397,6 +7701,7 @@ function SendInvoiceDialog({
   const defaultTax = listing?.default_tax_pct
     ? Number(listing.default_tax_pct).toString()
     : "";
+  const navigate = useNavigate();
   const [billToName, setBillToName] = useState(customer?.name ?? "");
   const [billToEmail, setBillToEmail] = useState(customer?.email ?? "");
   const [issueDate, setIssueDate] = useState(
@@ -7555,6 +7860,11 @@ function SendInvoiceDialog({
         toast.error("Email failed and rollback failed", {
           description: `${sendErr.message} (Invoice may be stuck as Sent — refresh and verify before resending.)`,
         });
+      } else if (await handleEmailBillingError(sendErr, navigate)) {
+        // Out of credits or email sending not enabled: invoice is
+        // safely back to draft and the helper already showed the
+        // right toast (top-up / enable). Vendor can resend from the
+        // list once they've resolved it.
       } else {
         toast.warning("Saved as draft — email failed", { description: sendErr.message });
       }

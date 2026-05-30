@@ -10,10 +10,14 @@
 // payment flow can ship/iterate without touching that 700-line file.
 //
 // Caller (vendorapay-webhook) sends Authorization: Bearer
-// ${SUPABASE_SERVICE_ROLE_KEY} on every call. This endpoint runs
-// with verify_jwt=false (Supabase JWT verifier off) BUT enforces
-// service-role bearer manually so anonymous callers can't spoof
-// "$X received" emails impersonating any vendor.
+// ${SUPABASE_SERVICE_ROLE_KEY} on every call. This endpoint MUST run
+// with verify_jwt=false (set in supabase/config.toml) BUT enforces
+// the service-role bearer manually (see handler below) so anonymous
+// callers can't spoof "$X received" emails impersonating any vendor.
+// NOTE: the service-role key is now the sb_secret_ format (not a JWT),
+// so leaving verify_jwt=true makes the gateway 401 the caller before
+// this self-auth check runs — silently killing receipt emails.
+// (config.toml entry added; this redeploy applies it.)
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -192,6 +196,18 @@ serve(async (req) => {
       location?: string | null;
       default_tax_pct?: number | null;
     } | null;
+
+    // Account-wide opt-in: only email the client receipt if the
+    // account owner has enabled client email sending. Admin
+    // notifications below are unaffected.
+    const { data: esRow } = await db
+      .from("vendor_email_settings")
+      .select("sending_enabled")
+      .eq("user_id", vpRow?.user_id ?? "")
+      .maybeSingle();
+    const sendingEnabled = Boolean(
+      (esRow as { sending_enabled?: boolean } | null)?.sending_enabled,
+    );
     const businessName = vpRow?.business_name ?? "Your business";
     const logoUrl = vpRow?.logo_url ?? null;
     const businessLocation = vpRow?.location ?? null;
@@ -326,7 +342,7 @@ serve(async (req) => {
     //    actual line items from the sale. From-name is the vendor's
     //    business so the buyer's inbox shows their brand; replies
     //    route to the vendor's account email via Reply-To.
-    if (body.host_email) {
+    if (body.host_email && sendingEnabled) {
       const paidAt = new Date().toLocaleDateString("en-US", {
         month: "long", day: "numeric", year: "numeric",
       });
@@ -462,7 +478,11 @@ serve(async (req) => {
       );
     }
 
-    return json(200, { ok: true, admins_notified: adminRows.length, host_emailed: Boolean(body.host_email) });
+    return json(200, {
+      ok: true,
+      admins_notified: adminRows.length,
+      host_emailed: Boolean(body.host_email && sendingEnabled),
+    });
   } catch (err) {
     console.error("[vendorapay-notify] error", err);
     const message = err instanceof Error ? err.message : String(err);

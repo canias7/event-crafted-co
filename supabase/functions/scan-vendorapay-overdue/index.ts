@@ -138,6 +138,14 @@ serve(async (req: Request) => {
         business_name?: string | null;
         logo_url?: string | null;
       } | null;
+      // Account-wide opt-in gate: skip (and don't bill) reminders for
+      // accounts that haven't enabled client email sending.
+      const { data: esRow } = await (db as any)
+        .from("vendor_email_settings")
+        .select("sending_enabled")
+        .eq("user_id", vpRow?.user_id ?? "")
+        .maybeSingle();
+      if (!(esRow as { sending_enabled?: boolean } | null)?.sending_enabled) continue;
       const businessName = vpRow?.business_name ?? "your vendor";
       const logoUrl = vpRow?.logo_url ?? null;
 

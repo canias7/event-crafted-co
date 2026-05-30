@@ -120,10 +120,18 @@ serve(async () => {
       }
       const { data: vp } = await db
         .from("vendor_profiles")
-        .select("business_name, logo_url")
+        .select("user_id, business_name, logo_url")
         .eq("id", r.vendor_id)
         .maybeSingle();
-      const vpRow = vp as { business_name?: string | null; logo_url?: string | null } | null;
+      const vpRow = vp as { user_id?: string | null; business_name?: string | null; logo_url?: string | null } | null;
+      // Account-wide opt-in gate: skip (and don't bill) reminders for
+      // accounts that haven't enabled client email sending.
+      const { data: esRow } = await db
+        .from("vendor_email_settings")
+        .select("sending_enabled")
+        .eq("user_id", vpRow?.user_id ?? "")
+        .maybeSingle();
+      if (!(esRow as { sending_enabled?: boolean } | null)?.sending_enabled) continue;
       if (vpRow?.business_name) businessName = vpRow.business_name;
       logoUrl = vpRow?.logo_url ?? null;
 
@@ -143,7 +151,9 @@ serve(async () => {
         `${logoHtml}<p style="margin:0 0 16px;">The remaining balance for <strong>${escapeHtml(r.title)}</strong> with ${escapeHtml(businessName)} is now due.</p><p style="margin:0 0 24px;font-size:28px;font-weight:600;">${amount}</p><p style="margin:0 0 24px;">${button(payUrl, `Pay ${amount}`)}</p><p style="margin:0;font-size:13px;color:#777;">Card payments processed securely via VendoraPay.</p>`,
       );
       const ok = await sendEmail(hostEmail, `Balance due (${amount}) — ${businessName}`, html);
-      if (ok) emailed++;
+      if (ok) {
+        emailed++;
+      }
     }
 
     // 2) Mark invoices overdue when due_date has passed. We KEEP

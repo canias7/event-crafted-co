@@ -118,6 +118,23 @@ function prettyDay(ymd: string): string {
   });
 }
 
+// Appointment display helpers — kind → label and a local-time string
+// for the calendar day panel.
+const APPT_KIND_LABEL: Record<string, string> = {
+  consultation: "Consultation",
+  walkthrough: "Walkthrough",
+  tasting: "Tasting",
+  fitting: "Fitting",
+  phone_call: "Phone call",
+  other: "Meeting",
+};
+function fmtApptTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function VendorAppointmentsPage({
   embedded = false,
   listingId: listingIdProp,
@@ -452,6 +469,18 @@ export default function VendorAppointmentsPage({
         m.set(key, "pending");
       }
     }
+    // Scheduled appointments mark their day busy too: a confirmed
+    // (accepted) meeting reads as booked, a still-proposed one as
+    // pending. Layered before the block loops below so a meeting
+    // overrides a recurring / manual block — you're not "unavailable"
+    // on a day you actually have a confirmed appointment.
+    for (const a of appointments) {
+      if (a.status !== "accepted" && a.status !== "proposed") continue;
+      const k = ymdKey(new Date(a.scheduled_at));
+      const prev = m.get(k);
+      if (a.status === "accepted") m.set(k, "booked");
+      else if (prev !== "booked") m.set(k, "pending");
+    }
     // Recurring weekday-off rules paint every matching weekday in
     // the visible month as blocked (unless already booked / pending).
     // Walking the month bounds is cheaper than rebuilding the whole
@@ -477,7 +506,7 @@ export default function VendorAppointmentsPage({
       if (prev !== "booked" && prev !== "pending") m.set(ymd, "blocked");
     }
     return m;
-  }, [inquiries, manualBlocks, recurringOff, monthBounds]);
+  }, [inquiries, appointments, manualBlocks, recurringOff, monthBounds]);
 
   // Header stats (booked/pending/earnings) were removed — vendors
   // don't transact through the app, so the dollar value is misleading.
@@ -485,7 +514,7 @@ export default function VendorAppointmentsPage({
   const selectedItems = useMemo(() => {
     if (!selectedYmd) return [];
     const out: Array<{
-      kind: "inquiry" | "busy";
+      kind: "inquiry" | "busy" | "appointment";
       inquiryId: string | null;
       title: string;
       subtitle: string;
@@ -509,6 +538,25 @@ export default function VendorAppointmentsPage({
         timeLabel: null,
       });
     }
+    // Appointments scheduled on the selected day — show the meeting
+    // (time, kind/title, host, Confirmed/Proposed) so the day panel
+    // isn't empty just because there's no inquiry *event* that day.
+    for (const a of appointments) {
+      if (a.status !== "accepted" && a.status !== "proposed") continue;
+      if (ymdKey(new Date(a.scheduled_at)) !== selectedYmd) continue;
+      out.push({
+        kind: "appointment",
+        inquiryId: a.inquiry_id ?? null,
+        title: a.title?.trim() || APPT_KIND_LABEL[a.kind] || "Meeting",
+        subtitle:
+          (a.host_name ?? "Client") +
+          " · " +
+          (a.status === "accepted" ? "Confirmed" : "Proposed"),
+        amountCents: null,
+        accent: a.status === "accepted" ? "booked" : "pending",
+        timeLabel: fmtApptTime(a.scheduled_at),
+      });
+    }
     if (manualBlocks.has(selectedYmd)) {
       const reason = manualBlocks.get(selectedYmd)?.trim() ?? "";
       // 'Blocked manually' is the legacy hardcoded fallback from
@@ -527,7 +575,7 @@ export default function VendorAppointmentsPage({
       });
     }
     return out;
-  }, [selectedYmd, inquiries, manualBlocks]);
+  }, [selectedYmd, inquiries, appointments, manualBlocks]);
 
   const isSelectedBlocked =
     !!selectedYmd && manualBlocks.has(selectedYmd);
@@ -1267,7 +1315,7 @@ function BookingRow({
   item,
 }: {
   item: {
-    kind: "inquiry" | "busy";
+    kind: "inquiry" | "busy" | "appointment";
     inquiryId: string | null;
     title: string;
     subtitle: string;
