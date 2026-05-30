@@ -4282,11 +4282,14 @@ function InvoicesTab({
                 className="rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none min-w-[150px]"
               >
                 <option value="">Select invoice…</option>
-                {invoices.map((inv) => (
-                  <option key={inv.id} value={inv.id}>
-                    {inv.invoice_number} · {inv.bill_to_name || inv.bill_to_email || "—"} · {formatMoney(inv.total_cents, inv.currency)}
-                  </option>
-                ))}
+                {invoices
+                  .slice()
+                  .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
+                  .map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      {inv.invoice_number}
+                    </option>
+                  ))}
               </select>
               <input
                 type="email"
