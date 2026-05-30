@@ -47,6 +47,7 @@ import {
   ExternalLink,
   FileEdit,
   FileText,
+  Info,
   Landmark,
   Link2,
   Loader2,
@@ -68,6 +69,7 @@ import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -3381,13 +3383,56 @@ function TransactionsTab({
                   <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">{meta.label}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(t.created_at)}</td>
                   <td className="px-3 py-3 text-right whitespace-nowrap">
-                    <div
-                      className={`text-sm font-semibold tabular-nums ${
-                        meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
-                      }`}
-                    >
-                      {meta.tone === "out" ? "-" : "+"}
-                      {formatMoney(Math.abs(t.amount_cents), t.currency)}
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span
+                        className={`text-sm font-semibold tabular-nums ${
+                          meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
+                        }`}
+                      >
+                        {meta.tone === "out" ? "-" : "+"}
+                        {formatMoney(Math.abs(t.amount_cents), t.currency)}
+                      </span>
+                      {t.fee_cents > 0 ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Show where this money went"
+                              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors"
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-60 p-3 text-left">
+                            <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground mb-2">
+                              Where this went
+                            </div>
+                            <div className="space-y-1.5 text-xs">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-muted-foreground">Charged</span>
+                                <span className="tabular-nums font-medium">
+                                  {formatMoney(Math.abs(t.amount_cents), t.currency)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-muted-foreground">Processing &amp; platform fees</span>
+                                <span className="tabular-nums text-rose-700">
+                                  -{formatMoney(t.fee_cents, t.currency)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-3 pt-1.5 border-t border-foreground/10">
+                                <span className="font-semibold">Net to your bank</span>
+                                <span className="tabular-nums font-semibold text-emerald-700">
+                                  {formatMoney(t.net_cents, t.currency)}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
+                              Fees cover card processing plus your VendoraPay plan rate. Net is what settles to your bank.
+                            </p>
+                          </PopoverContent>
+                        </Popover>
+                      ) : null}
                     </div>
                     {t.fee_cents > 0 ? (
                       <div className="text-[10px] text-muted-foreground tabular-nums">
