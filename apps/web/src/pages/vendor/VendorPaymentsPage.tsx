@@ -303,6 +303,19 @@ function formatDate(iso: string | null): string {
   });
 }
 
+// "Apr 4, 5:31 PM" — date + time, Stripe-style, for list "Created" cells.
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function kindLabel(kind: string): { label: string; tone: "in" | "out" | "neutral" } {
   switch (kind) {
     case "charge":
