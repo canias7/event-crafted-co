@@ -255,24 +255,11 @@ export default function InvoiceCheckoutPage() {
         >
           {/* Header — vendor brand on the left, INVOICE block on the right */}
           <header className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex items-center gap-4 min-w-0">
-              {invoice.vendor_logo_url ? (
-                <img
-                  src={invoice.vendor_logo_url}
-                  alt={businessName}
-                  className="w-14 h-14 rounded-full object-cover ring-1 ring-foreground/10 shrink-0"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-foreground/5 inline-flex items-center justify-center shrink-0">
-                  <CreditCard className="w-6 h-6 text-muted-foreground" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <h1 className="text-xl font-semibold tracking-tight truncate">{businessName}</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Issued via VendoraPay
-                </p>
-              </div>
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold tracking-tight truncate">{businessName}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Issued via VendoraPay
+              </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
