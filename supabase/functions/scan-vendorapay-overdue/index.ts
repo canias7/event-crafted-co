@@ -131,14 +131,18 @@ serve(async (req: Request) => {
       // small enough that the per-row look-ups stay cheap.
       const { data: vp } = await (db as any)
         .from("vendor_profiles")
-        .select("user_id, business_name, logo_url")
+        .select("user_id, business_name, logo_url, email_sending_enabled")
         .eq("id", inv.vendor_id)
         .maybeSingle();
       const vpRow = vp as {
         user_id?: string | null;
         business_name?: string | null;
         logo_url?: string | null;
+        email_sending_enabled?: boolean | null;
       } | null;
+      // Opt-in gate: skip (and don't bill) reminders for vendors who
+      // haven't enabled client email sending.
+      if (!vpRow?.email_sending_enabled) continue;
       const businessName = vpRow?.business_name ?? "your vendor";
       const logoUrl = vpRow?.logo_url ?? null;
 

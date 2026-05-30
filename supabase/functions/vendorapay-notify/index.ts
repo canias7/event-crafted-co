@@ -187,7 +187,7 @@ serve(async (req) => {
 
     const { data: vp } = await db
       .from("vendor_profiles")
-      .select("user_id, business_name, logo_url, location, default_tax_pct")
+      .select("user_id, business_name, logo_url, location, default_tax_pct, email_sending_enabled")
       .eq("id", body.vendor_id)
       .maybeSingle();
     const vpRow = vp as {
@@ -196,6 +196,7 @@ serve(async (req) => {
       logo_url?: string | null;
       location?: string | null;
       default_tax_pct?: number | null;
+      email_sending_enabled?: boolean | null;
     } | null;
     const businessName = vpRow?.business_name ?? "Your business";
     const logoUrl = vpRow?.logo_url ?? null;
@@ -331,7 +332,7 @@ serve(async (req) => {
     //    actual line items from the sale. From-name is the vendor's
     //    business so the buyer's inbox shows their brand; replies
     //    route to the vendor's account email via Reply-To.
-    if (body.host_email) {
+    if (body.host_email && vpRow?.email_sending_enabled) {
       const paidAt = new Date().toLocaleDateString("en-US", {
         month: "long", day: "numeric", year: "numeric",
       });
@@ -479,7 +480,11 @@ serve(async (req) => {
       );
     }
 
-    return json(200, { ok: true, admins_notified: adminRows.length, host_emailed: Boolean(body.host_email) });
+    return json(200, {
+      ok: true,
+      admins_notified: adminRows.length,
+      host_emailed: Boolean(body.host_email && vpRow?.email_sending_enabled),
+    });
   } catch (err) {
     console.error("[vendorapay-notify] error", err);
     const message = err instanceof Error ? err.message : String(err);

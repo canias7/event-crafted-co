@@ -55,3 +55,51 @@ export async function handleInsufficientCredits(
   );
   return true;
 }
+
+// Combined handler for the two billing responses the vendor->client
+// email endpoints can return: 403 email_not_enabled (vendor hasn't
+// opted into sending) and 402 insufficient_credits. The response body
+// is a one-shot stream, so a caller must use THIS instead of also
+// calling handleInsufficientCredits. Returns true if it showed a
+// toast (caller should then skip its generic error).
+export async function handleEmailBillingError(
+  err: unknown,
+  navigate: (path: string) => void,
+): Promise<boolean> {
+  const ctx = (err as { context?: Response })?.context;
+  if (!ctx || typeof ctx.json !== "function") return false;
+
+  let body: (InsufficientCreditsBody & { error: string }) | null = null;
+  try {
+    body = (await ctx.json()) as InsufficientCreditsBody & { error: string };
+  } catch {
+    return false;
+  }
+
+  if (body?.error === "email_not_enabled") {
+    toast.error("Client emails are turned off", {
+      description:
+        body.message ??
+        "Turn on “Send emails to clients” in the Email settings section to send this.",
+      duration: 8000,
+    });
+    return true;
+  }
+
+  if (body?.error === "insufficient_credits") {
+    const cost = typeof body.cost === "number" ? body.cost : null;
+    toast.error(
+      cost
+        ? `Out of credits — this needed ${cost} credit${cost === 1 ? "" : "s"}.`
+        : "Out of credits.",
+      {
+        description: "Top up a credit pack or upgrade your plan to keep sending.",
+        action: { label: "Top up", onClick: () => navigate("/vendor/subscription") },
+        duration: 8000,
+      },
+    );
+    return true;
+  }
+
+  return false;
+}
