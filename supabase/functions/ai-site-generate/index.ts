@@ -1975,13 +1975,19 @@ async function generateSpecImages(
     }
   }
 
-  // Generate sequentially (image models are heavy; parallel risks rate
-  // limits). Each failure just leaves that slot's Unsplash photo.
+  // Generate in PARALLEL. Sequential 4×~45s (~180s) blew past the
+  // background (waitUntil) wall-clock budget, so the job was killed
+  // before it could patch the row — zero images ever landed. Parallel
+  // collapses that to ~one image's duration (~45-60s), which fits the
+  // budget. Each failure just leaves that slot's Unsplash photo.
   let changed = false;
-  for (const job of jobs.slice(0, maxImages)) {
-    const url = await generateSpecImage(job.subject, style, slug, admin);
-    if (url) { job.apply(url); changed = true; }
-  }
+  const picked = jobs.slice(0, maxImages);
+  const results = await Promise.allSettled(
+    picked.map((job) => generateSpecImage(job.subject, style, slug, admin)),
+  );
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled" && r.value) { picked[i].apply(r.value); changed = true; }
+  });
   return { spec, changed };
 }
 
