@@ -2882,10 +2882,27 @@ function InvoiceCanvas({
         qty: parseInt(it.qty || "0", 10),
         unit_price_cents: Math.round(parseFloat(it.price || "0") * 100),
       }))
-      .filter((it) => it.name && it.qty > 0)
+      // Keep only valid rows: a name, a positive whole qty, and a
+      // non-negative price. Excludes negative prices/qty and blank rows
+      // (a vendor can leave extra "+ Add line" rows empty).
+      .filter(
+        (it) =>
+          it.name &&
+          Number.isFinite(it.qty) &&
+          it.qty > 0 &&
+          Number.isFinite(it.unit_price_cents) &&
+          it.unit_price_cents >= 0,
+      )
       .map((it) => ({ ...it, total_cents: it.qty * it.unit_price_cents }));
     if (parsedItems.length === 0) {
-      toast.error("Add at least one line item (name + qty)");
+      toast.error("Add at least one line item with a name, quantity, and price");
+      return;
+    }
+    // Block a $0 invoice — nothing to bill, and Stripe rejects sub-$0.50
+    // charges anyway. (Tax can't make a 0 subtotal positive.)
+    const itemsSubtotal = parsedItems.reduce((s, it) => s + it.total_cents, 0);
+    if (itemsSubtotal <= 0) {
+      toast.error("Invoice total must be greater than $0");
       return;
     }
     setSavingInvoice(true);
@@ -2924,6 +2941,13 @@ function InvoiceCanvas({
       if (trimmedName) customerPayload.name = trimmedName;
       await db.from("vendor_customers").upsert(customerPayload, { onConflict: "vendor_id,email" });
     }
+    // Totals derived from the FILTERED parsedItems (not the raw rows) so
+    // line_items, subtotal_cents, tax_cents and total_cents always
+    // reconcile — even if the composer had blank/invalid rows that were
+    // dropped above.
+    const savedSubtotal = itemsSubtotal;
+    const savedTax = Math.round((savedSubtotal * taxRateBps) / 10_000);
+    const savedTotal = savedSubtotal + savedTax;
     // Create as a DRAFT so it lands in the list; the vendor sends it
     // from the Send box. invoice_number uses the typed value when given,
     // else "" so the DB trigger assigns one when the invoice is sent.
@@ -2937,10 +2961,10 @@ function InvoiceCanvas({
         due_date: dueDate || null,
         notes: notes.trim() || null,
         line_items: parsedItems,
-        subtotal_cents: subtotalCents,
+        subtotal_cents: savedSubtotal,
         tax_rate_bps: taxRateBps,
-        tax_cents: taxCents,
-        total_cents: totalCents,
+        tax_cents: savedTax,
+        total_cents: savedTotal,
         status: "draft",
         invoice_number: trimmedNumber,
         created_by: userData.user.id,
