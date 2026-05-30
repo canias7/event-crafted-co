@@ -3415,7 +3415,14 @@ function TransactionsTab({
                                 </span>
                               </div>
                               <div className="flex items-center justify-between gap-3">
-                                <span className="text-muted-foreground">Processing &amp; platform fees</span>
+                                <span className="text-muted-foreground">
+                                  VendoraPay fees
+                                  {Math.abs(t.amount_cents) > 0 ? (
+                                    <span className="text-muted-foreground/70">
+                                      {" "}({((t.fee_cents / Math.abs(t.amount_cents)) * 100).toFixed(1)}%)
+                                    </span>
+                                  ) : null}
+                                </span>
                                 <span className="tabular-nums text-rose-700">
                                   -{formatMoney(t.fee_cents, t.currency)}
                                 </span>
@@ -3428,7 +3435,7 @@ function TransactionsTab({
                               </div>
                             </div>
                             <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
-                              Fees cover card processing plus your VendoraPay plan rate. Net is what settles to your bank.
+                              VendoraPay fees cover card processing plus your plan rate. Net is what settles to your bank.
                             </p>
                           </PopoverContent>
                         </Popover>
