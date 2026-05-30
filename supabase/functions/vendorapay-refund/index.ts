@@ -77,9 +77,42 @@ serve(async (req) => {
       console.error("[vendorapay-refund] PI retrieve failed", err);
       return json(404, { error: "payment not found" });
     }
+    // Ownership check, fail-closed. The PI's vendor_id metadata is the
+    // primary signal, but legacy / externally-created PIs may lack it —
+    // and the OLD check skipped verification entirely when metadata was
+    // absent, letting an admin of vendor A refund vendor B's charge by
+    // passing B's PI id. So: if metadata is present it must match; if
+    // it's absent, fall back to resolving the PI through our own DB
+    // (a paid invoice or payment_link records paid_payment_intent_id).
+    // If NEITHER confirms this vendor owns the charge, deny.
     const piVendorId = (pi.metadata?.vendor_id as string | undefined) ?? null;
-    if (piVendorId && piVendorId !== businessId) {
-      return json(403, { error: "payment does not belong to this vendor" });
+    if (piVendorId) {
+      if (piVendorId !== businessId) {
+        return json(403, { error: "payment does not belong to this vendor" });
+      }
+    } else {
+      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { persistSession: false },
+      });
+      const [{ data: invMatch }, { data: linkMatch }] = await Promise.all([
+        admin
+          .from("invoices")
+          .select("vendor_id")
+          .eq("paid_payment_intent_id", paymentIntentId)
+          .eq("vendor_id", businessId)
+          .maybeSingle(),
+        admin
+          .from("payment_links")
+          .select("vendor_id")
+          .eq("paid_payment_intent_id", paymentIntentId)
+          .eq("vendor_id", businessId)
+          .maybeSingle(),
+      ]);
+      if (!invMatch && !linkMatch) {
+        // Either the charge isn't ours to attribute, or it belongs to a
+        // different vendor. Refuse rather than refund on an unverified PI.
+        return json(403, { error: "payment does not belong to this vendor" });
+      }
     }
     // Server-side cap: never refund more than what's left.
     // Stripe would reject too, but bouncing the request here keeps
