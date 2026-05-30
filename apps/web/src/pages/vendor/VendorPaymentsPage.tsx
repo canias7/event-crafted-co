@@ -3828,6 +3828,32 @@ function InvoicesTab({
     onChanged();
   }, [onChanged, navigate]);
 
+  // Manual "Send to" — emails the invoice to a typed address. Pure
+  // send: no billing, no status change (the backend skips the sent_at
+  // stamp when a to_email override is present). Lets a vendor hand-send
+  // a receipt if they'd rather not automate it.
+  const [sendToEmail, setSendToEmail] = useState<Record<string, string>>({});
+  const sendInvoiceTo = useCallback(async (id: string, email: string) => {
+    const to = email.trim();
+    if (!to) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    setSendingId(id);
+    const { error } = await supabase.functions.invoke("vendorapay-invoice-send", {
+      body: { invoice_id: id, to_email: to },
+    });
+    setSendingId(null);
+    if (error) {
+      if (await handleEmailBillingError(error, navigate)) return;
+      toast.error("Couldn't send", { description: error.message });
+      return;
+    }
+    toast.success(`Invoice sent to ${to}`);
+    setSendToEmail((m) => ({ ...m, [id]: "" }));
+  }, [navigate]);
+
   const cancelInvoice = useCallback(async (inv: Invoice) => {
     // Destructive + irreversible: status='cancelled' is terminal,
     // there's no "uncancel" path. Always confirm so an accidental
@@ -3918,11 +3944,41 @@ function InvoicesTab({
                 <div className="text-right shrink-0">
                   <div className="text-lg font-editorial">{formatMoney(inv.total_cents, inv.currency)}</div>
                   {inv.paid_at ? (
-                    <div className="text-[10px] text-emerald-700 mt-0.5">Paid {formatDate(inv.paid_at)}</div>
+                    <div className="text-[10px] text-emerald-700 mt-2">Paid {formatDate(inv.paid_at)}</div>
                   ) : inv.sent_at ? (
-                    <div className="text-[10px] text-muted-foreground mt-0.5">Sent {formatDate(inv.sent_at)}</div>
+                    <div className="text-[10px] text-muted-foreground mt-2">Sent {formatDate(inv.sent_at)}</div>
                   ) : null}
                 </div>
+              </div>
+
+              {/* Manual "Send to" — email this invoice to any address.
+                  Just sends; no billing, no status change. */}
+              <div className="flex items-center gap-2 mt-3">
+                <input
+                  type="email"
+                  inputMode="email"
+                  placeholder="Send to email…"
+                  value={sendToEmail[inv.id] ?? ""}
+                  onChange={(e) => setSendToEmail((m) => ({ ...m, [inv.id]: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void sendInvoiceTo(inv.id, sendToEmail[inv.id] ?? "");
+                  }}
+                  className="flex-1 min-w-0 max-w-xs rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full shrink-0"
+                  onClick={() => void sendInvoiceTo(inv.id, sendToEmail[inv.id] ?? "")}
+                  disabled={sendingId === inv.id || !(sendToEmail[inv.id] ?? "").trim()}
+                >
+                  {sendingId === inv.id ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  Send
+                </Button>
               </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {inv.status === "draft" ? (
