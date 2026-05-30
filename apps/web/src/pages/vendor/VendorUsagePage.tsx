@@ -45,7 +45,6 @@ const ACTION_LABEL: Record<string, string> = {
   axion_image: "Axion image",
   mux_minute: "Mux minute",
   email_parse: "Email parse",
-  email_send: "Client email sent",
 };
 
 // Per-action credit cost — mirrors _shared/credits.ts::CREDIT_COST.
@@ -57,7 +56,6 @@ const ACTION_COST: Record<string, number> = {
   axion_image: 10,
   mux_minute: 1,
   email_parse: 1,
-  email_send: 1,
 };
 
 // Distinct colors per action for the donut + segment bars.
@@ -69,7 +67,6 @@ const ACTION_COLOR: Record<string, string> = {
   axion_image: "#9333ea",
   mux_minute: "#06b6d4",
   email_parse: "#10b981",
-  email_send: "#0ea5e9",
 };
 
 function formatActionType(action: string | null): string | null {
