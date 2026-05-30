@@ -298,65 +298,85 @@ function paperTextureCss(t: Theme): string {
   }
 }
 
-// Ornate vintage frame drawn as a border-image: a bold double rule with
-// curvy filigree scrollwork in each corner, a light bevel highlight, and
-// a soft dark offset copy behind it for dimension. Returns the CSS
-// properties to drop inside a rule. Rendered on a transparent border but
-// drawn thicker and outset, so it floats around the card edge without
-// resizing the box or disturbing the paper-stack pseudos.
+// ── Ornate metallic "picture-frame" border ──────────────────────────
+// A thick gold band (rendered as a brushed-metal gradient so it never
+// smears) framed by thin inner/outer keylines, with baroque scrollwork
+// in each corner and a diamond/fleur ornament centered on each edge. All
+// ornaments are fixed-size, NON-stretched background images, so they stay
+// crisp at any card size.
+
+// Gold palette helpers — light/mid/dark stops for the metallic look.
+function goldStops(g: string): { lo: string; mid: string; hi: string; dk: string } {
+  return {
+    hi: `color-mix(in srgb, ${g} 55%, #fff 45%)`,
+    lo: `color-mix(in srgb, ${g} 80%, #fff 20%)`,
+    mid: g,
+    dk: `color-mix(in srgb, ${g} 60%, #000 40%)`,
+  };
+}
+
+// Baroque corner scroll for viewBox 0 0 130 130, right-angle at top-left.
+function frameCornerUri(g: string, transform: string): string {
+  const s = goldStops(g);
+  const art =
+    `<g fill='none' stroke-linecap='round' stroke-linejoin='round'>` +
+    // big outer C-scroll sweeping from top edge down to left edge
+    `<path d='M126 40 C92 36 70 30 58 22 C44 13 30 12 22 22 C12 32 14 50 24 58 C34 66 30 84 40 92 C50 100 44 122 44 126' stroke='${s.dk}' stroke-width='9'/>` +
+    `<path d='M126 40 C92 36 70 30 58 22 C44 13 30 12 22 22 C12 32 14 50 24 58 C34 66 30 84 40 92 C50 100 44 122 44 126' stroke='${s.mid}' stroke-width='6'/>` +
+    `<path d='M126 40 C92 36 70 30 58 22 C44 13 30 12 22 22 C12 32 14 50 24 58 C34 66 30 84 40 92 C50 100 44 122 44 126' stroke='${s.hi}' stroke-width='2'/>` +
+    // inner volute spiral at the elbow
+    `<path d='M40 40 C30 40 26 50 34 56 C40 60 48 54 44 48' stroke='${s.dk}' stroke-width='6'/>` +
+    `<path d='M40 40 C30 40 26 50 34 56 C40 60 48 54 44 48' stroke='${s.hi}' stroke-width='2'/>` +
+    // little acanthus leaf off the scroll
+    `</g>` +
+    `<g fill='${s.mid}' stroke='${s.dk}' stroke-width='1'>` +
+    `<path d='M70 24 C84 20 98 24 108 34 C96 38 82 36 70 24 Z'/>` +
+    `<path d='M24 70 C20 84 24 98 34 108 C38 96 36 82 24 70 Z'/>` +
+    `</g>` +
+    `<circle cx='34' cy='34' r='3.5' fill='${s.hi}'/>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 130'><g transform='${transform}'>${art}</g></svg>`,
+  )}")`;
+}
+
+// Diamond/fleur ornament centered on an edge. Base art is laid out for a
+// 120×40 horizontal band; `vb` + `transform` re-orient it (e.g. into a
+// 40×120 canvas for the vertical edges).
+function frameEdgeUri(g: string, vb: string, transform: string): string {
+  const s = goldStops(g);
+  const art =
+    // central diamond
+    `<path d='M60 6 L74 20 L60 34 L46 20 Z' fill='${s.mid}' stroke='${s.dk}' stroke-width='1.5'/>` +
+    `<path d='M60 12 L68 20 L60 28 L52 20 Z' fill='${s.hi}'/>` +
+    // little flourishes flanking it
+    `<g fill='none' stroke='${s.mid}' stroke-width='3' stroke-linecap='round'>` +
+    `<path d='M46 20 C34 20 26 16 18 20'/>` +
+    `<path d='M74 20 C86 20 94 16 102 20'/>` +
+    `</g>` +
+    `<circle cx='16' cy='20' r='3' fill='${s.mid}'/>` +
+    `<circle cx='104' cy='20' r='3' fill='${s.mid}'/>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='${vb}'><g transform='${transform}'>${art}</g></svg>`,
+  )}")`;
+}
+
+// Returns CSS custom properties for the `.paper-card{}` rule. The thick
+// band + keylines + ornaments are painted by the `.paper-card` and
+// `.paper-card::before/::after` rules in the stylesheet, which read these.
 function vintageFrame(t: Theme): string {
   const g = t.gold;
-  // viewBox 320×320, sliced at 132 → big ornate corners + straight
-  // double-rule edges that stretch cleanly between them.
-  // Top-left corner flourish, defined once and mirrored to all 4 corners:
-  // long, flowing S-curves that sweep along each edge and resolve into
-  // spiral curls — a more flowing, calligraphic vintage corner (vs the
-  // tighter bracket). Leaves and dots accent the scrolls.
-  const corner =
-    `<path d='M16 104 C16 54 54 16 104 16'/>` +                         // outer sweep
-    `<path d='M28 100 C28 60 60 28 100 28'/>` +                         // inner sweep (double rule)
-    // flowing scroll sweeping down the left edge into a spiral curl
-    `<path d='M22 150 C24 96 44 64 80 58 C52 70 46 104 54 140 C58 160 42 168 32 158 C24 150 30 138 42 142'/>` +
-    // mirrored flowing scroll sweeping along the top edge
-    `<path d='M150 22 C96 24 64 44 58 80 C70 52 104 46 140 54 C160 58 168 42 158 32 C150 24 138 30 142 42'/>` +
-    // calligraphic diagonal flourish that tapers toward the center
-    `<path d='M60 60 C86 66 108 90 116 124'/>` +
-    `<path d='M104 96 q18 -5 30 5 q-5 -18 -30 -5 Z' fill='${g}' stroke='none'/>` + // leaf
-    `<path d='M96 104 q-5 18 5 30 q-18 -5 -5 -30 Z' fill='${g}' stroke='none'/>` + // leaf
-    `<circle cx='58' cy='58' r='5' fill='${g}' stroke='none'/>` +
-    `<circle cx='120' cy='120' r='3.2' fill='${g}' stroke='none'/>`;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320' fill='none'>` +
-    // deep dark drop: two offset copies for a thicker raised shadow
-    `<g stroke='rgba(0,0,0,0.38)' stroke-linecap='round' transform='translate(3.4,3.8)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.4'/>` +
-    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2.2'/></g>` +
-    `<g stroke='rgba(0,0,0,0.20)' stroke-linecap='round' transform='translate(1.8,2)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6.2'/></g>` +
-    // bright bevel highlight (sits up-left of the gold = catches light)
-    `<g stroke='rgba(255,252,242,0.8)' stroke-linecap='round' transform='translate(-1.8,-2)'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='3'/></g>` +
-    // gold double rule — bold outer band + thin inner rule
-    `<g stroke='${g}' stroke-linecap='round'>` +
-    `<rect x='12' y='12' width='296' height='296' rx='15' stroke-width='6'/>` +
-    `<rect x='24' y='24' width='272' height='272' rx='9' stroke-width='2' opacity='0.85'/></g>` +
-    // corner filigree: dark drop copy first (depth), then gold on top
-    `<g id='dl' stroke='rgba(0,0,0,0.32)' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' transform='translate(2.4,2.6)'>${corner}</g>` +
-    `<use href='#dl' transform='translate(320,0) scale(-1,1)'/>` +
-    `<use href='#dl' transform='translate(320,320) scale(-1,-1)'/>` +
-    `<use href='#dl' transform='translate(0,320) scale(1,-1)'/>` +
-    `<g id='fl' stroke='${g}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>${corner}</g>` +
-    `<use href='#fl' transform='translate(320,0) scale(-1,1)'/>` +
-    `<use href='#fl' transform='translate(320,320) scale(-1,-1)'/>` +
-    `<use href='#fl' transform='translate(0,320) scale(1,-1)'/>` +
-    `</svg>`;
-  const uri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  const s = goldStops(g);
+  const ctl = frameCornerUri(g, "translate(0,0)");
+  const ctr = frameCornerUri(g, "translate(130,0) scale(-1,1)");
+  const cbl = frameCornerUri(g, "translate(0,130) scale(1,-1)");
+  const cbr = frameCornerUri(g, "translate(130,130) scale(-1,-1)");
+  const eh = frameEdgeUri(g, "0 0 120 40", "translate(0,0)");     // horizontal (top/bottom)
+  const ev = frameEdgeUri(g, "0 0 40 120", "translate(40,0) rotate(90)"); // vertical: rotate the 120-wide art into a 40×120 canvas
   return `
-    border:6px solid transparent;
-    border-image-source:url("${uri}");
-    border-image-slice:132;
-    border-image-width:46px;
-    border-image-outset:9px;
-    border-image-repeat:stretch;`;
+    --vf-band:linear-gradient(135deg, ${s.dk} 0%, ${s.mid} 18%, ${s.hi} 32%, ${s.mid} 50%, ${s.dk} 68%, ${s.mid} 84%, ${s.hi} 100%);
+    --vf-ctl:${ctl};--vf-ctr:${ctr};--vf-cbl:${cbl};--vf-cbr:${cbr};
+    --vf-eh:${eh};--vf-ev:${ev};
+    --vf-hi:${s.hi};--vf-dk:${s.dk};`;
 }
 
 function particleField(t: Theme): string {
@@ -1038,8 +1058,12 @@ ${googleFontsLink(t)}
       var(--surface);
     background-blend-mode:multiply,normal;
     ${paperTextureCss(t)}
-    border-radius:6px;
+    border-radius:4px;
     ${vintageFrame(t)}
+    /* Thick metallic gold band as the border. A gradient border-image
+       stretches cleanly (no smearing), unlike pictorial border art. */
+    border:18px solid ${t.gold};
+    border-image:var(--vf-band) 1;
     padding:clamp(2.25rem,4.5vw,3.25rem);
     position:relative;
     /* No isolation — z-index:-1 pseudos need to escape behind. */
@@ -1056,17 +1080,42 @@ ${googleFontsLink(t)}
       0 0 80px ${t.gold}1f;
   }
   .paper-card > *:first-child{position:relative}
+  /* Baroque corner scrolls — fixed-size, non-stretched, sitting ON the
+     band in each corner. inset:-18px aligns them over the 18px border. */
+  .paper-card::before{
+    content:"";
+    position:absolute;
+    inset:-18px;
+    pointer-events:none;
+    z-index:3;
+    background-image:var(--vf-ctl),var(--vf-ctr),var(--vf-cbl),var(--vf-cbr);
+    background-repeat:no-repeat;
+    background-position:top left,top right,bottom left,bottom right;
+    background-size:56px 56px;
+  }
+  /* Diamond/fleur ornaments centered on each of the four edges. */
+  .paper-card::after{
+    content:"";
+    position:absolute;
+    inset:-18px;
+    pointer-events:none;
+    z-index:3;
+    background-image:var(--vf-eh),var(--vf-eh),var(--vf-ev),var(--vf-ev);
+    background-repeat:no-repeat;
+    background-position:top center,bottom center,left center,right center;
+    background-size:74px 22px,74px 22px,22px 74px,22px 74px;
+  }
   section.paper-card{box-shadow:
+    /* thin dark keyline hugging the OUTER edge of the gold band */
+    0 0 0 1px var(--vf-dk),
     0 1px 2px rgba(0,0,0,0.45),
     0 4px 10px rgba(0,0,0,0.25),
     0 14px 30px rgba(0,0,0,0.35),
     0 32px 64px rgba(0,0,0,0.32),
     0 60px 120px rgba(0,0,0,0.22),
     0 0 80px ${t.gold}1f,
-    /* Inset top edge highlight (paper catching light) */
-    inset 0 1px 0 rgba(255,255,255,0.5),
-    /* Inset bottom edge shadow (paper has thickness) */
-    inset 0 -1px 0 rgba(0,0,0,0.08)
+    /* thin bright keyline on the INNER edge of the band (against paper) */
+    inset 0 0 0 1px var(--vf-hi)
   }
   .ornament-rule{width:60px;height:1px;background:var(--accent);opacity:0.5;margin:0 auto 1.5rem}
   /* Letterpress: titles sit slightly pressed into the paper. Subtle
