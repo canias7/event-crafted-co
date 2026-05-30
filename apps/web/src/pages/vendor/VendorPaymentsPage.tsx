@@ -2835,7 +2835,7 @@ function InvoiceCanvas({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   return (
-    <div className="max-w-2xl">
+    <div className="w-full">
     <Card>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-foreground/5">
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
@@ -3903,6 +3903,9 @@ function InvoicesTab({
   // Persist current composer state as the vendor's default for this
   return (
     <div className="space-y-4">
+      {/* Template on the left, invoice list on the right (stacks on
+          narrow screens). items-start so the columns top-align. */}
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
       {/* Brand-editable invoice template — only the Bill From block
           (business name + city) and the Logo are interactive. The
           rest is a static visual reference for the vendor so they
@@ -4067,6 +4070,7 @@ function InvoicesTab({
           ))}
         </Card>
       )}
+      </div>
 
       {lateFeeTarget && (
         <Dialog open onOpenChange={(open) => { if (!open) setLateFeeTarget(null); }}>
