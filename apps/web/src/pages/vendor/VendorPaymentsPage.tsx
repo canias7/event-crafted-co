@@ -3905,7 +3905,10 @@ function InvoicesTab({
         uploadingLogo={uploadingLogo}
       />
 
-
+      {/* Right column: invoice list + Send box stacked together as ONE
+          grid cell, so the grid stays 2-up (template left, this right)
+          instead of the Send box wrapping to a full-width 3rd cell. */}
+      <div className="space-y-4">
       {/* Invoice list */}
       {invoices.length === 0 ? (
         <EmptyCard>
@@ -4103,6 +4106,7 @@ function InvoicesTab({
           </div>
         </Card>
       ) : null}
+      </div>
       </div>
 
       {lateFeeTarget && (
