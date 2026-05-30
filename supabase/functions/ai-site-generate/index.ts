@@ -53,7 +53,7 @@ const MODEL = "claude-sonnet-4-6";
 // Bumped whenever DESIGN_BIBLE / PLAYBOOKS / OUTPUT RULES change
 // meaningfully. Stamped into every generated HTML's <head> so we can
 // diagnose drift in the wild by view-source.
-const DESIGN_BIBLE_VERSION = "v39";
+const DESIGN_BIBLE_VERSION = "v40";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -1709,6 +1709,11 @@ Apply as many of these as fit the event mood. Don't sacrifice the MUST-HAVES to 
 
 1. Reply with ONE complete HTML document and nothing else. No prose before or after, no markdown fences. Start with <!DOCTYPE html> and end with </html>.
 2. All site-specific CSS in a single <style> tag in <head>. Google Fonts ARE allowed and encouraged via <link rel="preconnect"> and <link rel="stylesheet"> to fonts.googleapis.com — see the PREMIUM DESIGN BIBLE for the exact link pattern. No Tailwind / Bootstrap / any other framework CDN — only Google Fonts.
+   ⚡ DO NOT EMIT BOILERPLATE THE SERVER ALREADY INJECTS (saves output, faster gen). The renderer automatically adds, into every page, a base <style> with ALL of these — so you must OMIT them from your own output entirely:
+     • OG / Twitter / canonical / description meta tags (server injects them — do NOT write any <meta property="og:..">, <meta name="twitter:..">, <meta name="description">, or <link rel="canonical">).
+     • CSS reset (*,*::before,*::after{box-sizing/margin/padding}), html{scroll-behavior:smooth}, body font-smoothing, img{max-width:100%}.
+     • These utility classes + keyframes are ALREADY DEFINED — just USE the class names, never redefine them: .skeleton (+skFadeOut), .petal-field / .petal-field span (+petalFall), @keyframes tapBounce, .sound-btn, .photo-strip (+ its scrollbar hiding), ::-webkit-scrollbar-track, and the prefers-reduced-motion reset.
+   Still emit: your bespoke per-site CSS (colors, layout, typography, the envelope/menu/page design, countdown styling, etc.), the Google Fonts <link>s, <meta charset>, <meta viewport>, and the calendar <meta> tags.
 3. Absolutely NO <script> tags. NO JavaScript. NO inline event handlers. The page MUST work with JS disabled (CSS-only :checked / :hover / :focus-within patterns are encouraged for interactivity — see the cover-page reveal pattern).
 4. Apply the matching EVENT PLAYBOOK for sections, copy conventions, RSVP wording, default games, palette, and tone. Apply the PREMIUM DESIGN BIBLE for typography, layout patterns, color palettes, decorative elements. Honor explicit user overrides above either.
 5. Be specific. Use the user's names/dates/locations verbatim. If they didn't provide them, invent plausible specifics rather than leaving "[Your Name]" blanks.
