@@ -2897,6 +2897,27 @@ function InvoiceCanvas({
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
+    const trimmedNumber = invoiceNumber.trim();
+    // Invoice numbers must be unique per vendor (enforced by a DB
+    // unique index). If the vendor typed one, pre-check it so they get
+    // a clear message instead of a raw constraint error. Left blank,
+    // the DB trigger auto-assigns a unique INV-XXXX.
+    if (trimmedNumber) {
+      const { data: dupe } = await db
+        .from("invoices")
+        .select("id")
+        .eq("vendor_id", vendorId)
+        .eq("invoice_number", trimmedNumber)
+        .limit(1)
+        .maybeSingle();
+      if (dupe) {
+        setSavingInvoice(false);
+        toast.error("That invoice number is already used", {
+          description: `Invoice ${trimmedNumber} already exists — pick a different number.`,
+        });
+        return;
+      }
+    }
     const trimmedName = billToName.trim();
     if (email) {
       const customerPayload: Record<string, unknown> = { vendor_id: vendorId, email };
@@ -2921,11 +2942,19 @@ function InvoiceCanvas({
         tax_cents: taxCents,
         total_cents: totalCents,
         status: "draft",
-        invoice_number: invoiceNumber.trim(),
+        invoice_number: trimmedNumber,
         created_by: userData.user.id,
       });
     setSavingInvoice(false);
     if (error) {
+      // 23505 = unique violation on (vendor_id, invoice_number) —
+      // backstop for a race the pre-check above didn't catch.
+      if ((error as { code?: string }).code === "23505") {
+        toast.error("That invoice number is already used", {
+          description: "Pick a different invoice number.",
+        });
+        return;
+      }
       toast.error("Couldn't save invoice", { description: error.message });
       return;
     }
