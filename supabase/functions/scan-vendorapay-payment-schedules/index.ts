@@ -20,7 +20,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { consumeCredits } from "../_shared/credits.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -154,12 +153,6 @@ serve(async () => {
       const ok = await sendEmail(hostEmail, `Balance due (${amount}) — ${businessName}`, html);
       if (ok) {
         emailed++;
-        // Bill the vendor one credit for the balance-due reminder we
-        // just sent their client. Best-effort, post-send: never blocks
-        // a reminder; failed sends aren't charged.
-        if (vpRow?.user_id) {
-          await consumeCredits(vpRow.user_id, "email_send", r.id);
-        }
       }
     }
 
