@@ -3937,11 +3937,19 @@ function InvoicesTab({
             refunded_amount_cents: inv.refunded_amount_cents,
             late_fee_cents: inv.late_fee_cents,
           },
-          {
-            business_name: listing?.business_name ?? null,
-            location: listing?.location ?? null,
-            email: user?.email ?? null,
-          },
+          // Resolve the brand from the INVOICE's own listing, not the
+          // listing currently selected in the composer — otherwise a
+          // multi-listing vendor downloading invoice A while listing B
+          // is selected would get B's business name on A's PDF.
+          (() => {
+            const invListing =
+              listings.find((l) => l.id === inv.vendor_id) ?? listing;
+            return {
+              business_name: invListing?.business_name ?? null,
+              location: invListing?.location ?? null,
+              email: user?.email ?? null,
+            };
+          })(),
         );
       } catch (err) {
         console.error("[InvoicesTab] PDF download failed", err);
@@ -3950,7 +3958,7 @@ function InvoicesTab({
         setDownloadingId(null);
       }
     },
-    [listing, user],
+    [listing, listings, user],
   );
 
   // Brand fields — the only editable parts of the invoice template
