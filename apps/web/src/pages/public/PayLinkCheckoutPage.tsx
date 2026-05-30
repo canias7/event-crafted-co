@@ -1,16 +1,32 @@
 // VendoraPay public pay-link checkout. Hosts land here from a link
 // the vendor shared (/pay/link/<slug>). No auth required.
 //
-// Renders the vendor's brand + amount + description, then a single
-// Pay button that calls vendorapay-link-checkout (no JWT) to mint a
-// Stripe Checkout Session and redirect to it. After payment, Stripe
-// brings them back here with ?status=success.
+// Renders the vendor's brand + amount + description, then collects card
+// details RIGHT HERE via Stripe's embedded Payment Element — no redirect
+// to checkout.stripe.com. Flow:
+//   1. Load the link via get_payment_link_for_checkout (no JWT) to show
+//      brand / amount / title.
+//   2. When the link is active, call vendorapay-link-intent (no JWT) to
+//      mint a PaymentIntent (destination charge + platform fee) and get
+//      back a client_secret + publishable key.
+//   3. Mount <Elements>/<PaymentElement> against that client_secret and
+//      confirm the payment in-page. Stripe redirects back here with
+//      ?status=success on completion.
+//   4. vendorapay-webhook flips the link to paid via metadata correlation.
 //
-// States: loading / not-found / expired / cancelled / paid / active.
+// Fallback: if the embedded path isn't configured (no publishable key on
+// the edge function → use_hosted:true) or the intent can't be minted, we
+// fall back to the original hosted Checkout Session redirect so payments
+// never break.
+//
+// States: loading / not-found / expired / cancelled / paid / scheduled /
+// active (embedded form, or hosted-redirect fallback).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Check, CreditCard, Loader2 } from "lucide-react";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { loadStripe, type Stripe as StripeJs } from "@stripe/stripe-js";
+import { Check, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +43,32 @@ interface LinkDetails {
   vendor_logo_url: string | null;
 }
 
+interface IntentResult {
+  use_hosted?: boolean;
+  client_secret?: string;
+  publishable_key?: string;
+}
+
+// The publishable key is browser-safe. The web app already ships one for
+// the proposal Payment Element; reuse it so the embedded pay-link flow
+// needs no new server secret. The edge function may also return one.
+const WEB_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
+  | string
+  | undefined;
+
+// loadStripe must be called outside render and cached per publishable key
+// so we don't reinitialize Stripe.js on every render. Keyed cache because
+// the key arrives asynchronously from the edge function.
+const stripeCache = new Map<string, Promise<StripeJs | null>>();
+function stripeFor(pk: string): Promise<StripeJs | null> {
+  let p = stripeCache.get(pk);
+  if (!p) {
+    p = loadStripe(pk);
+    stripeCache.set(pk, p);
+  }
+  return p;
+}
+
 function formatMoney(cents: number, currency = "usd"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -37,11 +79,27 @@ function formatMoney(cents: number, currency = "usd"): string {
 export default function PayLinkCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
+  // Stripe appends redirect_status (succeeded | failed | pending) when it
+  // returns from a redirect-based method (e.g. 3DS). Only treat the
+  // ?status=success return as paid when Stripe didn't tell us it failed —
+  // otherwise a failed 3DS would flash a false "Payment received". The
+  // webhook remains the source of truth (link.status === "paid").
   const flow = searchParams.get("status");
+  const redirectStatus = searchParams.get("redirect_status");
+  const paidFlow = flow === "success" && redirectStatus !== "failed";
 
   const [link, setLink] = useState<LinkDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Embedded checkout state.
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [intentLoading, setIntentLoading] = useState(false);
+  const [useHosted, setUseHosted] = useState(false);
+  const intentFiredRef = useRef(false);
+
+  // Hosted-redirect fallback state.
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
@@ -69,7 +127,44 @@ export default function PayLinkCheckoutPage() {
     };
   }, [slug]);
 
-  const handlePay = useCallback(async () => {
+  // Once the link is known and active (and not a post-payment return),
+  // mint a PaymentIntent for the embedded Payment Element.
+  useEffect(() => {
+    if (!slug || !link || paidFlow) return;
+    if (link.status !== "active") return;
+    if (intentFiredRef.current) return;
+    intentFiredRef.current = true;
+
+    let cancelled = false;
+    (async () => {
+      setIntentLoading(true);
+      const { data, error } = await supabase.functions.invoke(
+        "vendorapay-link-intent",
+        { body: { slug } },
+      );
+      if (cancelled) return;
+      const res = (data ?? {}) as IntentResult;
+      // Prefer the edge function's key, else the web app's own. Embedded
+      // checkout only needs a client_secret + some publishable key.
+      const pk = res.publishable_key || WEB_PUBLISHABLE_KEY;
+      // Any failure, or no usable key anywhere, falls back to the hosted
+      // Checkout Session redirect so payment still works.
+      if (error || res.use_hosted || !res.client_secret || !pk) {
+        setUseHosted(true);
+        setIntentLoading(false);
+        return;
+      }
+      setClientSecret(res.client_secret);
+      setPublishableKey(pk);
+      setIntentLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, link, paidFlow]);
+
+  // Hosted Checkout Session redirect — fallback path only.
+  const handleHostedPay = useCallback(async () => {
     if (!slug || paying) return;
     setPaying(true);
     const { data, error } = await supabase.functions.invoke("vendorapay-link-checkout", {
@@ -95,6 +190,11 @@ export default function PayLinkCheckoutPage() {
     window.location.href = (data as { url: string }).url;
   }, [slug, paying]);
 
+  const stripePromise = useMemo(
+    () => (publishableKey ? stripeFor(publishableKey) : null),
+    [publishableKey],
+  );
+
   if (loading) {
     return (
       <Shell>
@@ -113,7 +213,7 @@ export default function PayLinkCheckoutPage() {
     );
   }
 
-  if (flow === "success" || link.status === "paid") {
+  if (paidFlow || link.status === "paid") {
     return (
       <Shell>
         <Centered
@@ -207,14 +307,15 @@ export default function PayLinkCheckoutPage() {
           ) : null}
         </div>
 
-        {/* Pay button */}
+        {/* Payment */}
         {expired ? (
           <div className="text-center text-sm text-muted-foreground">
             This link is no longer accepting payments.
           </div>
-        ) : (
+        ) : useHosted ? (
+          // Fallback: hosted Stripe Checkout redirect.
           <Button
-            onClick={handlePay}
+            onClick={handleHostedPay}
             disabled={paying}
             className="w-full rounded-full h-12 text-base"
           >
@@ -225,6 +326,37 @@ export default function PayLinkCheckoutPage() {
             )}
             Pay {formatMoney(link.amount_cents, link.currency)}
           </Button>
+        ) : intentLoading || !clientSecret || !stripePromise ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Preparing secure checkout…
+          </div>
+        ) : (
+          // Embedded Stripe Payment Element — themed to the brand palette.
+          <Elements
+            key={clientSecret}
+            stripe={stripePromise}
+            options={{
+              clientSecret,
+              appearance: {
+                theme: "stripe",
+                variables: {
+                  colorPrimary: "#c4541e",
+                  colorBackground: "#fffdfa",
+                  colorText: "#1a0d08",
+                  colorTextSecondary: "#6b5a4f",
+                  colorDanger: "#dc2626",
+                  fontFamily: "system-ui, sans-serif",
+                  borderRadius: "12px",
+                },
+              },
+            }}
+          >
+            <PayForm
+              slug={slug!}
+              amountLabel={formatMoney(link.amount_cents, link.currency)}
+            />
+          </Elements>
         )}
 
         <p className="text-[11px] text-muted-foreground text-center mt-4">
@@ -232,6 +364,54 @@ export default function PayLinkCheckoutPage() {
         </p>
       </div>
     </Shell>
+  );
+}
+
+// Embedded card form. Confirms the PaymentIntent in-page and redirects
+// back to this route with ?status=success on completion.
+function PayForm({ slug, amountLabel }: { slug: string; amountLabel: string }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSubmitting(true);
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/pay/link/${slug}?status=success`,
+      },
+    });
+    // We only reach here if confirmPayment fails immediately (validation,
+    // card declined without redirect). On success Stripe navigates away.
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message ?? "Payment failed");
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <PaymentElement />
+      <Button
+        type="submit"
+        disabled={!stripe || submitting}
+        className="w-full rounded-full h-12 text-base"
+      >
+        {submitting ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <CreditCard className="w-4 h-4 mr-2" />
+        )}
+        Pay {amountLabel}
+      </Button>
+      <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+        <ShieldCheck className="w-3.5 h-3.5" />
+        Secured by Stripe
+      </div>
+    </form>
   );
 }
 
