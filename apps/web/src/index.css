@@ -103,11 +103,18 @@
 /* Hide the up/down stepper arrow buttons WebKit/Chromium render at the
    ends of a scrollbar track (the little arrows that showed at the right
    edge of the My Vendora content area). Hides only the buttons, not the
-   scrollbar thumb/track or scrolling. */
-::-webkit-scrollbar-button {
-  display: none;
-  width: 0;
-  height: 0;
+   scrollbar thumb/track or scrolling. Cover every button pseudo +
+   direction so no single/double-button variant slips through. */
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:double-button,
+::-webkit-scrollbar-button:start,
+::-webkit-scrollbar-button:end,
+::-webkit-scrollbar-button:vertical,
+::-webkit-scrollbar-button:horizontal {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Print stylesheet — opt-in via the .printable class on the page <main>.
