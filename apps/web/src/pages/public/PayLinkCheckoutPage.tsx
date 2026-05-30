@@ -49,6 +49,13 @@ interface IntentResult {
   publishable_key?: string;
 }
 
+// The publishable key is browser-safe. The web app already ships one for
+// the proposal Payment Element; reuse it so the embedded pay-link flow
+// needs no new server secret. The edge function may also return one.
+const WEB_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
+  | string
+  | undefined;
+
 // loadStripe must be called outside render and cached per publishable key
 // so we don't reinitialize Stripe.js on every render. Keyed cache because
 // the key arrives asynchronously from the edge function.
@@ -130,15 +137,18 @@ export default function PayLinkCheckoutPage() {
       );
       if (cancelled) return;
       const res = (data ?? {}) as IntentResult;
-      // Any failure, or the edge function telling us to, falls back to
-      // the hosted Checkout Session redirect so payment still works.
-      if (error || res.use_hosted || !res.client_secret || !res.publishable_key) {
+      // Prefer the edge function's key, else the web app's own. Embedded
+      // checkout only needs a client_secret + some publishable key.
+      const pk = res.publishable_key || WEB_PUBLISHABLE_KEY;
+      // Any failure, or no usable key anywhere, falls back to the hosted
+      // Checkout Session redirect so payment still works.
+      if (error || res.use_hosted || !res.client_secret || !pk) {
         setUseHosted(true);
         setIntentLoading(false);
         return;
       }
       setClientSecret(res.client_secret);
-      setPublishableKey(res.publishable_key);
+      setPublishableKey(pk);
       setIntentLoading(false);
     })();
     return () => {

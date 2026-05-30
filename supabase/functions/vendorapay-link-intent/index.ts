@@ -23,9 +23,11 @@ import { computePlatformFeeCents, normalizeTier } from "../_shared/platformFees.
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-// Publishable key is safe to expose to the browser. Returned to the
-// client so the Payment Element can initialize. Falls back to deriving
-// nothing — if unset, the client should use hosted checkout instead.
+// Publishable key is safe to expose to the browser. Optional here: the
+// web app already ships VITE_STRIPE_PUBLISHABLE_KEY for the proposal
+// Payment Element, so the page uses that. We still forward this if an
+// edge-function secret happens to be set, but the embedded flow no
+// longer depends on it — only on STRIPE_SECRET_KEY (to mint the intent).
 const STRIPE_PUBLISHABLE_KEY = Deno.env.get("STRIPE_PUBLISHABLE_KEY") ?? "";
 
 const cors = {
@@ -51,9 +53,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
   try {
-    // No publishable key configured → tell the client to use hosted
-    // checkout. Keeps the embedded path strictly additive.
-    if (!STRIPE_PUBLISHABLE_KEY) {
+    // No Stripe secret → can't mint an intent. Tell the client to use
+    // the hosted Checkout Session path. Keeps embedded strictly additive.
+    if (!STRIPE_SECRET_KEY) {
       return json(200, { use_hosted: true });
     }
 
@@ -149,6 +151,8 @@ serve(async (req) => {
     return json(200, {
       use_hosted: false,
       client_secret: intent.client_secret,
+      // Empty when no edge secret is set — the web app falls back to its
+      // own VITE_STRIPE_PUBLISHABLE_KEY (same key the proposal flow uses).
       publishable_key: STRIPE_PUBLISHABLE_KEY,
       amount_cents: amountCents,
       currency,
