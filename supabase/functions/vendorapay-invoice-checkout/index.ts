@@ -5,9 +5,11 @@
 // Stripe page shows the breakdown), applies tax as a separate
 // line if set, returns the hosted URL.
 //
-// Vendor's tier sets the application_fee_amount on the TOTAL
-// (computed on total_cents). metadata.invoice_id lets the webhook
-// mark the invoice paid on payment_intent.succeeded.
+// Vendor's tier sets the application_fee_amount, computed on the SUM
+// of the line items Stripe actually charges (not the client-supplied
+// total_cents column, which has no DB constraint tying it to the
+// lines). metadata.invoice_id lets the webhook mark the invoice paid
+// on payment_intent.succeeded.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -113,8 +115,6 @@ serve(async (req) => {
       });
       tier = normalizeTier(tierRaw as string | null);
     }
-    const feeCents = computePlatformFeeCents(tier, inv.total_cents as number);
-
     const items = (inv.line_items as unknown as LineItem[]) ?? [];
     const currency = (inv.currency as string) ?? "usd";
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items
@@ -166,6 +166,21 @@ serve(async (req) => {
         },
       });
     }
+
+    // Platform fee MUST be computed from the amount Stripe will actually
+    // charge (the sum of the line items just built), NOT inv.total_cents.
+    // total_cents is a client-supplied column with no DB constraint tying
+    // it to the line items, so a vendor inserting an invoice directly
+    // (bypassing the UI) could understate total_cents to shrink the
+    // platform's commission while the buyer is still charged the real
+    // line-item sum. Deriving the fee from the charged amount closes that
+    // fee-evasion gap.
+    const chargedCents = lineItems.reduce(
+      (sum, li) =>
+        sum + (li.price_data?.unit_amount ?? 0) * (li.quantity ?? 1),
+      0,
+    );
+    const feeCents = computePlatformFeeCents(tier, chargedCents);
 
     const session = await client().checkout.sessions.create({
       mode: "payment",
