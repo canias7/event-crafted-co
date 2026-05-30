@@ -79,6 +79,14 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const invoiceId = body?.invoice_id as string | undefined;
     if (!invoiceId) return json(400, { error: "invoice_id required" });
+    // Optional recipient override — the "Send to" box lets a vendor
+    // email the invoice to an address they type (e.g. a copy to a
+    // second contact) instead of only the stored bill_to_email.
+    const toOverrideRaw = (body?.to_email as string | undefined)?.trim() ?? "";
+    const toOverride = toOverrideRaw.length > 0 ? toOverrideRaw : null;
+    if (toOverride && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toOverride)) {
+      return json(400, { error: "invalid to_email" });
+    }
 
     // Resolve the calling user up-front for non-service-role paths.
     // Doing this BEFORE the invoice lookup prevents an unauthenticated
@@ -113,11 +121,19 @@ serve(async (req) => {
     }
     if (!inv) return json(404, { error: "invoice not found" });
 
-    if (!inv.bill_to_email) return json(400, { error: "bill_to_email required to send" });
-    // Status guard: don't email an invoice that's already paid,
-    // cancelled, or refunded. Resending a draft / sent / overdue
-    // invoice is fine (vendor nudge).
-    if (!["draft", "sent", "overdue"].includes(inv.status as string)) {
+    // Recipient: the typed override if present, else the stored
+    // bill_to_email. One of the two must exist.
+    const recipient = toOverride ?? (inv.bill_to_email as string | null);
+    if (!recipient) return json(400, { error: "no recipient — enter an email to send to" });
+    // Status guard: for the default flow don't email an invoice that's
+    // already paid/cancelled/refunded. BUT when the vendor explicitly
+    // types a recipient in the "Send to" box, allow re-sending a copy
+    // of any non-cancelled invoice (e.g. emailing a paid invoice as a
+    // receipt to a second contact).
+    const allowedStatuses = toOverride
+      ? ["draft", "sent", "overdue", "paid", "partial_refund"]
+      : ["draft", "sent", "overdue"];
+    if (!allowedStatuses.includes(inv.status as string)) {
       return json(400, { error: `cannot send invoice with status '${inv.status}'` });
     }
 
@@ -217,7 +233,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: senderFrom(businessName, verifiedDomain),
         reply_to: vendorEmail ?? undefined,
-        to: inv.bill_to_email,
+        to: recipient,
         subject: `Invoice ${inv.invoice_number} from ${businessName} — ${formatMoney(inv.total_cents as number, currency)}`,
         html,
       }),
@@ -228,7 +244,11 @@ serve(async (req) => {
       return json(500, { error: "email_failed", detail: txt.slice(0, 240) });
     }
 
-    if (inv.status === "draft") {
+    // The "Send to" override is a pure send — just email the invoice
+    // to the typed address. No status change, no sent_at stamp, no
+    // billing side-effects. The automatic-delivery flow (no override)
+    // still flips a draft to 'sent' on first send.
+    if (!toOverride && inv.status === "draft") {
       await admin
         .from("invoices")
         .update({ status: "sent", sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
