@@ -54,6 +54,9 @@ const MARGIN = 56;
 const TEXT: [number, number, number] = [26, 20, 16];
 const MUTED: [number, number, number] = [107, 98, 89];
 const RULE: [number, number, number] = [232, 227, 221];
+// Accent matches the on-screen invoice template (rgb(30,80,180)) so the
+// PDF mirrors it — used on the INVOICE eyebrow, the divider, and Total due.
+const ACCENT: [number, number, number] = [30, 80, 180];
 
 function money(cents: number, currency: string): string {
   return new Intl.NumberFormat("en-US", {
@@ -77,38 +80,30 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const currency = invoice.currency || "usd";
 
-  // ---- Header: vendor brand + INVOICE eyebrow ---------------------
+  // ---- Header: business name (left) + INVOICE eyebrow (right) -----
+  // Mirrors the on-screen template: bold business name with a short
+  // accent underline, and an "INVOICE" eyebrow + number on the right.
   doc
-    .setFont("times", "normal")
-    .setFontSize(22)
+    .setFont("helvetica", "bold")
+    .setFontSize(20)
     .setTextColor(...TEXT);
-  doc.text(vendor.business_name ?? "Vendor", MARGIN, 80);
-
-  if (vendor.location) {
-    doc
-      .setFont("helvetica", "normal")
-      .setFontSize(9)
-      .setTextColor(...MUTED);
-    doc.text(vendor.location, MARGIN, 96);
-  }
-  if (vendor.email) {
-    doc
-      .setFont("helvetica", "normal")
-      .setFontSize(9)
-      .setTextColor(...MUTED);
-    doc.text(vendor.email, MARGIN, vendor.location ? 110 : 96);
-  }
+  doc.text(vendor.business_name ?? "Vendor", MARGIN, 84);
+  // accent underline under the business name (template's 36×2 bar)
+  doc
+    .setDrawColor(...ACCENT)
+    .setLineWidth(2)
+    .line(MARGIN, 94, MARGIN + 36, 94);
 
   doc
     .setFont("helvetica", "bold")
     .setFontSize(8)
-    .setTextColor(...MUTED);
-  doc.text("INVOICE", PAGE_W - MARGIN, 78, { align: "right" });
+    .setTextColor(...ACCENT);
+  doc.text("INVOICE", PAGE_W - MARGIN, 76, { align: "right" });
   doc
-    .setFont("times", "italic")
-    .setFontSize(20)
+    .setFont("helvetica", "bold")
+    .setFontSize(16)
     .setTextColor(...TEXT);
-  doc.text(invoice.invoice_number, PAGE_W - MARGIN, 100, { align: "right" });
+  doc.text(invoice.invoice_number || "—", PAGE_W - MARGIN, 94, { align: "right" });
 
   // Paid / refunded status pill
   const statusUpper = invoice.status.toUpperCase().replace("_", " ");
@@ -117,66 +112,52 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
       .setFont("helvetica", "bold")
       .setFontSize(8)
       .setTextColor(10, 124, 74);
-    doc.text(`✓ ${statusUpper}`, PAGE_W - MARGIN, 116, { align: "right" });
+    doc.text(`✓ ${statusUpper}`, PAGE_W - MARGIN, 110, { align: "right" });
   } else if (invoice.status === "refunded" || invoice.status === "partial_refund") {
     doc
       .setFont("helvetica", "bold")
       .setFontSize(8)
       .setTextColor(180, 70, 30);
-    doc.text(statusUpper, PAGE_W - MARGIN, 116, { align: "right" });
+    doc.text(statusUpper, PAGE_W - MARGIN, 110, { align: "right" });
   }
 
-  // Single rule under the header
-  doc
-    .setDrawColor(...RULE)
-    .setLineWidth(0.5)
-    .line(MARGIN, 130, PAGE_W - MARGIN, 130);
-
-  // ---- Bill-to + dates -------------------------------------------
-  let y = 156;
-  doc
-    .setFont("helvetica", "bold")
-    .setFontSize(8)
-    .setTextColor(...MUTED);
-  doc.text("BILL TO", MARGIN, y);
-  doc.text("ISSUED", PAGE_W - MARGIN - 140, y);
-  if (invoice.due_date) {
-    doc.text("DUE", PAGE_W - MARGIN, y, { align: "right" });
-  } else if (invoice.paid_at) {
-    doc.text("PAID", PAGE_W - MARGIN, y, { align: "right" });
-  }
+  // ---- Meta row: Bill from · Bill to · Issued · Due --------------
+  // Mirrors the template's 4-column meta block.
+  const COL1 = MARGIN;                       // Bill from
+  const COL2 = MARGIN + 150;                 // Bill to
+  const COL3 = PAGE_W - MARGIN - 150;        // Issued
+  const COL4 = PAGE_W - MARGIN;              // Due (right-aligned)
+  let y = 150;
+  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
+  doc.text("BILL FROM", COL1, y);
+  doc.text("BILL TO", COL2, y);
+  doc.text("ISSUED", COL3, y);
+  doc.text(invoice.due_date ? "DUE" : invoice.paid_at ? "PAID" : "DUE", COL4, y, { align: "right" });
 
   y += 14;
-  doc
-    .setFont("helvetica", "normal")
-    .setFontSize(11)
-    .setTextColor(...TEXT);
-  doc.text(invoice.bill_to_name ?? "—", MARGIN, y);
-  doc.text(formatDate(invoice.issue_date), PAGE_W - MARGIN - 140, y);
-  if (invoice.due_date) {
-    doc.text(formatDate(invoice.due_date), PAGE_W - MARGIN, y, {
-      align: "right",
-    });
-  } else if (invoice.paid_at) {
-    doc.text(formatDate(invoice.paid_at), PAGE_W - MARGIN, y, {
-      align: "right",
-    });
-  }
+  doc.setFont("helvetica", "normal").setFontSize(11).setTextColor(...TEXT);
+  doc.text(vendor.business_name ?? "—", COL1, y);
+  doc.text(invoice.bill_to_name ?? "—", COL2, y);
+  doc.text(formatDate(invoice.issue_date), COL3, y);
+  const dueValue = invoice.due_date
+    ? formatDate(invoice.due_date)
+    : invoice.paid_at
+    ? formatDate(invoice.paid_at)
+    : "—";
+  doc.text(dueValue, COL4, y, { align: "right" });
 
-  if (invoice.bill_to_email) {
-    y += 14;
-    doc
-      .setFontSize(9)
-      .setTextColor(...MUTED);
-    doc.text(invoice.bill_to_email, MARGIN, y);
-  }
+  // sub-lines (vendor location, client email)
+  y += 13;
+  doc.setFontSize(9).setTextColor(...MUTED);
+  if (vendor.location) doc.text(vendor.location, COL1, y);
+  if (invoice.bill_to_email) doc.text(invoice.bill_to_email, COL2, y);
 
   // ---- Line items table -------------------------------------------
   const tableStart = y + 28;
   autoTable(doc, {
     startY: tableStart,
     margin: { left: MARGIN, right: MARGIN },
-    head: [["Item", "Qty", "Unit", "Amount"]],
+    head: [["Item", "Qty", "Unit price", "Amount"]],
     body: invoice.line_items.map((li) => [
       li.name,
       String(li.qty),
@@ -242,19 +223,19 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
     doc.text(money(invoice.late_fee_cents, currency), valueX, ty, { align: "right" });
   }
 
-  // Rule above total
+  // Accent rule above total (mirrors the template's 2px accent border)
   ty += 8;
   doc
-    .setDrawColor(...RULE)
-    .setLineWidth(0.5)
+    .setDrawColor(...ACCENT)
+    .setLineWidth(1.5)
     .line(labelX, ty, valueX, ty);
 
   ty += 16;
   doc
     .setFont("helvetica", "bold")
     .setFontSize(11)
-    .setTextColor(...TEXT);
-  doc.text("Total", labelX, ty);
+    .setTextColor(...ACCENT);
+  doc.text("TOTAL DUE", labelX, ty);
   doc.text(money(invoice.total_cents, currency), valueX, ty, { align: "right" });
 
   // Refund line if applicable
@@ -292,17 +273,17 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
     ty += wrapped.length * 14;
   }
 
-  // ---- Footer ----------------------------------------------------
+  // ---- Footer (mirrors the template: thank-you left, Powered-by right)
+  doc
+    .setDrawColor(...RULE)
+    .setLineWidth(0.5)
+    .line(MARGIN, 744, PAGE_W - MARGIN, 744);
   doc
     .setFont("helvetica", "normal")
     .setFontSize(8)
     .setTextColor(...MUTED);
-  doc.text(
-    "Processed via VendoraPay · VENDORAPAY appears on card statements",
-    PAGE_W / 2,
-    760,
-    { align: "center" },
-  );
+  doc.text("Thank you for your business.", MARGIN, 760);
+  doc.text("Powered by VendoraPay", PAGE_W - MARGIN, 760, { align: "right" });
 
   return doc;
 }

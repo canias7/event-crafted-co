@@ -4183,21 +4183,6 @@ function InvoicesTab({
               </div>
 
               <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {inv.status === "draft" ? (
-                  <Button
-                    onClick={() => sendInvoice(inv.id)}
-                    disabled={sendingId === inv.id || !inv.bill_to_email}
-                    size="sm"
-                    className="rounded-full"
-                  >
-                    {sendingId === inv.id ? (
-                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                    ) : (
-                      <Mail className="w-3.5 h-3.5 mr-1" />
-                    )}
-                    Send to host
-                  </Button>
-                ) : null}
                 {(inv.status === "sent" || inv.status === "overdue") ? (
                   <Button
                     variant="outline"
