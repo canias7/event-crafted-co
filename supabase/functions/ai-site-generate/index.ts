@@ -2031,7 +2031,7 @@ type Spec = {
   hero_image?: string;       // Unsplash URL: https://images.unsplash.com/photo-XXXX?w=2000&q=80&fit=crop
   cover_variant?: "envelope" | "monogram";  // monogram for couples, envelope otherwise
   cover_eyebrow?: string;    // "Together with our families" / "You're invited to"
-  frame?: "gold-baroque";    // ornate border on section cards — see FRAMES below
+  frame?: "gold-baroque" | "garden-botanical" | "art-deco" | "rustic-kraft" | "baby-pastel" | "minimalist-line" | "tropical-palm" | "holiday-evergreen" | "celestial-gold" | "romantic-blush";  // ornate border on section cards — pick per RULE 3b
   sections: Section[];
   meta_description?: string;
 };
