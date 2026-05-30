@@ -2835,6 +2835,7 @@ function InvoiceCanvas({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   return (
+    <div className="max-w-2xl">
     <Card>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-foreground/5">
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
@@ -3040,6 +3041,7 @@ function InvoiceCanvas({
         </footer>
       </div>
     </Card>
+    </div>
   );
 }
 
