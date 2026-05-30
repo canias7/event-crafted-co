@@ -7713,7 +7713,6 @@ function PayLinksTab({
               <thead className="sticky top-0 z-10 bg-white">
                 <tr className="border-b border-foreground/10 text-[11px] uppercase tracking-wider text-muted-foreground">
                   <th className="text-left font-semibold px-4 py-2.5">Name</th>
-                  <th className="text-left font-semibold px-3 py-2.5">Status</th>
                   <th className="text-left font-semibold px-3 py-2.5">Price</th>
                   <th className="text-left font-semibold px-3 py-2.5">Created</th>
                   <th className="px-3 py-2.5 w-10" aria-label="Actions" />
@@ -7728,24 +7727,23 @@ function PayLinksTab({
                       key={l.id}
                       className="group border-b border-foreground/[0.06] last:border-b-0 hover:bg-foreground/[0.02]"
                     >
-                      {/* Name + description */}
+                      {/* Name + status badge inline (Stripe-style) + description */}
                       <td className="px-4 py-3 align-middle">
-                        <div className="font-semibold truncate max-w-[260px]">{l.title}</div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-semibold truncate max-w-[220px]">{l.title}</span>
+                          <LinkStatusPill status={l.status} />
+                        </div>
                         {l.description ? (
-                          <div className="text-[11px] text-muted-foreground truncate max-w-[260px]">{l.description}</div>
+                          <div className="text-[11px] text-muted-foreground truncate max-w-[280px] mt-0.5">{l.description}</div>
                         ) : null}
-                      </td>
-                      {/* Status */}
-                      <td className="px-3 py-3 align-middle">
-                        <LinkStatusPill status={l.status} />
                       </td>
                       {/* Price */}
                       <td className="px-3 py-3 align-middle whitespace-nowrap tabular-nums">
                         {formatMoney(l.amount_cents, l.currency)} {l.currency.toUpperCase()}
                       </td>
-                      {/* Created (+ paid/activates secondary) */}
+                      {/* Created — date + time, like Stripe */}
                       <td className="px-3 py-3 align-middle whitespace-nowrap text-muted-foreground">
-                        {formatDate(l.created_at)}
+                        {formatDateTime(l.created_at)}
                         {l.paid_at ? (
                           <span className="block text-[11px] text-emerald-700">Paid {formatDate(l.paid_at)}</span>
                         ) : l.status === "scheduled" && l.activate_at ? (
