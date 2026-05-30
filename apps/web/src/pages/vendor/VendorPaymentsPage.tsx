@@ -7707,102 +7707,131 @@ function PayLinksTab({
       {links.length === 0 ? (
         <EmptyCard>No pay links yet. Click "New pay link" to create one.</EmptyCard>
       ) : (
-        <Card>
-          {/* Compact single-line ledger rows. Scrollable past ~6 rows. */}
-          <div className="max-h-[480px] overflow-y-auto scrollbar-hide">
-          {links.map((l, idx) => {
-            const canCopy = l.status === "active";
-            const canCancel = l.status === "active" || l.status === "scheduled";
-            return (
-              <div
-                key={l.id}
-                className={`group flex items-center gap-3 px-4 py-3 hover:bg-foreground/[0.02] ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-              >
-                {/* Left: title + status + meta */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium truncate">{l.title}</span>
-                    <LinkStatusPill status={l.status} />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                    Created {formatDate(l.created_at)}
-                    {l.paid_at ? ` · Paid ${formatDate(l.paid_at)}` : ""}
-                    {l.status === "scheduled" && l.activate_at
-                      ? ` · Activates ${formatDate(l.activate_at)}`
-                      : ""}
-                    {l.description ? ` · ${l.description}` : ""}
-                  </p>
-                </div>
-
-                {/* Right: amount + overflow menu */}
-                <div className="text-sm font-semibold tabular-nums shrink-0">
-                  {formatMoney(l.amount_cents, l.currency)}
-                </div>
-                {canCopy || canCancel ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label="Pay link actions"
-                        className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      {canCopy ? (
-                        <DropdownMenuItem onClick={() => copyLink(l.slug)}>
-                          <Copy className="w-3.5 h-3.5 mr-2" />
-                          Copy link
-                        </DropdownMenuItem>
-                      ) : null}
-                      {canCopy ? (
-                        <DropdownMenuItem onClick={() => window.open(`/pay/link/${l.slug}`, "_blank")}>
-                          <ExternalLink className="w-3.5 h-3.5 mr-2" />
-                          Preview
-                        </DropdownMenuItem>
-                      ) : null}
-                      {canCancel ? (
-                        <DropdownMenuItem
-                          onClick={() => cancel(l)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          Cancel link
-                        </DropdownMenuItem>
-                      ) : null}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  // Keep alignment when there are no actions (paid/refunded/…)
-                  <span className="w-7 shrink-0" />
-                )}
-              </div>
-            );
-          })}
+        <div className="rounded-xl border border-foreground/10 bg-white overflow-hidden">
+          <div className="max-h-[520px] overflow-y-auto scrollbar-hide">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10 bg-white">
+                <tr className="border-b border-foreground/10 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <th className="text-left font-semibold px-4 py-2.5">Name</th>
+                  <th className="text-left font-semibold px-3 py-2.5">Status</th>
+                  <th className="text-left font-semibold px-3 py-2.5">Price</th>
+                  <th className="text-left font-semibold px-3 py-2.5">Created</th>
+                  <th className="px-3 py-2.5 w-10" aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {links.map((l) => {
+                  const canCopy = l.status === "active";
+                  const canCancel = l.status === "active" || l.status === "scheduled";
+                  return (
+                    <tr
+                      key={l.id}
+                      className="group border-b border-foreground/[0.06] last:border-b-0 hover:bg-foreground/[0.02]"
+                    >
+                      {/* Name + description */}
+                      <td className="px-4 py-3 align-middle">
+                        <div className="font-semibold truncate max-w-[260px]">{l.title}</div>
+                        {l.description ? (
+                          <div className="text-[11px] text-muted-foreground truncate max-w-[260px]">{l.description}</div>
+                        ) : null}
+                      </td>
+                      {/* Status */}
+                      <td className="px-3 py-3 align-middle">
+                        <LinkStatusPill status={l.status} />
+                      </td>
+                      {/* Price */}
+                      <td className="px-3 py-3 align-middle whitespace-nowrap tabular-nums">
+                        {formatMoney(l.amount_cents, l.currency)} {l.currency.toUpperCase()}
+                      </td>
+                      {/* Created (+ paid/activates secondary) */}
+                      <td className="px-3 py-3 align-middle whitespace-nowrap text-muted-foreground">
+                        {formatDate(l.created_at)}
+                        {l.paid_at ? (
+                          <span className="block text-[11px] text-emerald-700">Paid {formatDate(l.paid_at)}</span>
+                        ) : l.status === "scheduled" && l.activate_at ? (
+                          <span className="block text-[11px]">Activates {formatDate(l.activate_at)}</span>
+                        ) : null}
+                      </td>
+                      {/* Hover actions: Copy URL + overflow menu */}
+                      <td className="px-3 py-3 align-middle text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          {canCopy ? (
+                            <button
+                              type="button"
+                              onClick={() => copyLink(l.slug)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 rounded-md border border-foreground/10 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+                            >
+                              <Copy className="w-3 h-3" />
+                              Copy URL
+                            </button>
+                          ) : null}
+                          {canCopy || canCancel ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label="Pay link actions"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                {canCopy ? (
+                                  <DropdownMenuItem onClick={() => copyLink(l.slug)}>
+                                    <Copy className="w-3.5 h-3.5 mr-2" />
+                                    Copy link
+                                  </DropdownMenuItem>
+                                ) : null}
+                                {canCopy ? (
+                                  <DropdownMenuItem onClick={() => window.open(`/pay/link/${l.slug}`, "_blank")}>
+                                    <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                                    Preview
+                                  </DropdownMenuItem>
+                                ) : null}
+                                {canCancel ? (
+                                  <DropdownMenuItem
+                                    onClick={() => cancel(l)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    Cancel link
+                                  </DropdownMenuItem>
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <span className="w-7" />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );
 }
 
 function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
-  // Stripe-style status badge: soft tinted pill with a colored status
-  // dot + label. refunded / partial_refund are valid (set by the refund
-  // webhook); the ?? fallback guards any future unmapped status.
-  const map: Record<string, { label: string; className: string; dot: string }> = {
-    active: { label: "Active", className: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
-    paid: { label: "Paid", className: "bg-sky-50 text-sky-700", dot: "bg-sky-500" },
-    cancelled: { label: "Canceled", className: "bg-slate-100 text-slate-600", dot: "bg-slate-400" },
-    expired: { label: "Expired", className: "bg-slate-100 text-slate-600", dot: "bg-slate-400" },
-    scheduled: { label: "Scheduled", className: "bg-violet-50 text-violet-700", dot: "bg-violet-500" },
-    refunded: { label: "Refunded", className: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
-    partial_refund: { label: "Partial refund", className: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+  // Stripe-style outlined status badge: colored border + text, no fill.
+  // refunded / partial_refund are valid (set by the refund webhook);
+  // the ?? fallback guards any future unmapped status.
+  const map: Record<string, { label: string; className: string }> = {
+    active: { label: "Active", className: "border-emerald-300 text-emerald-700" },
+    paid: { label: "Paid", className: "border-sky-300 text-sky-700" },
+    cancelled: { label: "Canceled", className: "border-slate-300 text-slate-500" },
+    expired: { label: "Expired", className: "border-slate-300 text-slate-500" },
+    scheduled: { label: "Scheduled", className: "border-violet-300 text-violet-700" },
+    refunded: { label: "Refunded", className: "border-amber-300 text-amber-700" },
+    partial_refund: { label: "Partial refund", className: "border-amber-300 text-amber-700" },
   };
-  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-600", dot: "bg-slate-400" };
+  const m = map[status] ?? { label: status, className: "border-slate-300 text-slate-500" };
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${m.className}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
+    <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${m.className}`}>
       {m.label}
     </span>
   );
