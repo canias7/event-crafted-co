@@ -448,6 +448,19 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   const [refreshing, setRefreshing] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
+  // Guards against setState after unmount. refresh() can be in-flight
+  // (a Promise.all of edge-fn invokes + Supabase reads) when the user
+  // navigates away or a realtime event fires post-unmount; without
+  // this, those late resolutions write to a dead component. Mirrors
+  // the per-fetch `cancelled` flag ReportsTab/ExpensesTab already use.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const refresh = useCallback(
     async (silent = false) => {
       if (!vendorId || accountVendorIds.length === 0) {
@@ -511,6 +524,9 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             .order("created_at", { ascending: false })
             .limit(200),
         ]);
+        // Bail if the component unmounted while the batch was in
+        // flight — don't write state to a dead component.
+        if (!mountedRef.current) return;
         if (statusRes.data) setStatus(statusRes.data as Status);
         if (balanceRes.data) setBalance(balanceRes.data as Balance);
         // Merge transactions from every connected listing, tag each
@@ -538,8 +554,10 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
         // states for the failing sections).
         console.error("[vendor-payments] refresh failed", err);
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (mountedRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     // accountKey is the join of accountVendorIds — refetches when the
