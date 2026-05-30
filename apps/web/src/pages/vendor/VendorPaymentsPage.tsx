@@ -184,7 +184,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
 type PaymentsTabId = "incoming" | "expenses";
 
 const PAYMENTS_TABS: Array<{ id: PaymentsTabId; label: string; icon: typeof Wallet }> = [
-  { id: "incoming", label: "Incoming", icon: CreditCard },
+  { id: "incoming", label: "Income", icon: CreditCard },
   { id: "expenses", label: "Expenses", icon: Wallet },
 ];
 
