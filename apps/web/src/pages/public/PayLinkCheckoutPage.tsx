@@ -383,6 +383,7 @@ export default function PayLinkCheckoutPage() {
             <PayForm
               slug={slug!}
               amountLabel={formatMoney(link.amount_cents, link.currency)}
+              onNeedsHosted={() => setUseHosted(true)}
             />
           </Elements>
         )}
@@ -397,35 +398,70 @@ export default function PayLinkCheckoutPage() {
 
 // Embedded card form. Confirms the PaymentIntent in-page and redirects
 // back to this route with ?status=success on completion.
-function PayForm({ slug, amountLabel }: { slug: string; amountLabel: string }) {
+function PayForm({
+  slug,
+  amountLabel,
+  onNeedsHosted,
+}: {
+  slug: string;
+  amountLabel: string;
+  onNeedsHosted: () => void;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  // Gate the Pay button on the PaymentElement actually mounting. Clicking
+  // before it's ready makes confirmPayment throw "elements should have a
+  // mounted Payment Element" (an unhandled rejection that hung the button
+  // spinning forever). If the element never loads, escalate to hosted.
+  const [ready, setReady] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !ready || submitting) return;
     setSubmitting(true);
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/pay/link/${slug}?status=success`,
-      },
-    });
-    // We only reach here if confirmPayment fails immediately (validation,
-    // card declined without redirect). On success Stripe navigates away.
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message ?? "Payment failed");
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/pay/link/${slug}?status=success`,
+        },
+      });
+      // Reached only if confirmPayment fails immediately (validation, card
+      // declined without redirect). On success Stripe navigates away.
+      if (error) {
+        toast.error(error.message ?? "Payment failed");
+      }
+    } catch (err) {
+      // A thrown error (e.g. element not mounted) must never leave the
+      // button stuck spinning.
+      console.error("[PayLinkCheckout] confirmPayment threw", err);
+      toast.error("Couldn't process the payment. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <PaymentElement />
+      <PaymentElement
+        onReady={() => setReady(true)}
+        onLoadError={(e) => {
+          // The Element couldn't load (network, blocked script, bad
+          // config). Fall back to hosted checkout so the host can still pay.
+          console.error("[PayLinkCheckout] PaymentElement load error", e);
+          onNeedsHosted();
+        }}
+      />
+      {!ready ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 justify-center">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading payment form…
+        </div>
+      ) : null}
       <Button
         type="submit"
-        disabled={!stripe || submitting}
+        disabled={!stripe || !ready || submitting}
         className="w-full rounded-full h-12 text-base"
       >
         {submitting ? (
