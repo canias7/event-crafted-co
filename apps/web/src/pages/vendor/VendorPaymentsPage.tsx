@@ -7708,78 +7708,78 @@ function PayLinksTab({
         <EmptyCard>No pay links yet. Click "New pay link" to create one.</EmptyCard>
       ) : (
         <Card>
-          {links.map((l, idx) => (
-            <div
-              key={l.id}
-              className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
-            >
-              <div className="flex items-start gap-4 flex-wrap">
+          {/* Compact single-line ledger rows. Scrollable past ~6 rows. */}
+          <div className="max-h-[480px] overflow-y-auto scrollbar-hide">
+          {links.map((l, idx) => {
+            const canCopy = l.status === "active";
+            const canCancel = l.status === "active" || l.status === "scheduled";
+            return (
+              <div
+                key={l.id}
+                className={`group flex items-center gap-3 px-4 py-3 hover:bg-foreground/[0.02] ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+              >
+                {/* Left: title + status + meta */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold truncate">{l.title}</h3>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate">{l.title}</span>
                     <LinkStatusPill status={l.status} />
                   </div>
-                  {l.description ? (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>
-                  ) : null}
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                     Created {formatDate(l.created_at)}
                     {l.paid_at ? ` · Paid ${formatDate(l.paid_at)}` : ""}
                     {l.status === "scheduled" && l.activate_at
                       ? ` · Activates ${formatDate(l.activate_at)}`
                       : ""}
+                    {l.description ? ` · ${l.description}` : ""}
                   </p>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-lg font-editorial">{formatMoney(l.amount_cents, l.currency)}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
-                    {l.slug}
-                  </div>
+
+                {/* Right: amount + overflow menu */}
+                <div className="text-sm font-semibold tabular-nums shrink-0">
+                  {formatMoney(l.amount_cents, l.currency)}
                 </div>
+                {canCopy || canCancel ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Pay link actions"
+                        className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      {canCopy ? (
+                        <DropdownMenuItem onClick={() => copyLink(l.slug)}>
+                          <Copy className="w-3.5 h-3.5 mr-2" />
+                          Copy link
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canCopy ? (
+                        <DropdownMenuItem onClick={() => window.open(`/pay/link/${l.slug}`, "_blank")}>
+                          <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                          Preview
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canCancel ? (
+                        <DropdownMenuItem
+                          onClick={() => cancel(l)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Cancel link
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  // Keep alignment when there are no actions (paid/refunded/…)
+                  <span className="w-7 shrink-0" />
+                )}
               </div>
-              {l.status === "active" ? (
-                <div className="flex items-center gap-2 mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyLink(l.slug)}
-                    className="rounded-full"
-                  >
-                    <Copy className="w-3.5 h-3.5 mr-1" />
-                    Copy link
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`/pay/link/${l.slug}`, "_blank")}
-                    className="rounded-full"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                    Preview
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => cancel(l)}
-                    className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : l.status === "scheduled" ? (
-                <div className="flex items-center gap-2 mt-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => cancel(l)}
-                    className="rounded-full text-muted-foreground hover:text-destructive ml-auto"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          ))}
+            );
+          })}
+          </div>
         </Card>
       )}
     </div>
@@ -7787,22 +7787,22 @@ function PayLinksTab({
 }
 
 function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
-  // refunded / partial_refund are set by the webhook when a paid link is
-  // refunded; they must be in the map or `m.className` is undefined and
-  // crashes the row. Fallback below is the final guard against any
-  // unmapped status (mirrors InvoiceStatusPill).
-  const map: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-emerald-100 text-emerald-700" },
-    paid: { label: "Paid", className: "bg-sky-100 text-sky-700" },
-    cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700" },
-    expired: { label: "Expired", className: "bg-amber-100 text-amber-800" },
-    scheduled: { label: "Scheduled", className: "bg-violet-100 text-violet-700" },
-    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800" },
-    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800" },
+  // Stripe-style status badge: soft tinted pill with a colored status
+  // dot + label. refunded / partial_refund are valid (set by the refund
+  // webhook); the ?? fallback guards any future unmapped status.
+  const map: Record<string, { label: string; className: string; dot: string }> = {
+    active: { label: "Active", className: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+    paid: { label: "Paid", className: "bg-sky-50 text-sky-700", dot: "bg-sky-500" },
+    cancelled: { label: "Canceled", className: "bg-slate-100 text-slate-600", dot: "bg-slate-400" },
+    expired: { label: "Expired", className: "bg-slate-100 text-slate-600", dot: "bg-slate-400" },
+    scheduled: { label: "Scheduled", className: "bg-violet-50 text-violet-700", dot: "bg-violet-500" },
+    refunded: { label: "Refunded", className: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+    partial_refund: { label: "Partial refund", className: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
   };
-  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700" };
+  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-600", dot: "bg-slate-400" };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${m.className}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
       {m.label}
     </span>
   );
