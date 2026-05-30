@@ -209,7 +209,9 @@ export function buildInvoicePdf(invoice: PdfInvoice, vendor: PdfVendor): jsPDF {
   };
   let ty = tableEndY + 16;
   ty = ensureSpace(ty, 100); // totals block needs ~100pt
-  const labelX = PAGE_W - MARGIN - 100;
+  // Wider label column (160pt) so the bold "TOTAL DUE" label and the
+  // right-aligned amount don't collide in a cramped gap.
+  const labelX = PAGE_W - MARGIN - 160;
   const valueX = PAGE_W - MARGIN;
 
   doc
