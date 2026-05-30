@@ -4077,7 +4077,10 @@ function InvoicesTab({
     toast.success(`Invoice sent to ${to}`);
     setSendPickEmail("");
     setSendPickId("");
-  }, [navigate]);
+    // Refresh so a draft that just flipped to 'sent' shows its new
+    // status (a paid invoice stays paid — the backend only flips draft).
+    onChanged();
+  }, [navigate, onChanged]);
 
   const cancelInvoice = useCallback(async (inv: Invoice) => {
     // Destructive + irreversible: status='cancelled' is terminal,
