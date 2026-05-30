@@ -2058,6 +2058,13 @@ RULES:
    • "gold-baroque" — ornate antique gold baroque frame; formal, luxurious (weddings, galas, anniversaries, black-tie).
    • "garden-botanical" — soft watercolor eucalyptus + blush florals; airy, romantic (garden weddings, bridal/baby showers, spring & outdoor events).
    • "art-deco" — gold geometric 1920s Gatsby frame; glamorous (galas, NYE, cocktail parties, milestone birthdays, black-tie).
+   • "rustic-kraft" — twine, dried wheat, lavender + wildflowers; cottagecore, casual (barn/backyard weddings, BBQ, housewarming, rehearsal dinners).
+   • "baby-pastel" — pastel clouds, stars, moons + balloons; sweet, playful (baby showers, gender reveals, kids birthdays).
+   • "minimalist-line" — ultra-minimal thin gold lines; modern, clean (corporate, fundraisers, modern/minimalist events).
+   • "tropical-palm" — monstera + palm leaves with hibiscus; vibrant, beachy (destination weddings, beach/tropical/summer parties).
+   • "holiday-evergreen" — pine, holly, pinecones + gold ribbon; festive (Christmas/winter holiday parties).
+   • "celestial-gold" — gold constellations, stars + moons; mystical (NYE, evening galas, twilight/star-themed events).
+   • "romantic-blush" — blush roses, peonies + eucalyptus; soft, romantic (classic weddings, engagements, vow renewals, bridal showers).
 4. event_start MUST include a timezone offset (-04:00 for ET, +01:00 for CET, -07:00 for PT, etc). Pick the right one for the venue.
 5. venue_lat/lng: include when you know the venue. Lake Como: 46.012, 9.288. The Plaza NYC: 40.764, -73.974. Napa Valley: 38.297, -122.286. Tulum: 20.214, -87.466. Skip for "our backyard" / vague locations.
 6. hero_image: pick a real Unsplash photo ID matching the mood (wedding couple, garden, vineyard, beach, etc). Don't invent IDs — when unsure, use https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=80&fit=crop (versatile couple shot) as fallback.
