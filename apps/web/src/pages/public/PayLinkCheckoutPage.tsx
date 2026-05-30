@@ -79,7 +79,14 @@ function formatMoney(cents: number, currency = "usd"): string {
 export default function PayLinkCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
+  // Stripe appends redirect_status (succeeded | failed | pending) when it
+  // returns from a redirect-based method (e.g. 3DS). Only treat the
+  // ?status=success return as paid when Stripe didn't tell us it failed —
+  // otherwise a failed 3DS would flash a false "Payment received". The
+  // webhook remains the source of truth (link.status === "paid").
   const flow = searchParams.get("status");
+  const redirectStatus = searchParams.get("redirect_status");
+  const paidFlow = flow === "success" && redirectStatus !== "failed";
 
   const [link, setLink] = useState<LinkDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,7 +130,7 @@ export default function PayLinkCheckoutPage() {
   // Once the link is known and active (and not a post-payment return),
   // mint a PaymentIntent for the embedded Payment Element.
   useEffect(() => {
-    if (!slug || !link || flow === "success") return;
+    if (!slug || !link || paidFlow) return;
     if (link.status !== "active") return;
     if (intentFiredRef.current) return;
     intentFiredRef.current = true;
@@ -154,7 +161,7 @@ export default function PayLinkCheckoutPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, link, flow]);
+  }, [slug, link, paidFlow]);
 
   // Hosted Checkout Session redirect — fallback path only.
   const handleHostedPay = useCallback(async () => {
@@ -206,7 +213,7 @@ export default function PayLinkCheckoutPage() {
     );
   }
 
-  if (flow === "success" || link.status === "paid") {
+  if (paidFlow || link.status === "paid") {
     return (
       <Shell>
         <Centered
