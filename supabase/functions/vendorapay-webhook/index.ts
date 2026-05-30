@@ -132,8 +132,16 @@ serve(async (req: Request) => {
           if (propRow?.vendor_id) vendorIdForNotify = propRow.vendor_id;
           if (propRow?.title) descriptionForNotify = `${propRow.title} — ${mode === "deposit" ? "deposit" : "balance"}`;
           if (!hostEmailForNotify && propRow?.host_id) {
-            const { data: userRow } = await db.auth.admin.getUserById(propRow.host_id);
-            hostEmailForNotify = userRow?.user?.email ?? null;
+            // Best-effort: a transient auth-service blip here must not
+            // abort the handler (which, given dedup-before-process +
+            // 200-on-error, would permanently lose the paid-status
+            // write). Worst case the receipt email lacks a recipient.
+            try {
+              const { data: userRow } = await db.auth.admin.getUserById(propRow.host_id);
+              hostEmailForNotify = userRow?.user?.email ?? null;
+            } catch (err) {
+              console.error("[vendorapay-webhook] host email lookup failed", propRow.host_id, err);
+            }
           }
         } else if (paymentLinkId) {
           // receipt_email is null when Stripe Checkout collected the
