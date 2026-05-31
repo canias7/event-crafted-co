@@ -3394,32 +3394,28 @@ function DocumentCanvas({
   return (
     <div className="space-y-4">
       <Card>
-        <div className="px-4 pt-3 pb-2 border-b border-foreground/5">
+        <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3">
           <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
             {kind === "contract" ? "Contract template" : "Proposal template"}
           </p>
+          <Button
+            onClick={save}
+            disabled={saving || !dirty || !templateVendorId}
+            size="sm"
+            className="rounded-full h-8 text-xs"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+            Save template
+          </Button>
         </div>
 
         <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
           <header className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex items-center gap-4 min-w-0">
-              {templateListing?.logo_url ? (
-                <img
-                  src={templateListing.logo_url}
-                  alt={displayName}
-                  className="w-14 h-14 rounded-full object-cover ring-1 ring-foreground/10 shrink-0"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-foreground/5 inline-flex items-center justify-center shrink-0">
-                  <FileText className="w-6 h-6 text-muted-foreground" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
-                <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
-                  {displayLocation}
-                </p>
-              </div>
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
+              <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
+                {displayLocation}
+              </p>
             </div>
             <div className="text-right">
               <p
@@ -3465,19 +3461,6 @@ function DocumentCanvas({
               Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
             </span>
           </footer>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="p-4 flex justify-end">
-          <Button
-            onClick={save}
-            disabled={saving || !dirty || !templateVendorId}
-            className="rounded-full"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-            Save template
-          </Button>
         </div>
       </Card>
     </div>
