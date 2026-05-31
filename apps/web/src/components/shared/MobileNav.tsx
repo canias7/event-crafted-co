@@ -102,7 +102,9 @@ export function MobileNav({ items }: MobileNavProps) {
               aria-current={isActive ? "page" : undefined}
               aria-label={t(item.labelKey)}
             >
-              <item.icon className="w-5 h-5" aria-hidden="true" />
+              {item.icon ? (
+          <item.icon className="w-5 h-5" aria-hidden="true" />
+        ) : null}
             </Link>
           );
         })}
@@ -142,7 +144,9 @@ export function MobileNav({ items }: MobileNavProps) {
                       }`}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      <item.icon className="w-4 h-4" aria-hidden="true" />
+                      {item.icon ? (
+                        <item.icon className="w-4 h-4" aria-hidden="true" />
+                      ) : null}
                       <span className="truncate">{t(item.labelKey)}</span>
                     </Link>
                   );
