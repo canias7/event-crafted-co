@@ -758,6 +758,82 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
         .reduce((sum, t) => sum + t.amount_cents, 0),
     [transactions],
   );
+
+  // Income tab controls — mirror the Expenses tab (search + range
+  // filter + KPI cards). Only money-in rows (positive charge/payment)
+  // count as income; refunds/payouts/fees are excluded.
+  const [incomeQ, setIncomeQ] = useState("");
+  const [incomeRange, setIncomeRange] = useState<"all" | "12m" | "ytd" | "30d">(
+    "12m",
+  );
+  const incomeRows = useMemo(
+    () =>
+      transactions.filter(
+        (t) =>
+          t.amount_cents > 0 && (t.kind === "charge" || t.kind === "payment"),
+      ),
+    [transactions],
+  );
+  const incomeFiltered = useMemo(() => {
+    let list = incomeRows;
+    const now = new Date();
+    if (incomeRange === "30d") {
+      const cutoff = new Date(now);
+      cutoff.setDate(cutoff.getDate() - 30);
+      list = list.filter((t) => new Date(t.created_at) >= cutoff);
+    } else if (incomeRange === "ytd") {
+      const jan1 = new Date(now.getFullYear(), 0, 1);
+      list = list.filter((t) => new Date(t.created_at) >= jan1);
+    } else if (incomeRange === "12m") {
+      const cutoff = new Date(now);
+      cutoff.setMonth(cutoff.getMonth() - 12);
+      list = list.filter((t) => new Date(t.created_at) >= cutoff);
+    }
+    const needle = incomeQ.trim().toLowerCase();
+    if (needle) {
+      list = list.filter((t) =>
+        [t.description, String(t.amount_cents / 100)]
+          .filter(Boolean)
+          .some((s) => (s as string).toLowerCase().includes(needle)),
+      );
+    }
+    return list;
+  }, [incomeRows, incomeQ, incomeRange]);
+  const incomeSummary = useMemo(() => {
+    const all = incomeRows;
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const ytd = all.filter((t) => new Date(t.created_at) >= jan1);
+    const month = all.filter((t) => {
+      const d = new Date(t.created_at);
+      return (
+        d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+      );
+    });
+    const thirty = (() => {
+      const cutoff = new Date(now);
+      cutoff.setDate(cutoff.getDate() - 30);
+      return all.filter((t) => new Date(t.created_at) >= cutoff);
+    })();
+    const sum = (xs: Transaction[]) =>
+      xs.reduce((acc, t) => acc + t.amount_cents, 0);
+    const topSale = all.reduce(
+      (best, t) => (t.amount_cents > best ? t.amount_cents : best),
+      0,
+    );
+    return {
+      ytd: sum(ytd),
+      ytdCount: ytd.length,
+      month: sum(month),
+      monthCount: month.length,
+      thirty: sum(thirty),
+      thirtyCount: thirty.length,
+      topSale,
+    };
+  }, [incomeRows]);
+  const incomeMonthLabel = new Date().toLocaleDateString(undefined, {
+    month: "short",
+  });
   const totalFees = useMemo(
     () =>
       transactions
