@@ -1037,83 +1037,90 @@ export function MySpaceChat() {
           </div>
         )
         : null}
-      <div className="flex items-end gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,application/pdf,text/*"
-          hidden
-          onChange={(e) => {
-            void onPickFiles(e.target.files);
-            if (e.target) e.target.value = "";
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={sending || pendingAttachments.length >= 5}
-          className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-40 transition-colors"
-          aria-label="Attach file"
-          title="Attach an image or PDF (max 5)"
-        >
-          <Paperclip className="w-4 h-4" />
-        </button>
-        {speechSupported
-          ? (
-            <button
-              type="button"
-              onClick={voiceRecording ? stopVoice : startVoice}
-              disabled={sending}
-              className={`shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors disabled:opacity-40 ${
-                voiceRecording
-                  ? "bg-red-500/15 text-red-600"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-              }`}
-              aria-label={voiceRecording ? "Stop voice" : "Start voice"}
-              title={voiceRecording ? "Tap to stop" : "Voice input"}
-            >
-              {voiceRecording
-                ? <MicOff className="w-4 h-4" />
-                : <Mic className="w-4 h-4" />}
-            </button>
-          )
-          : null}
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          rows={3}
-          placeholder={composerPlaceholder}
-          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[72px] max-h-60 py-2 px-2 placeholder:text-foreground/40 text-foreground"
-          disabled={sending}
-        />
-        {sending
-          ? (
-            <button
-              type="button"
-              onClick={() => abortRef.current?.abort()}
-              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background transition-opacity"
-              aria-label="Stop"
-              title="Stop generating"
-            >
-              <Square className="w-3.5 h-3.5 fill-current" />
-            </button>
-          )
-          : (
-            <button
-              type="button"
-              onClick={() => void send()}
-              disabled={(!input.trim() &&
-                pendingAttachments.length === 0) ||
-                uploadingCount > 0}
-              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
-              aria-label="Send"
-            >
-              <ArrowUp className="w-4 h-4" />
-            </button>
-          )}
+      {/* Claude-style layout: textarea on top spanning full width, then
+          a control bar below — attach on the left, mic + send grouped
+          on the right. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,application/pdf,text/*"
+        hidden
+        onChange={(e) => {
+          void onPickFiles(e.target.files);
+          if (e.target) e.target.value = "";
+        }}
+      />
+      <textarea
+        ref={inputRef}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={onKeyDown}
+        rows={2}
+        placeholder={composerPlaceholder}
+        className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[52px] max-h-60 py-1.5 px-1 placeholder:text-foreground/40 text-foreground"
+        disabled={sending}
+      />
+      <div className="flex items-center justify-between gap-2 mt-1.5">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || pendingAttachments.length >= 5}
+            className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-40 transition-colors"
+            aria-label="Attach file"
+            title="Attach an image or PDF (max 5)"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          {speechSupported
+            ? (
+              <button
+                type="button"
+                onClick={voiceRecording ? stopVoice : startVoice}
+                disabled={sending}
+                className={`shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center transition-colors disabled:opacity-40 ${
+                  voiceRecording
+                    ? "bg-red-500/15 text-red-600"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                }`}
+                aria-label={voiceRecording ? "Stop voice" : "Start voice"}
+                title={voiceRecording ? "Tap to stop" : "Voice input"}
+              >
+                {voiceRecording
+                  ? <MicOff className="w-4 h-4" />
+                  : <Mic className="w-4 h-4" />}
+              </button>
+            )
+            : null}
+          {sending
+            ? (
+              <button
+                type="button"
+                onClick={() => abortRef.current?.abort()}
+                className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center bg-foreground text-background transition-opacity"
+                aria-label="Stop"
+                title="Stop generating"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+            )
+            : (
+              <button
+                type="button"
+                onClick={() => void send()}
+                disabled={(!input.trim() &&
+                  pendingAttachments.length === 0) ||
+                  uploadingCount > 0}
+                className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
+                aria-label="Send"
+              >
+                <ArrowUp className="w-4 h-4" />
+              </button>
+            )}
+        </div>
       </div>
     </>
   );
@@ -1459,14 +1466,23 @@ export function MySpaceChat() {
           </div>
         )}
 
-        {/* Bottom-docked composer — hidden on the welcome state,
-            where a centered composer sits under the hero instead. */}
+        {/* Bottom-docked composer — hidden on the welcome state, where a
+            centered composer sits under the hero instead. Claude-style:
+            a rounded bordered card floating above the page. */}
         {showEmptyState ? null : (
-          <div
-            className="border-t px-3 md:px-4 py-3"
-            style={{ borderColor: "rgba(255,138,76,0.18)" }}
-          >
-            {composerInner}
+          <div className="px-3 md:px-4 pb-3 pt-1">
+            <div
+              className="mx-auto w-full max-w-3xl rounded-[20px] px-3 md:px-4 py-2.5"
+              style={{
+                background: "rgba(255,255,255,0.55)",
+                border: "1px solid rgba(255,138,76,0.22)",
+                backdropFilter: "blur(18px) saturate(140%)",
+                WebkitBackdropFilter: "blur(18px) saturate(140%)",
+                boxShadow: "0 10px 36px -16px rgba(20,15,10,0.18)",
+              }}
+            >
+              {composerInner}
+            </div>
           </div>
         )}
       </div>
