@@ -48,7 +48,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { MySpaceKnowledgePanel } from "@/components/super-agents/MySpaceKnowledgePanel";
+import { MemoryConstellation } from "@/components/super-agents/MemoryConstellation";
 import {
   Bar,
   BarChart,
@@ -122,7 +122,8 @@ export function MySpaceChat() {
   // Mobile-only side-drawer state. Desktop renders the sidebar inline
   // in an <aside>, so these are only consulted on small screens.
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [mobileKbOpen, setMobileKbOpen] = useState(false);
+  // Full-screen memory constellation overlay (replaces the KB sheet).
+  const [memoryOpen, setMemoryOpen] = useState(false);
   // Name of the tool currently being executed by the AI, if any. Used
   // to swap the "Thinking…" indicator for something more specific.
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -899,6 +900,8 @@ export function MySpaceChat() {
     !messagesLoading;
 
   return (
+    <>
+    <MemoryConstellation open={memoryOpen} onClose={() => setMemoryOpen(false)} />
     <div
       className="flex rounded-2xl overflow-hidden h-[calc(100vh-180px)] min-h-[480px]"
       style={{
@@ -984,32 +987,16 @@ export function MySpaceChat() {
               className="w-full pl-8 pr-2 py-1.5 text-xs bg-secondary/30 rounded-md outline-none focus:bg-secondary/50 transition-colors"
             />
           </div>
-          {/* Knowledge base — open as side sheet. The AI loads these
-              entries into the system prompt on every turn. */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                Knowledge base
-              </button>
-            </SheetTrigger>
-            <SheetContent
-              side="right"
-              className="w-full sm:max-w-lg overflow-y-auto"
-            >
-              <SheetHeader>
-                <SheetTitle className="font-editorial text-2xl">
-                  Knowledge base
-                </SheetTitle>
-              </SheetHeader>
-              <div className="mt-5">
-                <MySpaceKnowledgePanel />
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* Memory — opens the full-screen constellation. The AI loads
+              these entries into the system prompt on every turn. */}
+          <button
+            type="button"
+            onClick={() => setMemoryOpen(true)}
+            className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            Memory
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-2">
           {threadsLoading ? (
@@ -1113,30 +1100,17 @@ export function MySpaceChat() {
                     className="w-full pl-8 pr-2 py-1.5 text-xs bg-secondary/30 rounded-md outline-none focus:bg-secondary/50"
                   />
                 </div>
-                <Sheet open={mobileKbOpen} onOpenChange={setMobileKbOpen}>
-                  <SheetTrigger asChild>
-                    <button
-                      type="button"
-                      className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                    >
-                      <BookOpen className="w-3.5 h-3.5" />
-                      Knowledge base
-                    </button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="right"
-                    className="w-full sm:max-w-lg overflow-y-auto"
-                  >
-                    <SheetHeader>
-                      <SheetTitle className="font-editorial text-2xl">
-                        Knowledge base
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-5">
-                      <MySpaceKnowledgePanel />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    setMemoryOpen(true);
+                  }}
+                  className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Memory
+                </button>
               </div>
               <div className="flex-1 overflow-y-auto px-2 py-2">
                 {threadsLoading ? (
@@ -1405,6 +1379,7 @@ export function MySpaceChat() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
