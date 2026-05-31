@@ -704,7 +704,9 @@ export default function VendorSubscriptionPage() {
                       <span className="text-2xl font-semibold tnum">
                         ${tier.priceMonthly.toFixed(2)}
                       </span>
-                      <span className="text-xs text-muted-foreground ml-1">/ mo</span>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {tier.billingInterval === "year" ? "/ yr" : "/ mo"}
+                      </span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {tier.monthlyCredits > 0
