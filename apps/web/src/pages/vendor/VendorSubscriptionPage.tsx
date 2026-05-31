@@ -729,6 +729,11 @@ export default function VendorSubscriptionPage() {
                         {tier.billingInterval === "year" ? "/ yr" : "/ mo"}
                       </span>
                     </p>
+                    {tier.billingInterval === "year" && tier.priceMonthly > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5 tnum">
+                        ≈ ${(tier.priceMonthly / 12).toFixed(2)}/mo, billed annually
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {tier.monthlyCredits > 0
                         ? `${tier.monthlyCredits.toLocaleString()} credits/mo · ${tier.listings}`
