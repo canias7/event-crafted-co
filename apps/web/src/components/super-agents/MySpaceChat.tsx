@@ -19,7 +19,6 @@ import {
   ArrowUp,
   Check,
   Copy,
-  Download,
   FileText,
   ImageIcon,
   Loader2,
@@ -33,8 +32,6 @@ import {
   Sparkles,
   Square,
   Trash2,
-  Volume2,
-  VolumeX,
   X,
   BookOpen,
   Menu,
@@ -109,6 +106,35 @@ const QUICK_PROMPTS = [
   "Am I free on July 14?",
   "Generate a moody product shot of a cake on a marble counter",
 ] as const;
+
+// Typewriter hook — reveals `text` one character at a time. `active`
+// gates it (so it only runs on the welcome state) and `startDelay`
+// lets the headline lead the placeholder. Returns the revealed slice
+// plus whether it's still typing (to show the caret).
+function useTypewriter(text: string, active: boolean, speed = 45, startDelay = 0) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      setN(text.length);
+      return;
+    }
+    setN(0);
+    let i = 0;
+    let timer: number | undefined;
+    const startId = window.setTimeout(() => {
+      timer = window.setInterval(() => {
+        i += 1;
+        setN(i);
+        if (i >= text.length && timer) window.clearInterval(timer);
+      }, speed);
+    }, startDelay);
+    return () => {
+      window.clearTimeout(startId);
+      if (timer) window.clearInterval(timer);
+    };
+  }, [text, active, speed, startDelay]);
+  return { shown: text.slice(0, n), done: n >= text.length };
+}
 
 export function MySpaceChat() {
   const { user } = useAuth();
@@ -900,6 +926,21 @@ export function MySpaceChat() {
   const showEmptyState = !currentThreadId && messages.length === 0 &&
     !messagesLoading;
 
+  // Typewriter text for the welcome hero. The headline types first,
+  // then the input placeholder follows once the headline finishes.
+  const HEADLINE = "Welcome to My Space";
+  const PLACEHOLDER = "Ask My Space anything — or describe an image to generate";
+  const headline = useTypewriter(HEADLINE, showEmptyState, 55, 150);
+  const placeholderTw = useTypewriter(
+    PLACEHOLDER,
+    showEmptyState,
+    28,
+    HEADLINE.length * 55 + 450,
+  );
+  // The composer placeholder: typewriter on the welcome state, static
+  // everywhere else.
+  const composerPlaceholder = showEmptyState ? placeholderTw.shown : PLACEHOLDER;
+
   // Composer inner content (attachment chips + input row + footnote),
   // shared between the bottom-docked composer (active chat) and the
   // centered composer that sits under the welcome hero (empty state).
@@ -977,8 +1018,8 @@ export function MySpaceChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           rows={1}
-          placeholder="Ask My Space anything — or describe an image to generate"
-          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2"
+          placeholder={composerPlaceholder}
+          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2 placeholder:text-foreground/40 text-foreground"
           disabled={sending}
         />
         {sending
@@ -1007,9 +1048,6 @@ export function MySpaceChat() {
             </button>
           )}
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1.5 px-2">
-        Text uses Claude Sonnet · Images use OpenAI gpt-image-2
-      </p>
     </>
   );
 
@@ -1046,47 +1084,6 @@ export function MySpaceChat() {
             <MessageSquarePlus className="w-4 h-4" />
             New chat
           </button>
-          {currentThreadId && messages.length > 0
-            ? (
-              <div className="flex items-center justify-center gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={exportChat}
-                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  title="Download this chat as Markdown"
-                >
-                  <Download className="w-3 h-3" />
-                  Export
-                </button>
-                {typeof window !== "undefined" && window.speechSynthesis
-                  ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (readAloud) {
-                          window.speechSynthesis.cancel();
-                        }
-                        setReadAloud((v) => !v);
-                      }}
-                      className={`inline-flex items-center gap-1 text-[11px] transition-colors ${
-                        readAloud
-                          ? "text-[#c4541e]"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      title={readAloud
-                        ? "Stop reading aloud"
-                        : "Read AI replies aloud"}
-                    >
-                      {readAloud
-                        ? <Volume2 className="w-3 h-3" />
-                        : <VolumeX className="w-3 h-3" />}
-                      Read aloud
-                    </button>
-                  )
-                  : null}
-              </div>
-            )
-            : null}
           {/* Search across threads (title + message content). */}
           <div className="relative mt-3">
             <Search
@@ -1305,33 +1302,34 @@ export function MySpaceChat() {
               <VendoraMark size={40} color="#fffdfa" />
             </div>
             <h2
-              className="font-editorial tracking-tight text-4xl md:text-5xl leading-[1.04] mb-3"
-              style={{ color: "#2b2320" }}
+              className="font-sans font-extrabold tracking-tight text-4xl md:text-5xl leading-[1.04] mb-3 min-h-[1.1em]"
+              style={{ color: "#1a1208" }}
             >
-              Welcome to{" "}
-              <span
-                style={{
-                  background: "linear-gradient(120deg, #ff8a4c, #f2722f)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                My Space
-              </span>
+              {/* "Welcome to " stays black; "My Space" reveals in amber. */}
+              {headline.shown.slice(0, 11)}
+              <span style={{ color: "#ff8a4c" }}>{headline.shown.slice(11)}</span>
+              {!headline.done ? (
+                <span
+                  className="inline-block w-[3px] h-[0.9em] align-middle ml-0.5 animate-pulse"
+                  style={{ background: "#ff8a4c" }}
+                />
+              ) : null}
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
               Your AI knows your packages, calendar, and active inquiries.
               Ask about leads, draft replies, or describe an image to generate.
             </p>
-            {/* Centered composer — sits right under the welcome hero
-                (the bottom-docked composer is hidden in this state). */}
+            {/* Centered glassy composer — sits right under the welcome
+                hero (the bottom-docked composer is hidden in this state). */}
             <div
               className="w-full max-w-2xl rounded-2xl px-3 md:px-4 py-3 mb-7"
               style={{
-                background: "rgba(255,253,250,0.85)",
-                border: "0.5px solid rgba(255,138,76,0.28)",
-                boxShadow: "0 10px 36px -14px rgba(20,15,10,0.12)",
+                background: "rgba(255,255,255,0.45)",
+                border: "1px solid rgba(255,255,255,0.6)",
+                backdropFilter: "blur(18px) saturate(140%)",
+                WebkitBackdropFilter: "blur(18px) saturate(140%)",
+                boxShadow:
+                  "0 12px 40px -16px rgba(20,15,10,0.18), inset 0 1px 0 rgba(255,255,255,0.7)",
               }}
             >
               {composerInner}
@@ -1636,12 +1634,13 @@ function MessageBubble(
       className={`group flex flex-col ${isUser ? "items-end" : "items-start"}`}
     >
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-          isUser ? "bg-foreground text-background" : "bg-white/70 text-foreground"
-        }`}
-        style={isUser
-          ? undefined
-          : { border: "0.5px solid rgba(255,138,76,0.18)" }}
+        className={
+          isUser
+            // User: compact rounded bubble, right-aligned (ChatGPT style).
+            ? "max-w-[80%] rounded-3xl px-4 py-2.5 bg-foreground text-background"
+            // Assistant: no bubble — plain text on the canvas, full width.
+            : "max-w-full w-full text-foreground"
+        }
       >
         {attachments && attachments.length > 0
           ? (
