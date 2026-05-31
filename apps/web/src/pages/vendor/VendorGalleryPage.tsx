@@ -77,7 +77,6 @@ import { useRealtime } from "@/lib/realtime";
 import { formatFileSize } from "@/lib/format";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
-import { useVendorPlan } from "@/hooks/useVendorPlan";
 import { supabase } from "@/integrations/supabase/client";
 import {
   computeBlurhash,
@@ -152,12 +151,8 @@ function thumbUrl(url: string, width: number): string {
 
 export default function VendorGalleryPage() {
   const { user } = useAuth();
-  // Gallery is a Starter+ feature. Free vendors land on a paywall
-  // instead of the empty grid so the upsell is obvious.
-  // useVendorPlan takes the user.id (subscription state lives on
-  // profiles per-user post migration 20260524000000).
-  const { tier } = useVendorPlan(user?.id ?? null);
-  const isFreeTier = tier === "free";
+  // Gallery is available to every vendor tier, including Free. Per-tier
+  // image caps are still enforced server-side via user_image_cap.
   const [rows, setRows] = useState<GalleryRow[] | null>(null);
   const [albums, setAlbums] = useState<Album[] | null>(null);
   // Two independent axes — album scope (or Trash) and an optional
@@ -1026,56 +1021,9 @@ export default function VendorGalleryPage() {
     [rows],
   );
 
-  if (isFreeTier) {
-    return (
-      <div className="min-h-screen vendor-canvas flex">
-        <DashboardSidebar
-          items={vendorNavItems}
-          title="Vendor Portal"
-          backPath="/vendor/me"
-        />
-        <main className="flex-1 pb-24 md:pb-0">
-          <div className="backdrop-blur-sm px-4 md:px-8 py-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h1 className="font-editorial text-3xl">Gallery</h1>
-                <p className="text-sm text-muted-foreground">
-                  Your media library. Upload once, reuse across listings.
-                </p>
-              </div>
-              <NotificationBell variant="light" />
-            </div>
-          </div>
-          <div className="p-4 md:p-8 max-w-2xl">
-            <div
-              className="rounded-2xl p-8 text-center"
-              style={{
-                background: "rgba(255,253,250,0.7)",
-                border: "0.5px solid rgba(255,138,76,0.22)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
-              }}
-            >
-              <h2 className="font-editorial text-2xl">Gallery is on Starter and up</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                Upload once, reuse across listings. Comes with 250 gallery images on
-                Starter, 1,000 on Pro, 2,000 on Studio. Listing photos remain
-                unlimited regardless of plan.
-              </p>
-              <a
-                href="/vendor/subscription"
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold mt-5"
-                style={{ background: "#1a1a1a", color: "white" }}
-              >
-                See plans
-              </a>
-            </div>
-          </div>
-        </main>
-        <MobileNav items={vendorNavItems} />
-      </div>
-    );
-  }
+  // Gallery is available to every vendor tier, including Free — no
+  // paywall. Per-tier image caps still apply via user_image_cap (Free
+  // is currently uncapped).
 
   return (
     <div className="min-h-screen vendor-canvas flex">

@@ -302,15 +302,8 @@ export function DashboardSidebar({
         className={`flex-1 ${collapsed ? "p-2 pt-3" : "p-3 pt-4"}`}
         aria-label="Primary"
       >
-        {items
-          // Gallery is a Starter+ feature; hide the nav entry from
-          // Free vendors so the upsell happens on /vendor/subscription
-          // instead of an empty gallery surface they can't use.
-          .filter(
-            (item) =>
-              !(item.path === "/vendor/gallery" && isVendorSide && tier === "free"),
-          )
-          .map(renderItem)}
+        {/* Gallery shows for every vendor tier, including Free. */}
+        {items.map(renderItem)}
       </nav>
       {/* Dedicated Log out row removed — the Sign out action lives on
           /settings now. signOut + handleLogout helpers stay so other
