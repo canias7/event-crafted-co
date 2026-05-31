@@ -699,28 +699,30 @@ export default function VendorAppointmentsPage({
         )}
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
-          {/* Listing picker — suppressed in embedded mode (My Vendora
-              dashboard owns the listing selection and passes it down). */}
-          {!embedded && (
-            !listingsLoading && listings.length === 0 ? (
-              <NoListingsEmptyState />
-            ) : !listingsLoading &&
-              !listings.some((l) => l.application_status === "approved") ? (
-              <PendingApprovalEmptyState />
-            ) : (
-              <ListingPicker
-                listings={listings}
-                loading={listingsLoading}
-                selectedId={selectedListingId}
-                onSelect={(id) => {
-                  setSelectedListingId(id);
-                  setListingPickerOpen(false);
-                }}
-                open={listingPickerOpen}
-                onOpenChange={setListingPickerOpen}
-              />
-            )
-          )}
+          {/* Empty states render in BOTH modes — without them the
+              embedded cockpit Calendar tab is a blank void for a vendor
+              with no (or no approved) listing. The listing PICKER stays
+              embedded-suppressed (My Vendora owns listing selection),
+              but the "no listing yet" / "under review" guidance must
+              still surface here. */}
+          {!listingsLoading && listings.length === 0 ? (
+            <NoListingsEmptyState />
+          ) : !listingsLoading &&
+            !listings.some((l) => l.application_status === "approved") ? (
+            <PendingApprovalEmptyState />
+          ) : !embedded ? (
+            <ListingPicker
+              listings={listings}
+              loading={listingsLoading}
+              selectedId={selectedListingId}
+              onSelect={(id) => {
+                setSelectedListingId(id);
+                setListingPickerOpen(false);
+              }}
+              open={listingPickerOpen}
+              onOpenChange={setListingPickerOpen}
+            />
+          ) : null}
 
           {selectedListingId && (
             <>
@@ -997,9 +999,9 @@ function NoListingsEmptyState() {
         Upload your first listing
       </h2>
       <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        The calendar lives per listing. Once you publish your first
-        listing, you'll be able to block dates, see incoming inquiries,
-        and manage availability right here.
+        Your calendar covers your whole account. Once you publish your
+        first listing, you'll be able to block dates, see incoming
+        inquiries, and manage availability right here.
       </p>
       <Link
         to="/vendor/me"
@@ -1033,9 +1035,9 @@ function PendingApprovalEmptyState() {
         Your listings are under review
       </h2>
       <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        The calendar lives per listing. Once one of your listings is
-        approved you'll be able to block dates and manage availability
-        here.
+        Your calendar covers your whole account. Once one of your
+        listings is approved you'll be able to block dates and manage
+        availability here.
       </p>
       <Link
         to="/vendor/me"
