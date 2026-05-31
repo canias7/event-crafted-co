@@ -2036,6 +2036,51 @@ function formatMoneyCompact(cents: number, currency: string): string {
 }
 
 
+// Summary stat card for the Income tab — same white-card / Fraunces
+// numeral treatment as the Expenses tab tiles so the two read as siblings.
+function SummaryCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+      <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
+        style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+      >
+        {value}
+      </div>
+      <div className="text-[11px] text-muted-foreground mt-1">{sub}</div>
+    </div>
+  );
+}
+
+// CSV export for the Income tab — date, description, type, status,
+// gross, fee, net.
+function exportIncomeCsv(rows: Transaction[]) {
+  const header = ["Date", "Description", "Type", "Status", "Gross", "Fee", "Net"];
+  const lines = [header.join(",")];
+  for (const t of rows) {
+    const cells = [
+      t.created_at.slice(0, 10),
+      t.description ?? "",
+      kindLabel(t.kind).label,
+      t.status ?? "",
+      (t.amount_cents / 100).toFixed(2),
+      (t.fee_cents / 100).toFixed(2),
+      (t.net_cents / 100).toFixed(2),
+    ];
+    lines.push(cells.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `income-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function TransactionsTab({
   transactions,
   status,
@@ -2048,109 +2093,147 @@ function TransactionsTab({
   onRefunded: () => void;
 }) {
   const [refundFor, setRefundFor] = useState<Transaction | null>(null);
+  const [q, setQ] = useState("");
+  const [range, setRange] = useState<"all" | "12m" | "ytd" | "30d">("12m");
 
-  // KPI strip — money in, net after fees, and a count. Mirrors the
-  // Expenses tab's tile treatment (white card, foreground/10 border,
-  // Fraunces numerals) so the two surfaces read as siblings.
-  const kpis = useMemo(() => {
-    const currency = transactions[0]?.currency ?? "usd";
-    let grossInCents = 0;
-    let netInCents = 0;
-    let inCount = 0;
-    let feeCents = 0;
-    for (const t of transactions) {
-      const meta = kindLabel(t.kind);
-      if (meta.tone === "in") {
-        grossInCents += t.amount_cents;
-        netInCents += t.net_cents;
-        feeCents += t.fee_cents;
-        inCount++;
-      }
+  const currency = transactions[0]?.currency ?? "usd";
+
+  // Income = money-in rows only; refunds/payouts/fees excluded.
+  const incomeRows = useMemo(
+    () => transactions.filter((t) => kindLabel(t.kind).tone === "in"),
+    [transactions],
+  );
+
+  const summary = useMemo(() => {
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const d30 = new Date(now);
+    d30.setDate(d30.getDate() - 30);
+    const sum = (xs: Transaction[]) => xs.reduce((a, t) => a + t.amount_cents, 0);
+    const ytd = incomeRows.filter((t) => new Date(t.created_at) >= jan1);
+    const month = incomeRows.filter((t) => {
+      const x = new Date(t.created_at);
+      return x.getFullYear() === now.getFullYear() && x.getMonth() === now.getMonth();
+    });
+    const thirty = incomeRows.filter((t) => new Date(t.created_at) >= d30);
+    const top = incomeRows.reduce((m, t) => (t.amount_cents > m ? t.amount_cents : m), 0);
+    return {
+      ytd: sum(ytd), ytdCount: ytd.length,
+      month: sum(month), monthCount: month.length,
+      thirty: sum(thirty), thirtyCount: thirty.length,
+      top,
+    };
+  }, [incomeRows]);
+
+  const filtered = useMemo(() => {
+    let list = transactions;
+    const now = new Date();
+    if (range !== "all") {
+      const cutoff = new Date(now);
+      if (range === "30d") cutoff.setDate(cutoff.getDate() - 30);
+      else if (range === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
+      else cutoff.setTime(new Date(now.getFullYear(), 0, 1).getTime());
+      list = list.filter((t) => new Date(t.created_at) >= cutoff);
     }
-    return { currency, grossInCents, netInCents, inCount, feeCents, total: transactions.length };
-  }, [transactions]);
+    const needle = q.trim().toLowerCase();
+    if (needle) {
+      list = list.filter((t) =>
+        [t.description ?? "", kindLabel(t.kind).label, String(Math.abs(t.amount_cents) / 100)]
+          .some((c) => c.toLowerCase().includes(needle)),
+      );
+    }
+    return list;
+  }, [transactions, q, range]);
 
-  if (transactions.length === 0) {
-    return (
-      <EmptyCard>
-        {status?.charges_enabled
-          ? "No transactions yet. When buyers pay you, they'll show up here."
-          : "Transactions appear after your first payment."}
-      </EmptyCard>
-    );
-  }
+  const monthLabel = new Date().toLocaleDateString(undefined, { month: "short" });
+
   return (
-    <div className="space-y-4">
-      {/* KPI strip — matches the Expenses tab tiles. */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
-          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-            Money in
-          </div>
-          <div
-            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
-          >
-            {formatMoney(kpis.grossInCents, kpis.currency)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-1">
-            {kpis.inCount} payment{kpis.inCount === 1 ? "" : "s"}
-          </div>
+    <div className="space-y-5">
+      {/* Header — mirrors the Expenses tab (title + subtitle + Export). */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="font-editorial text-2xl">Income</h2>
+          <p className="text-sm text-muted-foreground">
+            Payments received through VendoraPay, tracked against your costs.
+          </p>
         </div>
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
-          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-            Net to bank
-          </div>
-          <div
-            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
-          >
-            {formatMoney(kpis.netInCents, kpis.currency)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">
-            {kpis.feeCents > 0 ? <>{formatMoney(kpis.feeCents, kpis.currency)} fees</> : "After processing fees"}
-          </div>
-        </div>
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
-          <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-            Transactions
-          </div>
-          <div
-            className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
-          >
-            {kpis.total}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-1">
-            Most recent {transactions.length} shown
-          </div>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => exportIncomeCsv(filtered)}
+          disabled={filtered.length === 0}
+        >
+          <Download className="w-4 h-4 mr-1.5" />
+          Export
+        </Button>
       </div>
 
-      {/* Ledger table — same white-card table treatment as Expenses. */}
-      <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
-        <table className="w-full min-w-[640px]">
-          <thead>
-            <tr className="bg-foreground/[0.03]">
-              <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Description
-              </th>
-              <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Type
-              </th>
-              <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Date
-              </th>
-              <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Amount
-              </th>
-              <th className="px-4 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((t) => {
+      {/* Four summary cards — same treatment as the Expenses tab tiles. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <SummaryCard label="YTD INCOME" value={formatMoney(summary.ytd, currency)} sub={`${summary.ytdCount} payment${summary.ytdCount === 1 ? "" : "s"}`} />
+        <SummaryCard label="THIS MONTH" value={formatMoney(summary.month, currency)} sub={`${monthLabel} · ${summary.monthCount} payment${summary.monthCount === 1 ? "" : "s"}`} />
+        <SummaryCard label="LAST 30 DAYS" value={formatMoney(summary.thirty, currency)} sub={`${summary.thirtyCount} payment${summary.thirtyCount === 1 ? "" : "s"}`} />
+        <SummaryCard label="TOP SALE" value={summary.top ? formatMoney(summary.top, currency) : "—"} sub={summary.top ? "Largest single payment" : "No income yet"} />
+      </div>
+
+      {/* Search + range filter — matches the Expenses tab controls. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search description, type, amount…"
+            className="w-full rounded-full border border-foreground/10 bg-background pl-9 pr-3 py-2 text-sm outline-none focus:border-foreground/30"
+          />
+        </div>
+        <select
+          value={range}
+          onChange={(e) => setRange(e.target.value as typeof range)}
+          className="rounded-full border border-foreground/10 bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30"
+        >
+          <option value="all">All time</option>
+          <option value="12m">Last 12 months</option>
+          <option value="ytd">Year to date</option>
+          <option value="30d">Last 30 days</option>
+        </select>
+      </div>
+
+      {transactions.length === 0 ? (
+        <div className="card-soft p-8 text-center text-sm text-muted-foreground">
+          {status?.charges_enabled
+            ? "No income yet. When buyers pay you through VendoraPay, payments show up here as a full ledger of what you earn."
+            : "Transactions appear after your first payment."}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card-soft p-8 text-center text-sm text-muted-foreground">
+          No income matches your filters.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+          <table className="w-full min-w-[640px]">
+            <thead>
+              <tr className="bg-foreground/[0.03]">
+                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Description
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Type
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Date
+                </th>
+                <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Amount
+                </th>
+                <th className="px-4 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+            {filtered.map((t) => {
               const meta = kindLabel(t.kind);
               // Only refund actual card charges that resolved to a PI.
               // Adjustments / fees / payouts don't refund through this
@@ -2244,9 +2327,10 @@ function TransactionsTab({
                 </tr>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      )}
       {refundFor ? (
         <RefundModal
           tx={refundFor}
