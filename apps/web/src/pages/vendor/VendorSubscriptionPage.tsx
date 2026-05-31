@@ -629,6 +629,10 @@ export default function VendorSubscriptionPage() {
               actingId={actingId}
               setActingId={setActingId}
               vendorId={vendorId ?? null}
+              hasBilling={
+                (plan?.tier ?? "free") !== "free" &&
+                Boolean(plan?.stripeCustomerId)
+              }
             />
           </div>
 
@@ -920,6 +924,7 @@ function BillingPanel({
   actingId,
   setActingId,
   vendorId,
+  hasBilling,
 }: {
   loading: boolean;
   billing: {
@@ -943,6 +948,10 @@ function BillingPanel({
   actingId: string | null;
   setActingId: (id: string | null) => void;
   vendorId: string | null;
+  // True only when the vendor has a paid plan with a Stripe customer.
+  // The portal (Update card / Cancel) 400s for free vendors who have
+  // no customer yet, so those controls are hidden unless this is true.
+  hasBilling: boolean;
 }) {
   const [invoicesExpanded, setInvoicesExpanded] = useState(false);
 
@@ -1000,14 +1009,16 @@ function BillingPanel({
               <p className="text-[11px] text-muted-foreground tnum">{cardExp}</p>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={() => openPortal("update")}
-            disabled={actingId !== null}
-            className="text-xs font-medium text-foreground/70 hover:text-foreground rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
-          >
-            Update
-          </button>
+          {hasBilling ? (
+            <button
+              type="button"
+              onClick={() => openPortal("update")}
+              disabled={actingId !== null}
+              className="text-xs font-medium text-foreground/70 hover:text-foreground rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
+            >
+              Update
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -1149,19 +1160,21 @@ function BillingPanel({
         )}
       </div>
 
-      <div className="mt-5 pt-4 border-t border-foreground/8">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-          Cancellation
-        </p>
-        <button
-          type="button"
-          onClick={() => openPortal("cancel")}
-          disabled={actingId !== null}
-          className="mt-1.5 text-xs font-medium text-destructive hover:text-destructive/80 disabled:opacity-50"
-        >
-          Cancel plan
-        </button>
-      </div>
+      {hasBilling ? (
+        <div className="mt-5 pt-4 border-t border-foreground/8">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+            Cancellation
+          </p>
+          <button
+            type="button"
+            onClick={() => openPortal("cancel")}
+            disabled={actingId !== null}
+            className="mt-1.5 text-xs font-medium text-destructive hover:text-destructive/80 disabled:opacity-50"
+          >
+            Cancel plan
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
