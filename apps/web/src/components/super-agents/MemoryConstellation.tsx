@@ -69,6 +69,16 @@ function layout(entries: KnowledgeEntry[]) {
   });
 }
 
+// Faded placeholder nodes for the empty state, so the constellation
+// still reads as a "web" before any real memories exist (matches the
+// reference's dim ghost graph). Fixed positions; just decoration.
+const GHOST_NODES = Array.from({ length: 9 }).map((_, i) => {
+  const angle = (i / 9) * Math.PI * 2 - Math.PI / 2 + (i % 2 ? 0.18 : -0.12);
+  const ring = 0.6 + (i % 3) * 0.14;
+  const driftPhase = (i * 0.7) % (Math.PI * 2);
+  return { id: `ghost-${i}`, angle, ring, driftPhase };
+});
+
 export function MemoryConstellation({
   open,
   onClose,
@@ -307,6 +317,25 @@ export function MemoryConstellation({
               />
             );
           })}
+          {/* Ghost lines — only when there are no real memories. */}
+          {!loading && count === 0
+            ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
+                const drift = Math.sin(t * 0.5 + driftPhase) * 10;
+                const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
+                const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+                return (
+                  <line
+                    key={id}
+                    x1="50%"
+                    y1="50%"
+                    x2={`calc(50% + ${rx}vmin)`}
+                    y2={`calc(50% + ${ry}vmin)`}
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth={1}
+                  />
+                );
+              })
+            : null}
         </svg>
 
         {/* Central hub. */}
@@ -369,9 +398,40 @@ export function MemoryConstellation({
           );
         })}
 
-        {/* Empty state — just the hub + a hint. */}
+        {/* Ghost node chips — faded placeholders so the constellation
+            still reads as a web before any real memories exist. */}
+        {!loading && count === 0
+          ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
+              const drift = Math.sin(t * 0.5 + driftPhase) * 10;
+              const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
+              const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+              return (
+                <div
+                  key={id}
+                  aria-hidden
+                  className="absolute z-10 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{
+                    left: `calc(50% + ${rx}vmin)`,
+                    top: `calc(50% + ${ry}vmin)`,
+                  }}
+                >
+                  <span
+                    className="w-8 h-8 rounded-full inline-flex items-center justify-center"
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-white/15" />
+                  </span>
+                </div>
+              );
+            })
+          : null}
+
+        {/* Empty-state hint, low enough not to collide with the nodes. */}
         {!loading && count === 0 ? (
-          <div className="absolute left-1/2 top-[62%] -translate-x-1/2 text-center px-6 max-w-sm">
+          <div className="absolute left-1/2 top-[80%] -translate-x-1/2 text-center px-6 max-w-sm">
             <p className="text-white/45 text-sm leading-relaxed">
               No memories yet. Add one below, or tell My Space in chat —
               <span className="text-white/70"> "remember that my hourly rate is $150"</span> —
