@@ -848,8 +848,11 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               picks the first approved listing) so every downstream
               query stays scoped correctly until the new picker lands. */}
 
-          {/* Verify banner — appears on every tab when KYC isn't complete */}
-          {verifyBanner ? (
+          {/* Verify / connect banner — now scoped to the Settings tab
+              only (was previously shown on every tab when KYC wasn't
+              complete). Per product call, the payments-connect prompt
+              lives on Settings for now. */}
+          {verifyBanner && tab === "settings" ? (
             <section
               className="rounded-2xl p-5"
               style={{
