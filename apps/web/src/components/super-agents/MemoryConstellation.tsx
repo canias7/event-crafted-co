@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, type PanInfo } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -179,16 +180,13 @@ export function MemoryConstellation({
 
   const nodes = useMemo(() => layout(entries ?? []), [entries]);
 
-  // ── Long-press drag ──────────────────────────────────────────────
-  // Per-node position overrides (in vmin offsets from canvas center).
-  // Once a node is dragged it stays where it's dropped and its orbit
-  // drift is frozen. Positions reset when the overlay is reopened.
+  // ── Drag (Framer Motion) ─────────────────────────────────────────
+  // Per-node position overrides (vmin offsets from canvas center).
+  // While dragging, onDrag records the live offset so the connecting
+  // line follows the node; on release the node stays where dropped and
+  // its orbit drift stays frozen. Positions reset when reopened.
   const [overrides, setOverrides] = useState<Record<string, { rx: number; ry: number }>>({});
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLDivElement | null>(null);
-  const pressTimer = useRef<number | null>(null);
-  const movedRef = useRef(false);
-  // vmin in px — needed to convert pointer pixels → vmin offsets.
   const vminPx = () =>
     Math.min(window.innerWidth, window.innerHeight) / 100 || 1;
 
@@ -210,56 +208,22 @@ export function MemoryConstellation({
     [overrides, orbitPos],
   );
 
-  // Pointer → vmin offset from canvas center.
-  const pointerToVmin = useCallback((clientX: number, clientY: number) => {
-    const el = canvasRef.current;
-    const rect = el?.getBoundingClientRect();
-    const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-    const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
-    const u = vminPx();
-    return { rx: (clientX - cx) / u, ry: (clientY - cy) / u };
-  }, []);
-
-  // Begin a long-press: after the hold delay, enter drag mode for this
-  // node. A move before the timer fires cancels it (treated as a tap →
-  // opens detail via onClick).
-  const startPress = (id: string, e: React.PointerEvent) => {
-    movedRef.current = false;
-    const pointerId = e.pointerId;
-    const target = e.currentTarget as HTMLElement;
-    if (pressTimer.current) window.clearTimeout(pressTimer.current);
-    pressTimer.current = window.setTimeout(() => {
-      setDraggingId(id);
-      try {
-        target.setPointerCapture(pointerId);
-      } catch {
-        /* capture best-effort */
-      }
-      if (navigator.vibrate) navigator.vibrate(8);
-    }, 320);
-  };
-
-  const onPressMove = (id: string, e: React.PointerEvent) => {
-    if (draggingId !== id) {
-      // Moved before long-press fired — cancel the would-be drag.
-      if (pressTimer.current) {
-        window.clearTimeout(pressTimer.current);
-        pressTimer.current = null;
-      }
-      return;
-    }
-    movedRef.current = true;
-    const { rx, ry } = pointerToVmin(e.clientX, e.clientY);
-    setOverrides((prev) => ({ ...prev, [id]: { rx, ry } }));
-  };
-
-  const endPress = () => {
-    if (pressTimer.current) {
-      window.clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-    setDraggingId(null);
-  };
+  // Framer drag → record the node's offset (anchor orbit point + drag
+  // delta) in vmin so the SVG line tracks it in real time.
+  const handleNodeDrag = useCallback(
+    (
+      id: string,
+      anchor: { rx: number; ry: number },
+      info: PanInfo,
+    ) => {
+      const u = vminPx();
+      setOverrides((prev) => ({
+        ...prev,
+        [id]: { rx: anchor.rx + info.offset.x / u, ry: anchor.ry + info.offset.y / u },
+      }));
+    },
+    [],
+  );
 
   // Reset positions whenever the overlay closes so it re-springs fresh.
   useEffect(() => {
@@ -407,7 +371,7 @@ export function MemoryConstellation({
       </div>
 
       {/* Constellation canvas. */}
-      <div ref={canvasRef} className="absolute inset-0">
+      <div className="absolute inset-0">
         {/* SVG layer for the connecting lines (behind the node chips). */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
           {nodes.map(({ entry, angle, ring, driftPhase }) => {
@@ -461,50 +425,48 @@ export function MemoryConstellation({
           />
         </div>
 
-        {/* Memory nodes. */}
+        {/* Memory nodes — drag with Framer Motion. Grab and move; the
+            connecting line follows live, and the node stays where you
+            drop it. A click without a drag opens the detail card. */}
         {nodes.map(({ entry, angle, ring, driftPhase }) => {
           const meta = catMeta(entry.category);
           const Icon = meta.icon;
           const { rx, ry } = posFor(entry.id, angle, ring, driftPhase);
+          const anchor = orbitPos(angle, ring, driftPhase);
           const isDragging = draggingId === entry.id;
           // Label sits just outside the node, pushed further from center.
           const labelOutside = rx >= 0;
           return (
-            <div
+            <motion.div
               key={entry.id}
-              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+              drag
+              dragMomentum={false}
+              dragElastic={0}
+              whileDrag={{ scale: 1.18, zIndex: 40 }}
+              onDragStart={() => setDraggingId(entry.id)}
+              onDrag={(_, info) => handleNodeDrag(entry.id, anchor, info)}
+              onDragEnd={() => setDraggingId(null)}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
               style={{
                 left: `calc(50% + ${rx}vmin)`,
                 top: `calc(50% + ${ry}vmin)`,
                 zIndex: isDragging ? 40 : 10,
                 touchAction: "none",
+                cursor: isDragging ? "grabbing" : "grab",
               }}
             >
               <button
                 type="button"
-                onClick={() => {
-                  // Suppress the click that ends a drag — only a real tap
-                  // (no long-press drag) opens the detail card.
-                  if (movedRef.current) {
-                    movedRef.current = false;
-                    return;
-                  }
-                  openDetail(entry);
-                }}
-                onPointerDown={(e) => startPress(entry.id, e)}
-                onPointerMove={(e) => onPressMove(entry.id, e)}
-                onPointerUp={endPress}
-                onPointerCancel={endPress}
+                // Framer suppresses the click after a real drag, so this
+                // only fires on a genuine tap.
+                onClick={() => openDetail(entry)}
                 className="group relative flex items-center gap-2 select-none"
-                style={{
-                  flexDirection: labelOutside ? "row" : "row-reverse",
-                  cursor: isDragging ? "grabbing" : "pointer",
-                }}
+                style={{ flexDirection: labelOutside ? "row" : "row-reverse" }}
                 title={entry.title}
               >
                 <span
                   className={`w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 transition-transform ${
-                    isDragging ? "scale-125" : "group-hover:scale-110"
+                    isDragging ? "" : "group-hover:scale-110"
                   }`}
                   style={{
                     background: "rgba(255,255,255,0.05)",
@@ -521,7 +483,7 @@ export function MemoryConstellation({
                   {entry.title}
                 </span>
               </button>
-            </div>
+            </motion.div>
           );
         })}
 

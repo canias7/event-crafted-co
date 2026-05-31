@@ -939,13 +939,6 @@ export default function VendorAppointmentsPage({
             />
           ) : null}
 
-          {/* Embedded-only slim hint: the calendar shows regardless, but
-              there's nothing to block / no inquiries until a listing is
-              approved. Nudges without hiding the grid. */}
-          {embedded && !listingsLoading && !hasApprovedListing ? (
-            <NoListingHint hasListings={listings.length > 0} />
-          ) : null}
-
           {(embedded || selectedListingId) && (
             <>
           <div>
@@ -1249,50 +1242,6 @@ export default function VendorAppointmentsPage({
 
 // statusBadge + ListingPicker now live in @/components/vendor/ListingPicker
 // so the Leads page can share the same picker UI.
-
-// Slim inline hint shown ABOVE the embedded cockpit calendar when the
-// vendor has no approved listing yet. The calendar grid still renders
-// below it (so the vendor sees their account calendar immediately) —
-// this just explains that blocking / inquiries activate once a listing
-// is live, with a CTA to create / review one.
-function NoListingHint({ hasListings }: { hasListings: boolean }) {
-  return (
-    <div
-      className="rounded-2xl px-4 py-3 flex items-start gap-3 flex-wrap"
-      style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
-        backdropFilter: "blur(8px)",
-      }}
-    >
-      <div
-        className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
-        style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
-        aria-hidden
-      >
-        <ImagePlus className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-tight">
-          {hasListings
-            ? "Your listing is under review"
-            : "Publish a listing to manage availability"}
-        </p>
-        <p className="text-[12px] text-muted-foreground mt-0.5">
-          Your account calendar is here. Blocking dates and incoming
-          inquiries light up once {hasListings ? "a listing is approved" : "you publish your first listing"}.
-        </p>
-      </div>
-      <Link
-        to="/vendor/me"
-        className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-semibold hover:opacity-90 transition-opacity"
-      >
-        <Plus className="w-3.5 h-3.5" />
-        {hasListings ? "Review listings" : "Create a listing"}
-      </Link>
-    </div>
-  );
-}
 
 function NoListingsEmptyState() {
   return (
