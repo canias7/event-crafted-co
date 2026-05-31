@@ -923,6 +923,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             <CustomersTab
               accountVendorIds={accountVendorIds}
               listings={listings}
+              status={status}
               onChanged={() => refresh(true)}
             />
           ) : (
@@ -4690,12 +4691,21 @@ interface Customer {
 function CustomersTab({
   accountVendorIds,
   listings,
+  status,
   onChanged,
 }: {
   accountVendorIds: string[];
   listings: ListingOpt[];
+  status: Status | null;
   onChanged?: () => void;
 }) {
+  const [, setSearchParams] = useSearchParams();
+  // Contacts attach to a connected account (vendor_customers.vendor_id
+  // is NOT NULL + RLS-scoped to an owned listing). Gate the tab until
+  // VendoraPay is connected — connecting also auto-creates the draft
+  // listing the contact needs, so this fixes both "can't create" and
+  // the "connect first" intent in one move.
+  const needsConnect = !status?.onboarded;
   const [rows, setRows] = useState<Customer[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -5166,6 +5176,50 @@ function CustomersTab({
     },
     [refresh],
   );
+
+  // Gate: must connect VendoraPay before saving contacts.
+  if (needsConnect) {
+    return (
+      <div
+        className="rounded-2xl p-8 text-center"
+        style={{
+          background: "rgba(255,253,250,0.7)",
+          border: "0.5px solid rgba(255,138,76,0.22)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}
+      >
+        <div
+          className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center mb-4"
+          style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+        >
+          <Users className="w-5 h-5" />
+        </div>
+        <h3 className="font-editorial text-2xl mb-1.5">Connect VendoraPay first</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-5 leading-relaxed">
+          Contacts attach to your account so you can reuse them on invoices
+          and pay links. Verify your identity + bank in Settings (about 3
+          minutes), then add your contacts here.
+        </p>
+        <Button
+          onClick={() => {
+            setSearchParams(
+              (prev) => {
+                const p = new URLSearchParams(prev);
+                p.set("tab", "settings");
+                p.delete("file");
+                return p;
+              },
+              { replace: true },
+            );
+          }}
+          className="rounded-full"
+        >
+          Connect VendoraPay
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
