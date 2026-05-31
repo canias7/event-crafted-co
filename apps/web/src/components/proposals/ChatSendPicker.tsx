@@ -61,9 +61,13 @@ const KIND_META: Record<SendKind, { label: string; icon: typeof FileText; title:
 
 export function ChatSendPicker({
   vendorId,
+  inquiryId,
   onSend,
 }: {
   vendorId: string;
+  // Inquiry this chat belongs to — stamped onto a pay link when sent so a
+  // successful payment can auto-confirm the booking (webhook).
+  inquiryId: string;
   // Drops a formatted body into the thread (parent's sendBody).
   onSend: (body: string) => Promise<void> | void;
 }) {
@@ -144,6 +148,16 @@ export function ChatSendPicker({
   async function pick(row: PickRow) {
     setSendingId(row.id);
     try {
+      // Link a sent pay link to this inquiry so a successful payment can
+      // auto-confirm the booking (vendorapay-webhook reads inquiry_id).
+      // Best-effort: a failed stamp must not block sending the link.
+      if (kind === "link" && inquiryId) {
+        const { error } = await supabase
+          .from("payment_links")
+          .update({ inquiry_id: inquiryId })
+          .eq("id", row.id);
+        if (error) console.error("[ChatSendPicker] link inquiry stamp failed", error);
+      }
       await onSend(row.body);
       toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
       setKind(null);

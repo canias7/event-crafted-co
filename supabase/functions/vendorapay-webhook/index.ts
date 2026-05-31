@@ -154,9 +154,9 @@ serve(async (req: Request) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", paymentLinkId)
-            .select("vendor_id, title, currency")
+            .select("vendor_id, title, currency, inquiry_id")
             .maybeSingle();
-          const lRow = linkRow as { vendor_id?: string; title?: string; currency?: string | null } | null;
+          const lRow = linkRow as { vendor_id?: string; title?: string; currency?: string | null; inquiry_id?: string | null } | null;
           if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
           if (lRow?.title) descriptionForNotify = lRow.title;
           if (!hostEmailForNotify) hostEmailForNotify = hostEmailForLink;
@@ -165,6 +165,42 @@ serve(async (req: Request) => {
           // PI without currency (test fixture, edge case) still
           // renders the receipt in the buyer's actual currency.
           if (lRow?.currency) currencyForNotify = lRow.currency;
+
+          // Automated booking: a paid pay link that was sent from an
+          // inquiry chat confirms the booking outright — payment proves
+          // both sides engaged. Stamp BOTH booking-confirmed timestamps
+          // (opens the review gate) and flip the inquiry to 'won'.
+          // Best-effort: failures here must not block the paid-status
+          // write above (Stripe would retry and double-fire notifications).
+          if (lRow?.inquiry_id) {
+            try {
+              const nowIso = new Date().toISOString();
+              // Read current stamps so we only fill the ones still null
+              // (preserves a real earlier confirmation timestamp). Setting
+              // 'won' + both stamps is idempotent — a Stripe retry just
+              // re-writes the same booked state.
+              const { data: inqRow } = await db
+                .from("inquiries")
+                .select("host_confirmed_booked_at, vendor_confirmed_booked_at")
+                .eq("id", lRow.inquiry_id)
+                .maybeSingle();
+              const ir = inqRow as {
+                host_confirmed_booked_at?: string | null;
+                vendor_confirmed_booked_at?: string | null;
+              } | null;
+              await db
+                .from("inquiries")
+                .update({
+                  status: "won",
+                  host_confirmed_booked_at: ir?.host_confirmed_booked_at ?? nowIso,
+                  vendor_confirmed_booked_at: ir?.vendor_confirmed_booked_at ?? nowIso,
+                  updated_at: nowIso,
+                })
+                .eq("id", lRow.inquiry_id);
+            } catch (err) {
+              console.error("[vendorapay-webhook] auto-book failed", lRow.inquiry_id, err);
+            }
+          }
         } else if (invoiceId) {
           // Pull the buyer's billing-address state off the Charge so
           // we can group tax_cents by state on the Reports tab. ACH /
