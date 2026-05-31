@@ -136,6 +136,77 @@ function useTypewriter(text: string, active: boolean, speed = 45, startDelay = 0
   return { shown: text.slice(0, n), done: n >= text.length };
 }
 
+// Cycling typewriter — types a phrase, holds, deletes it, then advances
+// to the next phrase and loops forever. Used for the composer
+// placeholder so it keeps suggesting different prompts. `startDelay`
+// lets it begin after the welcome headline finishes typing.
+function useCyclingTypewriter(
+  phrases: readonly string[],
+  active: boolean,
+  startDelay = 0,
+) {
+  const [text, setText] = useState("");
+  useEffect(() => {
+    if (!active || phrases.length === 0) {
+      setText(phrases[0] ?? "");
+      return;
+    }
+    let cancelled = false;
+    let phase = 0; // index into phrases
+    let i = 0; // chars currently shown
+    let deleting = false;
+    let timer: number | undefined;
+
+    const TYPE = 32; // ms per char typed
+    const DEL = 18; // ms per char deleted
+    const HOLD = 1800; // ms to hold a fully-typed phrase
+    const BETWEEN = 350; // ms blank between phrases
+
+    const tick = () => {
+      if (cancelled) return;
+      const current = phrases[phase];
+      if (!deleting) {
+        i += 1;
+        setText(current.slice(0, i));
+        if (i >= current.length) {
+          deleting = true;
+          timer = window.setTimeout(tick, HOLD);
+          return;
+        }
+        timer = window.setTimeout(tick, TYPE);
+      } else {
+        i -= 1;
+        setText(current.slice(0, Math.max(0, i)));
+        if (i <= 0) {
+          deleting = false;
+          phase = (phase + 1) % phrases.length;
+          timer = window.setTimeout(tick, BETWEEN);
+          return;
+        }
+        timer = window.setTimeout(tick, DEL);
+      }
+    };
+
+    const startId = window.setTimeout(tick, startDelay);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(startId);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [phrases, active, startDelay]);
+  return text;
+}
+
+// Rotating placeholder prompts for the composer on the welcome state.
+const PLACEHOLDER_PHRASES = [
+  "Ask My Space anything — or describe an image to generate",
+  "What hot leads do I have right now?",
+  "Draft a reply to my newest inquiry",
+  "Am I free on July 14?",
+  "Generate a moody product shot of a cake on marble",
+  "Summarize my week and what needs a follow-up",
+] as const;
+
 export function MySpaceChat() {
   const { user } = useAuth();
   const [threads, setThreads] = useState<ThreadRow[]>([]);
@@ -927,19 +998,22 @@ export function MySpaceChat() {
     !messagesLoading;
 
   // Typewriter text for the welcome hero. The headline types first,
-  // then the input placeholder follows once the headline finishes.
+  // then the input placeholder follows once the headline finishes,
+  // cycling through several prompts on a loop.
   const HEADLINE = "Welcome to My Space";
-  const PLACEHOLDER = "Ask My Space anything — or describe an image to generate";
+  const STATIC_PLACEHOLDER =
+    "Ask My Space anything — or describe an image to generate";
   const headline = useTypewriter(HEADLINE, showEmptyState, 55, 150);
-  const placeholderTw = useTypewriter(
-    PLACEHOLDER,
+  const cyclingPlaceholder = useCyclingTypewriter(
+    PLACEHOLDER_PHRASES,
     showEmptyState,
-    28,
     HEADLINE.length * 55 + 450,
   );
-  // The composer placeholder: typewriter on the welcome state, static
-  // everywhere else.
-  const composerPlaceholder = showEmptyState ? placeholderTw.shown : PLACEHOLDER;
+  // The composer placeholder: cycling typewriter on the welcome state,
+  // static everywhere else.
+  const composerPlaceholder = showEmptyState
+    ? cyclingPlaceholder
+    : STATIC_PLACEHOLDER;
 
   // Composer inner content (attachment chips + input row + footnote),
   // shared between the bottom-docked composer (active chat) and the
