@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle,
   ArrowDownRight,
+  ArrowLeft,
   ArrowUpRight,
   Banknote,
   CalendarDays,
@@ -3292,10 +3293,18 @@ function StaticMeta({
   );
 }
 
-// Single editable contract / proposal template. Vendor types title +
-// body inline; Save persists to vendor_document_defaults keyed by
-// (vendor_id, kind). First-time vendors get the starter content
-// from CONTRACT_TEMPLATES[0] / PROPOSAL_TEMPLATES[0] as a seed.
+// Contract / proposal templates — a NAMED, multi-template list (like
+// invoices) backed by vendor_contract_templates / vendor_proposal_templates.
+// Vendors keep several saved templates per kind, pick one as default, and
+// edit each inline. First load migrates any legacy single template from
+// vendor_document_defaults so nothing is lost.
+interface DocTemplateRow {
+  id: string;
+  name: string;
+  body: string;
+  is_default: boolean;
+}
+
 function DocumentCanvas({
   accountVendorIds,
   listings,
@@ -3307,165 +3316,348 @@ function DocumentCanvas({
   kind: "contract" | "proposal";
   starter: DocTemplate;
 }) {
-  // Contract / proposal templates are stored once per account (no
-  // separate per-listing copies). The first listing in the account
-  // owns the template row; the brand placeholders rendered below
-  // come from that same listing's profile. A future primary-listing
-  // picker can replace `accountVendorIds[0]` if the vendor wants to
-  // pin a different listing as the template owner.
+  // The first listing in the account owns the templates; brand
+  // placeholders in the document header come from that listing's profile.
   const templateVendorId = accountVendorIds[0] ?? null;
   const templateListing = listings.find((l) => l.id === templateVendorId) ?? null;
-  const [title, setTitle] = useState(starter.title);
-  const [body, setBody] = useState(starter.content);
-  const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const initialRef = useRef({ title: starter.title, body: starter.content });
+  const tableName =
+    kind === "contract" ? "vendor_contract_templates" : "vendor_proposal_templates";
+  const kindLabel = kind === "contract" ? "Contract" : "Proposal";
 
-  // Fetch the account's saved default for this kind. If one exists,
-  // hydrate the canvas from it; otherwise leave the starter seed.
-  useEffect(() => {
+  const [rows, setRows] = useState<DocTemplateRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  // null = showing the list; "new" = composing a new one; <id> = editing.
+  const [editingId, setEditingId] = useState<string | "new" | null>(null);
+  const [name, setName] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const initialRef = useRef({ name: "", body: "" });
+
+  const load = useCallback(async () => {
     if (!templateVendorId) {
-      setTitle(starter.title);
-      setBody(starter.content);
-      initialRef.current = { title: starter.title, body: starter.content };
-      setLoaded(false);
+      setRows([]);
+      setLoaded(true);
       return;
     }
-    let cancelled = false;
     setLoaded(false);
-    (async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from(tableName)
+      .select("id, name, body, is_default")
+      .eq("vendor_id", templateVendorId)
+      .order("is_default", { ascending: false })
+      .order("name", { ascending: true });
+    let list = (data ?? []) as DocTemplateRow[];
+
+    // One-time migration: if the new table is empty but a legacy single
+    // template exists in vendor_document_defaults, seed it as the first
+    // named template so the vendor's old work carries over.
+    if (list.length === 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
+      const { data: legacy } = await (supabase as any)
         .from("vendor_document_defaults")
         .select("template_data")
         .eq("vendor_id", templateVendorId)
         .eq("kind", kind)
         .maybeSingle();
-      if (cancelled) return;
-      if (data?.template_data) {
-        const d = data.template_data as { title?: string; body?: string };
-        const t = d.title ?? starter.title;
-        const b = d.body ?? starter.content;
-        setTitle(t);
-        setBody(b);
-        initialRef.current = { title: t, body: b };
-      } else {
-        setTitle(starter.title);
-        setBody(starter.content);
-        initialRef.current = { title: starter.title, body: starter.content };
+      const d = legacy?.template_data as { title?: string; body?: string } | undefined;
+      if (d?.body) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: seeded } = await (supabase as any)
+          .from(tableName)
+          .insert({
+            vendor_id: templateVendorId,
+            name: d.title?.trim() || `${kindLabel} template`,
+            body: d.body,
+            is_default: true,
+          })
+          .select("id, name, body, is_default")
+          .single();
+        if (seeded) list = [seeded as DocTemplateRow];
       }
-      setLoaded(true);
+    }
+    setRows(list);
+    setLoaded(true);
+  }, [templateVendorId, tableName, kind, kindLabel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
     })();
     return () => {
       cancelled = true;
     };
-  }, [templateVendorId, kind, starter.title, starter.content]);
+  }, [load]);
 
-  const dirty = title !== initialRef.current.title || body !== initialRef.current.body;
+  function openNew() {
+    setName("");
+    setBody(starter.content);
+    initialRef.current = { name: "", body: starter.content };
+    setEditingId("new");
+  }
+  function openEdit(row: DocTemplateRow) {
+    setName(row.name);
+    setBody(row.body);
+    initialRef.current = { name: row.name, body: row.body };
+    setEditingId(row.id);
+  }
+  function closeEditor() {
+    setEditingId(null);
+  }
+
+  const dirty = name !== initialRef.current.name || body !== initialRef.current.body;
 
   const save = useCallback(async () => {
-    if (!templateVendorId || saving || !dirty) return;
-    setSaving(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("vendor_document_defaults")
-      .upsert(
-        {
-          vendor_id: templateVendorId,
-          kind,
-          template_data: { title, body },
-        },
-        { onConflict: "vendor_id,kind" },
-      );
-    setSaving(false);
-    if (error) {
-      toast.error("Couldn't save template", { description: error.message });
+    if (!templateVendorId || saving) return;
+    if (!name.trim()) {
+      toast.error(`${kindLabel} name is required`);
       return;
     }
-    initialRef.current = { title, body };
-    toast.success(`${kind === "contract" ? "Contract" : "Proposal"} template saved`);
-  }, [templateVendorId, saving, dirty, kind, title, body]);
+    setSaving(true);
+    if (editingId === "new") {
+      // First template for this kind becomes the default automatically.
+      const makeDefault = rows.length === 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from(tableName).insert({
+        vendor_id: templateVendorId,
+        name: name.trim(),
+        body,
+        is_default: makeDefault,
+      });
+      setSaving(false);
+      if (error) {
+        toast.error("Couldn't save", { description: error.message });
+        return;
+      }
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from(tableName)
+        .update({ name: name.trim(), body, updated_at: new Date().toISOString() })
+        .eq("id", editingId);
+      setSaving(false);
+      if (error) {
+        toast.error("Couldn't save", { description: error.message });
+        return;
+      }
+    }
+    toast.success(`${kindLabel} template saved`);
+    initialRef.current = { name: name.trim(), body };
+    setEditingId(null);
+    await load();
+  }, [templateVendorId, saving, name, body, editingId, rows.length, tableName, kindLabel, load]);
+
+  const makeDefault = useCallback(
+    async (id: string) => {
+      if (!templateVendorId) return;
+      // Clear other defaults, then set this one — two writes (no partial
+      // unique index), but cheap and the list is small.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from(tableName)
+        .update({ is_default: false })
+        .eq("vendor_id", templateVendorId)
+        .neq("id", id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from(tableName).update({ is_default: true }).eq("id", id);
+      toast.success("Default updated");
+      await load();
+    },
+    [templateVendorId, tableName, load],
+  );
+
+  const remove = useCallback(
+    async (row: DocTemplateRow) => {
+      if (!confirm(`Delete "${row.name}"? This can't be undone.`)) return;
+      setDeletingId(row.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from(tableName).delete().eq("id", row.id);
+      setDeletingId(null);
+      if (error) {
+        toast.error("Couldn't delete", { description: error.message });
+        return;
+      }
+      toast.success("Template deleted");
+      await load();
+    },
+    [tableName, load],
+  );
 
   const displayName = templateListing?.business_name?.trim() || "[Your Business Name]";
   const displayLocation = templateListing?.location?.trim() || "[City, State]";
   const editableCls =
     "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
 
-  return (
-    <div className="space-y-4">
-      <Card>
-        <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3">
-          <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
-            {kind === "contract" ? "Contract template" : "Proposal template"}
-          </p>
-          <Button
-            onClick={save}
-            disabled={saving || !dirty || !templateVendorId}
-            size="sm"
-            className="rounded-full h-8 text-xs"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-            Save template
-          </Button>
-        </div>
-
-        <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
-          <header className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="min-w-0">
-              <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
-              <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
-                {displayLocation}
-              </p>
-            </div>
-            <div className="text-right">
-              <p
-                className="text-[10px] font-bold text-muted-foreground"
-                style={{ letterSpacing: "0.22em" }}
-              >
-                {kind === "contract" ? "CONTRACT" : "PROPOSAL"}
-              </p>
-              <p className="text-[11px] mt-1 text-muted-foreground">
-                Template
-              </p>
-            </div>
-          </header>
-
-          <hr className="my-7 border-foreground/10" />
-
-          <div className="space-y-6">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={`${kind === "contract" ? "Contract" : "Proposal"} title`}
-              disabled={!loaded}
-              className={`block w-full text-2xl font-bold tracking-tight ${editableCls}`}
-            />
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Type your template body here…"
-              disabled={!loaded}
-              rows={Math.max(18, body.split("\n").length + 2)}
-              className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
-              style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
-            />
+  // ── Editor view ──────────────────────────────────────────────
+  if (editingId !== null) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={closeEditor}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              {kindLabel} templates
+            </button>
+            <Button
+              onClick={save}
+              disabled={saving || !dirty}
+              size="sm"
+              className="rounded-full h-8 text-xs"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+              Save template
+            </Button>
           </div>
 
-          <footer
-            className="mt-10 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
-            style={{ borderTop: "1px solid #e8e3dd" }}
-          >
-            <span>{displayName}</span>
-            <span>
-              Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
-            </span>
-          </footer>
+          <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
+            <header className="flex items-start justify-between gap-6 flex-wrap">
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
+                <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
+                  {displayLocation}
+                </p>
+              </div>
+              <div className="text-right">
+                <p
+                  className="text-[10px] font-bold text-muted-foreground"
+                  style={{ letterSpacing: "0.22em" }}
+                >
+                  {kindLabel.toUpperCase()}
+                </p>
+                <p className="text-[11px] mt-1 text-muted-foreground">Template</p>
+              </div>
+            </header>
+
+            <hr className="my-7 border-foreground/10" />
+
+            <div className="space-y-6">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={`${kindLabel} name (e.g. Standard ${kindLabel})`}
+                className={`block w-full text-2xl font-bold tracking-tight ${editableCls}`}
+              />
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Type your template body here…"
+                rows={Math.max(18, body.split("\n").length + 2)}
+                className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
+                style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
+              />
+            </div>
+
+            <footer
+              className="mt-10 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
+              style={{ borderTop: "1px solid #e8e3dd" }}
+            >
+              <span>{displayName}</span>
+              <span>
+                Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+              </span>
+            </footer>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── List view ────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {kind === "contract"
+            ? "Saved contract templates — attach one to a proposal when you quote."
+            : "Saved proposal templates — reuse them to quote faster."}
+        </p>
+        <Button onClick={openNew} disabled={!templateVendorId} className="rounded-full">
+          <Plus className="w-4 h-4 mr-1.5" />
+          New {kindLabel.toLowerCase()}
+        </Button>
+      </div>
+
+      {!loaded ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
-      </Card>
+      ) : rows.length === 0 ? (
+        <EmptyCard>
+          No {kindLabel.toLowerCase()} templates yet. Click "New {kindLabel.toLowerCase()}" to create one.
+        </EmptyCard>
+      ) : (
+        <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md shadow-sm overflow-hidden">
+          <div className="max-h-[520px] overflow-y-auto scrollbar-hide divide-y divide-black/5">
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-black/[0.03] transition-colors group"
+              >
+                <button
+                  type="button"
+                  onClick={() => openEdit(row)}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-black truncate">{row.name}</span>
+                    {row.is_default ? (
+                      <span className="text-[10px] uppercase tracking-wide rounded-full border border-emerald-300 text-emerald-700 px-1.5 py-0.5">
+                        Default
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {row.body.trim().split("\n")[0] || "Empty"}
+                  </p>
+                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {!row.is_default ? (
+                    <button
+                      type="button"
+                      onClick={() => void makeDefault(row.id)}
+                      className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                    >
+                      Make default
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => openEdit(row)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void remove(row)}
+                    disabled={deletingId === row.id}
+                    className="text-muted-foreground hover:text-destructive px-1.5 py-1 rounded"
+                    aria-label="Delete template"
+                  >
+                    {deletingId === row.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 interface DomainDnsRecord {
   record?: string;
