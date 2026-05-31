@@ -7608,10 +7608,16 @@ interface Dispute {
 // where the dispute is. "won" / "warning_closed" are essentially
 // resolved and net-positive for the vendor; "lost" / "charge_refunded"
 // mean the money went back. Others = action needed or pending.
-function disputeStatusPill(status: string): {
+function disputeStatusPill(status: string | null | undefined): {
   label: string;
   className: string;
 } {
+  // Guard a null/undefined status (e.g. a dispute row that arrived
+  // without a status) so the .startsWith / .replace calls below — and
+  // the `${pill.className}` template at the call site — never throw.
+  if (!status) {
+    return { label: "—", className: "bg-slate-100 text-slate-700" };
+  }
   if (status === "won" || status === "warning_closed") {
     return { label: "Won", className: "bg-emerald-100 text-emerald-700" };
   }
