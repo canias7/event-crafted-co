@@ -27,7 +27,6 @@ import {
   MicOff,
   Paperclip,
   Pencil,
-  RotateCw,
   Search,
   Square,
   Trash2,
@@ -840,10 +839,6 @@ export function MySpaceChat() {
     setVoiceRecording(false);
   }
 
-  function regenerate() {
-    void send(undefined, { regenerate: true });
-  }
-
   // ── Inline thread-title editing.
   async function renameThread(threadId: string, newTitle: string) {
     const cleaned = newTitle.trim().slice(0, 80);
@@ -1453,27 +1448,6 @@ export function MySpaceChat() {
                     void send(newText, { replaceMessageId: id })}
                 />
               ))}
-            {/* Regenerate button under the last assistant text message
-                when we're idle and the message has actually been
-                persisted (has an id). */}
-            {!sending && currentThreadId &&
-                messages.length > 0 &&
-                messages[messages.length - 1]?.role === "assistant" &&
-                (messages[messages.length - 1] as TextMessage).id
-              ? (
-                <div className="flex justify-start pl-2">
-                  <button
-                    type="button"
-                    onClick={regenerate}
-                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                    title="Regenerate"
-                  >
-                    <RotateCw className="w-3 h-3" />
-                    Regenerate
-                  </button>
-                </div>
-              )
-              : null}
             {sending && activeTool
               ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground pl-2">
