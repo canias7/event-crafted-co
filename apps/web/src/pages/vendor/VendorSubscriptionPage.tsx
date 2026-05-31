@@ -719,19 +719,23 @@ export default function VendorSubscriptionPage() {
                     <p className="mt-1">
                       {tier.wasMonthly && offerActive && (
                         <span className="text-sm text-muted-foreground line-through mr-1.5 tnum">
-                          ${tier.wasMonthly}
+                          ${tier.billingInterval === "year"
+                            ? (tier.wasMonthly / 12).toFixed(2)
+                            : tier.wasMonthly}
                         </span>
                       )}
                       <span className="text-2xl font-semibold tnum">
-                        ${tier.priceMonthly.toFixed(2)}
+                        ${tier.billingInterval === "year"
+                          ? (tier.priceMonthly / 12).toFixed(2)
+                          : tier.priceMonthly.toFixed(2)}
                       </span>
                       <span className="text-xs text-muted-foreground ml-1">
-                        {tier.billingInterval === "year" ? "/ yr" : "/ mo"}
+                        / mo
                       </span>
                     </p>
                     {tier.billingInterval === "year" && tier.priceMonthly > 0 && (
                       <p className="text-[11px] text-muted-foreground mt-0.5 tnum">
-                        ≈ ${(tier.priceMonthly / 12).toFixed(2)}/mo, billed annually
+                        ${tier.priceMonthly.toFixed(2)} billed annually
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground mt-0.5">

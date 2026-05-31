@@ -923,6 +923,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             <CustomersTab
               accountVendorIds={accountVendorIds}
               listings={listings}
+              status={status}
               onChanged={() => refresh(true)}
             />
           ) : (
@@ -970,6 +971,10 @@ function OverviewTab({
   onViewCalendar: () => void;
 }) {
   const currency = balance?.currency ?? "usd";
+  // Operating expenses are account-level (vendor_expenses.user_id), so
+  // the OPEX card reads by the signed-in user rather than by listing.
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
   // KPI snapshots used by the Overview: Revenue 30d (with prior 30d
   // for trend), Customers total (with last-30d-new for the sub line),
@@ -994,7 +999,7 @@ function OverviewTab({
   const accountKey = accountVendorIds.join(",");
 
   useEffect(() => {
-    if (accountVendorIds.length === 0) {
+    if (!userId && accountVendorIds.length === 0) {
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
       setRevenue30d(0);
@@ -1033,7 +1038,7 @@ function OverviewTab({
         db
           .from("vendor_expenses")
           .select("amount_cents, item_name, description")
-          .in("vendor_id", accountVendorIds)
+          .eq("user_id", userId)
           .gte("occurred_on", since30.toISOString().slice(0, 10))
           .limit(10000),
         // Paid invoices in the last 30 days (current period)
@@ -1185,7 +1190,7 @@ function OverviewTab({
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey]);
+  }, [accountKey, userId]);
 
   return (
     <>
@@ -4690,12 +4695,17 @@ interface Customer {
 function CustomersTab({
   accountVendorIds,
   listings,
+  status,
   onChanged,
 }: {
   accountVendorIds: string[];
   listings: ListingOpt[];
+  status: Status | null;
   onChanged?: () => void;
 }) {
+  // Contacts are account-level (vendor_customers.user_id), so a vendor
+  // can save and reuse contacts before connecting VendoraPay or
+  // publishing any listing. No connect-gate here.
   const [rows, setRows] = useState<Customer[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -4758,6 +4768,7 @@ function CustomersTab({
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [statementId, setStatementId] = useState<string | null>(null);
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
   // Statement download — fetches the FULL invoice history for this
   // customer (not the parent's 50-row cache) so an end-of-year
@@ -4995,7 +5006,7 @@ function CustomersTab({
   const accountKey = accountVendorIds.join(",");
 
   const refresh = useCallback(async () => {
-    if (accountVendorIds.length === 0) {
+    if (!userId) {
       setRows([]);
       setRecurringRules([]);
       setInvoices([]);
@@ -5005,34 +5016,43 @@ function CustomersTab({
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
+    // Contacts are account-level (user_id). Recurring invoices +
+    // invoices stay listing-scoped (they're billing artifacts that
+    // belong to a connected listing), so they only load once the
+    // account has at least one listing.
+    const hasListings = accountVendorIds.length > 0;
     const [{ data: cs, error: csErr }, { data: rrs }, { data: invs }] = await Promise.all([
       db
         .from("vendor_customers")
         .select("id, vendor_id, email, name, phone, notes, first_name, last_name, company, billing_line1, billing_city, billing_state, billing_postal_code, billing_country, created_at")
-        .in("vendor_id", accountVendorIds)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false }),
-      db
-        .from("vendor_recurring_invoices")
-        .select(
-          "id, vendor_id, customer_id, interval, line_items, notes, tax_pct, active, next_run_at, last_run_at",
-        )
-        .in("vendor_id", accountVendorIds)
-        .order("created_at", { ascending: false }),
-      db
-        .from("invoices")
-        .select(
-          "id, vendor_id, invoice_number, bill_to_name, bill_to_email, total_cents, currency, status, paid_at, sent_at, issue_date, due_date, created_at, refunded_at, refunded_amount_cents",
-        )
-        .in("vendor_id", accountVendorIds)
-        .order("created_at", { ascending: false })
-        .limit(2000),
+      hasListings
+        ? db
+            .from("vendor_recurring_invoices")
+            .select(
+              "id, vendor_id, customer_id, interval, line_items, notes, tax_pct, active, next_run_at, last_run_at",
+            )
+            .in("vendor_id", accountVendorIds)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
+      hasListings
+        ? db
+            .from("invoices")
+            .select(
+              "id, vendor_id, invoice_number, bill_to_name, bill_to_email, total_cents, currency, status, paid_at, sent_at, issue_date, due_date, created_at, refunded_at, refunded_amount_cents",
+            )
+            .in("vendor_id", accountVendorIds)
+            .order("created_at", { ascending: false })
+            .limit(2000)
+        : Promise.resolve({ data: [] }),
     ]);
     if (!csErr) setRows((cs ?? []) as Customer[]);
     setRecurringRules((rrs ?? []) as RecurringRule[]);
     setInvoices((invs ?? []) as Invoice[]);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey]);
+  }, [accountKey, userId]);
 
   useEffect(() => {
     void refresh();
@@ -5080,7 +5100,7 @@ function CustomersTab({
   };
 
   const save = useCallback(async () => {
-    if (accountVendorIds.length === 0 || saving) return;
+    if (!userId || saving) return;
     const email = form.email.trim().toLowerCase();
     if (!email || !email.includes("@")) {
       toast.error("Valid email required");
@@ -5111,27 +5131,26 @@ function CustomersTab({
     const db = supabase as any;
     const { error } =
       editing === "new"
-        ? // New row: the dialog renders a ListingPickerField when the
-          // account has multiple listings (newCustomerVendorId holds
-          // the choice). Default + only-one-listing fallback both
-          // resolve to accountVendorIds[0]. Edits never re-parent
-          // (see the update branch below).
+        ? // New row: account-level (user_id). vendor_id is optional
+          // metadata — tag the primary listing when one exists so
+          // per-customer billing actions pick up a brand, else null.
+          // The (user_id, email) unique index dedupes a re-add.
           await db
             .from("vendor_customers")
             .upsert(
               {
-                vendor_id: newCustomerVendorId ?? accountVendorIds[0],
+                user_id: userId,
+                vendor_id: accountVendorIds[0] ?? null,
                 email,
                 name,
                 phone,
                 notes,
                 ...contactFields,
               },
-              { onConflict: "vendor_id,email" },
+              { onConflict: "user_id,email" },
             )
-        : // Edit existing row: never overwrite vendor_id (would
-          // silently re-parent the customer to another listing) or
-          // email (the unique key).
+        : // Edit existing row: never overwrite user_id / vendor_id
+          // (would re-parent the contact) or email (the unique key).
           await db
             .from("vendor_customers")
             .update({ name, phone, notes, ...contactFields })
@@ -5167,6 +5186,7 @@ function CustomersTab({
     [refresh],
   );
 
+  // Gate: must connect VendoraPay before saving contacts.
   return (
     <div className="space-y-4">
       <Card>
@@ -5177,7 +5197,7 @@ function CustomersTab({
               Everyone you've billed. Save a contact once and reuse them on every invoice.
             </p>
           </div>
-          <Button onClick={startNew} disabled={accountVendorIds.length === 0} className="rounded-full" size="sm">
+          <Button onClick={startNew} disabled={!userId} className="rounded-full" size="sm">
             <Plus className="w-3.5 h-3.5 mr-1.5" />
             New contact
           </Button>
@@ -5767,6 +5787,10 @@ function ExpensesTab({
     setNewContractorVendorId(primaryVendorId);
   }, [primaryVendorId, accountVendorIds, newContractorVendorId]);
   const { user } = useAuth();
+  // Expenses + contractors are account-level (user_id). The listing
+  // picker still lets the vendor optionally tag a row to a listing,
+  // but a vendor with no listings can fully use this surface.
+  const userId = user?.id ?? null;
   const [rows, setRows] = useState<Expense[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -5840,7 +5864,7 @@ function ExpensesTab({
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (accountVendorIds.length === 0) {
+    if (!userId) {
       setRows([]);
       setContractors([]);
       setLoading(false);
@@ -5856,13 +5880,13 @@ function ExpensesTab({
       db
         .from("vendor_expenses")
         .select("id, vendor_id, occurred_on, amount_cents, currency, category, description, item_name, quantity, paid_to, notes, contractor_id, recurring_rule_id, created_at")
-        .in("vendor_id", accountVendorIds)
+        .eq("user_id", userId)
         .order("occurred_on", { ascending: false })
         .limit(500),
       db
         .from("vendor_contractors")
         .select("id, vendor_id, name, email, phone, address_line1, address_line2, city, state, postal_code, tax_id_last4, notes, created_at")
-        .in("vendor_id", accountVendorIds)
+        .eq("user_id", userId)
         .order("name", { ascending: true })
         .limit(500),
     ]);
@@ -5879,7 +5903,7 @@ function ExpensesTab({
     }
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey]);
+  }, [userId]);
 
   useEffect(() => {
     void refresh();
@@ -5923,11 +5947,12 @@ function ExpensesTab({
   };
 
   const save = async () => {
-    // For new rows use the picked listing; for edits keep the
-    // existing vendor_id (edits don't re-parent — see below).
+    // Expenses are account-level. For new rows we optionally tag the
+    // picked listing (may be null when the vendor has no listings);
+    // for edits we never re-parent (vendor_id is stripped below).
     const targetVendorId =
       editing === "new" ? (newExpenseVendorId ?? primaryVendorId) : primaryVendorId;
-    if (!targetVendorId || !user) return;
+    if (!user) return;
     const amountNum = Number(form.amount);
     if (!Number.isFinite(amountNum) || amountNum <= 0) {
       toast.error("Amount must be a positive number.");
@@ -5941,6 +5966,7 @@ function ExpensesTab({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const payload = {
+      user_id: user.id,
       vendor_id: targetVendorId,
       occurred_on: form.occurred_on,
       amount_cents: Math.round(amountNum * 100),
@@ -5971,10 +5997,10 @@ function ExpensesTab({
       error = insErr;
       insertedExpenseId = (ins as { id: string } | null)?.id ?? null;
     } else if (editing) {
-      // omit created_by + vendor_id on update — created_by stays the
-      // original creator; vendor_id is fixed at insert and editing
-      // must never re-parent the row to a different listing.
-      const { created_by: _cb, vendor_id: _vid, ...updatePayload } = payload;
+      // omit created_by + user_id + vendor_id on update — created_by
+      // and user_id stay the original owner; vendor_id is fixed at
+      // insert and editing must never re-parent the row.
+      const { created_by: _cb, user_id: _uid, vendor_id: _vid, ...updatePayload } = payload;
       ({ error } = await db
         .from("vendor_expenses")
         .update(updatePayload)
@@ -6004,6 +6030,7 @@ function ExpensesTab({
       const { data: ruleRow, error: ruleErr } = await db
         .from("vendor_recurring_expenses")
         .insert({
+          user_id: user.id,
           vendor_id: targetVendorId,
           interval: form.recurring_interval,
           day_of_month: dayOfMonth,
@@ -6097,7 +6124,7 @@ function ExpensesTab({
       editingContractor === "new"
         ? (newContractorVendorId ?? primaryVendorId)
         : primaryVendorId;
-    if (!targetVendorId || !user) return;
+    if (!user) return;
     if (!contractorForm.name.trim()) {
       toast.error("Contractor name required.");
       return;
@@ -6110,6 +6137,7 @@ function ExpensesTab({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
     const payload = {
+      user_id: user.id,
       vendor_id: targetVendorId,
       name: contractorForm.name.trim(),
       email: contractorForm.email.trim() || null,
@@ -6126,10 +6154,10 @@ function ExpensesTab({
     if (editingContractor === "new") {
       ({ error } = await db.from("vendor_contractors").insert(payload));
     } else if (editingContractor) {
-      // Strip created_by + vendor_id on update — created_by stays
-      // the original creator; vendor_id is fixed at insert and
-      // editing must not re-parent the contractor row.
-      const { created_by: _cb, vendor_id: _vid, ...updatePayload } = payload;
+      // Strip created_by + user_id + vendor_id on update — created_by
+      // and user_id stay the original owner; vendor_id is fixed at
+      // insert and editing must not re-parent the contractor row.
+      const { created_by: _cb, user_id: _uid, vendor_id: _vid, ...updatePayload } = payload;
       ({ error } = await db
         .from("vendor_contractors")
         .update(updatePayload)
@@ -6395,7 +6423,7 @@ function ExpensesTab({
             <Download className="w-3.5 h-3.5 mr-1.5" />
             Export
           </Button>
-          <Button onClick={startNew} size="sm" className="rounded-lg" disabled={!primaryVendorId}>
+          <Button onClick={startNew} size="sm" className="rounded-lg" disabled={!userId}>
             <Plus className="w-3.5 h-3.5 mr-1.5" />
             New expense
           </Button>

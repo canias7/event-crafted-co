@@ -26,7 +26,8 @@ const cors = {
 
 interface RecurringRow {
   id: string;
-  vendor_id: string;
+  user_id: string | null;
+  vendor_id: string | null;
   interval: "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
   day_of_month: number | null;
   amount_cents: number;
@@ -102,7 +103,7 @@ serve(async (req: Request) => {
   const { data: due, error: dueErr } = await (db as any)
     .from("vendor_recurring_expenses")
     .select(
-      "id, vendor_id, interval, day_of_month, amount_cents, currency, category, description, item_name, quantity, paid_to, notes, contractor_id, next_run_at, created_by",
+      "id, user_id, vendor_id, interval, day_of_month, amount_cents, currency, category, description, item_name, quantity, paid_to, notes, contractor_id, next_run_at, created_by",
     )
     .eq("active", true)
     .lte("next_run_at", now.toISOString())
@@ -129,6 +130,7 @@ serve(async (req: Request) => {
       const { data: ins, error: insErr } = await (db as any)
         .from("vendor_expenses")
         .insert({
+          user_id: row.user_id,
           vendor_id: row.vendor_id,
           occurred_on: occurredOn,
           amount_cents: row.amount_cents,
