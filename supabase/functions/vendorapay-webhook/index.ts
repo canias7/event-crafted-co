@@ -6,7 +6,7 @@
 //
 // Handles the five Phase 1 events:
 //   account.updated    → mirror onboarding bools to vendor_payment_secrets
-//   payment.succeeded  → flip proposal.payment_status
+//   payment.succeeded  → mark pay link / invoice paid
 //   payment.failed     → log + mark failed (vendor can retry)
 //   charge.refunded    → record refund + reset payment_status
 //   charge.disputed    → log + notify (manual handling for now)
@@ -104,11 +104,9 @@ serve(async (req: Request) => {
           receipt_email?: string | null;
           metadata?: Record<string, string>;
         };
-        const proposalId = pi.metadata?.proposal_id;
         const paymentLinkId = pi.metadata?.payment_link_id;
         const invoiceId = pi.metadata?.invoice_id;
         const vendorIdMeta = pi.metadata?.vendor_id;
-        const mode = pi.metadata?.mode;
         let vendorIdForNotify: string | null = vendorIdMeta ?? null;
         let descriptionForNotify = pi.description ?? "VendoraPay charge";
         let hostEmailForNotify: string | null = pi.receipt_email ?? null;
@@ -118,33 +116,9 @@ serve(async (req: Request) => {
         // currency for an extra layer of safety.
         let currencyForNotify = pi.currency ?? "usd";
 
-        // Else-if chain: one PaymentIntent maps to exactly one
-        // record. Without this guard a future double-tagged PI
-        // (proposal_id + payment_link_id) would credit both records.
-        if (proposalId) {
-          const nextStatus = mode === "deposit" ? "deposit_paid" : "paid_in_full";
-          const { data: prop } = await db
-            .from("proposals")
-            .update({ payment_status: nextStatus })
-            .eq("id", proposalId)
-            .select("vendor_id, host_id, title")
-            .maybeSingle();
-          const propRow = prop as { vendor_id?: string; host_id?: string; title?: string } | null;
-          if (propRow?.vendor_id) vendorIdForNotify = propRow.vendor_id;
-          if (propRow?.title) descriptionForNotify = `${propRow.title} — ${mode === "deposit" ? "deposit" : "balance"}`;
-          if (!hostEmailForNotify && propRow?.host_id) {
-            // Best-effort: a transient auth-service blip here must not
-            // abort the handler (which, given dedup-before-process +
-            // 200-on-error, would permanently lose the paid-status
-            // write). Worst case the receipt email lacks a recipient.
-            try {
-              const { data: userRow } = await db.auth.admin.getUserById(propRow.host_id);
-              hostEmailForNotify = userRow?.user?.email ?? null;
-            } catch (err) {
-              console.error("[vendorapay-webhook] host email lookup failed", propRow.host_id, err);
-            }
-          }
-        } else if (paymentLinkId) {
+        // One PaymentIntent maps to exactly one record (pay link OR
+        // invoice). Proposals were retired — no proposal_id branch.
+        if (paymentLinkId) {
           // receipt_email is null when Stripe Checkout collected the
           // email (rather than us setting it upfront). Pull from
           // latest_charge.billing_details so the scheduled-balance
@@ -258,7 +232,6 @@ serve(async (req: Request) => {
                 description: descriptionForNotify,
                 host_email: hostEmailForNotify,
                 payment_link_id: paymentLinkId ?? null,
-                proposal_id: proposalId ?? null,
                 invoice_id: invoiceId ?? null,
               }),
             });
@@ -275,7 +248,6 @@ serve(async (req: Request) => {
           last_payment_error?: { message?: string };
           metadata?: Record<string, string>;
         };
-        const proposalId = pi.metadata?.proposal_id;
         const invoiceId = pi.metadata?.invoice_id;
         const failureMessage = pi.last_payment_error?.message ?? null;
 
@@ -304,16 +276,6 @@ serve(async (req: Request) => {
             );
           }
         }
-
-        if (proposalId) {
-          // Proposals: still just log. Future work can promote
-          // failed proposal payments to the same row-level flag.
-          console.warn(
-            "[vendorapay-webhook] payment.failed (proposal)",
-            proposalId,
-            failureMessage,
-          );
-        }
         break;
       }
 
@@ -329,13 +291,8 @@ serve(async (req: Request) => {
         const nextStatus = isFullRefund ? "refunded" : "partial_refund";
         const nowIso = new Date().toISOString();
 
-        // Try each of the three record types — at most one should
-        // match because the PI is uniquely owned. Each branch is
-        // a no-op if the row doesn't exist.
-        await db
-          .from("proposals")
-          .update({ payment_status: nextStatus })
-          .eq("stripe_checkout_session_id", ch.payment_intent);
+        // Try each record type — at most one matches because the PI
+        // is uniquely owned. Each branch is a no-op if no row matches.
         await db
           .from("payment_links")
           .update({ status: nextStatus, updated_at: nowIso })
@@ -371,7 +328,7 @@ serve(async (req: Request) => {
 
         // Resolve which vendor owns the original charge so the
         // dispute shows up under the right listing. Look it up via
-        // the payment_intent across all three record types.
+        // the payment_intent across the two payable record types.
         let vendorIdForDispute: string | null = null;
         if (d.payment_intent) {
           for (const table of ["invoices", "payment_links"] as const) {
@@ -385,15 +342,6 @@ serve(async (req: Request) => {
               vendorIdForDispute = r.vendor_id;
               break;
             }
-          }
-          if (!vendorIdForDispute) {
-            const { data: prop } = await db
-              .from("proposals")
-              .select("vendor_id")
-              .eq("stripe_checkout_session_id", d.payment_intent)
-              .maybeSingle();
-            const r = prop as { vendor_id?: string } | null;
-            if (r?.vendor_id) vendorIdForDispute = r.vendor_id;
           }
         }
 

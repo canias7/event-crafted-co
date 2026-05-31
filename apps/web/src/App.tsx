@@ -42,7 +42,6 @@ import {
   PrivacyPage,
   TermsPage,
   HelpPage,
-  VendoraPayCheckoutPage,
   ChangelogPage,
   StatusPage,
   PressPage,
@@ -80,8 +79,6 @@ import {
   ClaimVendorPage,
   PublicReviewPage,
   LiveWatchPage,
-  ProposalPrintPage,
-  PublicProposalPage,
   PublicGallerySharePage,
   OAuthConsentPage,
 } from "@/router/lazyRoutes";
@@ -127,8 +124,6 @@ const App = () => (
                   temporarily — page is hidden until we re-enable. */}
               <Route path="/review/:token" element={<PublicReviewPage />} />
               <Route path="/live/:token" element={<LiveWatchPage />} />
-              <Route path="/proposals/:id/print" element={<ProposalPrintPage />} />
-              <Route path="/p/:token" element={<PublicProposalPage />} />
               <Route path="/g/:token" element={<PublicGallerySharePage />} />
               <Route path="/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
@@ -141,7 +136,6 @@ const App = () => (
               <Route path="/help" element={<HelpPage />} />
               <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
               <Route path="/pay/invoice/:slug" element={<InvoiceCheckoutPage />} />
-              <Route path="/pay/:proposalId" element={<RequireRole role={["host", "vendor"]}><VendoraPayCheckoutPage /></RequireRole>} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />

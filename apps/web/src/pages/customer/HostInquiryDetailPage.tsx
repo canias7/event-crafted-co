@@ -14,7 +14,7 @@ import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
 import { SubmittedReviewStatusCard } from "@/components/reviews/SubmittedReviewStatusCard";
 import { BookingConfirmationCard } from "@/components/inquiries/BookingConfirmationCard";
 import { InquiryReviewCard } from "@/components/inquiries/InquiryReviewCard";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
@@ -42,11 +42,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
-import {
-  ProposalCard,
-  type Proposal,
-  type SignaturePayload,
-} from "@/components/proposals/ProposalCard";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import {
   uploadAttachments,
@@ -121,7 +116,6 @@ function draftKey(inquiryId: string | undefined): string | null {
 
 export default function HostInquiryDetailPage() {
   const { inquiryId } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -160,7 +154,6 @@ export default function HostInquiryDetailPage() {
   const [sending, setSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
   // Vendor-side reviews of this host (conversation + event). The host
   // can post a public response per review via InquiryReviewCard.
   // Loaded only after the page settles; RLS already gates blind-period
@@ -176,7 +169,6 @@ export default function HostInquiryDetailPage() {
       response: { body: string; created_at: string; updated_at: string } | null;
     }>
   >([]);
-  const [acting, setActing] = useState<"accept" | "reject" | null>(null);
   // Thread id is the direct_threads row for this inquiry; mobile uses
   // the same model — see ensure_inquiry_thread RPC. Resolved on load.
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -201,11 +193,11 @@ export default function HostInquiryDetailPage() {
     if (!inquiryId || !user) return;
     if (!hasLoadedRef.current) setLoading(true);
 
-    // Three independent reads — inquiry, thread RPC, proposals —
+    // Three independent reads — inquiry, thread RPC, vendor reviews —
     // fire in parallel. Messages + reactions depend on the thread id
     // so they chain after. Submitted-review status is fetched by
     // SubmittedReviewStatusCard on its own.
-    const [iRes, tidRes, propsRes, vendorRevsRes] = await Promise.all([
+    const [iRes, tidRes, vendorRevsRes] = await Promise.all([
       supabase
         .from("inquiries")
         .select(
@@ -217,14 +209,6 @@ export default function HostInquiryDetailPage() {
       (supabase as any).rpc("ensure_inquiry_thread", {
         p_inquiry_id: inquiryId,
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("proposals")
-        .select(
-          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, payment_status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count",
-        )
-        .eq("inquiry_id", inquiryId)
-        .order("created_at", { ascending: false }),
       // Vendor-side reviews this host is the subject of. RLS gates
       // visibility — blind-period event reviews don't surface here.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -326,7 +310,6 @@ export default function HostInquiryDetailPage() {
       setReactionsByMsg({});
     }
 
-    setProposals((propsRes.data as unknown as Proposal[]) ?? []);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setVendorReviews(((vendorRevsRes.data as any[]) ?? []).map((r) => ({
       id: r.id,
@@ -344,47 +327,6 @@ export default function HostInquiryDetailPage() {
     hasLoadedRef.current = true;
     setLoading(false);
   }, [inquiryId, user]);
-
-  async function respondProposal(
-    p: Proposal,
-    action: "accepted" | "rejected",
-    signature?: SignaturePayload,
-  ) {
-    // Idempotency guard. Fast double-tap on Accept can fire two
-    // respondProposal calls before setActing(action) takes effect. The
-    // DB update would no-op (status is already accepted), but two
-    // toasts and two load() calls fire. Bail early if the proposal is
-    // already in a terminal state.
-    if (p.status !== "pending" || acting !== null) return;
-    setActing(action === "accepted" ? "accept" : "reject");
-    const update: Record<string, unknown> = {
-      status: action,
-      responded_at: new Date().toISOString(),
-    };
-    if (signature) {
-      update.signed_at = signature.signed_at;
-      update.signed_name = signature.signed_name;
-      update.signed_user_agent = signature.signed_user_agent;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("proposals")
-      .update(update)
-      .eq("id", p.id);
-    setActing(null);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(
-      action === "accepted"
-        ? signature
-          ? "Signed and accepted — you're booked."
-          : "Proposal accepted — you're booked."
-        : "Proposal declined",
-    );
-    load();
-  }
 
   useEffect(() => {
     load();
@@ -674,18 +616,6 @@ export default function HostInquiryDetailPage() {
   );
   useRealtime(inquiryConfig, debouncedLoad);
 
-  // Proposals: vendor can withdraw or revise after the host opens the
-  // page. Without a sub the bubble shows the stale state until manual
-  // refresh.
-  const proposalsConfig = useMemo(
-    () =>
-      inquiryId
-        ? { table: "proposals", filter: `inquiry_id=eq.${inquiryId}` }
-        : null,
-    [inquiryId],
-  );
-  useRealtime(proposalsConfig, debouncedLoad);
-
   function pickFiles(list: FileList) {
     const accepted: File[] = [];
     for (const f of Array.from(list)) {
@@ -963,23 +893,8 @@ export default function HostInquiryDetailPage() {
             </div>
           )}
 
-          {/* Proposals — sender-agnostic system bubbles */}
-          {proposals.map((p) => (
-            <div key={p.id} className="my-3">
-              <ProposalCard
-                proposal={p}
-                canRespond={p.status === "pending"}
-                acting={acting}
-                onAccept={(sig) => respondProposal(p, "accepted", sig)}
-                onReject={() => respondProposal(p, "rejected")}
-                onPay={() => navigate(`/pay/${p.id}`)}
-              />
-            </div>
-          ))}
-
           {messages.length === 0 &&
-          !inquiry.special_requests &&
-          proposals.length === 0 ? (
+          !inquiry.special_requests ? (
             <p className="text-sm text-muted-foreground py-12 text-center">
               No messages yet — the vendor will reply soon.
             </p>
@@ -1199,14 +1114,13 @@ export default function HostInquiryDetailPage() {
             </div>
           ) : null}
 
-          {/* Off-platform booking handshake. Hidden when an accepted
-              proposal exists (the proposals path is canonical). */}
+          {/* Off-platform booking handshake. */}
           {inquiry ? (
             <BookingConfirmationCard
               inquiryId={inquiry.id}
               selfRole="host"
               otherPartyName={vendorName}
-              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+              hasAcceptedProposal={false}
             />
           ) : null}
 

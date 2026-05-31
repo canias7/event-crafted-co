@@ -39,32 +39,25 @@ export function RatingPromptStrip({
   otherPartyName,
 }: Props) {
   const [messageCount, setMessageCount] = useState<number | null>(null);
-  const [proposalAccepted, setProposalAccepted] = useState<boolean | null>(null);
   const [myRatings, setMyRatings] = useState<ExistingRating[] | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [modalKind, setModalKind] = useState<"conversation" | "event" | null>(
     null,
   );
 
-  // Pull the three signals we need: message count for this
-  // inquiry's thread, whether a proposal was accepted, and
-  // whether the caller has already rated (so we don't re-prompt).
+  // Pull the two signals we need: message count for this inquiry's
+  // thread, and whether the caller has already rated (so we don't
+  // re-prompt). Proposals were retired — event-review eligibility now
+  // keys off the event date alone (the reviews BEFORE INSERT trigger
+  // still double-checks eligibility server-side).
   const refresh = useCallback(async () => {
     if (!inquiryId) return;
-    const [tRes, pRes, rRes] = await Promise.all([
+    const [tRes, rRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("direct_threads")
         .select("id")
         .eq("inquiry_id", inquiryId)
-        .maybeSingle(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("proposals")
-        .select("id, status")
-        .eq("inquiry_id", inquiryId)
-        .eq("status", "accepted")
-        .limit(1)
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
@@ -84,7 +77,6 @@ export function RatingPromptStrip({
     } else {
       setMessageCount(0);
     }
-    setProposalAccepted(!!pRes.data);
     setMyRatings((rRes.data as ExistingRating[] | null) ?? []);
   }, [inquiryId, raterRole]);
 
@@ -104,21 +96,16 @@ export function RatingPromptStrip({
     refresh,
   );
   useRealtime(
-    inquiryId ? { table: "proposals", filter: `inquiry_id=eq.${inquiryId}` } : null,
-    refresh,
-  );
-  useRealtime(
     threadId ? { table: "direct_messages", filter: `thread_id=eq.${threadId}` } : null,
     refresh,
   );
 
   const eventEligible = useMemo(() => {
     if (!eventDate) return false;
-    if (!proposalAccepted) return false;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 3);
     return new Date(eventDate).getTime() < cutoff.getTime();
-  }, [eventDate, proposalAccepted]);
+  }, [eventDate]);
 
   const conversationEligible = useMemo(() => {
     return (messageCount ?? 0) >= 6;
