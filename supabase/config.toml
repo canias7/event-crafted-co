@@ -86,6 +86,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.vendorapay-invoice-send]
     verify_jwt = false
+  [functions.vendorapay-document-send]
+    verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
   [functions.scan-daily-digests]

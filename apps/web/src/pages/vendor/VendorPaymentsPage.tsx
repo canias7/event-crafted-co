@@ -3323,6 +3323,7 @@ function DocumentCanvas({
   const tableName =
     kind === "contract" ? "vendor_contract_templates" : "vendor_proposal_templates";
   const kindLabel = kind === "contract" ? "Contract" : "Proposal";
+  const navigate = useNavigate();
 
   const [rows, setRows] = useState<DocTemplateRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -3332,6 +3333,8 @@ function DocumentCanvas({
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sendEmail, setSendEmail] = useState("");
+  const [sending, setSending] = useState(false);
   const initialRef = useRef({ name: "", body: "" });
 
   const load = useCallback(async () => {
@@ -3486,15 +3489,49 @@ function DocumentCanvas({
     [tableName, load],
   );
 
+  // Email the CURRENTLY-OPEN template's text to a typed recipient — same
+  // pattern as the invoice "Send to" box (manual send, consent-gated).
+  const sendDoc = useCallback(async () => {
+    const to = sendEmail.trim();
+    if (!templateVendorId || sending) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    if (!body.trim()) {
+      toast.error("Nothing to send — add some content first");
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.functions.invoke("vendorapay-document-send", {
+      body: {
+        vendor_id: templateVendorId,
+        kind,
+        name: name.trim() || kindLabel,
+        body,
+        to_email: to,
+      },
+    });
+    setSending(false);
+    if (error) {
+      if (await handleEmailBillingError(error, navigate)) return;
+      toast.error("Couldn't send", { description: error.message });
+      return;
+    }
+    toast.success(`${kindLabel} sent to ${to}`);
+    setSendEmail("");
+  }, [templateVendorId, sending, sendEmail, body, kind, name, kindLabel, navigate]);
+
   const displayName = templateListing?.business_name?.trim() || "[Your Business Name]";
   const displayLocation = templateListing?.location?.trim() || "[City, State]";
   const editableCls =
     "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
 
-  // ── Editor view ──────────────────────────────────────────────
+  // ── Editor view: narrower document on the left, list + send on the right ──
   if (editingId !== null) {
     return (
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+        {/* Document (reduced width so the sidebar fits beside it) */}
         <Card>
           <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3">
             <button
@@ -3516,7 +3553,7 @@ function DocumentCanvas({
             </Button>
           </div>
 
-          <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
+          <div className="bg-white px-5 sm:px-7 py-7 sm:py-8">
             <header className="flex items-start justify-between gap-6 flex-wrap">
               <div className="min-w-0">
                 <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
@@ -3535,9 +3572,9 @@ function DocumentCanvas({
               </div>
             </header>
 
-            <hr className="my-7 border-foreground/10" />
+            <hr className="my-6 border-foreground/10" />
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               <input
                 type="text"
                 value={name}
@@ -3549,14 +3586,14 @@ function DocumentCanvas({
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Type your template body here…"
-                rows={Math.max(18, body.split("\n").length + 2)}
+                rows={Math.max(16, body.split("\n").length + 2)}
                 className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
                 style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
               />
             </div>
 
             <footer
-              className="mt-10 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
+              className="mt-8 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
               style={{ borderTop: "1px solid #e8e3dd" }}
             >
               <span>{displayName}</span>
@@ -3566,6 +3603,89 @@ function DocumentCanvas({
             </footer>
           </div>
         </Card>
+
+        {/* Sidebar: send box + the saved list */}
+        <div className="space-y-4 lg:sticky lg:top-4">
+          {/* Send this document */}
+          <Card>
+            <div className="p-4 space-y-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+                Send this {kindLabel.toLowerCase()}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Emails the current text to someone. Save first to keep your edits.
+              </p>
+              <input
+                type="email"
+                inputMode="email"
+                placeholder="Send to email…"
+                value={sendEmail}
+                onChange={(e) => setSendEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void sendDoc();
+                }}
+                className="w-full rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+              />
+              <Button
+                size="sm"
+                className="rounded-full w-full"
+                onClick={() => void sendDoc()}
+                disabled={!sendEmail.trim() || sending}
+              >
+                {sending ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Mail className="w-3.5 h-3.5 mr-1" />
+                )}
+                Send
+              </Button>
+            </div>
+          </Card>
+
+          {/* Saved templates list */}
+          <Card>
+            <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+                Saved {kindLabel.toLowerCase()}s
+              </span>
+              <button
+                type="button"
+                onClick={openNew}
+                className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
+              >
+                <Plus className="w-3 h-3" /> New
+              </button>
+            </div>
+            <div className="max-h-[420px] overflow-y-auto scrollbar-hide divide-y divide-black/5">
+              {rows.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-muted-foreground">No saved templates yet.</p>
+              ) : (
+                rows.map((row) => (
+                  <button
+                    key={row.id}
+                    type="button"
+                    onClick={() => openEdit(row)}
+                    className={`w-full text-left px-3 py-2.5 hover:bg-black/[0.03] transition-colors ${
+                      editingId === row.id ? "bg-black/[0.04]" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-semibold text-black truncate">{row.name}</span>
+                      {row.is_default ? (
+                        <span className="text-[9px] uppercase tracking-wide rounded-full border border-emerald-300 text-emerald-700 px-1 py-0.5 shrink-0">
+                          Default
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      {row.body.trim().split("\n")[0] || "Empty"}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
     );
   }
