@@ -8673,7 +8673,12 @@ function SettingsTab({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-semibold">Bank account</h3>
-                  {status?.bank?.last4 ? (
+                  {/* `status.bank` isn't populated on v2 accounts, so we
+                      derive connectedness from payouts_enabled: Stripe
+                      requires a bank before payouts can be enabled, so
+                      payouts_enabled === true reliably means a bank is
+                      on file. */}
+                  {status?.bank?.last4 || status?.payouts_enabled ? (
                     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
                       Connected
                     </span>
@@ -8698,9 +8703,11 @@ function SettingsTab({
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground mt-1">
-                    {status?.onboarded
-                      ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
-                      : "Connect VendoraPay first to add a bank account."}
+                    {status?.payouts_enabled
+                      ? "Your bank is connected. Manage it in the VendoraPay Express dashboard."
+                      : status?.onboarded
+                        ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
+                        : "Connect VendoraPay first to add a bank account."}
                   </p>
                 )}
                 <p className="text-[11px] text-muted-foreground mt-2">
@@ -8734,9 +8741,17 @@ function SettingsTab({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-semibold">Identity &amp; tax info</h3>
-                  {status?.details_submitted ? (
+                  {/* "Verified" only once the processor has actually
+                      cleared the account (charges_enabled). Details
+                      submitted but still under review reads as "In
+                      review", not Verified — submitting != approved. */}
+                  {status?.charges_enabled ? (
                     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
                       Verified
+                    </span>
+                  ) : status?.details_submitted ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-sky-100 text-sky-700">
+                      In review
                     </span>
                   ) : (
                     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">

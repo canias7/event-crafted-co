@@ -38,7 +38,8 @@ interface NavItem {
   labelKey: string;
   /** Optional — items without a path are section headers (toggle only). */
   path?: string;
-  icon: LucideIcon;
+  /** Optional — when omitted, the row renders as text only (no icon). */
+  icon?: LucideIcon;
   /** Optional nested sub-items shown indented below the parent row. */
   children?: NavItem[];
 }
@@ -150,7 +151,9 @@ export function DashboardSidebar({
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
         }`}
       >
-        <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+        {item.icon ? (
+          <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+        ) : null}
         {!collapsed && <span className="truncate flex-1">{label}</span>}
         {showBalance && (
           <span
@@ -212,7 +215,9 @@ export function DashboardSidebar({
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                     }`}
                   >
-                    <child.icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    {child.icon ? (
+                      <child.icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    ) : null}
                     <span className="truncate flex-1">{t(child.labelKey)}</span>
                   </div>
                 </Link>

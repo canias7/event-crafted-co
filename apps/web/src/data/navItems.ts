@@ -7,7 +7,6 @@ import {
   Images,
   Inbox,
   Settings,
-  Sparkles,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -21,7 +20,8 @@ export interface NavItem {
    * (e.g. "My Vendora" → Leads / Calendar / VendoraPay).
    */
   path?: string;
-  icon: LucideIcon;
+  /** Optional — when omitted, the row renders as text only (no icon). */
+  icon?: LucideIcon;
   /**
    * Optional sub-items rendered indented beneath this item in the
    * sidebar. When the parent has a `path` it stays navigable; when
@@ -63,7 +63,7 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.my_vendora", path: "/vendor/my-vendora", icon: Briefcase },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
-  { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents", icon: Sparkles },
+  { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents" },
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
   // ---- Billing for the Vendora subscription itself ----
   { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
