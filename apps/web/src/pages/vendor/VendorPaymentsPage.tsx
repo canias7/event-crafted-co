@@ -7398,6 +7398,69 @@ function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
   );
 }
 
+// Stripe-style form primitives for the pay-link creator.
+const STRIPE_INPUT =
+  "w-full rounded-lg border-0 px-3 py-2 text-sm bg-background ring-1 ring-foreground/15 focus:ring-2 focus:ring-foreground/40 outline-none transition-shadow";
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+      {children}
+    </div>
+  );
+}
+
+function FieldRow({
+  label,
+  optional,
+  children,
+}: {
+  label: string;
+  optional?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-foreground/70 mb-1 inline-flex items-center gap-1.5">
+        {label}
+        {optional ? <span className="text-[10px] text-muted-foreground font-normal">optional</span> : null}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+// A Stripe-style toggle row: full-width clickable row with title + hint
+// and a checkbox on the right. Lives inside a ringed, divided container.
+function OptionRow({
+  checked,
+  onChange,
+  title,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <label
+      className="flex items-start gap-3 px-3.5 py-3 cursor-pointer hover:bg-foreground/[0.03] transition-colors"
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="rounded mt-0.5 shrink-0"
+      />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-foreground">{title}</span>
+        <span className="block text-[11px] text-muted-foreground mt-0.5">{hint}</span>
+      </span>
+    </label>
+  );
+}
+
 // Live preview of the host-facing /pay/link page, mirroring its layout
 // (brand row → amount-due card → contact-collection hint). Updates as the
 // vendor fills the form so they see what they're sending before creating.
@@ -7421,14 +7484,11 @@ function PayLinkPreview({
     ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
     : "$0.00";
   return (
-    <div className="rounded-lg p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-2">
-        Preview · what the host sees
-      </div>
-      <div
-        className="rounded-xl p-4"
-        style={{ background: "rgba(255,253,250,0.9)", border: "0.5px solid rgba(255,138,76,0.22)" }}
-      >
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: "rgba(255,253,250,0.9)", border: "0.5px solid rgba(255,138,76,0.22)" }}
+    >
+      <div>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full bg-foreground/5 inline-flex items-center justify-center">
             <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
@@ -7684,148 +7744,158 @@ function PayLinksTab({
 
   return (
     <div className="space-y-4">
-      {/* Create form */}
+      {/* Create form — Stripe-style two-column: fields left, live preview right */}
       {creating ? (
         <Card>
-          <div className="p-5 space-y-3">
-            <h3 className="text-sm font-semibold">New pay link</h3>
-            {/* Listing picker removed — account-level cockpit means
-                we default new links to defaultVendorId (see create())
-                without asking the vendor to pick. */}
-            <input
-              type="text"
-              placeholder="What's this charge for? (e.g. Deposit for Aug 14 wedding)"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-            />
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">$</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0.50"
-                placeholder="500.00"
-                value={amountDollars}
-                onChange={(e) => setAmountDollars(e.target.value)}
-                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
+          <div className="p-5 md:p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-semibold">Create a pay link</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setCreating(false);
+                    setTitle("");
+                    setAmountDollars("");
+                    setDescription("");
+                    setSplitDeposit(false);
+                    setDepositDollars("");
+                    setBalanceDueDate("");
+                    setExpiresDate("");
+                    setCollectContact(false);
+                  }}
+                  className="rounded-full h-9 px-4 text-sm"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={create} disabled={submitting} className="rounded-full h-9 px-4 text-sm">
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  {splitDeposit ? "Create schedule" : "Create link"}
+                </Button>
+              </div>
             </div>
-            <textarea
-              placeholder="Optional note for the host"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
-            />
 
-            {/* Split into deposit + balance */}
-            <label className="flex items-center gap-2 text-sm text-foreground/80">
-              <input
-                type="checkbox"
-                checked={splitDeposit}
-                onChange={(e) => setSplitDeposit(e.target.checked)}
-                className="rounded"
-              />
-              Split into deposit + balance
-            </label>
-            {splitDeposit ? (
-              <div className="space-y-2 rounded-lg p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">Deposit</span>
-                  <span className="text-sm text-muted-foreground">$</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min="0.50"
-                    placeholder="e.g. 500.00 (host pays now)"
-                    value={depositDollars}
-                    onChange={(e) => setDepositDollars(e.target.value)}
-                    className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* ── Left: form fields ─────────────────────────── */}
+              <div className="space-y-5">
+                {/* Charge details */}
+                <section className="space-y-3">
+                  <SectionLabel>Charge details</SectionLabel>
+                  <FieldRow label="What's this for?">
+                    <input
+                      type="text"
+                      placeholder="e.g. Deposit for Aug 14 wedding"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className={STRIPE_INPUT}
+                    />
+                  </FieldRow>
+                  <FieldRow label="Amount">
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0.50"
+                        placeholder="500.00"
+                        value={amountDollars}
+                        onChange={(e) => setAmountDollars(e.target.value)}
+                        className={`${STRIPE_INPUT} pl-7`}
+                      />
+                    </div>
+                  </FieldRow>
+                  <FieldRow label="Note for the host" optional>
+                    <textarea
+                      placeholder="Optional — shown on the payment page"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={2}
+                      className={`${STRIPE_INPUT} resize-none`}
+                    />
+                  </FieldRow>
+                </section>
+
+                {/* Options */}
+                <section className="space-y-3">
+                  <SectionLabel>Options</SectionLabel>
+                  <div className="rounded-xl ring-1 ring-foreground/10 divide-y divide-foreground/10 overflow-hidden">
+                    <OptionRow
+                      checked={splitDeposit}
+                      onChange={setSplitDeposit}
+                      title="Split into deposit + balance"
+                      hint="Host pays a deposit now; the balance link auto-activates on a due date."
+                    />
+                    <OptionRow
+                      checked={collectContact}
+                      onChange={setCollectContact}
+                      title="Collect host's name & phone"
+                      hint="Adds name + phone fields to the checkout and saves them to this link."
+                    />
+                  </div>
+
+                  {splitDeposit ? (
+                    <div className="space-y-2 rounded-xl p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
+                      <FieldRow label="Deposit (host pays now)">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0.50"
+                            placeholder="500.00"
+                            value={depositDollars}
+                            onChange={(e) => setDepositDollars(e.target.value)}
+                            className={`${STRIPE_INPUT} pl-7`}
+                          />
+                        </div>
+                      </FieldRow>
+                      <FieldRow label="Balance due date">
+                        <input
+                          type="date"
+                          value={balanceDueDate}
+                          onChange={(e) => setBalanceDueDate(e.target.value)}
+                          min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                          className={STRIPE_INPUT}
+                        />
+                      </FieldRow>
+                      <p className="text-[11px] text-muted-foreground">
+                        The balance link emails the host a reminder on the due date.
+                      </p>
+                    </div>
+                  ) : (
+                    <FieldRow label="Expiration date" optional>
+                      <input
+                        type="date"
+                        value={expiresDate}
+                        onChange={(e) => setExpiresDate(e.target.value)}
+                        min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                        className={STRIPE_INPUT}
+                      />
+                    </FieldRow>
+                  )}
+                </section>
+              </div>
+
+              {/* ── Right: sticky preview ─────────────────────── */}
+              <div className="lg:sticky lg:top-4 self-start">
+                <SectionLabel>Preview</SectionLabel>
+                <div className="mt-3">
+                  <PayLinkPreview
+                    title={title}
+                    amountDollars={amountDollars}
+                    description={description}
+                    businessName={
+                      listings.find((l) => l.id === (pickedVendorId ?? defaultVendorId))?.business_name ??
+                      listings[0]?.business_name ??
+                      null
+                    }
+                    expiresDate={!splitDeposit ? expiresDate : ""}
+                    collectContact={collectContact}
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">Balance due</span>
-                  <input
-                    type="date"
-                    value={balanceDueDate}
-                    onChange={(e) => setBalanceDueDate(e.target.value)}
-                    min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
-                    className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  The deposit link is live immediately. The balance link auto-activates on the due date and emails the host a reminder.
-                </p>
               </div>
-            ) : null}
-
-            {/* Expiration — single-charge only (the split flow schedules
-                its own balance leg, so an extra expiry would conflict). */}
-            {!splitDeposit ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-24 shrink-0">Expires (optional)</span>
-                <input
-                  type="date"
-                  value={expiresDate}
-                  onChange={(e) => setExpiresDate(e.target.value)}
-                  min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
-                  className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-              </div>
-            ) : null}
-
-            {/* Collect host contact at checkout */}
-            <label className="flex items-center gap-2 text-sm text-foreground/80">
-              <input
-                type="checkbox"
-                checked={collectContact}
-                onChange={(e) => setCollectContact(e.target.checked)}
-                className="rounded"
-              />
-              Collect host's name &amp; phone at checkout
-            </label>
-
-            {/* Live preview of the host-facing payment page */}
-            <PayLinkPreview
-              title={title}
-              amountDollars={amountDollars}
-              description={description}
-              businessName={
-                listings.find((l) => l.id === (pickedVendorId ?? defaultVendorId))?.business_name ??
-                listings[0]?.business_name ??
-                null
-              }
-              expiresDate={!splitDeposit ? expiresDate : ""}
-              collectContact={collectContact}
-            />
-
-            <div className="flex gap-2">
-              <Button onClick={create} disabled={submitting} className="rounded-full">
-                {submitting ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                ) : null}
-                {splitDeposit ? "Create schedule" : "Create link"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setCreating(false);
-                  setTitle("");
-                  setAmountDollars("");
-                  setDescription("");
-                  setSplitDeposit(false);
-                  setDepositDollars("");
-                  setBalanceDueDate("");
-                  setExpiresDate("");
-                  setCollectContact(false);
-                }}
-                className="rounded-full"
-              >
-                Cancel
-              </Button>
             </div>
           </div>
         </Card>
