@@ -181,12 +181,13 @@ serve(async (req: Request) => {
               // re-writes the same booked state.
               const { data: inqRow } = await db
                 .from("inquiries")
-                .select("host_confirmed_booked_at, vendor_confirmed_booked_at")
+                .select("host_confirmed_booked_at, vendor_confirmed_booked_at, paid_booked_at")
                 .eq("id", lRow.inquiry_id)
                 .maybeSingle();
               const ir = inqRow as {
                 host_confirmed_booked_at?: string | null;
                 vendor_confirmed_booked_at?: string | null;
+                paid_booked_at?: string | null;
               } | null;
               await db
                 .from("inquiries")
@@ -194,6 +195,10 @@ serve(async (req: Request) => {
                   status: "won",
                   host_confirmed_booked_at: ir?.host_confirmed_booked_at ?? nowIso,
                   vendor_confirmed_booked_at: ir?.vendor_confirmed_booked_at ?? nowIso,
+                  // In-app purchase: unlocks reviews (host-readable signal
+                  // the reviews gate checks). Set once; refund won't clear
+                  // it, so a refunded host keeps the right to review.
+                  paid_booked_at: ir?.paid_booked_at ?? nowIso,
                   updated_at: nowIso,
                 })
                 .eq("id", lRow.inquiry_id);
