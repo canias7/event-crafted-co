@@ -1389,7 +1389,10 @@ export function MySpaceChat() {
                 />
               ) : null}
             </h2>
-            <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+            <p
+              className="text-sm font-bold max-w-md mb-6 leading-relaxed"
+              style={{ color: "#1a1208" }}
+            >
               Your AI knows your packages, calendar, and active inquiries.
               Ask about leads, draft replies, or describe an image to generate.
             </p>
