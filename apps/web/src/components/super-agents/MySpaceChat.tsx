@@ -49,6 +49,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { MemoryConstellation } from "@/components/super-agents/MemoryConstellation";
+import { VendoraMark } from "@/components/shared/VendoraLogo";
 import {
   Bar,
   BarChart,
@@ -1180,36 +1181,57 @@ export function MySpaceChat() {
 
         {showEmptyState ? (
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-center">
+            {/* Brand logo tile — amber gradient with the Vendora mark. */}
             <div
-              className="w-14 h-14 rounded-full inline-flex items-center justify-center mb-5"
+              className="w-20 h-20 rounded-[22px] inline-flex items-center justify-center mb-6"
               style={{
-                background: "rgba(255,138,76,0.18)",
-                color: "#c4541e",
+                background: "linear-gradient(150deg, #ffb066 0%, #ff8a4c 55%, #f2722f 100%)",
+                boxShadow: "0 12px 36px -12px rgba(255,138,76,0.55)",
               }}
             >
-              <Sparkles className="w-6 h-6" />
+              <VendoraMark size={40} color="#fffdfa" />
             </div>
-            <h2 className="font-editorial italic text-3xl mb-2">
-              What can I help with?
+            <h2
+              className="font-editorial tracking-tight text-4xl md:text-5xl leading-[1.04] mb-3"
+              style={{ color: "#2b2320" }}
+            >
+              Welcome to{" "}
+              <span
+                style={{
+                  background: "linear-gradient(120deg, #ff8a4c, #f2722f)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                My Space
+              </span>
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mb-8 leading-relaxed">
-              I know your packages, calendar, and active inquiries. Ask
-              about leads, draft replies, or describe an image to generate.
+              Your AI knows your packages, calendar, and active inquiries.
+              Ask about leads, draft replies, or describe an image to generate.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full max-w-2xl">
               {QUICK_PROMPTS.map((p) => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => send(p)}
                   disabled={sending}
-                  className="text-left text-sm rounded-xl px-4 py-3 transition-colors disabled:opacity-50"
+                  className="group flex items-center gap-2.5 text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
                   style={{
-                    background: "rgba(255,253,250,0.5)",
-                    border: "0.5px solid rgba(255,138,76,0.18)",
+                    background: "rgba(255,253,250,0.7)",
+                    border: "0.5px solid rgba(255,138,76,0.22)",
+                    boxShadow: "0 2px 10px -6px rgba(20,15,10,0.08)",
                   }}
                 >
-                  {p}
+                  <span
+                    className="shrink-0 w-7 h-7 rounded-lg inline-flex items-center justify-center transition-colors"
+                    style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="min-w-0">{p}</span>
                 </button>
               ))}
             </div>
