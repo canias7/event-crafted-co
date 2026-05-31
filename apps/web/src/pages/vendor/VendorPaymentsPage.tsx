@@ -3512,9 +3512,11 @@ function DocumentCanvas({
     "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
 
   // ── Editor view: narrower document on the left, list + send on the right ──
+  // Capped at max-w-5xl (~1024px) so the whole composer (document +
+  // sidebar) is ~33% narrower than the full max-w-screen-2xl tab width.
   if (editingId !== null) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start max-w-5xl">
         {/* Document (reduced width so the sidebar fits beside it) */}
         <Card>
           <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3">
