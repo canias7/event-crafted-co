@@ -434,11 +434,11 @@ export default function VendorInboxPage() {
           </div>
 
           {loading ? (
-            <div className="bg-card rounded-2xl card-shadow p-12 text-center text-muted-foreground">
+            <div className="glass-card p-12 text-center text-muted-foreground">
               Loading conversations…
             </div>
           ) : filteredRows.length === 0 ? (
-            <div className="bg-card rounded-2xl card-shadow py-20 text-center">
+            <div className="glass-card py-20 text-center">
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                 <Inbox className="w-5 h-5 text-muted-foreground" />
               </div>

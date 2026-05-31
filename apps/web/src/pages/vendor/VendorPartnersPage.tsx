@@ -843,7 +843,7 @@ export default function VendorPartnersPage() {
                 ))}
               </div>
             ) : threads.length === 0 ? (
-              <div className="bg-card rounded-2xl card-shadow py-12 px-6 text-center">
+              <div className="glass-card py-12 px-6 text-center">
                 <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                   <MessageSquare className="w-5 h-5 text-muted-foreground" />
                 </div>
