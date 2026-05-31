@@ -3336,6 +3336,8 @@ function DocumentCanvas({
   const [sendEmail, setSendEmail] = useState("");
   const [sending, setSending] = useState(false);
   const initialRef = useRef({ name: "", body: "" });
+  // Land directly in the composer instead of a bare list.
+  const autoOpenedRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!templateVendorId) {
@@ -3394,6 +3396,17 @@ function DocumentCanvas({
       cancelled = true;
     };
   }, [load]);
+
+  // Open the composer on landing: the default template (or a blank new
+  // one if none yet) so the vendor sees the editable document right away,
+  // not just a list. The ref keeps "back to list" from re-opening it.
+  useEffect(() => {
+    if (!loaded || autoOpenedRef.current) return;
+    autoOpenedRef.current = true;
+    if (rows.length > 0) openEdit(rows[0]);
+    else openNew();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, rows]);
 
   function openNew() {
     setName("");

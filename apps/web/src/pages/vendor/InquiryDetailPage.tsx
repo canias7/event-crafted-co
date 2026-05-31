@@ -1396,7 +1396,7 @@ export default function InquiryDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Unified send menu — Invoice / Pay link / Proposal / Contract
                 from the vendor's saved Files items, dropped into the thread. */}
-            <ChatSendPicker vendorId={inquiry.vendor_id} onSend={sendBody} />
+            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
