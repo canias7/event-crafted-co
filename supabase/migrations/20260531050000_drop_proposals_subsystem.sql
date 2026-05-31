@@ -143,10 +143,10 @@ drop function if exists public.get_proposal_by_share_token(text);
 drop function if exists public.mark_proposal_viewed(uuid);
 drop function if exists public.toggle_proposal_share(uuid, boolean);
 
--- ── 4. Take proposals out of the realtime publication, then drop ────
--- (DROP TABLE auto-removes publication membership, but be explicit.)
-alter publication supabase_realtime drop table public.proposals;
-
+-- ── 4. Drop the tables ──────────────────────────────────────────────
+-- DROP TABLE automatically removes the table from the supabase_realtime
+-- publication, so no explicit ALTER PUBLICATION is needed (and an explicit
+-- one would ERROR if the table weren't a member — avoided).
 -- CASCADE drops the 3 triggers on proposals + their functions
 -- (accept_proposal_side_effects, proposals_protect_vendorapay_fields,
 -- tg_proposals_update_guard) and any remaining dependents.
