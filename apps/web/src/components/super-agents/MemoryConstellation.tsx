@@ -17,6 +17,7 @@ import {
   Loader2,
   MessageSquareQuote,
   Pencil,
+  Plus,
   ScrollText,
   Sparkles,
   Trash2,
@@ -26,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { VendoraMark } from "@/components/shared/VendoraLogo";
 
 const CATEGORIES = [
   { key: "pricing", label: "Pricing", icon: BadgeDollarSign, color: "#ffc14d" },
@@ -90,6 +92,8 @@ export function MemoryConstellation({
   const [entries, setEntries] = useState<KnowledgeEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<KnowledgeEntry | null>(null);
+  // Vendor logo shown in the central hub (falls back to the brand mark).
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   // Add / edit form state.
   const [adding, setAdding] = useState(false);
@@ -142,6 +146,24 @@ export function MemoryConstellation({
   useEffect(() => {
     if (open) void load();
   }, [open, load]);
+
+  // Pull the vendor's logo for the central hub. Best-effort.
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vendor_profiles")
+        .select("logo_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setLogoUrl((data as { logo_url?: string | null } | null)?.logo_url ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id]);
 
   // Esc closes whatever's topmost (detail → add → overlay).
   useEffect(() => {
@@ -338,17 +360,25 @@ export function MemoryConstellation({
             : null}
         </svg>
 
-        {/* Central hub. */}
+        {/* Central hub — the vendor's logo (falls back to brand mark). */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
           <div
-            className="w-16 h-16 rounded-full inline-flex items-center justify-center"
+            className="w-16 h-16 rounded-full inline-flex items-center justify-center overflow-hidden"
             style={{
-              background: "rgba(255,255,255,0.06)",
+              background: logoUrl ? "#fff" : "rgba(255,255,255,0.06)",
               border: "1px solid rgba(255,255,255,0.16)",
-              boxShadow: "0 0 40px rgba(255,138,76,0.18)",
+              boxShadow: "0 0 40px rgba(255,138,76,0.22)",
             }}
           >
-            <Sparkles className="w-6 h-6 text-white/80" />
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Your logo"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <VendoraMark size={30} color="#ff8a4c" />
+            )}
           </div>
         </div>
 
@@ -406,25 +436,27 @@ export function MemoryConstellation({
               const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
               const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
               return (
-                <div
+                <button
                   key={id}
-                  aria-hidden
-                  className="absolute z-10 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  title="Add a memory"
+                  className="group absolute z-10 -translate-x-1/2 -translate-y-1/2"
                   style={{
                     left: `calc(50% + ${rx}vmin)`,
                     top: `calc(50% + ${ry}vmin)`,
                   }}
                 >
                   <span
-                    className="w-8 h-8 rounded-full inline-flex items-center justify-center"
+                    className="w-8 h-8 rounded-full inline-flex items-center justify-center transition-all group-hover:scale-110"
                     style={{
                       background: "rgba(255,255,255,0.03)",
                       border: "1px solid rgba(255,255,255,0.10)",
                     }}
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-white/15" />
+                    <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-[#ff8a4c] transition-colors" />
                   </span>
-                </div>
+                </button>
               );
             })
           : null}
