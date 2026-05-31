@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Edit3, Plus, Share2 } from "lucide-react";
+import { CheckCircle2, Edit3, Plus, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -320,8 +320,9 @@ function HeaderCard({
               className="w-24 h-24 rounded-full object-cover bg-secondary"
             />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-4xl">
-              {initials}
+            // Neutral person silhouette default (no logo set).
+            <div className="w-24 h-24 rounded-full bg-[#e5e1da] flex items-center justify-center">
+              <User className="w-12 h-12" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
             </div>
           )}
           {verified ? (

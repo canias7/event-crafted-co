@@ -4,7 +4,7 @@
 // / ripple count there once and both surfaces update together.
 
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
@@ -80,7 +80,6 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
     row.brand?.business_name?.trim() ||
     "Vendor";
   const bio = row.bio?.trim() || row.brand?.bio?.trim() || null;
-  const initial = businessName[0]?.toUpperCase() ?? "V";
   const memberSinceYear = row.created_at
     ? String(new Date(row.created_at).getFullYear())
     : null;
@@ -100,13 +99,13 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
               style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             />
           ) : (
+            // Neutral person silhouette when no logo is set — soft gray
+            // placeholder (Google/Twitter style) instead of an initial.
             <div
-              className="w-[110px] h-[110px] rounded-[20px] bg-[#0a0a0a] flex items-center justify-center"
+              className="w-[110px] h-[110px] rounded-[20px] bg-[#e5e1da] flex items-center justify-center"
               style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             >
-              <span className="font-editorial text-[#ffffff] text-6xl leading-none">
-                {initial}
-              </span>
+              <User className="w-14 h-14" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
             </div>
           )}
           {/* KYC verified mark (bottom-right) — admin-verified vendor. */}
