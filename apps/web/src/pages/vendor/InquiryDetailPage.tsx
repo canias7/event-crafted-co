@@ -62,6 +62,7 @@ import {
   type Proposal,
 } from "@/components/proposals/ProposalCard";
 import { ProposalShareToggle } from "@/components/proposals/ProposalShareToggle";
+import { ChatSendPicker } from "@/components/proposals/ChatSendPicker";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import {
   uploadAttachments,
@@ -1448,14 +1449,9 @@ export default function InquiryDetailPage() {
               tap that either opens a focused modal or drops a templated
               body into the thread. */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setProposalModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
-            >
-              <FileText className="w-3.5 h-3.5 text-foreground/70" />
-              Send quote
-            </button>
+            {/* Unified send menu — Invoice / Pay link / Proposal / Contract
+                from the vendor's saved Files items, dropped into the thread. */}
+            <ChatSendPicker vendorId={inquiry.vendor_id} onSend={sendBody} />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
