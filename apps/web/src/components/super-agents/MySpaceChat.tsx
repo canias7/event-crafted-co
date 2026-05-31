@@ -900,6 +900,119 @@ export function MySpaceChat() {
   const showEmptyState = !currentThreadId && messages.length === 0 &&
     !messagesLoading;
 
+  // Composer inner content (attachment chips + input row + footnote),
+  // shared between the bottom-docked composer (active chat) and the
+  // centered composer that sits under the welcome hero (empty state).
+  const composerInner = (
+    <>
+      {pendingAttachments.length > 0 || uploadingCount > 0
+        ? (
+          <div className="flex flex-wrap items-center gap-2 mb-2 px-1">
+            {pendingAttachments.map((a, i) => (
+              <AttachmentChip
+                key={a.url}
+                att={a}
+                onRemove={() =>
+                  setPendingAttachments((prev) =>
+                    prev.filter((_, idx) => idx !== i)
+                  )}
+              />
+            ))}
+            {uploadingCount > 0
+              ? (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground px-2 py-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Uploading {uploadingCount}…
+                </span>
+              )
+              : null}
+          </div>
+        )
+        : null}
+      <div className="flex items-end gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,application/pdf,text/*"
+          hidden
+          onChange={(e) => {
+            void onPickFiles(e.target.files);
+            if (e.target) e.target.value = "";
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sending || pendingAttachments.length >= 5}
+          className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-40 transition-colors"
+          aria-label="Attach file"
+          title="Attach an image or PDF (max 5)"
+        >
+          <Paperclip className="w-4 h-4" />
+        </button>
+        {speechSupported
+          ? (
+            <button
+              type="button"
+              onClick={voiceRecording ? stopVoice : startVoice}
+              disabled={sending}
+              className={`shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors disabled:opacity-40 ${
+                voiceRecording
+                  ? "bg-red-500/15 text-red-600"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              }`}
+              aria-label={voiceRecording ? "Stop voice" : "Start voice"}
+              title={voiceRecording ? "Tap to stop" : "Voice input"}
+            >
+              {voiceRecording
+                ? <MicOff className="w-4 h-4" />
+                : <Mic className="w-4 h-4" />}
+            </button>
+          )
+          : null}
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          rows={1}
+          placeholder="Ask My Space anything — or describe an image to generate"
+          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2"
+          disabled={sending}
+        />
+        {sending
+          ? (
+            <button
+              type="button"
+              onClick={() => abortRef.current?.abort()}
+              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background transition-opacity"
+              aria-label="Stop"
+              title="Stop generating"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" />
+            </button>
+          )
+          : (
+            <button
+              type="button"
+              onClick={() => void send()}
+              disabled={(!input.trim() &&
+                pendingAttachments.length === 0) ||
+                uploadingCount > 0}
+              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
+              aria-label="Send"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          )}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1.5 px-2">
+        Text uses Claude Sonnet · Images use OpenAI gpt-image-2
+      </p>
+    </>
+  );
+
   return (
     <>
     <MemoryConstellation open={memoryOpen} onClose={() => setMemoryOpen(false)} />
@@ -1207,10 +1320,22 @@ export function MySpaceChat() {
                 My Space
               </span>
             </h2>
-            <p className="text-sm text-muted-foreground max-w-md mb-8 leading-relaxed">
+            <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
               Your AI knows your packages, calendar, and active inquiries.
               Ask about leads, draft replies, or describe an image to generate.
             </p>
+            {/* Centered composer — sits right under the welcome hero
+                (the bottom-docked composer is hidden in this state). */}
+            <div
+              className="w-full max-w-2xl rounded-2xl px-3 md:px-4 py-3 mb-7"
+              style={{
+                background: "rgba(255,253,250,0.85)",
+                border: "0.5px solid rgba(255,138,76,0.28)",
+                boxShadow: "0 10px 36px -14px rgba(20,15,10,0.12)",
+              }}
+            >
+              {composerInner}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 w-full max-w-2xl">
               {QUICK_PROMPTS.map((p) => (
                 <button
@@ -1288,117 +1413,16 @@ export function MySpaceChat() {
           </div>
         )}
 
-        {/* Composer */}
-        <div
-          className="border-t px-3 md:px-4 py-3"
-          style={{ borderColor: "rgba(255,138,76,0.18)" }}
-        >
-          {pendingAttachments.length > 0 || uploadingCount > 0
-            ? (
-              <div className="flex flex-wrap items-center gap-2 mb-2 px-1">
-                {pendingAttachments.map((a, i) => (
-                  <AttachmentChip
-                    key={a.url}
-                    att={a}
-                    onRemove={() =>
-                      setPendingAttachments((prev) =>
-                        prev.filter((_, idx) => idx !== i)
-                      )}
-                  />
-                ))}
-                {uploadingCount > 0
-                  ? (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground px-2 py-1">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Uploading {uploadingCount}…
-                    </span>
-                  )
-                  : null}
-              </div>
-            )
-            : null}
-          <div className="flex items-end gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,application/pdf,text/*"
-              hidden
-              onChange={(e) => {
-                void onPickFiles(e.target.files);
-                if (e.target) e.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={sending || pendingAttachments.length >= 5}
-              className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-40 transition-colors"
-              aria-label="Attach file"
-              title="Attach an image or PDF (max 5)"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-            {speechSupported
-              ? (
-                <button
-                  type="button"
-                  onClick={voiceRecording ? stopVoice : startVoice}
-                  disabled={sending}
-                  className={`shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors disabled:opacity-40 ${
-                    voiceRecording
-                      ? "bg-red-500/15 text-red-600"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                  }`}
-                  aria-label={voiceRecording ? "Stop voice" : "Start voice"}
-                  title={voiceRecording ? "Tap to stop" : "Voice input"}
-                >
-                  {voiceRecording
-                    ? <MicOff className="w-4 h-4" />
-                    : <Mic className="w-4 h-4" />}
-                </button>
-              )
-              : null}
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              rows={1}
-              placeholder="Ask My Space anything — or describe an image to generate"
-              className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2"
-              disabled={sending}
-            />
-            {sending
-              ? (
-                <button
-                  type="button"
-                  onClick={() => abortRef.current?.abort()}
-                  className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background transition-opacity"
-                  aria-label="Stop"
-                  title="Stop generating"
-                >
-                  <Square className="w-3.5 h-3.5 fill-current" />
-                </button>
-              )
-              : (
-                <button
-                  type="button"
-                  onClick={() => void send()}
-                  disabled={(!input.trim() &&
-                    pendingAttachments.length === 0) ||
-                    uploadingCount > 0}
-                  className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground text-background disabled:opacity-40 transition-opacity"
-                  aria-label="Send"
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </button>
-              )}
+        {/* Bottom-docked composer — hidden on the welcome state,
+            where a centered composer sits under the hero instead. */}
+        {showEmptyState ? null : (
+          <div
+            className="border-t px-3 md:px-4 py-3"
+            style={{ borderColor: "rgba(255,138,76,0.18)" }}
+          >
+            {composerInner}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1.5 px-2">
-            Text uses Claude Sonnet · Images use OpenAI gpt-image-2
-          </p>
-        </div>
+        )}
       </div>
     </div>
     </>
