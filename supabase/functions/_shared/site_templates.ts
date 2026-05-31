@@ -311,7 +311,10 @@ function paperTextureCss(t: Theme): string {
 // entry here. `slice` is the border-image slice in source px (how far the
 // ornament reaches from each edge); `width` is the rendered band width.
 // `desc` is the vibe hint Claude uses to pick a fitting frame per event.
-export type FrameId = "gold-baroque";
+export type FrameId =
+  | "gold-baroque" | "garden-botanical" | "art-deco"
+  | "rustic-kraft" | "baby-pastel" | "minimalist-line" | "tropical-palm"
+  | "holiday-evergreen" | "celestial-gold" | "romantic-blush";
 
 export interface FrameDef {
   id: FrameId;
@@ -328,6 +331,69 @@ export const FRAMES: Record<FrameId, FrameDef> = {
     slice: 132,
     width: 34,
     desc: "ornate antique gold baroque frame — formal, luxurious; weddings, galas, anniversaries, black-tie",
+  },
+  "garden-botanical": {
+    id: "garden-botanical",
+    url: "https://eventvendora.com/frames/garden-botanical.png",
+    slice: 150,
+    width: 38,
+    desc: "soft watercolor eucalyptus-and-blush-floral frame — airy, romantic; garden weddings, bridal/baby showers, spring/outdoor events",
+  },
+  "art-deco": {
+    id: "art-deco",
+    url: "https://eventvendora.com/frames/art-deco.png",
+    slice: 150,
+    width: 34,
+    desc: "gold geometric Art Deco / Gatsby frame — glamorous, 1920s; galas, NYE, cocktail parties, milestone birthdays, black-tie",
+  },
+  "rustic-kraft": {
+    id: "rustic-kraft",
+    url: "https://eventvendora.com/frames/rustic-kraft.png",
+    slice: 150,
+    width: 36,
+    desc: "rustic twine, dried wheat, lavender + wildflowers — cottagecore, casual; barn/backyard weddings, BBQ, housewarming, rehearsal dinners",
+  },
+  "baby-pastel": {
+    id: "baby-pastel",
+    url: "https://eventvendora.com/frames/baby-pastel.png",
+    slice: 150,
+    width: 38,
+    desc: "soft pastel clouds, stars, moons + balloons — sweet, playful; baby showers, gender reveals, kids birthdays, christenings",
+  },
+  "minimalist-line": {
+    id: "minimalist-line",
+    url: "https://eventvendora.com/frames/minimalist-line.png",
+    slice: 120,
+    width: 26,
+    desc: "ultra-minimal thin gold double-line with small geometric corners — modern, clean; corporate, fundraisers, modern/minimalist events",
+  },
+  "tropical-palm": {
+    id: "tropical-palm",
+    url: "https://eventvendora.com/frames/tropical-palm.png",
+    slice: 150,
+    width: 40,
+    desc: "lush monstera + palm leaves with hibiscus — vibrant, beachy; destination weddings, beach parties, tropical/summer events",
+  },
+  "holiday-evergreen": {
+    id: "holiday-evergreen",
+    url: "https://eventvendora.com/frames/holiday-evergreen.png",
+    slice: 150,
+    width: 40,
+    desc: "evergreen pine, holly berries, pinecones + gold ribbon — festive; Christmas parties, winter holiday events, NYE",
+  },
+  "celestial-gold": {
+    id: "celestial-gold",
+    url: "https://eventvendora.com/frames/celestial-gold.png",
+    slice: 150,
+    width: 34,
+    desc: "gold constellations, stars + crescent moons — mystical, dreamy; NYE, evening galas, star-themed or twilight events",
+  },
+  "romantic-blush": {
+    id: "romantic-blush",
+    url: "https://eventvendora.com/frames/romantic-blush.png",
+    slice: 150,
+    width: 40,
+    desc: "lush blush roses, peonies + eucalyptus garlands — soft, romantic; classic weddings, engagements, vow renewals, bridal showers",
   },
 };
 
