@@ -8725,39 +8725,9 @@ function SettingsTab({
         </h2>
         <div className="space-y-4">
           <SettingRow
-            label="Statement descriptor"
-            value="VENDORAPAY"
-            sub="What your customers see on their card statement."
-          />
-          <SettingRow
             label={tierLoading ? "Your fee" : `Your fee (${tier} plan)`}
             value={tierLoading ? "—" : fee.rate}
             sub={tierLoading ? "Loading your subscription tier…" : `${fee.vendoraCut}. ${fee.sub}`}
-          />
-          <SettingRow
-            label="Payout cadence"
-            value="Standard (2 business days)"
-            sub="Funds settle to your bank 2 business days after each charge clears. Faster options are coming."
-          />
-          <SettingRow
-            label="Currency"
-            value="USD"
-            sub="VendoraPay charges and pays out in US dollars."
-          />
-          <SettingRow
-            label="Account status"
-            value={
-              !status
-                ? "—"
-                : !status.onboarded
-                  ? "Not connected"
-                  : !status.details_submitted
-                    ? "KYC incomplete"
-                    : !status.charges_enabled
-                      ? "Review pending"
-                      : "Active"
-            }
-            sub="Verification + capability state from the payments processor."
           />
         </div>
       </section>
