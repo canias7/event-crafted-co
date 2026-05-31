@@ -1453,8 +1453,14 @@ function OverviewRevenueChart({
     <div
       className="rounded-2xl px-7 pt-6 pb-5"
       style={{
-        background: "linear-gradient(135deg, #fdf0ea, #fbe4dc)",
-        boxShadow: "0 18px 40px -20px rgba(217,79,61,0.35)",
+        // Match the other Overview cards: same glassy translucent fill,
+        // amber hairline border, blur, and soft shadow.
+        background: "rgba(255, 250, 245, 0.52)",
+        border: "0.5px solid rgba(255, 138, 76, 0.18)",
+        backdropFilter: "blur(20px) saturate(140%)",
+        WebkitBackdropFilter: "blur(20px) saturate(140%)",
+        boxShadow:
+          "0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14)",
       }}
     >
       <div className="flex items-end justify-between mb-4">
