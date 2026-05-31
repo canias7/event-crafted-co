@@ -8512,7 +8512,6 @@ function SettingsTab({
   // selecting any other listing triggers a per-account vendorapay-
   // status fetch.
   const primaryId = accountVendorIds[0] ?? null;
-  const fee = TIER_FEE_COPY[tier];
   const [connectedIds, setConnectedIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(primaryId);
   const [localStatus, setLocalStatus] = useState<Status | null>(primaryStatus);
@@ -8769,19 +8768,6 @@ function SettingsTab({
           </Card>
         </div>
       </section>
-
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Account
-        </h2>
-        <div className="space-y-4">
-          <SettingRow
-            label={tierLoading ? "Your fee" : `Your fee (${tier} plan)`}
-            value={tierLoading ? "—" : fee.rate}
-            sub={tierLoading ? "Loading your subscription tier…" : `${fee.vendoraCut}. ${fee.sub}`}
-          />
-        </div>
-      </section>
     </div>
   );
 }
@@ -8876,22 +8862,6 @@ function ListingPickerField({
   );
 }
 
-
-function SettingRow({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <Card>
-      <div className="p-5 flex items-start gap-4 flex-wrap">
-        <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-            {label}
-          </div>
-          <div className="text-base font-medium mt-1">{value}</div>
-        </div>
-        <div className="text-xs text-muted-foreground max-w-md">{sub}</div>
-      </div>
-    </Card>
-  );
-}
 
 function TransactionRow({ tx, showBorder }: { tx: Transaction; showBorder: boolean }) {
   const meta = kindLabel(tx.kind);
