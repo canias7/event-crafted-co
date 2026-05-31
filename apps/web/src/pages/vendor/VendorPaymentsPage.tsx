@@ -890,43 +890,11 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             </section>
           ) : null}
 
-          {/* Inline banner when the vendor has no listing yet. Skips
-              the "set up profile" step — the connect handler will
-              auto-create a draft vendor_profile on the server so the
-              user can jump straight to Stripe Express. */}
-          {!vendorId && !loading ? (
-            <section
-              className="rounded-2xl p-5"
-              style={{
-                background: "linear-gradient(135deg, rgba(255,138,76,0.1), rgba(217,119,87,0.08))",
-                border: "0.5px solid rgba(255,138,76,0.3)",
-              }}
-            >
-              <div className="flex items-start gap-4 flex-wrap">
-                <div
-                  className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                  style={{ background: "rgba(255,138,76,0.18)" }}
-                >
-                  <CreditCard className="w-5 h-5" style={{ color: "#c4541e" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-semibold">Connect VendoraPay to start accepting payments</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Verify your identity + bank account with Stripe (3 min).
-                    No need to finish your full vendor profile first.
-                  </p>
-                </div>
-                <Button onClick={handleConnect} disabled={connecting} className="rounded-full">
-                  {connecting ? (
-                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                  ) : (
-                    <ExternalLink className="w-4 h-4 mr-1.5" />
-                  )}
-                  Connect VendoraPay
-                </Button>
-              </div>
-            </section>
-          ) : null}
+          {/* The "Connect VendoraPay" prompt that used to live here
+              (shown on every tab whenever the vendor had no connected
+              account) was removed — it'll be placed on a specific
+              surface instead. handleConnect / connecting are still used
+              by the Settings tab's connect action. */}
 
           {loading ? (
             <div className="flex items-center justify-center py-20">
