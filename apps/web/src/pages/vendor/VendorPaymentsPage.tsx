@@ -7398,15 +7398,15 @@ function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
   );
 }
 
-// Stripe-style form primitives for the pay-link creator.
+// Stripe-style form primitives for the pay-link creator. Uses explicit
+// slate/indigo so it reads like Stripe's own creator (not the app's cream
+// design tokens) — matching the dashboard screenshot the user referenced.
 const STRIPE_INPUT =
-  "w-full rounded-lg border-0 px-3 py-2 text-sm bg-background ring-1 ring-foreground/15 focus:ring-2 focus:ring-foreground/40 outline-none transition-shadow";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 bg-white shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none transition";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
-      {children}
-    </div>
+    <div className="text-sm font-semibold text-slate-900">{children}</div>
   );
 }
 
@@ -7421,17 +7421,17 @@ function FieldRow({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium text-foreground/70 mb-1 inline-flex items-center gap-1.5">
+      <span className="text-[13px] font-medium text-slate-700 mb-1.5 inline-flex items-center gap-1.5">
         {label}
-        {optional ? <span className="text-[10px] text-muted-foreground font-normal">optional</span> : null}
+        {optional ? <span className="text-[11px] text-slate-400 font-normal">Optional</span> : null}
       </span>
       {children}
     </label>
   );
 }
 
-// A Stripe-style toggle row: full-width clickable row with title + hint
-// and a checkbox on the right. Lives inside a ringed, divided container.
+// Stripe-style option row: full-width clickable row, checkbox left, title +
+// hint. Indigo checkbox accent. Lives inside a gray-ringed, divided box.
 function OptionRow({
   checked,
   onChange,
@@ -7444,26 +7444,23 @@ function OptionRow({
   hint: string;
 }) {
   return (
-    <label
-      className="flex items-start gap-3 px-3.5 py-3 cursor-pointer hover:bg-foreground/[0.03] transition-colors"
-    >
+    <label className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="rounded mt-0.5 shrink-0"
+        className="mt-0.5 shrink-0 h-4 w-4 rounded border-slate-300 text-indigo-600 accent-indigo-600 focus:ring-indigo-500"
       />
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-foreground">{title}</span>
-        <span className="block text-[11px] text-muted-foreground mt-0.5">{hint}</span>
+        <span className="block text-sm font-medium text-slate-900">{title}</span>
+        <span className="block text-[12px] text-slate-500 mt-0.5">{hint}</span>
       </span>
     </label>
   );
 }
 
-// Live preview of the host-facing /pay/link page, mirroring its layout
-// (brand row → amount-due card → contact-collection hint). Updates as the
-// vendor fills the form so they see what they're sending before creating.
+// Live preview of the host-facing /pay/link page, framed in Stripe-style
+// browser chrome (buy.stripe.com bar) so it mirrors the dashboard preview.
 function PayLinkPreview({
   title,
   amountDollars,
@@ -7484,34 +7481,60 @@ function PayLinkPreview({
     ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
     : "$0.00";
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{ background: "rgba(255,253,250,0.9)", border: "0.5px solid rgba(255,138,76,0.22)" }}
-    >
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-full bg-foreground/5 inline-flex items-center justify-center">
-            <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+      {/* Browser chrome bar */}
+      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 border-b border-slate-200">
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+        <div className="flex-1 mx-2">
+          <div className="rounded bg-white border border-slate-200 text-[10px] text-slate-400 px-2 py-0.5 text-center truncate">
+            🔒 buy.stripe.com
+          </div>
+        </div>
+      </div>
+      {/* Payment page body */}
+      <div className="p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-7 h-7 rounded-full bg-slate-100 inline-flex items-center justify-center">
+            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-semibold truncate">{businessName || "VendoraPay"}</div>
-            <div className="text-[9px] text-muted-foreground">Powered by VendoraPay</div>
+            <div className="text-[13px] font-semibold text-slate-900 truncate">{businessName || "VendoraPay"}</div>
           </div>
         </div>
-        <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-          Amount due
+        <div className="text-[11px] text-slate-500 font-medium">
+          {title.trim() || "Payment"}
         </div>
-        <div className="text-2xl font-editorial mt-0.5">{amountLabel}</div>
-        <div className="text-xs mt-1.5">{title.trim() || "Untitled charge"}</div>
+        <div className="text-3xl font-semibold text-slate-900 mt-1 tracking-tight">{amountLabel}</div>
         {description.trim() ? (
-          <p className="text-[11px] text-muted-foreground mt-1 whitespace-pre-wrap">{description.trim()}</p>
+          <p className="text-[12px] text-slate-500 mt-2 whitespace-pre-wrap">{description.trim()}</p>
         ) : null}
-        {collectContact ? (
-          <p className="text-[10px] text-muted-foreground mt-2">+ asks for the host's name &amp; phone</p>
-        ) : null}
+
+        {/* Faux contact + card fields, mirroring the real checkout */}
+        <div className="mt-4 space-y-2">
+          {collectContact ? (
+            <>
+              <div className="h-8 rounded-md border border-slate-200 bg-white px-2.5 flex items-center text-[11px] text-slate-400">Full name</div>
+              <div className="h-8 rounded-md border border-slate-200 bg-white px-2.5 flex items-center text-[11px] text-slate-400">Phone</div>
+            </>
+          ) : null}
+          <div className="h-8 rounded-md border border-slate-200 bg-white px-2.5 flex items-center text-[11px] text-slate-400">
+            <span className="mr-2">💳</span>Card number
+          </div>
+          <button
+            type="button"
+            disabled
+            className="w-full h-9 rounded-md bg-indigo-600 text-white text-[13px] font-medium mt-1"
+          >
+            Pay {amountLabel}
+          </button>
+        </div>
+
         {expiresDate ? (
-          <p className="text-[10px] text-muted-foreground mt-1">Expires {expiresDate}</p>
+          <p className="text-[11px] text-slate-400 mt-3">Link expires {expiresDate}</p>
         ) : null}
+        <p className="text-[10px] text-slate-300 text-center mt-3">Powered by Stripe</p>
       </div>
     </div>
   );
@@ -7744,15 +7767,16 @@ function PayLinksTab({
 
   return (
     <div className="space-y-4">
-      {/* Create form — Stripe-style two-column: fields left, live preview right */}
+      {/* Create form — Stripe-style: white surface, slate text, indigo CTA,
+          two columns (fields left, browser-framed preview right). */}
       {creating ? (
-        <Card>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="p-5 md:p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-semibold">Create a pay link</h3>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">Create a payment link</h3>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
                   onClick={() => {
                     setCreating(false);
                     setTitle("");
@@ -7764,18 +7788,23 @@ function PayLinksTab({
                     setExpiresDate("");
                     setCollectContact(false);
                   }}
-                  className="rounded-full h-9 px-4 text-sm"
+                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   Cancel
-                </Button>
-                <Button onClick={create} disabled={submitting} className="rounded-full h-9 px-4 text-sm">
+                </button>
+                <button
+                  type="button"
+                  onClick={create}
+                  disabled={submitting}
+                  className="inline-flex items-center rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium h-9 px-4 transition-colors"
+                >
                   {submitting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
                   {splitDeposit ? "Create schedule" : "Create link"}
-                </Button>
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* ── Left: form fields ─────────────────────────── */}
               <div className="space-y-5">
                 {/* Charge details */}
@@ -7792,7 +7821,7 @@ function PayLinksTab({
                   </FieldRow>
                   <FieldRow label="Amount">
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -7819,7 +7848,7 @@ function PayLinksTab({
                 {/* Options */}
                 <section className="space-y-3">
                   <SectionLabel>Options</SectionLabel>
-                  <div className="rounded-xl ring-1 ring-foreground/10 divide-y divide-foreground/10 overflow-hidden">
+                  <div className="rounded-lg border border-slate-200 divide-y divide-slate-200 overflow-hidden">
                     <OptionRow
                       checked={splitDeposit}
                       onChange={setSplitDeposit}
@@ -7835,10 +7864,10 @@ function PayLinksTab({
                   </div>
 
                   {splitDeposit ? (
-                    <div className="space-y-2 rounded-xl p-3" style={{ background: "rgba(255,138,76,0.06)" }}>
+                    <div className="space-y-2 rounded-lg p-3 bg-slate-50 border border-slate-200">
                       <FieldRow label="Deposit (host pays now)">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                           <input
                             type="number"
                             inputMode="decimal"
@@ -7860,7 +7889,7 @@ function PayLinksTab({
                           className={STRIPE_INPUT}
                         />
                       </FieldRow>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-slate-500">
                         The balance link emails the host a reminder on the due date.
                       </p>
                     </div>
@@ -7881,7 +7910,7 @@ function PayLinksTab({
               {/* ── Right: sticky preview ─────────────────────── */}
               <div className="lg:sticky lg:top-4 self-start">
                 <SectionLabel>Preview</SectionLabel>
-                <div className="mt-3">
+                <div className="mt-3 max-w-sm">
                   <PayLinkPreview
                     title={title}
                     amountDollars={amountDollars}
@@ -7898,7 +7927,7 @@ function PayLinksTab({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       ) : (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
