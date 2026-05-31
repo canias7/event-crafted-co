@@ -180,6 +180,96 @@ export function MemoryConstellation({
 
   const nodes = useMemo(() => layout(entries ?? []), [entries]);
 
+  // ── Long-press drag ──────────────────────────────────────────────
+  // Per-node position overrides (in vmin offsets from canvas center).
+  // Once a node is dragged it stays where it's dropped and its orbit
+  // drift is frozen. Positions reset when the overlay is reopened.
+  const [overrides, setOverrides] = useState<Record<string, { rx: number; ry: number }>>({});
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const pressTimer = useRef<number | null>(null);
+  const movedRef = useRef(false);
+  // vmin in px — needed to convert pointer pixels → vmin offsets.
+  const vminPx = () =>
+    Math.min(window.innerWidth, window.innerHeight) / 100 || 1;
+
+  // Resting orbit position (vmin offset) for a node at time t.
+  const orbitPos = useCallback(
+    (angle: number, ring: number, driftPhase: number) => {
+      const drift = Math.sin(t * 0.5 + driftPhase) * 10;
+      return {
+        rx: Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38,
+        ry: Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38,
+      };
+    },
+    [t],
+  );
+
+  const posFor = useCallback(
+    (id: string, angle: number, ring: number, driftPhase: number) =>
+      overrides[id] ?? orbitPos(angle, ring, driftPhase),
+    [overrides, orbitPos],
+  );
+
+  // Pointer → vmin offset from canvas center.
+  const pointerToVmin = useCallback((clientX: number, clientY: number) => {
+    const el = canvasRef.current;
+    const rect = el?.getBoundingClientRect();
+    const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+    const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+    const u = vminPx();
+    return { rx: (clientX - cx) / u, ry: (clientY - cy) / u };
+  }, []);
+
+  // Begin a long-press: after the hold delay, enter drag mode for this
+  // node. A move before the timer fires cancels it (treated as a tap →
+  // opens detail via onClick).
+  const startPress = (id: string, e: React.PointerEvent) => {
+    movedRef.current = false;
+    const pointerId = e.pointerId;
+    const target = e.currentTarget as HTMLElement;
+    if (pressTimer.current) window.clearTimeout(pressTimer.current);
+    pressTimer.current = window.setTimeout(() => {
+      setDraggingId(id);
+      try {
+        target.setPointerCapture(pointerId);
+      } catch {
+        /* capture best-effort */
+      }
+      if (navigator.vibrate) navigator.vibrate(8);
+    }, 320);
+  };
+
+  const onPressMove = (id: string, e: React.PointerEvent) => {
+    if (draggingId !== id) {
+      // Moved before long-press fired — cancel the would-be drag.
+      if (pressTimer.current) {
+        window.clearTimeout(pressTimer.current);
+        pressTimer.current = null;
+      }
+      return;
+    }
+    movedRef.current = true;
+    const { rx, ry } = pointerToVmin(e.clientX, e.clientY);
+    setOverrides((prev) => ({ ...prev, [id]: { rx, ry } }));
+  };
+
+  const endPress = () => {
+    if (pressTimer.current) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    setDraggingId(null);
+  };
+
+  // Reset positions whenever the overlay closes so it re-springs fresh.
+  useEffect(() => {
+    if (!open) {
+      setOverrides({});
+      setDraggingId(null);
+    }
+  }, [open]);
+
   const handleAdd = async () => {
     if (!user?.id) return;
     const content = addText.trim();
@@ -318,13 +408,11 @@ export function MemoryConstellation({
       </div>
 
       {/* Constellation canvas. */}
-      <div className="absolute inset-0">
+      <div ref={canvasRef} className="absolute inset-0">
         {/* SVG layer for the connecting lines (behind the node chips). */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
           {nodes.map(({ entry, angle, ring, driftPhase }) => {
-            const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-            const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-            const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+            const { rx, ry } = posFor(entry.id, angle, ring, driftPhase);
             const x = `calc(50% + ${rx}vmin)`;
             const y = `calc(50% + ${ry}vmin)`;
             return (
@@ -386,9 +474,8 @@ export function MemoryConstellation({
         {nodes.map(({ entry, angle, ring, driftPhase }) => {
           const meta = catMeta(entry.category);
           const Icon = meta.icon;
-          const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-          const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-          const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+          const { rx, ry } = posFor(entry.id, angle, ring, driftPhase);
+          const isDragging = draggingId === entry.id;
           // Label sits just outside the node, pushed further from center.
           const labelOutside = rx >= 0;
           return (
@@ -398,21 +485,40 @@ export function MemoryConstellation({
               style={{
                 left: `calc(50% + ${rx}vmin)`,
                 top: `calc(50% + ${ry}vmin)`,
+                zIndex: isDragging ? 40 : 10,
+                touchAction: "none",
               }}
             >
               <button
                 type="button"
-                onClick={() => openDetail(entry)}
-                className="group relative flex items-center gap-2"
-                style={{ flexDirection: labelOutside ? "row" : "row-reverse" }}
+                onClick={() => {
+                  // Suppress the click that ends a drag — only a real tap
+                  // (no long-press drag) opens the detail card.
+                  if (movedRef.current) {
+                    movedRef.current = false;
+                    return;
+                  }
+                  openDetail(entry);
+                }}
+                onPointerDown={(e) => startPress(entry.id, e)}
+                onPointerMove={(e) => onPressMove(entry.id, e)}
+                onPointerUp={endPress}
+                onPointerCancel={endPress}
+                className="group relative flex items-center gap-2 select-none"
+                style={{
+                  flexDirection: labelOutside ? "row" : "row-reverse",
+                  cursor: isDragging ? "grabbing" : "pointer",
+                }}
                 title={entry.title}
               >
                 <span
-                  className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                  className={`w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 transition-transform ${
+                    isDragging ? "scale-125" : "group-hover:scale-110"
+                  }`}
                   style={{
                     background: "rgba(255,255,255,0.05)",
-                    border: `1px solid ${meta.color}66`,
-                    boxShadow: `0 0 16px ${meta.color}22`,
+                    border: `1px solid ${meta.color}${isDragging ? "cc" : "66"}`,
+                    boxShadow: `0 0 ${isDragging ? "28px" : "16px"} ${meta.color}${isDragging ? "55" : "22"}`,
                   }}
                 >
                   <Icon className="w-4 h-4" style={{ color: meta.color }} />
