@@ -29,7 +29,6 @@ import {
   Pencil,
   RotateCw,
   Search,
-  Sparkles,
   Square,
   Trash2,
   X,
@@ -1419,19 +1418,16 @@ export function MySpaceChat() {
                   type="button"
                   onClick={() => send(p)}
                   disabled={sending}
-                  className="group flex items-center gap-2.5 text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
+                  className="group flex items-center text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
                   style={{
-                    background: "rgba(255,253,250,0.7)",
-                    border: "0.5px solid rgba(255,138,76,0.22)",
-                    boxShadow: "0 2px 10px -6px rgba(20,15,10,0.08)",
+                    background: "rgba(255,255,255,0.35)",
+                    border: "1px solid rgba(255,255,255,0.55)",
+                    backdropFilter: "blur(14px) saturate(140%)",
+                    WebkitBackdropFilter: "blur(14px) saturate(140%)",
+                    boxShadow:
+                      "0 8px 24px -14px rgba(20,15,10,0.15), inset 0 1px 0 rgba(255,255,255,0.6)",
                   }}
                 >
-                  <span
-                    className="shrink-0 w-7 h-7 rounded-lg inline-flex items-center justify-center transition-colors"
-                    style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </span>
                   <span className="min-w-0">{p}</span>
                 </button>
               ))}
