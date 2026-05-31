@@ -534,6 +534,23 @@ export default function VendorSubscriptionPage() {
     return { days, hours, minutes, seconds };
   }, [offerActive, launchEndsMs, nowMs]);
 
+  // Biggest SAVE% across the tiers in the CURRENTLY selected interval,
+  // so the launch hero ("up to N% off") matches what the cards show.
+  // Monthly anchors are aggressive (~60%); yearly is the real ~17% vs
+  // 12x monthly — the hero must not overstate yearly savings.
+  const maxSavePct = useMemo(() => {
+    const pcts = tiers
+      .filter(
+        (t) =>
+          t.id !== "free" &&
+          t.billingInterval === billingInterval &&
+          t.wasMonthly &&
+          t.wasMonthly > t.priceMonthly,
+      )
+      .map((t) => Math.round((1 - t.priceMonthly / (t.wasMonthly as number)) * 100));
+    return pcts.length ? Math.max(...pcts) : 0;
+  }, [tiers, billingInterval]);
+
   return (
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
@@ -584,7 +601,7 @@ export default function VendorSubscriptionPage() {
                     }}
                   >
                     <Flame className="w-3 h-3" />
-                    Launch pricing 60% off
+                    Launch pricing {maxSavePct}% off
                   </span>
                   <h2
                     className="mt-4 font-editorial leading-[0.95] text-4xl md:text-5xl"
@@ -593,7 +610,7 @@ export default function VendorSubscriptionPage() {
                     Vendora Starter, Pro &amp; Studio
                   </h2>
                   <h3 className="font-editorial leading-tight text-2xl md:text-3xl text-white/90 mt-1">
-                    Locked in at up to 60% off
+                    Locked in at up to {maxSavePct}% off
                   </h3>
                   <p className="text-sm text-white/55 mt-3 max-w-md">
                     Lock in these rates before the offer ends. New rates apply on the
