@@ -59,7 +59,7 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { FileText, Paperclip, Eye } from "lucide-react";
+import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface Inquiry {
