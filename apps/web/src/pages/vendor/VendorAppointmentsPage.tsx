@@ -55,6 +55,27 @@ const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 type DayState = "available" | "booked" | "pending" | "blocked";
 
+// Per-listing dot palette for the account-wide cockpit calendar. Each
+// listing gets a stable color (assigned by its index in the account's
+// listing list) so a day booked/blocked on listing A vs listing B is
+// visually distinguishable. Picked for contrast on the warm canvas;
+// cycles if a vendor somehow has more listings than colors.
+const LISTING_PALETTE = [
+  "#c4541e", // brand orange
+  "#2563eb", // blue
+  "#0a7c4a", // green
+  "#9333ea", // purple
+  "#d4a017", // gold
+  "#db2777", // pink
+  "#0891b2", // cyan
+  "#b91c1c", // red
+];
+
+// Sentinel for the cockpit block-target picker: "all" writes blocks /
+// recurring rules across every listing (the original account-wide
+// behavior); a specific listing id scopes writes to just that listing.
+type BlockTarget = string | "all";
+
 interface InquiryRow {
   id: string;
   status: string;
@@ -63,7 +84,18 @@ interface InquiryRow {
   budget_min_cents: number | null;
   budget_max_cents: number | null;
   host_id: string;
+  // The listing (vendor_profiles.id) this inquiry belongs to — drives
+  // the per-listing dot color on the account calendar.
+  vendor_id: string;
   host: { display_name: string | null } | null;
+}
+
+// One listing's activity on a given day, for the multi-dot account
+// calendar. The strongest state wins per listing (booked > pending >
+// blocked).
+interface DayListingEntry {
+  vendorId: string;
+  state: Exclude<DayState, "available">;
 }
 
 // ListingOpt moved to @/components/vendor/ListingPicker so VendorLeads
@@ -181,6 +213,13 @@ export default function VendorAppointmentsPage({
   const [manualBlocks, setManualBlocks] = useState<Map<string, string | null>>(
     () => new Map(),
   );
+  // Per-date listing attribution for manual blocks: date → set of
+  // listing ids that have that date blocked. Drives the account
+  // calendar's per-listing dot coloring. Parallel to manualBlocks
+  // (which only keeps one display reason per date for the day panel).
+  const [blockListingIds, setBlockListingIds] = useState<
+    Map<string, Set<string>>
+  >(() => new Map());
   // Recurring weekly rules — vendor sets "I never work Sundays" /
   // "Mondays are off" once and the calendar applies that pattern
   // forever. Keyed by day_of_week (0=Sun..6=Sat). Value true means
@@ -189,6 +228,16 @@ export default function VendorAppointmentsPage({
   const [recurringOff, setRecurringOff] = useState<Set<number>>(
     () => new Set(),
   );
+  // Per-weekday listing attribution for recurring rules: dow → set of
+  // listing ids unavailable that weekday. Same role as blockListingIds
+  // but for the recurring projection.
+  const [recurringListingIds, setRecurringListingIds] = useState<
+    Map<number, Set<string>>
+  >(() => new Map());
+  // Cockpit block-target: which listing(s) a new block / recurring rule
+  // is written to. Defaults to "all" (account-wide, original behavior).
+  // Only surfaced in account mode where >1 listing exists.
+  const [blockTarget, setBlockTarget] = useState<BlockTarget>("all");
   const [savingRecurring, setSavingRecurring] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
@@ -254,6 +303,9 @@ export default function VendorAppointmentsPage({
     if (queryListingIds.length === 0 || !user?.id) {
       setInquiries([]);
       setManualBlocks(new Map());
+      setBlockListingIds(new Map());
+      setRecurringOff(new Set());
+      setRecurringListingIds(new Map());
       setLoading(false);
       return;
     }
@@ -272,6 +324,9 @@ export default function VendorAppointmentsPage({
     ) {
       setInquiries([]);
       setManualBlocks(new Map());
+      setBlockListingIds(new Map());
+      setRecurringOff(new Set());
+      setRecurringListingIds(new Map());
       setLoading(false);
       return;
     }
@@ -283,14 +338,14 @@ export default function VendorAppointmentsPage({
       (supabase as any)
         .from("inquiries")
         .select(
-          "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
+          "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, vendor_id, host:profiles!inquiries_host_id_fkey(display_name)",
         )
         .in("vendor_id", queryListingIds)
         .gte("event_date", startYmd)
         .lt("event_date", endYmd),
       supabase
         .from("vendor_unavailable_dates")
-        .select("date, reason")
+        .select("date, reason, vendor_id")
         .in("vendor_id", queryListingIds)
         .gte("date", startYmd)
         .lt("date", endYmd),
@@ -298,38 +353,68 @@ export default function VendorAppointmentsPage({
       // across listings: a weekday counts as "off" if ANY listing
       // has it marked unavailable. That matches what the cockpit
       // calendar should show ("am I busy on Mondays at any of my
-      // listings?"). Per-listing rules editing happens on the
-      // standalone /vendor/appointments page.
+      // listings?"). Per-listing attribution is kept alongside for
+      // the dot coloring + the per-listing block-target picker.
       supabase
         .from("vendor_availability_rules")
-        .select("day_of_week, is_unavailable")
+        .select("day_of_week, is_unavailable, vendor_id")
         .in("vendor_id", queryListingIds),
     ]);
     setInquiries((inqRes.data ?? []) as InquiryRow[]);
-    setManualBlocks(
-      new Map(
-        ((blockRes.data ?? []) as Array<{
-          date: string;
-          reason: string | null;
-        }>).map((r) => [r.date, r.reason]),
-      ),
-    );
-    setRecurringOff(
-      new Set(
-        ((recurringRes.data ?? []) as Array<{
-          day_of_week: number;
-          is_unavailable: boolean;
-        }>)
-          .filter((r) => r.is_unavailable)
-          .map((r) => r.day_of_week),
-      ),
-    );
+    const blockRows = (blockRes.data ?? []) as Array<{
+      date: string;
+      reason: string | null;
+      vendor_id: string;
+    }>;
+    // One display reason per date (last write wins for the day panel),
+    // plus the full per-listing attribution map for dot coloring.
+    const reasonByDate = new Map<string, string | null>();
+    const listingsByDate = new Map<string, Set<string>>();
+    for (const r of blockRows) {
+      reasonByDate.set(r.date, r.reason);
+      let s = listingsByDate.get(r.date);
+      if (!s) {
+        s = new Set();
+        listingsByDate.set(r.date, s);
+      }
+      s.add(r.vendor_id);
+    }
+    setManualBlocks(reasonByDate);
+    setBlockListingIds(listingsByDate);
+    const recurringRows = ((recurringRes.data ?? []) as Array<{
+      day_of_week: number;
+      is_unavailable: boolean;
+      vendor_id: string;
+    }>).filter((r) => r.is_unavailable);
+    setRecurringOff(new Set(recurringRows.map((r) => r.day_of_week)));
+    const recurringByDow = new Map<number, Set<string>>();
+    for (const r of recurringRows) {
+      let s = recurringByDow.get(r.day_of_week);
+      if (!s) {
+        s = new Set();
+        recurringByDow.set(r.day_of_week, s);
+      }
+      s.add(r.vendor_id);
+    }
+    setRecurringListingIds(recurringByDow);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryListingKey, user?.id, monthBounds, listings, listingsLoading, isAccountMode, selectedListingId]);
 
+  // Listing ids a block / recurring-rule write should target. Account
+  // mode honors the block-target picker: "all" fans out across every
+  // listing (original behavior), a specific id scopes to one listing.
+  // Standalone mode always targets the single picked listing.
+  const writeTargetIds = useCallback((): string[] => {
+    if (!isAccountMode) return selectedListingId ? [selectedListingId] : [];
+    if (blockTarget === "all") return queryListingIds;
+    return queryListingIds.includes(blockTarget) ? [blockTarget] : [];
+  }, [isAccountMode, selectedListingId, blockTarget, queryListingIds]);
+
   async function toggleRecurring(dow: number, willBeOff: boolean) {
-    if (queryListingIds.length === 0 || savingRecurring !== null) return;
+    if (savingRecurring !== null) return;
+    const targetIds = writeTargetIds();
+    if (targetIds.length === 0) return;
     setSavingRecurring(dow);
     // Optimistic local update so the switch flips instantly.
     setRecurringOff((prev) => {
@@ -338,12 +423,6 @@ export default function VendorAppointmentsPage({
       else next.delete(dow);
       return next;
     });
-    // Account mode writes the same weekday rule to every listing the
-    // vendor owns (the aggregated calendar view treats "Monday off
-    // anywhere" as "Monday off" — applying the rule everywhere keeps
-    // reads and writes in sync). Standalone mode targets just the
-    // picked listing as before.
-    const targetIds = isAccountMode ? queryListingIds : [selectedListingId!];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_availability_rules")
@@ -365,12 +444,26 @@ export default function VendorAppointmentsPage({
         return next;
       });
       toast.error(`Couldn't update: ${error.message}`);
+      return;
     }
+    // Reload so the per-listing attribution (recurringListingIds →
+    // dot colors) reflects exactly which listings now carry the rule.
+    void loadCalendar();
   }
 
   useEffect(() => {
     loadCalendar();
   }, [loadCalendar]);
+
+  // Keep the block-target valid: if the selected listing leaves the
+  // account's listing set (deleted / switched away), fall back to "all"
+  // so the Block button doesn't strand on an unresolvable target.
+  // Depend on the stable key string, not the array (new ref each render).
+  useEffect(() => {
+    if (blockTarget !== "all" && !queryListingKey.split(",").includes(blockTarget)) {
+      setBlockTarget("all");
+    }
+  }, [blockTarget, queryListingKey]);
 
   const loadAppointments = useCallback(async () => {
     if (!user || queryListingIds.length === 0) {
@@ -508,11 +601,117 @@ export default function VendorAppointmentsPage({
     return m;
   }, [inquiries, appointments, manualBlocks, recurringOff, monthBounds]);
 
+  // Stable palette index per listing — assigned by position in the
+  // account's listing list so colors don't reshuffle between renders.
+  const listingColorById = useMemo(() => {
+    const m = new Map<string, string>();
+    listings.forEach((l, idx) => {
+      m.set(l.id, LISTING_PALETTE[idx % LISTING_PALETTE.length]);
+    });
+    return m;
+  }, [listings]);
+
+  // Per-listing day state for the account calendar's multi-dot view:
+  // date → [{ vendorId, state }] with the strongest state per listing
+  // (booked > pending > blocked). Mirrors the aggregate dayState loops
+  // but keyed by listing so two listings booked on the same day render
+  // as two dots. Only meaningful in account mode (>1 listing); the
+  // standalone view keeps the single-state grid.
+  const dayListingState = useMemo(() => {
+    const rank: Record<Exclude<DayState, "available">, number> = {
+      booked: 3,
+      pending: 2,
+      blocked: 1,
+    };
+    // date → (listingId → strongest state)
+    const byDate = new Map<string, Map<string, Exclude<DayState, "available">>>();
+    const put = (
+      key: string,
+      vendorId: string,
+      state: Exclude<DayState, "available">,
+    ) => {
+      let inner = byDate.get(key);
+      if (!inner) {
+        inner = new Map();
+        byDate.set(key, inner);
+      }
+      const prev = inner.get(vendorId);
+      if (!prev || rank[state] > rank[prev]) inner.set(vendorId, state);
+    };
+    for (const i of inquiries) {
+      const d = parseYmd(i.event_date);
+      if (!d) continue;
+      const key = ymdKey(d);
+      if (i.status === "won") put(key, i.vendor_id, "booked");
+      else if (i.status === "new" || i.status === "replied" || i.status === "drafted")
+        put(key, i.vendor_id, "pending");
+    }
+    for (const a of appointments) {
+      if (a.status !== "accepted" && a.status !== "proposed") continue;
+      const key = ymdKey(new Date(a.scheduled_at));
+      put(key, a.vendor_id, a.status === "accepted" ? "booked" : "pending");
+    }
+    // Recurring weekday rules, projected per listing across the month.
+    if (recurringListingIds.size > 0) {
+      const cursor = new Date(monthBounds.start);
+      const end = new Date(monthBounds.end);
+      while (cursor < end) {
+        const ids = recurringListingIds.get(cursor.getDay());
+        if (ids) {
+          const key = ymdKey(cursor);
+          for (const vid of ids) put(key, vid, "blocked");
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    for (const [date, ids] of blockListingIds) {
+      for (const vid of ids) put(date, vid, "blocked");
+    }
+    // Flatten to sorted entry arrays (ordered by palette index so dots
+    // keep a stable left-to-right order per day).
+    const orderIndex = new Map<string, number>();
+    listings.forEach((l, idx) => orderIndex.set(l.id, idx));
+    const out = new Map<string, DayListingEntry[]>();
+    for (const [date, inner] of byDate) {
+      const entries: DayListingEntry[] = Array.from(inner.entries())
+        .map(([vendorId, state]) => ({ vendorId, state }))
+        .sort(
+          (a, b) =>
+            (orderIndex.get(a.vendorId) ?? 0) - (orderIndex.get(b.vendorId) ?? 0),
+        );
+      out.set(date, entries);
+    }
+    return out;
+  }, [
+    inquiries,
+    appointments,
+    blockListingIds,
+    recurringListingIds,
+    monthBounds,
+    listings,
+  ]);
+
+  // Multi-listing dot view only makes sense when the cockpit is showing
+  // more than one listing. Single-listing vendors keep the cleaner
+  // full-cell color grid.
+  const showListingColors = isAccountMode && listings.length > 1;
+
   // Header stats (booked/pending/earnings) were removed — vendors
   // don't transact through the app, so the dollar value is misleading.
 
   const selectedItems = useMemo(() => {
     if (!selectedYmd) return [];
+    // When >1 listing is in view, append the listing name to each
+    // row's subtitle so the vendor knows which listing a booking
+    // belongs to. Single-listing view stays clean (no redundant label).
+    const listingNameById = new Map(
+      listings.map((l) => [
+        l.id,
+        l.business_name?.trim() || l.category || "Listing",
+      ]),
+    );
+    const labelFor = (vid: string) =>
+      showListingColors ? ` · ${listingNameById.get(vid) ?? "Listing"}` : "";
     const out: Array<{
       kind: "inquiry" | "busy" | "appointment";
       inquiryId: string | null;
@@ -532,7 +731,10 @@ export default function VendorAppointmentsPage({
           ? i.event_type[0].toUpperCase() + i.event_type.slice(1)
           : "Booking",
         subtitle:
-          (i.host?.display_name ?? "Host") + " · " + statusLabel(i.status),
+          (i.host?.display_name ?? "Host") +
+          " · " +
+          statusLabel(i.status) +
+          labelFor(i.vendor_id),
         amountCents: i.budget_min_cents ?? i.budget_max_cents,
         accent: i.status === "won" ? "booked" : "pending",
         timeLabel: null,
@@ -551,7 +753,8 @@ export default function VendorAppointmentsPage({
         subtitle:
           (a.host_name ?? "Client") +
           " · " +
-          (a.status === "accepted" ? "Confirmed" : "Proposed"),
+          (a.status === "accepted" ? "Confirmed" : "Proposed") +
+          labelFor(a.vendor_id),
         amountCents: null,
         accent: a.status === "accepted" ? "booked" : "pending",
         timeLabel: fmtApptTime(a.scheduled_at),
@@ -575,7 +778,7 @@ export default function VendorAppointmentsPage({
       });
     }
     return out;
-  }, [selectedYmd, inquiries, appointments, manualBlocks]);
+  }, [selectedYmd, inquiries, appointments, manualBlocks, listings, showListingColors]);
 
   const isSelectedBlocked =
     !!selectedYmd && manualBlocks.has(selectedYmd);
@@ -585,18 +788,20 @@ export default function VendorAppointmentsPage({
   const [blockTitle, setBlockTitle] = useState("");
 
   async function commitSelectedDayBlock() {
-    if (!selectedYmd || queryListingIds.length === 0 || blocking) return;
+    if (!selectedYmd || blocking) return;
     const willBlock = !isSelectedBlocked;
     const verb = willBlock ? "Block" : "Unblock";
     setConfirmOpen(false);
     setBlocking(true);
-    // Account mode applies block / unblock across every listing on
-    // the account — the aggregated calendar view treats "blocked
-    // anywhere" as blocked, so the writes mirror that. Unblocking
-    // deletes the date row from every listing that had it, so the
-    // date becomes bookable on all of them at once. Standalone mode
-    // targets just the picked listing as before.
-    const targetIds = isAccountMode ? queryListingIds : [selectedListingId!];
+    // Target resolves from the block-target picker in account mode
+    // ("all" listings, or one specific listing); standalone mode
+    // always targets the single picked listing. Unblock deletes the
+    // date row from each targeted listing.
+    const targetIds = writeTargetIds();
+    if (targetIds.length === 0) {
+      setBlocking(false);
+      return;
+    }
     if (willBlock) {
       const trimmedTitle = blockTitle.trim();
       const reason = trimmedTitle.length > 0 ? trimmedTitle : "Blocked manually";
@@ -636,7 +841,6 @@ export default function VendorAppointmentsPage({
   // on vendor_unavailable_dates. Optimistic local update so the
   // input doesn't flicker while waiting for the round trip.
   async function editBlockTitle(ymd: string, newTitle: string) {
-    if (queryListingIds.length === 0) return;
     const trimmed = newTitle.trim();
     const reasonForDb = trimmed.length > 0 ? trimmed : "Blocked manually";
     setManualBlocks((prev) => {
@@ -644,11 +848,14 @@ export default function VendorAppointmentsPage({
       next.set(ymd, reasonForDb);
       return next;
     });
-    // Account mode keeps every listing's reason in sync — the
-    // aggregated map only shows one reason per date anyway, so
-    // updating them all keeps the displayed title consistent if
-    // the vendor later switches to the standalone per-listing view.
-    const targetIds = isAccountMode ? queryListingIds : [selectedListingId!];
+    // Update the reason on whichever listings actually have this date
+    // blocked (from the loaded attribution map) so the title edit lands
+    // regardless of the current block-target selection. Falls back to
+    // all queried listings if attribution isn't loaded yet.
+    const blockedOn = blockListingIds.get(ymd);
+    const targetIds =
+      blockedOn && blockedOn.size > 0 ? Array.from(blockedOn) : queryListingIds;
+    if (targetIds.length === 0) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_unavailable_dates")
@@ -754,36 +961,87 @@ export default function VendorAppointmentsPage({
                 <MonthGrid
                   month={viewMonth}
                   dayState={dayState}
+                  dayListingState={dayListingState}
+                  listingColorById={listingColorById}
+                  showListingColors={showListingColors}
                   selectedYmd={selectedYmd}
                   onSelect={(k) => setSelectedYmd(k)}
                 />
               )}
-              <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
-                <LegendDot swatchClass="bg-foreground" label="Booked" />
-                <LegendDot swatchClass="bg-amber-200" label="Pending" />
-                <LegendDot swatchClass="hatch" label="Blocked" />
-              </div>
+              {showListingColors ? (
+                // Per-listing color legend (account view, >1 listing):
+                // map each dot color to the listing it represents, plus
+                // the status meaning of solid vs hatched dots.
+                <div className="mt-4 pt-3 border-t border-border space-y-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+                    {listings.map((l) => (
+                      <div key={l.id} className="flex items-center gap-1.5">
+                        <span
+                          className="w-3 h-3 rounded-full inline-block"
+                          style={{ background: listingColorById.get(l.id) }}
+                        />
+                        <span className="text-foreground truncate max-w-[140px]">
+                          {l.business_name?.trim() || l.category || "Listing"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Solid = booked · faded = pending · ringed = blocked
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
+                  <LegendDot swatchClass="bg-foreground" label="Booked" />
+                  <LegendDot swatchClass="bg-amber-200" label="Pending" />
+                  <LegendDot swatchClass="hatch" label="Blocked" />
+                </div>
+              )}
             </div>
           </div>
 
           {selectedYmd ? (
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                 <h3 className="font-editorial text-xl">
                   {prettyDay(selectedYmd)}
                 </h3>
-                <button
-                  onClick={() => setConfirmOpen(true)}
-                  disabled={blocking || !selectedListingId}
-                  className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold disabled:opacity-60"
-                >
-                  {isSelectedBlocked ? (
-                    <XIcon className="h-3.5 w-3.5" />
-                  ) : (
-                    <Plus className="h-3.5 w-3.5" />
-                  )}
-                  {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Per-listing block target — account view with >1
+                      listing only. Lets the vendor block a date for ONE
+                      listing or all of them. "All" preserves the prior
+                      account-wide behavior. */}
+                  {showListingColors ? (
+                    <select
+                      value={blockTarget}
+                      onChange={(e) =>
+                        setBlockTarget(e.target.value as BlockTarget)
+                      }
+                      disabled={blocking}
+                      aria-label="Block applies to"
+                      className="rounded-full bg-secondary text-foreground text-xs font-medium px-3 py-2 outline-none disabled:opacity-60"
+                    >
+                      <option value="all">All listings</option>
+                      {listings.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.business_name?.trim() || l.category || "Listing"}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <button
+                    onClick={() => setConfirmOpen(true)}
+                    disabled={blocking || writeTargetIds().length === 0}
+                    className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold disabled:opacity-60"
+                  >
+                    {isSelectedBlocked ? (
+                      <XIcon className="h-3.5 w-3.5" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5" />
+                    )}
+                    {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
+                  </button>
+                </div>
               </div>
 
               {selectedItems.length === 0 ? (
@@ -1052,11 +1310,17 @@ function PendingApprovalEmptyState() {
 function MonthGrid({
   month,
   dayState,
+  dayListingState,
+  listingColorById,
+  showListingColors,
   selectedYmd,
   onSelect,
 }: {
   month: Date;
   dayState: Map<string, DayState>;
+  dayListingState: Map<string, DayListingEntry[]>;
+  listingColorById: Map<string, string>;
+  showListingColors: boolean;
   selectedYmd: string | null;
   onSelect: (k: string) => void;
 }) {
@@ -1093,6 +1357,9 @@ function MonthGrid({
               day={d.getDate()}
               inMonth={inMonth}
               state={state}
+              entries={showListingColors ? dayListingState.get(key) ?? [] : []}
+              listingColorById={listingColorById}
+              showListingColors={showListingColors}
               selected={selected}
               onClick={() => onSelect(key)}
             />
@@ -1165,15 +1432,77 @@ function DayCell({
   day,
   inMonth,
   state,
+  entries,
+  listingColorById,
+  showListingColors,
   selected,
   onClick,
 }: {
   day: number;
   inMonth: boolean;
   state: DayState;
+  entries: DayListingEntry[];
+  listingColorById: Map<string, string>;
+  showListingColors: boolean;
   selected: boolean;
   onClick: () => void;
 }) {
+  const dimmed = !inMonth ? "text-muted-foreground/50" : "";
+
+  // Multi-listing account view: a neutral cell with one colored dot per
+  // listing that has activity that day. Solid dot = booked, faded =
+  // pending, ringed (hollow) = blocked. Cap at 4 dots + "+N" so a busy
+  // day doesn't overflow the cell.
+  if (showListingColors) {
+    const MAX_DOTS = 4;
+    const shown = entries.slice(0, MAX_DOTS);
+    const extra = entries.length - shown.length;
+    return (
+      <div className="flex items-center justify-center py-1">
+        <button
+          onClick={onClick}
+          className={`relative w-10 h-10 rounded-xl flex flex-col items-center justify-center gap-0.5 text-sm font-medium transition hover:bg-secondary/60 ${
+            selected ? "ring-2 ring-foreground" : ""
+          } ${dimmed}`}
+        >
+          <span className="leading-none">{day}</span>
+          {entries.length > 0 ? (
+            <span className="flex items-center justify-center gap-[2px] h-1.5">
+              {shown.map((e, i) => {
+                const color = listingColorById.get(e.vendorId) ?? "#999";
+                if (e.state === "blocked") {
+                  return (
+                    <span
+                      key={i}
+                      className="w-1.5 h-1.5 rounded-full inline-block"
+                      style={{ border: `1.5px solid ${color}` }}
+                    />
+                  );
+                }
+                return (
+                  <span
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full inline-block"
+                    style={{
+                      background: color,
+                      opacity: e.state === "pending" ? 0.45 : 1,
+                    }}
+                  />
+                );
+              })}
+              {extra > 0 ? (
+                <span className="text-[8px] leading-none text-muted-foreground">
+                  +{extra}
+                </span>
+              ) : null}
+            </span>
+          ) : null}
+        </button>
+      </div>
+    );
+  }
+
+  // Single-listing (or standalone) view: original full-cell color grid.
   const baseClass =
     state === "booked"
       ? "bg-foreground text-background"
@@ -1182,7 +1511,6 @@ function DayCell({
         : state === "blocked"
           ? "text-foreground"
           : "text-foreground";
-  const dimmed = !inMonth ? "text-muted-foreground/50" : "";
   return (
     <div className="flex items-center justify-center py-1">
       <button
