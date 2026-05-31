@@ -58,6 +58,7 @@ import {
   RefreshCw,
   RotateCcw,
   ScrollText,
+  Search,
   Settings as SettingsIcon,
   Trash2,
   Users,
