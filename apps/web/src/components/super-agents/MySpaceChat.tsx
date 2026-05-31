@@ -29,7 +29,6 @@ import {
   Pencil,
   RotateCw,
   Search,
-  Sparkles,
   Square,
   Trash2,
   X,
@@ -46,7 +45,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { MemoryConstellation } from "@/components/super-agents/MemoryConstellation";
-import { VendoraMark } from "@/components/shared/VendoraLogo";
 import {
   Bar,
   BarChart,
@@ -1091,9 +1089,9 @@ export function MySpaceChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          rows={1}
+          rows={3}
           placeholder={composerPlaceholder}
-          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2 placeholder:text-foreground/40 text-foreground"
+          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[72px] max-h-60 py-2 px-2 placeholder:text-foreground/40 text-foreground"
           disabled={sending}
         />
         {sending
@@ -1149,10 +1147,10 @@ export function MySpaceChat() {
           <button
             type="button"
             onClick={startNewChat}
-            className="w-full inline-flex items-center justify-center gap-2 text-sm font-medium rounded-xl px-3 py-2 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold rounded-xl px-3 py-2 transition-colors"
             style={{
               background: "rgba(255,138,76,0.18)",
-              color: "#c4541e",
+              color: "#1a1208",
             }}
           >
             <MessageSquarePlus className="w-4 h-4" />
@@ -1161,7 +1159,8 @@ export function MySpaceChat() {
           {/* Search across threads (title + message content). */}
           <div className="relative mt-3">
             <Search
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+              style={{ color: "#1a1208" }}
               aria-hidden
             />
             <input
@@ -1169,7 +1168,7 @@ export function MySpaceChat() {
               value={threadSearch}
               onChange={(e) => setThreadSearch(e.target.value)}
               placeholder="Search chats…"
-              className="w-full pl-8 pr-2 py-1.5 text-xs bg-secondary/30 rounded-md outline-none focus:bg-secondary/50 transition-colors"
+              className="w-full pl-8 pr-2 py-1.5 text-xs font-bold text-[#1a1208] bg-secondary/30 rounded-md outline-none focus:bg-secondary/50 transition-colors placeholder:text-[#1a1208] placeholder:font-bold"
             />
           </div>
           {/* Memory — opens the full-screen constellation. The AI loads
@@ -1177,7 +1176,7 @@ export function MySpaceChat() {
           <button
             type="button"
             onClick={() => setMemoryOpen(true)}
-            className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-bold rounded-md px-2 py-1.5 text-[#1a1208] hover:bg-secondary/40 transition-colors"
           >
             <BookOpen className="w-3.5 h-3.5" />
             Memory
@@ -1190,7 +1189,7 @@ export function MySpaceChat() {
               Loading…
             </div>
           ) : threads.length === 0 ? (
-            <p className="text-xs text-muted-foreground p-3 leading-relaxed">
+            <p className="text-xs font-bold text-[#1a1208] p-3 leading-relaxed">
               No chats yet. Send your first message to start one.
             </p>
           ) : (
@@ -1365,16 +1364,17 @@ export function MySpaceChat() {
 
         {showEmptyState ? (
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-center">
-            {/* Brand logo tile — amber gradient with the Vendora mark. */}
-            <div
-              className="w-20 h-20 rounded-[22px] inline-flex items-center justify-center mb-6"
+            {/* Actual app logo (the PWA icon), with a soft black shadow
+                that fades down into the background. */}
+            <img
+              src="/pwa-512.png"
+              alt="Vendora"
+              className="w-20 h-20 rounded-[22px] mb-6 object-cover"
               style={{
-                background: "linear-gradient(150deg, #ffb066 0%, #ff8a4c 55%, #f2722f 100%)",
-                boxShadow: "0 12px 36px -12px rgba(255,138,76,0.55)",
+                boxShadow:
+                  "0 18px 30px -10px rgba(0,0,0,0.45), 0 6px 12px -6px rgba(0,0,0,0.30)",
               }}
-            >
-              <VendoraMark size={40} color="#fffdfa" />
-            </div>
+            />
             <h2
               className="font-sans font-extrabold tracking-tight text-4xl md:text-5xl leading-[1.04] mb-3 min-h-[1.1em]"
               style={{ color: "#1a1208" }}
@@ -1389,7 +1389,10 @@ export function MySpaceChat() {
                 />
               ) : null}
             </h2>
-            <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+            <p
+              className="text-sm font-bold max-w-md mb-6 leading-relaxed"
+              style={{ color: "#1a1208" }}
+            >
               Your AI knows your packages, calendar, and active inquiries.
               Ask about leads, draft replies, or describe an image to generate.
             </p>
@@ -1415,19 +1418,16 @@ export function MySpaceChat() {
                   type="button"
                   onClick={() => send(p)}
                   disabled={sending}
-                  className="group flex items-center gap-2.5 text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
+                  className="group flex items-center text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
                   style={{
-                    background: "rgba(255,253,250,0.7)",
-                    border: "0.5px solid rgba(255,138,76,0.22)",
-                    boxShadow: "0 2px 10px -6px rgba(20,15,10,0.08)",
+                    background: "rgba(255,255,255,0.35)",
+                    border: "1px solid rgba(255,255,255,0.55)",
+                    backdropFilter: "blur(14px) saturate(140%)",
+                    WebkitBackdropFilter: "blur(14px) saturate(140%)",
+                    boxShadow:
+                      "0 8px 24px -14px rgba(20,15,10,0.15), inset 0 1px 0 rgba(255,255,255,0.6)",
                   }}
                 >
-                  <span
-                    className="shrink-0 w-7 h-7 rounded-lg inline-flex items-center justify-center transition-colors"
-                    style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </span>
                   <span className="min-w-0">{p}</span>
                 </button>
               ))}

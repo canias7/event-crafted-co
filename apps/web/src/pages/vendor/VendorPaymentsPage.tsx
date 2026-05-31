@@ -55,7 +55,6 @@ import {
   Mail,
   MoreHorizontal,
   Plus,
-  RefreshCw,
   RotateCcw,
   ScrollText,
   Search,
@@ -785,20 +784,6 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
                   : "Accept card payments and track payouts from one place."}
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refresh(false)}
-              disabled={refreshing || loading}
-              className="rounded-full h-8"
-            >
-              {refreshing ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5 mr-1" />
-              )}
-              Refresh
-            </Button>
           </div>
 
           {/* Internal tab strip — the primary navigation inside

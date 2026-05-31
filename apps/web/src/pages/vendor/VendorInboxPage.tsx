@@ -310,7 +310,7 @@ export default function VendorInboxPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">Inbox</h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-bold text-[#1a1208]">
                 Conversations with hosts — every message in one place
               </p>
             </div>
@@ -351,12 +351,12 @@ export default function VendorInboxPage() {
 
         <div className="p-4 md:p-8 max-w-3xl">
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1a1208]" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by host, event type, location, or date"
-              className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1"
+              className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1 font-bold text-[#1a1208] placeholder:text-[#1a1208] placeholder:font-bold"
             />
           </div>
 
@@ -442,13 +442,13 @@ export default function VendorInboxPage() {
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                 <Inbox className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="font-display text-xl">
+              <p className="font-display text-xl font-bold text-[#1a1208]">
                 {rows.length === 0
                   ? "No inquiries yet"
                   : "Nothing matches that search"}
               </p>
               {rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+                <p className="text-sm font-bold text-[#1a1208] mt-2 max-w-sm mx-auto">
                   When a host sends you an inquiry, the conversation will land
                   here.
                 </p>

@@ -27,7 +27,6 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VendoraMark } from "@/components/shared/VendoraLogo";
 
 const CATEGORIES = [
   { key: "pricing", label: "Pricing", icon: BadgeDollarSign, color: "#ffc14d" },
@@ -448,26 +447,18 @@ export function MemoryConstellation({
             : null}
         </svg>
 
-        {/* Central hub — the vendor's logo (falls back to brand mark). */}
+        {/* Central hub — the vendor's logo, falling back to the actual
+            app icon. Amber glow + a soft black shadow under it. */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-          <div
-            className="w-16 h-16 rounded-full inline-flex items-center justify-center overflow-hidden"
+          <img
+            src={logoUrl ?? "/pwa-512.png"}
+            alt="Your logo"
+            className="w-16 h-16 rounded-[18px] object-cover"
             style={{
-              background: logoUrl ? "#fff" : "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.16)",
-              boxShadow: "0 0 40px rgba(255,138,76,0.22)",
+              boxShadow:
+                "0 0 40px rgba(255,138,76,0.30), 0 16px 28px -8px rgba(0,0,0,0.6)",
             }}
-          >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt="Your logo"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <VendoraMark size={30} color="#ff8a4c" />
-            )}
-          </div>
+          />
         </div>
 
         {/* Memory nodes. */}
