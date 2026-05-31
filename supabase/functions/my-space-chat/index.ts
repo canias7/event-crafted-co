@@ -2397,29 +2397,21 @@ async function toolGetConversionFunnel(
       head: false,
     })
     .eq("vendor_id", vendorId);
-  let propQ = admin
-    .from("proposals")
-    .select("id, vendor_id, status, created_at", {
-      count: "exact",
-      head: true,
-    })
-    .eq("vendor_id", vendorId);
   if (gte) {
     inqQ = inqQ.gte("created_at", gte);
-    propQ = propQ.gte("created_at", gte);
   }
-  const [{ data: inq, count: inqCount }, { count: propCount }] = await Promise
-    .all([inqQ, propQ]);
+  const { data: inq, count: inqCount } = await inqQ;
   let bookings = 0;
   for (const r of (inq ?? []) as Array<any>) {
     if (r.host_confirmed_booked_at && r.vendor_confirmed_booked_at) {
       bookings += 1;
     }
   }
+  // proposals_sent dropped — the proposals subsystem was retired; the
+  // funnel is now inquiries → bookings (host + vendor both confirmed).
   return {
     since: window,
     inquiries: inqCount ?? 0,
-    proposals_sent: propCount ?? 0,
     bookings,
     conversion_pct: inqCount
       ? Math.round((bookings / inqCount) * 1000) / 10

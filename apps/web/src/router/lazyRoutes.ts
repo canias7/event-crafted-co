@@ -42,12 +42,6 @@ export const PublicReviewPage = lazyWithReload(importPublicReview);
 const importLiveWatch = () => import("@/pages/LiveWatchPage");
 export const LiveWatchPage = lazyWithReload(importLiveWatch);
 
-const importProposalPrint = () => import("@/pages/ProposalPrintPage");
-export const ProposalPrintPage = lazyWithReload(importProposalPrint);
-
-const importPublicProposal = () => import("@/pages/PublicProposalPage");
-export const PublicProposalPage = lazyWithReload(importPublicProposal);
-
 const importPublicGalleryShare = () => import("@/pages/PublicGallerySharePage");
 export const PublicGallerySharePage = lazyWithReload(importPublicGalleryShare);
 
@@ -69,9 +63,6 @@ export const TermsPage = lazyWithReload(importTerms);
 
 const importHelp = () => import("@/pages/HelpPage");
 export const HelpPage = lazyWithReload(importHelp);
-
-const importVendoraPayCheckout = () => import("@/pages/VendoraPayCheckoutPage");
-export const VendoraPayCheckoutPage = lazyWithReload(importVendoraPayCheckout);
 
 const importPayLinkCheckout = () => import("@/pages/public/PayLinkCheckoutPage");
 export const PayLinkCheckoutPage = lazyWithReload(importPayLinkCheckout);
@@ -207,7 +198,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/help", importer: importHelp },
   { pattern: "/pay/link/:slug", importer: importPayLinkCheckout },
   { pattern: "/pay/invoice/:slug", importer: importInvoiceCheckout },
-  { pattern: "/pay/:proposalId", importer: importVendoraPayCheckout },
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },

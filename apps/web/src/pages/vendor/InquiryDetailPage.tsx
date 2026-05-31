@@ -1,5 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { lazyWithReload } from "@/lib/lazyWithReload";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -47,21 +46,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// Lazy: only loads when the vendor opens "Send proposal."
-const ProposalFormModal = lazyWithReload(() =>
-  import("@/components/proposals/ProposalFormModal").then((m) => ({
-    default: m.ProposalFormModal,
-  })),
-);
 import {
   InquiryReviewCard,
   type ReviewWithResponse,
 } from "@/components/inquiries/InquiryReviewCard";
-import {
-  ProposalCard,
-  type Proposal,
-} from "@/components/proposals/ProposalCard";
-import { ProposalShareToggle } from "@/components/proposals/ProposalShareToggle";
+import { ChatSendPicker } from "@/components/proposals/ChatSendPicker";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import {
   uploadAttachments,
@@ -70,7 +59,7 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { FileText, Paperclip, Eye } from "lucide-react";
+import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface Inquiry {
@@ -156,8 +145,6 @@ export default function InquiryDetailPage() {
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [review, setReview] = useState<ReviewWithResponse | null>(null);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const [pinLocationOpen, setPinLocationOpen] = useState(false);
   // Inquiry preview sheet — opened from the "..." menu, shows the
   // full original inquiry on a blurred backdrop. Tap the close arrow
@@ -282,7 +269,7 @@ export default function InquiryDetailPage() {
     // parallel. messages still has to wait on the RPC's thread id, so
     // it goes in a second hop. Cuts page-open latency roughly in half
     // versus the previous fully-sequential chain.
-    const [inqRes, scoreRes, threadRes, reviewRes, propsRes] = await Promise.all([
+    const [inqRes, scoreRes, threadRes, reviewRes] = await Promise.all([
       supabase
         .from("inquiries")
         .select("*, host:profiles!inquiries_host_id_fkey(display_name, avatar_url)")
@@ -313,14 +300,6 @@ export default function InquiryDetailPage() {
         .eq("rater_role", "host")
         .eq("kind", "event")
         .maybeSingle(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("proposals")
-        .select(
-          "id, title, line_items, subtotal_cents, deposit_cents, terms, contract_body, status, sent_at, signed_at, signed_name, first_viewed_at, last_viewed_at, view_count, share_token",
-        )
-        .eq("inquiry_id", inquiryId)
-        .order("created_at", { ascending: false }),
     ]);
 
     const i = inqRes.data;
@@ -419,8 +398,6 @@ export default function InquiryDetailPage() {
       setReview(null);
     }
 
-    setProposals((propsRes.data as unknown as Proposal[]) ?? []);
-
     hasLoadedRef.current = true;
     setLoading(false);
   }, [inquiryId]);
@@ -513,18 +490,6 @@ export default function InquiryDetailPage() {
   );
   useRealtime(inquiryScoreConfig, debouncedLoad);
 
-  // Proposals can be withdrawn / accepted / declined from either side
-  // after first load. Without a sub, the bubble shows "pending" until
-  // the user refreshes. Scoped to this inquiry so we don't refetch on
-  // unrelated activity.
-  const proposalsConfig = useMemo(
-    () =>
-      inquiryId
-        ? { table: "proposals", filter: `inquiry_id=eq.${inquiryId}` }
-        : null,
-    [inquiryId],
-  );
-  useRealtime(proposalsConfig, debouncedLoad);
 
   // Toggle a reaction on a message: if I already reacted with this
   // emoji, remove it; otherwise insert. Optimistic local update keeps
@@ -1076,34 +1041,15 @@ export default function InquiryDetailPage() {
               looking like 'No messages yet. Say hi.' with no context. */}
           <InquiryIntakeCard inquiry={inquiry} hostInitial={initial} />
 
-          {/* Proposals as system bubbles in-thread */}
-          {proposals.map((p) => (
-            <div key={p.id} className="my-3">
-              <ProposalCard proposal={p} />
-              {p.status === "pending" && (
-                <ProposalShareToggle
-                  proposalId={p.id}
-                  initialToken={
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).share_token ?? null
-                  }
-                />
-              )}
-            </div>
-          ))}
-
-          {/* Off-platform booking handshake. Now rendered ABOVE the
+          {/* Off-platform booking handshake. Rendered ABOVE the
               messages stream so it doesn't pop below newer chat
-              messages — was previously at the bottom which felt
-              out of order when the vendor confirmed booking and then
-              sent a follow-up chat message. Hidden when an accepted
-              proposal exists. */}
+              messages. */}
           {inquiry ? (
             <BookingConfirmationCard
               inquiryId={inquiry.id}
               selfRole="vendor"
               otherPartyName={hostName}
-              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+              hasAcceptedProposal={false}
             />
           ) : null}
 
@@ -1112,7 +1058,7 @@ export default function InquiryDetailPage() {
               proposals + intake_answers count as activity, so a
               fresh inquiry with a proposal sent doesn't get a
               misleading "Say hi" subtitle below the proposal card. */}
-          {messages.length === 0 && proposals.length === 0 ? (
+          {messages.length === 0 ? (
             // The intake card already sits above this; no extra "Say hi"
             // copy needed (it doubled with the intake card and felt
             // redundant). Keep the empty state quiet.
@@ -1346,7 +1292,7 @@ export default function InquiryDetailPage() {
               inquiryId={inquiry.id}
               selfRole="vendor"
               otherPartyName={hostName}
-              hasAcceptedProposal={proposals.some((p) => p.status === "accepted")}
+              hasAcceptedProposal={false}
             />
           ) : null}
 
@@ -1448,14 +1394,9 @@ export default function InquiryDetailPage() {
               tap that either opens a focused modal or drops a templated
               body into the thread. */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setProposalModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
-            >
-              <FileText className="w-3.5 h-3.5 text-foreground/70" />
-              Send quote
-            </button>
+            {/* Unified send menu — Invoice / Pay link / Proposal / Contract
+                from the vendor's saved Files items, dropped into the thread. */}
+            <ChatSendPicker vendorId={inquiry.vendor_id} onSend={sendBody} />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
@@ -1644,19 +1585,6 @@ export default function InquiryDetailPage() {
 
       {inquiry && (
         <>
-          {proposalModalOpen && (
-            <Suspense fallback={null}>
-              <ProposalFormModal
-                open={proposalModalOpen}
-                onOpenChange={setProposalModalOpen}
-                inquiryId={inquiry.id}
-                vendorId={inquiry.vendor_id}
-                hostId={inquiry.host_id}
-                defaultTitle={`${inquiry.event_type.replace("_", " ")} proposal`}
-                onSuccess={load}
-              />
-            </Suspense>
-          )}
           <PinLocationDialog
             open={pinLocationOpen}
             onOpenChange={setPinLocationOpen}
