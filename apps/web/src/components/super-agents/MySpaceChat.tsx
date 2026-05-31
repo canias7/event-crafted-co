@@ -1090,9 +1090,9 @@ export function MySpaceChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          rows={1}
+          rows={3}
           placeholder={composerPlaceholder}
-          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none max-h-40 py-2 px-2 placeholder:text-foreground/40 text-foreground"
+          className="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[72px] max-h-60 py-2 px-2 placeholder:text-foreground/40 text-foreground"
           disabled={sending}
         />
         {sending
