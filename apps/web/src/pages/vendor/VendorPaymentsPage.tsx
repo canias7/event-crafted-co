@@ -7919,6 +7919,13 @@ function PayLinksTab({
   // Default "home" listing for a new link, but the form lets the
   // vendor override per-link via ListingPickerField below.
   const defaultVendorId = accountVendorIds[0] ?? null;
+  const [, setSearchParams] = useSearchParams();
+  // Pay links require a connected VendoraPay account first. When the
+  // vendor hasn't connected, gate the tab to a "connect first" card
+  // that routes them to the Settings tab (where the connect/verify
+  // banner lives) instead of letting them compose links that can't go
+  // anywhere yet.
+  const needsConnect = !status?.onboarded;
   const [pickedVendorId, setPickedVendorId] = useState<string | null>(defaultVendorId);
   // Keep pickedVendorId valid as the account changes.
   useEffect(() => {
@@ -8127,6 +8134,50 @@ function PayLinksTab({
     },
     [onChanged],
   );
+
+  // Gate: must connect VendoraPay before composing pay links.
+  if (needsConnect) {
+    return (
+      <div
+        className="rounded-2xl p-8 text-center"
+        style={{
+          background: "rgba(255,253,250,0.7)",
+          border: "0.5px solid rgba(255,138,76,0.22)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}
+      >
+        <div
+          className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center mb-4"
+          style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+        >
+          <Link2 className="w-5 h-5" />
+        </div>
+        <h3 className="font-editorial text-2xl mb-1.5">Connect VendoraPay first</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-5 leading-relaxed">
+          Pay links need a connected account so money has somewhere to land.
+          Verify your identity + bank in Settings (about 3 minutes), then
+          come back to create links.
+        </p>
+        <Button
+          onClick={() => {
+            setSearchParams(
+              (prev) => {
+                const p = new URLSearchParams(prev);
+                p.set("tab", "settings");
+                p.delete("file");
+                return p;
+              },
+              { replace: true },
+            );
+          }}
+          className="rounded-full"
+        >
+          Connect VendoraPay
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -8461,7 +8512,6 @@ function SettingsTab({
   // selecting any other listing triggers a per-account vendorapay-
   // status fetch.
   const primaryId = accountVendorIds[0] ?? null;
-  const fee = TIER_FEE_COPY[tier];
   const [connectedIds, setConnectedIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(primaryId);
   const [localStatus, setLocalStatus] = useState<Status | null>(primaryStatus);
@@ -8718,19 +8768,6 @@ function SettingsTab({
           </Card>
         </div>
       </section>
-
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-          Account
-        </h2>
-        <div className="space-y-4">
-          <SettingRow
-            label={tierLoading ? "Your fee" : `Your fee (${tier} plan)`}
-            value={tierLoading ? "—" : fee.rate}
-            sub={tierLoading ? "Loading your subscription tier…" : `${fee.vendoraCut}. ${fee.sub}`}
-          />
-        </div>
-      </section>
     </div>
   );
 }
@@ -8825,22 +8862,6 @@ function ListingPickerField({
   );
 }
 
-
-function SettingRow({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <Card>
-      <div className="p-5 flex items-start gap-4 flex-wrap">
-        <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-            {label}
-          </div>
-          <div className="text-base font-medium mt-1">{value}</div>
-        </div>
-        <div className="text-xs text-muted-foreground max-w-md">{sub}</div>
-      </div>
-    </Card>
-  );
-}
 
 function TransactionRow({ tx, showBorder }: { tx: Transaction; showBorder: boolean }) {
   const meta = kindLabel(tx.kind);
