@@ -41,6 +41,11 @@ export function RatingPromptStrip({
   const [messageCount, setMessageCount] = useState<number | null>(null);
   const [myRatings, setMyRatings] = useState<ExistingRating[] | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
+  // In-app purchase signal — reviews (event AND conversation) only unlock
+  // once the host paid a pay link tied to this inquiry (webhook stamps
+  // inquiries.paid_booked_at). Both host + vendor can read their own
+  // inquiry, so this matches what the server gate enforces.
+  const [paidBooked, setPaidBooked] = useState<boolean | null>(null);
   const [modalKind, setModalKind] = useState<"conversation" | "event" | null>(
     null,
   );
@@ -52,7 +57,7 @@ export function RatingPromptStrip({
   // still double-checks eligibility server-side).
   const refresh = useCallback(async () => {
     if (!inquiryId) return;
-    const [tRes, rRes] = await Promise.all([
+    const [tRes, rRes, iRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("direct_threads")
@@ -65,9 +70,18 @@ export function RatingPromptStrip({
         .select("kind")
         .eq("inquiry_id", inquiryId)
         .eq("rater_role", raterRole),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("inquiries")
+        .select("paid_booked_at")
+        .eq("id", inquiryId)
+        .maybeSingle(),
     ]);
     const thread = (tRes.data as { id?: string } | null)?.id ?? null;
     setThreadId(thread);
+    setPaidBooked(
+      Boolean((iRes.data as { paid_booked_at?: string | null } | null)?.paid_booked_at),
+    );
     if (thread) {
       const { count } = await supabase
         .from("direct_messages")
@@ -100,16 +114,19 @@ export function RatingPromptStrip({
     refresh,
   );
 
+  // Event review: requires an in-app purchase AND the event day to have
+  // ended (opens the day after event_date). Matches the server gate.
   const eventEligible = useMemo(() => {
-    if (!eventDate) return false;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 3);
-    return new Date(eventDate).getTime() < cutoff.getTime();
-  }, [eventDate]);
+    if (!paidBooked || !eventDate) return false;
+    // event_date is a calendar date; eligible once today is past it.
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return eventDate < todayStr;
+  }, [paidBooked, eventDate]);
 
+  // Conversation review: requires an in-app purchase AND ≥6 messages.
   const conversationEligible = useMemo(() => {
-    return (messageCount ?? 0) >= 6;
-  }, [messageCount]);
+    return Boolean(paidBooked) && (messageCount ?? 0) >= 6;
+  }, [paidBooked, messageCount]);
 
   const already = useMemo(() => {
     const set = new Set((myRatings ?? []).map((r) => r.kind));
@@ -118,7 +135,7 @@ export function RatingPromptStrip({
 
   // Decide what (if anything) to surface. Event takes priority
   // when both are eligible — it's the higher-stakes signal.
-  if (myRatings === null) return null;
+  if (myRatings === null || paidBooked === null) return null;
 
   if (eventEligible && !already.event) {
     return (
