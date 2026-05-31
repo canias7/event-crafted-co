@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ImagePlus, Loader2 } from "lucide-react";
+import { ChevronLeft, ImagePlus, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -141,11 +141,6 @@ export default function VendorEditProfilePage() {
     navigate("/vendor/me");
   }
 
-  const initialChar =
-    form.business_name?.trim()?.[0]?.toUpperCase() ??
-    user?.email?.[0]?.toUpperCase() ??
-    "V";
-
   return (
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
@@ -197,8 +192,9 @@ export default function VendorEditProfilePage() {
                       className="w-24 h-24 rounded-full object-cover bg-secondary"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center font-editorial text-4xl">
-                      {initialChar}
+                    // Neutral person silhouette default (no logo set).
+                    <div className="w-24 h-24 rounded-full bg-[#e5e1da] flex items-center justify-center">
+                      <User className="w-12 h-12" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
                     </div>
                   )}
                   {logoUploading ? (
