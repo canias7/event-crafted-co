@@ -1,5 +1,8 @@
-// My Space scheduled-action worker. Invoked every minute by pg_cron
-// (see migration 20260527006000_my_space_scheduled_actions.sql).
+// My Space scheduled-action worker. Invoked every 5 minutes by pg_cron
+// (see migration 20260527006000_my_space_scheduled_actions.sql; the
+// cadence was throttled from 1m → 5m in a later migration). On an empty
+// queue this is a single 0-row UPDATE, so the looser cadence just means
+// a scheduled action fires up to ~5 minutes late instead of ~1.
 //
 // Polls my_space_scheduled_actions for rows where status='pending'
 // and run_at <= now(). For each, flips status to 'executing', runs
