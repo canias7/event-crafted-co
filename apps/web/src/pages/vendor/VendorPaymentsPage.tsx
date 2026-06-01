@@ -190,6 +190,10 @@ const SECTION_IDS: Record<string, string> = {
   settings: "ws-settings",
 };
 
+// Overview stands alone as a top-level tab; everything else collapses
+// under a single "Workspace" tab, navigated by the secondary strip below.
+const WORKSPACE_TABS = TABS.filter((t) => t.id !== "overview");
+
 // Sub-tabs inside the Payments tab.
 type PaymentsTabId = "incoming" | "expenses";
 
@@ -834,6 +838,45 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               </button>
             </nav>
           </div>
+
+          {/* Secondary nav — only inside Workspace. Holds the five
+              collapsed sections; overflows horizontally on narrow
+              viewports with a right-edge fade cue. */}
+          {tab !== "overview" && (
+            <div className="relative mt-2 -mx-4 md:-mx-8">
+              <nav
+                ref={tabNavRef}
+                className={`flex gap-1 overflow-x-auto scrollbar-hide px-4 md:px-8 ${
+                  tabOverflow ? "pr-12 md:pr-16" : ""
+                }`}
+              >
+                {WORKSPACE_TABS.map((t) => {
+                  const active = tab === t.id;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      data-tab={t.id}
+                      onClick={() => setTab(t.id)}
+                      className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                        active ? "cockpit-tab--active" : ""
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </nav>
+              {tabOverflow && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute top-0 right-0 h-full w-10 md:w-14 bg-gradient-to-l from-background via-background/70 to-transparent"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-4 md:p-8 max-w-screen-2xl space-y-6">
