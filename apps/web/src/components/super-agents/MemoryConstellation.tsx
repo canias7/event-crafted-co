@@ -92,8 +92,6 @@ export function MemoryConstellation({
   const [entries, setEntries] = useState<KnowledgeEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<KnowledgeEntry | null>(null);
-  // Vendor logo shown in the central hub (falls back to the brand mark).
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   // Add / edit form state.
   const [adding, setAdding] = useState(false);
@@ -146,24 +144,6 @@ export function MemoryConstellation({
   useEffect(() => {
     if (open) void load();
   }, [open, load]);
-
-  // Pull the vendor's logo for the central hub. Best-effort.
-  useEffect(() => {
-    if (!open || !user?.id) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("vendor_profiles")
-        .select("logo_url")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      setLogoUrl((data as { logo_url?: string | null } | null)?.logo_url ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, user?.id]);
 
   // Esc closes whatever's topmost (detail → add → overlay).
   useEffect(() => {
@@ -414,16 +394,16 @@ export function MemoryConstellation({
             })
           : null}
 
-        {/* Central hub — the vendor's logo, falling back to the actual
-            app icon. Pulsing amber halo + a white shine wave that sweeps
-            across it every ~5s (matches the floating launcher button). */}
+        {/* Central hub — the My Space brand mark (same /pwa-512.png as the
+            floating launcher button). Pulsing amber halo + a white shine
+            wave that sweeps across it every ~5s. */}
         <div
           className="myspace-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-16 h-16 rounded-[18px]"
           style={{ boxShadow: "0 16px 28px -8px rgba(0,0,0,0.6)" }}
         >
           <img
-            src={logoUrl ?? "/pwa-512.png"}
-            alt="Your logo"
+            src="/pwa-512.png"
+            alt="My Space"
             className="w-16 h-16 rounded-[18px] object-cover"
           />
         </div>
