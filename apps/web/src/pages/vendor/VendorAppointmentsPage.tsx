@@ -916,7 +916,7 @@ export default function VendorAppointmentsPage({
   const Shell = embedded ? "div" : "main";
   const body = (
     <>
-      <Shell id={embedded ? undefined : "main-content"} className="flex-1 pb-20 lg:pb-0">
+      <Shell id={embedded ? undefined : "main-content"} className="flex-1 pb-24 lg:pb-0">
         {!embedded && (
           <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
             <div className="flex items-start justify-between gap-4">

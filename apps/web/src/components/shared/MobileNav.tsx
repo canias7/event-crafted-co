@@ -16,7 +16,8 @@ interface NavItem {
   labelKey: string;
   /** Optional — pathless items are section headers, skipped on mobile. */
   path?: string;
-  icon: LucideIcon;
+  /** Optional — matches the shared nav type; rendering guards on it. */
+  icon?: LucideIcon;
   children?: NavItem[];
   /** Match the full path incl. query (e.g. Overview vs Workspace). */
   exact?: boolean;

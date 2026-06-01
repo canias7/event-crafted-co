@@ -215,7 +215,7 @@ export default function VendorMyProfilePage() {
         title="My Profile"
         backPath="/vendor/me"
       />
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>

@@ -311,7 +311,7 @@ export default function VendorUsagePage() {
   return (
     <div className="min-h-screen flex relative bg-[var(--vendor-canvas)]">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
-      <main className="flex-1 min-w-0 pb-20 lg:pb-0">
+      <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-4 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(255,138,76,0.18)" }}

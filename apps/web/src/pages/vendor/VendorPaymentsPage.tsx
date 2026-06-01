@@ -760,7 +760,7 @@ export default function VendorPaymentsPage(
   );
 
   const body = (
-    <main className="flex-1 pb-20 lg:pb-0">
+    <main className="flex-1 pb-24 lg:pb-0">
         <div
           className={`backdrop-blur-md px-4 md:px-8 sticky top-0 z-40 border-b border-foreground/[0.06] ${
             embedded ? "pt-5 pb-3" : "py-5"
@@ -2405,7 +2405,7 @@ function RefundModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
