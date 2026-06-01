@@ -46,19 +46,15 @@ serve(async (req) => {
     });
     const { data: userData } = await userClient.auth.getUser();
     if (!userData?.user) return json(401, { error: "unauthorized" });
+    const userId = userData.user.id;
 
-    const body = await req.json().catch(() => ({}));
-    const businessId = body?.business_id as string | undefined;
-    if (!businessId) return json(400, { error: "business_id required" });
-
-    const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", { _vendor_id: businessId });
-    if (!isAdmin) return json(403, { error: "admin role required" });
-
+    // Account-level: the connection belongs to the user, so resolve by
+    // user_id. (business_id is ignored if older callers still send it.)
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
     const { data: secret } = await admin
       .from("vendor_payment_secrets")
       .select("stripe_account_id")
-      .eq("vendor_id", businessId)
+      .eq("user_id", userId)
       .maybeSingle();
     const accountId = (secret as { stripe_account_id?: string | null } | null)?.stripe_account_id ?? null;
     if (!accountId) return json(400, { error: "vendor not onboarded" });

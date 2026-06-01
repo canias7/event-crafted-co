@@ -454,6 +454,27 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
   };
 
   const [status, setStatus] = useState<Status | null>(null);
+  // VendoraPay is account-level (one Stripe connection per user, not per
+  // listing), so pull the connection status by account — independent of
+  // whether the vendor has any listing yet. Drives the Settings tab's
+  // Connect CTA + bank / identity badges.
+  useEffect(() => {
+    if (!user?.id) {
+      setStatus(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.functions.invoke("vendorapay-status", {
+        body: {},
+      });
+      if (cancelled) return;
+      if (data) setStatus(data as Status);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<PayoutsResponse | null>(null);
@@ -8077,17 +8098,16 @@ function SettingsTab({
     };
   }, [selectedId, primaryId, primaryStatus]);
 
-  // The rest of the component (cards below) reads from `status` —
-  // alias it to the locally-resolved one so existing markup is
-  // unchanged.
-  const status = localStatus;
-  const vendorId = selectedId;
+  // VendoraPay is account-level, so the cards read the account status
+  // the parent fetched (by user, not listing). localStatus / the
+  // per-listing picker are legacy and no longer drive these cards.
+  const status = primaryStatus;
 
   const openDashboard = useCallback(async () => {
-    if (!vendorId || opening) return;
+    if (opening) return;
     setOpening(true);
     const { data, error } = await supabase.functions.invoke("vendorapay-dashboard-link", {
-      body: { business_id: vendorId },
+      body: {},
     });
     setOpening(false);
     if (error || !(data as { url?: string })?.url) {
@@ -8107,16 +8127,15 @@ function SettingsTab({
       return;
     }
     window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
-  }, [vendorId, opening]);
+  }, [opening]);
 
-  // Start (or resume) VendoraPay onboarding for the selected listing.
-  // vendorapay-onboard auto-creates a vendor_profile when business_id
-  // is omitted, so this works even before the vendor has a listing.
+  // Start (or resume) VendoraPay onboarding. The connection is
+  // account-level — no listing required, none created.
   const handleConnect = useCallback(async () => {
     if (connecting) return;
     setConnecting(true);
     const { data, error } = await supabase.functions.invoke("vendorapay-onboard", {
-      body: vendorId ? { business_id: vendorId } : {},
+      body: {},
     });
     if (error || !(data as { url?: string })?.url) {
       let detail = "Try again in a moment.";
@@ -8136,7 +8155,7 @@ function SettingsTab({
       return;
     }
     window.location.href = (data as { url: string }).url;
-  }, [vendorId, connecting]);
+  }, [connecting]);
 
   return (
     <div className="space-y-6">
