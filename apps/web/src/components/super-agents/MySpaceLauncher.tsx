@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 // Heavy chat — only load its bundle once the user opens the panel.
 const MySpaceChat = lazy(() =>
@@ -207,8 +208,15 @@ export function MySpaceLauncher() {
 // page (/vendor/*). Mounted once at the app root so it's available app-
 // wide without each vendor page wiring it up. Public vendor browse pages
 // live under /vendors/* and are intentionally excluded.
+//
+// Gated on hasVendorAccess too (not just the path): the mount lives
+// outside RequireRole, so without this it would flash for a frame on a
+// /vendor/* URL before a logged-out/non-vendor user gets redirected, and
+// render during the auth-loading splash.
 export function VendorMySpaceMount() {
   const { pathname } = useLocation();
+  const { hasVendorAccess } = useAuth();
+  if (!hasVendorAccess) return null;
   if (!pathname.startsWith("/vendor/")) return null;
   return <MySpaceLauncher />;
 }
