@@ -46,32 +46,23 @@ serve(async (req) => {
     });
     const { data: userData } = await userClient.auth.getUser();
     if (!userData?.user) return json(401, { error: "unauthorized" });
-
-    // business_id can come from query string (GET) or body (POST).
-    const url = new URL(req.url);
-    let businessId = url.searchParams.get("business_id");
-    if (!businessId && req.method === "POST") {
-      const body = await req.json().catch(() => ({}));
-      businessId = (body?.business_id as string | null) ?? null;
-    }
-    if (!businessId) return json(400, { error: "business_id required" });
-
-    const { data: isMember } = await userClient.rpc("is_vendor_member", {
-      _vendor_id: businessId,
-    });
-    if (!isMember) return json(403, { error: "not a team member" });
+    const userId = userData.user.id;
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
 
+    // Account-level: the VendoraPay connection belongs to the user, not
+    // a listing, so resolve the secret by user_id. (business_id is no
+    // longer required; older callers may still send it — we ignore it.)
     const { data: secret } = await admin
       .from("vendor_payment_secrets")
-      .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted")
-      .eq("vendor_id", businessId)
+      .select("id, stripe_account_id, charges_enabled, payouts_enabled, details_submitted")
+      .eq("user_id", userId)
       .maybeSingle();
     const row = secret as
       | {
+          id?: string;
           stripe_account_id?: string | null;
           charges_enabled?: boolean | null;
           payouts_enabled?: boolean | null;
@@ -105,7 +96,7 @@ serve(async (req) => {
             details_submitted: fresh.details_submitted,
             updated_at: new Date().toISOString(),
           })
-          .eq("vendor_id", businessId);
+          .eq("id", row.id);
       }
       return json(200, {
         onboarded: true,

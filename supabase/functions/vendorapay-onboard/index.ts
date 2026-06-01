@@ -1,19 +1,18 @@
-// VendoraPay Phase 1: POST /vendorapay/onboard
+// VendoraPay: POST /vendorapay/onboard
 //
-// Creates a connected account for the logged-in business, stores
-// the opaque account_id on vendor_payment_secrets (locked-down side
-// table; only service_role can read), and returns a VendoraPay-
-// branded onboarding link.
+// Creates ONE connected account per signed-in user (account-level —
+// NOT per listing) and returns a VendoraPay-branded onboarding link.
+// The opaque account_id is stored on vendor_payment_secrets keyed by
+// user_id (locked-down side table; only service_role can read).
 //
-// Idempotent on a per-business basis: re-onboarding the same vendor
-// reuses the existing account and just mints a fresh link.
+// Idempotent per user: re-onboarding reuses the existing account and
+// just mints a fresh link. No vendor_profile / listing is created —
+// connecting payments is independent of publishing a listing.
 //
-// The frontend gets back { url, account_id } and redirects the
-// user to the URL. After they complete KYC, Stripe redirects to
-// /vendor/integrations?vendorapay=return where the Integrations
-// page reads the query param, toasts "Welcome back", and re-pulls
-// status. /vendor/integrations?vendorapay=refresh handles expired
-// onboarding links (Stripe redirects there if the link timed out).
+// The frontend gets back { url, account_id } and redirects the user
+// to the URL. After KYC, Stripe redirects to
+// /vendor/integrations?vendorapay=return (the page re-pulls status);
+// ?vendorapay=refresh handles an expired link.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -61,82 +60,46 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    const body = await req.json().catch(() => ({}));
-    let businessId = (body?.business_id as string | undefined) ?? null;
-
-    if (businessId) {
-      // Ownership check: caller must be admin on this business.
-      const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
-        _vendor_id: businessId,
-      });
-      if (!isAdmin) return json(403, { error: "admin role required" });
-    } else {
-      // No listing specified — let the vendor connect VendoraPay before
-      // they've published a listing. Reuse their earliest profile if any,
-      // else create a private draft one. The vendor_profiles_add_owner
-      // trigger grants the caller ownership, so the admin check above
-      // passes on every later call for this profile.
-      const { data: existingProfile } = await admin
-        .from("vendor_profiles")
-        .select("id")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      businessId = (existingProfile as { id?: string } | null)?.id ?? null;
-      if (!businessId) {
-        const { data: created, error: createErr } = await admin
-          .from("vendor_profiles")
-          .insert({ user_id: userId, application_status: "draft" })
-          .select("id")
-          .single();
-        if (createErr || !(created as { id?: string } | null)?.id) {
-          console.error(
-            "[vendorapay-onboard] profile auto-create failed",
-            createErr,
-          );
-          return json(500, {
-            error: "profile_create_failed",
-            detail: (createErr?.message ?? "could not create a profile").slice(
-              0,
-              240,
-            ),
-          });
-        }
-        businessId = (created as { id: string }).id;
-      }
-    }
-
-    // Reuse the existing account if we already onboarded this vendor.
+    // Account-level: one Stripe connection per user. Reuse the existing
+    // account if this user already has one; otherwise create it.
     const { data: existing } = await admin
       .from("vendor_payment_secrets")
-      .select("stripe_account_id")
-      .eq("vendor_id", businessId)
+      .select("id, stripe_account_id")
+      .eq("user_id", userId)
       .maybeSingle();
     let accountId =
       (existing as { stripe_account_id?: string | null } | null)
         ?.stripe_account_id ?? null;
 
     if (!accountId) {
-      // Idempotency key is deterministic per business so a retry of
-      // POST /vendorapay/onboard within the same request window
-      // never spawns a second provider account for the same vendor.
+      // Idempotency key is deterministic per user so a retry within the
+      // same request window never spawns a second provider account.
       const account = await createAccount({
         email: userEmail,
-        business_id: businessId,
-        idempotency_key: `vendorapay:onboard:${businessId}`,
+        business_id: userId,
+        idempotency_key: `vendorapay:onboard:${userId}`,
       });
       accountId = account.id;
-      await admin.from("vendor_payment_secrets").upsert(
-        {
-          vendor_id: businessId,
+      const existingId = (existing as { id?: string } | null)?.id ?? null;
+      if (existingId) {
+        await admin
+          .from("vendor_payment_secrets")
+          .update({
+            stripe_account_id: accountId,
+            charges_enabled: account.charges_enabled,
+            payouts_enabled: account.payouts_enabled,
+            details_submitted: account.details_submitted,
+          })
+          .eq("id", existingId);
+      } else {
+        await admin.from("vendor_payment_secrets").insert({
+          user_id: userId,
           stripe_account_id: accountId,
           charges_enabled: account.charges_enabled,
           payouts_enabled: account.payouts_enabled,
           details_submitted: account.details_submitted,
-        },
-        { onConflict: "vendor_id" },
-      );
+        });
+      }
     }
 
     const { url } = await createOnboardingLink({
