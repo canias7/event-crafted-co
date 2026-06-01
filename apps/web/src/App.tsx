@@ -232,20 +232,20 @@ const App = () => (
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
-              {/* /vendor/my-vendora hosts the VendoraPay dashboard
-                  with Calendar embedded as a sub-tab.
-                  /vendor/leads is no longer a tab — inquiries are
-                  triaged in /vendor/inbox, which is the canonical
-                  hub for prospect conversations. The Leads tab in
-                  My Vendora duplicated that surface, so the
-                  redirect now goes to inbox. */}
+              {/* The vendor dashboard is two routes: /vendor/overview
+                  (KPIs) and /vendor/workspace (calendar, payments, files,
+                  contacts, settings). /vendor/leads is no longer a tab —
+                  inquiries are triaged in /vendor/inbox, the canonical
+                  hub for prospect conversations — so it redirects there. */}
               <Route path="/vendor/leads" element={<Navigate to="/vendor/inbox" replace />} />
               <Route path="/vendor/appointments" element={<Navigate to="/vendor/workspace?section=calendar" replace />} />
               <Route path="/vendor/payments" element={<Navigate to="/vendor/workspace" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
               <Route path="/vendor/integrations" element={<RequireRole role="vendor"><VendorIntegrationsPage /></RequireRole>} />
-              <Route path="/vendor/my-vendora" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
+              <Route path="/vendor/overview" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
+              {/* Back-compat: old /vendor/my-vendora now redirects to Overview. */}
+              <Route path="/vendor/my-vendora" element={<Navigate to="/vendor/overview" replace />} />
               <Route path="/vendor/workspace" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
               <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/usage" element={<RequireRole role="vendor"><VendorUsagePage /></RequireRole>} />

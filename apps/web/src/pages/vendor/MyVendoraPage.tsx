@@ -18,8 +18,8 @@ const VendorPaymentsPage = lazy(
 );
 
 // Serves two routes off the same dashboard component:
-//   /vendor/my-vendora → Overview (KPIs)
-//   /vendor/workspace  → Workspace (calendar/payments/files/contacts/settings)
+//   /vendor/overview  → Overview (KPIs)
+//   /vendor/workspace → Workspace (calendar/payments/files/contacts/settings)
 export default function MyVendoraPage() {
   const { pathname } = useLocation();
   const view = pathname === "/vendor/workspace" ? "workspace" : "overview";

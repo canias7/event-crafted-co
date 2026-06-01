@@ -55,8 +55,8 @@ const HOST_NAV: NavTarget[] = [
 const VENDOR_NAV: NavTarget[] = [
   { label: "Profile", path: "/vendor/me", icon: User },
   { label: "Inquiry inbox", path: "/vendor/inbox", icon: Inbox },
-  { label: "My Vendora", path: "/vendor/my-vendora", icon: CreditCard },
-  { label: "Calendar", path: "/vendor/my-vendora?tab=calendar", icon: CalendarDays },
+  { label: "Overview", path: "/vendor/overview", icon: CreditCard },
+  { label: "Workspace", path: "/vendor/workspace", icon: CalendarDays },
   { label: "Partners", path: "/vendor/partners", icon: MessageSquare },
   { label: "Studio", path: "/vendor/studio", icon: Store },
 ];

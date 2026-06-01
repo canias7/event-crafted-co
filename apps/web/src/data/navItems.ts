@@ -64,9 +64,9 @@ export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
   // My Vendora is now two separate pages/routes: Overview (KPIs) at
-  // /vendor/my-vendora, and Workspace (calendar, payments, files,
+  // /vendor/overview, and Workspace (calendar, payments, files,
   // contacts, settings — stacked) at /vendor/workspace.
-  { labelKey: "sidebar.vendor.overview", path: "/vendor/my-vendora", icon: LayoutDashboard },
+  { labelKey: "sidebar.vendor.overview", path: "/vendor/overview", icon: LayoutDashboard },
   { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },

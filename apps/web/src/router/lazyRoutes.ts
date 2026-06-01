@@ -242,7 +242,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/ai-superagents", importer: importVendorAiSuperagents },
   { pattern: "/vendor/integrations", importer: importVendorIntegrations },
   { pattern: "/vendor/payments", importer: importVendorPayments },
-  { pattern: "/vendor/my-vendora", importer: importMyVendora },
+  { pattern: "/vendor/overview", importer: importMyVendora },
   { pattern: "/vendor/workspace", importer: importMyVendora },
   { pattern: "/vendor/subscription", importer: importVendorSubscription },
   { pattern: "/vendor/usage", importer: importVendorUsage },
