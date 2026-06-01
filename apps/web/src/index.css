@@ -887,7 +887,10 @@
   100% { transform: translateX(260%); }
 }
 .myspace-fab {
-  position: relative;
+  /* Position comes from the `fixed` utility on the element. Don't set
+     position here — this file loads after Tailwind utilities, so it would
+     override .fixed and break the floating behavior. `fixed` is still a
+     positioned containing block for the ::after shine. */
   overflow: hidden;
   animation: myspace-fab-pulse 2.4s ease-in-out infinite;
 }
