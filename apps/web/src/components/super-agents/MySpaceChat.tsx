@@ -1805,7 +1805,7 @@ function MessageBubble(
             message.content
               ? (
                 <div
-                  className={`text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-pre:bg-black/10 prose-code:text-[0.85em] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:bg-black/10 prose-code:before:content-none prose-code:after:content-none ${
+                  className={`text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-headings:font-sans prose-headings:font-semibold prose-headings:tracking-normal prose-headings:leading-snug prose-h1:text-base prose-h2:text-[15px] prose-h3:text-sm prose-h4:text-sm prose-h5:text-sm prose-h6:text-sm prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-pre:bg-black/10 prose-code:text-[0.85em] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:bg-black/10 prose-code:before:content-none prose-code:after:content-none ${
                     isUser
                       ? "prose-invert prose-strong:text-background prose-a:text-background prose-code:bg-white/20"
                       : "prose-strong:text-foreground"
