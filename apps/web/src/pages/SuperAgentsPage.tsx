@@ -143,7 +143,7 @@ export default function SuperAgentsPage() {
       <AgentsSection />
 
       <footer className="relative z-10 border-t border-black/5 px-6 md:px-10 py-10 text-center text-[12px] text-black/45">
-        Vendora · Super Agents · Powered by Opus 4.7
+        Vendora · Super Agents
       </footer>
     </div>
   );
