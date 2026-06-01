@@ -37,14 +37,15 @@ export default function MyVendoraPage() {
           <VendorPaymentsPage embedded view={view} />
         </Suspense>
       </div>
-      {/* Docked My Space assistant — wide screens only. Replaces the
-          standalone My Space sidebar tab; the full-page chat still lives
-          at /vendor/ai-superagents for direct links. */}
-      <aside className="hidden xl:flex w-[380px] shrink-0 border-l border-foreground/10 p-3 h-screen sticky top-0">
-        <Suspense fallback={null}>
-          <MySpaceChat docked />
-        </Suspense>
-      </aside>
+      {/* Docked My Space assistant — Workspace only, wide screens only.
+          The full-page chat still lives at /vendor/ai-superagents. */}
+      {view === "workspace" && (
+        <aside className="hidden xl:flex w-[380px] shrink-0 border-l border-foreground/10 p-3 h-screen sticky top-0">
+          <Suspense fallback={null}>
+            <MySpaceChat docked />
+          </Suspense>
+        </aside>
+      )}
       <MobileNav items={vendorNavItems} />
     </div>
   );
