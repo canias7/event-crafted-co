@@ -24,6 +24,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const BATCH_LIMIT = 25;
+// Mirror of my-space-chat/config.ts SEND_EMAIL_DAILY_CAP so the
+// scheduled send path enforces the same per-user daily email cap.
+const SEND_EMAIL_DAILY_CAP = 20;
 
 interface ActionRow {
   id: string;
@@ -89,6 +92,21 @@ async function execSendEmail(admin: any, row: ActionRow): Promise<unknown> {
   const body = String(row.args?.body ?? "");
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) throw new Error("invalid_to");
   if (!subject || !body) throw new Error("missing subject/body");
+  // Shared daily email cap with the chat's send_email tool. Both paths
+  // count send_email rows in my_space_action_audit, so a loop of
+  // scheduled emails can no longer bypass SEND_EMAIL_DAILY_CAP.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("my_space_action_audit")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", row.user_id)
+    .eq("tool_name", "send_email")
+    .gte("created_at", since);
+  if ((count ?? 0) >= SEND_EMAIL_DAILY_CAP) {
+    throw new Error(
+      `daily_email_cap_reached: ${count}/${SEND_EMAIL_DAILY_CAP} in the last 24h`,
+    );
+  }
   let fromName = "Vendora";
   if (row.vendor_id) {
     const { data: vendor } = await admin
@@ -112,6 +130,19 @@ async function execSendEmail(admin: any, row: ActionRow): Promise<unknown> {
     throw new Error(`resend ${res.status}: ${(await res.text()).slice(0, 240)}`);
   }
   const out = (await res.json()) as any;
+  // Record the send in the shared audit table so it counts toward the
+  // daily cap (the chat's send_email path counts the same rows).
+  await admin
+    .from("my_space_action_audit")
+    .insert({
+      user_id: row.user_id,
+      vendor_id: row.vendor_id ?? null,
+      tool_name: "send_email",
+      input: { to, subject },
+      result: { sent: true, resend_id: out?.id ?? null, via: "scheduled" },
+      success: true,
+    })
+    .then(() => {}, () => {});
   return { sent: true, to, subject, resend_id: out?.id ?? null };
 }
 
