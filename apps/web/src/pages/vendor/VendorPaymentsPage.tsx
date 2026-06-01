@@ -8018,6 +8018,7 @@ function SettingsTab({
   const [localStatus, setLocalStatus] = useState<Status | null>(primaryStatus);
   const [statusLoading, setStatusLoading] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const accountKey = accountVendorIds.join(",");
 
   // Find every listing that's actually onboarded to VendoraPay.
@@ -8108,6 +8109,35 @@ function SettingsTab({
     window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
   }, [vendorId, opening]);
 
+  // Start (or resume) VendoraPay onboarding for the selected listing.
+  // vendorapay-onboard auto-creates a vendor_profile when business_id
+  // is omitted, so this works even before the vendor has a listing.
+  const handleConnect = useCallback(async () => {
+    if (connecting) return;
+    setConnecting(true);
+    const { data, error } = await supabase.functions.invoke("vendorapay-onboard", {
+      body: vendorId ? { business_id: vendorId } : {},
+    });
+    if (error || !(data as { url?: string })?.url) {
+      let detail = "Try again in a moment.";
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.clone().json();
+          detail = (body?.detail || body?.error || error?.message) ?? detail;
+        } catch {
+          detail = error?.message ?? detail;
+        }
+      } else if (error?.message) {
+        detail = error.message;
+      }
+      toast.error("Couldn't open VendoraPay onboarding", { description: detail });
+      setConnecting(false);
+      return;
+    }
+    window.location.href = (data as { url: string }).url;
+  }, [vendorId, connecting]);
+
   return (
     <div className="space-y-6">
       {/* Listing picker — Settings is per-connected-account, so the
@@ -8166,6 +8196,44 @@ function SettingsTab({
           Connection
         </h2>
         <div className="space-y-3">
+          {/* Connect CTA — the entry point into VendoraPay onboarding.
+              Only shown until the account is onboarded; afterward the
+              per-card "Manage bank" / "Update info" buttons take over. */}
+          {!status?.onboarded ? (
+            <div
+              className="rounded-2xl p-5 flex items-start gap-4 flex-wrap"
+              style={{
+                background: "rgba(255,253,250,0.7)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+              }}
+            >
+              <div
+                className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+              >
+                <Landmark className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold">Connect VendoraPay</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md leading-relaxed">
+                  Set up payments to send invoices, accept cards, and get
+                  paid out to your bank. Verify your identity + bank (about
+                  3 minutes) — we'll bring you right back here.
+                </p>
+              </div>
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="rounded-full"
+              >
+                {connecting ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : null}
+                Connect VendoraPay
+              </Button>
+            </div>
+          ) : null}
+
           <Card>
             <div className="p-5 flex items-start gap-4 flex-wrap">
               <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
