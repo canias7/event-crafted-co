@@ -2466,10 +2466,74 @@ async function toolSummarizeInquiryThread(
 // ─── Custom tools ───────────────────────────────────────────────
 
 // Execute one of the vendor's registered custom webhook tools.
+// True for loopback / private / link-local / reserved IPs (v4 and v6),
+// i.e. anything a vendor webhook must never be allowed to reach.
+function isPrivateIp(ip: string): boolean {
+  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const a = Number(m[1]), b = Number(m[2]);
+    if (a === 0 || a === 10 || a === 127) return true;
+    if (a === 169 && b === 254) return true; // link-local incl. cloud metadata
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+    if (a >= 224) return true; // multicast / reserved
+    return false;
+  }
+  const lo = ip.toLowerCase();
+  if (lo === "::1" || lo === "::") return true;
+  if (lo.startsWith("fe80")) return true; // link-local
+  if (lo.startsWith("fc") || lo.startsWith("fd")) return true; // ULA
+  if (lo.startsWith("::ffff:")) return isPrivateIp(lo.replace("::ffff:", ""));
+  return false;
+}
+
+// SSRF guard for vendor-registered custom-tool URLs. Requires https,
+// blocks literal private IPs and known internal hostnames, and (best
+// effort) resolves the host to reject names that point at private IPs.
+async function assertSafeOutboundUrl(raw: string): Promise<void> {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error("invalid_tool_url");
+  }
+  if (u.protocol !== "https:") throw new Error("tool_url_must_be_https");
+  const host = u.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (["localhost", "metadata", "metadata.google.internal"].includes(host)) {
+    throw new Error("tool_url_blocked_host");
+  }
+  const isIpLiteral = /^[0-9.]+$/.test(host) || host.includes(":");
+  if (isIpLiteral) {
+    if (isPrivateIp(host)) throw new Error("tool_url_blocked_ip");
+    return;
+  }
+  // Best-effort DNS check: if resolution works, reject private targets.
+  // If resolveDns is unavailable, the scheme + literal-IP + host checks
+  // above still cover the main metadata/localhost vectors.
+  try {
+    const ips = [
+      ...await Deno.resolveDns(host, "A").catch(() => [] as string[]),
+      ...await Deno.resolveDns(host, "AAAA").catch(() => [] as string[]),
+    ];
+    for (const ip of ips) {
+      if (isPrivateIp(ip)) throw new Error("tool_url_blocked_ip");
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message === "tool_url_blocked_ip") throw e;
+    // resolveDns unsupported/denied — keep going with the static checks.
+  }
+}
+
 async function execCustomTool(
   toolRow: any,
   input: any,
 ): Promise<unknown> {
+  try {
+    await assertSafeOutboundUrl(String(toolRow.url));
+  } catch (e) {
+    return { error: `blocked_tool_url: ${(e as Error).message}` };
+  }
   const method = String(toolRow.method ?? "POST");
   const baseHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -2709,6 +2773,12 @@ const SENSITIVE_TOOLS = new Set([
   "create_invoice",
 ]);
 
+// Scheduled-action kinds that actually send something. Scheduling one is
+// as sensitive as sending directly, so it must clear the same gate —
+// otherwise an injected turn bypasses confirmation by queueing the send
+// for the worker instead of sending it now.
+const SENSITIVE_SCHEDULE_KINDS = new Set(["send_host_reply", "send_email"]);
+
 // Stable hash of a tool's arguments so the same proposed action maps to
 // the same pending-confirmation row across turns.
 async function hashArgs(name: string, input: any): Promise<string> {
@@ -2790,6 +2860,17 @@ async function executeTool(
     // Confirmation gate for money/message tools.
     if (SENSITIVE_TOOLS.has(name)) {
       const gate = await confirmGate(admin, userId, threadId, turnId, name, input);
+      if (!gate.confirmed) return gate.payload;
+    }
+    // Same gate for SCHEDULING a send — closes the bypass where the model
+    // queues a send_email/send_host_reply for the worker to dodge the gate.
+    if (
+      name === "manage_scheduled_action" && input?.action === "schedule" &&
+      SENSITIVE_SCHEDULE_KINDS.has(String(input?.kind ?? ""))
+    ) {
+      const gate = await confirmGate(
+        admin, userId, threadId, turnId, `schedule:${input.kind}`, input,
+      );
       if (!gate.confirmed) return gate.payload;
     }
     if (name === "search_inquiries") {
