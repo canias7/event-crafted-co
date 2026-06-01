@@ -278,6 +278,63 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
   // AbortController for the in-flight stream so we can cancel it.
   const abortRef = useRef<AbortController | null>(null);
 
+  // ── Smooth typewriter reveal (ChatGPT-style). The server streams text
+  // in bursts; rather than dumping each burst into the bubble, we keep the
+  // full received text in `full` and animate `shown` forward a few chars
+  // per frame so it types out letter-by-letter but fast. `placeholder` is
+  // the assistant message object (matched by reference); `finalize` runs
+  // once the queue drains (e.g. to stamp the persisted id on completion).
+  const revealRef = useRef<{
+    full: string;
+    shown: number;
+    raf: number | null;
+    placeholder: TextMessage | null;
+    finalize: (() => void) | null;
+  }>({ full: "", shown: 0, raf: null, placeholder: null, finalize: null });
+
+  const stopReveal = useCallback(() => {
+    const s = revealRef.current;
+    if (s.raf !== null) {
+      cancelAnimationFrame(s.raf);
+      s.raf = null;
+    }
+  }, []);
+
+  const pumpReveal = useCallback(() => {
+    const s = revealRef.current;
+    const remaining = s.full.length - s.shown;
+    if (remaining <= 0) {
+      s.raf = null;
+      if (s.finalize) {
+        const fn = s.finalize;
+        s.finalize = null;
+        fn();
+      }
+      return;
+    }
+    // Reveal a base of a few chars per frame, accelerating with backlog so
+    // we never lag far behind the stream — fast, but still reads as typing.
+    const step = Math.max(3, Math.ceil(remaining / 5));
+    s.shown = Math.min(s.full.length, s.shown + step);
+    const shownText = s.full.slice(0, s.shown);
+    const ph = s.placeholder;
+    setMessages((prev) => {
+      const next = [...prev];
+      const idx = next.findIndex((m) => m === ph);
+      if (idx >= 0 && next[idx].type === "text") {
+        (next[idx] as TextMessage).content = shownText;
+      }
+      return next;
+    });
+    s.raf = requestAnimationFrame(pumpReveal);
+  }, []);
+
+  const startReveal = useCallback(() => {
+    if (revealRef.current.raf === null) {
+      revealRef.current.raf = requestAnimationFrame(pumpReveal);
+    }
+  }, [pumpReveal]);
+
   // ── Load threads on mount; pick the most recent as the default.
   const loadThreads = useCallback(async (): Promise<ThreadRow[]> => {
     if (!user?.id) return [];
@@ -371,6 +428,9 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
     if (!el || !atBottomRef.current) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, sending]);
+
+  // Cancel any in-flight typewriter frame on unmount.
+  useEffect(() => () => stopReveal(), [stopReveal]);
 
   // ── Realtime: toast when a new inquiry arrives for this vendor, so
   // the AI's snapshot doesn't go stale mid-chat without the vendor
@@ -553,6 +613,15 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
     });
     setSending(true);
     setActiveTool(null);
+    // Arm the typewriter reveal for this assistant bubble.
+    stopReveal();
+    revealRef.current = {
+      full: "",
+      shown: 0,
+      raf: null,
+      placeholder: assistantPlaceholder,
+      finalize: null,
+    };
 
     // Track per-stream state in closure variables; we apply them to
     // React state via functional updaters so concurrent deltas don't
@@ -665,16 +734,9 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               return next;
             });
           } else if (ev.type === "delta") {
-            const chunk = String(ev.text ?? "");
-            setMessages((prev) => {
-              const next = [...prev];
-              const idx = next.findIndex((m) => m === assistantPlaceholder);
-              if (idx >= 0 && next[idx].type === "text") {
-                (next[idx] as TextMessage).content =
-                  ((next[idx] as TextMessage).content ?? "") + chunk;
-              }
-              return next;
-            });
+            // Queue the burst and let the reveal loop type it out smoothly.
+            revealRef.current.full += String(ev.text ?? "");
+            startReveal();
           } else if (ev.type === "tool_start") {
             setActiveTool(String(ev.name ?? ""));
           } else if (ev.type === "tool_done") {
@@ -691,32 +753,42 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
             );
           } else if (ev.type === "done") {
             const a = ev.assistant_message ?? {};
-            setMessages((prev) => {
-              const next = [...prev];
-              const idx = next.findIndex((m) => m === assistantPlaceholder);
-              if (idx >= 0) {
-                next[idx] = a.type === "image"
-                  ? ({
-                    id: a.id,
-                    role: "assistant",
-                    type: "image",
-                    image_url: a.image_url,
-                    image_prompt: a.image_prompt,
-                    created_at: a.created_at,
-                  } as ImageMessage)
-                  : ({
-                    id: a.id,
-                    role: "assistant",
-                    type: "text",
-                    content: a.content,
-                    created_at: a.created_at,
-                  } as TextMessage);
-              }
-              return next;
-            });
             setActiveTool(null);
+            const replacePlaceholder = (msg: ChatMessage) =>
+              setMessages((prev) => {
+                const next = [...prev];
+                const idx = next.findIndex((m) => m === assistantPlaceholder);
+                if (idx >= 0) next[idx] = msg;
+                return next;
+              });
+            if (a.type === "image") {
+              // No typewriter for images — swap in the final bubble now.
+              stopReveal();
+              replacePlaceholder({
+                id: a.id,
+                role: "assistant",
+                type: "image",
+                image_url: a.image_url,
+                image_prompt: a.image_prompt,
+                created_at: a.created_at,
+              } as ImageMessage);
+            } else {
+              // Let the reveal type out the authoritative text, then stamp
+              // the persisted id/timestamp once it's fully shown.
+              revealRef.current.full = String(a.content ?? "");
+              revealRef.current.finalize = () =>
+                replacePlaceholder({
+                  id: a.id,
+                  role: "assistant",
+                  type: "text",
+                  content: a.content,
+                  created_at: a.created_at,
+                } as TextMessage);
+              startReveal();
+            }
           } else if (ev.type === "error") {
             sawError = true;
+            stopReveal();
             toast.error(`Couldn't get a reply: ${ev.message}`);
             // Roll back the placeholders we added.
             setMessages((prev) =>
@@ -737,6 +809,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
         setThreads(refreshed);
       }
     } catch (err) {
+      stopReveal();
       const aborted = err instanceof DOMException && err.name === "AbortError";
       if (aborted) {
         // User hit Stop. Keep whatever text streamed so far inside the
@@ -1494,8 +1567,6 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
                 <MessageBubble
                   key={m.id ?? `idx-${i}`}
                   message={m}
-                  onEditAndResend={(id, newText) =>
-                    void send(newText, { replaceMessageId: id })}
                 />
               ))}
             {sending && activeTool
@@ -1691,26 +1762,13 @@ function formatThreadTime(iso: string): string {
 function MessageBubble(
   {
     message,
-    onEditAndResend,
   }: {
     message: ChatMessage;
-    onEditAndResend?: (messageId: string, newText: string) => void;
   },
 ) {
   const isUser = message.role === "user";
   const attachments = message.type === "text" ? message.attachments : null;
   const [copied, setCopied] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(
-    message.type === "text" ? message.content : "",
-  );
-  // Keep draft in sync if the message updates from props.
-  useEffect(() => {
-    if (!editing && message.type === "text") setDraft(message.content);
-  }, [message, editing]);
-
-  const canEdit = isUser && message.type === "text" && !!message.id &&
-    !!onEditAndResend;
 
   const copyText = () => {
     const text = message.type === "text"
@@ -1720,20 +1778,6 @@ function MessageBubble(
     void navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  };
-
-  const commitEdit = () => {
-    const t = draft.trim();
-    if (!t || !message.id) {
-      setEditing(false);
-      return;
-    }
-    if (message.type === "text" && t === message.content) {
-      setEditing(false);
-      return;
-    }
-    setEditing(false);
-    onEditAndResend?.(message.id, t);
   };
 
   return (
@@ -1758,58 +1802,7 @@ function MessageBubble(
           : null}
         {message.type === "text"
           ? (
-            editing
-              ? (
-                <div className="min-w-[280px]">
-                  <textarea
-                    autoFocus
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        commitEdit();
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        setEditing(false);
-                        setDraft(message.content);
-                      }
-                    }}
-                    rows={Math.min(8, Math.max(2, draft.split("\n").length))}
-                    className={`w-full resize-none bg-transparent text-sm leading-relaxed outline-none ${
-                      isUser ? "text-background" : "text-foreground"
-                    }`}
-                  />
-                  <div className="flex items-center justify-end gap-2 mt-2 text-[10px]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditing(false);
-                        setDraft(message.content);
-                      }}
-                      className={`${
-                        isUser
-                          ? "text-background/70 hover:text-background"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={commitEdit}
-                      className={`font-medium ${
-                        isUser
-                          ? "text-background"
-                          : "text-[#c4541e]"
-                      }`}
-                    >
-                      Save & resend
-                    </button>
-                  </div>
-                </div>
-              )
-              : message.content
+            message.content
               ? (
                 <div
                   className={`text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-pre:bg-black/10 prose-code:text-[0.85em] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:bg-black/10 prose-code:before:content-none prose-code:after:content-none ${
@@ -1880,19 +1873,6 @@ function MessageBubble(
               {copied
                 ? <Check className="w-3 h-3" />
                 : <Copy className="w-3 h-3" />}
-            </button>
-          )
-          : null}
-        {canEdit
-          ? (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="inline-flex items-center gap-0.5 hover:text-foreground transition-colors"
-              aria-label="Edit"
-              title="Edit and resend"
-            >
-              <Pencil className="w-3 h-3" />
             </button>
           )
           : null}
