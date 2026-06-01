@@ -17,6 +17,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
+import { VendorMySpaceMount } from "@/components/super-agents/MySpaceLauncher";
 import { SkipLink } from "./components/SkipLink";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
 
@@ -265,6 +266,8 @@ const App = () => (
               wasn't pulling its weight. We'll bring back a leaner
               walkthrough later. */}
           <CommandPaletteLauncher />
+          {/* Floating My Space assistant — on every vendor dashboard page. */}
+          <VendorMySpaceMount />
           <Suspense fallback={null}>
             <CookieBanner />
           </Suspense>

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 
 // Heavy chat — only load its bundle once the user opens the panel.
@@ -200,4 +201,14 @@ export function MySpaceLauncher() {
       )}
     </>
   );
+}
+
+// Mounts the floating launcher on every authenticated vendor dashboard
+// page (/vendor/*). Mounted once at the app root so it's available app-
+// wide without each vendor page wiring it up. Public vendor browse pages
+// live under /vendors/* and are intentionally excluded.
+export function VendorMySpaceMount() {
+  const { pathname } = useLocation();
+  if (!pathname.startsWith("/vendor/")) return null;
+  return <MySpaceLauncher />;
 }
