@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { MySpaceLauncher } from "@/components/super-agents/MySpaceLauncher";
 import { vendorNavItems } from "@/data/navItems";
 
 // My Vendora is the vendor's operations dashboard. After the
@@ -15,12 +16,6 @@ import { vendorNavItems } from "@/data/navItems";
 // chrome from here without double-stacking.
 const VendorPaymentsPage = lazy(
   () => import("@/pages/vendor/VendorPaymentsPage"),
-);
-// Docked My Space assistant (replaces the old standalone My Space tab).
-const MySpaceChat = lazy(() =>
-  import("@/components/super-agents/MySpaceChat").then((m) => ({
-    default: m.MySpaceChat,
-  }))
 );
 
 // Serves two routes off the same dashboard component:
@@ -37,15 +32,9 @@ export default function MyVendoraPage() {
           <VendorPaymentsPage embedded view={view} />
         </Suspense>
       </div>
-      {/* Docked My Space assistant — Workspace only, wide screens only.
-          The full-page chat still lives at /vendor/ai-superagents. */}
-      {view === "workspace" && (
-        <aside className="hidden xl:flex w-[380px] shrink-0 border-l border-foreground/10 p-3 h-screen sticky top-0">
-          <Suspense fallback={null}>
-            <MySpaceChat docked />
-          </Suspense>
-        </aside>
-      )}
+      {/* Floating My Space launcher — opens an almost-full-screen blurred
+          overlay. Workspace only for now. */}
+      {view === "workspace" && <MySpaceLauncher />}
       <MobileNav items={vendorNavItems} />
     </div>
   );
