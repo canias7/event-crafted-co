@@ -474,6 +474,9 @@ export function MySpaceChat() {
     if (!regenerate && (!text && attachments.length === 0)) return;
     if (sending) return;
     if ((regenerate || replaceMessageId) && !currentThreadId) return;
+    // A user-initiated send always scrolls to show the new exchange,
+    // even if they'd scrolled up to read earlier content mid-stream.
+    atBottomRef.current = true;
     if (!regenerate && !replaceMessageId) {
       setInput("");
       setPendingAttachments([]);
@@ -1437,7 +1440,7 @@ export function MySpaceChat() {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => send(p)}
+                  onClick={() => void send(p)}
                   disabled={sending}
                   className="group flex items-center text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
                   style={{
