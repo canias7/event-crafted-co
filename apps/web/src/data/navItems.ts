@@ -63,12 +63,11 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // My Vendora is split into two sidebar entries that land on the same
-  // page's two tabs: Overview (KPIs) and Workspace (calendar, payments,
-  // files, contacts, settings — stacked). `exact` so only one of them
-  // highlights at a time even though they share a pathname.
-  { labelKey: "sidebar.vendor.overview", path: "/vendor/my-vendora", icon: LayoutDashboard, exact: true },
-  { labelKey: "sidebar.vendor.workspace", path: "/vendor/my-vendora?tab=workspace", icon: Briefcase, exact: true },
+  // My Vendora is now two separate pages/routes: Overview (KPIs) at
+  // /vendor/my-vendora, and Workspace (calendar, payments, files,
+  // contacts, settings — stacked) at /vendor/workspace.
+  { labelKey: "sidebar.vendor.overview", path: "/vendor/my-vendora", icon: LayoutDashboard },
+  { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents" },
