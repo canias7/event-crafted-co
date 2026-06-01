@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
+import { VendoraMark } from "@/components/shared/VendoraLogo";
 
 // Heavy chat — only load its bundle once the user opens the panel.
 const MySpaceChat = lazy(() =>
@@ -114,7 +115,7 @@ export function MySpaceLauncher() {
             ...(pos ? { left: pos.x, top: pos.y } : {}),
           }}
         >
-          <Sparkles className="w-6 h-6 pointer-events-none" />
+          <VendoraMark size={26} color="#fff" className="pointer-events-none" />
         </button>
       )}
 
