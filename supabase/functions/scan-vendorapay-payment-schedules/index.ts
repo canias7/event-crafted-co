@@ -54,11 +54,17 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 }
 
 serve(async (req) => {
-  const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
-  if (CRON_SECRET) {
+  // M1/M2: authenticate the cron caller against the Vault 'cron_secret'
+  // via the cron_secret_ok RPC. Dormant (allows) until the secret exists;
+  // fails OPEN on RPC error so a transient DB blip can't break the crons.
+  {
     const provided = req.headers.get("x-cron-secret") ??
       (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (provided !== CRON_SECRET) {
+    const _authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: _cronOk, error: _cronErr } = await _authClient.rpc("cron_secret_ok", { provided });
+    if (!_cronErr && _cronOk === false) {
       return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
   }
