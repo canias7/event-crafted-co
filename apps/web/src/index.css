@@ -910,6 +910,29 @@
   .myspace-fab, .myspace-fab::after { animation: none; }
 }
 
+/* Central memory-constellation logo — same pulsing halo + white shine wave
+   as the launcher FAB. The wrapper is already absolutely positioned (a
+   positioned containing block for the ::after), so don't set position here. */
+.myspace-logo {
+  overflow: hidden;
+  animation: myspace-fab-pulse 2.4s ease-in-out infinite;
+}
+.myspace-logo::after {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: 0;
+  width: 55%;
+  height: 220%;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.8) 50%, transparent 70%);
+  transform: translateX(-260%);
+  animation: myspace-fab-shine 5s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .myspace-logo, .myspace-logo::after { animation: none; }
+}
+
 /* Glassy "New chat" button + click ripple in the My Space rail/drawer. */
 .glass-newchat {
   position: relative;

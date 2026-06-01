@@ -92,8 +92,6 @@ export function MemoryConstellation({
   const [entries, setEntries] = useState<KnowledgeEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<KnowledgeEntry | null>(null);
-  // Vendor logo shown in the central hub (falls back to the brand mark).
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   // Add / edit form state.
   const [adding, setAdding] = useState(false);
@@ -146,24 +144,6 @@ export function MemoryConstellation({
   useEffect(() => {
     if (open) void load();
   }, [open, load]);
-
-  // Pull the vendor's logo for the central hub. Best-effort.
-  useEffect(() => {
-    if (!open || !user?.id) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("vendor_profiles")
-        .select("logo_url")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      setLogoUrl((data as { logo_url?: string | null } | null)?.logo_url ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, user?.id]);
 
   // Esc closes whatever's topmost (detail → add → overlay).
   useEffect(() => {
@@ -397,9 +377,7 @@ export function MemoryConstellation({
         {/* Ghost lines — only when there are no real memories. */}
         {!loading && count === 0
           ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
-              const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-              const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-              const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+              const { rx, ry } = posFor(id, angle, ring, driftPhase);
               const len = Math.sqrt(rx * rx + ry * ry);
               const deg = (Math.atan2(ry, rx) * 180) / Math.PI;
               return (
@@ -416,17 +394,17 @@ export function MemoryConstellation({
             })
           : null}
 
-        {/* Central hub — the vendor's logo, falling back to the actual
-            app icon. Amber glow + a soft black shadow under it. */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+        {/* Central hub — the My Space brand mark (same /pwa-512.png as the
+            floating launcher button). Pulsing amber halo + a white shine
+            wave that sweeps across it every ~5s. */}
+        <div
+          className="myspace-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-16 h-16 rounded-[18px]"
+          style={{ boxShadow: "0 16px 28px -8px rgba(0,0,0,0.6)" }}
+        >
           <img
-            src={logoUrl ?? "/pwa-512.png"}
-            alt="Your logo"
+            src="/pwa-512.png"
+            alt="My Space"
             className="w-16 h-16 rounded-[18px] object-cover"
-            style={{
-              boxShadow:
-                "0 0 40px rgba(255,138,76,0.30), 0 16px 28px -8px rgba(0,0,0,0.6)",
-            }}
           />
         </div>
 
@@ -493,34 +471,54 @@ export function MemoryConstellation({
         })}
 
         {/* Ghost node chips — faded placeholders so the constellation
-            still reads as a web before any real memories exist. */}
+            still reads as a web before any real memories exist. Draggable
+            like real nodes: grab and move them around; a tap (no drag)
+            opens the add-memory form. */}
         {!loading && count === 0
           ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
-              const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-              const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-              const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+              const { rx, ry } = posFor(id, angle, ring, driftPhase);
+              const anchor = orbitPos(angle, ring, driftPhase);
+              const isDragging = draggingId === id;
               return (
-                <button
+                <motion.div
                   key={id}
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  title="Add a memory"
-                  className="group absolute z-10 -translate-x-1/2 -translate-y-1/2"
+                  drag
+                  dragMomentum={false}
+                  dragElastic={0}
+                  whileDrag={{ scale: 1.18, zIndex: 40 }}
+                  onDragStart={() => setDraggingId(id)}
+                  onDrag={(_, info) => handleNodeDrag(id, anchor, info)}
+                  onDragEnd={() => setDraggingId(null)}
+                  className="group absolute -translate-x-1/2 -translate-y-1/2"
                   style={{
                     left: `calc(50% + ${rx}vmin)`,
                     top: `calc(50% + ${ry}vmin)`,
+                    zIndex: isDragging ? 40 : 10,
+                    touchAction: "none",
+                    cursor: isDragging ? "grabbing" : "grab",
                   }}
                 >
-                  <span
-                    className="w-8 h-8 rounded-full inline-flex items-center justify-center transition-all group-hover:scale-110"
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.10)",
-                    }}
+                  <button
+                    type="button"
+                    // Framer suppresses the click after a real drag, so this
+                    // only fires on a genuine tap.
+                    onClick={() => setAdding(true)}
+                    title="Add a memory"
+                    className="block select-none"
                   >
-                    <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-[#ff8a4c] transition-colors" />
-                  </span>
-                </button>
+                    <span
+                      className={`w-8 h-8 rounded-full inline-flex items-center justify-center transition-all ${
+                        isDragging ? "" : "group-hover:scale-110"
+                      }`}
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: `1px solid rgba(255,255,255,${isDragging ? "0.25" : "0.10"})`,
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-[#ff8a4c] transition-colors" />
+                    </span>
+                  </button>
+                </motion.div>
               );
             })
           : null}
