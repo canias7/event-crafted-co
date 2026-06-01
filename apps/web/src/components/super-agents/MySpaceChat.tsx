@@ -1479,7 +1479,9 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               atBottomRef.current =
                 el.scrollHeight - el.scrollTop - el.clientHeight < 80;
             }}
-            className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-4"
+            className={`flex-1 overflow-y-auto px-4 md:px-6 pb-6 space-y-4 ${
+              docked ? "pt-16 md:pt-14" : "pt-6"
+            }`}
           >
             {messagesLoading && messages.length === 0
               ? (
