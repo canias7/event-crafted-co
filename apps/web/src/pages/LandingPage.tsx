@@ -132,7 +132,7 @@ export default function LandingPage() {
                 letterSpacing: "2.5px",
               }}
             >
-              Now with Super Agents powered by Opus 4.7
+              Now with Super Agents
             </span>
           </div>
 
@@ -172,21 +172,6 @@ export default function LandingPage() {
             </div>
             <div className="text-[13px] text-black mb-4 leading-relaxed">
               Every detail, perfectly composed.
-            </div>
-            <div
-              className="inline-flex items-center gap-2 text-[10px] uppercase text-black rounded-full px-3 py-1.5"
-              style={{ border: "0.5px solid #000", letterSpacing: "1.5px" }}
-            >
-              <span
-                className="rounded-full"
-                style={{
-                  width: 5,
-                  height: 5,
-                  background: "#ff8a4c",
-                  boxShadow: "0 0 6px #ff8a4c",
-                }}
-              />
-              Powered by Opus 4.7
             </div>
           </div>
 
