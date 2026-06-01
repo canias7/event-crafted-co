@@ -324,7 +324,7 @@ export default function VendorLeadsPage({
   }, [leads]);
 
   const inner = (
-    <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
+    <main id="main-content" className="flex-1 min-w-0 pb-24 lg:pb-0">
         {/* Embedded inside MyVendoraPage the wrapper already shows
             "Leads" via its tab strip, so the inner h1 + description
             would just be visual noise. Suppress when embedded. */}

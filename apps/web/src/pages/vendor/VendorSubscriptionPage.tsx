@@ -555,7 +555,7 @@ export default function VendorSubscriptionPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
+      <main id="main-content" className="flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">Subscription</h1>
           <p className="text-sm text-muted-foreground">

@@ -232,7 +232,7 @@ export default function VendorIntegrationsPage() {
         title="Vendor Portal"
         backPath="/settings"
       />
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <button
             type="button"

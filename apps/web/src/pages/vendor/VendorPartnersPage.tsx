@@ -796,7 +796,7 @@ export default function VendorPartnersPage() {
 
       <main
         id="main-content"
-        className="flex-1 flex flex-col overflow-hidden pb-20 lg:pb-0"
+        className="flex-1 flex flex-col overflow-hidden pb-24 lg:pb-0"
       >
         {/* When a thread is open, mirror the inquiry flow: hide the
             Inbox header + tabs + threads list, render the chat full-
@@ -1466,7 +1466,7 @@ function PartnerChatPane(props: {
 
       {/* Sticky composer */}
       <div
-        className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
+        className="sticky bottom-24 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,253,250,0.92)",
           borderTop: "0.5px solid rgba(255,138,76,0.18)",
