@@ -8,15 +8,17 @@ const MySpaceChat = lazy(() =>
   }))
 );
 
-// Floating My Space launcher. A small AI button (bottom-right); tapping it
-// opens the assistant in an almost-full-screen overlay with a blurred
-// backdrop — a preview-style modal, not a route change.
+// Floating My Space launcher. A small draggable AI button; tapping it opens
+// the assistant in an almost-full-screen overlay with a blurred backdrop.
 export function MySpaceLauncher() {
   const [open, setOpen] = useState(false);
-
-  // Draggable position. null → default bottom-right (via CSS). Once the
-  // user drags it, we pin left/top in px and remember it.
   const BTN = 56; // w-14 / h-14
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // After a real drag, the browser still fires a click — suppress it so the
+  // overlay doesn't open when the user was only repositioning the button.
+  const suppressClick = useRef(false);
+
   const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
     try {
       const s = localStorage.getItem("myspace-fab-pos");
@@ -29,14 +31,18 @@ export function MySpaceLauncher() {
     { sx: number; sy: number; ox: number; oy: number; moved: boolean } | null
   >(null);
 
-  // Keep it on-screen if the window shrinks.
+  // Keep clear of the mobile bottom nav (shown below the lg breakpoint).
+  const bottomGap = () =>
+    typeof window !== "undefined" && window.innerWidth < 1024 ? 88 : 8;
+
+  // Re-clamp on resize so it never ends up off-screen / under the nav.
   useEffect(() => {
     const clamp = () =>
       setPos((p) =>
         p
           ? {
             x: Math.min(Math.max(8, p.x), window.innerWidth - BTN - 8),
-            y: Math.min(Math.max(8, p.y), window.innerHeight - BTN - 8),
+            y: Math.min(Math.max(8, p.y), window.innerHeight - BTN - bottomGap()),
           }
           : p
       );
@@ -45,6 +51,7 @@ export function MySpaceLauncher() {
   }, []);
 
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    suppressClick.current = false;
     const r = e.currentTarget.getBoundingClientRect();
     drag.current = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -58,7 +65,7 @@ export function MySpaceLauncher() {
     d.moved = true;
     setPos({
       x: Math.min(Math.max(8, d.ox + dx), window.innerWidth - BTN - 8),
-      y: Math.min(Math.max(8, d.oy + dy), window.innerHeight - BTN - 8),
+      y: Math.min(Math.max(8, d.oy + dy), window.innerHeight - BTN - bottomGap()),
     });
   };
   const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -68,7 +75,7 @@ export function MySpaceLauncher() {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch { /* ignore */ }
     if (d?.moved) {
-      // Persist the dropped position.
+      suppressClick.current = true; // the trailing click shouldn't open it
       setPos((p) => {
         if (p) {
           try {
@@ -77,23 +84,65 @@ export function MySpaceLauncher() {
         }
         return p;
       });
-    } else {
-      setOpen(true); // a tap (no real drag) → open
     }
   };
+  const onPointerCancel = () => {
+    drag.current = null;
+  };
+  // Opening lives on click so keyboard (Enter/Space) works too — a drag
+  // sets suppressClick to swallow the synthetic click that follows it.
+  const onClick = () => {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      return;
+    }
+    setOpen(true);
+  };
 
+  // Overlay behavior: Escape to close, scroll lock, a basic focus trap, and
+  // focus restoration back to the launcher on close.
   useEffect(() => {
     if (!open) return;
+    const panel = panelRef.current;
+    const focusables = () =>
+      panel
+        ? Array.from(
+          panel.querySelectorAll<HTMLElement>(
+            'button,[href],input,textarea,select,[tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => !el.hasAttribute("disabled"))
+        : [];
+    const t = setTimeout(() => {
+      const f = focusables();
+      (f[0] ?? panel)?.focus();
+    }, 0);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (e.key === "Tab" && panel) {
+        const f = focusables();
+        if (f.length === 0) return;
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
-    // Lock background scroll while the overlay is open.
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
+      clearTimeout(t);
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      fabRef.current?.focus();
     };
   }, [open]);
 
@@ -101,13 +150,16 @@ export function MySpaceLauncher() {
     <>
       {!open && (
         <button
+          ref={fabRef}
           type="button"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          onClick={onClick}
           aria-label="Open My Space assistant (drag to move)"
           className={`myspace-fab fixed z-50 w-14 h-14 rounded-2xl bg-cover bg-center touch-none select-none cursor-grab active:cursor-grabbing transition-transform hover:scale-105 ${
-            pos ? "" : "bottom-6 right-6"
+            pos ? "" : "bottom-24 right-6 lg:bottom-6"
           }`}
           style={{
             backgroundImage: "url(/pwa-512.png)",
@@ -123,14 +175,15 @@ export function MySpaceLauncher() {
           aria-modal="true"
           aria-label="My Space assistant"
         >
-          {/* Blurred backdrop — click to dismiss. */}
           <div
             className="absolute inset-0 bg-background/50 backdrop-blur-md"
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          {/* Almost-full-screen panel. */}
-          <div className="relative w-full max-w-6xl h-[92vh] rounded-2xl overflow-hidden shadow-2xl border border-foreground/10 bg-card animate-in fade-in zoom-in-95 duration-150">
+          <div
+            ref={panelRef}
+            className="relative w-full max-w-6xl h-[92vh] rounded-2xl overflow-hidden shadow-2xl border border-foreground/10 bg-card animate-in fade-in zoom-in-95 duration-150"
+          >
             <button
               type="button"
               onClick={() => setOpen(false)}
