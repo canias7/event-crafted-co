@@ -66,7 +66,6 @@ import {
   FileText,
   Info,
   Landmark,
-  LayoutGrid,
   Link2,
   Loader2,
   Mail,
@@ -176,8 +175,6 @@ interface Status {
     currency: string | null;
   } | null;
 }
-
-type TabId = "overview" | "workspace" | "calendar" | "transactions" | "files" | "customers" | "settings";
 
 // Overview is its own top-level tab; everything else is stacked under a
 // single "Workspace" tab. These ids anchor each stacked section so the
@@ -374,9 +371,14 @@ const TIER_FEE_COPY: Record<
   },
 };
 
-export default function VendorPaymentsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function VendorPaymentsPage(
+  { embedded = false, view = "workspace" }: {
+    embedded?: boolean;
+    view?: "overview" | "workspace";
+  } = {},
+) {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useVendorPlan(user?.id ?? null);
 
@@ -402,14 +404,14 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
     [listings],
   );
 
-  const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
-
-  // In Workspace everything is stacked into one scrolling page; the
-  // Overview "jump to" links and legacy ?tab= deep-links scroll to the
-  // matching section anchor. Small delay lets the section lay out first.
+  // Workspace stacks every section into one scrolling page. When another
+  // surface deep-links here with ?section=<id> (e.g. the Overview cards),
+  // scroll to that section once it has laid out.
   useEffect(() => {
-    if (tab === "overview") return;
-    const id = SECTION_IDS[tab];
+    if (view !== "workspace") return;
+    const section = searchParams.get("section");
+    if (!section) return;
+    const id = SECTION_IDS[section];
     if (!id) return;
     const t = setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({
@@ -418,41 +420,15 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
       });
     }, 80);
     return () => clearTimeout(t);
-  }, [tab]);
+  }, [view, searchParams]);
 
-  const setTab = (next: TabId) => {
-    const params = new URLSearchParams(searchParams);
-    if (next === "overview") params.delete("tab");
-    else params.set("tab", next);
-    setSearchParams(params, { replace: true });
-  };
-
-  // Jump straight to the Payments tab's Expenses sub-surface — the
-  // Operating expenses card on the Overview links here so a vendor
-  // can drill into the full ledger.
-  const goToExpenses = () => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", "transactions");
-    params.set("sub", "expenses");
-    setSearchParams(params, { replace: true });
-  };
-
-  // Recent activity card on the Overview links here so a vendor can
-  // see the full payments ledger.
-  const goToPayments = () => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", "transactions");
-    params.set("sub", "incoming");
-    setSearchParams(params, { replace: true });
-  };
-
-  // Upcoming appointments card on the Overview links here so a vendor
-  // can open the full calendar / appointments surface.
-  const goToCalendar = () => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", "calendar");
-    setSearchParams(params, { replace: true });
-  };
+  // Overview's drill-down cards jump to the Workspace route, scrolling to
+  // the relevant section (and pre-selecting the Payments sub-surface).
+  const goToExpenses = () =>
+    navigate("/vendor/workspace?section=transactions&sub=expenses");
+  const goToPayments = () =>
+    navigate("/vendor/workspace?section=transactions&sub=incoming");
+  const goToCalendar = () => navigate("/vendor/workspace?section=calendar");
 
   const [status, setStatus] = useState<Status | null>(null);
   // VendoraPay is account-level (one Stripe connection per user, not per
@@ -798,41 +774,20 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <h1 className="font-editorial text-3xl md:text-[2rem] leading-[1.05] tracking-tight">
-                {embedded ? "My Vendora" : "VendoraPay"}
+                {!embedded
+                  ? "VendoraPay"
+                  : view === "overview"
+                  ? "Overview"
+                  : "Workspace"}
               </h1>
               <p className="text-sm text-muted-foreground mt-1.5">
-                {embedded
-                  ? "Leads, calendar, and payments — one place to run the business."
-                  : "Accept card payments and track payouts from one place."}
+                {!embedded
+                  ? "Accept card payments and track payouts from one place."
+                  : view === "overview"
+                  ? "Your business at a glance — balance, activity, and what's next."
+                  : "Calendar, payments, files, contacts, and settings — all in one place."}
               </p>
             </div>
-          </div>
-
-          {/* Primary nav: Overview stands alone; everything else lives
-              stacked under a single "Workspace" tab. */}
-          <div className="mt-5 -mx-4 md:-mx-8 px-4 md:px-8">
-            <nav className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => setTab("overview")}
-                className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
-                  tab === "overview" ? "cockpit-tab--active" : ""
-                }`}
-              >
-                <Wallet className="w-3.5 h-3.5" />
-                Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("workspace")}
-                className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
-                  tab !== "overview" ? "cockpit-tab--active" : ""
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                Workspace
-              </button>
-            </nav>
           </div>
         </div>
 
@@ -846,7 +801,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               only (was previously shown on every tab when KYC wasn't
               complete). Per product call, the payments-connect prompt
               lives on Settings for now. */}
-          {verifyBanner && tab !== "overview" ? (
+          {verifyBanner && view !== "overview" ? (
             <section
               className="rounded-2xl p-5"
               style={{
@@ -897,7 +852,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
-          ) : tab === "overview" ? (
+          ) : view === "overview" ? (
             <OverviewTab
               balance={balance}
               accountVendorIds={accountVendorIds}

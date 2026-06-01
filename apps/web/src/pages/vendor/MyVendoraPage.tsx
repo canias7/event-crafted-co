@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -16,13 +17,18 @@ const VendorPaymentsPage = lazy(
   () => import("@/pages/vendor/VendorPaymentsPage"),
 );
 
+// Serves two routes off the same dashboard component:
+//   /vendor/my-vendora → Overview (KPIs)
+//   /vendor/workspace  → Workspace (calendar/payments/files/contacts/settings)
 export default function MyVendoraPage() {
+  const { pathname } = useLocation();
+  const view = pathname === "/vendor/workspace" ? "workspace" : "overview";
   return (
     <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
       <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/" />
       <div className="flex-1 min-w-0 flex flex-col">
         <Suspense fallback={<TabLoadingFallback />}>
-          <VendorPaymentsPage embedded />
+          <VendorPaymentsPage embedded view={view} />
         </Suspense>
       </div>
       <MobileNav items={vendorNavItems} />

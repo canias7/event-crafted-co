@@ -240,12 +240,13 @@ const App = () => (
                   My Vendora duplicated that surface, so the
                   redirect now goes to inbox. */}
               <Route path="/vendor/leads" element={<Navigate to="/vendor/inbox" replace />} />
-              <Route path="/vendor/appointments" element={<Navigate to="/vendor/my-vendora?tab=calendar" replace />} />
-              <Route path="/vendor/payments" element={<Navigate to="/vendor/my-vendora" replace />} />
+              <Route path="/vendor/appointments" element={<Navigate to="/vendor/workspace?section=calendar" replace />} />
+              <Route path="/vendor/payments" element={<Navigate to="/vendor/workspace" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
               <Route path="/vendor/integrations" element={<RequireRole role="vendor"><VendorIntegrationsPage /></RequireRole>} />
               <Route path="/vendor/my-vendora" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
+              <Route path="/vendor/workspace" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
               <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/usage" element={<RequireRole role="vendor"><VendorUsagePage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
