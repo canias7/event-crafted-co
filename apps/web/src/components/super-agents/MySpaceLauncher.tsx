@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 
 // Heavy chat — only load its bundle once the user opens the panel.
@@ -13,6 +13,74 @@ const MySpaceChat = lazy(() =>
 // backdrop — a preview-style modal, not a route change.
 export function MySpaceLauncher() {
   const [open, setOpen] = useState(false);
+
+  // Draggable position. null → default bottom-right (via CSS). Once the
+  // user drags it, we pin left/top in px and remember it.
+  const BTN = 56; // w-14 / h-14
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const s = localStorage.getItem("myspace-fab-pos");
+      return s ? (JSON.parse(s) as { x: number; y: number }) : null;
+    } catch {
+      return null;
+    }
+  });
+  const drag = useRef<
+    { sx: number; sy: number; ox: number; oy: number; moved: boolean } | null
+  >(null);
+
+  // Keep it on-screen if the window shrinks.
+  useEffect(() => {
+    const clamp = () =>
+      setPos((p) =>
+        p
+          ? {
+            x: Math.min(Math.max(8, p.x), window.innerWidth - BTN - 8),
+            y: Math.min(Math.max(8, p.y), window.innerHeight - BTN - 8),
+          }
+          : p
+      );
+    window.addEventListener("resize", clamp);
+    return () => window.removeEventListener("resize", clamp);
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    drag.current = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.sx;
+    const dy = e.clientY - d.sy;
+    if (!d.moved && Math.hypot(dx, dy) < 4) return; // ignore tiny jitters
+    d.moved = true;
+    setPos({
+      x: Math.min(Math.max(8, d.ox + dx), window.innerWidth - BTN - 8),
+      y: Math.min(Math.max(8, d.oy + dy), window.innerHeight - BTN - 8),
+    });
+  };
+  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    drag.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch { /* ignore */ }
+    if (d?.moved) {
+      // Persist the dropped position.
+      setPos((p) => {
+        if (p) {
+          try {
+            localStorage.setItem("myspace-fab-pos", JSON.stringify(p));
+          } catch { /* ignore */ }
+        }
+        return p;
+      });
+    } else {
+      setOpen(true); // a tap (no real drag) → open
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -34,12 +102,19 @@ export function MySpaceLauncher() {
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Open My Space assistant"
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-xl inline-flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95"
-          style={{ background: "linear-gradient(135deg, #ff8a4c, #d97757)" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          aria-label="Open My Space assistant (drag to move)"
+          className={`fixed z-50 w-14 h-14 rounded-full shadow-xl inline-flex items-center justify-center text-white touch-none select-none cursor-grab active:cursor-grabbing transition-transform hover:scale-105 ${
+            pos ? "" : "bottom-6 right-6"
+          }`}
+          style={{
+            background: "linear-gradient(135deg, #ff8a4c, #d97757)",
+            ...(pos ? { left: pos.x, top: pos.y } : {}),
+          }}
         >
-          <Sparkles className="w-6 h-6" />
+          <Sparkles className="w-6 h-6 pointer-events-none" />
         </button>
       )}
 
