@@ -56,12 +56,6 @@ export default function LandingPage() {
               NEW
             </span>
           </Link>
-          <Link
-            to="/super-agents"
-            className="hover:opacity-70 transition-opacity"
-          >
-            Super agents
-          </Link>
         </nav>
         <div className="flex items-center gap-5 text-[13px]">
           {session && portalPath ? (

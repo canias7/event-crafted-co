@@ -151,7 +151,7 @@ export function PublicNav() {
           ))}
 
           {/* Explore — public, read-only global feed of approved
-              vendor activity. Sits between Vendors and Super agents. */}
+              vendor activity. */}
           <Link
             to="/explore"
             className={`text-sm font-medium transition-colors duration-200 ${
@@ -162,27 +162,6 @@ export function PublicNav() {
             aria-current={location.pathname === "/explore" ? "page" : undefined}
           >
             Explore
-          </Link>
-
-          {/* Super agents — shipped across every public page so the
-              NEW pill stays visible while a visitor browses around
-              (was previously only on the landing). */}
-          <Link
-            to="/super-agents"
-            className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-200 ${
-              location.pathname === "/super-agents"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            aria-current={location.pathname === "/super-agents" ? "page" : undefined}
-          >
-            Super agents
-            <span
-              className="text-[9px] tracking-widest rounded-full px-1.5 py-px text-foreground"
-              style={{ border: "0.5px solid rgba(0,0,0,0.35)" }}
-            >
-              NEW
-            </span>
           </Link>
         </div>
 
