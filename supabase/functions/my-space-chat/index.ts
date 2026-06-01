@@ -34,6 +34,7 @@ import {
   MAX_TOOL_ITERATIONS,
   OPENAI_FETCH_TIMEOUT_MS,
   SEND_EMAIL_DAILY_CAP,
+  SEND_EMAIL_GLOBAL_DAILY_CAP,
   SONNET_MODEL,
   SUMMARIZE_FETCH_TIMEOUT_MS,
   withTimeout,
@@ -1875,6 +1876,19 @@ async function toolSendEmail(
     return {
       error:
         `daily_email_cap_reached: ${callsToday}/${SEND_EMAIL_DAILY_CAP} sent in the last 24h. Resets automatically. Ask the vendor to wait or batch through the inbox UI.`,
+    };
+  }
+  // M5: platform-wide cap across all vendors (the worker logs to the same
+  // audit table, so this count covers scheduled sends too). Fails open.
+  const { count: globalToday } = await admin
+    .from("my_space_action_audit")
+    .select("id", { count: "exact", head: true })
+    .eq("tool_name", "send_email")
+    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  if ((globalToday ?? 0) >= SEND_EMAIL_GLOBAL_DAILY_CAP) {
+    return {
+      error:
+        `platform_email_cap_reached: ${globalToday}/${SEND_EMAIL_GLOBAL_DAILY_CAP} platform-wide in the last 24h.`,
     };
   }
 

@@ -24,9 +24,11 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const BATCH_LIMIT = 25;
-// Mirror of my-space-chat/config.ts SEND_EMAIL_DAILY_CAP so the
-// scheduled send path enforces the same per-user daily email cap.
+// Mirror of my-space-chat/config.ts so the scheduled send path enforces
+// the same per-user and platform-wide daily email caps.
 const SEND_EMAIL_DAILY_CAP = 20;
+const SEND_EMAIL_GLOBAL_DAILY_CAP =
+  Number(Deno.env.get("SEND_EMAIL_GLOBAL_DAILY_CAP")) || 500;
 
 interface ActionRow {
   id: string;
@@ -105,6 +107,16 @@ async function execSendEmail(admin: any, row: ActionRow): Promise<unknown> {
   if ((count ?? 0) >= SEND_EMAIL_DAILY_CAP) {
     throw new Error(
       `daily_email_cap_reached: ${count}/${SEND_EMAIL_DAILY_CAP} in the last 24h`,
+    );
+  }
+  const { count: globalCount } = await admin
+    .from("my_space_action_audit")
+    .select("id", { count: "exact", head: true })
+    .eq("tool_name", "send_email")
+    .gte("created_at", since);
+  if ((globalCount ?? 0) >= SEND_EMAIL_GLOBAL_DAILY_CAP) {
+    throw new Error(
+      `platform_email_cap_reached: ${globalCount}/${SEND_EMAIL_GLOBAL_DAILY_CAP} in the last 24h`,
     );
   }
   let fromName = "Vendora";
