@@ -50,6 +50,7 @@ import {
   FileText,
   Info,
   Landmark,
+  LayoutGrid,
   Link2,
   Loader2,
   Mail,
@@ -180,6 +181,10 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
   // surfaces that lived under a separate "Integrations" tab.
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
+
+// Overview stands alone as a top-level tab; everything else collapses
+// under a single "Workspace" tab, navigated by the secondary strip below.
+const WORKSPACE_TABS = TABS.filter((t) => t.id !== "overview");
 
 // Sub-tabs inside the Payments tab.
 type PaymentsTabId = "incoming" | "expenses";
@@ -807,46 +812,74 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             </div>
           </div>
 
-          {/* Internal tab strip — the primary navigation inside
-              My Vendora. 11 tabs overflow horizontally on most
-              viewports; the right-edge gradient is a visual cue
-              that more tabs exist past the fold. */}
-          <div className="relative mt-5 -mx-4 md:-mx-8">
-            <nav
-              ref={tabNavRef}
-              className={`flex gap-1 overflow-x-auto scrollbar-hide px-4 md:px-8 ${
-                tabOverflow ? "pr-12 md:pr-16" : ""
-              }`}
-            >
-              {TABS.map((t) => {
-                const active = tab === t.id;
-                const Icon = t.icon;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    data-tab={t.id}
-                    onClick={() => setTab(t.id)}
-                    className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
-                      active ? "cockpit-tab--active" : ""
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {t.label}
-                  </button>
-                );
-              })}
+          {/* Primary nav: Overview stands alone; Calendar / Payments /
+              Files / Contacts / Settings collapse under one "Workspace"
+              tab, navigated by the secondary strip below. */}
+          <div className="mt-5 -mx-4 md:-mx-8 px-4 md:px-8">
+            <nav className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setTab("overview")}
+                className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                  tab === "overview" ? "cockpit-tab--active" : ""
+                }`}
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                Overview
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (tab === "overview") setTab("calendar");
+                }}
+                className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                  tab !== "overview" ? "cockpit-tab--active" : ""
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Workspace
+              </button>
             </nav>
-            {/* Right-edge fade — only when the strip actually
-                overflows, so wide viewports (all 11 tabs fit) don't
-                see a phantom gradient with nothing being clipped. */}
-            {tabOverflow && (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute top-0 right-0 h-full w-10 md:w-14 bg-gradient-to-l from-background via-background/70 to-transparent"
-              />
-            )}
           </div>
+
+          {/* Secondary nav — only inside Workspace. Holds the five
+              collapsed sections; overflows horizontally on narrow
+              viewports with a right-edge fade cue. */}
+          {tab !== "overview" && (
+            <div className="relative mt-2 -mx-4 md:-mx-8">
+              <nav
+                ref={tabNavRef}
+                className={`flex gap-1 overflow-x-auto scrollbar-hide px-4 md:px-8 ${
+                  tabOverflow ? "pr-12 md:pr-16" : ""
+                }`}
+              >
+                {WORKSPACE_TABS.map((t) => {
+                  const active = tab === t.id;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      data-tab={t.id}
+                      onClick={() => setTab(t.id)}
+                      className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                        active ? "cockpit-tab--active" : ""
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </nav>
+              {tabOverflow && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute top-0 right-0 h-full w-10 md:w-14 bg-gradient-to-l from-background via-background/70 to-transparent"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-4 md:p-8 max-w-screen-2xl space-y-6">
