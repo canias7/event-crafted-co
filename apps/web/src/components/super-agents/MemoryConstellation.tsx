@@ -415,16 +415,16 @@ export function MemoryConstellation({
           : null}
 
         {/* Central hub — the vendor's logo, falling back to the actual
-            app icon. Amber glow + a soft black shadow under it. */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+            app icon. Pulsing amber halo + a white shine wave that sweeps
+            across it every ~5s (matches the floating launcher button). */}
+        <div
+          className="myspace-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-16 h-16 rounded-[18px]"
+          style={{ boxShadow: "0 16px 28px -8px rgba(0,0,0,0.6)" }}
+        >
           <img
             src={logoUrl ?? "/pwa-512.png"}
             alt="Your logo"
             className="w-16 h-16 rounded-[18px] object-cover"
-            style={{
-              boxShadow:
-                "0 0 40px rgba(255,138,76,0.30), 0 16px 28px -8px rgba(0,0,0,0.6)",
-            }}
           />
         </div>
 
