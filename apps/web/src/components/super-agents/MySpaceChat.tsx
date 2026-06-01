@@ -377,42 +377,53 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
     }
     (async () => {
       setMessagesLoading(true);
-      const { data, error } = await supabase
-        .from("my_space_messages")
-        .select(
-          "id, role, type, content, image_url, image_prompt, attachments, created_at",
-        )
-        .eq("thread_id", currentThreadId)
-        .order("created_at", { ascending: true })
-        .limit(200);
-      if (cancelled) return;
-      if (error) {
-        console.error("[MySpaceChat] loadMessages failed", error);
-        setMessages([]);
-      } else {
-        const rows = (data ?? []) as Array<any>;
-        setMessages(
-          rows.map((r) =>
-            r.type === "image"
-              ? ({
-                id: r.id,
-                role: "assistant",
-                type: "image",
-                image_url: r.image_url,
-                image_prompt: r.image_prompt,
-                created_at: r.created_at,
-              } as ImageMessage)
-              : ({
-                id: r.id,
-                role: r.role,
-                type: "text",
-                content: r.content,
-                attachments: (r.attachments as Attachment[] | null) ?? null,
-                created_at: r.created_at,
-              } as TextMessage)
-          ),
-        );
+      // A thread that shows up in the list always has at least the message
+      // that created it. So an empty result (or an error) for a real thread
+      // is anomalous — typically a transient auth/session warmup on a fresh
+      // page load. The effect only fires on a thread change, so without a
+      // retry the pane stays blank until the user switches away and back.
+      // Retry a few times with small backoff before settling on empty.
+      let rows: Array<any> = [];
+      for (let attempt = 0; attempt < 4 && !cancelled; attempt++) {
+        const { data, error } = await supabase
+          .from("my_space_messages")
+          .select(
+            "id, role, type, content, image_url, image_prompt, attachments, created_at",
+          )
+          .eq("thread_id", currentThreadId)
+          .order("created_at", { ascending: true })
+          .limit(200);
+        if (cancelled) return;
+        if (!error && (data?.length ?? 0) > 0) {
+          rows = data as Array<any>;
+          break;
+        }
+        if (error) console.error("[MySpaceChat] loadMessages failed", error);
+        // Empty or error → brief backoff, then try again.
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
       }
+      if (cancelled) return;
+      setMessages(
+        rows.map((r) =>
+          r.type === "image"
+            ? ({
+              id: r.id,
+              role: "assistant",
+              type: "image",
+              image_url: r.image_url,
+              image_prompt: r.image_prompt,
+              created_at: r.created_at,
+            } as ImageMessage)
+            : ({
+              id: r.id,
+              role: r.role,
+              type: "text",
+              content: r.content,
+              attachments: (r.attachments as Attachment[] | null) ?? null,
+              created_at: r.created_at,
+            } as TextMessage)
+        ),
+      );
       setMessagesLoading(false);
     })();
     return () => {
