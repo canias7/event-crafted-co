@@ -228,6 +228,10 @@ export function MySpaceChat() {
   );
   const [uploadingCount, setUploadingCount] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
+  // Whether the message list is scrolled (near) to the bottom. Updated
+  // on scroll; gates auto-scroll so streaming tokens don't yank a user
+  // who has scrolled up to read earlier content back down.
+  const atBottomRef = useRef(true);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Voice input via the Web Speech API. Set while a recognition
@@ -279,6 +283,8 @@ export function MySpaceChat() {
   // ── Load messages whenever the current thread changes.
   useEffect(() => {
     let cancelled = false;
+    // A fresh thread should land scrolled to the bottom.
+    atBottomRef.current = true;
     if (!currentThreadId) {
       setMessages([]);
       return;
@@ -328,10 +334,12 @@ export function MySpaceChat() {
     };
   }, [currentThreadId]);
 
-  // ── Auto-scroll on new message.
+  // ── Auto-scroll on new message — but only when the user is already
+  // near the bottom, so streaming deltas don't yank them down while
+  // they're reading earlier content.
   useEffect(() => {
     const el = listRef.current;
-    if (!el) return;
+    if (!el || !atBottomRef.current) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, sending]);
 
@@ -466,6 +474,9 @@ export function MySpaceChat() {
     if (!regenerate && (!text && attachments.length === 0)) return;
     if (sending) return;
     if ((regenerate || replaceMessageId) && !currentThreadId) return;
+    // A user-initiated send always scrolls to show the new exchange,
+    // even if they'd scrolled up to read earlier content mid-stream.
+    atBottomRef.current = true;
     if (!regenerate && !replaceMessageId) {
       setInput("");
       setPendingAttachments([]);
@@ -962,9 +973,21 @@ export function MySpaceChat() {
     URL.revokeObjectURL(url);
   }
 
+  // User-initiated thread switch / new chat. Abort any in-flight stream
+  // first — otherwise its remaining deltas resolve against the thread we
+  // just left and silently vanish. (Stream-driven thread creation sets
+  // currentThreadId directly and is intentionally exempt.)
+  function switchThread(id: string | null) {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setCurrentThreadId(id);
+    if (id === null) setMessages([]);
+  }
+
   function startNewChat() {
-    setCurrentThreadId(null);
-    setMessages([]);
+    switchThread(null);
     inputRef.current?.focus();
   }
 
@@ -982,8 +1005,7 @@ export function MySpaceChat() {
     }
     setThreads((prev) => prev.filter((t) => t.id !== threadId));
     if (threadId === currentThreadId) {
-      setCurrentThreadId(null);
-      setMessages([]);
+      switchThread(null);
     }
   }
 
@@ -1217,7 +1239,7 @@ export function MySpaceChat() {
                       key={t.id}
                       thread={t}
                       active={t.id === currentThreadId}
-                      onClick={() => setCurrentThreadId(t.id)}
+                      onClick={() => switchThread(t.id)}
                       onDelete={() => deleteThread(t.id)}
                       onRename={(title) => renameThread(t.id, title)}
                       deleting={deletingThreadId === t.id}
@@ -1332,7 +1354,7 @@ export function MySpaceChat() {
                             thread={t}
                             active={t.id === currentThreadId}
                             onClick={() => {
-                              setCurrentThreadId(t.id);
+                              switchThread(t.id);
                               setMobileNavOpen(false);
                             }}
                             onDelete={() => deleteThread(t.id)}
@@ -1418,7 +1440,7 @@ export function MySpaceChat() {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => send(p)}
+                  onClick={() => void send(p)}
                   disabled={sending}
                   className="group flex items-center text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
                   style={{
@@ -1438,6 +1460,11 @@ export function MySpaceChat() {
         ) : (
           <div
             ref={listRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              atBottomRef.current =
+                el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            }}
             className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-4"
           >
             {messagesLoading && messages.length === 0
