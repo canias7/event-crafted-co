@@ -6,6 +6,7 @@ import {
   Gauge,
   Images,
   Inbox,
+  LayoutDashboard,
   Settings,
   User,
   type LucideIcon,
@@ -28,6 +29,13 @@ export interface NavItem {
    * it doesn't, the row only toggles the section open/closed.
    */
   children?: NavItem[];
+  /**
+   * When true, active-state matches the full path INCLUDING the query
+   * string (pathname + search), not just the pathname. Lets two items
+   * that share a pathname but differ by `?query` (e.g. Overview vs
+   * Workspace, both on /vendor/my-vendora) highlight independently.
+   */
+  exact?: boolean;
 }
 
 // Sidebar layout philosophy: keep the main nav at ≤10 items so the
@@ -55,12 +63,12 @@ export const customerNavItems: NavItem[] = [
 export const vendorNavItems: NavItem[] = [
   // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // My Vendora — single page that hosts Leads / Calendar /
-  // VendoraPay as switchable tabs (see MyVendoraPage). The
-  // standalone /vendor/leads, /vendor/appointments, /vendor/payments
-  // routes still resolve for deep-links but no longer appear in the
-  // sidebar — they're reached via the tab strip on the wrapper page.
-  { labelKey: "sidebar.vendor.my_vendora", path: "/vendor/my-vendora", icon: Briefcase },
+  // My Vendora is split into two sidebar entries that land on the same
+  // page's two tabs: Overview (KPIs) and Workspace (calendar, payments,
+  // files, contacts, settings — stacked). `exact` so only one of them
+  // highlights at a time even though they share a pathname.
+  { labelKey: "sidebar.vendor.overview", path: "/vendor/my-vendora", icon: LayoutDashboard, exact: true },
+  { labelKey: "sidebar.vendor.workspace", path: "/vendor/my-vendora?tab=workspace", icon: Briefcase, exact: true },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents" },
