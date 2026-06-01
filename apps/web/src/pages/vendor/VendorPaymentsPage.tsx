@@ -32,21 +32,6 @@ function TabSkeleton() {
   );
 }
 
-// Section heading for the stacked Workspace tab — labels each block
-// (Calendar / Payments / Files / Contacts / Settings) now that they
-// share one scrolling page instead of separate tabs.
-function WorkspaceSectionHeading(
-  { icon: Icon, label }: { icon: typeof Wallet; label: string },
-) {
-  return (
-    <div className="flex items-center gap-2 border-b border-foreground/10 pb-2">
-      <Icon className="w-4 h-4 text-muted-foreground" />
-      <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-        {label}
-      </h2>
-    </div>
-  );
-}
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { handleEmailBillingError } from "@/lib/credits";
 import { Switch } from "@/components/ui/switch";
@@ -56,7 +41,6 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Banknote,
-  CalendarDays,
   ChevronLeft,
   Copy,
   CreditCard,
@@ -176,16 +160,14 @@ interface Status {
   } | null;
 }
 
-// Overview is its own top-level tab; everything else is stacked under a
-// single "Workspace" tab. These ids anchor each stacked section so the
-// Overview "jump to" links + legacy ?tab= deep-links can scroll to them.
-const SECTION_IDS: Record<string, string> = {
-  calendar: "ws-calendar",
-  transactions: "ws-transactions",
-  files: "ws-files",
-  customers: "ws-customers",
-  settings: "ws-settings",
-};
+// Middle-column tabs on the Workspace view (Calendar lives in its own
+// left rail, so it's not a tab here).
+const WS_TABS = [
+  { id: "transactions", label: "Payments", icon: CreditCard },
+  { id: "files", label: "Files", icon: FileText },
+  { id: "customers", label: "Contacts", icon: Users },
+  { id: "settings", label: "Settings", icon: SettingsIcon },
+] as const;
 
 // Sub-tabs inside the Payments tab.
 type PaymentsTabId = "incoming" | "expenses";
@@ -378,7 +360,7 @@ export default function VendorPaymentsPage(
   } = {},
 ) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useVendorPlan(user?.id ?? null);
 
@@ -404,31 +386,27 @@ export default function VendorPaymentsPage(
     [listings],
   );
 
-  // Workspace stacks every section into one scrolling page. When another
-  // surface deep-links here with ?section=<id> (e.g. the Overview cards),
-  // scroll to that section once it has laid out.
-  useEffect(() => {
-    if (view !== "workspace") return;
-    const section = searchParams.get("section");
-    if (!section) return;
-    const id = SECTION_IDS[section];
-    if (!id) return;
-    const t = setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
-    return () => clearTimeout(t);
-  }, [view, searchParams]);
+  // Workspace tab (Calendar lives in its own left rail; these are the
+  // middle-column tabs). Driven by ?tab so deep-links + Overview cards work.
+  const wsTab: "transactions" | "files" | "customers" | "settings" = (() => {
+    const t = searchParams.get("tab");
+    return t === "files" || t === "customers" || t === "settings"
+      ? t
+      : "transactions";
+  })();
+  const setWsTab = (id: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", id);
+    setSearchParams(params, { replace: true });
+  };
 
-  // Overview's drill-down cards jump to the Workspace route, scrolling to
-  // the relevant section (and pre-selecting the Payments sub-surface).
+  // Overview's drill-down cards jump to the Workspace route, selecting the
+  // Payments tab + sub-surface (Calendar is always visible in the rail).
   const goToExpenses = () =>
-    navigate("/vendor/workspace?section=transactions&sub=expenses");
+    navigate("/vendor/workspace?tab=transactions&sub=expenses");
   const goToPayments = () =>
-    navigate("/vendor/workspace?section=transactions&sub=incoming");
-  const goToCalendar = () => navigate("/vendor/workspace?section=calendar");
+    navigate("/vendor/workspace?tab=transactions&sub=incoming");
+  const goToCalendar = () => navigate("/vendor/workspace");
 
   const [status, setStatus] = useState<Status | null>(null);
   // VendoraPay is account-level (one Stripe connection per user, not per
@@ -861,48 +839,63 @@ export default function VendorPaymentsPage(
               onViewCalendar={goToCalendar}
             />
           ) : (
-            <div className="space-y-10">
-              <section id="ws-calendar" className="scroll-mt-28 space-y-3">
-                <WorkspaceSectionHeading icon={CalendarDays} label="Calendar" />
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              {/* Calendar — left rail */}
+              <div className="w-full lg:w-[360px] lg:shrink-0">
                 <Suspense fallback={<TabSkeleton />}>
                   <VendorAppointmentsPageLazy embedded accountVendorIds={accountVendorIds} />
                 </Suspense>
-              </section>
-              <section id="ws-transactions" className="scroll-mt-28 space-y-3">
-                <WorkspaceSectionHeading icon={CreditCard} label="Payments" />
-                <PaymentsTab
-                  transactions={transactions}
-                  payouts={payouts}
-                  status={status}
-                  accountVendorIds={accountVendorIds}
-                  listings={listings}
-                  onRefunded={() => refresh(false)}
-                />
-              </section>
-              <section id="ws-files" className="scroll-mt-28 space-y-3">
-                <WorkspaceSectionHeading icon={FileText} label="Files" />
-                <FilesTab
-                  accountVendorIds={accountVendorIds}
-                  listings={listings}
-                  invoices={invoices}
-                  paymentLinks={paymentLinks}
-                  status={status}
-                  onChanged={() => refresh(true)}
-                />
-              </section>
-              <section id="ws-customers" className="scroll-mt-28 space-y-3">
-                <WorkspaceSectionHeading icon={Users} label="Contacts" />
-                <CustomersTab
-                  accountVendorIds={accountVendorIds}
-                  listings={listings}
-                  status={status}
-                  onChanged={() => refresh(true)}
-                />
-              </section>
-              <section id="ws-settings" className="scroll-mt-28 space-y-3">
-                <WorkspaceSectionHeading icon={SettingsIcon} label="Settings" />
-                <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
-              </section>
+              </div>
+              {/* Payments / Files / Contacts / Settings — tabbed middle */}
+              <div className="flex-1 min-w-0 w-full">
+                <nav className="flex gap-1 mb-5 overflow-x-auto scrollbar-hide">
+                  {WS_TABS.map((t) => {
+                    const active = wsTab === t.id;
+                    const Icon = t.icon;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setWsTab(t.id)}
+                        className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
+                          active ? "cockpit-tab--active" : ""
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+                {wsTab === "transactions" ? (
+                  <PaymentsTab
+                    transactions={transactions}
+                    payouts={payouts}
+                    status={status}
+                    accountVendorIds={accountVendorIds}
+                    listings={listings}
+                    onRefunded={() => refresh(false)}
+                  />
+                ) : wsTab === "files" ? (
+                  <FilesTab
+                    accountVendorIds={accountVendorIds}
+                    listings={listings}
+                    invoices={invoices}
+                    paymentLinks={paymentLinks}
+                    status={status}
+                    onChanged={() => refresh(true)}
+                  />
+                ) : wsTab === "customers" ? (
+                  <CustomersTab
+                    accountVendorIds={accountVendorIds}
+                    listings={listings}
+                    status={status}
+                    onChanged={() => refresh(true)}
+                  />
+                ) : (
+                  <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
+                )}
+              </div>
             </div>
           )}
         </div>
