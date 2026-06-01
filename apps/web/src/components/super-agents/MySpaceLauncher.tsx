@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
-import { VendoraMark } from "@/components/shared/VendoraLogo";
 
 // Heavy chat — only load its bundle once the user opens the panel.
 const MySpaceChat = lazy(() =>
@@ -107,16 +106,14 @@ export function MySpaceLauncher() {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           aria-label="Open My Space assistant (drag to move)"
-          className={`fixed z-50 w-14 h-14 rounded-full shadow-xl inline-flex items-center justify-center text-white touch-none select-none cursor-grab active:cursor-grabbing transition-transform hover:scale-105 ${
+          className={`myspace-fab fixed z-50 w-14 h-14 rounded-2xl bg-cover bg-center touch-none select-none cursor-grab active:cursor-grabbing transition-transform hover:scale-105 ${
             pos ? "" : "bottom-6 right-6"
           }`}
           style={{
-            background: "linear-gradient(135deg, #ff8a4c, #d97757)",
+            backgroundImage: "url(/pwa-512.png)",
             ...(pos ? { left: pos.x, top: pos.y } : {}),
           }}
-        >
-          <VendoraMark size={26} color="#fff" className="pointer-events-none" />
-        </button>
+        />
       )}
 
       {open && (
