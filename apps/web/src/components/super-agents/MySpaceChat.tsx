@@ -204,7 +204,7 @@ const PLACEHOLDER_PHRASES = [
   "Summarize my week and what needs a follow-up",
 ] as const;
 
-export function MySpaceChat() {
+export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
   const { user } = useAuth();
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
@@ -1151,7 +1151,9 @@ export function MySpaceChat() {
     <>
     <MemoryConstellation open={memoryOpen} onClose={() => setMemoryOpen(false)} />
     <div
-      className="flex rounded-2xl overflow-hidden h-[calc(100vh-180px)] min-h-[480px]"
+      className={`flex overflow-hidden ${
+        docked ? "h-full rounded-xl" : "rounded-2xl h-[calc(100vh-180px)] min-h-[480px]"
+      }`}
       style={{
         background: "rgba(255,253,250,0.7)",
         border: "0.5px solid rgba(255,138,76,0.22)",
@@ -1161,7 +1163,7 @@ export function MySpaceChat() {
     >
       {/* Thread rail */}
       <aside
-        className="hidden md:flex w-64 shrink-0 flex-col border-r"
+        className={`${docked ? "hidden" : "hidden md:flex"} w-64 shrink-0 flex-col border-r`}
         style={{ borderColor: "rgba(255,138,76,0.18)" }}
       >
         <div
@@ -1258,7 +1260,7 @@ export function MySpaceChat() {
             drawer with the full thread list + KB trigger, since the
             desktop aside is hidden on small screens. */}
         <div
-          className="md:hidden flex items-center justify-between px-3 py-2 border-b"
+          className={`${docked ? "" : "md:hidden"} flex items-center justify-between px-3 py-2 border-b`}
           style={{ borderColor: "rgba(255,138,76,0.18)" }}
         >
           <Sheet

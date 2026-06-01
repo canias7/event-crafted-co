@@ -16,6 +16,12 @@ import { vendorNavItems } from "@/data/navItems";
 const VendorPaymentsPage = lazy(
   () => import("@/pages/vendor/VendorPaymentsPage"),
 );
+// Docked My Space assistant (replaces the old standalone My Space tab).
+const MySpaceChat = lazy(() =>
+  import("@/components/super-agents/MySpaceChat").then((m) => ({
+    default: m.MySpaceChat,
+  }))
+);
 
 // Serves two routes off the same dashboard component:
 //   /vendor/overview  → Overview (KPIs)
@@ -31,6 +37,14 @@ export default function MyVendoraPage() {
           <VendorPaymentsPage embedded view={view} />
         </Suspense>
       </div>
+      {/* Docked My Space assistant — wide screens only. Replaces the
+          standalone My Space sidebar tab; the full-page chat still lives
+          at /vendor/ai-superagents for direct links. */}
+      <aside className="hidden xl:flex w-[380px] shrink-0 border-l border-foreground/10 p-3 h-screen sticky top-0">
+        <Suspense fallback={null}>
+          <MySpaceChat docked />
+        </Suspense>
+      </aside>
       <MobileNav items={vendorNavItems} />
     </div>
   );
