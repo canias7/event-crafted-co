@@ -183,6 +183,8 @@
     "vendor": {
       "inbox": "Inbox",
       "my_vendora": "My Vendora",
+      "overview": "Overview",
+      "workspace": "Workspace",
       "my_profile": "My Profile",
       "my_space": "My Space",
       "gallery": "Gallery",

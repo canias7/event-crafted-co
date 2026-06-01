@@ -18,6 +18,8 @@ interface NavItem {
   path?: string;
   icon: LucideIcon;
   children?: NavItem[];
+  /** Match the full path incl. query (e.g. Overview vs Workspace). */
+  exact?: boolean;
 }
 
 // Navigable item — narrows away the optional path for the rendering
@@ -87,9 +89,10 @@ export function MobileNav({ items }: MobileNavProps) {
     >
       <div className="pointer-events-auto mx-auto max-w-md flex items-center justify-between h-16 px-2 rounded-full bg-card/95 backdrop-blur shadow-[0_8px_24px_-8px_rgba(26,20,16,0.25)] border border-border/40">
         {primaryItems.map((item) => {
-          const isActive =
-            location.pathname === item.path ||
-            location.pathname.startsWith(`${item.path}/`);
+          const isActive = item.exact
+            ? location.pathname + location.search === item.path
+            : location.pathname === item.path ||
+              location.pathname.startsWith(`${item.path}/`);
           return (
             <Link
               key={item.path}
@@ -129,9 +132,10 @@ export function MobileNav({ items }: MobileNavProps) {
             {overflowItems.length > 0 && (
               <div className="grid grid-cols-2 gap-2 py-2">
                 {overflowItems.map((item) => {
-                  const isActive =
-                    location.pathname === item.path ||
-                    location.pathname.startsWith(`${item.path}/`);
+                  const isActive = item.exact
+                    ? location.pathname + location.search === item.path
+                    : location.pathname === item.path ||
+                      location.pathname.startsWith(`${item.path}/`);
                   return (
                     <Link
                       key={item.path}

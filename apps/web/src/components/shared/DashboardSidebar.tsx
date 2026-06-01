@@ -42,6 +42,8 @@ interface NavItem {
   icon?: LucideIcon;
   /** Optional nested sub-items shown indented below the parent row. */
   children?: NavItem[];
+  /** Match active-state on the full path incl. query (pathname+search). */
+  exact?: boolean;
 }
 
 interface DashboardSidebarProps {
@@ -98,7 +100,10 @@ export function DashboardSidebar({
     window.localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
 
-  function isPathActive(path: string): boolean {
+  function isPathActive(path: string, exact?: boolean): boolean {
+    // `exact` items (e.g. Overview vs Workspace, same pathname different
+    // ?tab) match the full path including the query string.
+    if (exact) return location.pathname + location.search === path;
     return (
       location.pathname === path ||
       location.pathname.startsWith(`${path}/`)
@@ -120,11 +125,11 @@ export function DashboardSidebar({
   }
 
   function renderItem(item: NavItem) {
-    const selfActive = item.path ? isPathActive(item.path) : false;
+    const selfActive = item.path ? isPathActive(item.path, item.exact) : false;
     // Parent stays highlighted when ANY child route is open — keeps
     // the visual "you are inside this section" anchor.
     const anyChildActive = (item.children ?? []).some(
-      (c) => c.path && isPathActive(c.path),
+      (c) => c.path && isPathActive(c.path, c.exact),
     );
     const isActive = selfActive || anyChildActive;
     const label = t(item.labelKey);
