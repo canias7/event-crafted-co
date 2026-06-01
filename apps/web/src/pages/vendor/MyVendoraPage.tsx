@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { MySpaceLauncher } from "@/components/super-agents/MySpaceLauncher";
 import { vendorNavItems } from "@/data/navItems";
 
 // My Vendora is the vendor's operations dashboard. After the
@@ -32,9 +31,8 @@ export default function MyVendoraPage() {
           <VendorPaymentsPage embedded view={view} />
         </Suspense>
       </div>
-      {/* Floating My Space launcher — opens an almost-full-screen blurred
-          overlay. Workspace only for now. */}
-      {view === "workspace" && <MySpaceLauncher />}
+      {/* The floating My Space launcher is mounted app-wide for vendor
+          pages via <VendorMySpaceMount /> in App.tsx. */}
       <MobileNav items={vendorNavItems} />
     </div>
   );
