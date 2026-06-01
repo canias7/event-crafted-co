@@ -70,7 +70,9 @@ export const vendorNavItems: NavItem[] = [
   { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
-  { labelKey: "sidebar.vendor.my_space", path: "/vendor/ai-superagents" },
+  // My Space is no longer a standalone tab — it's docked as the assistant
+  // rail in the cockpit (MyVendoraPage). The full page still resolves at
+  // /vendor/ai-superagents for direct links.
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
   // ---- Billing for the Vendora subscription itself ----
   { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
