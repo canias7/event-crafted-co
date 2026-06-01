@@ -53,7 +53,16 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   return true;
 }
 
-serve(async () => {
+serve(async (req) => {
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
+  if (CRON_SECRET) {
+    const provided = req.headers.get("x-cron-secret") ??
+      (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (provided !== CRON_SECRET) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
+  }
+
   const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
   try {
     const nowIso = new Date().toISOString();

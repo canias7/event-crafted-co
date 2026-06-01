@@ -31,6 +31,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200 });
   if (req.method !== "POST") return new Response("method_not_allowed", { status: 405 });
 
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
+  if (CRON_SECRET) {
+    const provided = req.headers.get("x-cron-secret") ??
+      (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (provided !== CRON_SECRET) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
+  }
+
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });

@@ -56,6 +56,16 @@ serve(async (req) => {
     if (!slug) return json(400, { error: "slug required" });
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+
+    // Rate limit per invoice slug before any live Stripe calls. Fail open:
+    // a limiter error / null result must NOT block legitimate buyers.
+    const { data: allowed } = await admin.rpc("bump_rate_limit", {
+      _bucket: `vendorapay-invoice-checkout:${slug}`,
+      _max: 30,
+      _window_seconds: 60,
+    });
+    if (allowed === false) return json(429, { error: "rate_limited" });
+
     const { data: inv, error: invErr } = await admin
       .from("invoices")
       .select("id, vendor_id, invoice_number, line_items, subtotal_cents, tax_cents, tax_rate_bps, total_cents, currency, status, bill_to_email, vendor_tier_snapshot, late_fee_cents")

@@ -74,6 +74,17 @@ serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("method", { status: 405, headers: cors });
   }
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
+  if (CRON_SECRET) {
+    const provided = req.headers.get("x-cron-secret") ??
+      (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (provided !== CRON_SECRET) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+  }
   if (!RESEND_API_KEY) {
     return new Response(JSON.stringify({ error: "resend_not_configured" }), {
       status: 500,

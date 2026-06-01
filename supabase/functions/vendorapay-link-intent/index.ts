@@ -65,6 +65,15 @@ serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
+    // Rate limit per pay-link slug before any live Stripe calls. Fail open:
+    // a limiter error / null result must NOT block legitimate buyers.
+    const { data: allowed } = await admin.rpc("bump_rate_limit", {
+      _bucket: `vendorapay-link-intent:${slug}`,
+      _max: 30,
+      _window_seconds: 60,
+    });
+    if (allowed === false) return json(429, { error: "rate_limited" });
+
     const { data: linkRow, error: linkErr } = await admin
       .from("payment_links")
       .select("id, vendor_id, title, description, amount_cents, currency, status, expires_at, vendor_tier_snapshot")

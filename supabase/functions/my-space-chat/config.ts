@@ -13,6 +13,12 @@ export const CONTEXT_HORIZON_DAYS = 30;
 // against a hijacked chat blasting messages in a tight loop.
 export const SEND_EMAIL_DAILY_CAP = 20;
 export const BULK_SEND_REPLY_DAILY_CAP = 5;
+// Platform-wide safety valve: total send_email across ALL vendors per
+// rolling 24h. Defends the @eventvendora.com sending reputation if many
+// accounts are abused at once. Generous + env-tunable; fails OPEN on a
+// count error so a telemetry blip never blocks legitimate mail.
+export const SEND_EMAIL_GLOBAL_DAILY_CAP =
+  Number(Deno.env.get("SEND_EMAIL_GLOBAL_DAILY_CAP")) || 500;
 
 // Per-user Claude cost cap in USD per rolling 24h. Generous power-
 // user budget; fails open on telemetry errors so an unrelated
