@@ -31,6 +31,22 @@ function TabSkeleton() {
     </div>
   );
 }
+
+// Section heading for the stacked Workspace tab — labels each block
+// (Calendar / Payments / Files / Contacts / Settings) now that they
+// share one scrolling page instead of separate tabs.
+function WorkspaceSectionHeading(
+  { icon: Icon, label }: { icon: typeof Wallet; label: string },
+) {
+  return (
+    <div className="flex items-center gap-2 border-b border-foreground/10 pb-2">
+      <Icon className="w-4 h-4 text-muted-foreground" />
+      <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+        {label}
+      </h2>
+    </div>
+  );
+}
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { handleEmailBillingError } from "@/lib/credits";
 import { Switch } from "@/components/ui/switch";
@@ -161,26 +177,18 @@ interface Status {
   } | null;
 }
 
-type TabId = "overview" | "calendar" | "transactions" | "files" | "customers" | "settings";
+type TabId = "overview" | "workspace" | "calendar" | "transactions" | "files" | "customers" | "settings";
 
-const TABS: Array<{ id: TabId; label: string; icon: typeof Wallet }> = [
-  { id: "overview", label: "Overview", icon: Wallet },
-  { id: "calendar", label: "Calendar", icon: CalendarDays },
-  // "Payments" now hosts Incoming charges, Payouts (bank transfers),
-  // and Disputes as sub-tabs — they're all parts of the same money
-  // lifecycle ("where's my money?") and lived as separate top-level
-  // tabs before, which fragmented the surface unnecessarily.
-  { id: "transactions", label: "Payments", icon: CreditCard },
-  // "Files" rolls up Invoices, Pay Links, Contracts, and Proposals
-  // under a single tab with its own internal sub-nav. Pay Links
-  // moved here because they're the same act as invoices to a vendor
-  // ("send a URL to get paid"), just flat-amount instead of itemized.
-  { id: "files", label: "Files", icon: FileText },
-  { id: "customers", label: "Contacts", icon: Users },
-  // Settings now also hosts the Stripe Connect / bank / identity
-  // surfaces that lived under a separate "Integrations" tab.
-  { id: "settings", label: "Settings", icon: SettingsIcon },
-];
+// Overview is its own top-level tab; everything else is stacked under a
+// single "Workspace" tab. These ids anchor each stacked section so the
+// Overview "jump to" links + legacy ?tab= deep-links can scroll to them.
+const SECTION_IDS: Record<string, string> = {
+  calendar: "ws-calendar",
+  transactions: "ws-transactions",
+  files: "ws-files",
+  customers: "ws-customers",
+  settings: "ws-settings",
+};
 
 // Overview stands alone as a top-level tab; everything else collapses
 // under a single "Workspace" tab, navigated by the secondary strip below.
@@ -400,28 +408,20 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
 
   const tab = ((searchParams.get("tab") as TabId | null) ?? "overview") as TabId;
 
-  // Tab-strip overflow management. Two related concerns: (1) scroll
-  // the active tab into view when the user deep-links to a far-right
-  // tab like Settings, and (2) only render the right-edge fade when
-  // the strip actually overflows — otherwise on wide viewports the
-  // fade looks like abandoned decoration. We track overflow via a
-  // ResizeObserver so the fade reacts to window resizes.
-  const tabNavRef = useRef<HTMLElement | null>(null);
-  const [tabOverflow, setTabOverflow] = useState(false);
+  // In Workspace everything is stacked into one scrolling page; the
+  // Overview "jump to" links and legacy ?tab= deep-links scroll to the
+  // matching section anchor. Small delay lets the section lay out first.
   useEffect(() => {
-    const el = tabNavRef.current;
-    if (!el) return;
-    const update = () => setTabOverflow(el.scrollWidth > el.clientWidth + 1);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  useEffect(() => {
-    const el = tabNavRef.current;
-    if (!el) return;
-    const btn = el.querySelector<HTMLButtonElement>(`[data-tab="${tab}"]`);
-    if (btn) btn.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (tab === "overview") return;
+    const id = SECTION_IDS[tab];
+    if (!id) return;
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+    return () => clearTimeout(t);
   }, [tab]);
 
   const setTab = (next: TabId) => {
@@ -812,9 +812,8 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
             </div>
           </div>
 
-          {/* Primary nav: Overview stands alone; Calendar / Payments /
-              Files / Contacts / Settings collapse under one "Workspace"
-              tab, navigated by the secondary strip below. */}
+          {/* Primary nav: Overview stands alone; everything else lives
+              stacked under a single "Workspace" tab. */}
           <div className="mt-5 -mx-4 md:-mx-8 px-4 md:px-8">
             <nav className="flex gap-1">
               <button
@@ -829,9 +828,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (tab === "overview") setTab("calendar");
-                }}
+                onClick={() => setTab("workspace")}
                 className={`cockpit-tab inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-medium transition-all whitespace-nowrap ${
                   tab !== "overview" ? "cockpit-tab--active" : ""
                 }`}
@@ -892,7 +889,7 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               only (was previously shown on every tab when KYC wasn't
               complete). Per product call, the payments-connect prompt
               lives on Settings for now. */}
-          {verifyBanner && tab === "settings" ? (
+          {verifyBanner && tab !== "overview" ? (
             <section
               className="rounded-2xl p-5"
               style={{
@@ -951,37 +948,50 @@ export default function VendorPaymentsPage({ embedded = false }: { embedded?: bo
               onViewActivity={goToPayments}
               onViewCalendar={goToCalendar}
             />
-          ) : tab === "calendar" ? (
-            <Suspense fallback={<TabSkeleton />}>
-              <VendorAppointmentsPageLazy embedded accountVendorIds={accountVendorIds} />
-            </Suspense>
-          ) : tab === "transactions" ? (
-            <PaymentsTab
-              transactions={transactions}
-              payouts={payouts}
-              status={status}
-              accountVendorIds={accountVendorIds}
-              listings={listings}
-              onRefunded={() => refresh(false)}
-            />
-          ) : tab === "files" ? (
-            <FilesTab
-              accountVendorIds={accountVendorIds}
-              listings={listings}
-              invoices={invoices}
-              paymentLinks={paymentLinks}
-              status={status}
-              onChanged={() => refresh(true)}
-            />
-          ) : tab === "customers" ? (
-            <CustomersTab
-              accountVendorIds={accountVendorIds}
-              listings={listings}
-              status={status}
-              onChanged={() => refresh(true)}
-            />
           ) : (
-            <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
+            <div className="space-y-10">
+              <section id="ws-calendar" className="scroll-mt-28 space-y-3">
+                <WorkspaceSectionHeading icon={CalendarDays} label="Calendar" />
+                <Suspense fallback={<TabSkeleton />}>
+                  <VendorAppointmentsPageLazy embedded accountVendorIds={accountVendorIds} />
+                </Suspense>
+              </section>
+              <section id="ws-transactions" className="scroll-mt-28 space-y-3">
+                <WorkspaceSectionHeading icon={CreditCard} label="Payments" />
+                <PaymentsTab
+                  transactions={transactions}
+                  payouts={payouts}
+                  status={status}
+                  accountVendorIds={accountVendorIds}
+                  listings={listings}
+                  onRefunded={() => refresh(false)}
+                />
+              </section>
+              <section id="ws-files" className="scroll-mt-28 space-y-3">
+                <WorkspaceSectionHeading icon={FileText} label="Files" />
+                <FilesTab
+                  accountVendorIds={accountVendorIds}
+                  listings={listings}
+                  invoices={invoices}
+                  paymentLinks={paymentLinks}
+                  status={status}
+                  onChanged={() => refresh(true)}
+                />
+              </section>
+              <section id="ws-customers" className="scroll-mt-28 space-y-3">
+                <WorkspaceSectionHeading icon={Users} label="Contacts" />
+                <CustomersTab
+                  accountVendorIds={accountVendorIds}
+                  listings={listings}
+                  status={status}
+                  onChanged={() => refresh(true)}
+                />
+              </section>
+              <section id="ws-settings" className="scroll-mt-28 space-y-3">
+                <WorkspaceSectionHeading icon={SettingsIcon} label="Settings" />
+                <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
+              </section>
+            </div>
           )}
         </div>
       </main>
