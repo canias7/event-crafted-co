@@ -4651,19 +4651,6 @@ function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
   );
 }
 
-interface RecurringRule {
-  id: string;
-  vendor_id: string;
-  customer_id: string;
-  interval: "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
-  line_items: Array<{ name: string; qty: number; unit_price_cents: number }>;
-  notes: string | null;
-  tax_pct: number;
-  active: boolean;
-  next_run_at: string;
-  last_run_at: string | null;
-}
-
 interface Customer {
   id: string;
   vendor_id: string;
@@ -4746,11 +4733,6 @@ function CustomersTab({
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendTarget, setSendTarget] = useState<Customer | null>(null);
-  const [recurringTarget, setRecurringTarget] = useState<{
-    customer: Customer;
-    existing: RecurringRule | null;
-  } | null>(null);
-  const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
   const [sortField, setSortField] = useState<"name" | "invoices">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const toggleSort = (field: "name" | "invoices") => {
@@ -4766,98 +4748,8 @@ function CustomersTab({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [statementId, setStatementId] = useState<string | null>(null);
   const { user } = useAuth();
   const userId = user?.id ?? null;
-
-  // Statement download — fetches the FULL invoice history for this
-  // customer (not the parent's 50-row cache) so an end-of-year
-  // statement doesn't miss older invoices. Lazy-imports the PDF
-  // module so jsPDF stays out of the initial bundle.
-  const downloadStatement = useCallback(
-    async (c: Customer) => {
-      // Each customer belongs to exactly one listing on the account
-      // (vendor_id is fixed at creation), so the brand stamp comes
-      // from that listing's row. Snapshot at click time so a later
-      // `listings` array update can't change the PDF mid-render.
-      const snapVendorId = c.vendor_id;
-      const ownerListing = listings.find((l) => l.id === c.vendor_id) ?? null;
-      const snapBrand = {
-        business_name: ownerListing?.business_name ?? null,
-        location: ownerListing?.location ?? null,
-        email: user?.email ?? null,
-      };
-      setStatementId(c.id);
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const db = supabase as any;
-        const { data, error } = await db
-          .from("invoices")
-          .select(
-            "invoice_number, issue_date, due_date, paid_at, refunded_at, refunded_amount_cents, status, total_cents, currency",
-          )
-          .eq("vendor_id", snapVendorId)
-          .eq("bill_to_email", c.email)
-          // Drafts haven't reached the customer — including them in
-          // the statement leaks in-progress amounts the buyer never
-          // saw and inflates the "Billed" total. Cancelled invoices
-          // are excluded for the same reason (already filtered in
-          // buildStatementPdf, but we don't want to ship the rows
-          // over the wire either).
-          .in("status", ["sent", "overdue", "paid", "refunded", "partial_refund"])
-          .order("issue_date", { ascending: true })
-          .limit(1000);
-        if (error) {
-          console.error("[CustomersTab] statement fetch failed", error);
-          toast.error("Couldn't load this customer's invoice history.");
-          return;
-        }
-        const invoices = (data ?? []) as Array<{
-          invoice_number: string;
-          issue_date: string;
-          due_date: string | null;
-          paid_at: string | null;
-          refunded_at: string | null;
-          refunded_amount_cents: number | null;
-          status: string;
-          total_cents: number;
-          currency: string;
-        }>;
-        if (invoices.length === 0) {
-          toast.info("No invoices yet for this customer.");
-          return;
-        }
-        const mod = await import("@/lib/invoiceReceiptPdf");
-        mod.downloadStatementPdf(
-          {
-            customer_name: c.name,
-            customer_email: c.email,
-            since: null,
-            until: null,
-            invoices: invoices.map((inv) => ({
-              invoice_number: inv.invoice_number,
-              issue_date: inv.issue_date,
-              due_date: inv.due_date,
-              paid_at: inv.paid_at,
-              refunded_at: inv.refunded_at ?? undefined,
-              refunded_amount_cents: inv.refunded_amount_cents ?? undefined,
-              status: inv.status,
-              total_cents: inv.total_cents,
-              currency: inv.currency,
-            })),
-            currency: invoices[0]?.currency ?? "usd",
-          },
-          snapBrand,
-        );
-      } catch (err) {
-        console.error("[CustomersTab] statement build failed", err);
-        toast.error("Couldn't build the statement PDF.");
-      } finally {
-        setStatementId(null);
-      }
-    },
-    [listings, user],
-  );
 
   // Group invoices by bill_to_email so each customer row can show
   // count + total billed + a per-invoice list on expand. Fed by
@@ -4892,16 +4784,6 @@ function CustomersTab({
     }
     return m;
   }, [rows, invoicesByEmail]);
-
-  // Recurring rule per customer id, built once so the row render
-  // doesn't run a linear find() for every contact on every paint.
-  const recurringByCustomerId = useMemo(() => {
-    const m = new Map<string, RecurringRule>();
-    for (const r of recurringRules) {
-      if (r.customer_id) m.set(r.customer_id, r);
-    }
-    return m;
-  }, [recurringRules]);
 
   // Free-text filter across the fields a vendor would look someone up
   // by — display name, email, phone, company. Applied before sort so
@@ -5008,7 +4890,6 @@ function CustomersTab({
   const refresh = useCallback(async () => {
     if (!userId) {
       setRows([]);
-      setRecurringRules([]);
       setInvoices([]);
       setLoading(false);
       return;
@@ -5016,26 +4897,17 @@ function CustomersTab({
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    // Contacts are account-level (user_id). Recurring invoices +
-    // invoices stay listing-scoped (they're billing artifacts that
-    // belong to a connected listing), so they only load once the
-    // account has at least one listing.
+    // Contacts are account-level (user_id). Invoices stay
+    // listing-scoped (they're billing artifacts that belong to a
+    // connected listing), so they only load once the account has at
+    // least one listing.
     const hasListings = accountVendorIds.length > 0;
-    const [{ data: cs, error: csErr }, { data: rrs }, { data: invs }] = await Promise.all([
+    const [{ data: cs, error: csErr }, { data: invs }] = await Promise.all([
       db
         .from("vendor_customers")
         .select("id, vendor_id, email, name, phone, notes, first_name, last_name, company, billing_line1, billing_city, billing_state, billing_postal_code, billing_country, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
-      hasListings
-        ? db
-            .from("vendor_recurring_invoices")
-            .select(
-              "id, vendor_id, customer_id, interval, line_items, notes, tax_pct, active, next_run_at, last_run_at",
-            )
-            .in("vendor_id", accountVendorIds)
-            .order("created_at", { ascending: false })
-        : Promise.resolve({ data: [] }),
       hasListings
         ? db
             .from("invoices")
@@ -5048,7 +4920,6 @@ function CustomersTab({
         : Promise.resolve({ data: [] }),
     ]);
     if (!csErr) setRows((cs ?? []) as Customer[]);
-    setRecurringRules((rrs ?? []) as RecurringRule[]);
     setInvoices((invs ?? []) as Invoice[]);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5064,7 +4935,6 @@ function CustomersTab({
   useEffect(() => {
     setEditing(null);
     setSendTarget(null);
-    setRecurringTarget(null);
     setSelectedIds(new Set());
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5442,7 +5312,6 @@ function CustomersTab({
               <tbody>
                 {pageRows.map((c) => {
                   const summary = summaryById.get(c.id) ?? { count: 0 };
-                  const custRecurring = recurringByCustomerId.get(c.id);
                   const location =
                     [c.billing_city, c.billing_state].filter(Boolean).join(", ") ||
                     c.billing_country ||
@@ -5461,23 +5330,6 @@ function CustomersTab({
                       <td className="px-3 py-3 text-sm text-foreground font-bold">
                         <div className="flex items-center gap-1.5">
                           <span>{c.name?.trim() || c.email}</span>
-                          {custRecurring ? (
-                            <span
-                              title={
-                                custRecurring.active
-                                  ? `Recurring ${custRecurring.interval} · next ${new Date(custRecurring.next_run_at).toLocaleDateString()}`
-                                  : "Recurring paused"
-                              }
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                              style={{
-                                background: custRecurring.active ? "rgba(34,197,94,0.12)" : "#f4ece7",
-                                color: custRecurring.active ? "#0a7c4a" : "#7d5a4f",
-                              }}
-                            >
-                              <RotateCcw className="w-2.5 h-2.5" />
-                              {custRecurring.active ? "Recurring" : "Paused"}
-                            </span>
-                          ) : null}
                         </div>
                       </td>
                       <td className="px-3 py-3 text-sm text-muted-foreground">
@@ -5512,7 +5364,7 @@ function CustomersTab({
                                 className="w-7 h-7 rounded-md text-muted-foreground hover:bg-foreground/5 inline-flex items-center justify-center outline-none"
                                 title="More actions"
                               >
-                                {deletingId === c.id || statementId === c.id ? (
+                                {deletingId === c.id ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 ) : (
                                   <MoreHorizontal className="w-3.5 h-3.5" />
@@ -5522,20 +5374,6 @@ function CustomersTab({
                             <DropdownMenuContent align="end" className="w-44">
                               <DropdownMenuItem onClick={() => setSendTarget(c)}>
                                 <Mail className="w-3.5 h-3.5 mr-2" /> Send invoice
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setRecurringTarget({ customer: c, existing: custRecurring ?? null })
-                                }
-                              >
-                                <RotateCcw className="w-3.5 h-3.5 mr-2" />
-                                {custRecurring ? "Edit recurring" : "Set up recurring"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => downloadStatement(c)}
-                                disabled={statementId === c.id || summary.count === 0}
-                              >
-                                <Download className="w-3.5 h-3.5 mr-2" /> Statement
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -5617,23 +5455,6 @@ function CustomersTab({
         }
         customer={sendTarget}
         onSent={onChanged}
-      />
-
-      <RecurringDialog
-        open={!!recurringTarget}
-        onOpenChange={(v) => !v && setRecurringTarget(null)}
-        vendorId={recurringTarget?.customer.vendor_id ?? null}
-        listing={
-          recurringTarget
-            ? listings.find((l) => l.id === recurringTarget.customer.vendor_id) ?? null
-            : null
-        }
-        customer={recurringTarget?.customer ?? null}
-        existing={recurringTarget?.existing ?? null}
-        onSaved={() => {
-          setRecurringTarget(null);
-          void refresh();
-        }}
       />
     </div>
   );
@@ -6875,354 +6696,6 @@ function ExpensesTab({
 // On submit: inserts the invoice row, upserts the customer (in case
 // the vendor edited name/phone), then calls vendorapay-invoice-send
 // which emails the buyer via the existing branded receipt path.
-// Schedule recurring invoices for a customer. Vendor picks an
-// interval, defines the line items, sets a tax rate, and the
-// scan-vendorapay-recurring scheduled function takes care of
-// generating + emailing each one on cadence. No card-on-file —
-// buyer pays each invoice through the existing /pay/invoice link.
-function RecurringDialog({
-  open,
-  onOpenChange,
-  vendorId,
-  listing,
-  customer,
-  existing,
-  onSaved,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  vendorId: string | null;
-  listing: ListingOpt | null;
-  customer: Customer | null;
-  existing: RecurringRule | null;
-  onSaved?: () => void;
-}) {
-  const defaultTax = listing?.default_tax_pct
-    ? Number(listing.default_tax_pct).toString()
-    : "";
-  const [interval, setIntervalVal] = useState<RecurringRule["interval"]>("monthly");
-  const [nextRun, setNextRun] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().slice(0, 10);
-  });
-  const [notes, setNotes] = useState("");
-  const [taxPct, setTaxPct] = useState(defaultTax);
-  const [items, setItems] = useState<
-    Array<{ name: string; qty: string; price: string }>
-  >([{ name: "", qty: "1", price: "" }]);
-  const [active, setActive] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Resync when the dialog opens with new context.
-  useEffect(() => {
-    if (!open) return;
-    if (existing) {
-      setIntervalVal(existing.interval);
-      setNextRun(existing.next_run_at.slice(0, 10));
-      setNotes(existing.notes ?? "");
-      setTaxPct(String(existing.tax_pct ?? 0));
-      setItems(
-        existing.line_items.length > 0
-          ? existing.line_items.map((it) => ({
-              name: it.name,
-              qty: String(it.qty),
-              price: (it.unit_price_cents / 100).toString(),
-            }))
-          : [{ name: "", qty: "1", price: "" }],
-      );
-      setActive(existing.active);
-    } else {
-      setIntervalVal("monthly");
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      setNextRun(d.toISOString().slice(0, 10));
-      setNotes("");
-      setTaxPct(defaultTax);
-      setItems([{ name: "", qty: "1", price: "" }]);
-      setActive(true);
-    }
-  }, [open, existing, defaultTax]);
-
-  const subtotalCents = items.reduce((sum, it) => {
-    const q = parseInt(it.qty || "0", 10);
-    const p = Math.round(parseFloat(it.price || "0") * 100);
-    return sum + (Number.isFinite(q) && Number.isFinite(p) ? q * p : 0);
-  }, 0);
-  const taxRateBps = Math.round(parseFloat(taxPct || "0") * 100);
-  const taxCents = Math.round((subtotalCents * taxRateBps) / 10_000);
-  const totalCents = subtotalCents + taxCents;
-
-  const updateRow = (i: number, key: "name" | "qty" | "price", v: string) =>
-    setItems((r) => r.map((row, idx) => (idx === i ? { ...row, [key]: v } : row)));
-  const addRow = () => setItems((r) => [...r, { name: "", qty: "1", price: "" }]);
-  const removeRow = (i: number) =>
-    setItems((r) => r.filter((_, idx) => idx !== i));
-
-  const save = useCallback(async () => {
-    if (!vendorId || !customer || submitting) return;
-    const parsedItems = items
-      .map((it) => ({
-        name: it.name.trim(),
-        qty: parseInt(it.qty || "0", 10),
-        unit_price_cents: Math.round(parseFloat(it.price || "0") * 100),
-      }))
-      .filter((it) => it.name && it.qty > 0 && it.unit_price_cents > 0);
-    if (parsedItems.length === 0) {
-      toast.error("Add at least one line item");
-      return;
-    }
-    setSubmitting(true);
-    const nextRunDate = new Date(`${nextRun}T09:00:00Z`);
-    if (!Number.isFinite(nextRunDate.getTime())) {
-      setSubmitting(false);
-      toast.error("Pick a valid next-run date");
-      return;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    let error: { message?: string } | null = null;
-    if (existing) {
-      // On EDIT: DON'T touch day_of_month. The vendor's original
-      // anchor (set on the first INSERT) is the authoritative
-      // intent. Recomputing from the picker would silently lock in
-      // any drift that's already happened to next_run_at (Jan 31
-      // -> Feb 28 -> setting day_of_month=28 forever).
-      ({ error } = await db
-        .from("vendor_recurring_invoices")
-        .update({
-          interval,
-          next_run_at: nextRunDate.toISOString(),
-          line_items: parsedItems,
-          notes: notes.trim() || null,
-          tax_pct: parseFloat(taxPct || "0") || 0,
-          active,
-        })
-        .eq("id", existing.id));
-    } else {
-      // On CREATE: for month-based cadences, snapshot the picker's
-      // calendar day as day_of_month so advance() can re-anchor
-      // instead of drifting after the first month-overflow.
-      const dayOfMonth =
-        interval === "monthly" || interval === "quarterly" || interval === "yearly"
-          ? nextRunDate.getUTCDate()
-          : null;
-      ({ error } = await db.from("vendor_recurring_invoices").insert({
-        vendor_id: vendorId,
-        customer_id: customer.id,
-        interval,
-        day_of_month: dayOfMonth,
-        next_run_at: nextRunDate.toISOString(),
-        line_items: parsedItems,
-        notes: notes.trim() || null,
-        tax_pct: parseFloat(taxPct || "0") || 0,
-        active,
-      }));
-    }
-    setSubmitting(false);
-    if (error) {
-      toast.error("Couldn't save recurring", { description: error.message });
-      return;
-    }
-    toast.success(existing ? "Recurring updated" : "Recurring set up", {
-      description: `Next invoice sends ${new Date(nextRun).toLocaleDateString()}.`,
-    });
-    onOpenChange(false);
-    onSaved?.();
-  }, [
-    vendorId,
-    customer,
-    submitting,
-    items,
-    interval,
-    nextRun,
-    notes,
-    taxPct,
-    active,
-    existing,
-    onOpenChange,
-    onSaved,
-  ]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {existing ? "Edit recurring invoice" : "Set up recurring invoice"}
-          </DialogTitle>
-          <DialogDescription>
-            {customer ? `For ${customer.name ?? customer.email}` : ""}
-            {" · "}
-            Auto-generates and emails on the cadence you pick.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-muted-foreground w-20 shrink-0">
-                Interval
-              </span>
-              <select
-                value={interval}
-                onChange={(e) =>
-                  setIntervalVal(e.target.value as RecurringRule["interval"])
-                }
-                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              >
-                <option value="weekly">Every week</option>
-                <option value="biweekly">Every 2 weeks</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-muted-foreground w-20 shrink-0">
-                First send
-              </span>
-              <input
-                type="date"
-                value={nextRun}
-                onChange={(e) => setNextRun(e.target.value)}
-                className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-            </div>
-          </div>
-
-          <div
-            className="rounded-lg p-3 space-y-2"
-            style={{ background: "rgba(255,138,76,0.06)" }}
-          >
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-              Line items (repeated each cycle)
-            </div>
-            {items.map((row, idx) => (
-              <div
-                key={idx}
-                className="grid grid-cols-[1fr_56px_96px_24px] gap-2 items-center"
-              >
-                <input
-                  type="text"
-                  placeholder="Service / item"
-                  value={row.name}
-                  onChange={(e) => updateRow(idx, "name", e.target.value)}
-                  className="rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="Qty"
-                  value={row.qty}
-                  onChange={(e) => updateRow(idx, "qty", e.target.value)}
-                  className="rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                />
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="Price"
-                    value={row.price}
-                    onChange={(e) => updateRow(idx, "price", e.target.value)}
-                    className="flex-1 rounded-md border-0 px-2.5 py-1.5 text-sm bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeRow(idx)}
-                  disabled={items.length === 1}
-                  className="text-muted-foreground hover:text-destructive disabled:opacity-30"
-                  title="Remove"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={addRow}
-              className="rounded-full text-xs"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Add line item
-            </Button>
-            <div className="border-t border-foreground/5 pt-3 space-y-1 text-sm">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>Subtotal</span>
-                <span className="tabular-nums">{formatMoney(subtotalCents)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2 text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  Tax
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={taxPct}
-                    onChange={(e) => setTaxPct(e.target.value)}
-                    className="w-12 rounded-md border-0 px-1.5 py-0.5 text-xs bg-background ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none text-right tabular-nums"
-                  />
-                  <span className="text-xs">%</span>
-                </span>
-                <span className="tabular-nums">{formatMoney(taxCents)}</span>
-              </div>
-              <div className="flex items-center justify-between font-semibold pt-1 border-t border-foreground/5">
-                <span>Total per cycle</span>
-                <span className="tabular-nums">{formatMoney(totalCents)}</span>
-              </div>
-            </div>
-          </div>
-
-          <textarea
-            placeholder="Optional note that goes on every recurring invoice"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            className="w-full rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none resize-none"
-          />
-
-          {existing && (
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
-                className="h-4 w-4"
-              />
-              Active — uncheck to pause future invoices
-            </label>
-          )}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="rounded-full"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={save}
-              disabled={submitting || !vendorId}
-              className="rounded-full"
-            >
-              {submitting ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : null}
-              {existing ? "Save changes" : "Schedule recurring"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function SendInvoiceDialog({
   open,
   onOpenChange,
@@ -8545,6 +8018,7 @@ function SettingsTab({
   const [localStatus, setLocalStatus] = useState<Status | null>(primaryStatus);
   const [statusLoading, setStatusLoading] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const accountKey = accountVendorIds.join(",");
 
   // Find every listing that's actually onboarded to VendoraPay.
@@ -8635,6 +8109,35 @@ function SettingsTab({
     window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
   }, [vendorId, opening]);
 
+  // Start (or resume) VendoraPay onboarding for the selected listing.
+  // vendorapay-onboard auto-creates a vendor_profile when business_id
+  // is omitted, so this works even before the vendor has a listing.
+  const handleConnect = useCallback(async () => {
+    if (connecting) return;
+    setConnecting(true);
+    const { data, error } = await supabase.functions.invoke("vendorapay-onboard", {
+      body: vendorId ? { business_id: vendorId } : {},
+    });
+    if (error || !(data as { url?: string })?.url) {
+      let detail = "Try again in a moment.";
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.clone().json();
+          detail = (body?.detail || body?.error || error?.message) ?? detail;
+        } catch {
+          detail = error?.message ?? detail;
+        }
+      } else if (error?.message) {
+        detail = error.message;
+      }
+      toast.error("Couldn't open VendoraPay onboarding", { description: detail });
+      setConnecting(false);
+      return;
+    }
+    window.location.href = (data as { url: string }).url;
+  }, [vendorId, connecting]);
+
   return (
     <div className="space-y-6">
       {/* Listing picker — Settings is per-connected-account, so the
@@ -8693,6 +8196,44 @@ function SettingsTab({
           Connection
         </h2>
         <div className="space-y-3">
+          {/* Connect CTA — the entry point into VendoraPay onboarding.
+              Only shown until the account is onboarded; afterward the
+              per-card "Manage bank" / "Update info" buttons take over. */}
+          {!status?.onboarded ? (
+            <div
+              className="rounded-2xl p-5 flex items-start gap-4 flex-wrap"
+              style={{
+                background: "rgba(255,253,250,0.7)",
+                border: "0.5px solid rgba(255,138,76,0.22)",
+              }}
+            >
+              <div
+                className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+              >
+                <Landmark className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold">Connect VendoraPay</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md leading-relaxed">
+                  Set up payments to send invoices, accept cards, and get
+                  paid out to your bank. Verify your identity + bank (about
+                  3 minutes) — we'll bring you right back here.
+                </p>
+              </div>
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="rounded-full"
+              >
+                {connecting ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : null}
+                Connect VendoraPay
+              </Button>
+            </div>
+          ) : null}
+
           <Card>
             <div className="p-5 flex items-start gap-4 flex-wrap">
               <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
