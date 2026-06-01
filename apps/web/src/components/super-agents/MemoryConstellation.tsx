@@ -372,44 +372,49 @@ export function MemoryConstellation({
 
       {/* Constellation canvas. */}
       <div className="absolute inset-0">
-        {/* SVG layer for the connecting lines (behind the node chips). */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
-          {nodes.map(({ entry, angle, ring, driftPhase }) => {
-            const { rx, ry } = posFor(entry.id, angle, ring, driftPhase);
-            const x = `calc(50% + ${rx}vmin)`;
-            const y = `calc(50% + ${ry}vmin)`;
-            return (
-              <line
-                key={entry.id}
-                x1="50%"
-                y1="50%"
-                x2={x}
-                y2={y}
-                stroke="rgba(255,255,255,0.14)"
-                strokeWidth={1}
-              />
-            );
-          })}
-          {/* Ghost lines — only when there are no real memories. */}
-          {!loading && count === 0
-            ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
-                const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-                const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-                const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
-                return (
-                  <line
-                    key={id}
-                    x1="50%"
-                    y1="50%"
-                    x2={`calc(50% + ${rx}vmin)`}
-                    y2={`calc(50% + ${ry}vmin)`}
-                    stroke="rgba(255,255,255,0.06)"
-                    strokeWidth={1}
-                  />
-                );
-              })
-            : null}
-        </svg>
+        {/* Connecting lines (behind the node chips). Rendered as CSS-
+            transformed divs rather than SVG <line>s: SVG geometry
+            attributes (x2/y2) don't accept calc()/vmin — Safari parses
+            them as 0, which made every line shoot to the top-left
+            corner. A div anchored at center with width = the vmin
+            distance and rotate(atan2) matches the chips exactly. */}
+        {nodes.map(({ entry, angle, ring, driftPhase }) => {
+          const { rx, ry } = posFor(entry.id, angle, ring, driftPhase);
+          const len = Math.sqrt(rx * rx + ry * ry);
+          const deg = (Math.atan2(ry, rx) * 180) / Math.PI;
+          return (
+            <div
+              key={`line-${entry.id}`}
+              className="absolute left-1/2 top-1/2 h-px origin-left pointer-events-none"
+              style={{
+                width: `${len}vmin`,
+                background: "rgba(255,255,255,0.14)",
+                transform: `rotate(${deg}deg)`,
+              }}
+            />
+          );
+        })}
+        {/* Ghost lines — only when there are no real memories. */}
+        {!loading && count === 0
+          ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
+              const drift = Math.sin(t * 0.5 + driftPhase) * 10;
+              const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
+              const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+              const len = Math.sqrt(rx * rx + ry * ry);
+              const deg = (Math.atan2(ry, rx) * 180) / Math.PI;
+              return (
+                <div
+                  key={`line-${id}`}
+                  className="absolute left-1/2 top-1/2 h-px origin-left pointer-events-none"
+                  style={{
+                    width: `${len}vmin`,
+                    background: "rgba(255,255,255,0.06)",
+                    transform: `rotate(${deg}deg)`,
+                  }}
+                />
+              );
+            })
+          : null}
 
         {/* Central hub — the vendor's logo, falling back to the actual
             app icon. Amber glow + a soft black shadow under it. */}
