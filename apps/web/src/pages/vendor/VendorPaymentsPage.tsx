@@ -406,7 +406,20 @@ export default function VendorPaymentsPage(
     navigate("/vendor/workspace?tab=transactions&sub=expenses");
   const goToPayments = () =>
     navigate("/vendor/workspace?tab=transactions&sub=incoming");
-  const goToCalendar = () => navigate("/vendor/workspace");
+  // Calendar lives in the left rail; nudge focus to it (and scroll on
+  // mobile, where it stacks) so the drill-down visibly lands somewhere.
+  const goToCalendar = () => navigate("/vendor/workspace?focus=calendar");
+
+  useEffect(() => {
+    if (view !== "workspace" || searchParams.get("focus") !== "calendar") return;
+    const t = setTimeout(() => {
+      document.getElementById("ws-calendar")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [view, searchParams]);
 
   const [status, setStatus] = useState<Status | null>(null);
   // VendoraPay is account-level (one Stripe connection per user, not per
@@ -571,6 +584,13 @@ export default function VendorPaymentsPage(
   // need updating when a payment lands.
   useEffect(() => {
     if (!vendorId) return;
+    // Coalesce bursts of webhook-driven row changes into one refresh
+    // instead of firing the full fan-out on every individual event.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefresh = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void refresh(false), 600);
+    };
     const channel = supabase
       .channel(`vendorapay:${vendorId}`)
       .on(
@@ -584,9 +604,7 @@ export default function VendorPaymentsPage(
           table: "invoices",
           filter: `vendor_id=eq.${vendorId}`,
         },
-        () => {
-          void refresh(false);
-        },
+        debouncedRefresh,
       )
       .on(
         "postgres_changes",
@@ -596,12 +614,11 @@ export default function VendorPaymentsPage(
           table: "payment_links",
           filter: `vendor_id=eq.${vendorId}`,
         },
-        () => {
-          void refresh(false);
-        },
+        debouncedRefresh,
       )
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       void supabase.removeChannel(channel);
     };
     // Deliberately depend only on vendorId, not refresh. The
@@ -826,24 +843,32 @@ export default function VendorPaymentsPage(
               surface instead. handleConnect / connecting are still used
               by the Settings tab's connect action. */}
 
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : view === "overview" ? (
-            <OverviewTab
-              balance={balance}
-              accountVendorIds={accountVendorIds}
-              onViewExpenses={goToExpenses}
-              onViewActivity={goToPayments}
-              onViewCalendar={goToCalendar}
-            />
+          {view === "overview" ? (
+            loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <OverviewTab
+                balance={balance}
+                accountVendorIds={accountVendorIds}
+                onViewExpenses={goToExpenses}
+                onViewActivity={goToPayments}
+                onViewCalendar={goToCalendar}
+              />
+            )
           ) : (
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Calendar — left rail */}
-              <div className="w-full lg:w-[360px] lg:shrink-0">
+              {/* Calendar — left rail. Renders independently of the Stripe
+                  load (it has its own data source) so it paints right away
+                  instead of waiting behind the payments fan-out. */}
+              <div id="ws-calendar" className="w-full lg:w-[360px] lg:shrink-0 scroll-mt-24">
                 <Suspense fallback={<TabSkeleton />}>
-                  <VendorAppointmentsPageLazy embedded accountVendorIds={accountVendorIds} />
+                  <VendorAppointmentsPageLazy
+                    embedded
+                    accountVendorIds={accountVendorIds}
+                    listings={listings}
+                  />
                 </Suspense>
               </div>
               {/* Payments / Files / Contacts / Settings — tabbed middle */}
@@ -867,7 +892,11 @@ export default function VendorPaymentsPage(
                     );
                   })}
                 </nav>
-                {wsTab === "transactions" ? (
+                {loading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : wsTab === "transactions" ? (
                   <PaymentsTab
                     transactions={transactions}
                     payouts={payouts}

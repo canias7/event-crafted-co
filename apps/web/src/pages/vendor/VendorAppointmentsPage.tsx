@@ -171,7 +171,15 @@ export default function VendorAppointmentsPage({
   embedded = false,
   listingId: listingIdProp,
   accountVendorIds,
-}: { embedded?: boolean; listingId?: string | null; accountVendorIds?: string[] } = {}) {
+  listings: listingsProp,
+}: {
+  embedded?: boolean;
+  listingId?: string | null;
+  accountVendorIds?: string[];
+  // When the embedding cockpit already fetched the user's listings, it
+  // passes them here so we don't issue a duplicate vendor_profiles query.
+  listings?: ListingOpt[];
+} = {}) {
   const { user } = useAuth();
 
   // Two modes:
@@ -257,6 +265,16 @@ export default function VendorAppointmentsPage({
 
   useEffect(() => {
     if (!user?.id) return;
+    // Reuse listings handed down by the cockpit instead of refetching.
+    if (listingsProp) {
+      setListings(listingsProp);
+      const firstApproved = listingsProp.find(
+        (l) => l.application_status === "approved",
+      );
+      setSelectedListingId((prev) => prev ?? firstApproved?.id ?? null);
+      setListingsLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setListingsLoading(true);
@@ -285,7 +303,7 @@ export default function VendorAppointmentsPage({
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, listingsProp]);
 
   const selectedListing = useMemo(
     () => listings.find((l) => l.id === selectedListingId) ?? null,
@@ -893,9 +911,12 @@ export default function VendorAppointmentsPage({
     year: "numeric",
   });
 
+  // Embedded in the cockpit (which already has a <main>), render a plain
+  // wrapper to avoid nested <main> landmarks / a duplicate id.
+  const Shell = embedded ? "div" : "main";
   const body = (
     <>
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
+      <Shell id={embedded ? undefined : "main-content"} className="flex-1 pb-20 lg:pb-0">
         {!embedded && (
           <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
             <div className="flex items-start justify-between gap-4">
@@ -1107,7 +1128,7 @@ export default function VendorAppointmentsPage({
             </>
           )}
         </div>
-      </main>
+      </Shell>
 
       <AlertDialog
         open={confirmOpen}
