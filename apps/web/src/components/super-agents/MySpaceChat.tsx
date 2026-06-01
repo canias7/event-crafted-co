@@ -204,6 +204,35 @@ const PLACEHOLDER_PHRASES = [
   "Summarize my week and what needs a follow-up",
 ] as const;
 
+// Glassy "New chat" button with a click ripple (wave from the tap point).
+// Shared by the thread rail and the mobile drawer.
+function GlassNewChatButton({ onClick }: { onClick: () => void }) {
+  const addRipple = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const ripple = document.createElement("span");
+    ripple.className = "glass-ripple";
+    ripple.style.width = `${size}px`;
+    ripple.style.height = `${size}px`;
+    ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+    ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+    btn.appendChild(ripple);
+    ripple.addEventListener("animationend", () => ripple.remove());
+  };
+  return (
+    <button
+      type="button"
+      onPointerDown={addRipple}
+      onClick={onClick}
+      className="glass-newchat w-full inline-flex items-center justify-center gap-2 text-sm font-bold rounded-xl px-3 py-2"
+    >
+      <MessageSquarePlus className="w-4 h-4" />
+      New chat
+    </button>
+  );
+}
+
 export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
   const { user } = useAuth();
   const [threads, setThreads] = useState<ThreadRow[]>([]);
@@ -1170,18 +1199,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
           className="px-3 py-3 border-b"
           style={{ borderColor: "rgba(255,138,76,0.18)" }}
         >
-          <button
-            type="button"
-            onClick={startNewChat}
-            className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold rounded-xl px-3 py-2 transition-colors"
-            style={{
-              background: "rgba(255,138,76,0.18)",
-              color: "#1a1208",
-            }}
-          >
-            <MessageSquarePlus className="w-4 h-4" />
-            New chat
-          </button>
+          <GlassNewChatButton onClick={startNewChat} />
           {/* Search across threads (title + message content). */}
           <div className="relative mt-3">
             <Search
@@ -1285,18 +1303,12 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
                 <SheetTitle className="font-editorial text-xl">My Space</SheetTitle>
               </SheetHeader>
               <div className="px-3 py-3 border-b" style={{ borderColor: "rgba(255,138,76,0.18)" }}>
-                <button
-                  type="button"
+                <GlassNewChatButton
                   onClick={() => {
                     setMobileNavOpen(false);
                     startNewChat();
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 text-sm font-medium rounded-xl px-3 py-2"
-                  style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
-                >
-                  <MessageSquarePlus className="w-4 h-4" />
-                  New chat
-                </button>
+                />
                 <div className="relative mt-3">
                   <Search
                     className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
