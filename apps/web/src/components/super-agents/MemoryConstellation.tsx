@@ -397,9 +397,7 @@ export function MemoryConstellation({
         {/* Ghost lines — only when there are no real memories. */}
         {!loading && count === 0
           ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
-              const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-              const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-              const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+              const { rx, ry } = posFor(id, angle, ring, driftPhase);
               const len = Math.sqrt(rx * rx + ry * ry);
               const deg = (Math.atan2(ry, rx) * 180) / Math.PI;
               return (
@@ -493,34 +491,54 @@ export function MemoryConstellation({
         })}
 
         {/* Ghost node chips — faded placeholders so the constellation
-            still reads as a web before any real memories exist. */}
+            still reads as a web before any real memories exist. Draggable
+            like real nodes: grab and move them around; a tap (no drag)
+            opens the add-memory form. */}
         {!loading && count === 0
           ? GHOST_NODES.map(({ id, angle, ring, driftPhase }) => {
-              const drift = Math.sin(t * 0.5 + driftPhase) * 10;
-              const rx = Math.cos(angle) * (ring * 38) + (drift * Math.cos(angle)) / 38;
-              const ry = Math.sin(angle) * (ring * 38) + (drift * Math.sin(angle)) / 38;
+              const { rx, ry } = posFor(id, angle, ring, driftPhase);
+              const anchor = orbitPos(angle, ring, driftPhase);
+              const isDragging = draggingId === id;
               return (
-                <button
+                <motion.div
                   key={id}
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  title="Add a memory"
-                  className="group absolute z-10 -translate-x-1/2 -translate-y-1/2"
+                  drag
+                  dragMomentum={false}
+                  dragElastic={0}
+                  whileDrag={{ scale: 1.18, zIndex: 40 }}
+                  onDragStart={() => setDraggingId(id)}
+                  onDrag={(_, info) => handleNodeDrag(id, anchor, info)}
+                  onDragEnd={() => setDraggingId(null)}
+                  className="group absolute -translate-x-1/2 -translate-y-1/2"
                   style={{
                     left: `calc(50% + ${rx}vmin)`,
                     top: `calc(50% + ${ry}vmin)`,
+                    zIndex: isDragging ? 40 : 10,
+                    touchAction: "none",
+                    cursor: isDragging ? "grabbing" : "grab",
                   }}
                 >
-                  <span
-                    className="w-8 h-8 rounded-full inline-flex items-center justify-center transition-all group-hover:scale-110"
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.10)",
-                    }}
+                  <button
+                    type="button"
+                    // Framer suppresses the click after a real drag, so this
+                    // only fires on a genuine tap.
+                    onClick={() => setAdding(true)}
+                    title="Add a memory"
+                    className="block select-none"
                   >
-                    <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-[#ff8a4c] transition-colors" />
-                  </span>
-                </button>
+                    <span
+                      className={`w-8 h-8 rounded-full inline-flex items-center justify-center transition-all ${
+                        isDragging ? "" : "group-hover:scale-110"
+                      }`}
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: `1px solid rgba(255,255,255,${isDragging ? "0.25" : "0.10"})`,
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-[#ff8a4c] transition-colors" />
+                    </span>
+                  </button>
+                </motion.div>
               );
             })
           : null}
