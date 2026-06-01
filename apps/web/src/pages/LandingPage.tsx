@@ -101,35 +101,6 @@ export default function LandingPage() {
 
         {/* HERO CONTENT */}
         <section className="relative z-[2] px-6 md:px-10 pt-24 pb-24 md:pt-28 md:pb-28 text-center">
-          <div
-            className="inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 mb-8"
-            style={{
-              border: "0.5px solid rgba(255,138,76,0.7)",
-              background: "rgba(255,255,255,0.7)",
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-            }}
-          >
-            <span
-              className="landing-hero-pulse rounded-full"
-              style={{
-                width: 6,
-                height: 6,
-                background: "#ff8a4c",
-                boxShadow: "0 0 8px #ff8a4c",
-              }}
-            />
-            <span
-              className="uppercase font-semibold text-black"
-              style={{
-                fontSize: "11px",
-                letterSpacing: "2.5px",
-              }}
-            >
-              Now with Super Agents
-            </span>
-          </div>
-
           <h1
             className="text-black m-0"
             style={{
