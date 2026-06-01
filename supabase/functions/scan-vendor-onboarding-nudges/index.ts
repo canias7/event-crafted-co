@@ -34,6 +34,15 @@ interface Row {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
+  if (CRON_SECRET) {
+    const provided = req.headers.get("x-cron-secret") ??
+      (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (provided !== CRON_SECRET) {
+      return json({ error: "unauthorized" }, 401);
+    }
+  }
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return json({ error: "Supabase admin credentials not set" }, 500);
   }
