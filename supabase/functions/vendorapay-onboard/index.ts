@@ -57,19 +57,55 @@ serve(async (req) => {
     const userId = userData.user.id;
     const userEmail = userData.user.email ?? null;
 
-    const body = await req.json().catch(() => ({}));
-    const businessId = (body?.business_id as string | undefined) ?? null;
-    if (!businessId) return json(400, { error: "business_id required" });
-
-    // Ownership check: caller must be admin on this business.
-    const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
-      _vendor_id: businessId,
-    });
-    if (!isAdmin) return json(403, { error: "admin role required" });
-
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
+
+    const body = await req.json().catch(() => ({}));
+    let businessId = (body?.business_id as string | undefined) ?? null;
+
+    if (businessId) {
+      // Ownership check: caller must be admin on this business.
+      const { data: isAdmin } = await userClient.rpc("is_vendor_team_admin", {
+        _vendor_id: businessId,
+      });
+      if (!isAdmin) return json(403, { error: "admin role required" });
+    } else {
+      // No listing specified — let the vendor connect VendoraPay before
+      // they've published a listing. Reuse their earliest profile if any,
+      // else create a private draft one. The vendor_profiles_add_owner
+      // trigger grants the caller ownership, so the admin check above
+      // passes on every later call for this profile.
+      const { data: existingProfile } = await admin
+        .from("vendor_profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      businessId = (existingProfile as { id?: string } | null)?.id ?? null;
+      if (!businessId) {
+        const { data: created, error: createErr } = await admin
+          .from("vendor_profiles")
+          .insert({ user_id: userId, application_status: "draft" })
+          .select("id")
+          .single();
+        if (createErr || !(created as { id?: string } | null)?.id) {
+          console.error(
+            "[vendorapay-onboard] profile auto-create failed",
+            createErr,
+          );
+          return json(500, {
+            error: "profile_create_failed",
+            detail: (createErr?.message ?? "could not create a profile").slice(
+              0,
+              240,
+            ),
+          });
+        }
+        businessId = (created as { id: string }).id;
+      }
+    }
 
     // Reuse the existing account if we already onboarded this vendor.
     const { data: existing } = await admin
