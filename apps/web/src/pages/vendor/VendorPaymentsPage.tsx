@@ -97,6 +97,7 @@ import {
 } from "@/components/appointments/AppointmentsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtime } from "@/lib/realtime";
+import { listingColorMap } from "@/lib/listingColors";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -892,6 +893,7 @@ export default function VendorPaymentsPage(
                   <VendorAppointmentsPageLazy
                     embedded
                     hideUpcoming
+                    hideLegend
                     accountVendorIds={accountVendorIds}
                     listings={listings}
                   />
@@ -924,7 +926,10 @@ export default function VendorPaymentsPage(
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : wsTab === "appointments" ? (
-                  <WorkspaceAppointments accountVendorIds={accountVendorIds} />
+                  <WorkspaceAppointments
+                    accountVendorIds={accountVendorIds}
+                    listings={listings}
+                  />
                 ) : wsTab === "transactions" ? (
                   <PaymentsTab
                     transactions={transactions}
@@ -977,12 +982,20 @@ export default function VendorPaymentsPage(
 // Aggregates across every listing on the account.
 function WorkspaceAppointments({
   accountVendorIds,
+  listings,
 }: {
   accountVendorIds: string[];
+  listings: ListingOpt[];
 }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const idsKey = accountVendorIds.join(",");
+  // Color key for the calendar dots — mirrors the calendar's palette/order.
+  const listingColorById = useMemo(
+    () => listingColorMap(listings.map((l) => l.id)),
+    [listings],
+  );
+  const showListingLegend = listings.length > 1;
 
   const load = useCallback(async () => {
     if (accountVendorIds.length === 0) {
@@ -1055,14 +1068,44 @@ function WorkspaceAppointments({
   }
 
   return (
-    <section>
-      <h2 className="font-display text-lg mb-3">Appointments</h2>
-      {/* Bounded, scrollable list so it doesn't run infinitely down the
-          page — the cards scroll inside this area. */}
-      <div className="max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 -mr-1">
-        <AppointmentsList appointments={appointments} onMutate={load} />
-      </div>
-    </section>
+    <div className="flex flex-col xl:flex-row gap-6 items-start">
+      {/* Appointments list — bounded + scrollable so it doesn't run
+          infinitely down the page. */}
+      <section className="flex-1 min-w-0 w-full">
+        <h2 className="font-display text-lg mb-3">Appointments</h2>
+        <div className="max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 -mr-1">
+          <AppointmentsList appointments={appointments} onMutate={load} />
+        </div>
+      </section>
+      {/* Calendar color key — to the RIGHT of the list, its own scroll
+          area (both columns bounded to the same height so neither runs
+          long and there's no tall empty column). */}
+      <aside className="w-full xl:w-[240px] xl:shrink-0">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Calendar colors
+        </h3>
+        <div className="card-soft p-4 space-y-2">
+          {showListingLegend ? (
+            <div className="space-y-1.5 text-xs max-h-[calc(100vh-17rem)] overflow-y-auto pr-1">
+              {listings.map((l) => (
+                <div key={l.id} className="flex items-center gap-1.5">
+                  <span
+                    className="w-3 h-3 rounded-full inline-block shrink-0"
+                    style={{ background: listingColorById.get(l.id) }}
+                  />
+                  <span className="text-foreground truncate">
+                    {l.business_name?.trim() || l.category || "Listing"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <p className="text-[11px] text-muted-foreground">
+            Solid = booked · faded = pending · ringed = blocked
+          </p>
+        </div>
+      </aside>
+    </div>
   );
 }
 
