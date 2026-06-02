@@ -98,6 +98,36 @@ External services in option A:
 4. Seed helpers reused from the existing `auth.setup` pattern (mint sessions
    against the local stack — no captcha locally, so plain password works).
 
+## Finding (2026-06-02): migrations do NOT apply from scratch
+The first CI run of `.github/workflows/write-flow-tests.yml` (option A's
+prerequisite gate) **failed** — the migration chain can't be replayed cleanly:
+
+```
+20260503205144_eb966d2e-….sql →
+ERROR: column "event_type" of relation "profiles" already exists (SQLSTATE 42701)
+  alter table public.profiles add column event_type text check (...), …
+```
+
+A Lovable-generated migration re-adds `profiles.event_type` (+ event_date,
+event_location, budget_*, event_notes, onboarded_at) without `IF NOT EXISTS`;
+an earlier migration already added them. Prod never errored (those columns were
+created out-of-band via the Lovable UI, so the migration was effectively a
+no-op there), but a from-scratch replay collides. There are very likely **more**
+such conflicts later in the 444-migration chain.
+
+**Implications & paths forward:**
+1. **Make migrations idempotent** (`add column if not exists`, `create … if not
+   exists`, guard drops) — iterative: fix one, re-run the workflow, fix the
+   next. Could span many migrations. Has value beyond tests (fresh-env / DR /
+   onboarding all depend on a clean replay).
+2. **Schema-snapshot approach** — `pg_dump --schema-only` of the current prod
+   schema, commit it as a fixture, and load *that* into the local stack instead
+   of replaying history. Sidesteps the drift entirely (tests want current-schema
+   parity, not migration history). Lower effort to get tests running; doesn't
+   fix the underlying migration debt.
+
+The validation workflow is now `workflow_dispatch`-only so it doesn't auto-fail.
+
 ## Operator decisions needed
 - **Which option** (A recommended).
 - For A: confirm CI can run Docker (`supabase start` needs it) on the runner.
