@@ -296,6 +296,14 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
   const [searchHits, setSearchHits] = useState<Set<string> | null>(null);
   // AbortController for the in-flight stream so we can cancel it.
   const abortRef = useRef<AbortController | null>(null);
+  // When the FIRST message of a new chat streams back, the server hands
+  // us the freshly-created thread id and we adopt it as currentThreadId.
+  // That thread change would normally trigger the load-messages effect,
+  // which refetches from the DB and clobbers the still-streaming bubbles
+  // (the user message persists but the assistant reply is mid-stream).
+  // This holds the id of a thread whose load should be skipped exactly
+  // once because its messages are already live in state from the stream.
+  const skipThreadLoadRef = useRef<string | null>(null);
 
   // ── Smooth typewriter reveal (ChatGPT-style). The server streams text
   // in bursts; rather than dumping each burst into the bubble, we keep the
@@ -409,6 +417,13 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
     atBottomRef.current = true;
     if (!currentThreadId) {
       setMessages([]);
+      return;
+    }
+    // This thread was just created by the in-flight send; its messages
+    // are already live in state from the stream. Refetching here would
+    // wipe the streaming bubbles, so skip it once and consume the guard.
+    if (skipThreadLoadRef.current === currentThreadId) {
+      skipThreadLoadRef.current = null;
       return;
     }
     (async () => {
@@ -760,6 +775,12 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
           if (ev.type === "thread") {
             receivedThreadId = ev.thread_id;
             if (ev.thread_is_new || ev.thread_id !== currentThreadId) {
+              // Adopting a new thread id mid-stream: tell the load-messages
+              // effect to skip its refetch so it doesn't clobber the live
+              // streaming bubbles we're already showing.
+              if (ev.thread_id !== currentThreadId) {
+                skipThreadLoadRef.current = ev.thread_id;
+              }
               setCurrentThreadId(ev.thread_id);
             }
           } else if (ev.type === "user_message" && userOptimistic) {
