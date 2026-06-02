@@ -196,6 +196,30 @@
     height: 0;
   }
 
+  /* Button click "wave" — a soft ripple that radiates from the click
+     point, emitted by the shared <Button>. Ink is currentColor so it
+     reads light on dark buttons and dark on light ones. Two layered
+     timing functions (a quick swell + a slower settle) give it a
+     liquid, wavy feel rather than a flat Material puck. */
+  .btn-ripple-ink {
+    position: absolute;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.28;
+    transform: scale(0);
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: btn-ripple 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes btn-ripple {
+    0% { transform: scale(0); opacity: 0.32; }
+    40% { opacity: 0.22; }
+    100% { transform: scale(1); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-ripple-ink { display: none; }
+  }
+
   .font-display {
     font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
     font-weight: 700;
