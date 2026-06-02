@@ -172,6 +172,7 @@ export default function VendorAppointmentsPage({
   listingId: listingIdProp,
   accountVendorIds,
   listings: listingsProp,
+  hideUpcoming = false,
 }: {
   embedded?: boolean;
   listingId?: string | null;
@@ -179,6 +180,10 @@ export default function VendorAppointmentsPage({
   // When the embedding cockpit already fetched the user's listings, it
   // passes them here so we don't issue a duplicate vendor_profiles query.
   listings?: ListingOpt[];
+  // The cockpit relocates the "Upcoming appointments" list into its own
+  // column beside the invoices, so it asks the embedded calendar rail to
+  // suppress its in-rail copy to avoid rendering it twice.
+  hideUpcoming?: boolean;
 } = {}) {
   const { user } = useAuth();
 
@@ -1113,7 +1118,7 @@ export default function VendorAppointmentsPage({
             />
           ) : null}
 
-          {appointments.length > 0 || appointmentsLoading ? (
+          {!hideUpcoming && (appointments.length > 0 || appointmentsLoading) ? (
             <section>
               <h2 className="font-display text-lg mb-3">
                 Upcoming appointments

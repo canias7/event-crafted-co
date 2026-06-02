@@ -91,6 +91,12 @@ import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
 import { InvoicePreview } from "@/components/vendor/InvoicePreview";
 import {
+  AppointmentsList,
+  type Appointment,
+} from "@/components/appointments/AppointmentsList";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRealtime } from "@/lib/realtime";
+import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
   PROPOSAL_TEMPLATES,
@@ -872,6 +878,7 @@ export default function VendorPaymentsPage(
                 <Suspense fallback={<TabSkeleton />}>
                   <VendorAppointmentsPageLazy
                     embedded
+                    hideUpcoming
                     accountVendorIds={accountVendorIds}
                     listings={listings}
                   />
@@ -898,6 +905,11 @@ export default function VendorPaymentsPage(
                     );
                   })}
                 </nav>
+                {/* Tab content keeps its place on the left; the Upcoming
+                    appointments list fills the empty space to its right
+                    (stacks below on narrower screens). */}
+                <div className="flex flex-col 2xl:flex-row gap-6 items-start">
+                  <div className="flex-1 min-w-0 w-full">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -930,6 +942,13 @@ export default function VendorPaymentsPage(
                 ) : (
                   <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
                 )}
+                  </div>
+                  {/* Upcoming appointments — relocated out of the calendar
+                      rail into the empty space beside the tab content. */}
+                  <div className="w-full 2xl:w-[380px] 2xl:shrink-0">
+                    <WorkspaceAppointments accountVendorIds={accountVendorIds} />
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -945,6 +964,76 @@ export default function VendorPaymentsPage(
       {body}
       <MobileNav items={vendorNavItems} />
     </div>
+  );
+}
+
+// Upcoming appointments column for the Workspace cockpit. Self-contained
+// fetch (mirrors the embedded calendar's loadAppointments) so it can live
+// beside the invoices without threading appointment state through the
+// page. Aggregates across every listing on the account.
+function WorkspaceAppointments({
+  accountVendorIds,
+}: {
+  accountVendorIds: string[];
+}) {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const idsKey = accountVendorIds.join(",");
+
+  const load = useCallback(async () => {
+    if (accountVendorIds.length === 0) {
+      setAppointments([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    // Bound to the recent window (~90 days back) like the calendar rail
+    // so years-old history doesn't bloat the payload.
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("appointments")
+      .select(
+        "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
+      )
+      .in("vendor_id", accountVendorIds)
+      .gte("scheduled_at", cutoff.toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(500);
+    const rows = (
+      (data as Array<
+        Appointment & { host: { display_name: string | null } | null }
+      > | null) ?? []
+    ).map((r) => ({ ...r, host_name: r.host?.display_name ?? null }));
+    setAppointments(rows);
+    setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Refetch when this account's appointments change so accepting /
+  // declining stays in sync without a manual reload.
+  const realtimeConfig = useMemo(
+    () => (accountVendorIds.length > 0 ? { table: "appointments" } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [idsKey],
+  );
+  useRealtime(realtimeConfig, () => load());
+
+  if (loading) {
+    return <Skeleton className="h-24 w-full rounded-md" />;
+  }
+  if (appointments.length === 0) return null;
+
+  return (
+    <section>
+      <h2 className="font-display text-lg mb-3">Upcoming appointments</h2>
+      <AppointmentsList appointments={appointments} onMutate={load} />
+    </section>
   );
 }
 
