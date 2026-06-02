@@ -881,7 +881,7 @@ export default function VendorPaymentsPage(
               {/* Calendar — left rail. Renders independently of the Stripe
                   load (it has its own data source) so it paints right away
                   instead of waiting behind the payments fan-out. */}
-              <div id="ws-calendar" className="w-full lg:w-[360px] lg:shrink-0 scroll-mt-24">
+              <div id="ws-calendar" className="w-full lg:flex-1 lg:min-w-0 scroll-mt-24">
                 <Suspense fallback={<TabSkeleton />}>
                   <VendorAppointmentsPageLazy
                     embedded
@@ -891,8 +891,11 @@ export default function VendorPaymentsPage(
                   />
                 </Suspense>
               </div>
-              {/* Payments / Files / Contacts / Settings — tabbed middle */}
-              <div className="flex-1 min-w-0 w-full">
+              {/* Payments / Files / Contacts / Settings — tabbed middle.
+                  Takes 2 parts so its two inner columns (tab content +
+                  appointments) each end up the same width as the calendar
+                  rail → three equal columns on wide screens. */}
+              <div className="min-w-0 w-full lg:flex-[2]">
                 <nav className="flex gap-1 mb-5 overflow-x-auto scrollbar-hide">
                   {WS_TABS.map((t) => {
                     const active = wsTab === t.id;
@@ -957,7 +960,7 @@ export default function VendorPaymentsPage(
                       sticks to the viewport and scrolls internally so a long
                       list doesn't stretch the page and leave the calendar /
                       invoices columns trailing empty space. */}
-                  <div className="w-full 2xl:flex-1 2xl:min-w-[340px] 2xl:max-w-2xl 2xl:sticky 2xl:top-24 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto 2xl:pr-1">
+                  <div className="w-full 2xl:flex-1 2xl:min-w-0 2xl:sticky 2xl:top-24 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto 2xl:pr-1">
                     <WorkspaceAppointments accountVendorIds={accountVendorIds} />
                   </div>
                 </div>
