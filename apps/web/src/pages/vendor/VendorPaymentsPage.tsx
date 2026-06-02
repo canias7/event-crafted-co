@@ -1040,7 +1040,18 @@ function WorkspaceAppointments({
   useRealtime(realtimeConfig, () => load());
 
   if (loading) {
-    return <Skeleton className="h-24 w-full rounded-md" />;
+    // Show the heading + card-shaped placeholders so the column reads as
+    // "loading" rather than a blank gap while the fetch resolves.
+    return (
+      <section>
+        <h2 className="font-display text-lg mb-3">Upcoming appointments</h2>
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+          ))}
+        </div>
+      </section>
+    );
   }
   if (appointments.length === 0) return null;
 
