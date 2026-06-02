@@ -59,6 +59,7 @@ import {
   ScrollText,
   Search,
   Settings as SettingsIcon,
+  ShieldCheck,
   Trash2,
   Users,
   Wallet,
@@ -8154,35 +8155,34 @@ function SettingsTab({
             </div>
           ) : null}
 
-          <Card>
+          {/* Payout method — glassy brand card (was "Bank account"). */}
+          <GlassCard>
             <div className="p-5 flex items-start gap-4 flex-wrap">
-              <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
+              <div
+                className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
+                aria-hidden
+              >
                 <Landmark className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold">Bank account</h3>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-[15px] font-semibold leading-tight">Payout method</h3>
                   {/* `status.bank` isn't populated on v2 accounts, so we
                       derive connectedness from payouts_enabled: Stripe
                       requires a bank before payouts can be enabled, so
                       payouts_enabled === true reliably means a bank is
                       on file. */}
                   {status?.bank?.last4 || status?.payouts_enabled ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                      Connected
-                    </span>
+                    <StatusDot tone="good" label="Connected" />
                   ) : status?.onboarded ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                      Pending
-                    </span>
+                    <StatusDot tone="warn" label="Pending" />
                   ) : (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">
-                      Not connected
-                    </span>
+                    <StatusDot tone="warn" label="Action required" />
                   )}
                 </div>
                 {status?.bank?.last4 ? (
-                  <p className="text-sm text-foreground mt-1">
+                  <p className="text-sm text-foreground mt-1.5">
                     {status.bank.bank_name ?? "Bank"} ····{status.bank.last4}
                     {status.bank.currency ? (
                       <span className="text-xs text-muted-foreground ml-2 uppercase">
@@ -8191,16 +8191,19 @@ function SettingsTab({
                     ) : null}
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-1.5 max-w-md leading-relaxed">
                     {status?.payouts_enabled
                       ? "Your bank is connected. Manage it in the VendoraPay Express dashboard."
                       : status?.onboarded
                         ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
-                        : "Connect VendoraPay first to add a bank account."}
+                        : "Link a verified bank account to start receiving automated payouts."}
                   </p>
                 )}
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  Payouts settle to this account 2 business days after each charge.
+                <p
+                  className="text-[12px] text-muted-foreground mt-3 pl-3"
+                  style={{ borderLeft: "2px solid rgba(255,138,76,0.35)" }}
+                >
+                  Funds settle T+2 business days after each successful charge.
                 </p>
               </div>
               {status?.onboarded ? (
@@ -8218,38 +8221,56 @@ function SettingsTab({
                   )}
                   {status?.bank?.last4 ? "Manage bank" : "Add bank"}
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  size="sm"
+                  className="rounded-full"
+                >
+                  {connecting ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : null}
+                  Connect account
+                  <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              )}
             </div>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          {/* Business verification — glassy brand card (was "Identity & tax info"). */}
+          <GlassCard>
             <div className="p-5 flex items-start gap-4 flex-wrap">
-              <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-violet-50 text-violet-700">
-                <FileText className="w-5 h-5" />
+              <div
+                className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
+                aria-hidden
+              >
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold">Identity &amp; tax info</h3>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-[15px] font-semibold leading-tight">Business verification</h3>
                   {/* "Verified" only once the processor has actually
                       cleared the account (charges_enabled). Details
                       submitted but still under review reads as "In
                       review", not Verified — submitting != approved. */}
                   {status?.charges_enabled ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                      Verified
-                    </span>
+                    <StatusDot tone="good" label="Verified" />
                   ) : status?.details_submitted ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-sky-100 text-sky-700">
-                      In review
-                    </span>
+                    <StatusDot tone="info" label="In review" />
                   ) : (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                      Incomplete
-                    </span>
+                    <StatusDot tone="bad" label="Incomplete" />
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Legal name, EIN/SSN, address. Required for tax forms (1099-K) and payouts.
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-md leading-relaxed">
+                  Submit legal entity details and tax ID (EIN or SSN) to satisfy KYC and enable 1099-K reporting.
+                </p>
+                <p
+                  className="text-[12px] text-muted-foreground mt-3 pl-3"
+                  style={{ borderLeft: "2px solid rgba(255,138,76,0.35)" }}
+                >
+                  Required by federal regulation before your first payout.
                 </p>
               </div>
               {status?.onboarded ? (
@@ -8267,9 +8288,22 @@ function SettingsTab({
                   )}
                   Update info
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  size="sm"
+                  className="rounded-full"
+                >
+                  {connecting ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : null}
+                  Start verification
+                  <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              )}
             </div>
-          </Card>
+          </GlassCard>
         </div>
       </section>
     </div>
@@ -8294,6 +8328,62 @@ function Card({ children }: { children: React.ReactNode }) {
     >
       {children}
     </div>
+  );
+}
+
+// Glassy brand card — translucent frosted glass over the warm
+// vendor-canvas radial, with a warm-orange hairline. Distinct from
+// the cockpit `Card` (which the .my-vendora-cockpit stylesheet
+// repaints into the dense palette): GlassCard keeps the airy,
+// transparent brand look on purpose, used by the Settings →
+// Connection cards (payout method + business verification).
+function GlassCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: "rgba(255,250,245,0.45)",
+        border: "0.5px solid rgba(255,138,76,0.22)",
+        backdropFilter: "blur(20px) saturate(140%)",
+        WebkitBackdropFilter: "blur(20px) saturate(140%)",
+        boxShadow:
+          "0 1px 2px rgba(196,84,30,0.05), 0 8px 24px -10px rgba(196,84,30,0.14)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Status pill with a leading colored dot. Tones map to the warm
+// cockpit palette so the badges read on the glass without the loud
+// solid-fill chips the cards used before.
+function StatusDot({
+  tone,
+  label,
+}: {
+  tone: "good" | "warn" | "info" | "bad";
+  label: string;
+}) {
+  const palette: Record<typeof tone, { dot: string; text: string; bg: string }> = {
+    good: { dot: "#4a7c4a", text: "#3f6b3f", bg: "rgba(74,124,74,0.10)" },
+    warn: { dot: "#d97706", text: "#b45309", bg: "rgba(217,119,6,0.10)" },
+    info: { dot: "#2563eb", text: "#1d4ed8", bg: "rgba(37,99,235,0.10)" },
+    bad: { dot: "#dc2626", text: "#b91c1c", bg: "rgba(220,38,38,0.10)" },
+  };
+  const c = palette[tone];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+      style={{ background: c.bg, color: c.text }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: c.dot }}
+        aria-hidden
+      />
+      {label}
+    </span>
   );
 }
 
