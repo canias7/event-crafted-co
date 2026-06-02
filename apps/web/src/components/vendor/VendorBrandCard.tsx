@@ -110,7 +110,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           )}
           {/* KYC verified mark (bottom-right) — admin-verified vendor. */}
           {verified ? (
-            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#b8472f] border-[3px] border-[#ffffff] flex items-center justify-center">
+            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#18181b] border-[3px] border-[#ffffff] flex items-center justify-center">
               <CheckCircle2 className="w-3 h-3 text-white" />
             </div>
           ) : null}

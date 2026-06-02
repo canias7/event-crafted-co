@@ -1389,7 +1389,7 @@ function OverviewRevenueChart({
           >
             Revenue · last 30 days
           </div>
-          <div className="text-[13px] mt-0.5" style={{ color: "#9c8d86" }}>
+          <div className="text-[13px] mt-0.5" style={{ color: "#9ca3af" }}>
             Daily paid-invoice totals
           </div>
         </div>
@@ -1484,8 +1484,8 @@ function OverviewRevenueChart({
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#d94f3d" stopOpacity={hasData ? 0.18 : 0.08} />
-                  <stop offset="100%" stopColor="#d94f3d" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#18181b" stopOpacity={hasData ? 0.18 : 0.08} />
+                  <stop offset="100%" stopColor="#18181b" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {/* Horizontal grid lines + y-axis tick labels */}
@@ -1493,8 +1493,8 @@ function OverviewRevenueChart({
                 const yy = PAD_T + plotH - t * plotH;
                 return (
                   <g key={t}>
-                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(43,35,32,0.06)" strokeWidth="1" />
-                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#9c8d86">
+                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(0, 0, 0,0.06)" strokeWidth="1" />
+                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#9ca3af">
                       {hasData ? (t === 0 ? "$0" : formatMoneyCompact(plotMax * t, currency)) : ""}
                     </text>
                   </g>
@@ -1504,7 +1504,7 @@ function OverviewRevenueChart({
               <path
                 d={linePath}
                 fill="none"
-                stroke="#d94f3d"
+                stroke="#18181b"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1512,8 +1512,8 @@ function OverviewRevenueChart({
               />
               {showHover ? (
                 <>
-                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#d94f3d" strokeOpacity="0.45" strokeWidth="1" />
-                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#fdf0ea" stroke="#d94f3d" strokeWidth="2.5" />
+                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#18181b" strokeOpacity="0.45" strokeWidth="1" />
+                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#18181b" strokeWidth="2.5" />
                 </>
               ) : null}
               {/* Hit-test rect — captures pointer moves and converts
@@ -1566,7 +1566,7 @@ function OverviewRevenueChart({
             <div
               className="flex justify-between text-[11px] mt-2"
               style={{
-                color: "#9c8d86",
+                color: "#9ca3af",
                 paddingLeft: `${(50 / 620) * 100}%`,
                 paddingRight: `${(8 / 620) * 100}%`,
               }}
@@ -1580,9 +1580,9 @@ function OverviewRevenueChart({
                 <div
                   className="text-xs italic rounded-full px-3 py-1.5"
                   style={{
-                    color: "#9c8d86",
+                    color: "#9ca3af",
                     background: "rgba(253,240,234,0.7)",
-                    border: "0.5px solid rgba(217,79,61,0.22)",
+                    border: "0.5px solid rgba(0, 0, 0,0.22)",
                     backdropFilter: "blur(8px)",
                     WebkitBackdropFilter: "blur(8px)",
                   }}
@@ -1621,7 +1621,7 @@ function OverviewLeadsCard({
 }) {
   const rows: Array<{ label: string; count: number; color: string }> = [
     { label: "New",    count: leads.new,    color: "#18181b" },
-    { label: "Active", count: leads.active, color: "#b8693d" },
+    { label: "Active", count: leads.active, color: "#52525b" },
     { label: "Won",    count: leads.won,    color: "#1a1a1a" },
     { label: "Lost",   count: leads.lost,   color: "#71717a" },
   ];
@@ -1774,7 +1774,7 @@ function OverviewExpensesCard({
 }) {
   // Reuse the bar palette from MRR (crimson → terra → amber → green)
   // so a vendor scanning the page picks up category rank by color.
-  const palette = ["#18181b", "#b8693d", "#1a1a1a", "#1a1a1a"];
+  const palette = ["#18181b", "#52525b", "#a1a1aa", "#d4d4d8"];
   const rows = expenses.topCategories.map((c, i) => ({
     ...c, color: palette[i] ?? "#71717a",
   }));
@@ -5177,7 +5177,7 @@ function CustomersTab({
                   size="sm"
                   onClick={() => void bulkDelete()}
                   disabled={bulkDeleting}
-                  className="rounded-lg text-[#d94f3d]"
+                  className="rounded-lg text-[#18181b]"
                 >
                   {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 mr-1.5" />}
                   Remove
@@ -5209,7 +5209,7 @@ function CustomersTab({
                     onClick={() => toggleSort("name")}
                   >
                     Name {sortField === "name" ? (
-                      <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                      <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                     ) : null}
                   </th>
                   <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -5229,7 +5229,7 @@ function CustomersTab({
                     onClick={() => toggleSort("invoices")}
                   >
                     Invoices {sortField === "invoices" ? (
-                      <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                      <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                     ) : null}
                   </th>
                   <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -5280,7 +5280,7 @@ function CustomersTab({
                           <button
                             type="button"
                             onClick={() => startEdit(c)}
-                            className="text-[#d94f3d] hover:underline text-sm font-medium"
+                            className="text-[#18181b] hover:underline text-sm font-medium"
                           >
                             Edit
                           </button>
@@ -5345,7 +5345,7 @@ function CustomersTab({
                                 key={p}
                                 type="button"
                                 onClick={() => setPage(p)}
-                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#d94f3d] text-white border-[#d94f3d]" : "border-foreground/10 hover:border-accent"}`}
+                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#18181b] text-white border-[#18181b]" : "border-foreground/10 hover:border-accent"}`}
                               >
                                 {p}
                               </button>
@@ -6460,7 +6460,7 @@ function ExpensesTab({
                   onClick={() => toggleSort("date")}
                 >
                   Date {sortField === "date" ? (
-                    <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                    <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                   ) : null}
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -6480,7 +6480,7 @@ function ExpensesTab({
                   onClick={() => toggleSort("amount")}
                 >
                   Total {sortField === "amount" ? (
-                    <span className="text-[#d94f3d] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                    <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                   ) : null}
                 </th>
                 <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -6534,7 +6534,7 @@ function ExpensesTab({
                       <button
                         type="button"
                         onClick={() => startEdit(e)}
-                        className="text-[#d94f3d] hover:underline text-sm font-medium"
+                        className="text-[#18181b] hover:underline text-sm font-medium"
                       >
                         Edit
                       </button>
@@ -6589,7 +6589,7 @@ function ExpensesTab({
                               key={p}
                               type="button"
                               onClick={() => setPage(p)}
-                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#d94f3d] text-white border-[#d94f3d]" : "border-foreground/10 hover:border-accent"}`}
+                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#18181b] text-white border-[#18181b]" : "border-foreground/10 hover:border-accent"}`}
                             >
                               {p}
                             </button>
