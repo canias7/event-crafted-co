@@ -1122,8 +1122,12 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
     }
   }
 
-  const showEmptyState = !currentThreadId && messages.length === 0 &&
-    !messagesLoading;
+  // Only show the welcome hero once we KNOW there's nothing to open.
+  // While threads are still loading we don't yet know whether a recent
+  // conversation will auto-select, so gating on !threadsLoading avoids a
+  // flash of the welcome screen before the last thread loads in.
+  const showEmptyState = !threadsLoading && !currentThreadId &&
+    messages.length === 0 && !messagesLoading;
 
   // Typewriter text for the welcome hero. The headline types first,
   // then the input placeholder follows once the headline finishes,
@@ -1567,7 +1571,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               docked ? "pt-16 md:pt-14" : "pt-6"
             }`}
           >
-            {messagesLoading && messages.length === 0
+            {(threadsLoading || messagesLoading) && messages.length === 0
               ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground pl-2">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
