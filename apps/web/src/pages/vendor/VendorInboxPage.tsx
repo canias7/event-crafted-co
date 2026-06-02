@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bot, Inbox, Loader2, Search, Sparkles } from "lucide-react";
 import { HiluxLogo } from "@/components/super-agents/AgentLogos";
@@ -96,6 +96,9 @@ function previewFor(r: InquiryRow): string {
   return `Inquiry about your ${type}`;
 }
 
+// Inbox page size for range-based pagination ("Load more").
+const PAGE_SIZE = 50;
+
 export default function VendorInboxPage() {
   const { user, vendorMemberships } = useAuth();
   // Cover EVERY listing the vendor owns, not just the first one. A
@@ -109,6 +112,11 @@ export default function VendorInboxPage() {
   const vendorIdsKey = vendorIds.join(",");
   const [rows, setRows] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  // Tracks how many rows are currently loaded so a realtime refetch
+  // reloads the same paginated window instead of snapping back to page 1.
+  const loadedCountRef = useRef(0);
   const [search, setSearch] = useState("");
   // HILUX master state lives on profiles (per-user, not per-listing
   // anymore). We fetch it once for the logged-in user; the sparkle
@@ -120,17 +128,14 @@ export default function VendorInboxPage() {
     "all",
   );
 
-  async function load(forVendorIds?: string[]) {
-    const vids = forVendorIds ?? vendorIds;
-    if (vids.length === 0) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
-    // Cap at 100 so a busy vendor with hundreds of historical
-    // inquiries doesn't re-download all of them on each page load /
-    // realtime refetch. Sorted newest-first so the cap drops oldest.
-    // If a vendor needs older inquiries we can add "Load more" later.
+  // Fetch one page of inquiries (range-based) plus the per-row lead score
+  // + HILUX pause state. Returns the scored rows and whether the page came
+  // back full (i.e. there may be more).
+  async function fetchInquiryPage(
+    vids: string[],
+    offset: number,
+    size: number,
+  ): Promise<{ rows: InquiryRow[]; full: boolean }> {
     const { data } = await supabase
       .from("inquiries")
       .select(
@@ -138,51 +143,86 @@ export default function VendorInboxPage() {
       )
       .in("vendor_id", vids)
       .order("last_message_at", { ascending: false })
-      .limit(100);
+      .range(offset, offset + size - 1);
     const baseRows = ((data as unknown as InquiryRow[]) ?? []);
+    const full = baseRows.length === size;
     // Lead scores moved to a vendor-only inquiry_scores table so
     // hosts can't see how we classified them. Fetch separately and
     // merge in client-side. RLS gates to vendor team members only.
     const ids = baseRows.map((r) => r.id);
-    let scored = baseRows;
-    if (ids.length > 0) {
-      const [{ data: scores }, { data: threads }] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("inquiry_scores")
-          .select("inquiry_id, lead_score, lead_score_reason")
-          .in("inquiry_id", ids),
-        supabase
-          .from("direct_threads")
-          .select("inquiry_id, hilux_paused")
-          .in("inquiry_id", ids),
-      ]);
-      const byId = new Map<string, { lead_score: string | null; lead_score_reason: string | null }>();
-      for (const s of (scores ?? []) as Array<{
-        inquiry_id: string;
-        lead_score: string | null;
-        lead_score_reason: string | null;
-      }>) {
-        byId.set(s.inquiry_id, { lead_score: s.lead_score, lead_score_reason: s.lead_score_reason });
-      }
-      // Per-thread HILUX pause state — the inbox sparkle pip should
-      // only show where HILUX is actually answering.
-      const pausedById = new Map<string, boolean>();
-      for (const t of (threads ?? []) as Array<{
-        inquiry_id: string | null;
-        hilux_paused: boolean | null;
-      }>) {
-        if (t.inquiry_id) pausedById.set(t.inquiry_id, t.hilux_paused === true);
-      }
-      scored = baseRows.map((r) => ({
-        ...r,
-        lead_score: (byId.get(r.id)?.lead_score ?? null) as InquiryRow["lead_score"],
-        lead_score_reason: byId.get(r.id)?.lead_score_reason ?? null,
-        hilux_paused: pausedById.get(r.id) ?? false,
-      }));
+    if (ids.length === 0) return { rows: baseRows, full };
+    const [{ data: scores }, { data: threads }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("inquiry_scores")
+        .select("inquiry_id, lead_score, lead_score_reason")
+        .in("inquiry_id", ids),
+      supabase
+        .from("direct_threads")
+        .select("inquiry_id, hilux_paused")
+        .in("inquiry_id", ids),
+    ]);
+    const byId = new Map<string, { lead_score: string | null; lead_score_reason: string | null }>();
+    for (const s of (scores ?? []) as Array<{
+      inquiry_id: string;
+      lead_score: string | null;
+      lead_score_reason: string | null;
+    }>) {
+      byId.set(s.inquiry_id, { lead_score: s.lead_score, lead_score_reason: s.lead_score_reason });
     }
+    // Per-thread HILUX pause state — the inbox sparkle pip should
+    // only show where HILUX is actually answering.
+    const pausedById = new Map<string, boolean>();
+    for (const t of (threads ?? []) as Array<{
+      inquiry_id: string | null;
+      hilux_paused: boolean | null;
+    }>) {
+      if (t.inquiry_id) pausedById.set(t.inquiry_id, t.hilux_paused === true);
+    }
+    const scored = baseRows.map((r) => ({
+      ...r,
+      lead_score: (byId.get(r.id)?.lead_score ?? null) as InquiryRow["lead_score"],
+      lead_score_reason: byId.get(r.id)?.lead_score_reason ?? null,
+      hilux_paused: pausedById.get(r.id) ?? false,
+    }));
+    return { rows: scored, full };
+  }
+
+  async function load(forVendorIds?: string[]) {
+    const vids = forVendorIds ?? vendorIds;
+    if (vids.length === 0) {
+      setRows([]);
+      setHasMore(false);
+      loadedCountRef.current = 0;
+      setLoading(false);
+      return;
+    }
+    // Reload the currently-loaded window (at least one page) so a realtime
+    // refetch doesn't collapse a paginated inbox back to the first page.
+    const windowSize = Math.max(PAGE_SIZE, loadedCountRef.current);
+    const { rows: scored, full } = await fetchInquiryPage(vids, 0, windowSize);
     setRows(scored);
+    loadedCountRef.current = scored.length;
+    setHasMore(full);
     setLoading(false);
+  }
+
+  async function loadMore() {
+    if (loadingMore || !hasMore || vendorIds.length === 0) return;
+    setLoadingMore(true);
+    const { rows: next, full } = await fetchInquiryPage(
+      vendorIds,
+      loadedCountRef.current,
+      PAGE_SIZE,
+    );
+    setRows((prev) => {
+      const seen = new Set(prev.map((r) => r.id));
+      const merged = [...prev, ...next.filter((r) => !seen.has(r.id))];
+      loadedCountRef.current = merged.length;
+      return merged;
+    });
+    setHasMore(full);
+    setLoadingMore(false);
   }
 
   // Master HILUX toggle from the inbox header. Same field the
@@ -474,6 +514,25 @@ export default function VendorInboxPage() {
               ))}
             </ul>
           )}
+          {!loading && hasMore ? (
+            <div className="flex justify-center py-4">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="inline-flex items-center gap-2 text-sm font-medium rounded-full px-4 py-2 text-muted-foreground hover:text-foreground border border-foreground/10 hover:bg-secondary/40 transition-colors disabled:opacity-60"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Loading…
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </button>
+            </div>
+          ) : null}
         </div>
       </main>
       <MobileNav items={navItems} />
