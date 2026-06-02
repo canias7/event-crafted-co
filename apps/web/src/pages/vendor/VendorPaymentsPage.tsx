@@ -1071,7 +1071,12 @@ function WorkspaceAppointments({
     <div className="flex flex-col xl:flex-row gap-6 items-start">
       <section className="flex-1 min-w-0 w-full">
         <h2 className="font-display text-lg mb-3">Appointments</h2>
-        <AppointmentsList appointments={appointments} onMutate={load} />
+        {/* Scroll the list inside a bounded height so a long list doesn't
+            stretch the whole page (which left the calendar / legend
+            trailing empty space). */}
+        <div className="max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 -mr-1">
+          <AppointmentsList appointments={appointments} onMutate={load} />
+        </div>
       </section>
       {/* Calendar color key — moved here out of the calendar rail. Sits to
           the right of the list (stacks above it on narrower screens). */}
