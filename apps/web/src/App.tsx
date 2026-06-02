@@ -19,6 +19,7 @@ import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { VendorMySpaceMount } from "@/components/super-agents/VendorMySpaceMount";
 import { SkipLink } from "./components/SkipLink";
+import { AmbientBackground } from "./components/AmbientBackground";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
 
 // Lazy ship-on-mount component. CookieBanner only renders once for
@@ -86,6 +87,7 @@ import {
 
 const App = () => (
   <TooltipProvider>
+      <AmbientBackground />
       <Toaster />
       <Sonner />
       <BrowserRouter>

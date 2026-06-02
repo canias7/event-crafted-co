@@ -74,10 +74,19 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Clean near-white base with two soft on-brand navy washes pinned in
+       opposite corners. The drifting orbs (AmbientBackground, fixed at
+       z-index:-1) animate above this static base; page content paints
+       above both. */
+    background:
+      radial-gradient(ellipse 1000px 700px at 22% 12%, rgba(27, 54, 84, 0.10) 0%, rgba(27, 54, 84, 0) 55%),
+      radial-gradient(ellipse 900px 680px at 82% 88%, rgba(27, 54, 84, 0.08) 0%, rgba(27, 54, 84, 0) 55%),
+      linear-gradient(180deg, #fbfcfd 0%, #f4f6f8 100%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -322,42 +331,71 @@
   }
 
   /*
-   * Dashboard canvas — the same warm cream → peach wash that the
-   * landing page and auth shell use, applied to every authenticated
-   * app surface (vendor portal, host portal, settings) so the whole
-   * thing reads as one continuous experience. The name says "vendor"
-   * for historical reasons (it shipped with the vendor portal first);
-   * host pages and /settings hook into it too. Swap `bg-background`
-   * for `vendor-canvas` on the outer wrapper of any dashboard page.
+   * Dashboard canvas — applied to every authenticated app surface
+   * (vendor portal, host portal, settings) so the whole thing reads as
+   * one continuous experience. The name says "vendor" for historical
+   * reasons (it shipped with the vendor portal first); host pages and
+   * /settings hook into it too. It's now TRANSPARENT so the global
+   * body wash + the drifting AmbientBackground orbs show through on
+   * every page. Swap `bg-background` for `vendor-canvas` on the outer
+   * wrapper of any dashboard page.
    */
   .vendor-canvas {
-    background:
-      radial-gradient(
-        ellipse 1200px 820px at 50% 14%,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(255, 255, 255, 0) 55%
-      ),
-      linear-gradient(180deg, #eef0f2 0%, #e7e9ec 100%);
-    background-attachment: fixed;
+    background: transparent;
   }
 
   /*
-   * Public-page canvas — matches the auth shell + Super Agents look:
-   * solid off-white base with a large amber radial glow stamped near
-   * the top of the viewport. The glow is `background-attachment:
-   * fixed` so it stays anchored to the viewport while the page
-   * scrolls (instead of riding up with the content), giving every
-   * surface that lived-in orange wash.
+   * Public-page canvas — auth shell + Super Agents + landing. Now
+   * TRANSPARENT (was a warm radial wash) so the global body wash + the
+   * drifting AmbientBackground orbs show through, matching the rest of
+   * the app.
    */
   .public-canvas {
-    background:
-      radial-gradient(
-        ellipse 1200px 820px at 50% 14%,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(255, 255, 255, 0) 55%
-      ),
-      linear-gradient(180deg, #eef0f2 0%, #e7e9ec 100%);
-    background-attachment: fixed;
+    background: transparent;
+  }
+
+  /* Ambient backdrop layer — two soft navy washes drifting slowly,
+     pinned behind all content (see AmbientBackground.tsx). Fixed +
+     z-index:-1 sits above the body's static wash, below page content. */
+  .ambient-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    will-change: transform;
+  }
+  .ambient-orb--1 {
+    width: 460px;
+    height: 460px;
+    background: rgba(27, 54, 84, 0.14);
+    top: -120px;
+    left: -100px;
+    animation: ambient-drift-1 40s ease-in-out infinite;
+  }
+  .ambient-orb--2 {
+    width: 420px;
+    height: 420px;
+    background: rgba(40, 72, 116, 0.12);
+    bottom: -140px;
+    right: -90px;
+    animation: ambient-drift-2 46s ease-in-out infinite;
+  }
+  @keyframes ambient-drift-1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(50px, 40px); }
+  }
+  @keyframes ambient-drift-2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-50px, -30px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-orb { animation: none !important; }
   }
 
   /*
