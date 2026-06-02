@@ -1002,7 +1002,10 @@ export default function VendorAppointmentsPage({
                 // map each dot color to the listing it represents, plus
                 // the status meaning of solid vs hatched dots.
                 <div className="mt-4 pt-3 border-t border-border space-y-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+                  {/* Cap the legend height and scroll — an account with
+                      many listings would otherwise render a wall of names
+                      that pushes the calendar off-screen. */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs max-h-36 overflow-y-auto pr-1">
                     {listings.map((l) => (
                       <div key={l.id} className="flex items-center gap-1.5">
                         <span
