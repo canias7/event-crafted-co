@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { VENDOR_AUTH_FILE } from "./tests/e2e/auth.paths";
+import { HOST_AUTH_FILE, VENDOR_AUTH_FILE } from "./tests/e2e/auth.paths";
 
 // Standalone Playwright config (no longer depends on the lovable-agent-
 // playwright-config package which isn't published outside Lovable's CI).
@@ -48,11 +48,22 @@ export default defineConfig({
       // Pixel 7 (not iPhone) so it runs on Chromium — CI only installs the
       // chromium browser, and iPhone devices use WebKit.
       name: "vendor-authed",
-      testMatch: /\.authed\.spec\.ts/,
+      testMatch: /vendor-display\.authed\.spec\.ts/,
       dependencies: ["setup"],
       use: {
         ...devices["Pixel 7"],
         storageState: VENDOR_AUTH_FILE,
+      },
+    },
+    {
+      // Authenticated host (customer) dashboard DISPLAY checks — same mobile
+      // viewport, signed in as the seeded test host.
+      name: "host-authed",
+      testMatch: /host-display\.authed\.spec\.ts/,
+      dependencies: ["setup"],
+      use: {
+        ...devices["Pixel 7"],
+        storageState: HOST_AUTH_FILE,
       },
     },
   ],
