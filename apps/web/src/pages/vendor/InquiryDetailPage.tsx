@@ -1285,17 +1285,6 @@ export default function InquiryDetailPage() {
             </div>
           ) : null}
 
-          {/* Off-platform booking handshake. Hidden when an accepted
-              proposal exists. */}
-          {inquiry ? (
-            <BookingConfirmationCard
-              inquiryId={inquiry.id}
-              selfRole="vendor"
-              otherPartyName={hostName}
-              hasAcceptedProposal={false}
-            />
-          ) : null}
-
           {/* Rating discovery + status for the vendor side. The
               SubmittedReviewStatusCard shows the vendor's OWN
               submitted reviews and their reveal status (event reviews
