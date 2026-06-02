@@ -98,8 +98,8 @@ interface DayListingEntry {
   state: Exclude<DayState, "available">;
 }
 
-// ListingOpt moved to @/components/vendor/ListingPicker so VendorLeads
-// and any future picker-using surface can share the same type.
+// ListingOpt moved to @/components/vendor/ListingPicker so any
+// picker-using surface can share the same type.
 
 function ymdKey(d: Date): string {
   const y = d.getFullYear();
