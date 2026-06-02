@@ -1012,51 +1012,18 @@ function OverviewTab({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
       const now = new Date();
-      const since30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
-      const since60 = new Date(now.getTime() - 60 * 24 * 3600 * 1000);
 
+      // Overview metrics (leads pipeline, expenses, revenue, daily series)
+      // are aggregated server-side in one RPC — instead of pulling up to
+      // 10k rows of inquiries/expenses/invoices into the browser to reduce
+      // them client-side. Recent paid invoices + upcoming appointments stay
+      // small (≤5-row) client fetches since they render row-by-row.
       const [
-        { data: leadRows },
-        { data: expenseRows },
-        { data: paid30 },
-        { data: paid60 },
+        { data: analytics },
         { data: recentPaid },
         { data: upcomingApptRows },
       ] = await Promise.all([
-        // Inbound inquiries in the last 30 days — drive the Leads card.
-        // vendor_id + host_id come back too so we can collapse a host's
-        // messages into a single lead, matching the Inquiries page.
-        db
-          .from("inquiries")
-          .select("vendor_id, host_id, status")
-          .in("vendor_id", accountVendorIds)
-          .gte("created_at", since30.toISOString())
-          .limit(10000),
-        // Operating expenses in the last 30 days — drive the OPEX card.
-        db
-          .from("vendor_expenses")
-          .select("amount_cents, item_name, description")
-          .eq("user_id", userId)
-          .gte("occurred_on", since30.toISOString().slice(0, 10))
-          .limit(10000),
-        // Paid invoices in the last 30 days (current period)
-        db
-          .from("invoices")
-          .select("total_cents, paid_at")
-          .in("vendor_id", accountVendorIds)
-          .eq("status", "paid")
-          .gte("paid_at", since30.toISOString())
-          .lt("paid_at", now.toISOString())
-          .limit(10000),
-        // Paid invoices in the 30 days before that (previous period)
-        db
-          .from("invoices")
-          .select("total_cents")
-          .in("vendor_id", accountVendorIds)
-          .eq("status", "paid")
-          .gte("paid_at", since60.toISOString())
-          .lt("paid_at", since30.toISOString())
-          .limit(10000),
+        db.rpc("vendor_overview_analytics"),
         // Recent paid invoices across the whole account — replaces
         // the Stripe transactions feed for the Recent activity table.
         db
@@ -1082,78 +1049,35 @@ function OverviewTab({
       ]);
       if (cancelled) return;
 
-      // Leads pipeline — count per LEAD, not per message, so these
-      // numbers stay in lockstep with the Inquiries page. A "lead" is
-      // one host on one listing (vendor_id + host_id); all of that
-      // host's inquiries collapse into a single aggregate status using
-      // the same priority the Inquiries page applies:
-      //   won > active (drafted/replied) > new > lost (lost/expired/etc).
-      const leadInquiries = (leadRows ?? []) as Array<{
-        vendor_id: string;
-        host_id: string;
-        status: string;
-      }>;
-      const statusesByLead = new Map<string, string[]>();
-      for (const r of leadInquiries) {
-        const key = `${r.vendor_id}:${r.host_id}`;
-        const arr = statusesByLead.get(key);
-        if (arr) arr.push(r.status);
-        else statusesByLead.set(key, [r.status]);
-      }
-      const leadCounts = { new: 0, active: 0, won: 0, lost: 0, total: statusesByLead.size };
-      for (const statuses of statusesByLead.values()) {
-        if (statuses.includes("won")) leadCounts.won += 1;
-        else if (statuses.some((s) => s === "replied" || s === "drafted")) leadCounts.active += 1;
-        else if (statuses.includes("new")) leadCounts.new += 1;
-        else leadCounts.lost += 1;
-      }
-      setLeads(leadCounts);
-
-      // Operating expenses — sum by item (item_name when set, else
-      // description), top 3 + roll-up Other. Vendors don't pick
-      // categories anymore, so the breakdown is by line-item label
-      // — that's what they actually typed.
-      const expRows = (expenseRows ?? []) as Array<{ amount_cents: number; item_name: string | null; description: string | null }>;
-      const totalExpenses = expRows.reduce((s, r) => s + r.amount_cents, 0);
-      const byItem = new Map<string, number>();
-      for (const r of expRows) {
-        const key = (r.item_name?.trim() || r.description?.trim() || "—");
-        byItem.set(key, (byItem.get(key) ?? 0) + r.amount_cents);
-      }
-      const sorted = Array.from(byItem.entries())
-        .map(([label, cents]) => ({ label, cents }))
-        .sort((a, b) => b.cents - a.cents);
-      // Roll any 4th+ items into "Other" then re-sort so the rollup
-      // sits at its true rank position (it can outweigh top-3
-      // individuals when many small items combine).
-      const topThree = sorted.slice(0, 3);
-      const restCents = sorted.slice(3).reduce((s, r) => s + r.cents, 0);
-      const topCategories = (restCents > 0
-        ? [...topThree, { label: "Other", cents: restCents }]
-        : topThree
-      ).sort((a, b) => b.cents - a.cents);
-      setExpenses({
-        total: totalExpenses,
-        count: expRows.length,
-        categoryCount: byItem.size,
-        topCategories,
-      });
-
-      const paid30Rows = (paid30 ?? []) as Array<{ total_cents: number; paid_at: string }>;
-      const paid60Rows = (paid60 ?? []) as Array<{ total_cents: number }>;
-      setRevenue30d(paid30Rows.reduce((s, r) => s + r.total_cents, 0));
-      setRevenue30dPrev(paid60Rows.reduce((s, r) => s + r.total_cents, 0));
-
-      // Build daily revenue series — 30 buckets, today-29 → today.
-      const series = new Array<number>(30).fill(0);
-      for (const p of paid30Rows) {
-        if (!p.paid_at) continue;
-        const t = Date.parse(p.paid_at);
-        if (Number.isNaN(t)) continue;
-        const dayIdx = Math.floor((t - since30.getTime()) / (24 * 3600 * 1000));
-        if (dayIdx >= 0 && dayIdx < 30) series[dayIdx] += p.total_cents;
-      }
-      setRevenueSeries(series);
+      // Apply the server-aggregated overview metrics. The RPC mirrors the
+      // old client math: leads collapsed per (vendor_id, host_id) with the
+      // won > active(replied/drafted) > new > lost priority; expenses summed
+      // per line-item label with a top-3 + "Other" rollup; revenue from paid
+      // invoices over the current vs previous 30-day window; and a 30-bucket
+      // daily revenue series.
+      const a = (analytics ?? {}) as {
+        leads?: { new: number; active: number; won: number; lost: number; total: number };
+        expenses?: {
+          total: number;
+          count: number;
+          categoryCount: number;
+          topCategories: Array<{ label: string; cents: number }>;
+        };
+        revenue30d?: number;
+        revenue30dPrev?: number;
+        revenueSeries?: number[];
+      };
+      setLeads(a.leads ?? { new: 0, active: 0, won: 0, lost: 0, total: 0 });
+      setExpenses(
+        a.expenses ?? { total: 0, count: 0, categoryCount: 0, topCategories: [] },
+      );
+      setRevenue30d(a.revenue30d ?? 0);
+      setRevenue30dPrev(a.revenue30dPrev ?? 0);
+      setRevenueSeries(
+        Array.isArray(a.revenueSeries) && a.revenueSeries.length === 30
+          ? a.revenueSeries
+          : new Array<number>(30).fill(0),
+      );
 
       setRecentInvoices(
         (recentPaid ?? []) as Array<{
