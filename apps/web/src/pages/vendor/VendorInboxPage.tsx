@@ -97,7 +97,8 @@ function previewFor(r: InquiryRow): string {
 }
 
 // Inbox page size for range-based pagination ("Load more").
-const PAGE_SIZE = 50;
+// Show 10 at a time; each "Load more" click pulls the next 10.
+const PAGE_SIZE = 10;
 
 export default function VendorInboxPage() {
   const { user, vendorMemberships } = useAuth();
