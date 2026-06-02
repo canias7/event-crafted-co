@@ -801,16 +801,16 @@ export default function VendorPaymentsPage(
             <section
               className="rounded-2xl p-5"
               style={{
-                background: "linear-gradient(135deg, rgba(255,138,76,0.1), rgba(217,119,87,0.08))",
-                border: "0.5px solid rgba(255,138,76,0.3)",
+                background: "linear-gradient(135deg, rgba(0,0,0,0.1), rgba(217,119,87,0.08))",
+                border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >
               <div className="flex items-start gap-4 flex-wrap">
                 <div
                   className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                  style={{ background: "rgba(255,138,76,0.18)" }}
+                  style={{ background: "rgba(0,0,0,0.08)" }}
                 >
-                  <CreditCard className="w-5 h-5" style={{ color: "#c4541e" }} />
+                  <CreditCard className="w-5 h-5" style={{ color: "#18181b" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold">{verifyBanner.title}</h2>
@@ -1368,12 +1368,12 @@ function OverviewRevenueChart({
       style={{
         // Match the other Overview cards: same glassy translucent fill,
         // amber hairline border, blur, and soft shadow.
-        background: "rgba(255, 250, 245, 0.52)",
-        border: "0.5px solid rgba(255, 138, 76, 0.18)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(20px) saturate(140%)",
         WebkitBackdropFilter: "blur(20px) saturate(140%)",
         boxShadow:
-          "0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14)",
+          "0 1px 2px rgba(0,0,0, 0.05), 0 8px 24px -10px rgba(0,0,0, 0.14)",
       }}
     >
       <div className="flex items-end justify-between mb-4">
@@ -1398,7 +1398,7 @@ function OverviewRevenueChart({
           {deltaPct !== null ? (
             <div
               className="text-xs font-semibold mt-1"
-              style={{ color: deltaPositive ? "#2e9e6b" : "#b8453d" }}
+              style={{ color: deltaPositive ? "#2e9e6b" : "#71717a" }}
             >
               {deltaPositive ? "▲" : "▼"} {Math.abs(deltaPct).toFixed(1)}%
             </div>
@@ -1615,10 +1615,10 @@ function OverviewLeadsCard({
   leads: { new: number; active: number; won: number; lost: number; total: number };
 }) {
   const rows: Array<{ label: string; count: number; color: string }> = [
-    { label: "New",    count: leads.new,    color: "#c8403a" },
+    { label: "New",    count: leads.new,    color: "#18181b" },
     { label: "Active", count: leads.active, color: "#b8693d" },
-    { label: "Won",    count: leads.won,    color: "#4a7c4a" },
-    { label: "Lost",   count: leads.lost,   color: "#8a8579" },
+    { label: "Won",    count: leads.won,    color: "#1a1a1a" },
+    { label: "Lost",   count: leads.lost,   color: "#71717a" },
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
   const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
@@ -1646,7 +1646,7 @@ function OverviewLeadsCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(0,0,0, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
@@ -1689,8 +1689,8 @@ function OverviewCashflowCard({
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: "Money in",  value: moneyIn,  color: "#4a7c4a" },
-    { label: "Money out", value: moneyOut, color: "#c8403a" },
+    { label: "Money in",  value: moneyIn,  color: "#1a1a1a" },
+    { label: "Money out", value: moneyOut, color: "#18181b" },
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -1707,7 +1707,7 @@ function OverviewCashflowCard({
           <div className="cockpit-kpi-label">Net</div>
           <div
             className="cockpit-money cockpit-money--lg"
-            style={{ color: netPositive ? "#3f7a3f" : "#c8403a" }}
+            style={{ color: netPositive ? "#3f7a3f" : "#18181b" }}
           >
             {netPositive ? "" : "−"}{formatMoney(Math.abs(net), currency)}
           </div>
@@ -1725,7 +1725,7 @@ function OverviewCashflowCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(0,0,0, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.value > 0 ? 1 : 0 }}
@@ -1769,9 +1769,9 @@ function OverviewExpensesCard({
 }) {
   // Reuse the bar palette from MRR (crimson → terra → amber → green)
   // so a vendor scanning the page picks up category rank by color.
-  const palette = ["#c8403a", "#b8693d", "#c89738", "#4a7c4a"];
+  const palette = ["#18181b", "#b8693d", "#1a1a1a", "#1a1a1a"];
   const rows = expenses.topCategories.map((c, i) => ({
-    ...c, color: palette[i] ?? "#8a8579",
+    ...c, color: palette[i] ?? "#71717a",
   }));
   // Donut geometry — stroked circle with stroke-dasharray for each
   // segment. Radius 38 + strokeWidth 14 gives an outer ring at 45
@@ -1809,7 +1809,7 @@ function OverviewExpensesCard({
             <svg viewBox="0 0 100 100" className="w-[110px] h-[110px] shrink-0 -rotate-90" aria-hidden>
               {/* Faint background ring so the donut feels seated even
                   when one segment dominates the total. */}
-              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,138,76,0.14)" strokeWidth={RING_W} />
+              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth={RING_W} />
               {rows.map((r) => {
                 const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
                 const offset = dashOffset;
@@ -4011,9 +4011,9 @@ function SenderDomainCard({ vendorId }: { vendorId: string | null }) {
                       border: "0.5px solid rgba(34,197,94,0.35)",
                     }
                   : {
-                      background: "rgba(255,138,76,0.14)",
-                      color: "#c4541e",
-                      border: "0.5px solid rgba(255,138,76,0.35)",
+                      background: "rgba(0,0,0,0.14)",
+                      color: "#18181b",
+                      border: "0.5px solid rgba(0,0,0,0.35)",
                     }
               }
             >
@@ -6879,7 +6879,7 @@ function SendInvoiceDialog({
 
           <div
             className="rounded-lg p-3 space-y-2"
-            style={{ background: "rgba(255,138,76,0.06)" }}
+            style={{ background: "rgba(0,0,0,0.035)" }}
           >
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
               Line items
@@ -7565,15 +7565,15 @@ function PayLinksTab({
       <div
         className="rounded-2xl p-8 text-center"
         style={{
-          background: "rgba(255,253,250,0.7)",
-          border: "0.5px solid rgba(255,138,76,0.22)",
+          background: "rgba(255,255,255,0.6)",
+          border: "0.5px solid rgba(0,0,0,0.08)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
         }}
       >
         <div
           className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center mb-4"
-          style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+          style={{ background: "rgba(0,0,0,0.16)", color: "#18181b" }}
         >
           <Link2 className="w-5 h-5" />
         </div>
@@ -8124,13 +8124,13 @@ function SettingsTab({
             <div
               className="rounded-2xl p-5 flex items-start gap-4 flex-wrap"
               style={{
-                background: "rgba(255,253,250,0.7)",
-                border: "0.5px solid rgba(255,138,76,0.22)",
+                background: "rgba(255,255,255,0.6)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
               }}
             >
               <div
                 className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+                style={{ background: "rgba(0,0,0,0.16)", color: "#18181b" }}
               >
                 <Landmark className="w-5 h-5" />
               </div>
@@ -8160,7 +8160,7 @@ function SettingsTab({
             <div className="p-5 flex items-start gap-4 flex-wrap">
               <div
                 className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
+                style={{ background: "rgba(0,0,0,0.05)", color: "#18181b" }}
                 aria-hidden
               >
                 <Landmark className="w-5 h-5" />
@@ -8201,7 +8201,7 @@ function SettingsTab({
                 )}
                 <p
                   className="text-[12px] text-muted-foreground mt-3 pl-3"
-                  style={{ borderLeft: "2px solid rgba(255,138,76,0.35)" }}
+                  style={{ borderLeft: "2px solid rgba(0,0,0,0.25)" }}
                 >
                   Funds settle T+2 business days after each successful charge.
                 </p>
@@ -8243,7 +8243,7 @@ function SettingsTab({
             <div className="p-5 flex items-start gap-4 flex-wrap">
               <div
                 className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(255,138,76,0.14)", color: "#c4541e" }}
+                style={{ background: "rgba(0,0,0,0.05)", color: "#18181b" }}
                 aria-hidden
               >
                 <ShieldCheck className="w-5 h-5" />
@@ -8268,7 +8268,7 @@ function SettingsTab({
                 </p>
                 <p
                   className="text-[12px] text-muted-foreground mt-3 pl-3"
-                  style={{ borderLeft: "2px solid rgba(255,138,76,0.35)" }}
+                  style={{ borderLeft: "2px solid rgba(0,0,0,0.25)" }}
                 >
                   Required by federal regulation before your first payout.
                 </p>
@@ -8322,8 +8322,8 @@ function Card({ children }: { children: React.ReactNode }) {
       data-cockpit-card
       className="rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(255,253,250,0.85)",
-        border: "1px solid rgba(255,138,76,0.18)",
+        background: "rgba(255,255,255,0.85)",
+        border: "1px solid rgba(0,0,0,0.08)",
       }}
     >
       {children}
@@ -8342,12 +8342,13 @@ function GlassCard({ children }: { children: React.ReactNode }) {
     <div
       className="rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(255,250,245,0.45)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
-        backdropFilter: "blur(20px) saturate(140%)",
-        WebkitBackdropFilter: "blur(20px) saturate(140%)",
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22))",
+        border: "0.5px solid rgba(255,255,255,0.75)",
+        backdropFilter: "blur(40px) saturate(180%)",
+        WebkitBackdropFilter: "blur(40px) saturate(180%)",
         boxShadow:
-          "0 1px 2px rgba(196,84,30,0.05), 0 8px 24px -10px rgba(196,84,30,0.14)",
+          "0 18px 44px -16px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 0.5px rgba(0,0,0,0.04)",
       }}
     >
       {children}
@@ -8365,17 +8366,23 @@ function StatusDot({
   tone: "good" | "warn" | "info" | "bad";
   label: string;
 }) {
-  const palette: Record<typeof tone, { dot: string; text: string; bg: string }> = {
-    good: { dot: "#4a7c4a", text: "#3f6b3f", bg: "rgba(74,124,74,0.10)" },
-    warn: { dot: "#d97706", text: "#b45309", bg: "rgba(217,119,6,0.10)" },
-    info: { dot: "#2563eb", text: "#1d4ed8", bg: "rgba(37,99,235,0.10)" },
-    bad: { dot: "#dc2626", text: "#b91c1c", bg: "rgba(220,38,38,0.10)" },
+  // Monochrome state language: complete reads as a SOLID black chip,
+  // in-progress as a soft gray fill, and anything needing action as an
+  // OUTLINED dark chip so it stands out without color.
+  const palette: Record<
+    typeof tone,
+    { dot: string; text: string; bg: string; border: string }
+  > = {
+    good: { dot: "#ffffff", text: "#ffffff", bg: "#18181b", border: "transparent" },
+    info: { dot: "#71717a", text: "#3f3f46", bg: "rgba(0,0,0,0.06)", border: "transparent" },
+    warn: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+    bad: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
   };
   const c = palette[tone];
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-      style={{ background: c.bg, color: c.text }}
+      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
     >
       <span
         className="w-1.5 h-1.5 rounded-full"
