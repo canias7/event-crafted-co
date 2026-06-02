@@ -8160,7 +8160,11 @@ function SettingsTab({
             <div className="p-5 flex items-start gap-4 flex-wrap">
               <div
                 className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.05)", color: "#18181b" }}
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
+                  color: "#18181b",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
+                }}
                 aria-hidden
               >
                 <Landmark className="w-5 h-5" />
@@ -8243,7 +8247,11 @@ function SettingsTab({
             <div className="p-5 flex items-start gap-4 flex-wrap">
               <div
                 className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.05)", color: "#18181b" }}
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
+                  color: "#18181b",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
+                }}
                 aria-hidden
               >
                 <ShieldCheck className="w-5 h-5" />
@@ -8340,15 +8348,19 @@ function Card({ children }: { children: React.ReactNode }) {
 function GlassCard({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="rounded-2xl overflow-hidden"
+      className="rounded-3xl overflow-hidden"
       style={{
+        // Layered backgrounds: a diagonal light sheen on top of a very
+        // transparent frosted fill (40% → 7%) so the ambient backdrop
+        // reads clearly through the glass. Rim highlight + hairline keep
+        // the edges defined and text legible.
         background:
-          "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22))",
-        border: "0.5px solid rgba(255,255,255,0.75)",
-        backdropFilter: "blur(40px) saturate(180%)",
-        WebkitBackdropFilter: "blur(40px) saturate(180%)",
+          "linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 34%), linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.16) 48%, rgba(255,255,255,0.07) 100%)",
+        border: "1px solid rgba(255,255,255,0.6)",
+        backdropFilter: "blur(48px) saturate(185%)",
+        WebkitBackdropFilter: "blur(48px) saturate(185%)",
         boxShadow:
-          "0 18px 44px -16px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 0.5px rgba(0,0,0,0.04)",
+          "0 24px 60px -22px rgba(0,0,0,0.30), 0 4px 14px -8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 0.5px rgba(0,0,0,0.03)",
       }}
     >
       {children}
