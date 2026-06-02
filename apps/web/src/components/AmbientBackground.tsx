@@ -10,6 +10,7 @@ export function AmbientBackground() {
     <div aria-hidden className="ambient-bg">
       <span className="ambient-orb ambient-orb--1" />
       <span className="ambient-orb ambient-orb--2" />
+      <span className="ambient-orb ambient-orb--3" />
     </div>
   );
 }

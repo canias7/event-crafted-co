@@ -83,9 +83,10 @@
        z-index:-1) animate above this static base; page content paints
        above both. */
     background:
-      radial-gradient(ellipse 1000px 700px at 22% 12%, rgba(27, 54, 84, 0.10) 0%, rgba(27, 54, 84, 0) 55%),
-      radial-gradient(ellipse 900px 680px at 82% 88%, rgba(27, 54, 84, 0.08) 0%, rgba(27, 54, 84, 0) 55%),
-      linear-gradient(180deg, #fbfcfd 0%, #f4f6f8 100%);
+      radial-gradient(ellipse 1000px 720px at 20% 10%, rgba(27, 54, 84, 0.16) 0%, rgba(27, 54, 84, 0) 55%),
+      radial-gradient(ellipse 920px 700px at 84% 90%, rgba(33, 64, 120, 0.14) 0%, rgba(33, 64, 120, 0) 55%),
+      radial-gradient(ellipse 1100px 800px at 55% 45%, rgba(40, 72, 116, 0.08) 0%, rgba(40, 72, 116, 0) 62%),
+      linear-gradient(180deg, #f6f8fb 0%, #eceff4 100%);
     background-attachment: fixed;
   }
 
@@ -288,12 +289,68 @@
      surface, hairline border, and a soft layered drop shadow do
      the lifting. Pair with rounded-3xl-ish radius. */
   .card-soft {
-    background-color: #ffffff;
-    border: 1px solid hsl(var(--border));
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.28) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 1.5rem;
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
     box-shadow:
-      0 1px 2px -1px hsl(220 14% 9% / 0.04),
-      0 12px 32px -16px hsl(220 14% 9% / 0.10);
+      0 1px 2px -1px hsl(220 14% 9% / 0.05),
+      0 16px 40px -18px hsl(220 14% 9% / 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    transition: box-shadow 240ms ease, transform 240ms ease,
+      border-color 240ms ease;
+  }
+  .card-soft:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow:
+      0 2px 6px -2px hsl(220 14% 9% / 0.08),
+      0 28px 60px -22px hsl(215 50% 22% / 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  /*
+   * Glassify the platform — make the common opaque card surfaces
+   * (card-soft, bg-card, bg-white containers) translucent + frosted on
+   * the app/marketing canvases so the moving ambient backdrop reads
+   * through them. Scoped to .vendor-canvas / .public-canvas so it never
+   * touches dialogs, popovers, inputs, or off-canvas chrome. ~58% white
+   * fill keeps text crisp while the glass + motion show through.
+   */
+  .vendor-canvas :is(.bg-card, .bg-white),
+  .public-canvas :is(.bg-card, .bg-white) {
+    background-color: rgba(255, 255, 255, 0.42) !important;
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    box-shadow:
+      0 1px 2px -1px hsl(220 14% 9% / 0.05),
+      0 16px 40px -18px hsl(220 14% 9% / 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: box-shadow 240ms ease, transform 240ms ease;
+  }
+  /* Glassy lift on hover — a deeper navy-tinted shadow as the cursor
+     passes over a card surface. */
+  .vendor-canvas :is(.bg-card, .bg-white):hover,
+  .public-canvas :is(.bg-card, .bg-white):hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 2px 6px -2px hsl(220 14% 9% / 0.08),
+      0 28px 60px -22px hsl(215 50% 22% / 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  }
+
+  /* Full-screen page wrappers that paint an opaque app background hide
+     the drifting ambient. Make just those roots transparent (only
+     elements that are BOTH min-h-screen AND bg-background — never inputs,
+     dialogs, or popovers, which aren't full-screen) so the ambient shows
+     on every page. */
+  .min-h-screen.bg-background {
+    background-color: transparent !important;
   }
 
   /* Glassy card — translucent frosted white over the near-white
@@ -367,32 +424,45 @@
   .ambient-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(70px);
+    filter: blur(56px);
     will-change: transform;
   }
   .ambient-orb--1 {
-    width: 460px;
-    height: 460px;
-    background: rgba(27, 54, 84, 0.14);
-    top: -120px;
-    left: -100px;
-    animation: ambient-drift-1 40s ease-in-out infinite;
+    width: 520px;
+    height: 520px;
+    background: rgba(27, 54, 84, 0.34);
+    top: -140px;
+    left: -90px;
+    animation: ambient-drift-1 22s ease-in-out infinite;
   }
   .ambient-orb--2 {
+    width: 460px;
+    height: 460px;
+    background: rgba(40, 72, 116, 0.30);
+    bottom: -160px;
+    right: -80px;
+    animation: ambient-drift-2 26s ease-in-out infinite;
+  }
+  .ambient-orb--3 {
     width: 420px;
     height: 420px;
-    background: rgba(40, 72, 116, 0.12);
-    bottom: -140px;
-    right: -90px;
-    animation: ambient-drift-2 46s ease-in-out infinite;
+    background: rgba(33, 64, 120, 0.24);
+    top: 42%;
+    left: 44%;
+    animation: ambient-drift-3 30s ease-in-out infinite;
   }
   @keyframes ambient-drift-1 {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(50px, 40px); }
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.1); }
   }
   @keyframes ambient-drift-2 {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(-50px, -30px); }
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -70px) scale(1.08); }
+  }
+  @keyframes ambient-drift-3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-90px, 60px) scale(1.12); }
+    66% { transform: translate(80px, -50px) scale(0.95); }
   }
   @media (prefers-reduced-motion: reduce) {
     .ambient-orb { animation: none !important; }

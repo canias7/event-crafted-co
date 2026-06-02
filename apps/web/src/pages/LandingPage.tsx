@@ -88,14 +88,9 @@ export default function LandingPage() {
           used absolute-positioned blobs scoped to a wrapper, which
           stopped at the hero's natural height and left the rest of
           the page reading as a separate flat section. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 70% at 50% 35%, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.035) 45%, rgba(0,0,0,0) 75%)",
-        }}
-      />
+      {/* Background intentionally left to the app-wide AmbientBackground
+          (drifting navy glow) so the landing feels alive and consistent
+          with the rest of the app instead of a flat monochrome wash. */}
 
       <div className="relative z-[1]">
 
