@@ -8351,16 +8351,16 @@ function GlassCard({ children }: { children: React.ReactNode }) {
       className="rounded-3xl overflow-hidden"
       style={{
         // Layered backgrounds: a diagonal light sheen on top of a very
-        // transparent frosted fill (40% → 7%) so the ambient backdrop
+        // transparent frosted fill (26% → 4%) so the ambient backdrop
         // reads clearly through the glass. Rim highlight + hairline keep
         // the edges defined and text legible.
         background:
-          "linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 34%), linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.16) 48%, rgba(255,255,255,0.07) 100%)",
-        border: "1px solid rgba(255,255,255,0.6)",
-        backdropFilter: "blur(48px) saturate(185%)",
-        WebkitBackdropFilter: "blur(48px) saturate(185%)",
+          "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 36%), linear-gradient(135deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.1) 48%, rgba(255,255,255,0.04) 100%)",
+        border: "1px solid rgba(255,255,255,0.55)",
+        backdropFilter: "blur(52px) saturate(190%)",
+        WebkitBackdropFilter: "blur(52px) saturate(190%)",
         boxShadow:
-          "0 24px 60px -22px rgba(0,0,0,0.30), 0 4px 14px -8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 0.5px rgba(0,0,0,0.03)",
+          "0 26px 64px -22px rgba(0,0,0,0.30), 0 4px 14px -8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 0 0 0.5px rgba(0,0,0,0.03)",
       }}
     >
       {children}
