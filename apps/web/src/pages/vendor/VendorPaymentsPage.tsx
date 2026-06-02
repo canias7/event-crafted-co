@@ -41,6 +41,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Banknote,
+  CalendarClock,
   ChevronLeft,
   Copy,
   CreditCard,
@@ -170,6 +171,7 @@ interface Status {
 // Middle-column tabs on the Workspace view (Calendar lives in its own
 // left rail, so it's not a tab here).
 const WS_TABS = [
+  { id: "appointments", label: "Appointments", icon: CalendarClock },
   { id: "transactions", label: "Payments", icon: CreditCard },
   { id: "files", label: "Files", icon: FileText },
   { id: "customers", label: "Contacts", icon: Users },
@@ -395,9 +397,17 @@ export default function VendorPaymentsPage(
 
   // Workspace tab (Calendar lives in its own left rail; these are the
   // middle-column tabs). Driven by ?tab so deep-links + Overview cards work.
-  const wsTab: "transactions" | "files" | "customers" | "settings" = (() => {
+  const wsTab:
+    | "appointments"
+    | "transactions"
+    | "files"
+    | "customers"
+    | "settings" = (() => {
     const t = searchParams.get("tab");
-    return t === "files" || t === "customers" || t === "settings"
+    return t === "appointments" ||
+        t === "files" ||
+        t === "customers" ||
+        t === "settings"
       ? t
       : "transactions";
   })();
@@ -793,14 +803,7 @@ export default function VendorPaymentsPage(
           </div>
         </div>
 
-        {/* Overview stays capped for readable KPI cards; the Workspace
-            view runs full-width so its 3 columns (calendar · invoices ·
-            appointments) reach the screen edge instead of leaving a gap. */}
-        <div
-          className={`p-4 md:p-8 space-y-6 ${
-            view === "overview" ? "max-w-screen-2xl" : ""
-          }`}
-        >
+        <div className="p-4 md:p-8 max-w-screen-2xl space-y-6">
           {/* The top-of-page listing picker has been removed pending a
               new selection UI. selectedListingId is still set (auto-
               picks the first approved listing) so every downstream
@@ -881,7 +884,7 @@ export default function VendorPaymentsPage(
               {/* Calendar — left rail. Renders independently of the Stripe
                   load (it has its own data source) so it paints right away
                   instead of waiting behind the payments fan-out. */}
-              <div id="ws-calendar" className="w-full lg:flex-1 lg:min-w-0 scroll-mt-24">
+              <div id="ws-calendar" className="w-full lg:w-[360px] lg:shrink-0 scroll-mt-24">
                 <Suspense fallback={<TabSkeleton />}>
                   <VendorAppointmentsPageLazy
                     embedded
@@ -891,11 +894,9 @@ export default function VendorPaymentsPage(
                   />
                 </Suspense>
               </div>
-              {/* Payments / Files / Contacts / Settings — tabbed middle.
-                  Takes 2 parts so its two inner columns (tab content +
-                  appointments) each end up the same width as the calendar
-                  rail → three equal columns on wide screens. */}
-              <div className="min-w-0 w-full lg:flex-[2]">
+              {/* Appointments / Payments / Files / Contacts / Settings —
+                  tabbed middle column (calendar lives in the left rail). */}
+              <div className="flex-1 min-w-0 w-full">
                 <nav className="flex gap-1 mb-5 overflow-x-auto scrollbar-hide">
                   {WS_TABS.map((t) => {
                     const active = wsTab === t.id;
@@ -915,15 +916,12 @@ export default function VendorPaymentsPage(
                     );
                   })}
                 </nav>
-                {/* Tab content keeps its place on the left; the Upcoming
-                    appointments list fills the empty space to its right
-                    (stacks below on narrower screens). */}
-                <div className="flex flex-col 2xl:flex-row gap-6 items-start">
-                  <div className="flex-1 min-w-0 w-full">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
+                ) : wsTab === "appointments" ? (
+                  <WorkspaceAppointments accountVendorIds={accountVendorIds} />
                 ) : wsTab === "transactions" ? (
                   <PaymentsTab
                     transactions={transactions}
@@ -952,18 +950,6 @@ export default function VendorPaymentsPage(
                 ) : (
                   <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
                 )}
-                  </div>
-                  {/* Upcoming appointments — relocated out of the calendar
-                      rail into the empty space beside the tab content. Grows
-                      to fill the remaining width (capped so cards don't get
-                      absurdly wide on ultra-wide monitors). On desktop it
-                      sticks to the viewport and scrolls internally so a long
-                      list doesn't stretch the page and leave the calendar /
-                      invoices columns trailing empty space. */}
-                  <div className="w-full 2xl:flex-1 2xl:min-w-0 2xl:sticky 2xl:top-24 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto 2xl:pr-1">
-                    <WorkspaceAppointments accountVendorIds={accountVendorIds} />
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -1044,7 +1030,7 @@ function WorkspaceAppointments({
     // "loading" rather than a blank gap while the fetch resolves.
     return (
       <section>
-        <h2 className="font-display text-lg mb-3">Upcoming appointments</h2>
+        <h2 className="font-display text-lg mb-3">Appointments</h2>
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-32 w-full rounded-2xl" />
@@ -1053,11 +1039,21 @@ function WorkspaceAppointments({
       </section>
     );
   }
-  if (appointments.length === 0) return null;
+  if (appointments.length === 0) {
+    return (
+      <section>
+        <h2 className="font-display text-lg mb-3">Appointments</h2>
+        <div className="card-soft p-8 text-center text-sm text-muted-foreground">
+          No appointments yet. Calls, consultations, and tastings you
+          schedule with hosts will show up here.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section>
-      <h2 className="font-display text-lg mb-3">Upcoming appointments</h2>
+      <h2 className="font-display text-lg mb-3">Appointments</h2>
       <AppointmentsList appointments={appointments} onMutate={load} />
     </section>
   );
