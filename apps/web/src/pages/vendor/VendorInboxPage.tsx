@@ -446,7 +446,11 @@ export default function VendorInboxPage() {
                     <span className={`w-1.5 h-1.5 rounded-full ${pill.dot}`} />
                   ) : null}
                   {pill.label}
-                  <span className="tabular-nums opacity-70">{pill.count}</span>
+                  {/* Hide the count while loading so the pills don't flash
+                      "0" before the real totals land. */}
+                  {loading ? null : (
+                    <span className="tabular-nums opacity-70">{pill.count}</span>
+                  )}
                 </button>
               );
             })}
@@ -494,9 +498,32 @@ export default function VendorInboxPage() {
           </div>
 
           {loading ? (
-            <div className="glass-card p-12 text-center text-muted-foreground">
-              Loading conversations…
-            </div>
+            // Skeleton rows that mirror the conversation list, so the inbox
+            // doesn't flash an empty "0" state before the data lands.
+            <ul
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.6)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+              }}
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <li
+                  key={i}
+                  className={`flex items-center gap-3 px-4 py-3.5 ${
+                    i > 0 ? "border-t border-black/5" : ""
+                  }`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-foreground/10 animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-40 rounded bg-foreground/10 animate-pulse" />
+                    <div className="h-2.5 w-56 max-w-full rounded bg-foreground/5 animate-pulse" />
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : filteredRows.length === 0 ? (
             <div className="glass-card py-20 text-center">
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
