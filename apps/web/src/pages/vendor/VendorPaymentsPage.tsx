@@ -1057,7 +1057,11 @@ function WorkspaceAppointments({
   return (
     <section>
       <h2 className="font-display text-lg mb-3">Appointments</h2>
-      <AppointmentsList appointments={appointments} onMutate={load} />
+      {/* Bounded, scrollable list so it doesn't run infinitely down the
+          page — the cards scroll inside this area. */}
+      <div className="max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 -mr-1">
+        <AppointmentsList appointments={appointments} onMutate={load} />
+      </div>
     </section>
   );
 }
