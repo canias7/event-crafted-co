@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
+import { LISTING_PALETTE } from "@/lib/listingColors";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -55,21 +56,6 @@ const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 type DayState = "available" | "booked" | "pending" | "blocked";
 
-// Per-listing dot palette for the account-wide cockpit calendar. Each
-// listing gets a stable color (assigned by its index in the account's
-// listing list) so a day booked/blocked on listing A vs listing B is
-// visually distinguishable. Picked for contrast on the warm canvas;
-// cycles if a vendor somehow has more listings than colors.
-const LISTING_PALETTE = [
-  "#18181b", // ink
-  "#2563eb", // blue
-  "#0a7c4a", // green
-  "#9333ea", // purple
-  "#d4a017", // gold
-  "#db2777", // pink
-  "#0891b2", // cyan
-  "#b91c1c", // red
-];
 
 // Sentinel for the cockpit block-target picker: "all" writes blocks /
 // recurring rules across every listing (the original account-wide
@@ -173,6 +159,7 @@ export default function VendorAppointmentsPage({
   accountVendorIds,
   listings: listingsProp,
   hideUpcoming = false,
+  hideLegend = false,
 }: {
   embedded?: boolean;
   listingId?: string | null;
@@ -184,6 +171,10 @@ export default function VendorAppointmentsPage({
   // column beside the invoices, so it asks the embedded calendar rail to
   // suppress its in-rail copy to avoid rendering it twice.
   hideUpcoming?: boolean;
+  // The cockpit also relocates the per-listing color legend next to the
+  // appointments list, so it suppresses the in-rail legend here. The
+  // calendar keeps its colored dots; only the written key moves.
+  hideLegend?: boolean;
 } = {}) {
   const { user } = useAuth();
 
@@ -1002,7 +993,7 @@ export default function VendorAppointmentsPage({
                   onSelect={(k) => setSelectedYmd(k)}
                 />
               )}
-              {showListingColors ? (
+              {hideLegend ? null : showListingColors ? (
                 // Per-listing color legend (account view, >1 listing):
                 // map each dot color to the listing it represents, plus
                 // the status meaning of solid vs hatched dots.

@@ -97,6 +97,7 @@ import {
 } from "@/components/appointments/AppointmentsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtime } from "@/lib/realtime";
+import { listingColorMap } from "@/lib/listingColors";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -889,6 +890,7 @@ export default function VendorPaymentsPage(
                   <VendorAppointmentsPageLazy
                     embedded
                     hideUpcoming
+                    hideLegend
                     accountVendorIds={accountVendorIds}
                     listings={listings}
                   />
@@ -921,7 +923,10 @@ export default function VendorPaymentsPage(
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : wsTab === "appointments" ? (
-                  <WorkspaceAppointments accountVendorIds={accountVendorIds} />
+                  <WorkspaceAppointments
+                    accountVendorIds={accountVendorIds}
+                    listings={listings}
+                  />
                 ) : wsTab === "transactions" ? (
                   <PaymentsTab
                     transactions={transactions}
@@ -968,18 +973,29 @@ export default function VendorPaymentsPage(
   );
 }
 
-// Upcoming appointments column for the Workspace cockpit. Self-contained
-// fetch (mirrors the embedded calendar's loadAppointments) so it can live
-// beside the invoices without threading appointment state through the
-// page. Aggregates across every listing on the account.
+// Appointments tab for the Workspace cockpit. Self-contained fetch
+// (mirrors the embedded calendar's loadAppointments) so it can live as
+// its own tab without threading appointment state through the page.
+// Aggregates across every listing on the account. The per-listing color
+// legend (moved out of the calendar rail) sits to the right of the list.
 function WorkspaceAppointments({
   accountVendorIds,
+  listings,
 }: {
   accountVendorIds: string[];
+  listings: ListingOpt[];
 }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const idsKey = accountVendorIds.join(",");
+  // Color key for the calendar dots — mirrors the calendar's palette/order
+  // so the legend matches what the calendar paints. Only meaningful with
+  // more than one listing (single-listing accounts get no per-listing key).
+  const listingColorById = useMemo(
+    () => listingColorMap(listings.map((l) => l.id)),
+    [listings],
+  );
+  const showListingLegend = listings.length > 1;
 
   const load = useCallback(async () => {
     if (accountVendorIds.length === 0) {
@@ -1052,10 +1068,39 @@ function WorkspaceAppointments({
   }
 
   return (
-    <section>
-      <h2 className="font-display text-lg mb-3">Appointments</h2>
-      <AppointmentsList appointments={appointments} onMutate={load} />
-    </section>
+    <div className="flex flex-col xl:flex-row gap-6 items-start">
+      <section className="flex-1 min-w-0 w-full">
+        <h2 className="font-display text-lg mb-3">Appointments</h2>
+        <AppointmentsList appointments={appointments} onMutate={load} />
+      </section>
+      {/* Calendar color key — moved here out of the calendar rail. Sits to
+          the right of the list (stacks above it on narrower screens). */}
+      <aside className="w-full xl:w-[220px] xl:shrink-0">
+        <div className="card-soft p-4 space-y-2 xl:sticky xl:top-24">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Calendar colors
+          </h3>
+          {showListingLegend ? (
+            <div className="space-y-1.5 text-xs max-h-[50vh] overflow-y-auto pr-1">
+              {listings.map((l) => (
+                <div key={l.id} className="flex items-center gap-1.5">
+                  <span
+                    className="w-3 h-3 rounded-full inline-block shrink-0"
+                    style={{ background: listingColorById.get(l.id) }}
+                  />
+                  <span className="text-foreground truncate">
+                    {l.business_name?.trim() || l.category || "Listing"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <p className="text-[11px] text-muted-foreground">
+            Solid = booked · faded = pending · ringed = blocked
+          </p>
+        </div>
+      </aside>
+    </div>
   );
 }
 
