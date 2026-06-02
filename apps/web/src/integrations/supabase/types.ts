@@ -2398,6 +2398,7 @@ export type Database = {
           expires_at: string | null
           host_email: string | null
           id: string
+          inquiry_id: string | null
           paid_at: string | null
           paid_payment_intent_id: string | null
           parent_link_id: string | null
@@ -2419,6 +2420,7 @@ export type Database = {
           expires_at?: string | null
           host_email?: string | null
           id?: string
+          inquiry_id?: string | null
           paid_at?: string | null
           paid_payment_intent_id?: string | null
           parent_link_id?: string | null
@@ -2440,6 +2442,7 @@ export type Database = {
           expires_at?: string | null
           host_email?: string | null
           id?: string
+          inquiry_id?: string | null
           paid_at?: string | null
           paid_payment_intent_id?: string | null
           parent_link_id?: string | null

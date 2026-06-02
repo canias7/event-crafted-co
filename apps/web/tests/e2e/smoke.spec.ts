@@ -67,15 +67,20 @@ const gatedRoutes = [
   "/customer/moodboards",
   "/customer/registry",
   "/customer/planning-team",
-  // Vendor
-  "/vendor/dashboard",
-  "/vendor/onboarding",
-  "/vendor/profile",
+  // Vendor — current dashboard routes (see App.tsx). All wrapped in
+  // RequireRole role="vendor"; unauthenticated access must land on /login.
+  "/vendor/me",
+  "/vendor/edit-profile",
   "/vendor/inbox",
-  "/vendor/availability",
-  "/vendor/appointments",
-  "/vendor/team",
-  "/vendor/analytics",
+  "/vendor/overview",
+  "/vendor/workspace",
+  "/vendor/partners",
+  "/vendor/ai-superagents",
+  "/vendor/integrations",
+  "/vendor/subscription",
+  "/vendor/usage",
+  "/vendor/gallery",
+  "/vendor/templates",
   // Account
   "/settings",
 ];
