@@ -233,10 +233,29 @@ function GlassNewChatButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+// Reopening the panel after this much idle time starts a fresh chat
+// instead of resuming the last conversation. We stamp the current time
+// to localStorage whenever the panel closes; the next open compares.
+const IDLE_NEW_CHAT_MS = 30 * 60 * 1000; // 30 minutes
+const MYSPACE_LAST_ACTIVE_KEY = "myspace-last-active";
+
 export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
   const { user } = useAuth();
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
+  // If it's been a while since the panel was last used, open into a fresh
+  // chat instead of resuming the last conversation. Computed once at mount
+  // (before the thread-load effect runs) from the timestamp we stamp on
+  // close, so the decision reflects the gap between the previous use and
+  // this open.
+  const [startFresh] = useState(() => {
+    try {
+      const last = Number(localStorage.getItem(MYSPACE_LAST_ACTIVE_KEY) || 0);
+      return last > 0 && Date.now() - last > IDLE_NEW_CHAT_MS;
+    } catch {
+      return false;
+    }
+  });
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -358,13 +377,30 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
       const rows = await loadThreads();
       if (cancelled) return;
       setThreads(rows);
-      setCurrentThreadId((prev) => prev ?? rows[0]?.id ?? null);
+      // After a long idle gap, land on a fresh chat (null) even though
+      // older threads exist — they stay listed in the sidebar to pick
+      // from. Otherwise resume the most recent conversation.
+      setCurrentThreadId((prev) =>
+        prev ?? (startFresh ? null : rows[0]?.id ?? null)
+      );
       setThreadsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadThreads]);
+  }, [loadThreads, startFresh]);
+
+  // Stamp the last-active time on close (unmount) so the next open can
+  // decide whether enough idle time has passed to start a fresh chat.
+  useEffect(() => {
+    return () => {
+      try {
+        localStorage.setItem(MYSPACE_LAST_ACTIVE_KEY, String(Date.now()));
+      } catch {
+        /* ignore */
+      }
+    };
+  }, []);
 
   // ── Load messages whenever the current thread changes.
   useEffect(() => {
