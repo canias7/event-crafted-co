@@ -953,8 +953,11 @@ export default function VendorPaymentsPage(
                   {/* Upcoming appointments — relocated out of the calendar
                       rail into the empty space beside the tab content. Grows
                       to fill the remaining width (capped so cards don't get
-                      absurdly wide on ultra-wide monitors). */}
-                  <div className="w-full 2xl:flex-1 2xl:min-w-[340px] 2xl:max-w-2xl">
+                      absurdly wide on ultra-wide monitors). On desktop it
+                      sticks to the viewport and scrolls internally so a long
+                      list doesn't stretch the page and leave the calendar /
+                      invoices columns trailing empty space. */}
+                  <div className="w-full 2xl:flex-1 2xl:min-w-[340px] 2xl:max-w-2xl 2xl:sticky 2xl:top-24 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto 2xl:pr-1">
                     <WorkspaceAppointments accountVendorIds={accountVendorIds} />
                   </div>
                 </div>
