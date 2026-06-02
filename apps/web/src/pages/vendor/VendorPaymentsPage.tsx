@@ -7454,6 +7454,19 @@ function PayLinkPreview({
   const amountLabel = Number.isFinite(cents) && cents > 0
     ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
     : "$0.00";
+  const merchant = businessName || "VendoraPay";
+  // Faux, non-interactive field — styled to read like a real Stripe
+  // Checkout input (label above, bordered box with muted placeholder).
+  const Field = ({ placeholder }: { placeholder: string }) => (
+    <div className="h-9 rounded-md border border-slate-300 bg-white px-3 flex items-center text-[12px] text-slate-400">
+      {placeholder}
+    </div>
+  );
+  const brandChip = (label: string) => (
+    <span className="text-[7px] font-bold leading-none text-slate-500 bg-white border border-slate-200 rounded-[3px] px-1 py-[3px]">
+      {label}
+    </span>
+  );
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
       {/* Browser chrome bar */}
@@ -7467,48 +7480,117 @@ function PayLinkPreview({
           </div>
         </div>
       </div>
-      {/* Payment page body */}
-      <div className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-full bg-slate-100 inline-flex items-center justify-center">
-            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+
+      {/* ── Order summary (Stripe's left panel) ─────────────────── */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-slate-100 inline-flex items-center justify-center shrink-0">
+            <CreditCard className="w-3 h-3 text-slate-500" />
           </div>
+          <span className="text-[12px] font-medium text-slate-700 truncate">{merchant}</span>
+        </div>
+        <div className="text-[12px] text-slate-500 mt-3">Pay {merchant}</div>
+        <div className="text-[28px] leading-tight font-semibold text-slate-900 tracking-tight mt-0.5">
+          {amountLabel}
+        </div>
+
+        {/* Line item */}
+        <div className="mt-4 flex items-start justify-between gap-3 text-[12px]">
           <div className="min-w-0">
-            <div className="text-[13px] font-semibold text-slate-900 truncate">{businessName || "VendoraPay"}</div>
+            <div className="text-slate-800 font-medium truncate">{title.trim() || "Payment"}</div>
+            {description.trim() ? (
+              <div className="text-slate-400 truncate">{description.trim()}</div>
+            ) : null}
+          </div>
+          <div className="text-slate-800 shrink-0">{amountLabel}</div>
+        </div>
+
+        {/* Totals */}
+        <div className="mt-3 border-t border-slate-100 pt-2.5 space-y-1.5 text-[12px]">
+          <div className="flex justify-between text-slate-500">
+            <span>Subtotal</span>
+            <span className="text-slate-800">{amountLabel}</span>
+          </div>
+          <div className="flex justify-between text-slate-400">
+            <span>Tax</span>
+            <span>Enter address to calculate</span>
+          </div>
+          <div className="flex justify-between font-semibold text-slate-900 border-t border-slate-100 pt-2 mt-1">
+            <span>Total due</span>
+            <span>{amountLabel}</span>
           </div>
         </div>
-        <div className="text-[11px] text-slate-500 font-medium">
-          {title.trim() || "Payment"}
+      </div>
+
+      {/* ── Pay with card (Stripe's right panel) ────────────────── */}
+      <div className="border-t border-slate-200 px-5 py-4 bg-slate-50/50 space-y-3">
+        <h4 className="text-[13px] font-semibold text-slate-800">Pay with card</h4>
+
+        <div className="space-y-1">
+          <div className="text-[11px] font-medium text-slate-600">Email</div>
+          <Field placeholder="you@example.com" />
         </div>
-        <div className="text-3xl font-semibold text-slate-900 mt-1 tracking-tight">{amountLabel}</div>
-        {description.trim() ? (
-          <p className="text-[12px] text-slate-500 mt-2 whitespace-pre-wrap">{description.trim()}</p>
+
+        <div className="space-y-1">
+          <div className="text-[11px] font-medium text-slate-600">Card information</div>
+          <div className="h-9 rounded-t-md border border-slate-300 bg-white px-3 flex items-center justify-between text-[12px] text-slate-400">
+            <span>1234 1234 1234 1234</span>
+            <div className="flex gap-1">
+              {brandChip("VISA")}
+              {brandChip("MC")}
+              {brandChip("AMEX")}
+            </div>
+          </div>
+          <div className="flex -mt-px">
+            <div className="flex-1 h-9 rounded-bl-md border border-slate-300 bg-white px-3 flex items-center text-[12px] text-slate-400">
+              MM / YY
+            </div>
+            <div className="flex-1 h-9 rounded-br-md border border-l-0 border-slate-300 bg-white px-3 flex items-center text-[12px] text-slate-400">
+              CVC
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="text-[11px] font-medium text-slate-600">Name on card</div>
+          <Field placeholder="Full name" />
+        </div>
+
+        <div className="space-y-1">
+          <div className="text-[11px] font-medium text-slate-600">Billing address</div>
+          <div className="h-9 rounded-t-md border border-slate-300 bg-white px-3 flex items-center justify-between text-[12px] text-slate-600">
+            <span>United States</span>
+            <span className="text-slate-400">▾</span>
+          </div>
+          <div className="h-9 -mt-px rounded-b-md border border-slate-300 bg-white px-3 flex items-center text-[12px] text-slate-400">
+            Address
+          </div>
+        </div>
+
+        {collectContact ? (
+          <div className="space-y-1">
+            <div className="text-[11px] font-medium text-slate-600">Phone number</div>
+            <Field placeholder="(555) 555-5555" />
+          </div>
         ) : null}
 
-        {/* Faux contact + card fields, mirroring the real checkout */}
-        <div className="mt-4 space-y-2">
-          {collectContact ? (
-            <>
-              <div className="h-8 rounded-md border border-slate-200 bg-white px-2.5 flex items-center text-[11px] text-slate-400">Full name</div>
-              <div className="h-8 rounded-md border border-slate-200 bg-white px-2.5 flex items-center text-[11px] text-slate-400">Phone</div>
-            </>
-          ) : null}
-          <div className="h-8 rounded-md border border-slate-200 bg-white px-2.5 flex items-center text-[11px] text-slate-400">
-            <span className="mr-2">💳</span>Card number
-          </div>
-          <button
-            type="button"
-            disabled
-            className="w-full h-9 rounded-md bg-indigo-600 text-white text-[13px] font-medium mt-1"
-          >
-            Pay {amountLabel}
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled
+          className="w-full h-9 rounded-md text-white text-[13px] font-semibold mt-1"
+          style={{ background: "#635bff" }}
+        >
+          Pay {amountLabel}
+        </button>
 
         {expiresDate ? (
-          <p className="text-[11px] text-slate-400 mt-3">Link expires {expiresDate}</p>
+          <p className="text-[11px] text-slate-400 text-center">Link expires {expiresDate}</p>
         ) : null}
-        <p className="text-[10px] text-slate-300 text-center mt-3">Powered by Stripe</p>
+        <p className="text-[10px] text-slate-400 text-center pt-1">
+          Powered by <span className="font-semibold text-slate-500">Stripe</span>
+          <span className="mx-1.5 text-slate-300">·</span>Terms
+          <span className="mx-1.5 text-slate-300">·</span>Privacy
+        </p>
       </div>
     </div>
   );
