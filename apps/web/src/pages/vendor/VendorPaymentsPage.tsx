@@ -508,11 +508,14 @@ export default function VendorPaymentsPage(
         const stripeConnectedIds = accountVendorIds;
 
         const [statusRes, balanceRes, txResultsRaw, payoutRes, linksRes, invoicesRes] = await Promise.all([
-          // Status / balance / payouts schedule are still scoped to
-          // the primary connected listing — combining a "weekly"
-          // payout schedule on listing A with a "daily" on listing
-          // B is a UX decision, not a merge, and gets its own pass.
-          supabase.functions.invoke("vendorapay-status", { body: { business_id: vendorId } }),
+          // VendoraPay is account-level (one Stripe connection per user),
+          // so fetch status with an empty body — the SAME call the
+          // dedicated status effect makes. Using a listing-scoped body
+          // here returned a different onboarded state, and the two writes
+          // raced and overwrote each other (the Settings cards flickered
+          // between "Connect VendoraPay" and the onboarded steps). Balance
+          // / payouts stay scoped to the primary connected listing.
+          supabase.functions.invoke("vendorapay-status", { body: {} }),
           supabase.functions.invoke("vendorapay-balance", { body: { business_id: vendorId } }),
           // Transactions fan out across every connected listing.
           // Each transaction is tagged with its source vendor_id so
