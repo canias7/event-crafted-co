@@ -69,9 +69,12 @@ export async function handleEmailBillingError(
   const ctx = (err as { context?: Response })?.context;
   if (!ctx || typeof ctx.json !== "function") return false;
 
-  let body: (InsufficientCreditsBody & { error: string }) | null = null;
+  let body: (Omit<InsufficientCreditsBody, "error"> & { error: string }) | null =
+    null;
   try {
-    body = (await ctx.json()) as InsufficientCreditsBody & { error: string };
+    body = (await ctx.json()) as Omit<InsufficientCreditsBody, "error"> & {
+      error: string;
+    };
   } catch {
     return false;
   }
