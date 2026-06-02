@@ -45,3 +45,6 @@ pnpm-lock.yaml
 # Supabase CLI scratch dir (cli-latest, linked-project.json). Created
 # when running `supabase functions deploy` locally.
 supabase/.temp/
+
+# Playwright authenticated storage state (contains session tokens)
+apps/web/tests/e2e/.auth/

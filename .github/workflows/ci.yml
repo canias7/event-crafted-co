@@ -50,6 +50,16 @@ jobs:
         working-directory: apps/web
       - run: bun run test:e2e
         env:
-          VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder
+          # Public + gated smoke tests run against placeholders. When the
+          # operator sets the E2E_* secrets (a throwaway approved-vendor
+          # account + the real project URL/anon key), the app and the
+          # auth.setup sign-in both target the real backend so the
+          # authenticated vendor-display tests activate. Without the
+          # secrets these fall back to placeholders and those tests skip.
+          VITE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY || 'placeholder' }}
           VITE_SUPABASE_PROJECT_ID: placeholder
+          E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+          E2E_VENDOR_EMAIL: ${{ secrets.E2E_VENDOR_EMAIL }}
+          E2E_VENDOR_PASSWORD: ${{ secrets.E2E_VENDOR_PASSWORD }}

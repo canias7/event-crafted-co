@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { VENDOR_AUTH_FILE } from "./tests/e2e/auth.paths";
 
 // Standalone Playwright config (no longer depends on the lovable-agent-
 // playwright-config package which isn't published outside Lovable's CI).
@@ -26,8 +27,28 @@ export default defineConfig({
   },
   projects: [
     {
+      // Public + gated-redirect smoke tests (no auth). Excludes the auth
+      // setup and the authenticated specs.
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: [/auth\.setup\.ts/, /\.authed\.spec\.ts/],
+    },
+    {
+      // Signs in a throwaway vendor (when E2E creds are set) and writes the
+      // storage state the authed project below consumes.
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
+      // Authenticated vendor-dashboard DISPLAY checks, run at a mobile
+      // viewport to exercise the bottom-nav clearance / overflow fixes.
+      name: "vendor-authed",
+      testMatch: /\.authed\.spec\.ts/,
+      dependencies: ["setup"],
+      use: {
+        ...devices["iPhone 13"],
+        storageState: VENDOR_AUTH_FILE,
+      },
     },
   ],
   webServer: {
@@ -37,3 +58,4 @@ export default defineConfig({
     timeout: 60_000,
   },
 });
+
