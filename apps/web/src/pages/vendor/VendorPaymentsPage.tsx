@@ -97,7 +97,6 @@ import {
 } from "@/components/appointments/AppointmentsList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtime } from "@/lib/realtime";
-import { listingColorMap } from "@/lib/listingColors";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -893,7 +892,6 @@ export default function VendorPaymentsPage(
                   <VendorAppointmentsPageLazy
                     embedded
                     hideUpcoming
-                    hideLegend
                     accountVendorIds={accountVendorIds}
                     listings={listings}
                   />
@@ -926,10 +924,7 @@ export default function VendorPaymentsPage(
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : wsTab === "appointments" ? (
-                  <WorkspaceAppointments
-                    accountVendorIds={accountVendorIds}
-                    listings={listings}
-                  />
+                  <WorkspaceAppointments accountVendorIds={accountVendorIds} />
                 ) : wsTab === "transactions" ? (
                   <PaymentsTab
                     transactions={transactions}
@@ -979,26 +974,15 @@ export default function VendorPaymentsPage(
 // Appointments tab for the Workspace cockpit. Self-contained fetch
 // (mirrors the embedded calendar's loadAppointments) so it can live as
 // its own tab without threading appointment state through the page.
-// Aggregates across every listing on the account. The per-listing color
-// legend (moved out of the calendar rail) sits to the right of the list.
+// Aggregates across every listing on the account.
 function WorkspaceAppointments({
   accountVendorIds,
-  listings,
 }: {
   accountVendorIds: string[];
-  listings: ListingOpt[];
 }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const idsKey = accountVendorIds.join(",");
-  // Color key for the calendar dots — mirrors the calendar's palette/order
-  // so the legend matches what the calendar paints. Only meaningful with
-  // more than one listing (single-listing accounts get no per-listing key).
-  const listingColorById = useMemo(
-    () => listingColorMap(listings.map((l) => l.id)),
-    [listings],
-  );
-  const showListingLegend = listings.length > 1;
 
   const load = useCallback(async () => {
     if (accountVendorIds.length === 0) {
@@ -1073,30 +1057,6 @@ function WorkspaceAppointments({
   return (
     <section>
       <h2 className="font-display text-lg mb-3">Appointments</h2>
-      {/* Calendar color key — a slim horizontal strip above the list (was a
-          tall sidebar that left a big empty column beside the long list).
-          Scrolls horizontally so many listings stay on one compact row. */}
-      <div className="mb-4 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs text-muted-foreground">
-        <span className="shrink-0 font-semibold uppercase tracking-wider">
-          Calendar colors
-        </span>
-        {showListingLegend
-          ? listings.map((l) => (
-              <span key={l.id} className="shrink-0 inline-flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full inline-block"
-                  style={{ background: listingColorById.get(l.id) }}
-                />
-                <span className="text-foreground">
-                  {l.business_name?.trim() || l.category || "Listing"}
-                </span>
-              </span>
-            ))
-          : null}
-        <span className="shrink-0 text-[11px]">
-          · Solid = booked · faded = pending · ringed = blocked
-        </span>
-      </div>
       <AppointmentsList appointments={appointments} onMutate={load} />
     </section>
   );
