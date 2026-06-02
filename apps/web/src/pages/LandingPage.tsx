@@ -100,7 +100,7 @@ export default function LandingPage() {
       <div className="relative z-[1]">
 
         {/* HERO CONTENT */}
-        <section className="relative z-[2] px-6 md:px-10 pt-24 pb-24 md:pt-28 md:pb-28 text-center">
+        <section className="relative z-[2] px-6 md:px-10 pt-20 pb-16 md:pt-24 md:pb-20 text-center">
           <h1
             className="text-black m-0"
             style={{
@@ -113,7 +113,7 @@ export default function LandingPage() {
             Book your next event
           </h1>
           <h1
-            className="font-editorial italic text-black mt-2.5 mb-9"
+            className="font-editorial italic text-black mt-2.5 mb-6"
             style={{
               fontSize: "60px",
               fontWeight: 500,
@@ -123,6 +123,24 @@ export default function LandingPage() {
           >
             with Vendora.
           </h1>
+          <p className="text-black/55 text-base md:text-lg max-w-xl mx-auto mb-8 leading-relaxed">
+            Browse curated, verified vendors — photographers, caterers, venues,
+            and more — and book the ones that fit your celebration.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/vendors"
+              className="bg-black text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-black/90 transition-colors"
+            >
+              Browse vendors
+            </Link>
+            <Link
+              to="/signup/vendor"
+              className="rounded-full px-6 py-3 text-sm font-medium border border-black/15 text-black hover:bg-black/[0.04] transition-colors"
+            >
+              List your business
+            </Link>
+          </div>
         </section>
 
       </div>

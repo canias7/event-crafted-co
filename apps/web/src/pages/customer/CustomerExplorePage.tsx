@@ -153,7 +153,7 @@ export default function CustomerExplorePage() {
         title="Explore"
         backPath="/customer/explore"
       />
-      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
+      <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>

@@ -801,20 +801,25 @@ export default function VendorPaymentsPage(
             <section
               className="rounded-2xl p-5"
               style={{
-                background: "linear-gradient(135deg, rgba(0,0,0,0.1), rgba(217,119,87,0.08))",
-                border: "0.5px solid rgba(0,0,0,0.3)",
+                background: "linear-gradient(135deg, rgba(0,0,0,0.06), rgba(0,0,0,0.03))",
+                border: "0.5px solid rgba(0,0,0,0.12)",
               }}
             >
-              <div className="flex items-start gap-4 flex-wrap">
-                <div
-                  className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                  style={{ background: "rgba(0,0,0,0.08)" }}
-                >
-                  <CreditCard className="w-5 h-5" style={{ color: "#18181b" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-semibold">{verifyBanner.title}</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">{verifyBanner.sub}</p>
+              {/* Stacks on mobile (icon+copy, then a full-width CTA below)
+                  so the text isn't crammed into a narrow column beside the
+                  button; switches to a single row from sm up. */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div
+                    className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                    style={{ background: "rgba(0,0,0,0.08)" }}
+                  >
+                    <CreditCard className="w-5 h-5" style={{ color: "#18181b" }} />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-semibold">{verifyBanner.title}</h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">{verifyBanner.sub}</p>
+                  </div>
                 </div>
                 {verifyBanner.cta ? (
                   <Button
@@ -824,7 +829,7 @@ export default function VendorPaymentsPage(
                         : handleConnect
                     }
                     disabled={connecting}
-                    className="rounded-full"
+                    className="rounded-full w-full sm:w-auto shrink-0"
                   >
                     {connecting ? (
                       <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
