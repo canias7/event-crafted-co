@@ -20,7 +20,10 @@ export default defineConfig({
   // landing page bundle (framer-motion, hero assets, i18n lazy
   // chunks) — that cold-start can take 30-45s on CI runners. Once
   // warm, every other test completes in <2s.
-  timeout: 60_000,
+  // Bumped to 90s: on a cold CI runner, several workers trigger Vite's
+  // on-demand route compile at once, so the first navigation to a few
+  // routes can exceed 60s under that contention.
+  timeout: 90_000,
   use: {
     baseURL: "http://127.0.0.1:8080",
     trace: "on-first-retry",
@@ -42,11 +45,13 @@ export default defineConfig({
     {
       // Authenticated vendor-dashboard DISPLAY checks, run at a mobile
       // viewport to exercise the bottom-nav clearance / overflow fixes.
+      // Pixel 7 (not iPhone) so it runs on Chromium — CI only installs the
+      // chromium browser, and iPhone devices use WebKit.
       name: "vendor-authed",
       testMatch: /\.authed\.spec\.ts/,
       dependencies: ["setup"],
       use: {
-        ...devices["iPhone 13"],
+        ...devices["Pixel 7"],
         storageState: VENDOR_AUTH_FILE,
       },
     },
