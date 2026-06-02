@@ -176,7 +176,7 @@ const WS_TABS = [
   { id: "transactions", label: "Payments", icon: CreditCard },
   { id: "files", label: "Files", icon: FileText },
   { id: "customers", label: "Contacts", icon: Users },
-  { id: "settings", label: "Settings", icon: SettingsIcon },
+  // Settings tab removed — VendoraPay connection now lives on /settings.
 ] as const;
 
 // Sub-tabs inside the Payments tab.
@@ -402,13 +402,9 @@ export default function VendorPaymentsPage(
     | "appointments"
     | "transactions"
     | "files"
-    | "customers"
-    | "settings" = (() => {
+    | "customers" = (() => {
     const t = searchParams.get("tab");
-    return t === "appointments" ||
-        t === "files" ||
-        t === "customers" ||
-        t === "settings"
+    return t === "appointments" || t === "files" || t === "customers"
       ? t
       : "transactions";
   })();
@@ -948,15 +944,13 @@ export default function VendorPaymentsPage(
                     status={status}
                     onChanged={() => refresh(true)}
                   />
-                ) : wsTab === "customers" ? (
+                ) : (
                   <CustomersTab
                     accountVendorIds={accountVendorIds}
                     listings={listings}
                     status={status}
                     onChanged={() => refresh(true)}
                   />
-                ) : (
-                  <SettingsTab status={status} accountVendorIds={accountVendorIds} listings={listings} tier={tier} tierLoading={tierLoading} />
                 )}
               </div>
             </div>

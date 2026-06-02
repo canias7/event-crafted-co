@@ -21,6 +21,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
+import { VendoraPayConnection } from "@/components/vendor/VendoraPayConnection";
 
 // Account settings — rowed-card layout. Each row is icon + title +
 // subtitle on the left, value or action pill on the right, divided by
@@ -63,6 +64,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="p-4 md:p-8 max-w-2xl">
+          {/* VendoraPay connection — moved here from the Workspace cockpit's
+              Settings tab. Account-level payments/payout setup lives with
+              the rest of the account settings. Vendors only. */}
+          {isApprovedVendor ? (
+            <div className="mb-6">
+              <VendoraPayConnection />
+            </div>
+          ) : null}
           {!profile ? (
             <Skeleton className="h-48 w-full rounded-2xl" />
           ) : (
