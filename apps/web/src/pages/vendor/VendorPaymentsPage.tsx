@@ -1153,6 +1153,10 @@ function OverviewTab({
   // Upcoming appointments across the whole account — confirmed and
   // proposed meetings scheduled from now on, soonest first.
   const [upcomingAppts, setUpcomingAppts] = useState<Array<{ id: string; kind: string; title: string | null; location: string | null; scheduled_at: string; status: string; host_name: string | null }>>([]);
+  // Gates the cards behind skeletons until the first fetch resolves —
+  // otherwise the Overview flashes its empty states ($0, "No leads", "No
+  // paid invoices") for a beat before the real numbers land.
+  const [loading, setLoading] = useState(true);
 
   // Stable string key for the useEffect dep so we don't refire on
   // every render just because listings is re-derived.
@@ -1167,9 +1171,11 @@ function OverviewTab({
       setRevenueSeries([]);
       setRecentInvoices([]);
       setUpcomingAppts([]);
+      setLoading(false);
       return;
     }
     let cancelled = false;
+    setLoading(true);
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
@@ -1271,10 +1277,30 @@ function OverviewTab({
           host_name: a.host?.display_name ?? null,
         })),
       );
+      setLoading(false);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountKey, userId]);
+
+  if (loading) {
+    // Match the real layout (revenue + recent row, three KPI cards, then
+    // the appointments strip) so the cards don't jump when data lands.
+    return (
+      <div className="space-y-4">
+        <div className="xl:flex xl:items-start xl:gap-4">
+          <div className="xl:w-1/2 mb-4 xl:mb-0 h-64 rounded-2xl bg-foreground/5 animate-pulse" />
+          <div className="xl:w-1/2 h-64 rounded-2xl bg-foreground/5 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-48 rounded-2xl bg-foreground/5 animate-pulse" />
+          ))}
+        </div>
+        <div className="h-40 rounded-2xl bg-foreground/5 animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <>
