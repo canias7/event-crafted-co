@@ -59,17 +59,27 @@ async function rest(path: string, token?: string): Promise<any[]> {
 }
 
 test.describe("RLS data isolation", () => {
+  // Serial + mint-once: concurrent admin OTP generate/verify for the SAME
+  // user races (one test's verify can consume another's OTP), which made
+  // these flaky. Mint each actor a single token up front and reuse it.
+  test.describe.configure({ mode: "serial" });
   test.skip(!HAS_CREDS, "E2E Supabase creds not configured");
 
-  test("vendor sees their inbox; host sees only their own; anon sees none", async () => {
-    const vendor = await actor(VENDOR_EMAIL);
-    const host = await actor(HOST_EMAIL);
+  let vendor: { token: string; uid: string };
+  let host: { token: string; uid: string };
+  let listingId: string;
 
+  test.beforeAll(async () => {
+    if (!HAS_CREDS) return;
+    vendor = await actor(VENDOR_EMAIL);
+    host = await actor(HOST_EMAIL);
     // Derive the vendor's own listing id (owner can read own profile).
     const listings = await rest("vendor_profiles?select=id&limit=1", vendor.token);
     expect(listings.length, "test vendor should own a listing").toBeGreaterThan(0);
-    const listingId: string = listings[0].id;
+    listingId = listings[0].id;
+  });
 
+  test("vendor sees their inbox; host sees only their own; anon sees none", async () => {
     // 1. Vendor (team member) sees the full seeded inbox for their listing.
     const asVendor = await rest(
       `inquiries?vendor_id=eq.${listingId}&select=id,host_id`,
@@ -96,23 +106,11 @@ test.describe("RLS data isolation", () => {
   });
 
   test("anon cannot see a pending (unapproved) vendor listing", async () => {
-    const vendor = await actor(VENDOR_EMAIL);
-    const listings = await rest(
-      "vendor_profiles?select=id,application_status&limit=1",
-      vendor.token,
-    );
-    const listingId: string = listings[0].id;
-
     const asAnon = await rest(`vendor_profiles?select=id&id=eq.${listingId}`);
     expect(asAnon.length, "anon must not see a non-approved listing").toBe(0);
   });
 
   test("invoices/payment_links are vendor-team-only (host + anon blocked)", async () => {
-    const vendor = await actor(VENDOR_EMAIL);
-    const host = await actor(HOST_EMAIL);
-    const listings = await rest("vendor_profiles?select=id&limit=1", vendor.token);
-    const listingId: string = listings[0].id;
-
     for (const table of ["invoices", "payment_links"]) {
       const asHost = await rest(`${table}?vendor_id=eq.${listingId}&select=id`, host.token);
       expect(asHost.length, `host must not read ${table}`).toBe(0);
@@ -122,9 +120,6 @@ test.describe("RLS data isolation", () => {
   });
 
   test("vendor_overview_analytics RPC is scoped to the caller", async () => {
-    const vendor = await actor(VENDOR_EMAIL);
-    const host = await actor(HOST_EMAIL);
-
     const callRpc = async (token: string) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/vendor_overview_analytics`, {
         method: "POST",
