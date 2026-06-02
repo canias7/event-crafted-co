@@ -8,13 +8,12 @@ name: Write-flow tests (local Supabase)
 # from scratch — `supabase start` applies them and fails the job if any
 # migration errors. This is the prerequisite gate before we layer on the
 # function-serve + write-flow test suite.
+# Manual-only for now: the migration chain does NOT yet apply cleanly from
+# scratch (see docs/testing/staging-and-write-flow-tests.md → "Finding"), so
+# auto-running this on every migration push would just be red noise. Run it
+# on demand to re-check once the migrations are made idempotent.
 on:
   workflow_dispatch:
-  push:
-    branches: ["claude/**"]
-    paths:
-      - "supabase/migrations/**"
-      - ".github/workflows/write-flow-tests.yml"
 
 jobs:
   local-stack:
