@@ -115,6 +115,10 @@ export default function VendorInboxPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  // Total inquiry count across all the vendor's listings, shown in the
+  // header. Fetched as a HEAD count so it reflects EVERY inquiry, not
+  // just the paginated window currently loaded into `rows`.
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   // Tracks how many rows are currently loaded so a realtime refetch
   // reloads the same paginated window instead of snapping back to page 1.
   const loadedCountRef = useRef(0);
@@ -194,6 +198,7 @@ export default function VendorInboxPage() {
     if (vids.length === 0) {
       setRows([]);
       setHasMore(false);
+      setTotalCount(0);
       loadedCountRef.current = 0;
       setLoading(false);
       return;
@@ -201,8 +206,15 @@ export default function VendorInboxPage() {
     // Reload the currently-loaded window (at least one page) so a realtime
     // refetch doesn't collapse a paginated inbox back to the first page.
     const windowSize = Math.max(PAGE_SIZE, loadedCountRef.current);
-    const { rows: scored, full } = await fetchInquiryPage(vids, 0, windowSize);
+    const [{ rows: scored, full }, { count }] = await Promise.all([
+      fetchInquiryPage(vids, 0, windowSize),
+      supabase
+        .from("inquiries")
+        .select("id", { count: "exact", head: true })
+        .in("vendor_id", vids),
+    ]);
     setRows(scored);
+    setTotalCount(count ?? scored.length);
     loadedCountRef.current = scored.length;
     setHasMore(full);
     setLoading(false);
@@ -350,7 +362,14 @@ export default function VendorInboxPage() {
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-editorial text-3xl">Inbox</h1>
+              <h1 className="font-editorial text-3xl">
+                Inbox
+                {totalCount !== null ? (
+                  <span className="ml-2 align-middle text-base font-bold text-[#1a1208]/70">
+                    {totalCount}
+                  </span>
+                ) : null}
+              </h1>
               <p className="text-sm font-bold text-[#1a1208]">
                 Conversations with hosts — every message in one place
               </p>
