@@ -793,7 +793,14 @@ export default function VendorPaymentsPage(
           </div>
         </div>
 
-        <div className="p-4 md:p-8 max-w-screen-2xl space-y-6">
+        {/* Overview stays capped for readable KPI cards; the Workspace
+            view runs full-width so its 3 columns (calendar · invoices ·
+            appointments) reach the screen edge instead of leaving a gap. */}
+        <div
+          className={`p-4 md:p-8 space-y-6 ${
+            view === "overview" ? "max-w-screen-2xl" : ""
+          }`}
+        >
           {/* The top-of-page listing picker has been removed pending a
               new selection UI. selectedListingId is still set (auto-
               picks the first approved listing) so every downstream
@@ -944,8 +951,10 @@ export default function VendorPaymentsPage(
                 )}
                   </div>
                   {/* Upcoming appointments — relocated out of the calendar
-                      rail into the empty space beside the tab content. */}
-                  <div className="w-full 2xl:w-[380px] 2xl:shrink-0">
+                      rail into the empty space beside the tab content. Grows
+                      to fill the remaining width (capped so cards don't get
+                      absurdly wide on ultra-wide monitors). */}
+                  <div className="w-full 2xl:flex-1 2xl:min-w-[340px] 2xl:max-w-2xl">
                     <WorkspaceAppointments accountVendorIds={accountVendorIds} />
                   </div>
                 </div>
