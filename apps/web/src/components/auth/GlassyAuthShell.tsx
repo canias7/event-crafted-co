@@ -38,7 +38,7 @@ export function GlassyAuthShell({
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: "#ffffff", color: "#000" }}
+      style={{ background: "transparent", color: "#000" }}
     >
       {/* GLOWS */}
       <div
