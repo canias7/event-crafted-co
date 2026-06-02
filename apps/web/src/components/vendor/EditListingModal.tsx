@@ -489,8 +489,13 @@ export function EditListingModal({
     }
   }
 
+  // Opaque base — `vendor-canvas` is transparent by design, which left the
+  // page behind this full-screen modal bleeding through.
   return (
-    <div className="fixed inset-0 z-50 flex flex-col vendor-canvas">
+    <div
+      className="fixed inset-0 z-50 flex flex-col vendor-canvas"
+      style={{ background: "hsl(var(--background))" }}
+    >
       <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <button
           onClick={attemptClose}

@@ -399,8 +399,15 @@ export function ListingWizardModal({
     }
   }
 
+  // Solid background: `vendor-canvas` is transparent by design (lets the body
+  // wash show through on normal pages), but as a full-screen modal that left
+  // the profile page bleeding through. Keep the class for its card styling,
+  // but paint an opaque base so it reads as a real panel.
   return (
-    <div className="fixed inset-0 z-50 flex flex-col vendor-canvas">
+    <div
+      className="fixed inset-0 z-50 flex flex-col vendor-canvas"
+      style={{ background: "hsl(var(--background))" }}
+    >
       <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <button
           onClick={attemptClose}
