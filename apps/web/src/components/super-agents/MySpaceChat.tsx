@@ -1599,7 +1599,12 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => void send(p)}
+                  onClick={() => {
+                    // Drop the suggestion into the composer for the user to
+                    // edit/send, rather than firing it off immediately.
+                    setInput(p);
+                    inputRef.current?.focus();
+                  }}
                   disabled={sending}
                   className="group flex items-center text-left text-sm rounded-xl px-4 py-3 transition-all disabled:opacity-50 hover:-translate-y-0.5"
                   style={{
