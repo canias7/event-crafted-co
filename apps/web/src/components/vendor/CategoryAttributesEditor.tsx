@@ -323,9 +323,9 @@ function FieldEditor({
                 style={
                   active
                     ? {
-                        background: "rgba(255,138,76,0.18)",
-                        color: "#c4541e",
-                        border: "0.5px solid rgba(255,138,76,0.45)",
+                        background: "rgba(0,0,0,0.08)",
+                        color: "#18181b",
+                        border: "0.5px solid rgba(0,0,0,0.45)",
                       }
                     : {
                         background: "rgba(255,255,255,0.55)",
@@ -348,9 +348,9 @@ function FieldEditor({
               onClick={() => onToggleTag(opt)}
               className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
               style={{
-                background: "rgba(255,138,76,0.18)",
-                color: "#c4541e",
-                border: "0.5px solid rgba(255,138,76,0.45)",
+                background: "rgba(0,0,0,0.08)",
+                color: "#18181b",
+                border: "0.5px solid rgba(0,0,0,0.45)",
               }}
               title="Custom entry — click to remove"
             >
@@ -433,7 +433,7 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
         style={{
           background: "transparent",
           color: "rgba(26,22,18,0.55)",
-          border: "0.5px dashed rgba(255,138,76,0.4)",
+          border: "0.5px dashed rgba(0,0,0,0.4)",
         }}
         aria-label="Add a custom option"
       >

@@ -1836,7 +1836,7 @@ export default function WebsiteBuilderPage() {
           )}
           {hasContent && unresolvedPlaceholders.length > 0 && (
             <div
-              className="absolute top-3 right-3 max-w-[320px] bg-amber-500/15 border border-amber-400/40 text-amber-100 text-[11px] px-3 py-1.5 rounded-full backdrop-blur"
+              className="absolute top-3 right-3 max-w-[320px] bg-zinc-800/15 border border-zinc-300/40 text-zinc-100 text-[11px] px-3 py-1.5 rounded-full backdrop-blur"
               title="Claude wrote a placeholder the server doesn't know how to fill. Ask it to remove the placeholder or replace it with real content."
             >
               ⚠ Unresolved placeholder{unresolvedPlaceholders.length > 1 ? "s" : ""}: {unresolvedPlaceholders.join(", ")}
@@ -1989,7 +1989,7 @@ export default function WebsiteBuilderPage() {
                       className={
                         "text-[11px] border rounded-full px-2.5 py-1 transition-colors " +
                         (g.plus_one_allowed
-                          ? "text-amber-200 border-amber-400/30 bg-amber-500/10"
+                          ? "text-zinc-200 border-zinc-300/30 bg-zinc-800/10"
                           : "text-white/55 border-white/15 hover:text-white")
                       }
                       title={g.plus_one_allowed ? "Plus-one allowed (click to disallow)" : "Allow plus-one"}
@@ -2120,7 +2120,7 @@ export default function WebsiteBuilderPage() {
                       className={`border rounded-xl p-3 ${
                         m.approved
                           ? "border-white/10 bg-white/[0.02]"
-                          : "border-amber-400/30 bg-amber-500/[0.05]"
+                          : "border-zinc-300/30 bg-zinc-800/[0.05]"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -2179,7 +2179,7 @@ export default function WebsiteBuilderPage() {
                     <div
                       key={p.id}
                       className={`relative rounded-xl overflow-hidden border ${
-                        p.approved ? "border-white/10" : "border-amber-400/40 opacity-70"
+                        p.approved ? "border-white/10" : "border-zinc-300/40 opacity-70"
                       }`}
                     >
                       <img
@@ -2223,7 +2223,7 @@ export default function WebsiteBuilderPage() {
                         </button>
                       </div>
                       {!p.approved && (
-                        <div className="absolute top-1 left-1 text-[9px] uppercase tracking-wider bg-amber-500/80 text-black px-1.5 py-0.5 rounded">
+                        <div className="absolute top-1 left-1 text-[9px] uppercase tracking-wider bg-zinc-800/80 text-black px-1.5 py-0.5 rounded">
                           Hidden
                         </div>
                       )}

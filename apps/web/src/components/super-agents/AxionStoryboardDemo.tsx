@@ -150,7 +150,7 @@ export function AxionStoryboardDemo() {
           className="relative font-mono text-[11.5px] leading-[1.5] text-foreground/85 rounded-xl p-2.5 min-h-[80px] max-h-[90px] overflow-y-auto"
           style={{
             background: "rgba(255,255,255,0.35)",
-            border: "0.5px solid rgba(255,138,76,0.18)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
             backdropFilter: "blur(6px)",
           }}
         >
@@ -159,7 +159,7 @@ export function AxionStoryboardDemo() {
             <span
               className="inline-block w-[7px] h-[14px] align-text-bottom ml-0.5"
               style={{
-                background: "#c4541e",
+                background: "#18181b",
                 animation: "axionCaret 0.9s steps(2) infinite",
               }}
             />
@@ -173,9 +173,9 @@ export function AxionStoryboardDemo() {
                 width: 6,
                 height: 6,
                 background:
-                  stage === "idle" ? "rgba(0,0,0,0.3)" : "#ff8a4c",
+                  stage === "idle" ? "rgba(0,0,0,0.3)" : "#18181b",
                 boxShadow:
-                  stage === "idle" ? undefined : "0 0 6px #ff8a4c",
+                  stage === "idle" ? undefined : "0 0 6px rgba(0,0,0,0.4)",
               }}
             />
             {STATUS_COPY[stage]}
@@ -184,10 +184,10 @@ export function AxionStoryboardDemo() {
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium"
             style={{
               background: isProcessing
-                ? "rgba(255,138,76,0.2)"
-                : "rgba(255,138,76,0.95)",
-              color: isProcessing ? "#c4541e" : "#fff",
-              border: "0.5px solid rgba(255,138,76,0.35)",
+                ? "rgba(0,0,0,0.08)"
+                : "rgba(0,0,0,0.95)",
+              color: isProcessing ? "#18181b" : "#fff",
+              border: "0.5px solid rgba(0,0,0,0.35)",
               transition: "background 0.3s",
             }}
           >
@@ -234,10 +234,10 @@ export function AxionStoryboardDemo() {
                 className="rounded-full w-12 h-12 flex items-center justify-center"
                 style={{
                   background: "rgba(255,255,255,0.7)",
-                  border: "0.5px solid rgba(255,138,76,0.35)",
+                  border: "0.5px solid rgba(0,0,0,0.35)",
                 }}
               >
-                <Wand2 className="h-5 w-5 text-[#c4541e]" />
+                <Wand2 className="h-5 w-5 text-[#18181b]" />
               </div>
               <p className="text-[12px] italic">
                 Waiting for prompt to generate
@@ -251,7 +251,7 @@ export function AxionStoryboardDemo() {
               className="absolute inset-x-0 h-[14%] pointer-events-none"
               style={{
                 background:
-                  "linear-gradient(180deg, transparent 0%, rgba(255,138,76,0.55) 50%, transparent 100%)",
+                  "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 50%, transparent 100%)",
                 mixBlendMode: "screen",
                 animation: "axionScan 1.4s linear infinite",
               }}
@@ -269,10 +269,10 @@ export function AxionStoryboardDemo() {
         <button
           type="button"
           onClick={() => setRunId((r) => r + 1)}
-          className="self-end inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] font-semibold text-[#c4541e] hover:text-[#a4441a] transition-colors"
+          className="self-end inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] font-semibold text-[#18181b] hover:text-[#000000] transition-colors"
           style={{
             background: "rgba(255,255,255,0.6)",
-            border: "0.5px solid rgba(255,138,76,0.28)",
+            border: "0.5px solid rgba(0,0,0,0.28)",
             backdropFilter: "blur(6px)",
           }}
         >
@@ -315,9 +315,9 @@ function StoryboardPanel({
       className="relative rounded-2xl p-2.5"
       style={{
         background: "rgba(255,255,255,0.32)",
-        border: "0.5px solid rgba(255,138,76,0.18)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(14px)",
-        boxShadow: "0 8px 28px rgba(255,138,76,0.08)",
+        boxShadow: "0 8px 28px rgba(0,0,0,0.08)",
       }}
     >
       {/* corner brackets */}
@@ -325,27 +325,27 @@ function StoryboardPanel({
         aria-hidden
         className="absolute top-1.5 left-1.5 w-3 h-3 rounded-tl-[3px] opacity-50"
         style={{
-          borderTop: "0.5px solid #c4541e",
-          borderLeft: "0.5px solid #c4541e",
+          borderTop: "0.5px solid #18181b",
+          borderLeft: "0.5px solid #18181b",
         }}
       />
       <span
         aria-hidden
         className="absolute bottom-1.5 right-1.5 w-3 h-3 rounded-br-[3px] opacity-50"
         style={{
-          borderBottom: "0.5px solid #c4541e",
-          borderRight: "0.5px solid #c4541e",
+          borderBottom: "0.5px solid #18181b",
+          borderRight: "0.5px solid #18181b",
         }}
       />
 
       <div
         className="flex items-center justify-between pb-1.5 mb-2"
-        style={{ borderBottom: "0.5px solid rgba(255,138,76,0.14)" }}
+        style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
       >
         <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] font-medium text-foreground/75">
           <span
             className="font-mono text-[9px]"
-            style={{ color: "#c4541e", opacity: 0.85 }}
+            style={{ color: "#18181b", opacity: 0.85 }}
           >
             {num}
           </span>
@@ -355,11 +355,11 @@ function StoryboardPanel({
           className="inline-flex items-center gap-1.5 font-mono uppercase tracking-[0.1em] text-[9px] px-2 py-1 rounded"
           style={{
             background: accentBadge
-              ? "rgba(255,138,76,0.16)"
+              ? "rgba(0,0,0,0.08)"
               : "rgba(0,0,0,0.04)",
-            color: accentBadge ? "#c4541e" : "rgba(26,22,18,0.55)",
+            color: accentBadge ? "#18181b" : "rgba(0,0,0,0.55)",
             border: accentBadge
-              ? "0.5px solid rgba(255,138,76,0.32)"
+              ? "0.5px solid rgba(0,0,0,0.32)"
               : "0.5px solid rgba(0,0,0,0.06)",
           }}
         >
@@ -368,8 +368,8 @@ function StoryboardPanel({
             style={{
               width: 5,
               height: 5,
-              background: accentBadge ? "#ff8a4c" : "rgba(0,0,0,0.3)",
-              boxShadow: accentBadge ? "0 0 6px #ff8a4c" : undefined,
+              background: accentBadge ? "#18181b" : "rgba(0,0,0,0.3)",
+              boxShadow: accentBadge ? "0 0 6px rgba(0,0,0,0.4)" : undefined,
             }}
           />
           {badge}
@@ -382,7 +382,7 @@ function StoryboardPanel({
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-2xl"
           style={{
-            boxShadow: "inset 0 0 0 0.5px rgba(255,138,76,0.35)",
+            boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.35)",
           }}
         />
       )}
@@ -394,7 +394,7 @@ function PanelMeta({ name, stat }: { name: string; stat: string }) {
   return (
     <div className="flex items-center justify-between mt-2 text-[11px]">
       <span className="text-muted-foreground font-mono">{name}</span>
-      <span className="font-mono text-[#c4541e] font-medium">{stat}</span>
+      <span className="font-mono text-[#18181b] font-medium">{stat}</span>
     </div>
   );
 }
@@ -405,11 +405,11 @@ function DownArrow() {
       <span
         className="inline-flex items-center justify-center w-6 h-6 rounded-full"
         style={{
-          background: "rgba(255,138,76,0.16)",
-          border: "0.5px solid rgba(255,138,76,0.3)",
+          background: "rgba(0,0,0,0.08)",
+          border: "0.5px solid rgba(0,0,0,0.3)",
         }}
       >
-        <ArrowDown className="h-3 w-3 text-[#c4541e]" />
+        <ArrowDown className="h-3 w-3 text-[#18181b]" />
       </span>
     </div>
   );

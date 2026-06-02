@@ -59,8 +59,8 @@ const LEAD_SCORE_STYLE: Record<
     label: "Hot",
   },
   warm: {
-    dot: "bg-amber-500",
-    text: "text-amber-700",
+    dot: "bg-zinc-800",
+    text: "text-zinc-800",
     label: "Warm",
   },
   cold: {
@@ -407,7 +407,7 @@ export default function VendorInboxPage() {
             {([
               { key: "all", label: "All", count: rows.length, dot: "" },
               { key: "hot", label: "Hot", count: leadCounts.hot, dot: "bg-rose-500" },
-              { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-amber-500" },
+              { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-zinc-800" },
               { key: "cold", label: "Cold", count: leadCounts.cold, dot: "bg-sky-500" },
             ] as const).map((pill) => {
               const active = leadFilter === pill.key;
@@ -441,12 +441,12 @@ export default function VendorInboxPage() {
               title={hiluxEnabled ? "Tap to turn HILUX off" : "Tap to turn HILUX on"}
               className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] pl-1.5 pr-2 py-1 rounded-full border transition-colors disabled:opacity-60 ${
                 hiluxEnabled
-                  ? "border-orange-200/60 text-orange-900 hover:bg-orange-100/50"
+                  ? "border-zinc-300/60 text-zinc-800 hover:bg-zinc-100/50"
                   : "border-white/50 text-foreground/65 hover:bg-white/55"
               }`}
               style={{
                 background: hiluxEnabled
-                  ? "rgba(255, 237, 213, 0.45)"
+                  ? "rgba(0,0,0,0.05)"
                   : "rgba(255, 255, 255, 0.4)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
@@ -498,8 +498,8 @@ export default function VendorInboxPage() {
             <ul
               className="rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,253,250,0.6)",
-                border: "0.5px solid rgba(255,138,76,0.18)",
+                background: "rgba(255,255,255,0.6)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
@@ -592,8 +592,8 @@ function ConversationRow({
           <span
             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold"
             style={{
-              background: "rgba(255,138,76,0.18)",
-              color: "#c4541e",
+              background: "rgba(0,0,0,0.08)",
+              color: "#18181b",
             }}
             aria-hidden
           >

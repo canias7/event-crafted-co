@@ -310,7 +310,7 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
     <div>
       <p
         className="font-label mb-3"
-        style={{ color: "#c4541e", letterSpacing: "0.22em" }}
+        style={{ color: "#18181b", letterSpacing: "0.22em" }}
       >
         FAQ
       </p>
@@ -340,8 +340,8 @@ export function FaqCardList({
           open={i === 0 ? true : undefined}
           className="group rounded-lg transition-colors"
           style={{
-            background: "rgba(255,253,250,0.55)",
-            border: "0.5px solid rgba(255,138,76,0.18)",
+            background: "rgba(255,255,255,0.55)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
           }}
@@ -357,15 +357,15 @@ export function FaqCardList({
             <span
               className="shrink-0 grid place-items-center w-7 h-7 rounded-md group-open:hidden"
               style={{
-                background: "rgba(255,138,76,0.06)",
-                border: "0.5px solid rgba(255,138,76,0.22)",
+                background: "rgba(0,0,0,0.035)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
               }}
               aria-hidden
             >
               <span
                 className="block w-1.5 h-1.5 rotate-45"
                 style={{
-                  background: "rgba(255,138,76,0.4)",
+                  background: "rgba(0,0,0,0.4)",
                   borderRadius: 1,
                 }}
               />
@@ -374,8 +374,8 @@ export function FaqCardList({
             <span
               className="shrink-0 hidden group-open:grid place-items-center w-7 h-7 rounded-full"
               style={{
-                background: "#c4541e",
-                boxShadow: "0 6px 18px -8px rgba(196,84,30,0.6)",
+                background: "#18181b",
+                boxShadow: "0 6px 18px -8px rgba(0,0,0,0.6)",
               }}
               aria-hidden
             >
@@ -390,7 +390,7 @@ export function FaqCardList({
           </summary>
           <div
             className="mx-6"
-            style={{ borderTop: "0.75px dashed rgba(255,138,76,0.4)" }}
+            style={{ borderTop: "0.75px dashed rgba(0,0,0,0.4)" }}
             aria-hidden
           />
           <p className="px-6 pt-4 pb-5 italic text-[15px] text-muted-foreground leading-relaxed whitespace-pre-wrap">

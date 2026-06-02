@@ -4563,8 +4563,8 @@ function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
     paid: { label: "Paid", className: "bg-sky-100 text-sky-700", cockpit: "cockpit-pill--success" },
     cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" },
     overdue: { label: "Overdue", className: "bg-rose-100 text-rose-700", cockpit: "cockpit-pill--danger" },
-    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800", cockpit: "cockpit-pill--warning" },
-    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800", cockpit: "cockpit-pill--warning" },
+    refunded: { label: "Refunded", className: "bg-zinc-100 text-zinc-800", cockpit: "cockpit-pill--warning" },
+    partial_refund: { label: "Partial refund", className: "bg-zinc-100 text-zinc-800", cockpit: "cockpit-pill--warning" },
   };
   const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" };
   return (
@@ -7034,10 +7034,10 @@ function disputeStatusPill(status: string | null | undefined): {
     return { label: "Lost", className: "bg-rose-100 text-rose-700" };
   }
   if (status.startsWith("warning")) {
-    return { label: "Warning", className: "bg-amber-100 text-amber-700" };
+    return { label: "Warning", className: "bg-zinc-100 text-zinc-800" };
   }
   if (status === "needs_response") {
-    return { label: "Needs response", className: "bg-orange-100 text-orange-700" };
+    return { label: "Needs response", className: "bg-zinc-100 text-zinc-800" };
   }
   if (status === "under_review") {
     return { label: "Under review", className: "bg-sky-100 text-sky-700" };
@@ -7901,8 +7901,8 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
     cancelled: { label: "Canceled", className: "border-slate-300 text-slate-500" },
     expired: { label: "Expired", className: "border-slate-300 text-slate-500" },
     scheduled: { label: "Scheduled", className: "border-violet-300 text-violet-700" },
-    refunded: { label: "Refunded", className: "border-amber-300 text-amber-700" },
-    partial_refund: { label: "Partial refund", className: "border-amber-300 text-amber-700" },
+    refunded: { label: "Refunded", className: "border-zinc-300 text-zinc-800" },
+    partial_refund: { label: "Partial refund", className: "border-zinc-300 text-zinc-800" },
   };
   const m = map[status] ?? { label: status, className: "border-slate-300 text-slate-500" };
   return (

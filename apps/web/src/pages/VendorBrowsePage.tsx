@@ -201,7 +201,7 @@ export default function VendorBrowsePage() {
         className="sticky top-16 z-30 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.45)",
-          borderBottom: "0.5px solid rgba(255,138,76,0.18)",
+          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <div className="container mx-auto px-6 md:px-8 py-4">

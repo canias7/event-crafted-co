@@ -62,8 +62,8 @@ export default function CheckEmailPage() {
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "rgba(255,138,76,0.15)",
-            color: "#c4541e",
+            background: "rgba(0,0,0,0.08)",
+            color: "#18181b",
           }}
         >
           <Mail className="w-6 h-6" />

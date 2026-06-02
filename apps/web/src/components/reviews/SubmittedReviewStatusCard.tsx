@@ -146,8 +146,8 @@ function StatusTile({
     <div
       className="rounded-2xl px-4 py-3"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.18)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(8px)",
       }}
     >
@@ -157,8 +157,8 @@ function StatusTile({
           style={{
             background: waiting
               ? "rgba(0,0,0,0.04)"
-              : "rgba(255,138,76,0.16)",
-            color: waiting ? "#666" : "#c4541e",
+              : "rgba(0,0,0,0.08)",
+            color: waiting ? "#666" : "#18181b",
           }}
           aria-hidden
         >

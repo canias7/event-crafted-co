@@ -213,13 +213,13 @@ export function HiluxChatDemo() {
           className="flex items-center gap-2 pl-4 pr-1 py-1 rounded-full transition-colors"
           style={{
             background: "rgba(255,255,255,0.32)",
-            border: "0.5px solid rgba(255,138,76,0.22)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
             backdropFilter: "blur(8px)",
           }}
         >
           <button
             type="button"
-            className="w-[30px] h-[30px] flex items-center justify-center text-[rgba(26,22,18,0.4)] hover:text-[#c4541e]"
+            className="w-[30px] h-[30px] flex items-center justify-center text-[rgba(0,0,0,0.4)] hover:text-[#18181b]"
             aria-label="Attach"
           >
             <Paperclip className="w-[15px] h-[15px]" />
@@ -236,12 +236,12 @@ export function HiluxChatDemo() {
               }
             }}
             placeholder="Type a message…"
-            className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#1a1612] py-2"
+            className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#18181b] py-2"
             style={{ fontFamily: "inherit" }}
           />
           <button
             type="button"
-            className="w-[30px] h-[30px] flex items-center justify-center text-[rgba(26,22,18,0.4)] hover:text-[#c4541e]"
+            className="w-[30px] h-[30px] flex items-center justify-center text-[rgba(0,0,0,0.4)] hover:text-[#18181b]"
             aria-label="Emoji"
           >
             <Smile className="w-[15px] h-[15px]" />
@@ -251,7 +251,7 @@ export function HiluxChatDemo() {
             onClick={send}
             className="w-[34px] h-[34px] rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform"
             style={{
-              background: "linear-gradient(135deg, #ff8a4c, #c4541e)",
+              background: "linear-gradient(135deg, #3f3f46, #18181b)",
               border: "none",
             }}
             aria-label="Send"
@@ -281,7 +281,7 @@ function DayDivider({ label }: { label: string }) {
       className="flex items-center gap-4 justify-center text-[10px] uppercase font-medium"
       style={{
         letterSpacing: "2px",
-        color: "rgba(26,22,18,0.35)",
+        color: "rgba(0,0,0,0.35)",
         margin: "4px 0 4px",
       }}
     >
@@ -318,14 +318,14 @@ function FloatingMsg({ msg }: { msg: ChatMsg }) {
         style={
           isAgent
             ? {
-                background: "linear-gradient(135deg, #ff8a4c 0%, #c4541e 100%)",
+                background: "linear-gradient(135deg, #3f3f46 0%, #18181b 100%)",
                 color: "#fff",
                 fontSize: 14,
-                boxShadow: "0 4px 16px rgba(255,138,76,0.35)",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
               }
             : {
                 background: "rgba(0,0,0,0.06)",
-                color: "#1a1612",
+                color: "#18181b",
                 fontSize: 9.5,
                 fontWeight: 500,
                 letterSpacing: "0.3px",
@@ -341,7 +341,7 @@ function FloatingMsg({ msg }: { msg: ChatMsg }) {
         <div
           className="text-[11px] font-medium inline-flex items-center gap-1.5 px-1"
           style={{
-            color: isAgent ? "#c4541e" : "rgba(26,22,18,0.5)",
+            color: isAgent ? "#18181b" : "rgba(0,0,0,0.5)",
           }}
         >
           {isAgent ? "North & Pine Studio" : "Host 123"}
@@ -351,9 +351,9 @@ function FloatingMsg({ msg }: { msg: ChatMsg }) {
               style={{
                 fontSize: "8.5px",
                 letterSpacing: "0.8px",
-                background: "rgba(255,138,76,0.1)",
-                color: "#c4541e",
-                border: "0.5px solid rgba(255,138,76,0.3)",
+                background: "rgba(0,0,0,0.06)",
+                color: "#18181b",
+                border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >
               AI · HILUX
@@ -375,7 +375,7 @@ function FloatingMsg({ msg }: { msg: ChatMsg }) {
               fontSize: 15,
               lineHeight: 1.55,
               maxWidth: 420,
-              color: isAgent ? "#c4541e" : "#1a1612",
+              color: isAgent ? "#18181b" : "#18181b",
               textAlign: isAgent ? "right" : "left",
               margin: 0,
             }}
@@ -387,7 +387,7 @@ function FloatingMsg({ msg }: { msg: ChatMsg }) {
           <div
             className="text-[10.5px] px-1"
             style={{
-              color: "rgba(26,22,18,0.35)",
+              color: "rgba(0,0,0,0.35)",
               letterSpacing: "0.5px",
             }}
           >
@@ -406,7 +406,7 @@ function Dot({ agent, delay }: { agent: boolean; delay: string }) {
       style={{
         width: 8,
         height: 8,
-        background: agent ? "#c4541e" : "rgba(26,22,18,0.4)",
+        background: agent ? "#18181b" : "rgba(0,0,0,0.4)",
         animation: "hiluxTypingBounce 1.2s ease-in-out infinite",
         animationDelay: delay,
       }}

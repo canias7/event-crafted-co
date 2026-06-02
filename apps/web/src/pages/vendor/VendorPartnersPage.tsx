@@ -857,8 +857,8 @@ export default function VendorPartnersPage() {
               <ul
                 className="rounded-2xl overflow-hidden"
                 style={{
-                  background: "rgba(255,253,250,0.6)",
-                  border: "0.5px solid rgba(255,138,76,0.18)",
+                  background: "rgba(255,255,255,0.6)",
+                  border: "0.5px solid rgba(0,0,0,0.08)",
                   backdropFilter: "blur(10px)",
                   WebkitBackdropFilter: "blur(10px)",
                 }}
@@ -922,8 +922,8 @@ export default function VendorPartnersPage() {
                           <span
                             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold self-center"
                             style={{
-                              background: "rgba(255,138,76,0.18)",
-                              color: "#c4541e",
+                              background: "rgba(0,0,0,0.08)",
+                              color: "#18181b",
                             }}
                             aria-hidden
                           >
@@ -1159,8 +1159,8 @@ function PartnerChatPane(props: {
       <div
         className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,253,250,0.85)",
-          borderBottom: "0.5px solid rgba(255,138,76,0.18)",
+          background: "rgba(255,255,255,0.85)",
+          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
@@ -1184,8 +1184,8 @@ function PartnerChatPane(props: {
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
                 style={{
-                  background: "rgba(255,138,76,0.18)",
-                  color: "#c4541e",
+                  background: "rgba(0,0,0,0.08)",
+                  color: "#18181b",
                 }}
                 aria-hidden
               >
@@ -1306,8 +1306,8 @@ function PartnerChatPane(props: {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(255,138,76,0.18)",
-                            color: "#c4541e",
+                            background: "rgba(0,0,0,0.08)",
+                            color: "#18181b",
                           }}
                           aria-hidden
                         >
@@ -1468,8 +1468,8 @@ function PartnerChatPane(props: {
       <div
         className="sticky bottom-24 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,253,250,0.92)",
-          borderTop: "0.5px solid rgba(255,138,76,0.18)",
+          background: "rgba(255,255,255,0.92)",
+          borderTop: "0.5px solid rgba(0,0,0,0.08)",
         }}
         onDragOver={(e) => {
           if (Array.from(e.dataTransfer.types).includes("Files")) {
@@ -1741,8 +1741,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
     <aside
       className="hidden lg:flex flex-col w-80 shrink-0 border-l p-4 gap-3 overflow-hidden"
       style={{
-        borderColor: "rgba(255,138,76,0.18)",
-        background: "rgba(255,253,250,0.4)",
+        borderColor: "rgba(0,0,0,0.08)",
+        background: "rgba(255,255,255,0.4)",
       }}
     >
       <div>
@@ -1805,10 +1805,10 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                     type="button"
                     disabled={isStarting}
                     onClick={() => void startThread(r)}
-                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c4541e]/40"
+                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40"
                     style={{
-                      background: "rgba(255,253,250,0.7)",
-                      border: "0.5px solid rgba(255,138,76,0.18)",
+                      background: "rgba(255,255,255,0.6)",
+                      border: "0.5px solid rgba(0,0,0,0.08)",
                     }}
                   >
                     {r.logo_url ? (
@@ -1821,8 +1821,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                       <span
                         className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
                         style={{
-                          background: "rgba(255,138,76,0.18)",
-                          color: "#c4541e",
+                          background: "rgba(0,0,0,0.08)",
+                          color: "#18181b",
                         }}
                       >
                         {initial}

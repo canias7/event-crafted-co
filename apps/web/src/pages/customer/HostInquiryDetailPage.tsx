@@ -796,8 +796,8 @@ export default function HostInquiryDetailPage() {
       <div
         className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,253,250,0.85)",
-          borderBottom: "0.5px solid rgba(255,138,76,0.18)",
+          background: "rgba(255,255,255,0.85)",
+          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
@@ -819,7 +819,7 @@ export default function HostInquiryDetailPage() {
             ) : (
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+                style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
                 aria-hidden
               >
                 {vendorInitial}
@@ -827,7 +827,7 @@ export default function HostInquiryDetailPage() {
             )}
             <span
               aria-hidden
-              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#fffdfa]"
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
             />
           </div>
           <div className="min-w-0 flex-1 leading-tight">
@@ -940,8 +940,8 @@ export default function HostInquiryDetailPage() {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(255,138,76,0.18)",
-                            color: "#c4541e",
+                            background: "rgba(0,0,0,0.08)",
+                            color: "#18181b",
                           }}
                           aria-hidden
                         >
@@ -1185,8 +1185,8 @@ export default function HostInquiryDetailPage() {
         inquiry.status === "cancelled") ? (
         <div className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
-            background: "rgba(255,253,250,0.92)",
-            borderTop: "0.5px solid rgba(255,138,76,0.18)",
+            background: "rgba(255,255,255,0.92)",
+            borderTop: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
           {inquiry.status === "lost"
@@ -1203,8 +1203,8 @@ export default function HostInquiryDetailPage() {
         // actual viewport bottom.
         className="sticky bottom-20 lg:bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,253,250,0.92)",
-          borderTop: "0.5px solid rgba(255,138,76,0.18)",
+          background: "rgba(255,255,255,0.92)",
+          borderTop: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <div className="max-w-3xl mx-auto space-y-2">
@@ -1402,7 +1402,7 @@ function InquirySummarySheet({
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center">
-      <div className="relative w-full sm:max-w-lg bg-[#fffdfa] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}

@@ -69,8 +69,8 @@ export default function SettingsPage() {
             <div
               className="rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,253,250,0.6)",
-                border: "0.5px solid rgba(255,138,76,0.22)",
+                background: "rgba(255,255,255,0.6)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
@@ -303,8 +303,8 @@ function SettingRow({
         style={{
           background: destructive
             ? "rgba(220,38,38,0.10)"
-            : "rgba(255,138,76,0.14)",
-          color: destructive ? "#a3160d" : "#c4541e",
+            : "rgba(0,0,0,0.14)",
+          color: destructive ? "#a3160d" : "#18181b",
         }}
         aria-hidden
       >

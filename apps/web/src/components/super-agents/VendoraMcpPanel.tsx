@@ -398,8 +398,8 @@ export function VendoraMcpPanel() {
           </div>
 
           {justMinted ? (
-            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 mb-3">
-              <p className="text-xs font-medium text-amber-900 mb-2">
+            <div className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 mb-3">
+              <p className="text-xs font-medium text-zinc-800 mb-2">
                 Copy this token now — you won't see it again.
               </p>
               <div className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export function VendoraMcpPanel() {
                 <Button
                   size="sm"
                   onClick={() => copy("token", justMinted.token)}
-                  className="shrink-0 bg-amber-700 hover:bg-amber-800 text-white"
+                  className="shrink-0 bg-zinc-800 hover:bg-zinc-800 text-white"
                 >
                   {copiedKey === "token" ? (
                     <Check className="w-3.5 h-3.5" />
@@ -439,7 +439,7 @@ export function VendoraMcpPanel() {
                   setJustMinted(null);
                   setShowSecret(false);
                 }}
-                className="mt-2 text-amber-900/70 hover:text-amber-900"
+                className="mt-2 text-zinc-800/70 hover:text-zinc-800"
               >
                 I've saved it — dismiss
               </Button>

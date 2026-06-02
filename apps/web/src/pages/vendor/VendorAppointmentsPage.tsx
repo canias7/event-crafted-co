@@ -61,7 +61,7 @@ type DayState = "available" | "booked" | "pending" | "blocked";
 // visually distinguishable. Picked for contrast on the warm canvas;
 // cycles if a vendor somehow has more listings than colors.
 const LISTING_PALETTE = [
-  "#c4541e", // brand orange
+  "#18181b", // ink
   "#2563eb", // blue
   "#0a7c4a", // green
   "#9333ea", // purple
@@ -1022,7 +1022,7 @@ export default function VendorAppointmentsPage({
               ) : (
                 <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
                   <LegendDot swatchClass="bg-foreground" label="Booked" />
-                  <LegendDot swatchClass="bg-amber-200" label="Pending" />
+                  <LegendDot swatchClass="bg-zinc-200" label="Pending" />
                   <LegendDot swatchClass="hatch" label="Blocked" />
                 </div>
               )}
@@ -1229,7 +1229,7 @@ export default function VendorAppointmentsPage({
             height="6"
             patternTransform="rotate(45)"
           >
-            <line x1="0" y1="0" x2="0" y2="6" stroke="#cbbfac" strokeWidth="2" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#d4d4d8" strokeWidth="2" />
           </pattern>
           <pattern
             id="hatch-cell"
@@ -1238,7 +1238,7 @@ export default function VendorAppointmentsPage({
             height="6"
             patternTransform="rotate(45)"
           >
-            <line x1="0" y1="0" x2="0" y2="6" stroke="#cbbfac" strokeWidth="1.6" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#d4d4d8" strokeWidth="1.6" />
           </pattern>
         </defs>
       </svg>
@@ -1269,15 +1269,15 @@ function NoListingsEmptyState() {
     <div
       className="rounded-2xl p-10 md:p-14 text-center"
       style={{
-        background: "rgba(255,253,250,0.6)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
     >
       <div
         className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
       >
         <ImagePlus className="w-6 h-6" />
       </div>
@@ -1305,15 +1305,15 @@ function PendingApprovalEmptyState() {
     <div
       className="rounded-2xl p-10 md:p-14 text-center"
       style={{
-        background: "rgba(255,253,250,0.6)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
     >
       <div
         className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
       >
         <ImagePlus className="w-6 h-6" />
       </div>
@@ -1535,7 +1535,7 @@ function DayCell({
     state === "booked"
       ? "bg-foreground text-background"
       : state === "pending"
-        ? "bg-amber-200 text-amber-900"
+        ? "bg-zinc-200 text-zinc-800"
         : state === "blocked"
           ? "text-foreground"
           : "text-foreground";
@@ -1550,7 +1550,7 @@ function DayCell({
         {state === "blocked" ? (
           <span
             className="absolute inset-0 rounded-xl"
-            style={{ background: "#efe6d6" }}
+            style={{ background: "#f4f4f5" }}
           />
         ) : null}
         {state === "blocked" ? (
@@ -1580,7 +1580,7 @@ function LegendDot({
         <span className="w-3 h-3 rounded-sm overflow-hidden inline-block relative">
           <span
             className="absolute inset-0"
-            style={{ background: "#efe6d6" }}
+            style={{ background: "#f4f4f5" }}
           />
           <svg className="absolute inset-0 w-full h-full" aria-hidden>
             <rect width="100%" height="100%" fill="url(#hatch-legend)" />
@@ -1686,7 +1686,7 @@ function BookingRow({
     item.accent === "booked"
       ? "bg-emerald-500"
       : item.accent === "pending"
-        ? "bg-amber-500"
+        ? "bg-zinc-400"
         : "bg-muted-foreground/40";
   const wrap = (children: React.ReactNode) =>
     item.kind === "inquiry" && item.inquiryId ? (

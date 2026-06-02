@@ -34,8 +34,8 @@ export function VendorComingSoonShell({
           <div
             className="rounded-2xl p-10 md:p-14 text-center"
             style={{
-              background: "rgba(255,253,250,0.6)",
-              border: "0.5px solid rgba(255,138,76,0.22)",
+              background: "rgba(255,255,255,0.6)",
+              border: "0.5px solid rgba(0,0,0,0.08)",
               backdropFilter: "blur(10px)",
               WebkitBackdropFilter: "blur(10px)",
             }}
@@ -43,8 +43,8 @@ export function VendorComingSoonShell({
             <div
               className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
               style={{
-                background: "rgba(255,138,76,0.18)",
-                color: "#c4541e",
+                background: "rgba(0,0,0,0.08)",
+                color: "#18181b",
               }}
             >
               <Icon className="w-6 h-6" />

@@ -111,8 +111,8 @@ export function BookingConfirmationCard({
     <div
       className="my-3 rounded-2xl px-4 py-4"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.18)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(8px)",
       }}
     >
@@ -122,9 +122,9 @@ export function BookingConfirmationCard({
           style={{
             background:
               state === "confirmed"
-                ? "rgba(255,138,76,0.16)"
+                ? "rgba(0,0,0,0.08)"
                 : "rgba(0,0,0,0.04)",
-            color: state === "confirmed" ? "#c4541e" : "#666",
+            color: state === "confirmed" ? "#18181b" : "#666",
           }}
           aria-hidden
         >

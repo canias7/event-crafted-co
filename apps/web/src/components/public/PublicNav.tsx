@@ -62,8 +62,8 @@ export function PublicNav() {
     <nav
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
       style={{
-        background: "rgba(255,253,250,0.5)",
-        borderBottom: "0.5px solid rgba(255,138,76,0.12)",
+        background: "rgba(255,255,255,0.6)",
+        borderBottom: "0.5px solid rgba(0,0,0,0.12)",
       }}
       aria-label="Public"
     >

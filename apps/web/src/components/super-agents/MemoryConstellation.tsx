@@ -32,10 +32,10 @@ import { useAuth } from "@/hooks/useAuth";
 const CATEGORIES = [
   { key: "pricing", label: "Pricing", icon: BadgeDollarSign, color: "#ffc14d" },
   { key: "services", label: "Services", icon: Boxes, color: "#4dd2ff" },
-  { key: "brand_voice", label: "Brand voice", icon: MessageSquareQuote, color: "#ff8a4c" },
+  { key: "brand_voice", label: "Brand voice", icon: MessageSquareQuote, color: "#a1a1aa" },
   { key: "faq", label: "FAQ", icon: HelpCircle, color: "#b894ff" },
   { key: "policies", label: "Policies", icon: ScrollText, color: "#ff6b9d" },
-  { key: "other", label: "Other", icon: Sparkles, color: "#d8c4b0" },
+  { key: "other", label: "Other", icon: Sparkles, color: "#d4d4d8" },
 ] as const;
 
 type Category = (typeof CATEGORIES)[number]["key"];
@@ -322,7 +322,7 @@ export function MemoryConstellation({
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] h-[560px] rounded-full pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle, rgba(255,138,76,0.12) 0%, transparent 65%)",
+            "radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 65%)",
         }}
       />
 
@@ -515,7 +515,7 @@ export function MemoryConstellation({
                         border: `1px solid rgba(255,255,255,${isDragging ? "0.25" : "0.10"})`,
                       }}
                     >
-                      <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-[#ff8a4c] transition-colors" />
+                      <Plus className="w-3.5 h-3.5 text-white/25 group-hover:text-white transition-colors" />
                     </span>
                   </button>
                 </motion.div>
@@ -591,7 +591,7 @@ export function MemoryConstellation({
                 onClick={handleAdd}
                 disabled={saving || !addText.trim()}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3.5 py-1.5 disabled:opacity-50"
-                style={{ background: "#ff8a4c", color: "#0a0a0b" }}
+                style={{ background: "#ffffff", color: "#0a0a0b" }}
               >
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Remember this
@@ -612,7 +612,7 @@ export function MemoryConstellation({
             <span className="text-sm text-white/50">Add a memory</span>
             <span
               className="w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0"
-              style={{ background: "#ff8a4c", color: "#0a0a0b" }}
+              style={{ background: "#ffffff", color: "#0a0a0b" }}
             >
               <ArrowUp className="w-4 h-4" />
             </span>
@@ -710,7 +710,7 @@ export function MemoryConstellation({
                     onClick={handleSaveEdit}
                     disabled={editSaving}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3.5 py-1.5 disabled:opacity-50"
-                    style={{ background: "#ff8a4c", color: "#0a0a0b" }}
+                    style={{ background: "#ffffff", color: "#0a0a0b" }}
                   >
                     {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                     Save

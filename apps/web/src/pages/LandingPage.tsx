@@ -29,7 +29,7 @@ export default function LandingPage() {
         // a peach tint that the amber-glow ellipse blends into, so
         // hero and footer sit on one canvas with no visible seam.
         background:
-          "linear-gradient(180deg, #fafafa 0%, #fcf6ec 35%, #fbf0df 60%, #faecd6 80%, #f8e7cd 100%)",
+          "linear-gradient(180deg, #ffffff 0%, #fafafa 35%, #f6f6f7 60%, #f2f2f3 80%, #efeff0 100%)",
       }}
     >
       {/* NAV */}
@@ -93,7 +93,7 @@ export default function LandingPage() {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 70% at 50% 35%, rgba(255,138,76,0.22) 0%, rgba(255,138,76,0.08) 45%, rgba(255,138,76,0) 75%)",
+            "radial-gradient(ellipse 80% 70% at 50% 35%, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.035) 45%, rgba(0,0,0,0) 75%)",
         }}
       />
 

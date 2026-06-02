@@ -26,8 +26,8 @@ const TIER_LABEL: Record<VendorTier, string> = {
 // amber for Starter; soft slate for Free.
 const TIER_CHIP: Record<VendorTier, { bg: string; ring: string; text: string; shadow: string }> = {
   free:    { bg: "rgba(100,116,139,0.12)", ring: "rgba(100,116,139,0.35)", text: "rgb(71,85,105)",    shadow: "0 0 8px rgba(100,116,139,0.25)" },
-  starter: { bg: "rgba(245,158,11,0.15)",  ring: "rgba(245,158,11,0.45)",  text: "rgb(180,83,9)",     shadow: "0 0 8px rgba(245,158,11,0.45)" },
-  pro:     { bg: "rgba(255,138,76,0.18)",  ring: "rgba(255,138,76,0.5)",   text: "rgb(196,84,30)",    shadow: "0 0 10px rgba(255,138,76,0.55)" },
+  starter: { bg: "rgba(0,0,0,0.06)",       ring: "rgba(0,0,0,0.25)",       text: "rgb(63,63,70)",     shadow: "0 0 8px rgba(0,0,0,0.18)" },
+  pro:     { bg: "rgba(0,0,0,0.08)",       ring: "rgba(0,0,0,0.5)",        text: "rgb(24,24,27)",     shadow: "0 0 10px rgba(0,0,0,0.3)" },
   studio:  { bg: "rgba(220,38,38,0.15)",   ring: "rgba(220,38,38,0.5)",    text: "rgb(185,28,28)",    shadow: "0 0 12px rgba(220,38,38,0.55)" },
 };
 const TIER_NAME: Record<VendorTier, string> = {
@@ -246,12 +246,12 @@ export function DashboardSidebar({
         // through. Hairline right border tinted amber so it blends
         // into the warm gradient instead of cutting a hard grey line.
         background: "transparent",
-        borderRight: "0.5px solid rgba(255,138,76,0.18)",
+        borderRight: "0.5px solid rgba(0,0,0,0.08)",
       }}
       aria-label={`${title} navigation`}
     >
       {collapsed ? (
-        <div className="px-2 py-4 border-b border-[rgba(255,138,76,0.14)] flex flex-col items-center gap-3">
+        <div className="px-2 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col items-center gap-3">
           <Link
             to={backPath}
             title="Vendora — Events, simplified"
@@ -269,7 +269,7 @@ export function DashboardSidebar({
           </button>
         </div>
       ) : (
-        <div className="p-6 border-b border-[rgba(255,138,76,0.14)] flex items-start justify-between gap-3">
+        <div className="p-6 border-b border-[rgba(0,0,0,0.08)] flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Link to={backPath} aria-label="Vendora — Events, simplified">
               <VendoraLogo size="md" color="currentColor" />

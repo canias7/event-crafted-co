@@ -113,11 +113,11 @@ export default function VendorLocationsPage() {
                   type="button"
                   className="w-full flex items-center justify-between gap-3 rounded-full px-5 py-3 text-left transition-colors"
                   style={{
-                    background: "rgba(255,253,250,0.7)",
-                    border: "0.5px solid rgba(255,138,76,0.22)",
+                    background: "rgba(255,255,255,0.6)",
+                    border: "0.5px solid rgba(0,0,0,0.08)",
                     backdropFilter: "blur(10px)",
                     WebkitBackdropFilter: "blur(10px)",
-                    boxShadow: "0 8px 24px -16px rgba(196,84,30,0.18)",
+                    boxShadow: "0 8px 24px -16px rgba(0,0,0,0.18)",
                   }}
                 >
                   <span className="flex items-center gap-2.5 min-w-0">
@@ -138,8 +138,8 @@ export default function VendorLocationsPage() {
                 className="w-[--radix-popover-trigger-width] p-0 overflow-hidden"
                 align="start"
                 style={{
-                  background: "rgba(255,253,250,0.95)",
-                  border: "0.5px solid rgba(255,138,76,0.22)",
+                  background: "rgba(255,255,255,0.95)",
+                  border: "0.5px solid rgba(0,0,0,0.08)",
                   backdropFilter: "blur(14px)",
                   WebkitBackdropFilter: "blur(14px)",
                 }}

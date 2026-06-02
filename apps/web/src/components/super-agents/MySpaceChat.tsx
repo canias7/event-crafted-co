@@ -1268,8 +1268,8 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
         docked ? "h-full rounded-xl" : "rounded-2xl h-[calc(100vh-180px)] min-h-[480px]"
       }`}
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
@@ -1277,18 +1277,18 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
       {/* Thread rail */}
       <aside
         className="hidden md:flex w-64 shrink-0 flex-col border-r"
-        style={{ borderColor: "rgba(255,138,76,0.18)" }}
+        style={{ borderColor: "rgba(0,0,0,0.08)" }}
       >
         <div
           className="px-3 py-3 border-b"
-          style={{ borderColor: "rgba(255,138,76,0.18)" }}
+          style={{ borderColor: "rgba(0,0,0,0.08)" }}
         >
           <GlassNewChatButton onClick={startNewChat} />
           {/* Search across threads (title + message content). */}
           <div className="relative mt-3">
             <Search
               className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
-              style={{ color: "#1a1208" }}
+              style={{ color: "#18181b" }}
               aria-hidden
             />
             <input
@@ -1296,7 +1296,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               value={threadSearch}
               onChange={(e) => setThreadSearch(e.target.value)}
               placeholder="Search chats…"
-              className="w-full pl-8 pr-2 py-1.5 text-xs font-bold text-[#1a1208] bg-secondary/30 rounded-md outline-none focus:bg-secondary/50 transition-colors placeholder:text-[#1a1208] placeholder:font-bold"
+              className="w-full pl-8 pr-2 py-1.5 text-xs font-bold text-[#18181b] bg-secondary/30 rounded-md outline-none focus:bg-secondary/50 transition-colors placeholder:text-[#18181b] placeholder:font-bold"
             />
           </div>
           {/* Memory — opens the full-screen constellation. The AI loads
@@ -1304,7 +1304,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
           <button
             type="button"
             onClick={() => setMemoryOpen(true)}
-            className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-bold rounded-md px-2 py-1.5 text-[#1a1208] hover:bg-secondary/40 transition-colors"
+            className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-bold rounded-md px-2 py-1.5 text-[#18181b] hover:bg-secondary/40 transition-colors"
           >
             <BookOpen className="w-3.5 h-3.5" />
             Memory
@@ -1317,7 +1317,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               Loading…
             </div>
           ) : threads.length === 0 ? (
-            <p className="text-xs font-bold text-[#1a1208] p-3 leading-relaxed">
+            <p className="text-xs font-bold text-[#18181b] p-3 leading-relaxed">
               No chats yet. Send your first message to start one.
             </p>
           ) : (
@@ -1363,7 +1363,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
             desktop aside is hidden on small screens. */}
         <div
           className="md:hidden flex items-center justify-between px-3 py-2 border-b"
-          style={{ borderColor: "rgba(255,138,76,0.18)" }}
+          style={{ borderColor: "rgba(0,0,0,0.08)" }}
         >
           <Sheet
             open={mobileNavOpen}
@@ -1383,10 +1383,10 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               side="left"
               className="w-72 max-w-[80vw] p-0 flex flex-col"
             >
-              <SheetHeader className="px-3 py-3 border-b" style={{ borderColor: "rgba(255,138,76,0.18)" }}>
+              <SheetHeader className="px-3 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
                 <SheetTitle className="font-editorial text-xl">My Space</SheetTitle>
               </SheetHeader>
-              <div className="px-3 py-3 border-b" style={{ borderColor: "rgba(255,138,76,0.18)" }}>
+              <div className="px-3 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
                 <GlassNewChatButton
                   onClick={() => {
                     setMobileNavOpen(false);
@@ -1477,7 +1477,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
             onClick={startNewChat}
             aria-label="New chat"
             className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5"
-            style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+            style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
           >
             <MessageSquarePlus className="w-3.5 h-3.5" />
             New
@@ -1499,21 +1499,21 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
             />
             <h2
               className="font-sans font-extrabold tracking-tight text-4xl md:text-5xl leading-[1.04] mb-3 min-h-[1.1em]"
-              style={{ color: "#1a1208" }}
+              style={{ color: "#18181b" }}
             >
               {/* "Welcome to " stays black; "My Space" reveals in amber. */}
               {headline.shown.slice(0, 11)}
-              <span style={{ color: "#ff8a4c" }}>{headline.shown.slice(11)}</span>
+              <span style={{ color: "#18181b" }}>{headline.shown.slice(11)}</span>
               {!headline.done ? (
                 <span
                   className="inline-block w-[3px] h-[0.9em] align-middle ml-0.5 animate-pulse"
-                  style={{ background: "#ff8a4c" }}
+                  style={{ background: "#18181b" }}
                 />
               ) : null}
             </h2>
             <p
               className="text-sm font-bold max-w-md mb-6 leading-relaxed"
-              style={{ color: "#1a1208" }}
+              style={{ color: "#18181b" }}
             >
               Your AI knows your packages, calendar, and active inquiries.
               Ask about leads, draft replies, or describe an image to generate.
@@ -1600,7 +1600,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               className="mx-auto w-full max-w-3xl rounded-[20px] px-3 md:px-4 py-2.5"
               style={{
                 background: "rgba(255,255,255,0.55)",
-                border: "1px solid rgba(255,138,76,0.22)",
+                border: "1px solid rgba(0,0,0,0.08)",
                 backdropFilter: "blur(18px) saturate(140%)",
                 WebkitBackdropFilter: "blur(18px) saturate(140%)",
                 boxShadow: "0 10px 36px -16px rgba(20,15,10,0.18)",
@@ -1925,15 +1925,15 @@ function ChartBlock({ raw }: { raw: string }) {
   const type = String(spec?.type ?? "bar");
   const title = spec?.title ? String(spec.title) : null;
   const palette = [
-    "#c4541e",
-    "#e8915e",
-    "#f4c187",
-    "#9a3d18",
-    "#d97a4e",
-    "#7a2a0f",
+    "#18181b",
+    "#52525b",
+    "#a1a1aa",
+    "#3f3f46",
+    "#71717a",
+    "#27272a",
   ];
   return (
-    <div className="my-2 rounded-xl border bg-white/60 p-3" style={{ borderColor: "rgba(255,138,76,0.18)" }}>
+    <div className="my-2 rounded-xl border bg-white/60 p-3" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
       {title
         ? (
           <p className="text-xs font-medium text-foreground mb-2 text-center">

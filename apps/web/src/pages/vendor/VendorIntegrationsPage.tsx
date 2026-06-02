@@ -71,10 +71,10 @@ const CONNECTORS: Connector[] = [
     description:
       "Accept card payments and payouts straight to your bank. Vendora's white-label processor handles KYC and money movement.",
     brand: (
-      <BrandMark bg="rgba(255,138,76,0.18)">
+      <BrandMark bg="rgba(0,0,0,0.08)">
         <span
           className="font-bold text-lg tracking-tight"
-          style={{ color: "#c4541e" }}
+          style={{ color: "#18181b" }}
         >
           V
         </span>
@@ -263,8 +263,8 @@ export default function VendorIntegrationsPage() {
                       key={c.id}
                       className="rounded-2xl overflow-hidden"
                       style={{
-                        background: "rgba(255,253,250,0.7)",
-                        border: "0.5px solid rgba(255,138,76,0.22)",
+                        background: "rgba(255,255,255,0.6)",
+                        border: "0.5px solid rgba(0,0,0,0.08)",
                       }}
                     >
                       <div className="flex items-center gap-4 p-4 md:p-5">
@@ -278,7 +278,7 @@ export default function VendorIntegrationsPage() {
                             {c.kind === "vendorapay" &&
                             vendorapayConnected &&
                             !chargesEnabled ? (
-                              <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                              <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                 Pending KYC
                               </span>
                             ) : null}

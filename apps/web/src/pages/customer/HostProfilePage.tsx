@@ -374,7 +374,7 @@ function HeroCard({
         <StatCol
           label="Ratings"
           value={String(stats.ratings)}
-          trailing={<Star className="h-4 w-4 text-amber-500" />}
+          trailing={<Star className="h-4 w-4 text-zinc-600" />}
         />
       </div>
     </div>

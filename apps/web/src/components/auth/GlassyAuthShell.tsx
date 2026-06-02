@@ -38,7 +38,7 @@ export function GlassyAuthShell({
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: "#fafafa", color: "#000" }}
+      style={{ background: "#ffffff", color: "#000" }}
     >
       {/* GLOWS */}
       <div
@@ -51,7 +51,7 @@ export function GlassyAuthShell({
           width: "1100px",
           height: "850px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,138,76,0.32) 0%, rgba(255,138,76,0.11) 32%, rgba(255,138,76,0.03) 58%, transparent 78%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.025) 32%, rgba(0,0,0,0.012) 58%, transparent 78%)",
         }}
       />
       <div
@@ -63,7 +63,7 @@ export function GlassyAuthShell({
           width: "680px",
           height: "580px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,138,76,0.16) 0%, rgba(255,138,76,0.04) 42%, transparent 72%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.025) 42%, transparent 72%)",
         }}
       />
       <div
@@ -75,7 +75,7 @@ export function GlassyAuthShell({
           width: "480px",
           height: "480px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,178,122,0.10) 0%, transparent 65%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.035) 0%, transparent 65%)",
         }}
       />
 
@@ -103,7 +103,7 @@ export function GlassyAuthShell({
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(255,138,76,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255,138,76,0.28) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -120,7 +120,7 @@ export function GlassyAuthShell({
           left: "50%",
           width: "640px",
           height: "640px",
-          border: "0.5px dashed rgba(255,138,76,0.18)",
+          border: "0.5px dashed rgba(0,0,0,0.08)",
           borderRadius: "50%",
         }}
       />
@@ -250,8 +250,8 @@ export function GlassyAuthShell({
               style={{
                 width: 6,
                 height: 6,
-                background: "#ff8a4c",
-                boxShadow: "0 0 6px #ff8a4c",
+                background: "#18181b",
+                boxShadow: "0 0 6px rgba(0,0,0,0.25)",
               }}
             />
             <span
@@ -324,7 +324,7 @@ export function GlassyAuthShell({
           right: 0;
           bottom: -2px;
           height: 0.5px;
-          background: linear-gradient(to right, transparent, #ff8a4c, transparent);
+          background: linear-gradient(to right, transparent, #18181b, transparent);
         }
         /* Glassy form input — used by children forms */
         .auth-input {
@@ -343,9 +343,9 @@ export function GlassyAuthShell({
           font-family: inherit;
         }
         .auth-input:focus {
-          border-color: rgba(255,138,76,0.65);
+          border-color: rgba(0,0,0,0.65);
           background: rgba(255,255,255,0.75);
-          box-shadow: 0 0 0 3px rgba(255,138,76,0.08);
+          box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
         }
         .auth-input::placeholder {
           color: rgba(0,0,0,0.35);
@@ -367,11 +367,11 @@ export function GlassyAuthShell({
           justify-content: center;
           gap: 8px;
           font-family: inherit;
-          box-shadow: 0 4px 20px rgba(255,138,76,0.18);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.18);
         }
         .auth-submit:hover:not(:disabled) {
           background: #1a1a1a;
-          box-shadow: 0 6px 28px rgba(255,138,76,0.3);
+          box-shadow: 0 6px 28px rgba(0,0,0,0.3);
           transform: translateY(-1px);
         }
         .auth-submit:disabled {
@@ -407,7 +407,7 @@ function Star({
       <svg width={size} height={size} viewBox="0 0 24 24">
         <path
           d="M12 2 L13 11 L22 12 L13 13 L12 22 L11 13 L2 12 L11 11 Z"
-          fill="#ff8a4c"
+          fill="#18181b"
         />
       </svg>
     </div>
@@ -426,12 +426,12 @@ type Particle = {
 };
 
 const PARTICLES: Particle[] = [
-  { variant: "a", top: "20%", left: "12%", size: 3, color: "#ff8a4c", glow: 10, delay: "0s" },
-  { variant: "b", top: "38%", left: "26%", size: 2, color: "#ffb27a", glow: 6, delay: "1s" },
-  { variant: "a", top: "62%", left: "16%", size: 2, color: "#ff8a4c", glow: 6, delay: "2s" },
-  { variant: "b", top: "30%", right: "22%", size: 3, color: "#ffb27a", glow: 8, delay: "0.5s" },
-  { variant: "a", top: "52%", left: "8%", size: 2, color: "#ff8a4c", glow: 6, delay: "1.5s" },
-  { variant: "b", top: "72%", right: "16%", size: 2, color: "#ffb27a", glow: 6, delay: "2.5s" },
-  { variant: "a", top: "14%", right: "30%", size: 3, color: "#ff8a4c", glow: 10, delay: "1s" },
-  { variant: "b", top: "78%", left: "32%", size: 2, color: "#ffb27a", glow: 6, delay: "3s" },
+  { variant: "a", top: "20%", left: "12%", size: 3, color: "#18181b", glow: 10, delay: "0s" },
+  { variant: "b", top: "38%", left: "26%", size: 2, color: "#71717a", glow: 6, delay: "1s" },
+  { variant: "a", top: "62%", left: "16%", size: 2, color: "#18181b", glow: 6, delay: "2s" },
+  { variant: "b", top: "30%", right: "22%", size: 3, color: "#71717a", glow: 8, delay: "0.5s" },
+  { variant: "a", top: "52%", left: "8%", size: 2, color: "#18181b", glow: 6, delay: "1.5s" },
+  { variant: "b", top: "72%", right: "16%", size: 2, color: "#71717a", glow: 6, delay: "2.5s" },
+  { variant: "a", top: "14%", right: "30%", size: 3, color: "#18181b", glow: 10, delay: "1s" },
+  { variant: "b", top: "78%", left: "32%", size: 2, color: "#71717a", glow: 6, delay: "3s" },
 ];
