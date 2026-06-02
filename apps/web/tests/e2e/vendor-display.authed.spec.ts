@@ -2,12 +2,16 @@ import { test, expect } from "@playwright/test";
 
 // Authenticated vendor-dashboard DISPLAY smoke tests. These require a
 // throwaway approved-vendor account, provided via env (see auth.setup.ts):
-//   E2E_VENDOR_EMAIL, E2E_VENDOR_PASSWORD
+//   E2E_VENDOR_EMAIL  + (E2E_SUPABASE_SERVICE_ROLE_KEY  OR  E2E_VENDOR_PASSWORD)
 //   E2E_SUPABASE_URL / E2E_SUPABASE_ANON_KEY (default to the VITE_* vars)
-// When those aren't set the whole file skips, so CI stays green until a
-// test account is wired up.
+// This project enforces server-side auth captcha, so the service-role path
+// (captcha-free admin OTP) is the reliable one; password sign-in only works
+// where captcha is disabled. When unset the whole file skips, so CI stays
+// green until a test account is wired up.
 const HAS_CREDS = Boolean(
-  process.env.E2E_VENDOR_EMAIL && process.env.E2E_VENDOR_PASSWORD,
+  process.env.E2E_VENDOR_EMAIL &&
+    (process.env.E2E_SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.E2E_VENDOR_PASSWORD),
 );
 
 // The current vendor dashboard routes (mirror App.tsx / smoke.spec.ts).
