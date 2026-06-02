@@ -31,7 +31,7 @@ function csvEscape(s: string): string {
 function attendingPill(value: "yes" | "no" | "maybe") {
   const cfg = {
     yes: { bg: "bg-green-100", text: "text-green-800", label: "Going" },
-    maybe: { bg: "bg-amber-100", text: "text-amber-800", label: "Maybe" },
+    maybe: { bg: "bg-zinc-100", text: "text-zinc-800", label: "Maybe" },
     no: { bg: "bg-red-100", text: "text-red-700", label: "Not going" },
   }[value];
   return (
@@ -208,7 +208,7 @@ export default function SiteRsvpsPage() {
             <div className="text-[28px] font-medium">{counts.yes}</div>
           </div>
           <div className="bg-white rounded-2xl border border-black/10 p-4">
-            <div className="text-[11px] uppercase tracking-wider text-amber-700 mb-1">
+            <div className="text-[11px] uppercase tracking-wider text-zinc-800 mb-1">
               Maybe
             </div>
             <div className="text-[28px] font-medium">{counts.maybe}</div>

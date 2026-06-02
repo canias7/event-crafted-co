@@ -59,6 +59,7 @@ import {
   ScrollText,
   Search,
   Settings as SettingsIcon,
+  ShieldCheck,
   Trash2,
   Users,
   Wallet,
@@ -800,16 +801,16 @@ export default function VendorPaymentsPage(
             <section
               className="rounded-2xl p-5"
               style={{
-                background: "linear-gradient(135deg, rgba(255,138,76,0.1), rgba(217,119,87,0.08))",
-                border: "0.5px solid rgba(255,138,76,0.3)",
+                background: "linear-gradient(135deg, rgba(0,0,0,0.1), rgba(217,119,87,0.08))",
+                border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >
               <div className="flex items-start gap-4 flex-wrap">
                 <div
                   className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                  style={{ background: "rgba(255,138,76,0.18)" }}
+                  style={{ background: "rgba(0,0,0,0.08)" }}
                 >
-                  <CreditCard className="w-5 h-5" style={{ color: "#c4541e" }} />
+                  <CreditCard className="w-5 h-5" style={{ color: "#18181b" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold">{verifyBanner.title}</h2>
@@ -1367,12 +1368,12 @@ function OverviewRevenueChart({
       style={{
         // Match the other Overview cards: same glassy translucent fill,
         // amber hairline border, blur, and soft shadow.
-        background: "rgba(255, 250, 245, 0.52)",
-        border: "0.5px solid rgba(255, 138, 76, 0.18)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(20px) saturate(140%)",
         WebkitBackdropFilter: "blur(20px) saturate(140%)",
         boxShadow:
-          "0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14)",
+          "0 1px 2px rgba(0,0,0, 0.05), 0 8px 24px -10px rgba(0,0,0, 0.14)",
       }}
     >
       <div className="flex items-end justify-between mb-4">
@@ -1397,7 +1398,7 @@ function OverviewRevenueChart({
           {deltaPct !== null ? (
             <div
               className="text-xs font-semibold mt-1"
-              style={{ color: deltaPositive ? "#2e9e6b" : "#b8453d" }}
+              style={{ color: deltaPositive ? "#2e9e6b" : "#71717a" }}
             >
               {deltaPositive ? "▲" : "▼"} {Math.abs(deltaPct).toFixed(1)}%
             </div>
@@ -1614,10 +1615,10 @@ function OverviewLeadsCard({
   leads: { new: number; active: number; won: number; lost: number; total: number };
 }) {
   const rows: Array<{ label: string; count: number; color: string }> = [
-    { label: "New",    count: leads.new,    color: "#c8403a" },
+    { label: "New",    count: leads.new,    color: "#18181b" },
     { label: "Active", count: leads.active, color: "#b8693d" },
-    { label: "Won",    count: leads.won,    color: "#4a7c4a" },
-    { label: "Lost",   count: leads.lost,   color: "#8a8579" },
+    { label: "Won",    count: leads.won,    color: "#1a1a1a" },
+    { label: "Lost",   count: leads.lost,   color: "#71717a" },
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
   const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
@@ -1645,7 +1646,7 @@ function OverviewLeadsCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(0,0,0, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
@@ -1688,8 +1689,8 @@ function OverviewCashflowCard({
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: "Money in",  value: moneyIn,  color: "#4a7c4a" },
-    { label: "Money out", value: moneyOut, color: "#c8403a" },
+    { label: "Money in",  value: moneyIn,  color: "#1a1a1a" },
+    { label: "Money out", value: moneyOut, color: "#18181b" },
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -1706,7 +1707,7 @@ function OverviewCashflowCard({
           <div className="cockpit-kpi-label">Net</div>
           <div
             className="cockpit-money cockpit-money--lg"
-            style={{ color: netPositive ? "#3f7a3f" : "#c8403a" }}
+            style={{ color: netPositive ? "#3f7a3f" : "#18181b" }}
           >
             {netPositive ? "" : "−"}{formatMoney(Math.abs(net), currency)}
           </div>
@@ -1724,7 +1725,7 @@ function OverviewCashflowCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255, 138, 76, 0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(0,0,0, 0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.value > 0 ? 1 : 0 }}
@@ -1768,9 +1769,9 @@ function OverviewExpensesCard({
 }) {
   // Reuse the bar palette from MRR (crimson → terra → amber → green)
   // so a vendor scanning the page picks up category rank by color.
-  const palette = ["#c8403a", "#b8693d", "#c89738", "#4a7c4a"];
+  const palette = ["#18181b", "#b8693d", "#1a1a1a", "#1a1a1a"];
   const rows = expenses.topCategories.map((c, i) => ({
-    ...c, color: palette[i] ?? "#8a8579",
+    ...c, color: palette[i] ?? "#71717a",
   }));
   // Donut geometry — stroked circle with stroke-dasharray for each
   // segment. Radius 38 + strokeWidth 14 gives an outer ring at 45
@@ -1808,7 +1809,7 @@ function OverviewExpensesCard({
             <svg viewBox="0 0 100 100" className="w-[110px] h-[110px] shrink-0 -rotate-90" aria-hidden>
               {/* Faint background ring so the donut feels seated even
                   when one segment dominates the total. */}
-              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,138,76,0.14)" strokeWidth={RING_W} />
+              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth={RING_W} />
               {rows.map((r) => {
                 const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
                 const offset = dashOffset;
@@ -4010,9 +4011,9 @@ function SenderDomainCard({ vendorId }: { vendorId: string | null }) {
                       border: "0.5px solid rgba(34,197,94,0.35)",
                     }
                   : {
-                      background: "rgba(255,138,76,0.14)",
-                      color: "#c4541e",
-                      border: "0.5px solid rgba(255,138,76,0.35)",
+                      background: "rgba(0,0,0,0.14)",
+                      color: "#18181b",
+                      border: "0.5px solid rgba(0,0,0,0.35)",
                     }
               }
             >
@@ -4562,8 +4563,8 @@ function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
     paid: { label: "Paid", className: "bg-sky-100 text-sky-700", cockpit: "cockpit-pill--success" },
     cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" },
     overdue: { label: "Overdue", className: "bg-rose-100 text-rose-700", cockpit: "cockpit-pill--danger" },
-    refunded: { label: "Refunded", className: "bg-orange-100 text-orange-800", cockpit: "cockpit-pill--warning" },
-    partial_refund: { label: "Partial refund", className: "bg-orange-100 text-orange-800", cockpit: "cockpit-pill--warning" },
+    refunded: { label: "Refunded", className: "bg-zinc-100 text-zinc-800", cockpit: "cockpit-pill--warning" },
+    partial_refund: { label: "Partial refund", className: "bg-zinc-100 text-zinc-800", cockpit: "cockpit-pill--warning" },
   };
   const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" };
   return (
@@ -6878,7 +6879,7 @@ function SendInvoiceDialog({
 
           <div
             className="rounded-lg p-3 space-y-2"
-            style={{ background: "rgba(255,138,76,0.06)" }}
+            style={{ background: "rgba(0,0,0,0.035)" }}
           >
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
               Line items
@@ -7033,10 +7034,10 @@ function disputeStatusPill(status: string | null | undefined): {
     return { label: "Lost", className: "bg-rose-100 text-rose-700" };
   }
   if (status.startsWith("warning")) {
-    return { label: "Warning", className: "bg-amber-100 text-amber-700" };
+    return { label: "Warning", className: "bg-zinc-100 text-zinc-800" };
   }
   if (status === "needs_response") {
-    return { label: "Needs response", className: "bg-orange-100 text-orange-700" };
+    return { label: "Needs response", className: "bg-zinc-100 text-zinc-800" };
   }
   if (status === "under_review") {
     return { label: "Under review", className: "bg-sky-100 text-sky-700" };
@@ -7564,15 +7565,15 @@ function PayLinksTab({
       <div
         className="rounded-2xl p-8 text-center"
         style={{
-          background: "rgba(255,253,250,0.7)",
-          border: "0.5px solid rgba(255,138,76,0.22)",
+          background: "rgba(255,255,255,0.6)",
+          border: "0.5px solid rgba(0,0,0,0.08)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
         }}
       >
         <div
           className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center mb-4"
-          style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+          style={{ background: "rgba(0,0,0,0.16)", color: "#18181b" }}
         >
           <Link2 className="w-5 h-5" />
         </div>
@@ -7900,8 +7901,8 @@ function LinkStatusPill({ status }: { status: PaymentLink["status"] }) {
     cancelled: { label: "Canceled", className: "border-slate-300 text-slate-500" },
     expired: { label: "Expired", className: "border-slate-300 text-slate-500" },
     scheduled: { label: "Scheduled", className: "border-violet-300 text-violet-700" },
-    refunded: { label: "Refunded", className: "border-amber-300 text-amber-700" },
-    partial_refund: { label: "Partial refund", className: "border-amber-300 text-amber-700" },
+    refunded: { label: "Refunded", className: "border-zinc-300 text-zinc-800" },
+    partial_refund: { label: "Partial refund", className: "border-zinc-300 text-zinc-800" },
   };
   const m = map[status] ?? { label: status, className: "border-slate-300 text-slate-500" };
   return (
@@ -8123,13 +8124,13 @@ function SettingsTab({
             <div
               className="rounded-2xl p-5 flex items-start gap-4 flex-wrap"
               style={{
-                background: "rgba(255,253,250,0.7)",
-                border: "0.5px solid rgba(255,138,76,0.22)",
+                background: "rgba(255,255,255,0.6)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
               }}
             >
               <div
                 className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-                style={{ background: "rgba(255,138,76,0.16)", color: "#c4541e" }}
+                style={{ background: "rgba(0,0,0,0.16)", color: "#18181b" }}
               >
                 <Landmark className="w-5 h-5" />
               </div>
@@ -8154,35 +8155,38 @@ function SettingsTab({
             </div>
           ) : null}
 
-          <Card>
+          {/* Payout method — glassy brand card (was "Bank account"). */}
+          <GlassCard>
             <div className="p-5 flex items-start gap-4 flex-wrap">
-              <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-sky-50 text-sky-700">
+              <div
+                className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
+                  color: "#18181b",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
+                }}
+                aria-hidden
+              >
                 <Landmark className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold">Bank account</h3>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-[15px] font-semibold leading-tight">Payout method</h3>
                   {/* `status.bank` isn't populated on v2 accounts, so we
                       derive connectedness from payouts_enabled: Stripe
                       requires a bank before payouts can be enabled, so
                       payouts_enabled === true reliably means a bank is
                       on file. */}
                   {status?.bank?.last4 || status?.payouts_enabled ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                      Connected
-                    </span>
+                    <StatusDot tone="good" label="Connected" />
                   ) : status?.onboarded ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                      Pending
-                    </span>
+                    <StatusDot tone="warn" label="Pending" />
                   ) : (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">
-                      Not connected
-                    </span>
+                    <StatusDot tone="warn" label="Action required" />
                   )}
                 </div>
                 {status?.bank?.last4 ? (
-                  <p className="text-sm text-foreground mt-1">
+                  <p className="text-sm text-foreground mt-1.5">
                     {status.bank.bank_name ?? "Bank"} ····{status.bank.last4}
                     {status.bank.currency ? (
                       <span className="text-xs text-muted-foreground ml-2 uppercase">
@@ -8191,16 +8195,19 @@ function SettingsTab({
                     ) : null}
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-1.5 max-w-md leading-relaxed">
                     {status?.payouts_enabled
                       ? "Your bank is connected. Manage it in the VendoraPay Express dashboard."
                       : status?.onboarded
                         ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
-                        : "Connect VendoraPay first to add a bank account."}
+                        : "Link a verified bank account to start receiving automated payouts."}
                   </p>
                 )}
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  Payouts settle to this account 2 business days after each charge.
+                <p
+                  className="text-[12px] text-muted-foreground mt-3 pl-3"
+                  style={{ borderLeft: "2px solid rgba(0,0,0,0.25)" }}
+                >
+                  Funds settle T+2 business days after each successful charge.
                 </p>
               </div>
               {status?.onboarded ? (
@@ -8218,38 +8225,60 @@ function SettingsTab({
                   )}
                   {status?.bank?.last4 ? "Manage bank" : "Add bank"}
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  size="sm"
+                  className="rounded-full"
+                >
+                  {connecting ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : null}
+                  Connect account
+                  <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              )}
             </div>
-          </Card>
+          </GlassCard>
 
-          <Card>
+          {/* Business verification — glassy brand card (was "Identity & tax info"). */}
+          <GlassCard>
             <div className="p-5 flex items-start gap-4 flex-wrap">
-              <div className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center bg-violet-50 text-violet-700">
-                <FileText className="w-5 h-5" />
+              <div
+                className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
+                  color: "#18181b",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
+                }}
+                aria-hidden
+              >
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold">Identity &amp; tax info</h3>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-[15px] font-semibold leading-tight">Business verification</h3>
                   {/* "Verified" only once the processor has actually
                       cleared the account (charges_enabled). Details
                       submitted but still under review reads as "In
                       review", not Verified — submitting != approved. */}
                   {status?.charges_enabled ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                      Verified
-                    </span>
+                    <StatusDot tone="good" label="Verified" />
                   ) : status?.details_submitted ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-sky-100 text-sky-700">
-                      In review
-                    </span>
+                    <StatusDot tone="info" label="In review" />
                   ) : (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800">
-                      Incomplete
-                    </span>
+                    <StatusDot tone="bad" label="Incomplete" />
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Legal name, EIN/SSN, address. Required for tax forms (1099-K) and payouts.
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-md leading-relaxed">
+                  Submit legal entity details and tax ID (EIN or SSN) to satisfy KYC and enable 1099-K reporting.
+                </p>
+                <p
+                  className="text-[12px] text-muted-foreground mt-3 pl-3"
+                  style={{ borderLeft: "2px solid rgba(0,0,0,0.25)" }}
+                >
+                  Required by federal regulation before your first payout.
                 </p>
               </div>
               {status?.onboarded ? (
@@ -8267,9 +8296,22 @@ function SettingsTab({
                   )}
                   Update info
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  size="sm"
+                  className="rounded-full"
+                >
+                  {connecting ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : null}
+                  Start verification
+                  <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              )}
             </div>
-          </Card>
+          </GlassCard>
         </div>
       </section>
     </div>
@@ -8288,12 +8330,79 @@ function Card({ children }: { children: React.ReactNode }) {
       data-cockpit-card
       className="rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(255,253,250,0.85)",
-        border: "1px solid rgba(255,138,76,0.18)",
+        background: "rgba(255,255,255,0.85)",
+        border: "1px solid rgba(0,0,0,0.08)",
       }}
     >
       {children}
     </div>
+  );
+}
+
+// Glassy brand card — translucent frosted glass over the warm
+// vendor-canvas radial, with a warm-orange hairline. Distinct from
+// the cockpit `Card` (which the .my-vendora-cockpit stylesheet
+// repaints into the dense palette): GlassCard keeps the airy,
+// transparent brand look on purpose, used by the Settings →
+// Connection cards (payout method + business verification).
+function GlassCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-3xl overflow-hidden"
+      style={{
+        // Layered backgrounds: a diagonal light sheen on top of a very
+        // transparent frosted fill (26% → 4%) so the ambient backdrop
+        // reads clearly through the glass. Rim highlight + hairline keep
+        // the edges defined and text legible.
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 36%), linear-gradient(135deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.1) 48%, rgba(255,255,255,0.04) 100%)",
+        border: "1px solid rgba(255,255,255,0.55)",
+        backdropFilter: "blur(52px) saturate(190%)",
+        WebkitBackdropFilter: "blur(52px) saturate(190%)",
+        boxShadow:
+          "0 26px 64px -22px rgba(0,0,0,0.30), 0 4px 14px -8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 0 0 0.5px rgba(0,0,0,0.03)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Status pill with a leading colored dot. Tones map to the warm
+// cockpit palette so the badges read on the glass without the loud
+// solid-fill chips the cards used before.
+function StatusDot({
+  tone,
+  label,
+}: {
+  tone: "good" | "warn" | "info" | "bad";
+  label: string;
+}) {
+  // Monochrome state language: complete reads as a SOLID black chip,
+  // in-progress as a soft gray fill, and anything needing action as an
+  // OUTLINED dark chip so it stands out without color.
+  const palette: Record<
+    typeof tone,
+    { dot: string; text: string; bg: string; border: string }
+  > = {
+    good: { dot: "#ffffff", text: "#ffffff", bg: "#18181b", border: "transparent" },
+    info: { dot: "#71717a", text: "#3f3f46", bg: "rgba(0,0,0,0.06)", border: "transparent" },
+    warn: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+    bad: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+  };
+  const c = palette[tone];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: c.dot }}
+        aria-hidden
+      />
+      {label}
+    </span>
   );
 }
 

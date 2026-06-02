@@ -318,8 +318,8 @@ export default function PayLinkCheckoutPage() {
         <div
           className="rounded-2xl p-6 mb-4"
           style={{
-            background: "rgba(255,253,250,0.7)",
-            border: "0.5px solid rgba(255,138,76,0.22)",
+            background: "rgba(255,255,255,0.6)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
@@ -370,10 +370,10 @@ export default function PayLinkCheckoutPage() {
               appearance: {
                 theme: "stripe",
                 variables: {
-                  colorPrimary: "#c4541e",
-                  colorBackground: "#fffdfa",
-                  colorText: "#1a0d08",
-                  colorTextSecondary: "#6b5a4f",
+                  colorPrimary: "#18181b",
+                  colorBackground: "#ffffff",
+                  colorText: "#18181b",
+                  colorTextSecondary: "#71717a",
                   colorDanger: "#dc2626",
                   fontFamily: "system-ui, sans-serif",
                   borderRadius: "12px",

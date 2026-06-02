@@ -575,9 +575,9 @@ export default function VendorSubscriptionPage() {
               className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
               style={{
                 background:
-                  "linear-gradient(135deg, #2a1810 0%, #3d1f1a 45%, #4a2620 100%)",
-                border: "1px solid rgba(255,138,76,0.35)",
-                boxShadow: "0 12px 40px -16px rgba(255,138,76,0.35)",
+                  "linear-gradient(135deg, #18181b 0%, #27272a 45%, #3f3f46 100%)",
+                border: "1px solid rgba(0,0,0,0.35)",
+                boxShadow: "0 12px 40px -16px rgba(0,0,0,0.35)",
               }}
             >
               {/* Soft glow accent in the top-right so the dark block
@@ -587,7 +587,7 @@ export default function VendorSubscriptionPage() {
                 className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
                 style={{
                   background:
-                    "radial-gradient(circle, rgba(255,138,76,0.22) 0%, transparent 70%)",
+                    "radial-gradient(circle, rgba(0,0,0,0.08) 0%, transparent 70%)",
                 }}
               />
               <div className="relative flex items-start justify-between gap-6 flex-wrap">
@@ -596,8 +596,8 @@ export default function VendorSubscriptionPage() {
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] font-bold"
                     style={{
                       background:
-                        "linear-gradient(135deg, #ff8a4c 0%, #ff6b3d 100%)",
-                      color: "#1a0d08",
+                        "linear-gradient(135deg, #e4e4e7 0%, #ffffff 100%)",
+                      color: "#18181b",
                     }}
                   >
                     <Flame className="w-3 h-3" />
@@ -605,7 +605,7 @@ export default function VendorSubscriptionPage() {
                   </span>
                   <h2
                     className="mt-4 font-editorial leading-[0.95] text-4xl md:text-5xl"
-                    style={{ color: "#ff8a4c" }}
+                    style={{ color: "#fafafa" }}
                   >
                     Vendora Starter, Pro &amp; Studio
                   </h2>
@@ -621,7 +621,7 @@ export default function VendorSubscriptionPage() {
                 <div className="shrink-0">
                   <p
                     className="text-[11px] uppercase tracking-[0.12em] font-semibold mb-2 flex items-center gap-1.5"
-                    style={{ color: "rgba(255,138,76,0.85)" }}
+                    style={{ color: "rgba(255,255,255,0.85)" }}
                   >
                     <Flame className="w-3 h-3" />
                     Offer expires in
@@ -686,16 +686,16 @@ export default function VendorSubscriptionPage() {
                     className="rounded-2xl p-5 flex flex-col"
                     style={{
                       background: isCurrent
-                        ? "linear-gradient(135deg, rgba(255,138,76,0.12), rgba(255,138,76,0.04))"
-                        : "rgba(255,253,250,0.7)",
+                        ? "linear-gradient(135deg, rgba(0,0,0,0.035), rgba(0,0,0,0.025))"
+                        : "rgba(255,255,255,0.6)",
                       border: isCurrent
-                        ? "1px solid rgba(255,138,76,0.45)"
-                        : "0.5px solid rgba(255,138,76,0.22)",
+                        ? "1px solid rgba(0,0,0,0.45)"
+                        : "0.5px solid rgba(0,0,0,0.08)",
                       backdropFilter: "blur(10px)",
                       WebkitBackdropFilter: "blur(10px)",
                       boxShadow: isCurrent
-                        ? "0 8px 28px -12px rgba(255,138,76,0.25)"
-                        : "0 4px 18px -8px rgba(20,15,10,0.06)",
+                        ? "0 8px 28px -12px rgba(0,0,0,0.25)"
+                        : "0 4px 18px -8px rgba(0,0,0,0.06)",
                     }}
                   >
                     <div className="flex items-center justify-between">
@@ -704,14 +704,14 @@ export default function VendorSubscriptionPage() {
                         {tier.wasMonthly && offerActive && !isCurrent && (
                           <span
                             className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
-                            style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+                            style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
                           >
                             Save {Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100)}%
                           </span>
                         )}
                       </div>
                       {isCurrent && (
-                        <span className="text-[10px] uppercase tracking-wide font-semibold text-[#c4541e]">
+                        <span className="text-[10px] uppercase tracking-wide font-semibold text-[#18181b]">
                           Current
                         </span>
                       )}
@@ -744,7 +744,7 @@ export default function VendorSubscriptionPage() {
                         : tier.listings}
                     </p>
                     {tier.wasMonthly && offerActive && !isCurrent && (
-                      <p className="text-[10px] text-[#c4541e] font-medium mt-0.5">
+                      <p className="text-[10px] text-[#18181b] font-medium mt-0.5">
                         Launch pricing — limited time
                       </p>
                     )}
@@ -834,11 +834,11 @@ export default function VendorSubscriptionPage() {
                     key={pack.id}
                     className="rounded-2xl p-5 flex flex-col"
                     style={{
-                      background: "rgba(255,253,250,0.7)",
-                      border: "0.5px solid rgba(255,138,76,0.22)",
+                      background: "rgba(255,255,255,0.6)",
+                      border: "0.5px solid rgba(0,0,0,0.08)",
                       backdropFilter: "blur(10px)",
                       WebkitBackdropFilter: "blur(10px)",
-                      boxShadow: "0 4px 18px -8px rgba(20,15,10,0.06)",
+                      boxShadow: "0 4px 18px -8px rgba(0,0,0,0.06)",
                     }}
                   >
                     <p className="font-medium">{pack.name}</p>
@@ -1013,11 +1013,11 @@ function BillingPanel({
     <div
       className="w-full lg:w-[360px] shrink-0 rounded-2xl p-5 md:p-6 flex flex-col"
       style={{
-        background: "rgba(255,253,250,0.72)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,255,255,0.72)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 6px 24px -12px rgba(20,15,10,0.08)",
+        boxShadow: "0 6px 24px -12px rgba(0,0,0,0.08)",
       }}
     >
       <h3 className="text-base font-semibold tracking-tight font-sans">
@@ -1073,7 +1073,7 @@ function BillingPanel({
                 inv.status === "paid"
                   ? "text-emerald-700"
                   : inv.status === "open"
-                    ? "text-amber-700"
+                    ? "text-zinc-800"
                     : "text-muted-foreground";
               const lines = (inv.lines ?? []).filter((l) => l.amount > 0);
               if (lines.length === 0) {
@@ -1267,7 +1267,7 @@ function CountdownTile({
       className="flex flex-col items-center justify-center rounded-lg px-3 md:px-4 py-2 md:py-2.5 min-w-[58px] md:min-w-[68px]"
       style={{
         background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,138,76,0.22)",
+        border: "1px solid rgba(255,255,255,0.22)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
       }}

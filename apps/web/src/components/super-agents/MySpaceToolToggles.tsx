@@ -293,8 +293,8 @@ export function MySpaceToolToggles() {
     <div
       className="rounded-2xl overflow-hidden flex flex-col"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
@@ -303,7 +303,7 @@ export function MySpaceToolToggles() {
           the left works regardless of this toggle. */}
       <div
         className="flex items-center gap-3 p-4 border-b"
-        style={{ borderColor: "rgba(255,138,76,0.18)" }}
+        style={{ borderColor: "rgba(0,0,0,0.08)" }}
       >
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-foreground">Inbox auto-reply</p>
@@ -329,7 +329,7 @@ export function MySpaceToolToggles() {
           />
           <span
             className={`text-[10px] font-semibold uppercase tracking-wider ${
-              enabled ? "text-[#c4541e]" : "text-muted-foreground"
+              enabled ? "text-[#18181b]" : "text-muted-foreground"
             }`}
           >
             On
@@ -411,7 +411,7 @@ export function MySpaceToolToggles() {
                   </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <ul className="divide-y pl-5" style={{ borderColor: "rgba(255,138,76,0.12)" }}>
+                  <ul className="divide-y pl-5" style={{ borderColor: "rgba(0,0,0,0.12)" }}>
                     {visible.map((action) => {
                       const { Icon } = action;
                       const value = profile?.[action.key] !== false;
@@ -420,7 +420,7 @@ export function MySpaceToolToggles() {
                         <li
                           key={action.key}
                           className="flex items-center gap-3 py-3"
-                          style={{ borderColor: "rgba(255,138,76,0.12)" }}
+                          style={{ borderColor: "rgba(0,0,0,0.12)" }}
                         >
                           <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
                           <div className="min-w-0 flex-1">
@@ -461,7 +461,7 @@ export function MySpaceToolToggles() {
           default so the panel mounts fast. */}
       <div
         className="border-t p-4"
-        style={{ borderColor: "rgba(255,138,76,0.18)" }}
+        style={{ borderColor: "rgba(0,0,0,0.08)" }}
       >
         <button
           type="button"
@@ -487,7 +487,7 @@ export function MySpaceToolToggles() {
         {showPrompt ? (
           <div
             className="mt-3 rounded-lg border overflow-hidden max-h-[420px] flex flex-col"
-            style={{ borderColor: "rgba(255,138,76,0.18)", background: "rgba(255,255,255,0.7)" }}
+            style={{ borderColor: "rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.7)" }}
           >
             {promptLoading && !prompt ? (
               <div className="flex-1 flex items-center justify-center gap-2 text-[11px] text-muted-foreground py-8">

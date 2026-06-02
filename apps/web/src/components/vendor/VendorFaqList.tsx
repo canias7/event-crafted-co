@@ -25,7 +25,7 @@ export function VendorFaqList({
     <div>
       <p
         className="font-label mb-3"
-        style={{ color: "#c4541e", letterSpacing: "0.22em" }}
+        style={{ color: "#18181b", letterSpacing: "0.22em" }}
       >
         {eyebrow}
       </p>

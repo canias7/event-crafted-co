@@ -13,7 +13,7 @@ export function Footer() {
         // the footer feels like a continuation of the canvas instead
         // of a fenced-off white block.
         background: "transparent",
-        borderTop: "0.5px solid rgba(255,138,76,0.16)",
+        borderTop: "0.5px solid rgba(0,0,0,0.16)",
       }}
     >
       <div className="container mx-auto px-4 md:px-8">

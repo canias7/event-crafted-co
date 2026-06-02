@@ -62,8 +62,8 @@ function fmtMoney(c: number | null) {
 const AVATAR_COLORS = [
   "bg-violet-400",
   "bg-pink-400",
-  "bg-orange-400",
-  "bg-amber-400",
+  "bg-zinc-800",
+  "bg-zinc-800",
   "bg-emerald-400",
   "bg-blue-400",
   "bg-cyan-400",

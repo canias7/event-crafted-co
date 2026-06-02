@@ -68,8 +68,8 @@ export default function ForgotPasswordPage() {
           <div
             className="rounded-xl"
             style={{
-              background: "rgba(255,138,76,0.08)",
-              border: "0.5px solid rgba(255,138,76,0.3)",
+              background: "rgba(0,0,0,0.035)",
+              border: "0.5px solid rgba(0,0,0,0.3)",
               padding: "16px 18px",
             }}
           >

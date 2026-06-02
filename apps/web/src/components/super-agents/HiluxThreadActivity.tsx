@@ -75,32 +75,32 @@ export function HiluxThreadActivity({ inquiryId }: { inquiryId: string }) {
   const intentDetected = rows.some((r) => r.action === "booking_intent_detected");
 
   return (
-    <div className="mb-3 rounded-xl border border-orange-200/60 bg-orange-50/50 overflow-hidden">
+    <div className="mb-3 rounded-xl border border-zinc-300/60 bg-zinc-100/50 overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-orange-100/50 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-zinc-100/50 transition-colors"
         aria-expanded={expanded}
       >
-        <ScrollText className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-orange-900">
+        <ScrollText className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-800">
           HILUX
         </span>
-        <span className="text-xs text-orange-900/80 truncate">
+        <span className="text-xs text-zinc-800/80 truncate">
           {summaryLine(rows.length, replyCount, escalCount, hotFlagged, intentDetected)}
         </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-orange-700 shrink-0 ml-auto transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 text-zinc-800 shrink-0 ml-auto transition-transform ${expanded ? "rotate-180" : ""}`}
         />
       </button>
       {expanded ? (
-        <ul className="divide-y divide-orange-200/40 border-t border-orange-200/40 bg-white/40">
+        <ul className="divide-y divide-orange-200/40 border-t border-zinc-300/40 bg-white/40">
           {rows.map((r) => {
             const Icon = ACTION_ICON[r.action] ?? ScrollText;
             const label = ACTION_LABEL[r.action] ?? r.action;
             return (
               <li key={r.id} className="flex items-start gap-2 px-3 py-2">
-                <Icon className="w-3 h-3 text-orange-700 mt-0.5 shrink-0" />
+                <Icon className="w-3 h-3 text-zinc-800 mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <p className="text-xs font-medium text-black/85 leading-tight">

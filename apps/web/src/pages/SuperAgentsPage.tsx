@@ -61,8 +61,8 @@ const AGENTS: Agent[] = [
       "Routes hot leads straight to your phone",
       "Drafts you the perfect follow-up two days later",
     ],
-    accent: "#ff8a4c",
-    accentSoft: "rgba(255, 138, 76, 0.18)",
+    accent: "#71717a",
+    accentSoft: "rgba(0, 0, 0, 0.08)",
     status: "24/7 · Live chat",
     Icon: Bot,
     imageSrc: "/agents/hilux.png",
@@ -115,7 +115,7 @@ export default function SuperAgentsPage() {
   return (
     <div
       className="relative min-h-screen overflow-x-hidden text-black"
-      style={{ background: "#fafafa" }}
+      style={{ background: "#ffffff" }}
     >
       <AmbientBackdrop disabled={!!reduceMotion} />
 
@@ -171,7 +171,7 @@ export function AmbientBackdrop({ disabled }: { disabled: boolean }) {
           width: "1100px",
           height: "850px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,138,76,0.32) 0%, rgba(255,138,76,0.11) 32%, rgba(255,138,76,0.03) 58%, transparent 78%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.11) 32%, rgba(0,0,0,0.025) 58%, transparent 78%)",
         }}
       />
       {/* Bottom-right secondary glow */}
@@ -184,7 +184,7 @@ export function AmbientBackdrop({ disabled }: { disabled: boolean }) {
           width: "680px",
           height: "580px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,138,76,0.16) 0%, rgba(255,138,76,0.04) 42%, transparent 72%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.025) 42%, transparent 72%)",
         }}
       />
       {/* Left-side soft glow */}
@@ -197,7 +197,7 @@ export function AmbientBackdrop({ disabled }: { disabled: boolean }) {
           width: "480px",
           height: "480px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,178,122,0.10) 0%, transparent 65%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.10) 0%, transparent 65%)",
         }}
       />
 
@@ -225,7 +225,7 @@ export function AmbientBackdrop({ disabled }: { disabled: boolean }) {
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(255,138,76,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255,138,76,0.28) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -243,7 +243,7 @@ export function AmbientBackdrop({ disabled }: { disabled: boolean }) {
           left: "50%",
           width: "720px",
           height: "720px",
-          border: "0.5px dashed rgba(255,138,76,0.18)",
+          border: "0.5px dashed rgba(0,0,0,0.08)",
           borderRadius: "50%",
           transform: "translate(-50%, -50%)",
         }}
@@ -332,7 +332,7 @@ function Star({
       <svg width={size} height={size} viewBox="0 0 24 24">
         <path
           d="M12 2 L13 11 L22 12 L13 13 L12 22 L11 13 L2 12 L11 11 Z"
-          fill="#ff8a4c"
+          fill="#71717a"
         />
       </svg>
     </div>
@@ -351,14 +351,14 @@ type Particle = {
 };
 
 const PARTICLES: Particle[] = [
-  { variant: "a", top: "20%", left: "12%", size: 3, color: "#ff8a4c", glow: 10, delay: "0s" },
-  { variant: "b", top: "38%", left: "26%", size: 2, color: "#ffb27a", glow: 6, delay: "1s" },
-  { variant: "a", top: "62%", left: "16%", size: 2, color: "#ff8a4c", glow: 6, delay: "2s" },
-  { variant: "b", top: "30%", right: "22%", size: 3, color: "#ffb27a", glow: 8, delay: "0.5s" },
-  { variant: "a", top: "52%", left: "8%", size: 2, color: "#ff8a4c", glow: 6, delay: "1.5s" },
-  { variant: "b", top: "72%", right: "16%", size: 2, color: "#ffb27a", glow: 6, delay: "2.5s" },
-  { variant: "a", top: "14%", right: "30%", size: 3, color: "#ff8a4c", glow: 10, delay: "1s" },
-  { variant: "b", top: "78%", left: "32%", size: 2, color: "#ffb27a", glow: 6, delay: "3s" },
+  { variant: "a", top: "20%", left: "12%", size: 3, color: "#71717a", glow: 10, delay: "0s" },
+  { variant: "b", top: "38%", left: "26%", size: 2, color: "#a1a1aa", glow: 6, delay: "1s" },
+  { variant: "a", top: "62%", left: "16%", size: 2, color: "#71717a", glow: 6, delay: "2s" },
+  { variant: "b", top: "30%", right: "22%", size: 3, color: "#a1a1aa", glow: 8, delay: "0.5s" },
+  { variant: "a", top: "52%", left: "8%", size: 2, color: "#71717a", glow: 6, delay: "1.5s" },
+  { variant: "b", top: "72%", right: "16%", size: 2, color: "#a1a1aa", glow: 6, delay: "2.5s" },
+  { variant: "a", top: "14%", right: "30%", size: 3, color: "#71717a", glow: 10, delay: "1s" },
+  { variant: "b", top: "78%", left: "32%", size: 2, color: "#a1a1aa", glow: 6, delay: "3s" },
 ];
 
 // ─── Agents section ────────────────────────────────────────────────────
@@ -789,7 +789,7 @@ function AgentVisual({ agent }: { agent: Agent }) {
           border: "0.5px solid rgba(0,0,0,0.12)",
           backdropFilter: "blur(20px)",
           boxShadow:
-            "0 30px 80px rgba(255,138,76,0.18), 0 8px 30px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
+            "0 30px 80px rgba(0,0,0,0.08), 0 8px 30px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
           transformStyle: "preserve-3d",
         }}
       >

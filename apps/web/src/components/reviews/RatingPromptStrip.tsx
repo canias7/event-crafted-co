@@ -213,11 +213,11 @@ function PromptCard({
       className="w-full text-left rounded-2xl px-4 py-3 transition-colors my-3"
       style={{
         background: isEvent
-          ? "linear-gradient(135deg, rgba(255,138,76,0.14), rgba(255,138,76,0.05))"
-          : "rgba(255,253,250,0.7)",
+          ? "linear-gradient(135deg, rgba(0,0,0,0.06), rgba(0,0,0,0.025))"
+          : "rgba(255,255,255,0.6)",
         border: isEvent
-          ? "0.5px solid rgba(255,138,76,0.35)"
-          : "0.5px solid rgba(255,138,76,0.18)",
+          ? "0.5px solid rgba(0,0,0,0.08)"
+          : "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(8px)",
       }}
     >
@@ -225,8 +225,8 @@ function PromptCard({
         <span
           className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
           style={{
-            background: "rgba(255,138,76,0.16)",
-            color: "#c4541e",
+            background: "rgba(0,0,0,0.08)",
+            color: "#18181b",
           }}
           aria-hidden
         >

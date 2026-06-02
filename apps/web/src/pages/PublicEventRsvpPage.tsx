@@ -124,8 +124,8 @@ export default function PublicEventRsvpPage() {
         <div
           className="rounded-2xl p-10 text-center max-w-md w-full"
           style={{
-            background: "rgba(255,253,250,0.7)",
-            border: "0.5px solid rgba(255,138,76,0.2)",
+            background: "rgba(255,255,255,0.6)",
+            border: "0.5px solid rgba(0,0,0,0.2)",
             backdropFilter: "blur(10px)",
             WebkitBackdropFilter: "blur(10px)",
           }}
@@ -158,8 +158,8 @@ export default function PublicEventRsvpPage() {
         <div
           className="rounded-3xl p-6 md:p-8 mb-6"
           style={{
-            background: "rgba(255,253,250,0.75)",
-            border: "0.5px solid rgba(255,138,76,0.22)",
+            background: "rgba(255,255,255,0.85)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
             backdropFilter: "blur(10px)",
             WebkitBackdropFilter: "blur(10px)",
           }}
@@ -201,8 +201,8 @@ export default function PublicEventRsvpPage() {
           <div
             className="rounded-2xl p-6 text-center"
             style={{
-              background: "rgba(255,138,76,0.08)",
-              border: "0.5px solid rgba(255,138,76,0.32)",
+              background: "rgba(0,0,0,0.08)",
+              border: "0.5px solid rgba(0,0,0,0.32)",
             }}
           >
             <p className="font-editorial italic text-2xl">Thanks for RSVPing.</p>

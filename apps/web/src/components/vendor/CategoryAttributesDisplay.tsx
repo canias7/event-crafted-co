@@ -144,9 +144,9 @@ function FieldDisplay({
               key={t}
               className="inline-flex text-[13px] rounded-full px-3.5 py-1.5"
               style={{
-                background: "rgba(255,138,76,0.12)",
-                color: "#c4541e",
-                border: "0.5px solid rgba(255,138,76,0.3)",
+                background: "rgba(0,0,0,0.12)",
+                color: "#18181b",
+                border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >
               {t}

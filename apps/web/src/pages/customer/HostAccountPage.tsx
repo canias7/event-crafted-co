@@ -121,8 +121,8 @@ export default function HostAccountPage() {
               <div
                 className="rounded-2xl p-10 text-center"
                 style={{
-                  background: "rgba(255,253,250,0.6)",
-                  border: "0.5px solid rgba(255,138,76,0.18)",
+                  background: "rgba(255,255,255,0.6)",
+                  border: "0.5px solid rgba(0,0,0,0.08)",
                   backdropFilter: "blur(10px)",
                   WebkitBackdropFilter: "blur(10px)",
                 }}
@@ -171,8 +171,8 @@ export default function HostAccountPage() {
             <div
               className="rounded-2xl p-8 text-center"
               style={{
-                background: "rgba(255,253,250,0.6)",
-                border: "0.5px solid rgba(255,138,76,0.18)",
+                background: "rgba(255,255,255,0.6)",
+                border: "0.5px solid rgba(0,0,0,0.08)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
               }}
@@ -226,7 +226,7 @@ function VerificationCard({
           toast.message("Verification pending — we'll email you within 48h.")
         }
         icon={Clock}
-        iconBg="bg-amber-500"
+        iconBg="bg-zinc-800"
         iconColor="text-white"
         title="Verification pending"
         subtitle="We'll reach out within 48 hours."

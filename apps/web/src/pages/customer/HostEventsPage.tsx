@@ -447,8 +447,8 @@ export default function HostEventsPage() {
                 <div
                   className="rounded-2xl p-6 text-center text-sm text-muted-foreground"
                   style={{
-                    background: "rgba(255,253,250,0.5)",
-                    border: "0.5px solid rgba(255,138,76,0.14)",
+                    background: "rgba(255,255,255,0.5)",
+                    border: "0.5px solid rgba(0,0,0,0.08)",
                   }}
                 >
                   Nothing on this day.
@@ -542,15 +542,15 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     <div
       className="rounded-2xl p-10 md:p-14 text-center"
       style={{
-        background: "rgba(255,253,250,0.6)",
-        border: "0.5px solid rgba(255,138,76,0.22)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
     >
       <div
         className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
       >
         <CalendarIcon className="w-6 h-6" />
       </div>
@@ -595,8 +595,8 @@ function MonthCalendar({
     <div
       className="rounded-3xl p-4 md:p-5"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.18)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
@@ -700,8 +700,8 @@ function CalendarCell({
               background: selected
                 ? "rgba(255,255,255,0.85)"
                 : disabled
-                  ? "rgba(255,138,76,0.35)"
-                  : "#ff8a4c",
+                  ? "rgba(0,0,0,0.08)"
+                  : "#18181b",
             }}
           />
         ) : null}
@@ -734,7 +734,7 @@ function UpNextHero({
       className="rounded-3xl p-6 md:p-8 relative overflow-hidden"
       style={{
         background:
-          "linear-gradient(135deg, rgba(255,213,165,1) 0%, rgba(255,176,107,1) 100%)",
+          "linear-gradient(135deg, rgba(244,244,245,1) 0%, rgba(228,228,231,1) 100%)",
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -862,8 +862,8 @@ function EventCard({
     <div
       className="rounded-2xl p-4 md:p-5"
       style={{
-        background: "rgba(255,253,250,0.7)",
-        border: "0.5px solid rgba(255,138,76,0.18)",
+        background: "rgba(255,255,255,0.6)",
+        border: "0.5px solid rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}

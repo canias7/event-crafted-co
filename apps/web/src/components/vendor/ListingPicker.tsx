@@ -43,7 +43,7 @@ function statusBadge(s: ListingOpt["application_status"]) {
     return { label: "Live", bg: "rgba(34,197,94,0.14)", color: "#0a7c4a" };
   if (s === "rejected")
     return { label: "Rejected", bg: "rgba(220,38,38,0.14)", color: "#a3160d" };
-  return { label: "Pending", bg: "rgba(255,138,76,0.18)", color: "#c4541e" };
+  return { label: "Pending", bg: "rgba(0,0,0,0.08)", color: "#18181b" };
 }
 
 export function ListingPicker({
@@ -86,19 +86,19 @@ export function ListingPicker({
             type="button"
             className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition-colors"
             style={{
-              background: "rgba(255,253,250,0.7)",
-              border: "0.5px solid rgba(255,138,76,0.22)",
+              background: "rgba(255,255,255,0.6)",
+              border: "0.5px solid rgba(0,0,0,0.08)",
               backdropFilter: "blur(10px)",
               WebkitBackdropFilter: "blur(10px)",
-              boxShadow: "0 8px 24px -16px rgba(196,84,30,0.18)",
+              boxShadow: "0 8px 24px -16px rgba(0,0,0,0.18)",
             }}
           >
             <span className="flex items-center gap-3 min-w-0 flex-1">
               <span
                 className="w-9 h-9 rounded-full shrink-0 overflow-hidden inline-flex items-center justify-center text-xs font-medium"
                 style={{
-                  background: "rgba(255,138,76,0.18)",
-                  color: "#c4541e",
+                  background: "rgba(0,0,0,0.08)",
+                  color: "#18181b",
                 }}
               >
                 {selected?.logo_url ? (
@@ -142,8 +142,8 @@ export function ListingPicker({
           className="w-[--radix-popover-trigger-width] p-0 overflow-hidden"
           align="start"
           style={{
-            background: "rgba(255,253,250,0.97)",
-            border: "0.5px solid rgba(255,138,76,0.22)",
+            background: "rgba(255,255,255,0.97)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
           }}

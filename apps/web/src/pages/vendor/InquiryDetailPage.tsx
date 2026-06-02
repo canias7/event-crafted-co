@@ -87,7 +87,7 @@ interface Inquiry {
 
 const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string; label: string }> = {
   hot: { bg: "bg-rose-100", text: "text-rose-700", label: "Hot lead" },
-  warm: { bg: "bg-amber-100", text: "text-amber-700", label: "Warm lead" },
+  warm: { bg: "bg-zinc-100", text: "text-zinc-800", label: "Warm lead" },
   cold: { bg: "bg-sky-100", text: "text-sky-700", label: "Cold lead" },
 };
 
@@ -897,8 +897,8 @@ export default function InquiryDetailPage() {
       <div
         className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,253,250,0.85)",
-          borderBottom: "0.5px solid rgba(255,138,76,0.18)",
+          background: "rgba(255,255,255,0.85)",
+          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
@@ -920,7 +920,7 @@ export default function InquiryDetailPage() {
             ) : (
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(255,138,76,0.18)", color: "#c4541e" }}
+                style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
                 aria-hidden
               >
                 {initial}
@@ -931,7 +931,7 @@ export default function InquiryDetailPage() {
                 appears reachable, the chat feels alive. */}
             <span
               aria-hidden
-              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#fffdfa]"
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
             />
           </div>
           <div className="min-w-0 flex-1 leading-tight">
@@ -1107,8 +1107,8 @@ export default function InquiryDetailPage() {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(255,138,76,0.18)",
-                            color: "#c4541e",
+                            background: "rgba(0,0,0,0.08)",
+                            color: "#18181b",
                           }}
                           aria-hidden
                         >
@@ -1357,8 +1357,8 @@ export default function InquiryDetailPage() {
         <div
           className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
-            background: "rgba(255,253,250,0.92)",
-            borderTop: "0.5px solid rgba(255,138,76,0.18)",
+            background: "rgba(255,255,255,0.92)",
+            borderTop: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
           {inquiry.status === "lost"
@@ -1371,8 +1371,8 @@ export default function InquiryDetailPage() {
       <div
         className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,253,250,0.92)",
-          borderTop: "0.5px solid rgba(255,138,76,0.18)",
+          background: "rgba(255,255,255,0.92)",
+          borderTop: "0.5px solid rgba(0,0,0,0.08)",
         }}
         onDragOver={(e) => {
           if (Array.from(e.dataTransfer.types).includes("Files")) {
@@ -1672,8 +1672,8 @@ function InquiryIntakeCard({
           <span
             className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold mt-2"
             style={{
-              background: "rgba(255,138,76,0.18)",
-              color: "#c4541e",
+              background: "rgba(0,0,0,0.08)",
+              color: "#18181b",
             }}
             aria-hidden
           >
@@ -1703,7 +1703,7 @@ function InquiryIntakeCard({
             ) : null}
           </div>
           {intakeEntries.length > 0 ? (
-            <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "rgba(20,15,10,0.08)" }}>
+            <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
               {intakeEntries.map(([label, val]) => (
                 <div key={label} className="flex items-start gap-2 text-xs">
                   <span className="text-muted-foreground shrink-0">{label}:</span>
@@ -1713,7 +1713,7 @@ function InquiryIntakeCard({
             </div>
           ) : null}
           {inquiry.special_requests ? (
-            <div className="border-t pt-3 text-sm leading-relaxed whitespace-pre-wrap" style={{ borderColor: "rgba(20,15,10,0.08)" }}>
+            <div className="border-t pt-3 text-sm leading-relaxed whitespace-pre-wrap" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
               <MessageBody body={inquiry.special_requests} />
             </div>
           ) : null}
@@ -1833,8 +1833,8 @@ function InquiryPreviewSheet({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-xl rounded-2xl p-7 md:p-9 shadow-2xl"
         style={{
-          background: "rgba(255,253,250,0.97)",
-          border: "0.5px solid rgba(255,138,76,0.22)",
+          background: "rgba(255,255,255,0.97)",
+          border: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-accent mb-2">

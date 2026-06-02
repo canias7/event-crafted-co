@@ -119,7 +119,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       style={{
-        background: "rgba(20,16,12,0.55)",
+        background: "rgba(0,0,0,0.55)",
         backdropFilter: "blur(28px) saturate(140%)",
         WebkitBackdropFilter: "blur(28px) saturate(140%)",
       }}
@@ -127,8 +127,8 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
       <div
         className="relative rounded-2xl p-6 w-full max-w-md"
         style={{
-          background: "rgba(255,253,250,0.97)",
-          border: "0.5px solid rgba(255,138,76,0.22)",
+          background: "rgba(255,255,255,0.97)",
+          border: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
         <button

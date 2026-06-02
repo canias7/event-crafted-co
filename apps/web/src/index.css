@@ -74,10 +74,19 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Clean near-white base with two soft on-brand navy washes pinned in
+       opposite corners. The drifting orbs (AmbientBackground, fixed at
+       z-index:-1) animate above this static base; page content paints
+       above both. */
+    background:
+      radial-gradient(ellipse 1000px 700px at 22% 12%, rgba(27, 54, 84, 0.10) 0%, rgba(27, 54, 84, 0) 55%),
+      radial-gradient(ellipse 900px 680px at 82% 88%, rgba(27, 54, 84, 0.08) 0%, rgba(27, 54, 84, 0) 55%),
+      linear-gradient(180deg, #fbfcfd 0%, #f4f6f8 100%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -196,6 +205,30 @@
     height: 0;
   }
 
+  /* Button click "wave" — a soft ripple that radiates from the click
+     point, emitted by the shared <Button>. Ink is currentColor so it
+     reads light on dark buttons and dark on light ones. Two layered
+     timing functions (a quick swell + a slower settle) give it a
+     liquid, wavy feel rather than a flat Material puck. */
+  .btn-ripple-ink {
+    position: absolute;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.28;
+    transform: scale(0);
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: btn-ripple 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes btn-ripple {
+    0% { transform: scale(0); opacity: 0.32; }
+    40% { opacity: 0.22; }
+    100% { transform: scale(1); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-ripple-ink { display: none; }
+  }
+
   .font-display {
     font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
     font-weight: 700;
@@ -263,18 +296,25 @@
       0 12px 32px -16px hsl(220 14% 9% / 0.10);
   }
 
-  /* Warm peach glassy card — the look used by the My Vendora Overview
-     cards. Reused across Inbox / Partners / Settings / Usage so those
-     surfaces read as one cohesive set instead of plain white. */
+  /* Glassy card — translucent frosted white over the near-white
+     canvas, hairline-black border. The look used by the My Vendora
+     Overview cards, reused across Inbox / Partners / Settings / Usage
+     so those surfaces read as one cohesive set. */
   .glass-card {
-    background: rgba(255, 250, 245, 0.52);
-    border: 0.5px solid rgba(255, 138, 76, 0.18);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.7) 0%,
+      rgba(255, 255, 255, 0.4) 100%
+    );
+    border: 0.5px solid rgba(255,255,255,0.75);
     border-radius: 1rem;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
     box-shadow:
-      0 1px 2px rgba(196, 84, 30, 0.05),
-      0 8px 24px -10px rgba(196, 84, 30, 0.14);
+      0 1px 1px rgba(0, 0, 0, 0.03),
+      0 18px 44px -16px rgba(0,0,0,0.26),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   }
 
   /* Dark mode: dark surface card with a soft glow shadow. */
@@ -291,46 +331,71 @@
   }
 
   /*
-   * Dashboard canvas — the same warm cream → peach wash that the
-   * landing page and auth shell use, applied to every authenticated
-   * app surface (vendor portal, host portal, settings) so the whole
-   * thing reads as one continuous experience. The name says "vendor"
-   * for historical reasons (it shipped with the vendor portal first);
-   * host pages and /settings hook into it too. Swap `bg-background`
-   * for `vendor-canvas` on the outer wrapper of any dashboard page.
+   * Dashboard canvas — applied to every authenticated app surface
+   * (vendor portal, host portal, settings) so the whole thing reads as
+   * one continuous experience. The name says "vendor" for historical
+   * reasons (it shipped with the vendor portal first); host pages and
+   * /settings hook into it too. It's now TRANSPARENT so the global
+   * body wash + the drifting AmbientBackground orbs show through on
+   * every page. Swap `bg-background` for `vendor-canvas` on the outer
+   * wrapper of any dashboard page.
    */
   .vendor-canvas {
-    background:
-      radial-gradient(
-        ellipse 1200px 820px at 50% 22%,
-        rgba(255, 138, 76, 0.28) 0%,
-        rgba(255, 138, 76, 0.09) 35%,
-        rgba(255, 138, 76, 0.02) 60%,
-        transparent 78%
-      ),
-      #fafafa;
-    background-attachment: fixed;
+    background: transparent;
   }
 
   /*
-   * Public-page canvas — matches the auth shell + Super Agents look:
-   * solid off-white base with a large amber radial glow stamped near
-   * the top of the viewport. The glow is `background-attachment:
-   * fixed` so it stays anchored to the viewport while the page
-   * scrolls (instead of riding up with the content), giving every
-   * surface that lived-in orange wash.
+   * Public-page canvas — auth shell + Super Agents + landing. Now
+   * TRANSPARENT (was a warm radial wash) so the global body wash + the
+   * drifting AmbientBackground orbs show through, matching the rest of
+   * the app.
    */
   .public-canvas {
-    background:
-      radial-gradient(
-        ellipse 1200px 820px at 50% 22%,
-        rgba(255, 138, 76, 0.28) 0%,
-        rgba(255, 138, 76, 0.09) 35%,
-        rgba(255, 138, 76, 0.02) 60%,
-        transparent 78%
-      ),
-      #fafafa;
-    background-attachment: fixed;
+    background: transparent;
+  }
+
+  /* Ambient backdrop layer — two soft navy washes drifting slowly,
+     pinned behind all content (see AmbientBackground.tsx). Fixed +
+     z-index:-1 sits above the body's static wash, below page content. */
+  .ambient-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    will-change: transform;
+  }
+  .ambient-orb--1 {
+    width: 460px;
+    height: 460px;
+    background: rgba(27, 54, 84, 0.14);
+    top: -120px;
+    left: -100px;
+    animation: ambient-drift-1 40s ease-in-out infinite;
+  }
+  .ambient-orb--2 {
+    width: 420px;
+    height: 420px;
+    background: rgba(40, 72, 116, 0.12);
+    bottom: -140px;
+    right: -90px;
+    animation: ambient-drift-2 46s ease-in-out infinite;
+  }
+  @keyframes ambient-drift-1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(50px, 40px); }
+  }
+  @keyframes ambient-drift-2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-50px, -30px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-orb { animation: none !important; }
   }
 
   /*
@@ -344,15 +409,15 @@
    * the KPI display + chart titles for editorial feel.
    *
    * Token palette:
-   *   --c-card    rgba(255,253,250,0.7)        glassy card fill
-   *   --c-line    rgba(255,138,76,0.18)        warm hairline border
-   *   --c-tint    rgba(255,138,76,0.06)        table-row warm tint
-   *   --c-shadow  rgba(196,84,30,0.14)         warm shadow
+   *   --c-card    rgba(255, 255, 255, 0.6)        glassy card fill
+   *   --c-line    rgba(0, 0, 0, 0.08)        warm hairline border
+   *   --c-tint    rgba(0, 0, 0, 0.035)        table-row warm tint
+   *   --c-shadow  rgba(0, 0, 0,0.14)         warm shadow
    *   --c-ink     #1a1a1a                      primary text
    *   --c-soft    #4a4a4a                      secondary text
-   *   --c-muted   #8a8579                      tertiary / labels
-   *   --c-accent  #c8403a                      crimson (revenue line, CTA)
-   *   --c-good    #4a7c4a  --c-warn #c89738  --c-bad #b8453d
+   *   --c-muted   #71717a                      tertiary / labels
+   *   --c-accent  #1a1a1a                      crimson (revenue line, CTA)
+   *   --c-good    #1a1a1a  --c-warn #1a1a1a  --c-bad #71717a
    *
    * Apply by adding `my-vendora-cockpit` on the page root (alongside
    * `vendor-canvas` so the radial shows through the glass).
@@ -364,12 +429,15 @@
   /* Override the local Card component when nested inside the cockpit. */
   .my-vendora-cockpit [data-cockpit-card],
   .my-vendora-cockpit .cockpit-card {
-    background: rgba(255, 250, 245, 0.52) !important;
-    border: 0.5px solid rgba(255, 138, 76, 0.18) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22)) !important;
+    border: 0.5px solid rgba(255,255,255,0.75) !important;
     border-radius: 14px !important;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    box-shadow:
+      0 18px 44px -16px rgba(0,0,0,0.26),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04) !important;
   }
 
   /* Section heading bar — editorial eyebrow with warm hairline. */
@@ -378,10 +446,10 @@
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #8a8579;
+    color: #71717a;
     padding-bottom: 10px;
     margin-bottom: 14px;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.18);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -390,26 +458,32 @@
 
   /* StatCard — glassy KPI tile with serif display value. */
   .my-vendora-cockpit .cockpit-stat {
-    background: rgba(255, 250, 245, 0.52) !important;
-    border: 0.5px solid rgba(255, 138, 76, 0.18) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22)) !important;
+    border: 0.5px solid rgba(255,255,255,0.75) !important;
     border-radius: 14px !important;
     padding: 18px 20px !important;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14) !important;
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    box-shadow:
+      0 18px 44px -16px rgba(0,0,0,0.26),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04) !important;
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
   .my-vendora-cockpit .cockpit-stat:hover {
-    box-shadow: 0 2px 4px rgba(196, 84, 30, 0.08), 0 12px 28px -10px rgba(196, 84, 30, 0.2) !important;
+    box-shadow:
+      0 16px 40px -14px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 0 0 0.5px rgba(0, 0, 0, 0.05) !important;
   }
   .my-vendora-cockpit .cockpit-stat-label {
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #8a8579;
+    color: #71717a;
   }
   .my-vendora-cockpit .cockpit-stat-value {
     font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
@@ -422,18 +496,18 @@
   }
   .my-vendora-cockpit .cockpit-stat-sub {
     font-size: 12px;
-    color: #8a8579;
+    color: #71717a;
     margin-top: 2px;
   }
-  .my-vendora-cockpit .cockpit-stat-value--negative { color: #b8453d; }
-  .my-vendora-cockpit .cockpit-stat-value--positive { color: #4a7c4a; }
+  .my-vendora-cockpit .cockpit-stat-value--negative { color: #71717a; }
+  .my-vendora-cockpit .cockpit-stat-value--positive { color: #1a1a1a; }
 
   /* Tab strip — underline-on-active, warm muted resting state. */
   .my-vendora-cockpit .cockpit-tabs {
     display: flex;
     gap: 4px;
     overflow-x: auto;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.18);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
     margin: 0 -16px 20px;
     padding: 0 16px;
     scrollbar-width: none;
@@ -446,7 +520,7 @@
     padding: 12px 14px;
     font-size: 14px;
     font-weight: 400;
-    color: #8a8579;
+    color: #71717a;
     cursor: pointer;
     white-space: nowrap;
     display: inline-flex;
@@ -458,7 +532,7 @@
   .my-vendora-cockpit .cockpit-tab:hover { color: #1a1a1a; }
   .my-vendora-cockpit .cockpit-tab--active {
     color: #1a1a1a;
-    border-bottom-color: #c8403a;
+    border-bottom-color: #1a1a1a;
     font-weight: 500;
   }
 
@@ -476,19 +550,19 @@
     line-height: 1.4;
   }
   .my-vendora-cockpit .cockpit-pill--success {
-    background: #e8f0e8 !important; color: #4a7c4a !important; border-color: transparent !important;
+    background: rgba(0,0,0,0.06) !important; color: #1a1a1a !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--info {
-    background: #eef3f7 !important; color: #3d6b8c !important; border-color: transparent !important;
+    background: rgba(0,0,0,0.05) !important; color: #1a1a1a !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--warning {
-    background: #fdf2dd !important; color: #c89738 !important; border-color: transparent !important;
+    background: rgba(0,0,0,0.05) !important; color: #1a1a1a !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--danger {
-    background: #fbe5e3 !important; color: #b8453d !important; border-color: transparent !important;
+    background: rgba(0,0,0,0.05) !important; color: #71717a !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--neutral {
-    background: rgba(255, 138, 76, 0.1) !important; color: #4a4a4a !important; border-color: transparent !important;
+    background: rgba(0, 0, 0, 0.1) !important; color: #4a4a4a !important; border-color: transparent !important;
   }
 
   /* Dense data table — glassy surface, warm-tinted hover rows. */
@@ -501,25 +575,25 @@
   .my-vendora-cockpit .cockpit-table thead th {
     position: sticky;
     top: 0;
-    background: rgba(255, 138, 76, 0.06);
-    color: #8a8579;
+    background: rgba(0, 0, 0, 0.035);
+    color: #71717a;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     text-align: left;
     padding: 10px 12px;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.18);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
     white-space: nowrap;
   }
   .my-vendora-cockpit .cockpit-table tbody td {
     padding: 14px 12px;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.14);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.14);
     vertical-align: middle;
     color: #1a1a1a;
   }
   .my-vendora-cockpit .cockpit-table tbody tr:hover td {
-    background: rgba(255, 138, 76, 0.06);
+    background: rgba(0, 0, 0, 0.035);
   }
   .my-vendora-cockpit .cockpit-table .num {
     text-align: right;
@@ -528,9 +602,9 @@
   }
   .my-vendora-cockpit .cockpit-table tfoot td {
     padding: 12px;
-    border-top: 0.5px solid rgba(255, 138, 76, 0.18);
+    border-top: 0.5px solid rgba(0, 0, 0, 0.08);
     font-weight: 500;
-    background: rgba(255, 138, 76, 0.04);
+    background: rgba(0, 0, 0, 0.025);
   }
 
   /* Tabular money — sans + tabular for legibility. */
@@ -550,7 +624,7 @@
     font-weight: 700;
     letter-spacing: -0.25px;
   }
-  .my-vendora-cockpit .cockpit-money--negative { color: #b8453d; }
+  .my-vendora-cockpit .cockpit-money--negative { color: #71717a; }
 
   /* Headings inside the cockpit — Cormorant Garamond display. */
   .my-vendora-cockpit h1,
@@ -570,11 +644,15 @@
     gap: 12px;
     flex-wrap: wrap;
     padding: 12px 14px;
-    background: rgba(255, 250, 245, 0.52);
-    border: 0.5px solid rgba(255, 138, 76, 0.18);
+    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22));
+    border: 0.5px solid rgba(255,255,255,0.75);
+    box-shadow:
+      0 18px 44px -16px rgba(0,0,0,0.26),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
     border-radius: 14px;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
     margin-bottom: 16px;
   }
   .my-vendora-cockpit .cockpit-toolbar-meta {
@@ -585,7 +663,7 @@
     gap: 8px;
   }
   .my-vendora-cockpit .cockpit-count-chip {
-    background: rgba(255, 138, 76, 0.12);
+    background: rgba(0, 0, 0, 0.12);
     color: #4a4a4a;
     padding: 3px 9px;
     border-radius: 999px;
@@ -606,13 +684,13 @@
 
   /* Charts — glassy card, crimson line + soft area gradient. */
   .my-vendora-cockpit .cockpit-chart {
-    background: rgba(255, 250, 245, 0.52);
-    border: 0.5px solid rgba(255, 138, 76, 0.18);
+    background: rgba(255, 255, 255, 0.6);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
     border-radius: 14px;
     padding: 16px 18px;
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
   }
   .my-vendora-cockpit .cockpit-chart-title {
     font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
@@ -623,21 +701,21 @@
   }
   .my-vendora-cockpit .cockpit-chart-sub {
     font-size: 12px;
-    color: #8a8579;
+    color: #71717a;
     margin-top: 2px;
   }
   .my-vendora-cockpit .cockpit-chart-grid {
-    stroke: rgba(255, 138, 76, 0.18);
+    stroke: rgba(0, 0, 0, 0.08);
     stroke-width: 1;
   }
   .my-vendora-cockpit .cockpit-chart-axis {
     font-size: 10px;
-    fill: #8a8579;
+    fill: #71717a;
     font-variant-numeric: tabular-nums;
   }
   .my-vendora-cockpit .cockpit-chart-line {
     fill: none;
-    stroke: #c8403a;
+    stroke: #1a1a1a;
     stroke-width: 2;
   }
   .my-vendora-cockpit .cockpit-chart-area {
@@ -645,13 +723,13 @@
     opacity: 1;
   }
   .my-vendora-cockpit .cockpit-chart-bar {
-    fill: #c8403a;
+    fill: #1a1a1a;
   }
-  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #4a7c4a; }
-  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #b8453d; }
+  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #1a1a1a; }
+  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #71717a; }
   .my-vendora-cockpit .cockpit-chart-dot {
     fill: #ffffff;
-    stroke: #c8403a;
+    stroke: #1a1a1a;
     stroke-width: 1.75;
   }
 
@@ -665,15 +743,15 @@
     font-variant-numeric: tabular-nums;
     margin-left: 6px;
   }
-  .my-vendora-cockpit .cockpit-delta--up { color: #4a7c4a; }
-  .my-vendora-cockpit .cockpit-delta--down { color: #b8453d; }
-  .my-vendora-cockpit .cockpit-delta--flat { color: #8a8579; }
+  .my-vendora-cockpit .cockpit-delta--up { color: #1a1a1a; }
+  .my-vendora-cockpit .cockpit-delta--down { color: #71717a; }
+  .my-vendora-cockpit .cockpit-delta--flat { color: #71717a; }
 
   /* In-cell bar visualization — accent-tinted magnitude bar. */
   .my-vendora-cockpit .cockpit-inline-bar {
     display: inline-block;
     height: 4px;
-    background: #c8403a;
+    background: #1a1a1a;
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -682,7 +760,7 @@
     display: inline-block;
     width: 80px;
     height: 4px;
-    background: rgba(255, 138, 76, 0.12);
+    background: rgba(0, 0, 0, 0.12);
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -691,15 +769,15 @@
   .my-vendora-cockpit .cockpit-inline-bar-track > span {
     display: block;
     height: 100%;
-    background: #c8403a;
+    background: #1a1a1a;
     border-radius: 2px;
   }
 
   /* Page header — glassy chrome (still defined; the Overview tab no
      longer uses it but other tabs can). */
   .my-vendora-cockpit .cockpit-page-header {
-    background: rgba(255, 250, 245, 0.52);
-    border: 0.5px solid rgba(255, 138, 76, 0.18);
+    background: rgba(255, 255, 255, 0.6);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
     border-radius: 14px;
     padding: 22px 24px;
     margin-bottom: 20px;
@@ -710,18 +788,18 @@
     flex-wrap: wrap;
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
   }
   .my-vendora-cockpit .cockpit-breadcrumb {
     font-size: 11px;
-    color: #8a8579;
+    color: #71717a;
     margin-bottom: 6px;
     letter-spacing: 0.04em;
   }
   .my-vendora-cockpit .cockpit-breadcrumb span + span::before {
     content: "/";
     margin: 0 6px;
-    color: rgba(255, 138, 76, 0.4);
+    color: rgba(0, 0, 0, 0.4);
   }
   .my-vendora-cockpit .cockpit-page-title {
     font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
@@ -733,7 +811,7 @@
   }
   .my-vendora-cockpit .cockpit-page-sub {
     font-size: 13px;
-    color: #8a8579;
+    color: #71717a;
     margin-top: 6px;
     font-style: italic;
   }
@@ -752,8 +830,8 @@
     }
   }
   .my-vendora-cockpit .cockpit-kpi-tile {
-    background: rgba(255, 250, 245, 0.52);
-    border: 0.5px solid rgba(255, 138, 76, 0.18);
+    background: rgba(255, 255, 255, 0.6);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
     border-radius: 14px;
     padding: 14px 18px;
     display: flex;
@@ -761,18 +839,18 @@
     gap: 6px;
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
     transition: box-shadow 160ms ease, transform 160ms ease;
   }
   .my-vendora-cockpit .cockpit-kpi-tile:hover {
-    box-shadow: 0 2px 4px rgba(196, 84, 30, 0.08), 0 14px 32px -10px rgba(196, 84, 30, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 14px 32px -10px rgba(0, 0, 0, 0.2);
   }
   .my-vendora-cockpit .cockpit-kpi-label {
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #8a8579;
+    color: #71717a;
     margin-bottom: 4px;
   }
   .my-vendora-cockpit .cockpit-kpi-value {
@@ -786,7 +864,7 @@
   }
   .my-vendora-cockpit .cockpit-kpi-sub {
     font-size: 12px;
-    color: #8a8579;
+    color: #71717a;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -816,15 +894,15 @@
   .my-vendora-cockpit table.cockpit-data-table thead th {
     position: sticky;
     top: 0;
-    background: rgba(255, 138, 76, 0.06);
-    color: #8a8579;
+    background: rgba(0, 0, 0, 0.035);
+    color: #71717a;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     text-align: left;
     padding: 12px 14px;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.18);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
     white-space: nowrap;
     z-index: 1;
   }
@@ -833,7 +911,7 @@
   }
   .my-vendora-cockpit table.cockpit-data-table tbody td {
     padding: 14px;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.14);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.14);
     color: #1a1a1a;
     vertical-align: middle;
   }
@@ -843,24 +921,24 @@
     white-space: nowrap;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody tr:hover td {
-    background: rgba(255, 138, 76, 0.06);
+    background: rgba(0, 0, 0, 0.035);
   }
   .my-vendora-cockpit table.cockpit-data-table tbody tr:last-child td {
     border-bottom: 0;
   }
   /* Data-table card wrapper — glassy frosted surface. */
   .my-vendora-cockpit .cockpit-data-card {
-    background: rgba(255, 250, 245, 0.52);
-    border: 0.5px solid rgba(255, 138, 76, 0.18);
+    background: rgba(255, 255, 255, 0.6);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
     border-radius: 14px;
     overflow: hidden;
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(196, 84, 30, 0.05), 0 8px 24px -10px rgba(196, 84, 30, 0.14);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
   }
   .my-vendora-cockpit .cockpit-data-card-header {
     padding: 16px 18px;
-    border-bottom: 0.5px solid rgba(255, 138, 76, 0.18);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -878,8 +956,8 @@
 /* My Space floating launcher — pulsing halo + slow white shine wave that
    sweeps across the logo every ~5s. Applied to the draggable FAB. */
 @keyframes myspace-fab-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 138, 76, 0.45), 0 6px 16px rgba(0, 0, 0, 0.12); }
-  50% { box-shadow: 0 0 0 12px rgba(255, 138, 76, 0), 0 6px 16px rgba(0, 0, 0, 0.12); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.45), 0 6px 16px rgba(0, 0, 0, 0.12); }
+  50% { box-shadow: 0 0 0 12px rgba(0, 0, 0, 0), 0 6px 16px rgba(0, 0, 0, 0.12); }
 }
 @keyframes myspace-fab-shine {
   0% { transform: translateX(-260%); }
@@ -942,11 +1020,11 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.25));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 4px rgba(0, 0, 0, 0.05);
   transition: background 0.2s, transform 0.05s;
 }
 .glass-newchat:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
+  background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22));
 }
 .glass-newchat:active { transform: scale(0.985); }
 .glass-ripple {
@@ -954,7 +1032,7 @@
   border-radius: 9999px;
   transform: scale(0);
   pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.85), rgba(255, 138, 76, 0.35) 60%, transparent 72%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85), rgba(0, 0, 0, 0.35) 60%, transparent 72%);
   animation: glass-ripple 0.6s ease-out forwards;
 }
 @keyframes glass-ripple { to { transform: scale(2.6); opacity: 0; } }

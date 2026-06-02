@@ -19,9 +19,9 @@ export default function LoginRoleChooserPage() {
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: "#fafafa", color: "#000" }}
+      style={{ background: "#ffffff", color: "#000" }}
     >
-      {/* Ambient amber glow — primary upper-left blob */}
+      {/* Ambient glow — primary upper-left blob */}
       <div
         aria-hidden
         className="pointer-events-none absolute z-0"
@@ -32,11 +32,11 @@ export default function LoginRoleChooserPage() {
           width: "900px",
           height: "700px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,138,76,0.32) 0%, rgba(255,138,76,0.12) 30%, rgba(255,138,76,0.04) 55%, transparent 75%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.025) 30%, rgba(0,0,0,0.012) 55%, transparent 75%)",
         }}
       />
 
-      {/* Secondary glow — bottom-right warmth */}
+      {/* Secondary glow — bottom-right */}
       <div
         aria-hidden
         className="pointer-events-none absolute z-0"
@@ -46,7 +46,7 @@ export default function LoginRoleChooserPage() {
           width: "700px",
           height: "600px",
           background:
-            "radial-gradient(ellipse at center, rgba(255,138,76,0.18) 0%, rgba(255,138,76,0.05) 40%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.025) 40%, transparent 70%)",
         }}
       />
 
@@ -74,7 +74,7 @@ export default function LoginRoleChooserPage() {
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(255,138,76,0.30) 1px, transparent 1px), linear-gradient(90deg, rgba(255,138,76,0.30) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -137,7 +137,7 @@ export default function LoginRoleChooserPage() {
         <div
           className="inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 mb-7"
           style={{
-            border: "0.5px solid rgba(255,138,76,0.7)",
+            border: "0.5px solid rgba(0,0,0,0.7)",
             background: "rgba(255,255,255,0.55)",
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
@@ -148,8 +148,8 @@ export default function LoginRoleChooserPage() {
             style={{
               width: 6,
               height: 6,
-              background: "#ff8a4c",
-              boxShadow: "0 0 8px #ff8a4c",
+              background: "#18181b",
+              boxShadow: "0 0 8px rgba(0,0,0,0.25)",
             }}
           />
           <span
@@ -239,9 +239,9 @@ export default function LoginRoleChooserPage() {
         }
         .login-card:hover {
           background: rgba(255,255,255,0.55) !important;
-          border-color: rgba(255,138,76,0.6) !important;
+          border-color: rgba(0,0,0,0.6) !important;
           transform: translateY(-2px);
-          box-shadow: 0 8px 30px rgba(255,138,76,0.12);
+          box-shadow: 0 8px 30px rgba(0,0,0,0.12);
         }
       `}</style>
     </div>
@@ -323,11 +323,11 @@ type Particle = {
 };
 
 const PARTICLES: Particle[] = [
-  { variant: "a", top: "20%", left: "10%", size: 3, color: "#ff8a4c", glow: 10, delay: "0s" },
-  { variant: "b", top: "35%", left: "28%", size: 2, color: "#ffb27a", glow: 6, delay: "1s" },
-  { variant: "a", top: "60%", left: "18%", size: 2, color: "#ff8a4c", glow: 6, delay: "2s" },
-  { variant: "b", top: "25%", right: "30%", size: 3, color: "#ffb27a", glow: 8, delay: "0.5s" },
-  { variant: "a", top: "50%", left: "8%", size: 2, color: "#ff8a4c", glow: 6, delay: "1.5s" },
-  { variant: "b", top: "75%", right: "20%", size: 2, color: "#ffb27a", glow: 6, delay: "2.5s" },
-  { variant: "a", top: "15%", right: "12%", size: 3, color: "#ff8a4c", glow: 10, delay: "1s" },
+  { variant: "a", top: "20%", left: "10%", size: 3, color: "#18181b", glow: 10, delay: "0s" },
+  { variant: "b", top: "35%", left: "28%", size: 2, color: "#71717a", glow: 6, delay: "1s" },
+  { variant: "a", top: "60%", left: "18%", size: 2, color: "#18181b", glow: 6, delay: "2s" },
+  { variant: "b", top: "25%", right: "30%", size: 3, color: "#71717a", glow: 8, delay: "0.5s" },
+  { variant: "a", top: "50%", left: "8%", size: 2, color: "#18181b", glow: 6, delay: "1.5s" },
+  { variant: "b", top: "75%", right: "20%", size: 2, color: "#71717a", glow: 6, delay: "2.5s" },
+  { variant: "a", top: "15%", right: "12%", size: 3, color: "#18181b", glow: 10, delay: "1s" },
 ];
