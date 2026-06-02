@@ -425,7 +425,7 @@ export default function VendorInboxPage() {
               many hot leads they have without clicking through. */}
           <div className="mb-4 flex items-center gap-1.5 overflow-x-auto">
             {([
-              { key: "all", label: "All", count: rows.length, dot: "" },
+              { key: "all", label: "All", count: totalCount ?? rows.length, dot: "" },
               { key: "hot", label: "Hot", count: leadCounts.hot, dot: "bg-rose-500" },
               { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-zinc-800" },
               { key: "cold", label: "Cold", count: leadCounts.cold, dot: "bg-sky-500" },
