@@ -1,0 +1,45 @@
+name: Write-flow tests (local Supabase)
+
+# Option A from docs/testing/staging-and-write-flow-tests.md: spin up an
+# ephemeral local Supabase stack in CI (Docker on ubuntu-latest) so write
+# flows + edge functions can be tested in isolation, never against prod.
+#
+# Step 1 (this workflow, for now): prove the 444 migrations apply cleanly
+# from scratch — `supabase start` applies them and fails the job if any
+# migration errors. This is the prerequisite gate before we layer on the
+# function-serve + write-flow test suite.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - "supabase/migrations/**"
+      - ".github/workflows/write-flow-tests.yml"
+
+jobs:
+  local-stack:
+    name: Local stack + migrations-from-scratch
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # `supabase start` boots the local stack (Postgres + Auth + PostgREST +
+      # Storage + …) and applies every migration in supabase/migrations in
+      # order. If any migration fails to apply, this step exits non-zero.
+      - name: Start local Supabase (applies all migrations)
+        run: supabase start
+      - name: Show local stack status
+        if: always()
+        run: supabase status || true
+      - name: Sanity-check the schema is queryable
+        run: |
+          set -e
+          DB_URL="$(supabase status -o env | grep '^DB_URL=' | cut -d= -f2- | tr -d '"')"
+          echo "Querying local DB…"
+          # A couple of core tables should exist after a clean migration apply.
+          psql "$DB_URL" -tAc "select count(*) from public.vendor_profiles;"
+          psql "$DB_URL" -tAc "select count(*) from public.inquiries;"
+          echo "Migrations applied from scratch and core tables are queryable."
