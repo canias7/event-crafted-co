@@ -1,5 +1,4 @@
 import { test as setup } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
 import type { Session } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
@@ -28,46 +27,63 @@ function writeState(state: unknown) {
   fs.writeFileSync(VENDOR_AUTH_FILE, JSON.stringify(state));
 }
 
-// Captcha-free: ask the admin API for a magic-link OTP, then verify it for
-// a session. Requires the service-role key.
+// We hit the GoTrue REST endpoints with plain fetch rather than the
+// supabase-js client: createClient() spins up a realtime client that needs a
+// WebSocket, which Node < 22 (CI's runner) doesn't provide natively — it
+// throws before we ever reach auth. fetch needs none of that.
+const gotrue = (suffix: string, apikey: string, body: unknown) =>
+  fetch(`${SUPABASE_URL}/auth/v1/${suffix}`, {
+    method: "POST",
+    headers: {
+      apikey,
+      authorization: `Bearer ${apikey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+// Captcha-free: ask the admin API for a one-time magic-link OTP (admin calls
+// aren't captcha-gated), then verify it for a session. Requires service role.
 async function sessionViaServiceRole(): Promise<Session> {
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: EMAIL,
-  });
-  if (linkErr || !link.properties?.email_otp) {
-    throw new Error(`generateLink failed: ${linkErr?.message ?? "no email_otp"}`);
+  const linkRes = await gotrue(
+    "admin/generate_link",
+    SERVICE_ROLE_KEY,
+    { type: "magiclink", email: EMAIL },
+  );
+  if (!linkRes.ok) {
+    throw new Error(`generate_link ${linkRes.status}: ${await linkRes.text()}`);
   }
-  const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data, error } = await anon.auth.verifyOtp({
-    email: EMAIL,
-    token: link.properties.email_otp,
+  const link = await linkRes.json();
+  // GoTrue returns the OTP at the top level or under `properties`.
+  const otp: string | undefined = link?.email_otp ?? link?.properties?.email_otp;
+  if (!otp) throw new Error("generate_link returned no email_otp");
+
+  const verifyRes = await gotrue("verify", SUPABASE_ANON_KEY, {
     type: "email",
+    email: EMAIL,
+    token: otp,
   });
-  if (error || !data.session) {
-    throw new Error(`verifyOtp failed: ${error?.message ?? "no session"}`);
+  if (!verifyRes.ok) {
+    throw new Error(`verify ${verifyRes.status}: ${await verifyRes.text()}`);
   }
-  return data.session;
+  const session = (await verifyRes.json()) as Session;
+  if (!session?.access_token) throw new Error("verify returned no access_token");
+  return session;
 }
 
 // Fallback for projects WITHOUT auth captcha.
 async function sessionViaPassword(): Promise<Session> {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: EMAIL,
-    password: PASSWORD,
-  });
-  if (error || !data.session) {
-    throw new Error(`signInWithPassword failed: ${error?.message ?? "no session"}`);
+  const res = await gotrue(
+    "token?grant_type=password",
+    SUPABASE_ANON_KEY,
+    { email: EMAIL, password: PASSWORD },
+  );
+  if (!res.ok) {
+    throw new Error(`password grant ${res.status}: ${await res.text()}`);
   }
-  return data.session;
+  const session = (await res.json()) as Session;
+  if (!session?.access_token) throw new Error("password grant returned no access_token");
+  return session;
 }
 
 // Always produce a storage-state file so the authed project can load it even
