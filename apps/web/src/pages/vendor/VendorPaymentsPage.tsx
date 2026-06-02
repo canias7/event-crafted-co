@@ -1071,39 +1071,34 @@ function WorkspaceAppointments({
   }
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6 items-start">
-      <section className="flex-1 min-w-0 w-full">
-        <h2 className="font-display text-lg mb-3">Appointments</h2>
-        <AppointmentsList appointments={appointments} onMutate={load} />
-      </section>
-      {/* Calendar color key — moved here out of the calendar rail. Sits to
-          the right of the list (stacks above it on narrower screens). */}
-      <aside className="w-full xl:w-[220px] xl:shrink-0">
-        <div className="card-soft p-4 space-y-2 xl:sticky xl:top-24">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Calendar colors
-          </h3>
-          {showListingLegend ? (
-            <div className="space-y-1.5 text-xs max-h-[50vh] overflow-y-auto pr-1">
-              {listings.map((l) => (
-                <div key={l.id} className="flex items-center gap-1.5">
-                  <span
-                    className="w-3 h-3 rounded-full inline-block shrink-0"
-                    style={{ background: listingColorById.get(l.id) }}
-                  />
-                  <span className="text-foreground truncate">
-                    {l.business_name?.trim() || l.category || "Listing"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <p className="text-[11px] text-muted-foreground">
-            Solid = booked · faded = pending · ringed = blocked
-          </p>
-        </div>
-      </aside>
-    </div>
+    <section>
+      <h2 className="font-display text-lg mb-3">Appointments</h2>
+      {/* Calendar color key — a slim horizontal strip above the list (was a
+          tall sidebar that left a big empty column beside the long list).
+          Scrolls horizontally so many listings stay on one compact row. */}
+      <div className="mb-4 flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 text-xs text-muted-foreground">
+        <span className="shrink-0 font-semibold uppercase tracking-wider">
+          Calendar colors
+        </span>
+        {showListingLegend
+          ? listings.map((l) => (
+              <span key={l.id} className="shrink-0 inline-flex items-center gap-1.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-full inline-block"
+                  style={{ background: listingColorById.get(l.id) }}
+                />
+                <span className="text-foreground">
+                  {l.business_name?.trim() || l.category || "Listing"}
+                </span>
+              </span>
+            ))
+          : null}
+        <span className="shrink-0 text-[11px]">
+          · Solid = booked · faded = pending · ringed = blocked
+        </span>
+      </div>
+      <AppointmentsList appointments={appointments} onMutate={load} />
+    </section>
   );
 }
 
