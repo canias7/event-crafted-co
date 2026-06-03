@@ -7,6 +7,10 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.proposal-accepted-email]
     verify_jwt = false
+  # Fired by the notifications push fan-out trigger with no JWT — must be
+  # false or the gateway 401s every push before the handler runs.
+  [functions.send-push]
+    verify_jwt = false
   [functions.axion-generate]
     verify_jwt = true
   [functions.ai-site-generate]

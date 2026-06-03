@@ -3560,6 +3560,17 @@ function DocumentCanvas({
       toast.error("Nothing to send — add some content first");
       return;
     }
+    // Warn if there are still unfilled merge fields (e.g. [Total Amount]) —
+    // the chat editor warns too; this keeps the Workspace send consistent.
+    const placeholder = body.match(/\[[^\]]+\]/);
+    if (
+      placeholder &&
+      !confirm(
+        `This still has unfilled placeholders like "${placeholder[0]}". Send anyway?`,
+      )
+    ) {
+      return;
+    }
     setSending(true);
     try {
       let ctaUrl: string | undefined;
