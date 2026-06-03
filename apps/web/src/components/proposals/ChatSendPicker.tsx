@@ -55,6 +55,39 @@ function formatMoney(cents: number, currency = "usd"): string {
   }).format(cents / 100);
 }
 
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// Prepare a template body for signing: strip the redundant leading "#
+// title" line (the page shows the title separately), drop the in-body
+// "Signature: ____" placeholder lines (the e-sign block replaces them),
+// and fill the merge fields we know from the inquiry. [Total Amount] and
+// any other brackets are left for the vendor to fill in the editor.
+function prefillContractBody(
+  body: string,
+  ctx: { hostName?: string; eventDate?: string; location?: string },
+): string {
+  let b = body.replace(/^#\s+.*\n+/, "");
+  b = b
+    .split("\n")
+    .filter((line) => !/signature\s*:\s*_/i.test(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (ctx.hostName) b = b.replace(/\[Client Name\]/g, ctx.hostName);
+  if (ctx.eventDate) b = b.replace(/\[Event Date\]/g, ctx.eventDate);
+  if (ctx.location) b = b.replace(/\[Venue ?\/? ?Location\]/g, ctx.location);
+  return b;
+}
+
 const KIND_META: Record<SendKind, { label: string; icon: typeof FileText; title: string }> = {
   invoice: { label: "Invoice", icon: ReceiptText, title: "Send an invoice" },
   link: { label: "Pay link", icon: Link2, title: "Send a pay link" },
@@ -82,6 +115,13 @@ export function ChatSendPicker({
   const [rows, setRows] = useState<PickRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  // Contract fill step: after picking a contract we open an editor with
+  // the merge fields pre-filled, so the vendor completes [Total Amount]
+  // etc. before it goes out for signature.
+  const [editing, setEditing] = useState<
+    { name: string; body: string; templateId: string; recipientName: string } | null
+  >(null);
+  const [sendingContract, setSendingContract] = useState(false);
 
   const fetchRows = useCallback(
     async (k: SendKind) => {
@@ -175,29 +215,32 @@ export function ChatSendPicker({
         await onStageInvoice(row.id, row.body);
         toast.success("Invoice added — review and send");
       } else if (kind === "contract" && row.contract) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase as any)
-          .from("vendor_contracts")
-          .insert({
-            vendor_id: vendorId,
-            inquiry_id: inquiryId,
-            template_id: row.contract.templateId,
-            title: row.contract.name,
-            body: row.contract.body,
-          })
-          .select("sign_token")
-          .single();
-        if (error || !(data as { sign_token?: string })?.sign_token) {
-          toast.error("Couldn't create the contract", {
-            description: error?.message,
-          });
-          return;
+        // Pre-fill the merge fields from the inquiry, then open the editor
+        // so the vendor completes anything left (e.g. [Total Amount]).
+        let hostName = "";
+        let eventDate = "";
+        let location = "";
+        if (inquiryId) {
+          const { data: inq } = await supabase
+            .from("inquiries")
+            .select(
+              "event_date, location, host:profiles!inquiries_host_id_fkey(display_name)",
+            )
+            .eq("id", inquiryId)
+            .maybeSingle();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const i = inq as any;
+          hostName = i?.host?.display_name ?? "";
+          eventDate = formatDate(i?.event_date ?? null);
+          location = i?.location ?? "";
         }
-        const token = (data as { sign_token: string }).sign_token;
-        await onSend(
-          `📑 Contract: ${row.contract.name} — [Review & sign](${ORIGIN}/sign/${token})`,
-        );
-        toast.success("Contract sent for signing");
+        setEditing({
+          name: row.contract.name,
+          body: prefillContractBody(row.contract.body, { hostName, eventDate, location }),
+          templateId: row.contract.templateId,
+          recipientName: hostName,
+        });
+        return; // editor's "Send for signature" creates + sends it
       } else {
         await onSend(row.body);
         toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
@@ -205,6 +248,39 @@ export function ChatSendPicker({
       setKind(null);
     } finally {
       setSendingId(null);
+    }
+  }
+
+  async function sendContract() {
+    if (!editing || sendingContract) return;
+    setSendingContract(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("vendor_contracts")
+        .insert({
+          vendor_id: vendorId,
+          inquiry_id: inquiryId,
+          template_id: editing.templateId,
+          title: editing.name,
+          body: editing.body,
+          recipient_name: editing.recipientName || null,
+        })
+        .select("sign_token")
+        .single();
+      if (error || !(data as { sign_token?: string })?.sign_token) {
+        toast.error("Couldn't create the contract", { description: error?.message });
+        return;
+      }
+      const token = (data as { sign_token: string }).sign_token;
+      await onSend(
+        `📑 Contract: ${editing.name} — [Review & sign](${ORIGIN}/sign/${token})`,
+      );
+      toast.success("Contract sent for signing");
+      setEditing(null);
+      setKind(null);
+    } finally {
+      setSendingContract(false);
     }
   }
 
@@ -233,12 +309,24 @@ export function ChatSendPicker({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={kind !== null} onOpenChange={(o) => !o && setKind(null)}>
+      <Dialog
+        open={kind !== null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setKind(null);
+            setEditing(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto rounded-sm">
           <DialogHeader>
-            <DialogTitle>{kind ? KIND_META[kind].title : ""}</DialogTitle>
+            <DialogTitle>
+              {editing ? "Review & fill the contract" : kind ? KIND_META[kind].title : ""}
+            </DialogTitle>
             <DialogDescription className="text-xs">
-              {kind === "invoice"
+              {editing
+                ? "Complete any [brackets] (e.g. [Total Amount]), then send it for e-signature."
+                : kind === "invoice"
                 ? "Pick one to add as a PDF (with its pay link) to your message — then review and send."
                 : kind === "link"
                   ? "Pick one to drop its payment link into the chat."
@@ -248,7 +336,46 @@ export function ChatSendPicker({
             </DialogDescription>
           </DialogHeader>
 
-          {loading ? (
+          {editing ? (
+            <div className="space-y-3">
+              <textarea
+                value={editing.body}
+                onChange={(e) =>
+                  setEditing((ed) => (ed ? { ...ed, body: e.target.value } : ed))
+                }
+                rows={12}
+                className="w-full text-[13px] leading-relaxed rounded-md border border-input bg-background px-3 py-2 resize-y"
+              />
+              {/\[[^\]]+\]/.test(editing.body) ? (
+                <p className="text-[11px] text-amber-700">
+                  Heads up — there are still unfilled [placeholders] in the
+                  contract.
+                </p>
+              ) : null}
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="text-sm text-muted-foreground hover:text-foreground px-2 py-1.5"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void sendContract()}
+                  disabled={sendingContract}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium rounded-full bg-foreground text-background px-4 py-2 disabled:opacity-60"
+                >
+                  {sendingContract ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <FileSignature className="w-3.5 h-3.5" />
+                  )}
+                  Send for signature
+                </button>
+              </div>
+            </div>
+          ) : loading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
