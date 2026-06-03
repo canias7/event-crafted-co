@@ -3542,8 +3542,9 @@ function DocumentCanvas({
 
   // Send the CURRENTLY-OPEN template to a typed recipient — same pattern as
   // the invoice "Send to" box (manual send, consent-gated). Proposals create a
-  // shareable /proposal/<token> page (with the Accept button) and email that
-  // link; contracts still email the plain text.
+  // shareable /proposal/<token> page (with the Accept button); contracts
+  // create a signable /sign/<token> instance bound to the typed email. Both
+  // email the client a button to the live page.
   const sendDoc = useCallback(async () => {
     const to = sendEmail.trim();
     if (!templateVendorId || sending) return;
@@ -3579,6 +3580,26 @@ function DocumentCanvas({
         }
         ctaUrl = `${window.location.origin}/proposal/${token}`;
         ctaLabel = "View & accept proposal";
+      } else if (kind === "contract") {
+        // Create a signable contract bound to the typed email (the signing
+        // code goes there), then send the /sign link.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error: createErr } = await (supabase as any).rpc(
+          "create_sent_contract",
+          {
+            p_vendor_id: templateVendorId,
+            p_title: name.trim() || kindLabel,
+            p_body: body,
+            p_recipient_email: to,
+          },
+        );
+        const token = typeof data === "string" ? data : undefined;
+        if (createErr || !token) {
+          toast.error("Couldn't create the contract", { description: createErr?.message });
+          return;
+        }
+        ctaUrl = `${window.location.origin}/sign/${token}`;
+        ctaLabel = "Review & sign";
       }
       const { error } = await supabase.functions.invoke("vendorapay-document-send", {
         body: {
@@ -3697,7 +3718,7 @@ function DocumentCanvas({
               <p className="text-[11px] text-muted-foreground">
                 {kind === "proposal"
                   ? "Creates a shareable proposal page and emails the link — the client can review and accept it. Save first to keep your edits."
-                  : "Emails the current text to someone. Save first to keep your edits."}
+                  : "Creates a signable contract and emails the link — the signing code goes to this email. Save first to keep your edits."}
               </p>
               <input
                 type="email"
