@@ -4494,8 +4494,9 @@ function InvoicesTab({
   return (
     <div className="space-y-4">
       {/* Template on the left, invoice list on the right (stacks on
-          narrow screens). items-start so the columns top-align. */}
-      <div className="grid lg:grid-cols-2 gap-4 items-start">
+          narrow screens). items-start so the columns top-align. The composer
+          gets the larger share (~60%) so the invoice maker has more room. */}
+      <div className="grid lg:grid-cols-[3fr_2fr] gap-4 items-start">
       {/* Brand-editable invoice template — only the Bill From block
           (business name + city) and the Logo are interactive. The
           rest is a static visual reference for the vendor so they
