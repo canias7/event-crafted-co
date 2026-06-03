@@ -499,8 +499,9 @@ export default function VendorInboxPage() {
 
           {/* Scroll the conversation list inside a bounded height so it
               doesn't run infinitely down the page. "Load more" (10 per
-              click) stays at the bottom of the scroll area. */}
-          <div className="max-h-[calc(100vh-16rem)] overflow-y-auto pr-1 -mr-1">
+              click) stays at the bottom. Scrollbar hidden — scroll is live
+              but the bar isn't drawn. */}
+          <div className="max-h-[calc(100vh-16rem)] overflow-y-auto scrollbar-hide">
           {loading ? (
             // Skeleton rows that mirror the conversation list, so the inbox
             // doesn't flash an empty "0" state before the data lands.
