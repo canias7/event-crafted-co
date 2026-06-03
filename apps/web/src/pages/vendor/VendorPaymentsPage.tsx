@@ -1673,10 +1673,10 @@ function OverviewLeadsCard({
   leads: { new: number; active: number; won: number; lost: number; total: number };
 }) {
   const rows: Array<{ label: string; count: number; color: string }> = [
-    { label: "New",    count: leads.new,    color: "#18181b" },
-    { label: "Active", count: leads.active, color: "#52525b" },
-    { label: "Won",    count: leads.won,    color: "#1a1a1a" },
-    { label: "Lost",   count: leads.lost,   color: "#71717a" },
+    { label: "New",    count: leads.new,    color: "#dc2626" }, // crimson — needs attention
+    { label: "Active", count: leads.active, color: "#f59e0b" }, // amber — in conversation
+    { label: "Won",    count: leads.won,    color: "#16a34a" }, // green — converted
+    { label: "Lost",   count: leads.lost,   color: "#a8a29e" }, // warm gray — lost/expired
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
   const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
@@ -1747,8 +1747,8 @@ function OverviewCashflowCard({
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: "Money in",  value: moneyIn,  color: "#1a1a1a" },
-    { label: "Money out", value: moneyOut, color: "#18181b" },
+    { label: "Money in",  value: moneyIn,  color: "#16a34a" }, // green
+    { label: "Money out", value: moneyOut, color: "#dc2626" }, // crimson
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -1765,7 +1765,7 @@ function OverviewCashflowCard({
           <div className="cockpit-kpi-label">Net</div>
           <div
             className="cockpit-money cockpit-money--lg"
-            style={{ color: netPositive ? "#3f7a3f" : "#18181b" }}
+            style={{ color: netPositive ? "#16a34a" : "#dc2626" }}
           >
             {netPositive ? "" : "−"}{formatMoney(Math.abs(net), currency)}
           </div>
@@ -1825,11 +1825,11 @@ function OverviewExpensesCard({
   currency: string;
   onViewAll?: () => void;
 }) {
-  // Reuse the bar palette from MRR (crimson → terra → amber → green)
-  // so a vendor scanning the page picks up category rank by color.
-  const palette = ["#18181b", "#52525b", "#a1a1aa", "#d4d4d8"];
+  // Categorical palette (crimson → terra → amber → green) so a vendor
+  // scanning the page picks up category rank by color.
+  const palette = ["#dc2626", "#ea580c", "#f59e0b", "#16a34a"];
   const rows = expenses.topCategories.map((c, i) => ({
-    ...c, color: palette[i] ?? "#71717a",
+    ...c, color: palette[i] ?? "#a8a29e",
   }));
   // Donut geometry — stroked circle with stroke-dasharray for each
   // segment. Radius 38 + strokeWidth 14 gives an outer ring at 45
