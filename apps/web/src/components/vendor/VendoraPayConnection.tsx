@@ -91,6 +91,10 @@ async function fnError(error: { message?: string; context?: Response } | null): 
 
 export function VendoraPayConnection() {
   const [status, setStatus] = useState<PayStatus | null>(null);
+  // Gate rendering on the first status load — otherwise the "Connect
+  // VendoraPay" CTA flashes (status starts null → !onboarded → shows,
+  // then the real onboarded status arrives and hides it).
+  const [loaded, setLoaded] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [opening, setOpening] = useState(false);
 
@@ -100,7 +104,9 @@ export function VendoraPayConnection() {
       const { data } = await supabase.functions.invoke("vendorapay-status", {
         body: {},
       });
-      if (!cancelled && data) setStatus(data as PayStatus);
+      if (cancelled) return;
+      if (data) setStatus(data as PayStatus);
+      setLoaded(true);
     })();
     return () => {
       cancelled = true;
@@ -147,6 +153,14 @@ export function VendoraPayConnection() {
       <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
         VendoraPay
       </h2>
+      {!loaded ? (
+        // Skeleton until the first status load resolves, so the cards
+        // don't flash the wrong (not-connected) state first.
+        <div className="space-y-3">
+          <div className="h-28 rounded-3xl bg-foreground/5 animate-pulse" />
+          <div className="h-28 rounded-3xl bg-foreground/5 animate-pulse" />
+        </div>
+      ) : (
       <div className="space-y-3">
         {!status?.onboarded ? (
           <div
@@ -293,6 +307,7 @@ export function VendoraPayConnection() {
           </div>
         </GlassCard>
       </div>
+      )}
     </section>
   );
 }
