@@ -28,6 +28,9 @@ import { EmailVerificationBanner } from "./components/auth/EmailVerificationBann
 const CookieBanner = lazyWithReload(() =>
   import("./components/CookieBanner").then((m) => ({ default: m.CookieBanner })),
 );
+const SignContractPage = lazyWithReload(() =>
+  import("./pages/public/SignContractPage").then((m) => ({ default: m.default })),
+);
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { RouteFallback } from "@/components/shared/RouteFallback";
 // All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
@@ -126,6 +129,7 @@ const App = () => (
               {/* /real-events + /real-events/:slug routes pulled
                   temporarily — page is hidden until we re-enable. */}
               <Route path="/review/:token" element={<PublicReviewPage />} />
+              <Route path="/sign/:token" element={<SignContractPage />} />
               <Route path="/live/:token" element={<LiveWatchPage />} />
               <Route path="/g/:token" element={<PublicGallerySharePage />} />
               <Route path="/oauth/consent" element={<OAuthConsentPage />} />

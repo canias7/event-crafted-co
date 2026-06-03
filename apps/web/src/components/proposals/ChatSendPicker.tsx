@@ -41,6 +41,9 @@ interface PickRow {
   secondary?: string | null;
   // Outgoing message body
   body: string;
+  // For contracts: the template content used to create a signable
+  // instance (a /sign/<token> link is sent instead of the raw text).
+  contract?: { name: string; body: string; templateId: string };
 }
 
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "https://eventvendora.com";
@@ -135,6 +138,9 @@ export function ChatSendPicker({
               primary: t.name,
               secondary: (t.body as string)?.trim().split("\n")[0] || "Empty",
               body: `${emoji} ${KIND_META[k].label}: ${t.name}\n\n${t.body}`,
+              ...(k === "contract"
+                ? { contract: { name: t.name, body: t.body, templateId: t.id } }
+                : {}),
             })),
           );
         }
@@ -163,11 +169,35 @@ export function ChatSendPicker({
         if (error) console.error("[ChatSendPicker] link inquiry stamp failed", error);
       }
       // Invoices stage a PDF + body into the composer (vendor reviews,
-      // then sends); everything else drops a formatted text/link body
-      // straight into the thread.
+      // then sends). Contracts create a signable instance and send a
+      // "Review & sign" link. Everything else drops a text/link body.
       if (kind === "invoice" && onStageInvoice) {
         await onStageInvoice(row.id, row.body);
         toast.success("Invoice added — review and send");
+      } else if (kind === "contract" && row.contract) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from("vendor_contracts")
+          .insert({
+            vendor_id: vendorId,
+            inquiry_id: inquiryId,
+            template_id: row.contract.templateId,
+            title: row.contract.name,
+            body: row.contract.body,
+          })
+          .select("sign_token")
+          .single();
+        if (error || !(data as { sign_token?: string })?.sign_token) {
+          toast.error("Couldn't create the contract", {
+            description: error?.message,
+          });
+          return;
+        }
+        const token = (data as { sign_token: string }).sign_token;
+        await onSend(
+          `📑 Contract: ${row.contract.name} — [Review & sign](${ORIGIN}/sign/${token})`,
+        );
+        toast.success("Contract sent for signing");
       } else {
         await onSend(row.body);
         toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
@@ -212,7 +242,9 @@ export function ChatSendPicker({
                 ? "Pick one to add as a PDF (with its pay link) to your message — then review and send."
                 : kind === "link"
                   ? "Pick one to drop its payment link into the chat."
-                  : "Pick a saved template to send into the chat. Create them in Files."}
+                  : kind === "contract"
+                    ? "Pick a contract to send for e-signature — the host gets a link to review and sign."
+                    : "Pick a saved template to send into the chat. Create them in Files."}
             </DialogDescription>
           </DialogHeader>
 
