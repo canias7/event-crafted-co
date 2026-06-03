@@ -1914,13 +1914,11 @@ function MessageBubble(
           )
           : (
             <div>
-              <div className="rounded-xl overflow-hidden mb-2">
-                <img
-                  src={message.image_url}
-                  alt={message.image_prompt}
-                  className="block w-full h-auto"
-                />
-              </div>
+              <ChatImage
+                src={message.image_url}
+                alt={message.image_prompt}
+                thumbClassName="rounded-xl overflow-hidden mb-2"
+              />
               <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
                 <ImageIcon className="w-3 h-3" />
                 {message.image_prompt}
@@ -2087,18 +2085,77 @@ function AttachmentChip(
   );
 }
 
+// Tappable chat image — opens an in-app lightbox instead of navigating to the
+// raw storage URL. Used for both uploaded attachments and AI-generated images.
+// "Open original" inside the lightbox still gives access to the raw file.
+function ChatImage(
+  { src, alt, thumbClassName }: { src: string; alt: string; thumbClassName?: string },
+) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Tap to view"
+        aria-label="View image"
+        className={`block cursor-zoom-in ${thumbClassName ?? ""}`}
+      >
+        <img src={src} alt={alt} className="block w-full h-auto" />
+      </button>
+      {open && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setOpen(false)}
+        >
+          <img
+            src={src}
+            alt={alt}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+            className="absolute top-4 right-4 w-9 h-9 rounded-full inline-flex items-center justify-center bg-white/15 hover:bg-white/25 text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/80 hover:text-white underline"
+          >
+            Open original
+          </a>
+        </div>
+      )}
+    </>
+  );
+}
+
 function AttachmentTile({ att }: { att: Attachment }) {
   const isImage = att.mime.startsWith("image/");
   if (isImage) {
     return (
-      <a
-        href={att.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block rounded-lg overflow-hidden max-w-[180px]"
-      >
-        <img src={att.url} alt={att.name} className="block w-full h-auto" />
-      </a>
+      <ChatImage
+        src={att.url}
+        alt={att.name}
+        thumbClassName="rounded-lg overflow-hidden max-w-[180px]"
+      />
     );
   }
   return (
