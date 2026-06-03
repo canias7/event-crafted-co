@@ -1308,13 +1308,27 @@ export default function VendorAppointmentsPage({
               </label>
             ) : null}
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">What is it?</span>
+              <span className="text-xs font-medium text-muted-foreground">Type</span>
+              {/* Free text — type anything, or pick a suggestion. */}
               <Input
                 value={aTitle}
                 onChange={(e) => setATitle(e.target.value)}
-                placeholder="e.g. Vacation, external shoot, dentist"
+                list="vendora-entry-types"
+                placeholder="Type or pick — e.g. Vacation, External shoot"
                 className="mt-1"
               />
+              <datalist id="vendora-entry-types">
+                <option value="Personal" />
+                <option value="Vacation" />
+                <option value="External shoot" />
+                <option value="Consultation" />
+                <option value="Walkthrough" />
+                <option value="Tasting" />
+                <option value="Fitting" />
+                <option value="Phone call" />
+                <option value="Errand" />
+                <option value="Other" />
+              </datalist>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
