@@ -5,6 +5,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.contract-send-otp]
     verify_jwt = false
+  [functions.proposal-accepted-email]
+    verify_jwt = false
   [functions.axion-generate]
     verify_jwt = true
   [functions.ai-site-generate]
