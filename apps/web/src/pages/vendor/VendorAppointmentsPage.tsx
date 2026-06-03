@@ -757,6 +757,51 @@ export default function VendorAppointmentsPage({
     listings,
   ]);
 
+  // Per-day status dots: one dot PER event (appointment / inquiry) plus a
+  // single "blocked" dot on blocked days, coloured by status. Unlike
+  // dayListingState this does NOT collapse per listing, so a day with three
+  // appointments renders three dots. Sorted booked > pending > blocked so the
+  // cap keeps the most important ones.
+  const dayStatusDots = useMemo(() => {
+    const out = new Map<string, Array<Exclude<DayState, "available">>>();
+    const add = (key: string, st: Exclude<DayState, "available">) => {
+      const arr = out.get(key) ?? [];
+      arr.push(st);
+      out.set(key, arr);
+    };
+    for (const i of inquiries) {
+      const d = parseYmd(i.event_date);
+      if (!d) continue;
+      const key = ymdKey(d);
+      if (i.status === "won") add(key, "booked");
+      else if (i.status === "new" || i.status === "replied" || i.status === "drafted")
+        add(key, "pending");
+    }
+    for (const a of appointments) {
+      if (a.status !== "accepted" && a.status !== "proposed") continue;
+      add(ymdKey(new Date(a.scheduled_at)), a.status === "accepted" ? "booked" : "pending");
+    }
+    // One blocked dot per blocked date (recurring weekday + manual blocks).
+    const blockedDates = new Set<string>();
+    if (recurringListingIds.size > 0) {
+      const cursor = new Date(monthBounds.start);
+      const end = new Date(monthBounds.end);
+      while (cursor < end) {
+        if (recurringListingIds.get(cursor.getDay())) blockedDates.add(ymdKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    for (const [date] of blockListingIds) blockedDates.add(date);
+    for (const date of blockedDates) add(date, "blocked");
+    const rank: Record<Exclude<DayState, "available">, number> = {
+      booked: 3,
+      pending: 2,
+      blocked: 1,
+    };
+    for (const arr of out.values()) arr.sort((a, b) => rank[b] - rank[a]);
+    return out;
+  }, [inquiries, appointments, blockListingIds, recurringListingIds, monthBounds]);
+
   // Multi-listing dot view only makes sense when the cockpit is showing
   // more than one listing. Single-listing vendors keep the cleaner
   // full-cell color grid.
@@ -1055,6 +1100,7 @@ export default function VendorAppointmentsPage({
                   month={viewMonth}
                   dayState={dayState}
                   dayListingState={dayListingState}
+                  dayStatusDots={dayStatusDots}
                   listingColorById={listingColorById}
                   showListingColors={showListingColors}
                   selectedYmd={selectedYmd}
@@ -1065,29 +1111,22 @@ export default function VendorAppointmentsPage({
                 />
               )}
               {hideLegend ? null : showListingColors ? (
-                // Per-listing color legend (account view, >1 listing):
-                // map each dot color to the listing it represents, plus
-                // the status meaning of solid vs hatched dots.
-                <div className="mt-4 pt-3 border-t border-border space-y-2">
-                  {/* Cap the legend height and scroll — an account with
-                      many listings would otherwise render a wall of names
-                      that pushes the calendar off-screen. */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs max-h-36 overflow-y-auto pr-1">
-                    {listings.map((l) => (
-                      <div key={l.id} className="flex items-center gap-1.5">
-                        <span
-                          className="w-3 h-3 rounded-full inline-block"
-                          style={{ background: listingColorById.get(l.id) }}
-                        />
-                        <span className="text-foreground truncate max-w-[140px]">
-                          {l.business_name?.trim() || l.category || "Listing"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Solid = booked · faded = pending · ringed = blocked
-                  </p>
+                // Status legend (account view): each calendar dot is one event,
+                // coloured by status. Matches STATUS_DOT in DayCell.
+                <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
+                  {([
+                    ["#059669", "Booked"],
+                    ["#d97706", "Pending"],
+                    ["#a1a1aa", "Blocked"],
+                  ] as const).map(([color, label]) => (
+                    <span key={label} className="inline-flex items-center gap-1.5">
+                      <span
+                        className="w-3 h-3 rounded-full inline-block"
+                        style={{ background: color }}
+                      />
+                      {label}
+                    </span>
+                  ))}
                 </div>
               ) : (
                 <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
@@ -1558,6 +1597,7 @@ function MonthGrid({
   month,
   dayState,
   dayListingState,
+  dayStatusDots,
   listingColorById,
   showListingColors,
   selectedYmd,
@@ -1566,6 +1606,7 @@ function MonthGrid({
   month: Date;
   dayState: Map<string, DayState>;
   dayListingState: Map<string, DayListingEntry[]>;
+  dayStatusDots: Map<string, Array<Exclude<DayState, "available">>>;
   listingColorById: Map<string, string>;
   showListingColors: boolean;
   selectedYmd: string | null;
@@ -1605,6 +1646,7 @@ function MonthGrid({
               inMonth={inMonth}
               state={state}
               entries={showListingColors ? dayListingState.get(key) ?? [] : []}
+              statusDots={dayStatusDots.get(key) ?? []}
               listingColorById={listingColorById}
               showListingColors={showListingColors}
               selected={selected}
@@ -1675,12 +1717,18 @@ function RecurringBlocksSection({
   );
 }
 
+// Status dot colours for the calendar: one dot per event, coloured by status.
+const STATUS_DOT: Record<Exclude<DayState, "available">, string> = {
+  booked: "#059669", // emerald-600
+  pending: "#d97706", // amber-600
+  blocked: "#a1a1aa", // zinc-400
+};
+
 function DayCell({
   day,
   inMonth,
   state,
-  entries,
-  listingColorById,
+  statusDots,
   showListingColors,
   selected,
   onClick,
@@ -1689,6 +1737,7 @@ function DayCell({
   inMonth: boolean;
   state: DayState;
   entries: DayListingEntry[];
+  statusDots: Array<Exclude<DayState, "available">>;
   listingColorById: Map<string, string>;
   showListingColors: boolean;
   selected: boolean;
@@ -1696,14 +1745,13 @@ function DayCell({
 }) {
   const dimmed = !inMonth ? "text-muted-foreground/50" : "";
 
-  // Multi-listing account view: a neutral cell with one colored dot per
-  // listing that has activity that day. Solid dot = booked, faded =
-  // pending, ringed (hollow) = blocked. Cap at 4 dots + "+N" so a busy
-  // day doesn't overflow the cell.
+  // Account view: the day number with one dot PER event below it, coloured by
+  // status (booked / pending / blocked). A day with several appointments shows
+  // several dots. Cap at 6 + "+N" so a very busy day doesn't overflow.
   if (showListingColors) {
-    const MAX_DOTS = 4;
-    const shown = entries.slice(0, MAX_DOTS);
-    const extra = entries.length - shown.length;
+    const MAX_DOTS = 6;
+    const shown = statusDots.slice(0, MAX_DOTS);
+    const extra = statusDots.length - shown.length;
     return (
       <div className="flex items-center justify-center py-1">
         <button
@@ -1713,30 +1761,15 @@ function DayCell({
           } ${dimmed}`}
         >
           <span className="leading-none">{day}</span>
-          {entries.length > 0 ? (
+          {statusDots.length > 0 ? (
             <span className="flex items-center justify-center gap-[2px] h-1.5">
-              {shown.map((e, i) => {
-                const color = listingColorById.get(e.vendorId) ?? "#999";
-                if (e.state === "blocked") {
-                  return (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full inline-block"
-                      style={{ border: `1.5px solid ${color}` }}
-                    />
-                  );
-                }
-                return (
-                  <span
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full inline-block"
-                    style={{
-                      background: color,
-                      opacity: e.state === "pending" ? 0.45 : 1,
-                    }}
-                  />
-                );
-              })}
+              {shown.map((st, i) => (
+                <span
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full inline-block"
+                  style={{ background: STATUS_DOT[st] }}
+                />
+              ))}
               {extra > 0 ? (
                 <span className="text-[8px] leading-none text-muted-foreground">
                   +{extra}
