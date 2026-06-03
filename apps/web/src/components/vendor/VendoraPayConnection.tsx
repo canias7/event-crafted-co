@@ -101,12 +101,17 @@ export function VendoraPayConnection() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.functions.invoke("vendorapay-status", {
-        body: {},
-      });
-      if (cancelled) return;
-      if (data) setStatus(data as PayStatus);
-      setLoaded(true);
+      try {
+        const { data } = await supabase.functions.invoke("vendorapay-status", {
+          body: {},
+        });
+        if (!cancelled && data) setStatus(data as PayStatus);
+      } catch {
+        // Network/throw — fall through so we still flip `loaded` and render
+        // the cards (rather than getting stuck on the skeleton forever).
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
     })();
     return () => {
       cancelled = true;

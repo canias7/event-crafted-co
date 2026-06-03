@@ -65,9 +65,10 @@ export default function SettingsPage() {
 
         <div className="p-4 md:p-8 max-w-2xl">
           {/* VendoraPay connection — moved here from the Workspace cockpit's
-              Settings tab. Account-level payments/payout setup lives with
-              the rest of the account settings. Vendors only. */}
-          {isApprovedVendor ? (
+              Settings tab. Gated on useVendorNav (stable, localStorage-based)
+              rather than isApprovedVendor, which is recomputed from async
+              profile/listing state and flickered the section in and out. */}
+          {useVendorNav ? (
             <div className="mb-6">
               <VendoraPayConnection />
             </div>
