@@ -18,7 +18,9 @@ export type CreditAction =
   | "hilux_draft"
   | "axion_image"
   | "mux_minute"
-  | "email_parse";
+  | "email_parse"
+  | "invoice_ai_draft"
+  | "document_ai_draft";
 
 // Per-action credit costs. Calibrated for ~80%+ gross margin per
 // action at measured upstream prices (see ai_call_usage telemetry).
@@ -35,6 +37,8 @@ export const CREDIT_COST: Record<CreditAction, number> = {
   axion_image: 10,
   mux_minute: 1,
   email_parse: 1,
+  invoice_ai_draft: 2,
+  document_ai_draft: 2,
 };
 
 function adminClient() {

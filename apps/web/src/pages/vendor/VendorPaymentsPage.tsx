@@ -43,7 +43,7 @@ function TabSkeleton() {
 }
 
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { handleEmailBillingError } from "@/lib/credits";
+import { handleEmailBillingError, handleInsufficientCredits } from "@/lib/credits";
 import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle,
@@ -3824,6 +3824,7 @@ function DocumentCanvas({
               });
               const d = data as { name?: string; body?: string } | null;
               if (error || !d?.body) {
+                if (error && (await handleInsufficientCredits(error))) throw error;
                 toast.error(`Couldn't generate the ${kindLabel.toLowerCase()}. Try rephrasing.`);
                 throw error ?? new Error("no_draft");
               }
@@ -4717,6 +4718,7 @@ function InvoicesTab({
             body: { description: prompt },
           });
           if (error || !(data as { items?: unknown[] })?.items) {
+            if (error && (await handleInsufficientCredits(error))) throw error;
             toast.error("Couldn't generate the invoice. Try rephrasing.");
             throw error ?? new Error("no_draft");
           }
