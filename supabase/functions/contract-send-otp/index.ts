@@ -1,9 +1,13 @@
-// POST /contract-send-otp { token, email }
+// POST /contract-send-otp { token, email? }
 //
 // Public (verify_jwt=false): the signer is anonymous. Gated by the
 // contract's 128-bit sign token — only a valid 'sent' contract token
-// can trigger a code. Emails a 6-digit code to the given address and
-// stores its SHA-256 hash (matching the sign_contract RPC's check).
+// can trigger a code. The code is emailed to the contract's bound
+// recipient (the host it was sent to), looked up server-side by token —
+// the client cannot redirect it to an arbitrary inbox, so only the
+// intended recipient can sign. The submitted `email` is only used as a
+// fallback for legacy contracts with no recipient on file. Stores the
+// code's SHA-256 hash (matching the sign_contract RPC's check).
 // Rate-limited to 5 codes per contract per hour.
 
 // deno-lint-ignore-file no-explicit-any
@@ -45,19 +49,23 @@ serve(async (req) => {
   if (!RESEND_API_KEY) return json(500, { error: "resend_not_configured" });
   try {
     const { token, email } = await req.json();
-    if (!token || !email) return json(400, { error: "token and email required" });
-    const cleanEmail = String(email).trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail)) {
-      return json(400, { error: "invalid email" });
-    }
+    if (!token) return json(400, { error: "token required" });
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: c } = await admin
       .from("vendor_contracts")
-      .select("id, status, title")
+      .select("id, status, title, recipient_email")
       .eq("sign_token", token)
       .maybeSingle();
     if (!c) return json(404, { error: "contract_not_found" });
     if ((c as any).status !== "sent") return json(400, { error: "not_signable" });
+
+    // The code always goes to the contract's bound recipient. A client-supplied
+    // email is only honored for legacy contracts with no recipient on file.
+    const recipient = String((c as any).recipient_email ?? "").trim().toLowerCase();
+    const cleanEmail = recipient || String(email ?? "").trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail)) {
+      return json(400, { error: "invalid email" });
+    }
 
     // Rate limit: at most 5 codes per contract per hour.
     const since = new Date(Date.now() - 3600 * 1000).toISOString();

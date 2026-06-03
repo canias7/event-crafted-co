@@ -23,6 +23,8 @@ interface SignContract {
   signed_at: string | null;
   vendor_business_name: string | null;
   signature_image: string | null;
+  recipient_email_masked: string | null;
+  has_fixed_recipient: boolean;
 }
 
 function fmtDate(iso: string | null): string {
@@ -73,16 +75,23 @@ export default function SignContractPage() {
     void load();
   }, [load]);
 
+  // When the contract is locked to a recipient, the code always goes to that
+  // address — the signer doesn't (and can't) supply an email.
+  const fixedRecipient = !!contract?.has_fixed_recipient;
+
   async function sendCode() {
-    if (!token || !email.trim() || sendingCode) return;
+    if (!token || sendingCode) return;
+    if (!fixedRecipient && !email.trim()) return;
     setSendingCode(true);
     const { error } = await supabase.functions.invoke("contract-send-otp", {
-      body: { token, email: email.trim() },
+      body: fixedRecipient ? { token } : { token, email: email.trim() },
     });
     setSendingCode(false);
     if (error) {
       toast.error("Couldn't send the code", {
-        description: "Check the email and try again.",
+        description: fixedRecipient
+          ? "Please try again in a moment."
+          : "Check the email and try again.",
       });
       return;
     }
@@ -95,7 +104,7 @@ export default function SignContractPage() {
       !token ||
       !agreed ||
       !signerName.trim() ||
-      !email.trim() ||
+      (!fixedRecipient && !email.trim()) ||
       !otp.trim() ||
       signing
     )
@@ -106,7 +115,7 @@ export default function SignContractPage() {
       p_token: token,
       p_signer_name: signerName.trim(),
       p_signature_image: signatureImage,
-      p_email: email.trim(),
+      p_email: fixedRecipient ? null : email.trim(),
       p_otp: otp.trim(),
     });
     setSigning(false);
@@ -256,37 +265,65 @@ export default function SignContractPage() {
                     <SignaturePad onChange={setSignatureImage} />
                   </div>
                 </div>
-                {/* Email verification — prove control of an email with a
-                    one-time code before signing. */}
+                {/* Email verification — prove control of the recipient's
+                    email with a one-time code before signing. When the
+                    contract is locked to a recipient, the code only goes to
+                    that address, so only they can sign. */}
                 <div className="border-t border-foreground/10 pt-4">
                   <label className="text-xs font-medium text-muted-foreground">
                     Verify your email to sign
                   </label>
-                  <div className="mt-1 flex gap-2">
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      disabled={codeSent}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={sendCode}
-                      disabled={!email.trim() || sendingCode}
-                      className="rounded-full shrink-0"
-                    >
-                      {sendingCode ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : codeSent ? (
-                        "Resend"
-                      ) : (
-                        "Send code"
-                      )}
-                    </Button>
-                  </div>
+                  {fixedRecipient ? (
+                    <div className="mt-1 flex gap-2 items-center">
+                      <div className="flex-1 rounded-md border border-foreground/15 bg-muted/40 px-3 py-2 text-sm text-foreground/80">
+                        We'll send a code to{" "}
+                        <span className="font-medium">
+                          {contract.recipient_email_masked}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={sendCode}
+                        disabled={sendingCode}
+                        className="rounded-full shrink-0"
+                      >
+                        {sendingCode ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : codeSent ? (
+                          "Resend"
+                        ) : (
+                          "Send code"
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="mt-1 flex gap-2">
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        disabled={codeSent}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={sendCode}
+                        disabled={!email.trim() || sendingCode}
+                        className="rounded-full shrink-0"
+                      >
+                        {sendingCode ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : codeSent ? (
+                          "Resend"
+                        ) : (
+                          "Send code"
+                        )}
+                      </Button>
+                    </div>
+                  )}
                   {codeSent ? (
                     <div className="mt-2">
                       <Input
@@ -299,8 +336,11 @@ export default function SignContractPage() {
                         className="tracking-[0.4em] text-center"
                       />
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        We emailed a code to {email.trim()}. It expires in 10
-                        minutes.
+                        We emailed a code to{" "}
+                        {fixedRecipient
+                          ? contract.recipient_email_masked
+                          : email.trim()}
+                        . It expires in 10 minutes.
                       </p>
                     </div>
                   ) : null}
@@ -322,7 +362,7 @@ export default function SignContractPage() {
                   disabled={
                     !agreed ||
                     !signerName.trim() ||
-                    !email.trim() ||
+                    (!fixedRecipient && !email.trim()) ||
                     otp.trim().length < 6 ||
                     signing
                   }
