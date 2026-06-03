@@ -497,6 +497,10 @@ export default function VendorInboxPage() {
             </button>
           </div>
 
+          {/* Scroll the conversation list inside a bounded height so it
+              doesn't run infinitely down the page. "Load more" (10 per
+              click) stays at the bottom of the scroll area. */}
+          <div className="max-h-[calc(100vh-16rem)] overflow-y-auto pr-1 -mr-1">
           {loading ? (
             // Skeleton rows that mirror the conversation list, so the inbox
             // doesn't flash an empty "0" state before the data lands.
@@ -580,6 +584,7 @@ export default function VendorInboxPage() {
               </button>
             </div>
           ) : null}
+          </div>
         </div>
       </main>
       <MobileNav items={navItems} />
