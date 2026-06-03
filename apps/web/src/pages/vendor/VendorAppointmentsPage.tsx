@@ -249,7 +249,6 @@ export default function VendorAppointmentsPage({
   // Manual "add appointment" form — vendor-created, no host/inquiry.
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
-  const [aKind, setAKind] = useState("consultation");
   const [aTitle, setATitle] = useState("");
   const [aTime, setATime] = useState("09:00");
   const [aDuration, setADuration] = useState("60");
@@ -502,7 +501,7 @@ export default function VendorAppointmentsPage({
       vendor_id: vid,
       inquiry_id: null,
       host_id: null,
-      kind: aKind,
+      kind: "other", // off-platform/personal entry — not a host-meeting type
       title: aTitle.trim() || null,
       location: aLocation.trim() || null,
       scheduled_at: scheduledAt.toISOString(),
@@ -817,9 +816,12 @@ export default function VendorAppointmentsPage({
         inquiryId: a.inquiry_id ?? null,
         title: a.title?.trim() || APPT_KIND_LABEL[a.kind] || "Meeting",
         subtitle:
-          (a.host_name ?? "Client") +
-          " · " +
-          (a.status === "accepted" ? "Confirmed" : "Proposed") +
+          // Host-less rows are off-platform/personal entries.
+          (a.host_id
+            ? (a.host_name ?? "Client") +
+              " · " +
+              (a.status === "accepted" ? "Confirmed" : "Proposed")
+            : "Off-platform · personal") +
           labelFor(a.vendor_id),
         amountCents: null,
         accent: a.status === "accepted" ? "booked" : "pending",
@@ -1280,11 +1282,12 @@ export default function VendorAppointmentsPage({
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-2xl">
-              Add to calendar
+              Add personal entry
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
-              {selectedYmd ? prettyDay(selectedYmd) : ""} · a private entry on
-              your calendar (no host is notified).
+              {selectedYmd ? prettyDay(selectedYmd) : ""} · block off-platform
+              time — vacation, an external booking, a personal appointment.
+              Private to you; no host is involved.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -1304,43 +1307,12 @@ export default function VendorAppointmentsPage({
                 </select>
               </label>
             ) : null}
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Type</span>
-                <select
-                  value={aKind}
-                  onChange={(e) => setAKind(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
-                >
-                  <option value="consultation">Consultation</option>
-                  <option value="walkthrough">Walkthrough</option>
-                  <option value="tasting">Tasting</option>
-                  <option value="fitting">Fitting</option>
-                  <option value="phone_call">Phone call</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Duration</span>
-                <select
-                  value={aDuration}
-                  onChange={(e) => setADuration(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
-                >
-                  <option value="30">30 min</option>
-                  <option value="45">45 min</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
-                </select>
-              </label>
-            </div>
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Title (optional)</span>
+              <span className="text-xs font-medium text-muted-foreground">What is it?</span>
               <Input
                 value={aTitle}
                 onChange={(e) => setATitle(e.target.value)}
-                placeholder="e.g. Site visit"
+                placeholder="e.g. Vacation, external shoot, dentist"
                 className="mt-1"
               />
             </label>
@@ -1355,15 +1327,31 @@ export default function VendorAppointmentsPage({
                 />
               </label>
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Location (optional)</span>
-                <Input
-                  value={aLocation}
-                  onChange={(e) => setALocation(e.target.value)}
-                  placeholder="e.g. Zoom, address"
-                  className="mt-1"
-                />
+                <span className="text-xs font-medium text-muted-foreground">Duration</span>
+                <select
+                  value={aDuration}
+                  onChange={(e) => setADuration(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
+                >
+                  <option value="30">30 min</option>
+                  <option value="45">45 min</option>
+                  <option value="60">1 hour</option>
+                  <option value="90">1.5 hours</option>
+                  <option value="120">2 hours</option>
+                  <option value="240">Half day</option>
+                  <option value="480">Full day</option>
+                </select>
               </label>
             </div>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground">Location (optional)</span>
+              <Input
+                value={aLocation}
+                onChange={(e) => setALocation(e.target.value)}
+                placeholder="e.g. address, Zoom"
+                className="mt-1"
+              />
+            </label>
             <label className="block">
               <span className="text-xs font-medium text-muted-foreground">Notes (optional)</span>
               <textarea

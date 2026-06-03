@@ -209,6 +209,11 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
             const badge = statusBadge[appt.status];
             const when = new Date(appt.scheduled_at);
             const otherName = appt.host_name;
+            // Host-less rows are manual, off-platform entries (personal
+            // blocks, external bookings) — render them as "Personal", not
+            // as a host meeting.
+            const isPersonal = !appt.host_id;
+            const heading = appt.title?.trim() || kindLabel[appt.kind] || "Meeting";
             const needsMyResponse =
               appt.status === "proposed" && appt.proposed_by === "host";
             const canCancel =
@@ -228,7 +233,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                 <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
                   <div className="min-w-0">
                     <p className="font-display text-base mb-0.5">
-                      {kindLabel[appt.kind] ?? "Meeting"}
+                      {heading}
                       {otherName && (
                         <span className="text-muted-foreground font-normal">
                           {" "}
@@ -237,12 +242,20 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground tnum">
-                      {appt.proposed_by === "vendor"
-                        ? "Proposed by you"
-                        : "Proposed by the host"}
+                      {isPersonal
+                        ? "Off-platform · personal"
+                        : appt.proposed_by === "vendor"
+                          ? "Proposed by you"
+                          : "Proposed by the host"}
                     </p>
                   </div>
-                  <Badge className={badge.className}>{badge.label}</Badge>
+                  {isPersonal ? (
+                    <Badge className="bg-secondary text-secondary-foreground border border-border">
+                      Personal
+                    </Badge>
+                  ) : (
+                    <Badge className={badge.className}>{badge.label}</Badge>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground mb-3">
