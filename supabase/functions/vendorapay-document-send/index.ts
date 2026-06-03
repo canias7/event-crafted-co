@@ -1,5 +1,6 @@
 // VendoraPay: POST /vendorapay-document-send
-//   { vendor_id, kind: "contract"|"proposal", name, body, to_email }
+//   { vendor_id, kind: "contract"|"proposal", name, body, to_email,
+//     cta_url?, cta_label? }
 //
 // Vendor-initiated email of a contract/proposal TEMPLATE (title + body
 // text) to a typed recipient. Mirrors vendorapay-invoice-send: same
@@ -51,6 +52,11 @@ serve(async (req) => {
     const docName = (reqBody?.name as string | undefined)?.trim() || (kind === "contract" ? "Contract" : "Proposal");
     const docBody = (reqBody?.body as string | undefined) ?? "";
     const toEmail = (reqBody?.to_email as string | undefined)?.trim() ?? "";
+    // Optional call-to-action button (e.g. proposals link to the shareable
+    // /proposal/<token> page so the client can review and accept). Contracts
+    // omit it and keep the plain text email.
+    const ctaUrl = (reqBody?.cta_url as string | undefined)?.trim() ?? "";
+    const ctaLabel = (reqBody?.cta_label as string | undefined)?.trim() || "Open";
 
     if (!vendorId) return json(400, { error: "vendor_id required" });
     if (!toEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
@@ -115,7 +121,10 @@ serve(async (req) => {
 
     const kindLabel = kind === "contract" ? "Contract" : "Proposal";
     // Preserve the vendor's line breaks; escape the rest.
-    const bodyHtml = `<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><div style="white-space:pre-wrap;font-size:14px;line-height:1.7;color:#3a3a3a;">${escapeHtml(docBody)}</div>`;
+    let bodyHtml = `<p style="margin:0 0 8px;font-size:13px;color:#777;">From ${escapeHtml(businessName)}</p><div style="white-space:pre-wrap;font-size:14px;line-height:1.7;color:#3a3a3a;">${escapeHtml(docBody)}</div>`;
+    if (ctaUrl && /^https?:\/\//i.test(ctaUrl)) {
+      bodyHtml += `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:28px;"><tr><td><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 30px;border-radius:999px;">${escapeHtml(ctaLabel)}</a></td></tr></table>`;
+    }
     const html = shellHtml(escapeHtml(docName), bodyHtml);
 
     const r = await fetch("https://api.resend.com/emails", {

@@ -3540,8 +3540,10 @@ function DocumentCanvas({
     [tableName, load],
   );
 
-  // Email the CURRENTLY-OPEN template's text to a typed recipient — same
-  // pattern as the invoice "Send to" box (manual send, consent-gated).
+  // Send the CURRENTLY-OPEN template to a typed recipient — same pattern as
+  // the invoice "Send to" box (manual send, consent-gated). Proposals create a
+  // shareable /proposal/<token> page (with the Accept button) and email that
+  // link; contracts still email the plain text.
   const sendDoc = useCallback(async () => {
     const to = sendEmail.trim();
     if (!templateVendorId || sending) return;
@@ -3554,23 +3556,50 @@ function DocumentCanvas({
       return;
     }
     setSending(true);
-    const { error } = await supabase.functions.invoke("vendorapay-document-send", {
-      body: {
-        vendor_id: templateVendorId,
-        kind,
-        name: name.trim() || kindLabel,
-        body,
-        to_email: to,
-      },
-    });
-    setSending(false);
-    if (error) {
-      if (await handleEmailBillingError(error, navigate)) return;
-      toast.error("Couldn't send", { description: error.message });
-      return;
+    try {
+      let ctaUrl: string | undefined;
+      let ctaLabel: string | undefined;
+      if (kind === "proposal") {
+        // Create the shareable proposal instance so the client gets the real
+        // page (with Accept), not just the raw text.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error: createErr } = await (supabase as any)
+          .from("vendor_proposals")
+          .insert({
+            vendor_id: templateVendorId,
+            title: name.trim() || kindLabel,
+            body,
+          })
+          .select("view_token")
+          .single();
+        const token = (data as { view_token?: string } | null)?.view_token;
+        if (createErr || !token) {
+          toast.error("Couldn't create the proposal", { description: createErr?.message });
+          return;
+        }
+        ctaUrl = `${window.location.origin}/proposal/${token}`;
+        ctaLabel = "View & accept proposal";
+      }
+      const { error } = await supabase.functions.invoke("vendorapay-document-send", {
+        body: {
+          vendor_id: templateVendorId,
+          kind,
+          name: name.trim() || kindLabel,
+          body,
+          to_email: to,
+          ...(ctaUrl ? { cta_url: ctaUrl, cta_label: ctaLabel } : {}),
+        },
+      });
+      if (error) {
+        if (await handleEmailBillingError(error, navigate)) return;
+        toast.error("Couldn't send", { description: error.message });
+        return;
+      }
+      toast.success(`${kindLabel} sent to ${to}`);
+      setSendEmail("");
+    } finally {
+      setSending(false);
     }
-    toast.success(`${kindLabel} sent to ${to}`);
-    setSendEmail("");
   }, [templateVendorId, sending, sendEmail, body, kind, name, kindLabel, navigate]);
 
   const displayName = templateListing?.business_name?.trim() || "[Your Business Name]";
@@ -3666,7 +3695,9 @@ function DocumentCanvas({
                 Send this {kindLabel.toLowerCase()}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Emails the current text to someone. Save first to keep your edits.
+                {kind === "proposal"
+                  ? "Creates a shareable proposal page and emails the link — the client can review and accept it. Save first to keep your edits."
+                  : "Emails the current text to someone. Save first to keep your edits."}
               </p>
               <input
                 type="email"
