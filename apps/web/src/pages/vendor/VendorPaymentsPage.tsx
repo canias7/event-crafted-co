@@ -100,6 +100,7 @@ import { useRealtime } from "@/lib/realtime";
 import { listingColorMap } from "@/lib/listingColors";
 import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { SentContractsList } from "@/components/vendor/SentContractsList";
+import { SentProposalsList } from "@/components/vendor/SentProposalsList";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -2830,12 +2831,15 @@ function FilesTab(props: {
           />
         </>
       ) : fileTab === "proposals" ? (
-        <DocumentCanvas
-          accountVendorIds={props.accountVendorIds}
-          listings={props.listings}
-          kind="proposal"
-          starter={PROPOSAL_TEMPLATES[0]}
-        />
+        <>
+          <SentProposalsList accountVendorIds={props.accountVendorIds} />
+          <DocumentCanvas
+            accountVendorIds={props.accountVendorIds}
+            listings={props.listings}
+            kind="proposal"
+            starter={PROPOSAL_TEMPLATES[0]}
+          />
+        </>
       ) : null}
     </div>
   );
