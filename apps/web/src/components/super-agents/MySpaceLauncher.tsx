@@ -175,8 +175,13 @@ export function MySpaceLauncher() {
           aria-modal="true"
           aria-label="My Space assistant"
         >
+          {/* Solid translucent scrim — NOT a live backdrop-blur. A
+              full-viewport backdrop-filter forces WebKit to re-rasterize the
+              entire underlying page every frame during the open animation,
+              which froze the main thread for seconds on heavy pages (big
+              calendar / long inbox). A plain opacity scrim composites cheaply. */}
           <div
-            className="absolute inset-0 bg-background/50 backdrop-blur-md"
+            className="absolute inset-0 bg-background/80"
             onClick={() => setOpen(false)}
             aria-hidden
           />
