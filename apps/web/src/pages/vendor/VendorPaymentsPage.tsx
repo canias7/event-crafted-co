@@ -1537,8 +1537,8 @@ function OverviewRevenueChart({
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#18181b" stopOpacity={hasData ? 0.18 : 0.08} />
-                  <stop offset="100%" stopColor="#18181b" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#16a34a" stopOpacity={hasData ? 0.18 : 0.08} />
+                  <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {/* Horizontal grid lines + y-axis tick labels */}
@@ -1557,7 +1557,7 @@ function OverviewRevenueChart({
               <path
                 d={linePath}
                 fill="none"
-                stroke="#18181b"
+                stroke="#16a34a"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1565,8 +1565,8 @@ function OverviewRevenueChart({
               />
               {showHover ? (
                 <>
-                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#18181b" strokeOpacity="0.45" strokeWidth="1" />
-                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#18181b" strokeWidth="2.5" />
+                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#16a34a" strokeOpacity="0.45" strokeWidth="1" />
+                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#16a34a" strokeWidth="2.5" />
                 </>
               ) : null}
               {/* Hit-test rect — captures pointer moves and converts
