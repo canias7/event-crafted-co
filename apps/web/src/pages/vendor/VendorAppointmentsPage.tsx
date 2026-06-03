@@ -35,6 +35,12 @@ import {
 } from "@/components/appointments/AppointmentsList";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -246,6 +252,8 @@ export default function VendorAppointmentsPage({
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Clicking a calendar day opens a preview modal of that day's schedule.
+  const [dayModalOpen, setDayModalOpen] = useState(false);
   // Manual "add appointment" form — vendor-created, no host/inquiry.
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
@@ -1037,7 +1045,10 @@ export default function VendorAppointmentsPage({
                   listingColorById={listingColorById}
                   showListingColors={showListingColors}
                   selectedYmd={selectedYmd}
-                  onSelect={(k) => setSelectedYmd(k)}
+                  onSelect={(k) => {
+                    setSelectedYmd(k);
+                    setDayModalOpen(true);
+                  }}
                 />
               )}
               {hideLegend ? null : showListingColors ? (
@@ -1075,13 +1086,18 @@ export default function VendorAppointmentsPage({
             </div>
           </div>
 
-          {selectedYmd ? (
-            <div>
-              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <h3 className="font-editorial text-xl">
-                  {prettyDay(selectedYmd)}
-                </h3>
-                <div className="flex items-center gap-2">
+          {/* Day preview — opens on day click, shows that day's schedule. */}
+          <Dialog
+            open={dayModalOpen && !!selectedYmd}
+            onOpenChange={setDayModalOpen}
+          >
+            <DialogContent className="rounded-2xl max-w-md max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-editorial text-2xl text-left">
+                  {selectedYmd ? prettyDay(selectedYmd) : ""}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
                   {/* Per-listing block target — account view with >1
                       listing only. Lets the vendor block a date for ONE
                       listing or all of them. "All" preserves the prior
@@ -1128,7 +1144,6 @@ export default function VendorAppointmentsPage({
                     )}
                     {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
                   </button>
-                </div>
               </div>
 
               {selectedItems.length === 0 ? (
@@ -1150,8 +1165,8 @@ export default function VendorAppointmentsPage({
                   )}
                 </div>
               )}
-            </div>
-          ) : null}
+            </DialogContent>
+          </Dialog>
 
           {/* Recurring blocks — vendor sets "I never work Sundays"
               once and every Sunday on every future month is marked
