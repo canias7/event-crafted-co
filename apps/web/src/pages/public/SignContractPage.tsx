@@ -5,11 +5,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Check, Loader2, FileSignature } from "lucide-react";
+import { Check, Loader2, FileSignature, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SignaturePad } from "@/components/SignaturePad";
+import { downloadSignedContractPdf } from "@/lib/signedContractPdf";
 
 interface SignContract {
   id: string;
@@ -20,6 +22,7 @@ interface SignContract {
   signer_name: string | null;
   signed_at: string | null;
   vendor_business_name: string | null;
+  signature_image: string | null;
 }
 
 function fmtDate(iso: string | null): string {
@@ -42,6 +45,7 @@ export default function SignContractPage() {
   const [signerName, setSignerName] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
+  const [signatureImage, setSignatureImage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -72,6 +76,7 @@ export default function SignContractPage() {
     const { data, error } = await (supabase as any).rpc("sign_contract", {
       p_token: token,
       p_signer_name: signerName.trim(),
+      p_signature_image: signatureImage,
     });
     setSigning(false);
     if (error) {
@@ -89,6 +94,7 @@ export default function SignContractPage() {
               status: "signed",
               signer_name: signerName.trim(),
               signed_at: new Date().toISOString(),
+              signature_image: signatureImage,
             }
           : c,
       );
@@ -147,18 +153,42 @@ export default function SignContractPage() {
 
           <div className="border-t border-foreground/10 mt-6 pt-6">
             {isSigned ? (
-              <div className="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-                <div className="w-9 h-9 rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
-                  <Check className="w-5 h-5" />
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+                  <div className="w-9 h-9 rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
+                    <Check className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-emerald-900">
+                      Signed by {contract.signer_name}
+                    </p>
+                    <p className="text-sm text-emerald-800/80">
+                      {fmtDate(contract.signed_at)}
+                    </p>
+                    {contract.signature_image ? (
+                      <img
+                        src={contract.signature_image}
+                        alt="Signature"
+                        className="mt-2 h-14 bg-white rounded border border-emerald-200"
+                      />
+                    ) : (
+                      <p
+                        className="mt-1 text-2xl text-emerald-900"
+                        style={{ fontFamily: "'Brush Script MT', cursive" }}
+                      >
+                        {contract.signer_name}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-emerald-900">
-                    Signed by {contract.signer_name}
-                  </p>
-                  <p className="text-sm text-emerald-800/80">
-                    {fmtDate(contract.signed_at)}
-                  </p>
-                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => downloadSignedContractPdf(contract)}
+                  className="rounded-full"
+                >
+                  <Download className="w-4 h-4 mr-1.5" />
+                  Download signed PDF
+                </Button>
               </div>
             ) : isOpen ? (
               <div className="space-y-4">
@@ -172,7 +202,7 @@ export default function SignContractPage() {
                     placeholder="Your full name"
                     className="mt-1"
                   />
-                  {signerName.trim() ? (
+                  {signerName.trim() && !signatureImage ? (
                     <p
                       className="mt-2 text-2xl text-foreground/90"
                       style={{ fontFamily: "'Brush Script MT', cursive" }}
@@ -180,6 +210,14 @@ export default function SignContractPage() {
                       {signerName.trim()}
                     </p>
                   ) : null}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Or draw your signature (optional)
+                  </label>
+                  <div className="mt-1">
+                    <SignaturePad onChange={setSignatureImage} />
+                  </div>
                 </div>
                 <label className="flex items-start gap-2 text-sm text-foreground/80 cursor-pointer">
                   <input

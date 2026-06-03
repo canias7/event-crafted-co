@@ -99,6 +99,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtime } from "@/lib/realtime";
 import { listingColorMap } from "@/lib/listingColors";
 import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
+import { SentContractsList } from "@/components/vendor/SentContractsList";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -2819,12 +2820,15 @@ function FilesTab(props: {
           onChanged={props.onChanged}
         />
       ) : fileTab === "contracts" ? (
-        <DocumentCanvas
-          accountVendorIds={props.accountVendorIds}
-          listings={props.listings}
-          kind="contract"
-          starter={CONTRACT_TEMPLATES[0]}
-        />
+        <>
+          <SentContractsList accountVendorIds={props.accountVendorIds} />
+          <DocumentCanvas
+            accountVendorIds={props.accountVendorIds}
+            listings={props.listings}
+            kind="contract"
+            starter={CONTRACT_TEMPLATES[0]}
+          />
+        </>
       ) : fileTab === "proposals" ? (
         <DocumentCanvas
           accountVendorIds={props.accountVendorIds}
