@@ -63,7 +63,7 @@ export function ChatSendPicker({
   vendorId,
   inquiryId,
   onSend,
-  onSendInvoice,
+  onStageInvoice,
 }: {
   vendorId: string;
   // Inquiry this chat belongs to — stamped onto a pay link when sent so a
@@ -71,9 +71,9 @@ export function ChatSendPicker({
   inquiryId: string;
   // Drops a formatted body into the thread (parent's sendBody).
   onSend: (body: string) => Promise<void> | void;
-  // Sends an invoice as an actual PDF attachment (parent builds + uploads
-  // the PDF, then posts a message with it). Falls back to onSend if absent.
-  onSendInvoice?: (invoiceId: string, body: string) => Promise<void> | void;
+  // Stages an invoice into the composer as a PDF attachment + body (the
+  // vendor reviews, then sends). Falls back to onSend if absent.
+  onStageInvoice?: (invoiceId: string, body: string) => Promise<void> | void;
 }) {
   const [kind, setKind] = useState<SendKind | null>(null);
   const [rows, setRows] = useState<PickRow[]>([]);
@@ -162,14 +162,16 @@ export function ChatSendPicker({
           .eq("id", row.id);
         if (error) console.error("[ChatSendPicker] link inquiry stamp failed", error);
       }
-      // Invoices go out as an actual PDF attachment when the parent
-      // supports it; everything else drops a formatted text/link body.
-      if (kind === "invoice" && onSendInvoice) {
-        await onSendInvoice(row.id, row.body);
+      // Invoices stage a PDF + body into the composer (vendor reviews,
+      // then sends); everything else drops a formatted text/link body
+      // straight into the thread.
+      if (kind === "invoice" && onStageInvoice) {
+        await onStageInvoice(row.id, row.body);
+        toast.success("Invoice added — review and send");
       } else {
         await onSend(row.body);
+        toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
       }
-      toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
       setKind(null);
     } finally {
       setSendingId(null);
@@ -207,7 +209,7 @@ export function ChatSendPicker({
             <DialogTitle>{kind ? KIND_META[kind].title : ""}</DialogTitle>
             <DialogDescription className="text-xs">
               {kind === "invoice"
-                ? "Pick one to send as a PDF (with its pay link) into the chat."
+                ? "Pick one to add as a PDF (with its pay link) to your message — then review and send."
                 : kind === "link"
                   ? "Pick one to drop its payment link into the chat."
                   : "Pick a saved template to send into the chat. Create them in Files."}

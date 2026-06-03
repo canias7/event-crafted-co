@@ -773,11 +773,15 @@ export default function InquiryDetailPage() {
   }
 
 
-  // Send an invoice into the chat as an actual PDF attachment (built
-  // client-side, uploaded to message-attachments), keeping the pay-link
-  // body so the host can still tap to pay.
-  async function sendInvoicePdf(invoiceId: string, body: string) {
-    if (!inquiryId || !user || !threadId) return;
+  // Stage an invoice into the composer as a PDF attachment (built
+  // client-side) + a pay-link body — so the vendor can add a note and
+  // review before hitting Send, rather than firing it off immediately.
+  async function stageInvoice(invoiceId: string, body: string) {
+    if (!inquiryId || !user) return;
+    if (pendingFiles.length >= MAX_FILES) {
+      toast.error(`Up to ${MAX_FILES} attachments per message`);
+      return;
+    }
     const { data: inv } = await supabase
       .from("invoices")
       .select(
@@ -836,26 +840,10 @@ export default function InquiryDetailPage() {
       `invoice-${i.invoice_number || "vendora"}.pdf`,
       { type: "application/pdf" },
     );
-    const uploaded = await uploadAttachments([file], inquiryId, (n, m) =>
-      toast.error(`${n}: ${m}`),
-    );
-    if (uploaded.length === 0) {
-      toast.error("Couldn't attach the invoice PDF.");
-      return;
-    }
-    const { error } = await supabase.from("direct_messages").insert({
-      thread_id: threadId,
-      sender_id: user.id,
-      sender_role: "vendor",
-      body: body.trim() || "(invoice)",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      attachments: uploaded,
-    } as any);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await transitionToReplied();
+    // Stage in the composer — the vendor reviews + sends via the normal
+    // Send button (which uploads the PDF and posts the message).
+    setPendingFiles((prev) => [...prev, file]);
+    setComposer((prev) => (prev.trim() ? `${prev.trim()}\n${body}` : body));
   }
 
   async function sendMessage() {
@@ -1227,7 +1215,7 @@ export default function InquiryDetailPage() {
                   ) : null}
                   <div className="flex flex-col">
                     <div
-                      className={`max-w-md px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl backdrop-blur-md shadow-sm ${
+                      className={`max-w-md px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-2xl backdrop-blur-md shadow-sm ${
                         isDeleted
                           ? "bg-background/60 text-muted-foreground italic border border-border/40"
                           : it.isMe
@@ -1470,7 +1458,7 @@ export default function InquiryDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Unified send menu — Invoice / Pay link / Proposal / Contract
                 from the vendor's saved Files items, dropped into the thread. */}
-            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} onSendInvoice={sendInvoicePdf} />
+            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} onStageInvoice={stageInvoice} />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
