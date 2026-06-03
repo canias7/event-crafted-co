@@ -773,6 +773,91 @@ export default function InquiryDetailPage() {
   }
 
 
+  // Send an invoice into the chat as an actual PDF attachment (built
+  // client-side, uploaded to message-attachments), keeping the pay-link
+  // body so the host can still tap to pay.
+  async function sendInvoicePdf(invoiceId: string, body: string) {
+    if (!inquiryId || !user || !threadId) return;
+    const { data: inv } = await supabase
+      .from("invoices")
+      .select(
+        "invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, paid_at, refunded_amount_cents, late_fee_cents, vendor_id",
+      )
+      .eq("id", invoiceId)
+      .maybeSingle();
+    if (!inv) {
+      toast.error("Couldn't load that invoice.");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const i = inv as any;
+    const { data: vp } = await supabase
+      .from("vendor_profiles")
+      .select("business_name, location")
+      .eq("id", i.vendor_id)
+      .maybeSingle();
+    const { buildInvoicePdf } = await import("@/lib/invoiceReceiptPdf");
+    const doc = buildInvoicePdf(
+      {
+        invoice_number: i.invoice_number,
+        bill_to_name: i.bill_to_name,
+        bill_to_email: i.bill_to_email,
+        issue_date: i.issue_date,
+        due_date: i.due_date,
+        notes: i.notes,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        line_items: (i.line_items ?? []).map((li: any) => ({
+          name: li.name,
+          qty: li.qty,
+          unit_price_cents: li.unit_price_cents,
+          total_cents: li.total_cents,
+        })),
+        subtotal_cents: i.subtotal_cents,
+        tax_rate_bps: i.tax_rate_bps,
+        tax_cents: i.tax_cents,
+        total_cents: i.total_cents,
+        currency: i.currency,
+        status: i.status,
+        paid_at: i.paid_at,
+        refunded_amount_cents: i.refunded_amount_cents,
+        late_fee_cents: i.late_fee_cents,
+      },
+      {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        business_name: (vp as any)?.business_name ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        location: (vp as any)?.location ?? null,
+        email: user.email ?? null,
+      },
+    );
+    const blob = doc.output("blob");
+    const file = new File(
+      [blob],
+      `invoice-${i.invoice_number || "vendora"}.pdf`,
+      { type: "application/pdf" },
+    );
+    const uploaded = await uploadAttachments([file], inquiryId, (n, m) =>
+      toast.error(`${n}: ${m}`),
+    );
+    if (uploaded.length === 0) {
+      toast.error("Couldn't attach the invoice PDF.");
+      return;
+    }
+    const { error } = await supabase.from("direct_messages").insert({
+      thread_id: threadId,
+      sender_id: user.id,
+      sender_role: "vendor",
+      body: body.trim() || "(invoice)",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      attachments: uploaded,
+    } as any);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await transitionToReplied();
+  }
+
   async function sendMessage() {
     if (
       (!composer.trim() && pendingFiles.length === 0) ||
@@ -1385,7 +1470,7 @@ export default function InquiryDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Unified send menu — Invoice / Pay link / Proposal / Contract
                 from the vendor's saved Files items, dropped into the thread. */}
-            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} />
+            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} onSendInvoice={sendInvoicePdf} />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}

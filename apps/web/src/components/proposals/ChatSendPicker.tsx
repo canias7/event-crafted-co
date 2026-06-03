@@ -63,6 +63,7 @@ export function ChatSendPicker({
   vendorId,
   inquiryId,
   onSend,
+  onSendInvoice,
 }: {
   vendorId: string;
   // Inquiry this chat belongs to — stamped onto a pay link when sent so a
@@ -70,6 +71,9 @@ export function ChatSendPicker({
   inquiryId: string;
   // Drops a formatted body into the thread (parent's sendBody).
   onSend: (body: string) => Promise<void> | void;
+  // Sends an invoice as an actual PDF attachment (parent builds + uploads
+  // the PDF, then posts a message with it). Falls back to onSend if absent.
+  onSendInvoice?: (invoiceId: string, body: string) => Promise<void> | void;
 }) {
   const [kind, setKind] = useState<SendKind | null>(null);
   const [rows, setRows] = useState<PickRow[]>([]);
@@ -158,7 +162,13 @@ export function ChatSendPicker({
           .eq("id", row.id);
         if (error) console.error("[ChatSendPicker] link inquiry stamp failed", error);
       }
-      await onSend(row.body);
+      // Invoices go out as an actual PDF attachment when the parent
+      // supports it; everything else drops a formatted text/link body.
+      if (kind === "invoice" && onSendInvoice) {
+        await onSendInvoice(row.id, row.body);
+      } else {
+        await onSend(row.body);
+      }
       toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
       setKind(null);
     } finally {
@@ -196,9 +206,11 @@ export function ChatSendPicker({
           <DialogHeader>
             <DialogTitle>{kind ? KIND_META[kind].title : ""}</DialogTitle>
             <DialogDescription className="text-xs">
-              {kind === "invoice" || kind === "link"
-                ? "Pick one to drop its payment link into the chat."
-                : "Pick a saved template to send into the chat. Create them in Files."}
+              {kind === "invoice"
+                ? "Pick one to send as a PDF (with its pay link) into the chat."
+                : kind === "link"
+                  ? "Pick one to drop its payment link into the chat."
+                  : "Pick a saved template to send into the chat. Create them in Files."}
             </DialogDescription>
           </DialogHeader>
 
