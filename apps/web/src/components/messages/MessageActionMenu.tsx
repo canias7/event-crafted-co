@@ -1,18 +1,11 @@
-// Bubble-hover action menu shared by both sides of the inquiry chat.
-// Renders an emoji-reaction picker as a popover, and (when the
-// message belongs to the current user) a small dropdown with
-// destructive actions like Delete. Positions itself outside the
+// Bubble-hover action menu shared across the inquiry/partner chats.
+// Renders an emoji-reaction picker as a popover, plus a small dropdown for
+// Reply / Regenerate. Edit and Delete were intentionally removed — chat
+// messages are not editable or deletable. Positions itself outside the
 // bubble so the trigger doesn't take width.
 
 import { useState } from "react";
-import {
-  Smile,
-  MoreHorizontal,
-  Pencil,
-  RefreshCw,
-  Reply,
-  Trash2,
-} from "lucide-react";
+import { Smile, MoreHorizontal, RefreshCw, Reply } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -31,6 +24,8 @@ interface Props {
   isMine: boolean;
   onReact: (emoji: string) => void;
   onReply?: () => void;
+  // Accepted for call-site compatibility but no longer rendered — messages
+  // can't be edited or deleted.
   onEdit?: () => void;
   onDelete?: () => void;
   onRegenerate?: () => void;
@@ -40,8 +35,6 @@ export function MessageActionMenu({
   isMine,
   onReact,
   onReply,
-  onEdit,
-  onDelete,
   onRegenerate,
 }: Props) {
   const [reactOpen, setReactOpen] = useState(false);
@@ -85,7 +78,7 @@ export function MessageActionMenu({
           ))}
         </PopoverContent>
       </Popover>
-      {onReply || onRegenerate || (isMine && (onEdit || onDelete)) ? (
+      {onReply || onRegenerate ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -103,25 +96,10 @@ export function MessageActionMenu({
                 Reply
               </DropdownMenuItem>
             ) : null}
-            {isMine && onEdit ? (
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-            ) : null}
             {onRegenerate ? (
               <DropdownMenuItem onClick={onRegenerate}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Regenerate with HILUX
-              </DropdownMenuItem>
-            ) : null}
-            {isMine && onDelete ? (
-              <DropdownMenuItem
-                onClick={onDelete}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>
