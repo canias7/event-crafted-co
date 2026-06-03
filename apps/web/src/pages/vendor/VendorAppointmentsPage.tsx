@@ -858,6 +858,19 @@ export default function VendorAppointmentsPage({
 
   const isSelectedBlocked =
     !!selectedYmd && manualBlocks.has(selectedYmd);
+  // A day with an accepted appointment is already unavailable to hosts
+  // (matches the public vendor_booked_dates RPC), so manually blocking
+  // it is redundant — we disable Block and say so.
+  const isSelectedBooked = useMemo(
+    () =>
+      !!selectedYmd &&
+      appointments.some(
+        (a) =>
+          a.status === "accepted" &&
+          ymdKey(new Date(a.scheduled_at)) === selectedYmd,
+      ),
+    [selectedYmd, appointments],
+  );
   // Title input state for the block dialog. Reset to blank on each
   // open; if the vendor is opening a date that's already blocked
   // (i.e. they're about to unblock) we don't show the input.
@@ -1134,7 +1147,16 @@ export default function VendorAppointmentsPage({
                   </button>
                   <button
                     onClick={() => setConfirmOpen(true)}
-                    disabled={blocking || writeTargetIds().length === 0}
+                    disabled={
+                      blocking ||
+                      writeTargetIds().length === 0 ||
+                      (isSelectedBooked && !isSelectedBlocked)
+                    }
+                    title={
+                      isSelectedBooked && !isSelectedBlocked
+                        ? "Already booked — unavailable to hosts"
+                        : undefined
+                    }
                     className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold disabled:opacity-60"
                   >
                     {isSelectedBlocked ? (
@@ -1145,6 +1167,13 @@ export default function VendorAppointmentsPage({
                     {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
                   </button>
               </div>
+
+              {isSelectedBooked && !isSelectedBlocked ? (
+                <p className="text-[12px] text-muted-foreground mb-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-foreground inline-block" />
+                  Already booked — this day is automatically unavailable to hosts.
+                </p>
+              ) : null}
 
               {selectedItems.length === 0 ? (
                 <div className="card-soft p-6 text-center text-sm text-muted-foreground">
