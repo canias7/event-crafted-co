@@ -3,6 +3,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.contract-send-otp]
+    verify_jwt = false
   [functions.axion-generate]
     verify_jwt = true
   [functions.ai-site-generate]

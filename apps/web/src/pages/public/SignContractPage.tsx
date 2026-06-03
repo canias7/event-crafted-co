@@ -46,6 +46,10 @@ export default function SignContractPage() {
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -69,20 +73,53 @@ export default function SignContractPage() {
     void load();
   }, [load]);
 
+  async function sendCode() {
+    if (!token || !email.trim() || sendingCode) return;
+    setSendingCode(true);
+    const { error } = await supabase.functions.invoke("contract-send-otp", {
+      body: { token, email: email.trim() },
+    });
+    setSendingCode(false);
+    if (error) {
+      toast.error("Couldn't send the code", {
+        description: "Check the email and try again.",
+      });
+      return;
+    }
+    setCodeSent(true);
+    toast.success("Code sent — check your email");
+  }
+
   async function sign() {
-    if (!token || !agreed || !signerName.trim() || signing) return;
+    if (
+      !token ||
+      !agreed ||
+      !signerName.trim() ||
+      !email.trim() ||
+      !otp.trim() ||
+      signing
+    )
+      return;
     setSigning(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc("sign_contract", {
       p_token: token,
       p_signer_name: signerName.trim(),
       p_signature_image: signatureImage,
+      p_email: email.trim(),
+      p_otp: otp.trim(),
     });
     setSigning(false);
     if (error) {
-      toast.error("Couldn't record your signature", {
-        description: error.message,
-      });
+      const m = String(error.message || "");
+      const friendly = m.includes("invalid_code")
+        ? "That code isn't right. Double-check and try again."
+        : m.includes("code_expired_or_missing")
+          ? "Your code expired. Request a new one."
+          : m.includes("too_many_attempts")
+            ? "Too many attempts. Request a new code."
+            : "Couldn't record your signature.";
+      toast.error(friendly);
       return;
     }
     if (data === "signed") {
@@ -219,6 +256,55 @@ export default function SignContractPage() {
                     <SignaturePad onChange={setSignatureImage} />
                   </div>
                 </div>
+                {/* Email verification — prove control of an email with a
+                    one-time code before signing. */}
+                <div className="border-t border-foreground/10 pt-4">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Verify your email to sign
+                  </label>
+                  <div className="mt-1 flex gap-2">
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      disabled={codeSent}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={sendCode}
+                      disabled={!email.trim() || sendingCode}
+                      className="rounded-full shrink-0"
+                    >
+                      {sendingCode ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : codeSent ? (
+                        "Resend"
+                      ) : (
+                        "Send code"
+                      )}
+                    </Button>
+                  </div>
+                  {codeSent ? (
+                    <div className="mt-2">
+                      <Input
+                        inputMode="numeric"
+                        value={otp}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                        }
+                        placeholder="Enter the 6-digit code"
+                        className="tracking-[0.4em] text-center"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        We emailed a code to {email.trim()}. It expires in 10
+                        minutes.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
                 <label className="flex items-start gap-2 text-sm text-foreground/80 cursor-pointer">
                   <input
                     type="checkbox"
@@ -227,13 +313,19 @@ export default function SignContractPage() {
                     className="mt-0.5"
                   />
                   <span>
-                    I have read and agree to this contract, and my typed name
+                    I have read and agree to this contract, and my signature
                     above is my legally binding electronic signature.
                   </span>
                 </label>
                 <Button
                   onClick={sign}
-                  disabled={!agreed || !signerName.trim() || signing}
+                  disabled={
+                    !agreed ||
+                    !signerName.trim() ||
+                    !email.trim() ||
+                    otp.trim().length < 6 ||
+                    signing
+                  }
                   className="rounded-full w-full sm:w-auto"
                 >
                   {signing ? (
