@@ -98,7 +98,7 @@ export function ChatSendPicker({
               id: inv.id,
               primary: `Invoice ${inv.invoice_number}`,
               secondary: `${formatMoney(inv.total_cents, inv.currency)}${inv.bill_to_name ? ` · ${inv.bill_to_name}` : ""}`,
-              body: `🧾 Invoice ${inv.invoice_number} — ${formatMoney(inv.total_cents, inv.currency)}\n${ORIGIN}/pay/invoice/${inv.slug}`,
+              body: `🧾 Invoice ${inv.invoice_number} · ${formatMoney(inv.total_cents, inv.currency)} — [Pay online](${ORIGIN}/pay/invoice/${inv.slug})`,
             })),
           );
         } else if (k === "link") {
@@ -114,7 +114,7 @@ export function ChatSendPicker({
               id: l.id,
               primary: l.title || "Pay link",
               secondary: formatMoney(l.amount_cents, l.currency),
-              body: `💳 ${l.title || "Payment"} — ${formatMoney(l.amount_cents, l.currency)}\n${ORIGIN}/pay/link/${l.slug}`,
+              body: `💳 ${l.title || "Payment"} · ${formatMoney(l.amount_cents, l.currency)} — [Pay online](${ORIGIN}/pay/link/${l.slug})`,
             })),
           );
         } else {
