@@ -45,6 +45,10 @@ interface InvoiceDetails {
   status: string;
   vendor_business_name: string | null;
   vendor_logo_url: string | null;
+  // Best-effort: whether the vendor's payments are set up. Cached; the
+  // checkout function re-verifies live on Pay, so we only use this for a
+  // soft heads-up (we don't disable Pay on it).
+  vendor_can_accept?: boolean;
 }
 
 function formatMoney(cents: number, currency = "usd"): string {
@@ -246,6 +250,15 @@ export default function InvoiceCheckoutPage() {
             Pay {totalDue}
           </Button>
         </div>
+        {invoice.vendor_can_accept === false ? (
+          <div className="max-w-3xl mx-auto px-4 sm:px-8 pb-3 -mt-1">
+            <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Heads up — this vendor is still finishing their payment setup, so
+              online payment may not be available just yet. You can review the
+              invoice below in the meantime.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {/* Document — A4-friendly width, white card on the canvas. */}
