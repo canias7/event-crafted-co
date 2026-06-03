@@ -61,6 +61,7 @@ import {
   Search,
   Settings as SettingsIcon,
   ShieldCheck,
+  Sparkles,
   Trash2,
   Users,
   Wallet,
@@ -4522,6 +4523,29 @@ function InvoicesTab({
           grid cell, so the grid stays 2-up (template left, this right)
           instead of the Send box wrapping to a full-width 3rd cell. */}
       <div className="space-y-4">
+      {/* Generate with AI — entry point that sits above the invoice list. */}
+      <button
+        type="button"
+        onClick={() =>
+          toast("Generate with AI is coming soon", {
+            description:
+              "Describe the job and AI will draft the invoice line items for you.",
+          })
+        }
+        className="group w-full text-left rounded-2xl border border-foreground/10 bg-gradient-to-br from-foreground/[0.05] to-transparent p-4 hover:border-foreground/25 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-foreground text-background inline-flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">Generate with AI</div>
+            <div className="text-xs text-muted-foreground">
+              Describe the job — AI drafts the invoice for you.
+            </div>
+          </div>
+        </div>
+      </button>
       {/* Invoice list */}
       {invoices.length === 0 ? (
         <EmptyCard>
