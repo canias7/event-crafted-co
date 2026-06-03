@@ -13,6 +13,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { Check, CreditCard, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { Button } from "@/components/ui/button";
 
 interface LineItem {
@@ -316,25 +317,17 @@ export default function InvoiceCheckoutPage() {
                 </tr>
               </thead>
               <tbody>
-                {(invoice.line_items ?? []).map((li, idx) => (
+                {normalizeInvoiceLineItems(invoice.line_items).map((li, idx) => (
                   <tr key={idx} className="border-b border-foreground/5 align-top">
                     <td className="py-3 pr-2">
                       <div className="font-medium">{li.name}</div>
-                      {li.description ? (
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {li.description}
-                        </div>
-                      ) : null}
                     </td>
                     <td className="py-3 px-2 text-right tabular-nums">{li.qty}</td>
                     <td className="py-3 px-2 text-right tabular-nums">
                       {formatMoney(li.unit_price_cents, invoice.currency)}
                     </td>
                     <td className="py-3 pl-2 text-right tabular-nums font-medium">
-                      {formatMoney(
-                        li.total_cents ?? li.qty * li.unit_price_cents,
-                        invoice.currency,
-                      )}
+                      {formatMoney(li.total_cents, invoice.currency)}
                     </td>
                   </tr>
                 ))}

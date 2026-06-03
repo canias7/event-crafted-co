@@ -59,6 +59,7 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
+import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
 
@@ -809,13 +810,7 @@ export default function InquiryDetailPage() {
         issue_date: i.issue_date,
         due_date: i.due_date,
         notes: i.notes,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        line_items: (i.line_items ?? []).map((li: any) => ({
-          name: li.name,
-          qty: li.qty,
-          unit_price_cents: li.unit_price_cents,
-          total_cents: li.total_cents,
-        })),
+        line_items: normalizeInvoiceLineItems(i.line_items),
         subtotal_cents: i.subtotal_cents,
         tax_rate_bps: i.tax_rate_bps,
         tax_cents: i.tax_cents,

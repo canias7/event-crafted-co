@@ -98,6 +98,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtime } from "@/lib/realtime";
 import { listingColorMap } from "@/lib/listingColors";
+import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import {
   CONTRACT_TEMPLATES,
   INVOICE_TEMPLATES,
@@ -4227,12 +4228,7 @@ function InvoicesTab({
             issue_date: inv.issue_date,
             due_date: inv.due_date,
             notes: inv.notes,
-            line_items: (inv.line_items ?? []).map((li) => ({
-              name: li.name,
-              qty: li.qty,
-              unit_price_cents: li.unit_price_cents,
-              total_cents: li.total_cents,
-            })),
+            line_items: normalizeInvoiceLineItems(inv.line_items),
             subtotal_cents: inv.subtotal_cents,
             tax_rate_bps: inv.tax_rate_bps,
             tax_cents: inv.tax_cents,
