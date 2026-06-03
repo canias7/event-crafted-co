@@ -1934,12 +1934,14 @@ function BookingRow({
     timeLabel: string | null;
   };
 }) {
-  const accentClass =
+  // Status bar colour — matches the calendar dots (STATUS_DOT): booked green,
+  // pending amber, blocked/other gray.
+  const accentColor =
     item.accent === "booked"
-      ? "bg-emerald-500"
+      ? STATUS_DOT.booked
       : item.accent === "pending"
-        ? "bg-zinc-400"
-        : "bg-muted-foreground/40";
+        ? STATUS_DOT.pending
+        : STATUS_DOT.blocked;
   const wrap = (children: React.ReactNode) =>
     item.kind === "inquiry" && item.inquiryId ? (
       <Link
@@ -1955,7 +1957,10 @@ function BookingRow({
     );
   return wrap(
     <div className="flex items-center gap-3">
-      <span className={`w-1.5 h-10 rounded-full ${accentClass}`} />
+      <span
+        className="w-1.5 h-10 rounded-full"
+        style={{ background: accentColor }}
+      />
       <div className="flex-1 min-w-0">
         <p className="font-medium text-foreground truncate">{item.title}</p>
         <p className="text-xs text-muted-foreground truncate">
