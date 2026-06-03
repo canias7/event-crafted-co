@@ -1,14 +1,13 @@
-// POST /contract-send-otp { token, email? }
+// POST /contract-send-otp { token }
 //
 // Public (verify_jwt=false): the signer is anonymous. Gated by the
 // contract's 128-bit sign token — only a valid 'sent' contract token
 // can trigger a code. The code is emailed to the contract's bound
 // recipient (the host it was sent to), looked up server-side by token —
 // the client cannot redirect it to an arbitrary inbox, so only the
-// intended recipient can sign. The submitted `email` is only used as a
-// fallback for legacy contracts with no recipient on file. Stores the
-// code's SHA-256 hash (matching the sign_contract RPC's check).
-// Rate-limited to 5 codes per contract per hour.
+// intended recipient can sign. A contract with no recipient on file is
+// not signable. Stores the code's SHA-256 hash (matching the
+// sign_contract RPC's check). Rate-limited to 5 codes per contract per hour.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -48,7 +47,7 @@ serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
   if (!RESEND_API_KEY) return json(500, { error: "resend_not_configured" });
   try {
-    const { token, email } = await req.json();
+    const { token } = await req.json();
     if (!token) return json(400, { error: "token required" });
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: c } = await admin
@@ -59,12 +58,11 @@ serve(async (req) => {
     if (!c) return json(404, { error: "contract_not_found" });
     if ((c as any).status !== "sent") return json(400, { error: "not_signable" });
 
-    // The code always goes to the contract's bound recipient. A client-supplied
-    // email is only honored for legacy contracts with no recipient on file.
-    const recipient = String((c as any).recipient_email ?? "").trim().toLowerCase();
-    const cleanEmail = recipient || String(email ?? "").trim().toLowerCase();
+    // The code only ever goes to the contract's bound recipient, looked up
+    // server-side. A contract with no recipient on file is not signable.
+    const cleanEmail = String((c as any).recipient_email ?? "").trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail)) {
-      return json(400, { error: "invalid email" });
+      return json(400, { error: "no_recipient" });
     }
 
     // Rate limit: at most 5 codes per contract per hour.
