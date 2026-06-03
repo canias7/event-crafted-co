@@ -1456,7 +1456,7 @@ function OverviewRevenueChart({
           {deltaPct !== null ? (
             <div
               className="text-xs font-semibold mt-1"
-              style={{ color: deltaPositive ? "#2e9e6b" : "#71717a" }}
+              style={{ color: deltaPositive ? "#16a34a" : "#dc2626" }}
             >
               {deltaPositive ? "▲" : "▼"} {Math.abs(deltaPct).toFixed(1)}%
             </div>
