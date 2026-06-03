@@ -7,6 +7,7 @@ import {
   DollarSign,
   FileCheck2,
   LayoutDashboard,
+  Mail,
   Star,
   Store,
   Users,
@@ -26,6 +27,7 @@ const NAV: Array<{
   { to: "/listings", label: "Vendor listings", icon: Store },
   { to: "/reviews", label: "Reviews", icon: Star },
   { to: "/costs", label: "Costs", icon: DollarSign },
+  { to: "/emails", label: "Emails", icon: Mail },
   { to: "/workspace", label: "Workspace", icon: Briefcase },
 ];
 

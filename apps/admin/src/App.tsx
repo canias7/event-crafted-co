@@ -14,6 +14,7 @@ import { EmailLeadsPage } from "./pages/EmailLeadsPage";
 import { EmailScrapingPage } from "./pages/EmailScrapingPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { CostsPage } from "./pages/CostsPage";
+import { EmailsPage } from "./pages/EmailsPage";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/listings" element={<ListingsPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/costs" element={<CostsPage />} />
+              <Route path="/emails" element={<EmailsPage />} />
               <Route path="/workspace" element={<WorkspacePage />} />
               <Route path="/workspace/email-leads" element={<EmailLeadsPage />} />
               <Route path="/workspace/templates" element={<TemplatesPage />} />
