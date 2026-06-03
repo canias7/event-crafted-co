@@ -246,6 +246,16 @@ export default function VendorAppointmentsPage({
   const [loading, setLoading] = useState(true);
   const [blocking, setBlocking] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Manual "add appointment" form — vendor-created, no host/inquiry.
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [aKind, setAKind] = useState("consultation");
+  const [aTitle, setATitle] = useState("");
+  const [aTime, setATime] = useState("09:00");
+  const [aDuration, setADuration] = useState("60");
+  const [aLocation, setALocation] = useState("");
+  const [aNotes, setANotes] = useState("");
+  const [aListingId, setAListingId] = useState<string | null>(null);
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -478,6 +488,41 @@ export default function VendorAppointmentsPage({
       setBlockTarget("all");
     }
   }, [blockTarget, queryListingKey]);
+
+  // Create a manual, vendor-side appointment on the selected day — no
+  // host, no inquiry. Stored confirmed (proposed_by 'vendor', accepted)
+  // so it reads as the vendor's own committed time on the calendar.
+  async function addManualAppointment() {
+    const vid = aListingId ?? selectedListingId;
+    if (!vid || !selectedYmd || addSaving) return;
+    setAddSaving(true);
+    const scheduledAt = new Date(`${selectedYmd}T${aTime || "09:00"}:00`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("appointments").insert({
+      vendor_id: vid,
+      inquiry_id: null,
+      host_id: null,
+      kind: aKind,
+      title: aTitle.trim() || null,
+      location: aLocation.trim() || null,
+      scheduled_at: scheduledAt.toISOString(),
+      duration_minutes: parseInt(aDuration, 10) || 60,
+      status: "accepted",
+      proposed_by: "vendor",
+      notes: aNotes.trim() || null,
+    });
+    setAddSaving(false);
+    if (error) {
+      toast.error("Couldn't add to calendar", { description: error.message });
+      return;
+    }
+    toast.success("Added to your calendar");
+    setAddOpen(false);
+    setATitle("");
+    setALocation("");
+    setANotes("");
+    void loadAppointments();
+  }
 
   const loadAppointments = useCallback(async () => {
     if (!user || queryListingIds.length === 0) {
@@ -1057,6 +1102,18 @@ export default function VendorAppointmentsPage({
                       ))}
                     </select>
                   ) : null}
+                  {/* Manually add a vendor-side appointment to this day. */}
+                  <button
+                    onClick={() => {
+                      setAListingId(selectedListingId);
+                      setAddOpen(true);
+                    }}
+                    disabled={!selectedListingId}
+                    className="inline-flex items-center gap-1 rounded-full border border-foreground/15 text-foreground px-3.5 py-2 text-xs font-bold disabled:opacity-60 hover:bg-secondary/50"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add
+                  </button>
                   <button
                     onClick={() => setConfirmOpen(true)}
                     disabled={blocking || writeTargetIds().length === 0}
@@ -1213,6 +1270,123 @@ export default function VendorAppointmentsPage({
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {isSelectedBlocked ? "Unblock" : "Block"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Manual "add appointment" form — vendor-side calendar entry. */}
+      <AlertDialog open={addOpen} onOpenChange={setAddOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-editorial text-2xl">
+              Add to calendar
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {selectedYmd ? prettyDay(selectedYmd) : ""} · a private entry on
+              your calendar (no host is notified).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            {showListingColors ? (
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Listing</span>
+                <select
+                  value={aListingId ?? ""}
+                  onChange={(e) => setAListingId(e.target.value || null)}
+                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
+                >
+                  {listings.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.business_name?.trim() || l.category || "Listing"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Type</span>
+                <select
+                  value={aKind}
+                  onChange={(e) => setAKind(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
+                >
+                  <option value="consultation">Consultation</option>
+                  <option value="walkthrough">Walkthrough</option>
+                  <option value="tasting">Tasting</option>
+                  <option value="fitting">Fitting</option>
+                  <option value="phone_call">Phone call</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Duration</span>
+                <select
+                  value={aDuration}
+                  onChange={(e) => setADuration(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
+                >
+                  <option value="30">30 min</option>
+                  <option value="45">45 min</option>
+                  <option value="60">1 hour</option>
+                  <option value="90">1.5 hours</option>
+                  <option value="120">2 hours</option>
+                </select>
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground">Title (optional)</span>
+              <Input
+                value={aTitle}
+                onChange={(e) => setATitle(e.target.value)}
+                placeholder="e.g. Site visit"
+                className="mt-1"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Time</span>
+                <Input
+                  type="time"
+                  value={aTime}
+                  onChange={(e) => setATime(e.target.value)}
+                  className="mt-1"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Location (optional)</span>
+                <Input
+                  value={aLocation}
+                  onChange={(e) => setALocation(e.target.value)}
+                  placeholder="e.g. Zoom, address"
+                  className="mt-1"
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground">Notes (optional)</span>
+              <textarea
+                value={aNotes}
+                onChange={(e) => setANotes(e.target.value)}
+                rows={2}
+                className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm resize-none"
+              />
+            </label>
+          </div>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={addSaving} className="rounded-full">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void addManualAppointment();
+              }}
+              disabled={addSaving || !(aListingId ?? selectedListingId)}
+              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+            >
+              {addSaving ? "Adding…" : "Add"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
