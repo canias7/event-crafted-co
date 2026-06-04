@@ -99,11 +99,22 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
-    const { data: secret } = await admin
-      .from("vendor_payment_secrets")
-      .select("stripe_account_id, charges_enabled")
-      .eq("vendor_id", proposal.vendor_id)
+    // vendor_payment_secrets is account-level (keyed by the listing owner's
+    // user_id since the secrets migration). Resolve the owner from the
+    // listing first — keying by vendor_id misses every post-migration vendor.
+    const { data: ownerRow } = await admin
+      .from("vendor_profiles")
+      .select("user_id")
+      .eq("id", proposal.vendor_id)
       .maybeSingle();
+    const ownerId = (ownerRow as { user_id?: string | null } | null)?.user_id ?? null;
+    const { data: secret } = ownerId
+      ? await admin
+          .from("vendor_payment_secrets")
+          .select("stripe_account_id, charges_enabled")
+          .eq("user_id", ownerId)
+          .maybeSingle()
+      : { data: null };
     const sRow = secret as
       | { stripe_account_id?: string | null; charges_enabled?: boolean | null }
       | null;

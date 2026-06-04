@@ -349,17 +349,29 @@ serve(async (req) => {
       const taxPct = invoiceCtx
         ? (invoiceCtx.tax_rate_bps / 100).toFixed(2)
         : Number(vpRow?.default_tax_pct ?? 0).toFixed(2);
-      const lineItems: InvoiceLineItem[] = invoiceCtx?.lineItems?.length
-        ? invoiceCtx.lineItems
-        : [{
-            name: body.description || "Payment",
-            qty: 1,
-            unit_price_cents: body.amount_cents,
-            total_cents: body.amount_cents,
-          }];
-      const subtotalCents = invoiceCtx?.subtotal_cents ?? body.amount_cents;
-      const taxCents = invoiceCtx?.tax_cents ?? 0;
-      const totalCents = invoiceCtx?.total_cents ?? body.amount_cents;
+      // The receipt headline is what was ACTUALLY charged
+      // (body.amount_cents), not the invoice's stored total — those diverge
+      // if the invoice was edited after payment (e.g. a late fee added).
+      // Only show the itemized invoice breakdown when it still reconciles
+      // with the charged amount; otherwise fall back to a single line so
+      // subtotal + tax always equals the total actually paid.
+      const paidCents = body.amount_cents;
+      const invoiceReconciles = invoiceCtx != null &&
+        (invoiceCtx.total_cents ?? paidCents) === paidCents;
+      const lineItems: InvoiceLineItem[] =
+        invoiceReconciles && invoiceCtx?.lineItems?.length
+          ? invoiceCtx.lineItems
+          : [{
+              name: body.description || "Payment",
+              qty: 1,
+              unit_price_cents: paidCents,
+              total_cents: paidCents,
+            }];
+      const subtotalCents = invoiceReconciles
+        ? (invoiceCtx?.subtotal_cents ?? paidCents)
+        : paidCents;
+      const taxCents = invoiceReconciles ? (invoiceCtx?.tax_cents ?? 0) : 0;
+      const totalCents = paidCents;
       const invoiceNumber = invoiceCtx?.number ?? "—";
       const hostedInvoiceUrl = invoiceCtx?.slug
         ? `${APP_URL}/pay/invoice/${invoiceCtx.slug}`

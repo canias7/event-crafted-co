@@ -72,7 +72,10 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { data: _cronOk, error: _cronErr } = await _authClient.rpc("cron_secret_ok", { provided });
-    if (!_cronErr && _cronOk === false) {
+    // Fail CLOSED on an RPC error (was failing open). Still dormant when no
+    // secret is configured (cron_secret_ok returns true), so this only
+    // rejects when a secret exists and the provided value didn't match.
+    if (_cronErr || _cronOk === false) {
       return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
   }

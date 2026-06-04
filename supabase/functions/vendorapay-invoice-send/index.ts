@@ -244,7 +244,7 @@ serve(async (req) => {
     if (!r.ok) {
       const txt = await r.text();
       console.error("[vendorapay-invoice-send] resend error", txt);
-      return json(500, { error: "email_failed", detail: txt.slice(0, 240) });
+      return json(500, { error: "email_failed" });
     }
 
     // Flip draft -> sent once the email goes out (whether it was the
@@ -262,7 +262,6 @@ serve(async (req) => {
     return json(200, { ok: true, pay_url: payUrl });
   } catch (err) {
     console.error("[vendorapay-invoice-send] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "send_failed", detail: message.slice(0, 240) });
+    return json(500, { error: "send_failed" });
   }
 });

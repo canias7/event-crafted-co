@@ -92,13 +92,18 @@ serve(async (req) => {
           })
           .eq("id", existingId);
       } else {
-        await admin.from("vendor_payment_secrets").insert({
+        // Upsert (not insert) so two concurrent onboard calls — which both
+        // saw existing=null and got the SAME Stripe account back via the
+        // idempotency key — don't make the second one fail on the user_id
+        // unique index (23505). The conflicting row already has the right
+        // account id, so on-conflict-update is a safe no-op-ish write.
+        await admin.from("vendor_payment_secrets").upsert({
           user_id: userId,
           stripe_account_id: accountId,
           charges_enabled: account.charges_enabled,
           payouts_enabled: account.payouts_enabled,
           details_submitted: account.details_submitted,
-        });
+        }, { onConflict: "user_id" });
       }
     }
 
@@ -111,10 +116,6 @@ serve(async (req) => {
     return json(200, { url, account_id: accountId });
   } catch (err) {
     console.error("[vendorapay-onboard] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, {
-      error: "onboard_failed",
-      detail: message.slice(0, 240),
-    });
+    return json(500, { error: "onboard_failed" });
   }
 });

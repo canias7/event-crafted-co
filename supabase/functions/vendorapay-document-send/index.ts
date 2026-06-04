@@ -141,13 +141,12 @@ serve(async (req) => {
     if (!r.ok) {
       const txt = await r.text();
       console.error("[vendorapay-document-send] resend error", txt);
-      return json(500, { error: "email_failed", detail: txt.slice(0, 240) });
+      return json(500, { error: "email_failed" });
     }
 
     return json(200, { ok: true });
   } catch (err) {
     console.error("[vendorapay-document-send] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "send_failed", detail: message.slice(0, 240) });
+    return json(500, { error: "send_failed" });
   }
 });
