@@ -842,6 +842,17 @@ export default function VendorAppointmentsPage({
     for (const i of inquiries) {
       const d = parseYmd(i.event_date);
       if (!d || ymdKey(d) !== selectedYmd) continue;
+      // Only show live pipeline + confirmed leads — same statuses the
+      // calendar dots use. Dead leads (lost / expired) shouldn't appear
+      // as active "pending" rows on a day they no longer occupy.
+      if (
+        i.status !== "won" &&
+        i.status !== "new" &&
+        i.status !== "replied" &&
+        i.status !== "drafted"
+      ) {
+        continue;
+      }
       out.push({
         kind: "inquiry",
         inquiryId: i.id,
