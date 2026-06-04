@@ -763,6 +763,30 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: "list_listings",
+    description:
+      "List the vendor listings this account can manage, each with its id, name, and whether it's the one currently active for My Space. Use this when the account has more than one listing and you need to ask the vendor which to work on. READ-ONLY.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "set_active_listing",
+    description:
+      "Set which listing My Space works on for this account. Pass the vendor_id (from list_listings) of the listing the vendor chose. The choice persists across conversations until changed. Call this once the vendor tells you which listing to use; afterwards, everything you read or write applies to that listing.",
+    input_schema: {
+      type: "object",
+      required: ["vendor_id"],
+      properties: {
+        vendor_id: {
+          type: "string",
+          description: "The id of the listing to make active (from list_listings).",
+        },
+      },
+    },
+  },
 ] as const;
 
 export { TOOLS };

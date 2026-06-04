@@ -287,50 +287,139 @@ async function callOpenAIImage(
 
 // ─── Vendor lookup ────────────────────────────────────────────────
 
-async function findVendorIdForUser(
+interface ListingOption {
+  id: string;
+  name: string;
+}
+
+// Every vendor listing this user can manage (team memberships + owned
+// profiles), deduped, oldest-first so the "default" feels like their original
+// listing rather than a later-added one.
+async function listUserListings(
   admin: any,
   userId: string,
-  preferredVendorId?: string | null,
-): Promise<string | null> {
-  // If the client picked a listing (My Space's listing switcher), honor it —
-  // but only after verifying the user actually belongs to that vendor, so a
-  // tampered request can't point the assistant at someone else's account.
-  if (preferredVendorId) {
-    const { data: member } = await admin
-      .from("vendor_team_members")
-      .select("vendor_id")
-      .eq("user_id", userId)
-      .eq("vendor_id", preferredVendorId)
-      .maybeSingle();
-    if (member?.vendor_id) return member.vendor_id as string;
-    const { data: own } = await admin
-      .from("vendor_profiles")
-      .select("id")
-      .eq("id", preferredVendorId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (own?.id) return own.id as string;
-    // Not theirs → fall through to the default resolution below.
-  }
-  // Team membership wins (covers both owners and invited team members
-  // since the owner is also written to vendor_team_members on profile
-  // creation).
-  const { data: team } = await admin
+): Promise<ListingOption[]> {
+  const ids = new Set<string>();
+  const { data: tm } = await admin
     .from("vendor_team_members")
     .select("vendor_id")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (team?.vendor_id) return team.vendor_id as string;
-  // Belt-and-suspenders fallback for pre-team-table rows.
+    .eq("user_id", userId);
+  for (const r of (tm ?? [])) {
+    if (r?.vendor_id) ids.add(String(r.vendor_id));
+  }
   const { data: owned } = await admin
     .from("vendor_profiles")
     .select("id")
+    .eq("user_id", userId);
+  for (const r of (owned ?? [])) {
+    if (r?.id) ids.add(String(r.id));
+  }
+  if (ids.size === 0) return [];
+  const { data: vps } = await admin
+    .from("vendor_profiles")
+    .select("id, business_name, created_at")
+    .in("id", Array.from(ids));
+  return ((vps ?? []) as Array<
+    { id: string; business_name: string | null; created_at: string }
+  >)
+    .slice()
+    .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+    .map((v) => ({ id: v.id, name: v.business_name?.trim() || "Listing" }));
+}
+
+async function getActiveListing(
+  admin: any,
+  userId: string,
+): Promise<string | null> {
+  const { data } = await admin
+    .from("my_space_active_listing")
+    .select("vendor_id")
     .eq("user_id", userId)
-    .limit(1)
     .maybeSingle();
-  return (owned?.id as string | undefined) ?? null;
+  return (data?.vendor_id as string | undefined) ?? null;
+}
+
+async function persistActiveListing(
+  admin: any,
+  userId: string,
+  vendorId: string,
+): Promise<void> {
+  await admin
+    .from("my_space_active_listing")
+    .upsert(
+      { user_id: userId, vendor_id: vendorId, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+}
+
+interface ListingContext {
+  // Vendor to operate on this turn, or null when there's nothing to use yet
+  // (no profile) or the vendor still has to pick (needsSelection).
+  vendorId: string | null;
+  // True when the account has several listings and none is active yet — the
+  // assistant should ask which one before doing vendor-specific work.
+  needsSelection: boolean;
+  listings: ListingOption[];
+}
+
+// Resolve which listing My Space should act on:
+//   • 0 listings  → no vendor profile (general-help mode).
+//   • 1 listing   → use it automatically.
+//   • N listings  → use the persisted active one if still valid; otherwise
+//                   flag needsSelection so the assistant asks.
+async function resolveListingContext(
+  admin: any,
+  userId: string,
+): Promise<ListingContext> {
+  const listings = await listUserListings(admin, userId);
+  if (listings.length === 0) {
+    return { vendorId: null, needsSelection: false, listings };
+  }
+  if (listings.length === 1) {
+    return { vendorId: listings[0].id, needsSelection: false, listings };
+  }
+  const active = await getActiveListing(admin, userId);
+  if (active && listings.some((l) => l.id === active)) {
+    return { vendorId: active, needsSelection: false, listings };
+  }
+  return { vendorId: null, needsSelection: true, listings };
+}
+
+// Tool: list the user's listings + which one is active.
+async function toolListListings(
+  admin: any,
+  userId: string,
+): Promise<unknown> {
+  const listings = await listUserListings(admin, userId);
+  const active = await getActiveListing(admin, userId);
+  return {
+    count: listings.length,
+    active_vendor_id: active,
+    listings: listings.map((l) => ({
+      vendor_id: l.id,
+      name: l.name,
+      active: l.id === active,
+    })),
+  };
+}
+
+// Tool: persist which listing My Space works on. Verifies the chosen listing
+// actually belongs to the user before saving, so a hallucinated id can't point
+// the assistant at someone else's account.
+async function toolSetActiveListing(
+  admin: any,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  const vendorId = String(input?.vendor_id ?? "").trim();
+  if (!vendorId) return { error: "vendor_id is required" };
+  const listings = await listUserListings(admin, userId);
+  const match = listings.find((l) => l.id === vendorId);
+  if (!match) {
+    return { error: "That listing isn't one of yours — call list_listings to see the valid options." };
+  }
+  await persistActiveListing(admin, userId, vendorId);
+  return { ok: true, active_vendor_id: vendorId, active_listing: match.name };
 }
 
 // ─── Always-context snapshot ──────────────────────────────────────
@@ -523,7 +612,10 @@ function priceUsd(cents: number | null): string {
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function buildSystemPrompt(snap: VendorSnapshot): string {
+function buildSystemPrompt(
+  snap: VendorSnapshot,
+  listingInfo?: { listings: ListingOption[]; activeVendorId: string },
+): string {
   const v = snap.vendor;
   const closedDays = snap.calendar.recurringClosedDays
     .map((d) => DOW[d])
@@ -542,7 +634,19 @@ function buildSystemPrompt(snap: VendorSnapshot): string {
     : `  ${snap.calendar.busyDates.slice(0, 20).join(", ")}${
       snap.calendar.busyDates.length > 20 ? "…" : ""
     }`;
-  return `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.
+  // When the account has more than one listing, remind the assistant which one
+  // it's acting on and that the vendor can switch.
+  const others = (listingInfo?.listings ?? []).filter(
+    (l) => l.id !== listingInfo?.activeVendorId,
+  );
+  const listingNote = others.length > 0
+    ? `\n\nACTIVE LISTING — this account has ${
+      (listingInfo?.listings.length ?? 0)
+    } listings; you are currently working on "${v.business_name ?? "(unnamed)"}". Everything you read or change applies to THIS listing. If the vendor wants a different one (${
+      others.map((l) => l.name).join(", ")
+    }), call set_active_listing with its id (list_listings shows the ids). Always be clear which listing you're acting on if there's any doubt.`
+    : "";
+  return `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.${listingNote}
 
 You are talking to the vendor THEMSELVES (the business owner). You are NOT writing on their behalf to a host in this thread.
 
@@ -599,6 +703,8 @@ Write tools (require an explicit go-ahead from the vendor before calling):
 - \`bulk_update_inquiry_status\` · \`bulk_send_reply\` — batch ops
 - \`manage_faq\` · \`manage_package\` · \`update_profile\` · \`toggle_auto_reply\`
 - \`edit_image\` · \`set_chat_preferences\`
+- \`list_listings\` — show the listings on this account (when there's more than one)
+- \`set_active_listing(vendor_id)\` — choose which listing My Space works on (persists across chats)
 
 Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
@@ -3561,6 +3667,13 @@ async function executeTool(
     if (name === "set_chat_preferences") {
       return await toolSetChatPreferences(admin, vendorId, input);
     }
+    // Listing selection (account-level, keyed on the user, not a vendor).
+    if (name === "list_listings") {
+      return await toolListListings(admin, userId);
+    }
+    if (name === "set_active_listing") {
+      return await toolSetActiveListing(admin, userId, input);
+    }
     // Bulk + summary
     if (name === "bulk_update_inquiry_status") {
       return await toolBulkUpdateInquiryStatus(admin, vendorId, input);
@@ -3770,8 +3883,6 @@ serve(async (req) => {
   const payload = await req.json().catch(() => ({}));
   const userText = String(payload?.text ?? "").trim();
   const threadIdIn = payload?.thread_id ? String(payload.thread_id) : null;
-  // Listing switcher: the client may pin which listing the assistant works on.
-  const selectedVendorId = payload?.vendor_id ? String(payload.vendor_id) : null;
   // Attachments are { url, mime, name, size? }. We trust the client
   // to upload them to message-attachments first (RLS-gated bucket).
   const rawAttachments = Array.isArray(payload?.attachments)
@@ -3951,9 +4062,11 @@ serve(async (req) => {
           return;
         }
 
-        // Resolve vendor + build snapshot. A client-selected listing (the My
-        // Space listing switcher) overrides the default, if the user owns it.
-        const vendorId = await findVendorIdForUser(admin, userId, selectedVendorId);
+        // Resolve which listing to act on. Single-listing accounts resolve
+        // automatically; multi-listing accounts use the persisted choice, or
+        // flag needsSelection so the assistant asks which listing to use.
+        const listingCtx = await resolveListingContext(admin, userId);
+        const vendorId = listingCtx.vendorId;
         let systemPrompt: string;
         if (vendorId) {
           const snap = await buildVendorSnapshot(
@@ -3963,7 +4076,17 @@ serve(async (req) => {
             threadId,
             vendorTimezone,
           );
-          systemPrompt = buildSystemPrompt(snap);
+          systemPrompt = buildSystemPrompt(snap, {
+            listings: listingCtx.listings,
+            activeVendorId: vendorId,
+          });
+        } else if (listingCtx.needsSelection) {
+          // Several listings, none chosen yet — the assistant must ask first.
+          const names = listingCtx.listings
+            .map((l) => `• ${l.name} (id: ${l.id})`)
+            .join("\n");
+          systemPrompt =
+            `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform. This account manages MORE THAN ONE listing, and the vendor hasn't told you which one to work on yet, so you can't read or change anything listing-specific until they pick.\n\nThe listings on this account:\n${names}\n\nBefore doing any listing-specific work, ask the vendor which listing they want to work on (show the names, not the raw ids). Once they answer, call set_active_listing with that listing's id — the choice is remembered for future chats. If they're just chatting generally, you can still help. You can re-show options anytime with list_listings, and switch with set_active_listing.`;
         } else {
           systemPrompt =
             "You are My Space, the in-app AI assistant for an event vendor. The caller doesn't yet have a vendor profile, so you can answer general questions but can't reference their inquiries, calendar, or packages. Encourage them to finish setting up their vendor profile.";
