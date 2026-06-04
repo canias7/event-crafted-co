@@ -637,60 +637,56 @@ export default function VendorPaymentsPage(
     void refresh(true);
   }, [refresh]);
 
-  // Realtime: when a Stripe webhook lands and flips an invoice to
-  // paid (or marks a payment as failed), refresh the page so the
-  // vendor doesn't have to hit Refresh to see the new state. Same
-  // pattern for payment_links so refunds / paid-out states update
-  // live. We refresh the whole page rather than patching individual
-  // rows because the Overview KPIs / balance / transactions also
-  // need updating when a payment lands.
-  useEffect(() => {
-    if (!vendorId) return;
-    // Coalesce bursts of webhook-driven row changes into one refresh
-    // instead of firing the full fan-out on every individual event.
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const debouncedRefresh = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => void refresh(false), 600);
-    };
-    const channel = supabase
-      .channel(`vendorapay:${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          // INSERT + UPDATE so newly-created invoices (e.g. a
-          // cron-generated recurring invoice, or one saved in another
-          // tab) appear live, not just status changes on existing rows.
-          event: "*",
-          schema: "public",
-          table: "invoices",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        debouncedRefresh,
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "payment_links",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        debouncedRefresh,
-      )
-      .subscribe();
-    return () => {
-      if (timer) clearTimeout(timer);
-      void supabase.removeChannel(channel);
-    };
-    // Deliberately depend only on vendorId, not refresh. The
-    // callback captures refresh by closure; even though refresh
-    // is recreated whenever vendorId changes (the useCallback
-    // also depends on it), we'd tear down and re-build the
-    // channel on the same render. Listing only vendorId keeps the
-    // subscription stable for the lifetime of one selected vendor.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendorId]);
+  // Realtime: when a Stripe webhook lands and flips an invoice to paid
+  // (or marks a payment failed / a link refunded), refresh so the vendor
+  // doesn't have to hit Refresh. We refresh the whole page rather than
+  // patching individual rows because the Overview KPIs / balance /
+  // transactions also need updating when a payment lands.
+  //
+  // Scoped to the WHOLE account (every listing the user owns), not just
+  // the primary listing. The old version filtered on the single primary
+  // vendorId, so a payment on a second listing fired no event and that
+  // tab silently went stale. The shared realtime channel delivers all of
+  // the user's public-schema changes (RLS-scoped); we filter to this
+  // account's listings here in JS, which also scales past any one-row
+  // server-side filter.
+  const accountIdSet = useMemo(
+    () => new Set(accountVendorIds),
+    [accountVendorIds],
+  );
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedRefresh = useCallback(() => {
+    // Coalesce bursts of webhook-driven row changes into one refresh.
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => void refresh(false), 600);
+  }, [refresh]);
+  const onBillingRowChange = useCallback(
+    (payload: { new: unknown; old: unknown }) => {
+      const row = (payload.new ?? payload.old) as { vendor_id?: string } | null;
+      if (row?.vendor_id && accountIdSet.has(row.vendor_id)) debouncedRefresh();
+    },
+    [accountIdSet, debouncedRefresh],
+  );
+  // Clear any pending debounce on unmount.
+  useEffect(
+    () => () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    },
+    [],
+  );
+  // INSERT + UPDATE on invoices so newly-created invoices (cron-generated
+  // recurring, or saved in another tab) appear live, not just status
+  // changes; UPDATE on payment_links for refund / paid-out state.
+  useRealtime(
+    accountVendorIds.length > 0 ? { table: "invoices" } : null,
+    onBillingRowChange,
+  );
+  useRealtime(
+    accountVendorIds.length > 0
+      ? { table: "payment_links", event: "UPDATE" }
+      : null,
+    onBillingRowChange,
+  );
 
   // Fetch all listings owned by this vendor for the picker. Auto-
   // selects the first approved one; otherwise leaves selection null
@@ -937,14 +933,29 @@ function WorkspaceAppointments({
     load();
   }, [load]);
 
-  // Refetch when this account's appointments change so accepting /
-  // declining stays in sync without a manual reload.
+  // Refetch when THIS account's appointments change so accepting /
+  // declining stays in sync without a manual reload. The shared channel
+  // delivers all of the user's appointment changes; filter to this
+  // account's listings in the callback instead of reacting to every
+  // appointments row the channel hands us.
+  const accountIdSet = useMemo(
+    () => new Set(accountVendorIds),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [idsKey],
+  );
   const realtimeConfig = useMemo(
     () => (accountVendorIds.length > 0 ? { table: "appointments" } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [idsKey],
   );
-  useRealtime(realtimeConfig, () => load());
+  const onApptChange = useCallback(
+    (payload: { new: unknown; old: unknown }) => {
+      const row = (payload.new ?? payload.old) as { vendor_id?: string } | null;
+      if (row?.vendor_id && accountIdSet.has(row.vendor_id)) load();
+    },
+    [accountIdSet, load],
+  );
+  useRealtime(realtimeConfig, onApptChange);
 
   if (loading) {
     // Show the heading + card-shaped placeholders so the column reads as
