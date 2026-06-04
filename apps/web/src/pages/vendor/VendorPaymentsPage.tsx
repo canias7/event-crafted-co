@@ -365,6 +365,36 @@ const TIER_FEE_COPY: Record<
   },
 };
 
+// Page through one listing's VendoraPay balance transactions. The edge
+// function caps each call at 100, so a single request only ever returned
+// the 50 (now 100) most-recent rows — which made the Payments KPIs
+// (YTD / month / 30d) silently undercount once a vendor had more than
+// that. We follow the `starting_after` cursor up to a few pages so the
+// totals cover a real window, while the page cap keeps a high-volume
+// account from triggering an unbounded fan-out.
+async function fetchListingTransactions(
+  businessId: string,
+  maxPages = 6,
+): Promise<Transaction[]> {
+  const out: Transaction[] = [];
+  let startingAfter: string | undefined;
+  for (let page = 0; page < maxPages; page++) {
+    const res = await supabase.functions.invoke("vendorapay-transactions", {
+      body: { business_id: businessId, limit: 100, starting_after: startingAfter },
+    });
+    const list =
+      ((res?.data as { transactions?: Transaction[] } | null)?.transactions ??
+        []) as Transaction[];
+    out.push(...list);
+    // A short page (or an empty one from a non-connected listing) is the
+    // last page — stop before spending another round-trip.
+    if (list.length < 100) break;
+    startingAfter = list[list.length - 1]?.id;
+    if (!startingAfter) break;
+  }
+  return out;
+}
+
 export default function VendorPaymentsPage(
   { embedded = false, view = "workspace" }: {
     embedded?: boolean;
@@ -424,7 +454,14 @@ export default function VendorPaymentsPage(
     navigate("/vendor/workspace?tab=transactions&sub=incoming");
   // Calendar lives in the left rail; nudge focus to it (and scroll on
   // mobile, where it stacks) so the drill-down visibly lands somewhere.
-  const goToCalendar = () => navigate("/vendor/workspace?focus=calendar");
+  // Preserve any existing params (e.g. the active tab) instead of wiping
+  // them, so landing on the calendar doesn't silently reset the middle
+  // column to the default Payments tab.
+  const goToCalendar = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set("focus", "calendar");
+    navigate(`/vendor/workspace?${next.toString()}`);
+  };
 
   useEffect(() => {
     if (view !== "workspace" || searchParams.get("focus") !== "calendar") return;
@@ -433,9 +470,14 @@ export default function VendorPaymentsPage(
         behavior: "smooth",
         block: "start",
       });
+      // One-shot: clear the focus flag so later tab switches (which clone
+      // the search params) don't keep yanking the viewport back here.
+      const next = new URLSearchParams(searchParams);
+      next.delete("focus");
+      setSearchParams(next, { replace: true });
     }, 80);
     return () => clearTimeout(t);
-  }, [view, searchParams]);
+  }, [view, searchParams, setSearchParams]);
 
   const [status, setStatus] = useState<Status | null>(null);
   // VendoraPay is account-level (one Stripe connection per user, not per
@@ -522,9 +564,10 @@ export default function VendorPaymentsPage(
           stripeConnectedIds.length > 0
             ? Promise.all(
                 stripeConnectedIds.map((id) =>
-                  supabase.functions
-                    .invoke("vendorapay-transactions", { body: { business_id: id, limit: 50 } })
-                    .then((res) => ({ id, res })),
+                  fetchListingTransactions(id).then((transactions) => ({
+                    id,
+                    transactions,
+                  })),
                 ),
               )
             : Promise.resolve([]),
@@ -535,7 +578,7 @@ export default function VendorPaymentsPage(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (supabase as any)
             .from("payment_links")
-            .select("id, vendor_id, slug, title, description, amount_cents, currency, status, paid_at, expires_at, activate_at, parent_link_id, created_at")
+            .select("id, vendor_id, slug, title, description, amount_cents, currency, status, host_email, paid_at, expires_at, activate_at, parent_link_id, created_at")
             .in("vendor_id", accountVendorIds)
             .order("created_at", { ascending: false })
             .limit(200),
@@ -552,18 +595,18 @@ export default function VendorPaymentsPage(
         if (!mountedRef.current) return;
         if (statusRes.data) setStatus(statusRes.data as Status);
         if (balanceRes.data) setBalance(balanceRes.data as Balance);
-        // Merge transactions from every connected listing, tag each
-        // with its source vendor_id (refund flow uses it), then sort
-        // newest-first and cap at 50 — same length the single-account
-        // call used to return.
-        const txResults = txResultsRaw as Array<{ id: string; res: { data?: { transactions?: Transaction[] } | null } }>;
+        // Merge transactions from every connected listing, tag each with
+        // its source vendor_id (refund flow uses it), then sort newest-first.
+        // No longer capped at 50 — fetchListingTransactions pages each
+        // listing so the Payments KPIs sum a real window, not just the
+        // most-recent handful.
+        const txResults = txResultsRaw as Array<{ id: string; transactions: Transaction[] }>;
         const mergedTx: Transaction[] = [];
-        for (const { id, res } of txResults) {
-          const list = (res?.data?.transactions ?? []) as Transaction[];
-          for (const t of list) mergedTx.push({ ...t, vendor_id: id });
+        for (const { id, transactions } of txResults) {
+          for (const t of transactions) mergedTx.push({ ...t, vendor_id: id });
         }
         mergedTx.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
-        setTransactions(mergedTx.slice(0, 50));
+        setTransactions(mergedTx);
         if (payoutRes.data) setPayouts(payoutRes.data as PayoutsResponse);
         if (linksRes && !linksRes.error) {
           setPaymentLinks((linksRes.data ?? []) as PaymentLink[]);
@@ -999,7 +1042,7 @@ function OverviewTab({
   const accountKey = accountVendorIds.join(",");
 
   useEffect(() => {
-    if (!userId && accountVendorIds.length === 0) {
+    if (!userId || accountVendorIds.length === 0) {
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
       setRevenue30d(0);
