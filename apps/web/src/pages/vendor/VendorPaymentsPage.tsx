@@ -13,17 +13,7 @@
 // them into vendorapay-onboard. No tab is hidden behind a gate —
 // the software is "there", even pre-verify.
 
-import {
-  forwardRef,
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Lazy-load the Calendar panel — nontrivial bundle that most
 // VendoraPay sessions don't open, so deferring its download keeps
@@ -43,7 +33,7 @@ function TabSkeleton() {
 }
 
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { handleEmailBillingError, handleInsufficientCredits } from "@/lib/credits";
+import { handleEmailBillingError } from "@/lib/credits";
 import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle,
@@ -71,7 +61,6 @@ import {
   Search,
   Settings as SettingsIcon,
   ShieldCheck,
-  Sparkles,
   Trash2,
   Users,
   Wallet,
@@ -2868,87 +2857,20 @@ function FilesTab(props: {
 // placeholder text so the vendor can see the document shape without
 // having to fill anything in here — actual invoice creation happens
 // elsewhere.
-
-// Reusable "Generate with AI" prompt dialog. Caller owns the open state and
-// supplies onGenerate(prompt) which does the actual work (call the edge fn and
-// fill the composer). Shared by Invoices, Contracts, and Proposals.
-function AiGenerateDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  placeholder,
-  onGenerate,
+function InvoiceCanvas({
+  brandName,
+  setBrandName,
+  brandLocation,
+  setBrandLocation,
+  brandLogoUrl,
+  brandTaxPct,
+  setBrandTaxPct,
+  category,
+  onPickLogo,
+  uploadingLogo,
+  vendorId,
+  onSaved,
 }: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  title: string;
-  description: string;
-  placeholder: string;
-  onGenerate: (prompt: string) => Promise<void>;
-}) {
-  const [prompt, setPrompt] = useState("");
-  const [busy, setBusy] = useState(false);
-  async function run() {
-    const p = prompt.trim();
-    if (!p || busy) return;
-    setBusy(true);
-    try {
-      await onGenerate(p);
-      setPrompt("");
-      onOpenChange(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> {title}
-          </DialogTitle>
-          <DialogDescription className="text-xs">{description}</DialogDescription>
-        </DialogHeader>
-        <textarea
-          autoFocus
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder={placeholder}
-          rows={4}
-          className="w-full text-sm leading-relaxed rounded-md border border-input bg-background px-3 py-2 resize-y"
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") void run();
-          }}
-        />
-        <div className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="text-sm text-muted-foreground hover:text-foreground px-3 py-2"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => void run()}
-            disabled={!prompt.trim() || busy}
-            className="inline-flex items-center gap-1.5 text-sm font-medium rounded-full bg-foreground text-background px-4 py-2 disabled:opacity-60"
-          >
-            {busy ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5" />
-            )}
-            Generate
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-type InvoiceCanvasProps = {
   brandName: string;
   setBrandName: (v: string) => void;
   brandLocation: string;
@@ -2961,31 +2883,7 @@ type InvoiceCanvasProps = {
   uploadingLogo: boolean;
   vendorId: string | null;
   onSaved: () => void;
-};
-export type InvoiceCanvasHandle = {
-  applyAiDraft: (draft: {
-    items: Array<{ name: string; qty: number; unit_price: number }>;
-    notes?: string | null;
-  }) => void;
-};
-const InvoiceCanvas = forwardRef<InvoiceCanvasHandle, InvoiceCanvasProps>(
-  function InvoiceCanvas(
-    {
-      brandName,
-      setBrandName,
-      brandLocation,
-      setBrandLocation,
-      brandLogoUrl,
-      brandTaxPct,
-      setBrandTaxPct,
-      category,
-      onPickLogo,
-      uploadingLogo,
-      vendorId,
-      onSaved,
-    },
-    ref,
-  ) {
+}) {
   const accent = "rgb(30,80,180)";
   const displayName = brandName.trim() || "[Your Business Name]";
   const displayLocation = brandLocation.trim() || "[City, State]";
@@ -3015,27 +2913,6 @@ const InvoiceCanvas = forwardRef<InvoiceCanvasHandle, InvoiceCanvasProps>(
   const updateRow = (i: number, key: "name" | "qty" | "price", v: string) =>
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, [key]: v } : row)));
   const addRow = () => setRows((r) => [...r, { name: "", qty: "1", price: "" }]);
-  // Fill the composer from an AI draft (line items + optional notes).
-  const applyAiDraft = useCallback(
-    (draft: {
-      items: Array<{ name: string; qty: number; unit_price: number }>;
-      notes?: string | null;
-    }) => {
-      const items = (draft.items ?? []).filter((it) => it && it.name?.trim());
-      if (items.length > 0) {
-        setRows(
-          items.map((it) => ({
-            name: it.name,
-            qty: String(Math.max(1, Math.round(it.qty || 1))),
-            price: it.unit_price != null ? String(it.unit_price) : "",
-          })),
-        );
-      }
-      if (draft.notes) setNotes((n) => (n.trim() ? n : draft.notes!.trim()));
-    },
-    [],
-  );
-  useImperativeHandle(ref, () => ({ applyAiDraft }), [applyAiDraft]);
   // Live totals (integer cents). Mirrors the modal composer's math.
   const subtotalCents = rows.reduce((sum, it) => {
     const q = parseInt(it.qty || "0", 10);
@@ -3436,7 +3313,7 @@ const InvoiceCanvas = forwardRef<InvoiceCanvasHandle, InvoiceCanvasProps>(
     </Card>
     </div>
   );
-});
+}
 
 function StaticMeta({
   label,
@@ -3496,7 +3373,6 @@ function DocumentCanvas({
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
-  const [aiOpen, setAiOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendEmail, setSendEmail] = useState("");
@@ -3784,55 +3660,16 @@ function DocumentCanvas({
               <ArrowLeft className="w-3.5 h-3.5" />
               {kindLabel} templates
             </button>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAiOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground border border-foreground/15 rounded-full px-3 h-8"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Generate with AI
-              </button>
-              <Button
-                onClick={save}
-                disabled={saving || !dirty}
-                size="sm"
-                className="rounded-full h-8 text-xs"
-              >
-                {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                Save template
-              </Button>
-            </div>
+            <Button
+              onClick={save}
+              disabled={saving || !dirty}
+              size="sm"
+              className="rounded-full h-8 text-xs"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+              Save template
+            </Button>
           </div>
-          <AiGenerateDialog
-            open={aiOpen}
-            onOpenChange={setAiOpen}
-            title={`Generate ${kindLabel.toLowerCase()} with AI`}
-            description={`Describe the ${kindLabel.toLowerCase()} and AI will draft it. You can edit everything before saving.`}
-            placeholder={
-              kind === "contract"
-                ? "e.g. DJ service contract: 6-hour reception, 30% deposit, cancellation terms"
-                : "e.g. wedding photography proposal: 8 hours, two shooters, online gallery"
-            }
-            onGenerate={async (prompt) => {
-              const { data, error } = await supabase.functions.invoke("document-ai-draft", {
-                body: {
-                  kind,
-                  prompt,
-                  businessName: templateListing?.business_name ?? "",
-                },
-              });
-              const d = data as { name?: string; body?: string } | null;
-              if (error || !d?.body) {
-                if (error && (await handleInsufficientCredits(error))) throw error;
-                toast.error(`Couldn't generate the ${kindLabel.toLowerCase()}. Try rephrasing.`);
-                throw error ?? new Error("no_draft");
-              }
-              setBody(d.body);
-              setName((n) => (n.trim() ? n : (d.name ?? "")));
-              toast.success("Draft added — review and save");
-            }}
-          />
 
           <div className="bg-white px-5 sm:px-7 py-7 sm:py-8">
             <header className="flex items-start justify-between gap-6 flex-wrap">
@@ -4509,9 +4346,6 @@ function InvoicesTab({
   const [brandTaxPct, setBrandTaxPct] = useState(taxPctToString(listing?.default_tax_pct));
   const [savingBrand, setSavingBrand] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  // Generate-with-AI: ref into the composer to apply the drafted line items.
-  const invoiceCanvasRef = useRef<InvoiceCanvasHandle | null>(null);
-  const [aiInvoiceOpen, setAiInvoiceOpen] = useState(false);
   const initialBrandRef = useRef({
     name: listing?.business_name ?? "",
     location: listing?.location ?? "",
@@ -4670,7 +4504,6 @@ function InvoicesTab({
           document. Saving writes back to vendor_profiles so the
           public invoice page picks it up next time. */}
       <InvoiceCanvas
-        ref={invoiceCanvasRef}
         brandName={brandName}
         setBrandName={setBrandName}
         brandLocation={brandLocation}
@@ -4689,48 +4522,6 @@ function InvoicesTab({
           grid cell, so the grid stays 2-up (template left, this right)
           instead of the Send box wrapping to a full-width 3rd cell. */}
       <div className="space-y-4">
-      {/* Generate with AI — entry point that sits above the invoice list. */}
-      <button
-        type="button"
-        onClick={() => setAiInvoiceOpen(true)}
-        className="group w-full text-left rounded-2xl border border-foreground/10 bg-gradient-to-br from-foreground/[0.05] to-transparent p-4 hover:border-foreground/25 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-foreground text-background inline-flex items-center justify-center shrink-0">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Generate with AI</div>
-            <div className="text-xs text-muted-foreground">
-              Describe the job — AI drafts the invoice for you.
-            </div>
-          </div>
-        </div>
-      </button>
-      <AiGenerateDialog
-        open={aiInvoiceOpen}
-        onOpenChange={setAiInvoiceOpen}
-        title="Generate invoice with AI"
-        description="Describe the job and AI will draft the line items. You can edit everything before saving."
-        placeholder="e.g. 6-hour wedding DJ with lighting and an MC, around $1,800 total"
-        onGenerate={async (prompt) => {
-          const { data, error } = await supabase.functions.invoke("invoice-ai-draft", {
-            body: { description: prompt },
-          });
-          if (error || !(data as { items?: unknown[] })?.items) {
-            if (error && (await handleInsufficientCredits(error))) throw error;
-            toast.error("Couldn't generate the invoice. Try rephrasing.");
-            throw error ?? new Error("no_draft");
-          }
-          invoiceCanvasRef.current?.applyAiDraft(
-            data as {
-              items: Array<{ name: string; qty: number; unit_price: number }>;
-              notes?: string | null;
-            },
-          );
-          toast.success("Draft added — review and save");
-        }}
-      />
       {/* Invoice list */}
       {invoices.length === 0 ? (
         <EmptyCard>
