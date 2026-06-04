@@ -20,8 +20,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 
 type ActionType =
   | "signup"
-  | "recovery"
-  | "reauthentication";
+  | "recovery";
 
 interface HookPayload {
   user: {
@@ -270,20 +269,8 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
   }
   // Note: there is no "email_change" case — the product has no self-serve
   // email change (Settings directs users to support), so nothing triggers it.
-  if (action === "reauthentication") {
-    const code = String(p.email_data.token).replace(/[^0-9]/g, "").slice(0, 6);
-    return {
-      subject: `Your Vendora verification code is ${code}`,
-      html: shell(
-        "Verification code",
-        `<p style="margin:0 0 16px;">Use this 6-digit code to confirm it's you:</p>
-         <p style="margin:0 0 24px;text-align:center;">
-           <span style="display:inline-block;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.4em;font-weight:600;color:#1a1a1a;background:#f7f5f2;border:1px solid #ececec;border-radius:8px;padding:18px 28px;">${escape(code)}</span>
-         </p>
-         <p style="margin:0;font-size:13px;color:#777;">This code expires in 10 minutes. Vendora will never ask you to share it.</p>`,
-      ),
-    };
-  }
+  // Note: there is no "reauthentication" case — nothing in the product calls
+  // GoTrue's reauthenticate(); the real login 2FA code is sent by signin-2fa.
   return null;
 }
 
