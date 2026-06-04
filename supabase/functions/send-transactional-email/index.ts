@@ -327,7 +327,7 @@ async function vendorDecisionEmail(
 
   if (decision === "vendor_rejected") {
     const body = `
-      <p style="margin:0 0 16px;">Thanks for applying to list <strong>${business}</strong> on Vendora. After review, we're not able to approve this application at the moment.</p>
+      <p style="margin:0 0 16px;">Thank you for applying to list <strong>${business}</strong> on Vendora — we really appreciate you taking the time, and the chance to learn about your business.</p>
       ${reasonLine}
       <p style="margin:0 0 16px;">If you'd like to address the feedback and reapply, you're welcome to submit again from the same email.</p>
       <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
