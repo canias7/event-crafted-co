@@ -395,6 +395,31 @@ async function fetchListingTransactions(
   return out;
 }
 
+// Page through invoices for the given listings so the Contacts tab's
+// per-contact invoice counts (and per-contact invoice lists) aren't
+// silently truncated for high-volume accounts. Bounded so it can't run
+// away on a pathological account.
+async function fetchAllInvoices(vendorIds: string[]): Promise<Invoice[]> {
+  if (vendorIds.length === 0) return [];
+  const cols =
+    "id, vendor_id, invoice_number, bill_to_name, bill_to_email, total_cents, currency, status, paid_at, sent_at, issue_date, due_date, created_at, refunded_at, refunded_amount_cents";
+  const out: Invoice[] = [];
+  const pageSize = 1000;
+  for (let page = 0; page < 8; page++) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("invoices")
+      .select(cols)
+      .in("vendor_id", vendorIds)
+      .order("created_at", { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    const rows = (data ?? []) as Invoice[];
+    out.push(...rows);
+    if (rows.length < pageSize) break;
+  }
+  return out;
+}
+
 export default function VendorPaymentsPage(
   { embedded = false, view = "workspace" }: {
     embedded?: boolean;
@@ -898,12 +923,14 @@ function WorkspaceAppointments({
   const [loading, setLoading] = useState(true);
   const idsKey = accountVendorIds.join(",");
 
+  const reqIdRef = useRef(0);
   const load = useCallback(async () => {
     if (accountVendorIds.length === 0) {
       setAppointments([]);
       setLoading(false);
       return;
     }
+    const reqId = ++reqIdRef.current;
     setLoading(true);
     // Bound to the recent window (~90 days back) like the calendar rail
     // so years-old history doesn't bloat the payload.
@@ -919,6 +946,8 @@ function WorkspaceAppointments({
       .gte("scheduled_at", cutoff.toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(500);
+    // A newer load started while this one was in flight — drop this result.
+    if (reqId !== reqIdRef.current) return;
     const rows = (
       (data as Array<
         Appointment & { host: { display_name: string | null } | null }
@@ -2347,6 +2376,16 @@ function TransactionsTab({
   );
 }
 
+// Stripe zero-decimal currencies — the smallest unit IS the whole unit
+// (¥1, not ¥0.01), so amount math must not assume two decimal places.
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  "bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf",
+  "ugx", "vnd", "vuv", "xaf", "xof", "xpf",
+]);
+function currencyDecimals(currency: string | null | undefined): number {
+  return ZERO_DECIMAL_CURRENCIES.has((currency ?? "").toLowerCase()) ? 0 : 2;
+}
+
 function RefundModal({
   tx,
   vendorId,
@@ -2358,9 +2397,22 @@ function RefundModal({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [amountDollars, setAmountDollars] = useState((tx.amount_cents / 100).toFixed(2));
+  // Currency-aware minor-unit factor (1 for ¥/₩, 100 for $/€) so parsing
+  // and validation work for zero-decimal currencies, not just USD.
+  const decimals = currencyDecimals(tx.currency);
+  const factor = decimals === 0 ? 1 : 10 ** decimals;
+  const [amount, setAmount] = useState((tx.amount_cents / factor).toFixed(decimals));
   const [reason, setReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
   const [submitting, setSubmitting] = useState(false);
+  // Single source of truth for the refund amount in minor units — used by
+  // validation, the submit, and the button preview so they can never
+  // disagree. Tolerates a comma decimal separator.
+  const cents = useMemo(() => {
+    const n = parseFloat(String(amount).replace(",", "."));
+    return Number.isFinite(n) ? Math.round(n * factor) : NaN;
+  }, [amount, factor]);
+  const amountValid =
+    Number.isFinite(cents) && cents >= 1 && cents <= tx.amount_cents;
 
   // Use the resolved PI id from listTransactions (server-side
   // expansion of balance-txn.source.payment_intent). The Transaction
@@ -2368,8 +2420,7 @@ function RefundModal({
   // rejects with resource_missing.
   const handle = useCallback(async () => {
     if (!vendorId || submitting || !tx.payment_intent_id) return;
-    const cents = Math.round(parseFloat(amountDollars) * 100);
-    if (!Number.isFinite(cents) || cents < 50 || cents > tx.amount_cents) {
+    if (!amountValid) {
       toast.error("Enter a valid amount up to the original charge.");
       return;
     }
@@ -2403,7 +2454,7 @@ function RefundModal({
     }
     toast.success("Refund issued");
     onDone();
-  }, [vendorId, submitting, amountDollars, reason, tx, onDone]);
+  }, [vendorId, submitting, amountValid, cents, reason, tx, onDone]);
 
   return (
     <div
@@ -2428,11 +2479,11 @@ function RefundModal({
               <input
                 type="number"
                 inputMode="decimal"
-                step="0.01"
-                min="0.50"
-                max={(tx.amount_cents / 100).toFixed(2)}
-                value={amountDollars}
-                onChange={(e) => setAmountDollars(e.target.value)}
+                step={decimals === 0 ? "1" : "0.01"}
+                min={decimals === 0 ? "1" : "0.01"}
+                max={(tx.amount_cents / factor).toFixed(decimals)}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
                 className="flex-1 rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
               />
             </div>
@@ -2460,9 +2511,13 @@ function RefundModal({
           <Button variant="ghost" onClick={onClose} disabled={submitting} className="rounded-full">
             Cancel
           </Button>
-          <Button onClick={handle} disabled={submitting} className="rounded-full">
+          <Button
+            onClick={handle}
+            disabled={submitting || !amountValid}
+            className="rounded-full"
+          >
             {submitting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : null}
-            Refund {formatMoney(Math.round(parseFloat(amountDollars || "0") * 100), tx.currency)}
+            Refund {formatMoney(Number.isFinite(cents) ? cents : 0, tx.currency)}
           </Button>
         </div>
       </div>
@@ -2789,7 +2844,12 @@ function FilesTab(props: {
   onChanged: () => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const fileTab = ((searchParams.get("file") as FileTabId | null) ?? "invoices") as FileTabId;
+  // Validate against the known tabs so a junk ?file= value falls back to
+  // the default instead of rendering a blank pane.
+  const rawFile = searchParams.get("file");
+  const fileTab: FileTabId = FILES_TABS.some((t) => t.id === rawFile)
+    ? (rawFile as FileTabId)
+    : "invoices";
   const setFileTab = (next: FileTabId) => {
     const params = new URLSearchParams(searchParams);
     if (next === "invoices") params.delete("file");
@@ -3374,9 +3434,20 @@ function DocumentCanvas({
   kind: "contract" | "proposal";
   starter: DocTemplate;
 }) {
-  // The first listing in the account owns the templates; brand
-  // placeholders in the document header come from that listing's profile.
-  const templateVendorId = accountVendorIds[0] ?? null;
+  // Which listing's templates we're managing. Defaults to the primary
+  // listing; the picker in the list view lets multi-listing vendors switch
+  // so each listing can keep its own contract/proposal templates (and its
+  // own brand placeholders in the document header).
+  const [templateVendorId, setTemplateVendorId] = useState<string | null>(
+    accountVendorIds[0] ?? null,
+  );
+  useEffect(() => {
+    // Keep the selection valid if the account's listing set changes.
+    setTemplateVendorId((prev) =>
+      prev && accountVendorIds.includes(prev) ? prev : accountVendorIds[0] ?? null,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountVendorIds.join(",")]);
   const templateListing = listings.find((l) => l.id === templateVendorId) ?? null;
   const tableName =
     kind === "contract" ? "vendor_contract_templates" : "vendor_proposal_templates";
@@ -3840,6 +3911,17 @@ function DocumentCanvas({
           New {kindLabel.toLowerCase()}
         </Button>
       </div>
+
+      {/* Multi-listing accounts: choose which listing's templates to manage
+          (hidden when there's ≤1 listing). */}
+      <ListingPickerField
+        accountVendorIds={accountVendorIds}
+        listings={listings}
+        value={templateVendorId}
+        onChange={setTemplateVendorId}
+        label="Templates for listing"
+        inline
+      />
 
       {!loaded ? (
         <div className="flex items-center justify-center py-12">
@@ -4832,11 +4914,47 @@ function CustomersTab({
     return map;
   }, [invoices]);
 
+  // "Everyone you've billed": saved contacts PLUS anyone who's received an
+  // invoice but was never saved as a contact, surfaced as a read-only row
+  // (id prefixed "billed:") built from their most recent invoice. Editing
+  // one saves it as a real contact; it can't be selected/deleted (there's
+  // no saved row to remove). This is what makes the header truthful.
+  const displayRows = useMemo(() => {
+    const savedEmails = new Set(rows.map((r) => r.email.toLowerCase()));
+    const seen = new Set<string>();
+    const virtual: Customer[] = [];
+    // invoices arrive newest-first, so the first time we see an email gives
+    // us the most recent bill-to name.
+    for (const inv of invoices) {
+      const email = (inv.bill_to_email ?? "").trim().toLowerCase();
+      if (!email || savedEmails.has(email) || seen.has(email)) continue;
+      seen.add(email);
+      virtual.push({
+        id: `billed:${email}`,
+        vendor_id: inv.vendor_id ?? null,
+        email,
+        name: inv.bill_to_name?.trim() || null,
+        phone: null,
+        notes: null,
+        first_name: null,
+        last_name: null,
+        company: null,
+        billing_line1: null,
+        billing_city: null,
+        billing_state: null,
+        billing_postal_code: null,
+        billing_country: null,
+        created_at: inv.created_at,
+      } as Customer);
+    }
+    return [...rows, ...virtual];
+  }, [rows, invoices]);
+
   // Per-contact rollup keyed by row id: how many invoices the contact
   // has actually received. Drives the Invoices column and sorting.
   const summaryById = useMemo(() => {
     const m = new Map<string, { count: number }>();
-    for (const c of rows) {
+    for (const c of displayRows) {
       const inv = invoicesByEmail.get(c.email.toLowerCase()) ?? [];
       // Count only invoices the customer actually received — drafts
       // are in-progress and cancelled ones were pulled, so neither
@@ -4848,22 +4966,22 @@ function CustomersTab({
       m.set(c.id, { count: real.length });
     }
     return m;
-  }, [rows, invoicesByEmail]);
+  }, [displayRows, invoicesByEmail]);
 
   // Free-text filter across the fields a vendor would look someone up
   // by — display name, email, phone, company. Applied before sort so
   // the count/total in the footer reflect what's on screen.
   const filteredRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((c) => {
+    if (!q) return displayRows;
+    return displayRows.filter((c) => {
       const hay = [c.name, c.email, c.phone, c.company, c.first_name, c.last_name]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [rows, searchTerm]);
+  }, [displayRows, searchTerm]);
 
   const sortedRows = useMemo(() => {
     const copy = [...filteredRows];
@@ -4915,7 +5033,11 @@ function CustomersTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIdsKey]);
 
+  // Billed-but-unsaved rows aren't real DB rows, so they can't be selected
+  // for bulk delete.
+  const isBilledRow = (id: string) => id.startsWith("billed:");
   const toggleRow = (id: string) => {
+    if (isBilledRow(id)) return;
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -4925,18 +5047,20 @@ function CustomersTab({
   };
   const toggleAllOnPage = () => {
     setSelectedIds((prev) => {
-      const allSelected = pageRows.length > 0 && pageRows.every((r) => prev.has(r.id));
+      const selectable = pageRows.filter((r) => !isBilledRow(r.id));
+      const allSelected =
+        selectable.length > 0 && selectable.every((r) => prev.has(r.id));
       if (allSelected) return new Set();
-      return new Set(pageRows.map((r) => r.id));
+      return new Set(selectable.map((r) => r.id));
     });
   };
   const bulkDelete = async () => {
-    if (selectedIds.size === 0) return;
-    if (!confirm(`Remove ${selectedIds.size} contact${selectedIds.size === 1 ? "" : "s"}?`)) return;
+    const ids = Array.from(selectedIds).filter((id) => !isBilledRow(id));
+    if (ids.length === 0) return;
+    if (!confirm(`Remove ${ids.length} contact${ids.length === 1 ? "" : "s"}?`)) return;
     setBulkDeleting(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    const ids = Array.from(selectedIds);
     const { error } = await db.from("vendor_customers").delete().in("id", ids);
     setBulkDeleting(false);
     if (error) {
@@ -4952,6 +5076,7 @@ function CustomersTab({
   // every render just because the listings array is re-derived.
   const accountKey = accountVendorIds.join(",");
 
+  const reqIdRef = useRef(0);
   const refresh = useCallback(async () => {
     if (!userId) {
       setRows([]);
@@ -4959,31 +5084,25 @@ function CustomersTab({
       setLoading(false);
       return;
     }
+    const reqId = ++reqIdRef.current;
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    // Contacts are account-level (user_id). Invoices stay
-    // listing-scoped (they're billing artifacts that belong to a
-    // connected listing), so they only load once the account has at
-    // least one listing.
+    // Contacts are account-level (user_id). Invoices stay listing-scoped
+    // (billing artifacts on a connected listing) and are paged so the
+    // per-contact counts aren't truncated.
     const hasListings = accountVendorIds.length > 0;
-    const [{ data: cs, error: csErr }, { data: invs }] = await Promise.all([
+    const [{ data: cs, error: csErr }, invs] = await Promise.all([
       db
         .from("vendor_customers")
         .select("id, vendor_id, email, name, phone, notes, first_name, last_name, company, billing_line1, billing_city, billing_state, billing_postal_code, billing_country, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
-      hasListings
-        ? db
-            .from("invoices")
-            .select(
-              "id, vendor_id, invoice_number, bill_to_name, bill_to_email, total_cents, currency, status, paid_at, sent_at, issue_date, due_date, created_at, refunded_at, refunded_amount_cents",
-            )
-            .in("vendor_id", accountVendorIds)
-            .order("created_at", { ascending: false })
-            .limit(2000)
-        : Promise.resolve({ data: [] }),
+      hasListings ? fetchAllInvoices(accountVendorIds) : Promise.resolve([] as Invoice[]),
     ]);
+    // A newer refresh superseded this one while it was in flight — bail so
+    // the stale result can't clobber the fresh state.
+    if (reqId !== reqIdRef.current) return;
     if (!csErr) setRows((cs ?? []) as Customer[]);
     setInvoices((invs ?? []) as Invoice[]);
     setLoading(false);
@@ -5031,7 +5150,14 @@ function CustomersTab({
       billing_postal_code: c.billing_postal_code ?? "",
       billing_country: c.billing_country ?? "",
     });
-    setEditing(c);
+    // Billed-but-unsaved rows have no DB id — editing one saves it as a new
+    // contact, tagged to the listing that billed them.
+    if (c.id.startsWith("billed:")) {
+      setNewCustomerVendorId(c.vendor_id ?? accountVendorIds[0] ?? null);
+      setEditing("new");
+    } else {
+      setEditing(c);
+    }
   };
 
   const save = useCallback(async () => {
@@ -5075,7 +5201,9 @@ function CustomersTab({
             .upsert(
               {
                 user_id: userId,
-                vendor_id: accountVendorIds[0] ?? null,
+                // The listing the vendor picked (multi-listing accounts),
+                // falling back to the primary listing, then null.
+                vendor_id: newCustomerVendorId ?? accountVendorIds[0] ?? null,
                 email,
                 name,
                 phone,
@@ -5145,9 +5273,21 @@ function CustomersTab({
             <h3 className="text-sm font-semibold">
               {editing === "new" ? "New contact" : `Edit ${editing.name ?? editing.email}`}
             </h3>
-            {/* Listing picker removed — account-level cockpit means
-                we default new customers to accountVendorIds[0] (see
-                save()) without asking the vendor to pick. */}
+            {/* Which listing this contact belongs to. Only rendered for a
+                new contact on a multi-listing account (the picker hides
+                itself when there's ≤1 listing); editing never re-parents a
+                contact, so it's not shown then. Drives the vendor_id we
+                save, so per-customer billing actions pick up the right
+                brand instead of always defaulting to the first listing. */}
+            {editing === "new" ? (
+              <ListingPickerField
+                accountVendorIds={accountVendorIds}
+                listings={listings}
+                value={newCustomerVendorId}
+                onChange={setNewCustomerVendorId}
+                label="Save under listing"
+              />
+            ) : null}
             {/* Name + company. Display name is what shows on invoices
                 and statements; if left blank it auto-fills from the
                 first/last name (then company, then email) on save. */}
@@ -5289,7 +5429,7 @@ function CustomersTab({
 
       {loading ? (
         <EmptyCard>Loading contacts…</EmptyCard>
-      ) : rows.length === 0 ? (
+      ) : displayRows.length === 0 ? (
         <EmptyCard>No contacts yet. Click "New contact" to add your first.</EmptyCard>
       ) : (
         <>
@@ -5335,7 +5475,10 @@ function CustomersTab({
                   <th className="w-10 px-4 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={pageRows.length > 0 && pageRows.every((r) => selectedIds.has(r.id))}
+                      checked={(() => {
+                        const sel = pageRows.filter((r) => !isBilledRow(r.id));
+                        return sel.length > 0 && sel.every((r) => selectedIds.has(r.id));
+                      })()}
                       onChange={toggleAllOnPage}
                       aria-label="Select all rows on this page"
                       className="cursor-pointer"
@@ -5388,13 +5531,22 @@ function CustomersTab({
                           type="checkbox"
                           checked={selectedIds.has(c.id)}
                           onChange={() => toggleRow(c.id)}
+                          disabled={isBilledRow(c.id)}
                           aria-label={`Select contact ${c.name ?? c.email}`}
-                          className="cursor-pointer"
+                          className="cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         />
                       </td>
                       <td className="px-3 py-3 text-sm text-foreground font-bold">
                         <div className="flex items-center gap-1.5">
                           <span>{c.name?.trim() || c.email}</span>
+                          {isBilledRow(c.id) ? (
+                            <span
+                              title="Billed via an invoice but not saved as a contact yet — click Save to keep them."
+                              className="text-[9px] uppercase tracking-wide rounded-full border border-foreground/15 text-muted-foreground px-1.5 py-0.5 shrink-0 font-medium"
+                            >
+                              Billed
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-3 py-3 text-sm text-muted-foreground">
@@ -5419,7 +5571,7 @@ function CustomersTab({
                             onClick={() => startEdit(c)}
                             className="text-[#18181b] hover:underline text-sm font-medium"
                           >
-                            Edit
+                            {isBilledRow(c.id) ? "Save" : "Edit"}
                           </button>
                           <span aria-hidden className="text-foreground/15">|</span>
                           <DropdownMenu>
@@ -5441,13 +5593,15 @@ function CustomersTab({
                                 <Mail className="w-3.5 h-3.5 mr-2" /> Send invoice
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => void remove(c)}
-                                disabled={deletingId === c.id}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                              </DropdownMenuItem>
+                              {!isBilledRow(c.id) ? (
+                                <DropdownMenuItem
+                                  onClick={() => void remove(c)}
+                                  disabled={deletingId === c.id}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              ) : null}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
