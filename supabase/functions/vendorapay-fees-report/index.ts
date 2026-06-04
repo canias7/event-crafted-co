@@ -75,11 +75,22 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
-    const { data: secret } = await admin
-      .from("vendor_payment_secrets")
-      .select("stripe_account_id")
-      .eq("vendor_id", businessId)
+    // vendor_payment_secrets is account-level (keyed by the listing
+    // owner's user_id). Resolve the owner from the listing, then look up
+    // by user_id — keying by vendor_id misses every post-migration vendor.
+    const { data: ownerRow } = await admin
+      .from("vendor_profiles")
+      .select("user_id")
+      .eq("id", businessId)
       .maybeSingle();
+    const ownerId = (ownerRow as { user_id?: string | null } | null)?.user_id ?? null;
+    const { data: secret } = ownerId
+      ? await admin
+          .from("vendor_payment_secrets")
+          .select("stripe_account_id")
+          .eq("user_id", ownerId)
+          .maybeSingle()
+      : { data: null };
     const stripeAccountId =
       (secret as { stripe_account_id?: string | null } | null)?.stripe_account_id ?? null;
     if (!stripeAccountId) {
@@ -103,7 +114,6 @@ serve(async (req) => {
     return json(200, { ...result, connected: true });
   } catch (err) {
     console.error("[vendorapay-fees-report] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "internal", detail: message.slice(0, 240) });
+    return json(500, { error: "internal" });
   }
 });

@@ -77,11 +77,22 @@ serve(async (req) => {
     }
     if ((inv.total_cents as number) < 50) return json(400, { error: "invoice total too small" });
 
-    const { data: secret } = await admin
-      .from("vendor_payment_secrets")
-      .select("stripe_account_id, charges_enabled")
-      .eq("vendor_id", inv.vendor_id)
+    // Secrets are account-level (keyed by the listing owner's user_id);
+    // resolve the owner from the listing first. Keying by vendor_id misses
+    // every vendor onboarded after the secrets migration.
+    const { data: ownerRow } = await admin
+      .from("vendor_profiles")
+      .select("user_id")
+      .eq("id", inv.vendor_id)
       .maybeSingle();
+    const ownerId = (ownerRow as { user_id?: string | null } | null)?.user_id ?? null;
+    const { data: secret } = ownerId
+      ? await admin
+          .from("vendor_payment_secrets")
+          .select("stripe_account_id, charges_enabled")
+          .eq("user_id", ownerId)
+          .maybeSingle()
+      : { data: null };
     const sRow = secret as { stripe_account_id?: string | null; charges_enabled?: boolean | null } | null;
     if (!sRow?.stripe_account_id) {
       return json(400, { error: "vendor not ready to receive payments" });
@@ -218,7 +229,6 @@ serve(async (req) => {
     return json(200, { url: session.url });
   } catch (err) {
     console.error("[vendorapay-invoice-checkout] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "checkout_failed", detail: message.slice(0, 240) });
+    return json(500, { error: "checkout_failed" });
   }
 });

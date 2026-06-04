@@ -57,8 +57,11 @@ serve(async (req) => {
     const reasonRaw = (body?.reason as string | undefined) ?? "requested_by_customer";
     if (!businessId) return json(400, { error: "business_id required" });
     if (!paymentIntentId) return json(400, { error: "payment_intent_id required" });
-    if (amountCents !== undefined && (!Number.isInteger(amountCents) || amountCents < 50)) {
-      return json(400, { error: "amount_cents must be an integer >= 50" });
+    // Minimum is 1 minor unit — currency-agnostic, so it's correct for
+    // zero-decimal currencies (¥) too, not just USD cents. The
+    // remaining-balance cap is enforced below once we know the charge.
+    if (amountCents !== undefined && (!Number.isInteger(amountCents) || amountCents < 1)) {
+      return json(400, { error: "amount_cents must be a positive integer" });
     }
     const reason = VALID_REASONS.has(reasonRaw) ? reasonRaw : "requested_by_customer";
 
@@ -132,6 +135,13 @@ serve(async (req) => {
       });
     }
 
+    // Idempotency key keyed by PI + amount + how much was already refunded.
+    // A double-click / retry (same already-refunded snapshot) reuses the
+    // SAME refund instead of issuing a second one; a legitimate later
+    // partial refund sees a different already-refunded total and so gets a
+    // distinct key. Closes the double-refund race.
+    const idempotencyKey =
+      `refund_${paymentIntentId}_${amountCents ?? "full"}_${alreadyRefunded}`;
     const refund = await client().refunds.create({
       payment_intent: paymentIntentId,
       amount: amountCents,
@@ -142,7 +152,7 @@ serve(async (req) => {
         vendor_id: businessId,
         refunded_by: userData.user.id,
       },
-    });
+    }, { idempotencyKey });
 
     return json(200, {
       refund_id: refund.id,
@@ -152,7 +162,6 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("[vendorapay-refund] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "refund_failed", detail: message.slice(0, 240) });
+    return json(500, { error: "refund_failed" });
   }
 });
