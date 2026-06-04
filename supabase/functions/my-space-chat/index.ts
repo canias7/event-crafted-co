@@ -571,6 +571,9 @@ Write tools (require an explicit go-ahead from the vendor before calling):
 - \`manage_expense(action)\` — list / add business expenses
 - \`add_portfolio_image\` — add an image (by URL, e.g. one you generated) to the public gallery
 - \`manage_listing(action)\` — get_status / submit_for_review (use update_profile to edit listing fields)
+- \`manage_invoice(action)\` — list / send / mark_paid / cancel an existing invoice
+- \`list_documents\` — see sent contracts & proposals + their status (signed/accepted/awaiting)
+- \`manage_appointment(action=accept|decline)\` — respond to a host-proposed appointment
 - \`manage_calendar(action=recurring_block_weekday|recurring_unblock_weekday)\` — set permanent weekly off-days
 - \`bulk_update_inquiry_status\` · \`bulk_send_reply\` — batch ops
 - \`manage_faq\` · \`manage_package\` · \`update_profile\` · \`toggle_auto_reply\`
@@ -1520,7 +1523,37 @@ async function toolManageAppointment(
   const action = String(input?.action ?? "").trim();
   if (action === "create") return await toolCreateAppointment(admin, vendorId, input);
   if (action === "update") return await toolUpdateAppointment(admin, vendorId, input);
-  return { error: `unknown_action:${action}. Valid: create, update.` };
+  if (action === "accept" || action === "decline") {
+    return await toolRespondAppointment(
+      admin,
+      vendorId,
+      input,
+      action === "accept" ? "accepted" : "declined",
+    );
+  }
+  return { error: `unknown_action:${action}. Valid: create, update, accept, decline.` };
+}
+
+// Accept or decline a host-proposed appointment by id.
+async function toolRespondAppointment(
+  admin: any,
+  vendorId: string,
+  input: any,
+  newStatus: "accepted" | "declined",
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const id = String(input?.appointment_id ?? "").trim();
+  if (!id) return { error: "appointment_id required" };
+  const { data, error } = await admin
+    .from("appointments")
+    .update({ status: newStatus })
+    .eq("id", id)
+    .eq("vendor_id", vendorId)
+    .select("id, title, status, scheduled_at")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "appointment_not_found" };
+  return { updated: true, appointment: data };
 }
 
 async function toolManageCalendar(
@@ -3014,6 +3047,137 @@ async function toolManageListing(
   return { error: `unknown_action:${action}. Valid: get_status, submit_for_review.` };
 }
 
+// ── Invoice lifecycle: list / send / mark_paid / cancel.
+async function toolManageInvoice(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const action = String(input?.action ?? "").trim();
+  if (action === "list") {
+    const { data, error } = await admin
+      .from("invoices")
+      .select("invoice_number, status, total_cents, bill_to_name, due_date, slug")
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    if (error) return { error: error.message };
+    return {
+      invoices: ((data ?? []) as Array<any>).map((i) => ({
+        invoice_number: i.invoice_number,
+        status: i.status,
+        total_usd: (i.total_cents ?? 0) / 100,
+        bill_to: i.bill_to_name,
+        due_date: i.due_date,
+        checkout_url: `https://eventvendora.com/pay/invoice/${i.slug}`,
+      })),
+    };
+  }
+  // Resolve the target invoice by id or number (scoped to the vendor).
+  let q = admin.from("invoices").select("id, status, invoice_number").eq("vendor_id", vendorId);
+  const invId = String(input?.invoice_id ?? "").trim();
+  const invNum = String(input?.invoice_number ?? "").trim();
+  if (invId) q = q.eq("id", invId);
+  else if (invNum) q = q.eq("invoice_number", invNum);
+  else return { error: "invoice_id or invoice_number required" };
+  const { data: inv, error: selErr } = await q.maybeSingle();
+  if (selErr) return { error: selErr.message };
+  if (!inv) return { error: "invoice_not_found" };
+  const id = (inv as any).id as string;
+
+  if (action === "send") {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/vendorapay-invoice-send`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        invoice_id: id,
+        ...(input?.to_email ? { to_email: String(input.to_email) } : {}),
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { error: (body as any)?.error ?? (body as any)?.message ?? `send_failed_${res.status}` };
+    }
+    return { sent: true, invoice_number: (inv as any).invoice_number };
+  }
+  if (action === "mark_paid") {
+    const { error } = await admin
+      .from("invoices")
+      .update({ status: "paid", paid_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    return { marked_paid: true, invoice_number: (inv as any).invoice_number };
+  }
+  if (action === "cancel") {
+    if ((inv as any).status === "paid") {
+      return { error: "can't cancel a paid invoice — issue a refund instead (done manually)." };
+    }
+    const { error } = await admin
+      .from("invoices")
+      .update({ status: "cancelled" })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    return { cancelled: true, invoice_number: (inv as any).invoice_number };
+  }
+  return { error: `unknown_action:${action}. Valid: list, send, mark_paid, cancel.` };
+}
+
+// ── Document tracking: list sent contracts & proposals with status + link.
+async function toolListDocuments(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const kind = input?.kind === "contract"
+    ? "contract"
+    : input?.kind === "proposal"
+      ? "proposal"
+      : "all";
+  const out: Array<any> = [];
+  if (kind === "all" || kind === "contract") {
+    const { data } = await admin
+      .from("vendor_contracts")
+      .select("title, status, recipient_name, signer_name, signed_at, sign_token, created_at")
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    for (const c of (data ?? []) as Array<any>) {
+      out.push({
+        type: "contract",
+        title: c.title,
+        status: c.status === "signed" ? "signed" : "awaiting signature",
+        to: c.signer_name ?? c.recipient_name ?? null,
+        signed_at: c.signed_at,
+        link: `https://eventvendora.com/sign/${c.sign_token}`,
+      });
+    }
+  }
+  if (kind === "all" || kind === "proposal") {
+    const { data } = await admin
+      .from("vendor_proposals")
+      .select("title, status, recipient_name, accepted_name, accepted_at, view_token, created_at")
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    for (const p of (data ?? []) as Array<any>) {
+      out.push({
+        type: "proposal",
+        title: p.title,
+        status: p.status === "accepted" ? "accepted" : "awaiting acceptance",
+        to: p.accepted_name ?? p.recipient_name ?? null,
+        accepted_at: p.accepted_at,
+        link: `https://eventvendora.com/proposal/${p.view_token}`,
+      });
+    }
+  }
+  return { documents: out };
+}
+
 const WEEKDAY_NAMES = [
   "Sunday",
   "Monday",
@@ -3268,6 +3432,17 @@ async function executeTool(
       );
       if (!gate.confirmed) return gate.payload;
     }
+    // Gate the write actions on manage_invoice (send emails a client;
+    // mark_paid / cancel mutate financial records) — but let 'list' read freely.
+    if (
+      name === "manage_invoice" &&
+      ["send", "mark_paid", "cancel"].includes(String(input?.action ?? ""))
+    ) {
+      const gate = await confirmGate(
+        admin, userId, threadId, turnId, `invoice:${input.action}`, input,
+      );
+      if (!gate.confirmed) return gate.payload;
+    }
     if (name === "search_inquiries") {
       return await toolSearchInquiries(admin, vendorId, input);
     }
@@ -3337,6 +3512,12 @@ async function executeTool(
     }
     if (name === "manage_listing") {
       return await toolManageListing(admin, vendorId, input);
+    }
+    if (name === "manage_invoice") {
+      return await toolManageInvoice(admin, vendorId, input);
+    }
+    if (name === "list_documents") {
+      return await toolListDocuments(admin, vendorId, input);
     }
     if (name === "toggle_auto_reply") {
       return await toolToggleAutoReply(admin, vendorId, userId, input);

@@ -180,12 +180,12 @@ const TOOLS = [
   {
     name: "manage_appointment",
     description:
-      "Create or update an appointment with a host. WRITE ACTION — confirm date/time/kind with the vendor first. Use action='create' to schedule a new one (consultation, walkthrough, tasting, fitting, or phone call); action='update' to reschedule, change status, or edit details on an existing one.",
+      "Create, update, or respond to an appointment with a host. WRITE ACTION — confirm date/time/kind with the vendor first. action='create' schedules a new one; 'update' reschedules/edits; 'accept' confirms a host-PROPOSED appointment; 'decline' declines a host-proposed one. (accept/decline just need appointment_id.)",
     input_schema: {
       type: "object",
       required: ["action"],
       properties: {
-        action: { type: "string", enum: ["create", "update"] },
+        action: { type: "string", enum: ["create", "update", "accept", "decline"] },
         appointment_id: {
           type: "string",
           description: "UUID of the appointment. Required when action='update'.",
@@ -730,6 +730,36 @@ const TOOLS = [
       required: ["action"],
       properties: {
         action: { type: "string", enum: ["get_status", "submit_for_review"] },
+      },
+    },
+  },
+  {
+    name: "manage_invoice",
+    description:
+      "Manage existing invoices. action='list' shows recent invoices + statuses; 'send' emails the invoice to its bill-to contact (and stamps it sent); 'mark_paid' marks an invoice paid (e.g. they paid by cash/transfer); 'cancel' voids an invoice. Identify the invoice by invoice_number (e.g. INV-2026-0007) or invoice_id. (Use create_invoice to make a new one.) WRITE for send/mark_paid/cancel — confirm with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["list", "send", "mark_paid", "cancel"] },
+        invoice_number: { type: "string", description: "e.g. INV-2026-0007." },
+        invoice_id: { type: "string", description: "Invoice UUID (alternative to invoice_number)." },
+        to_email: { type: "string", description: "Optional override recipient for action='send'." },
+      },
+    },
+  },
+  {
+    name: "list_documents",
+    description:
+      "List the contracts and proposals the vendor has sent, with their status (contracts: sent/awaiting vs signed; proposals: sent/awaiting vs accepted) and the shareable link. READ-ONLY.",
+    input_schema: {
+      type: "object",
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["all", "contract", "proposal"],
+          description: "Filter. Default 'all'.",
+        },
       },
     },
   },
