@@ -21,7 +21,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 type ActionType =
   | "signup"
   | "invite"
-  | "magiclink"
   | "recovery"
   | "email_change"
   | "reauthentication";
@@ -266,17 +265,10 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
       ),
     };
   }
-  if (action === "magiclink") {
-    return {
-      subject: "Your Vendora sign-in link",
-      html: shell(
-        "Sign in to Vendora",
-        `<p style="margin:0 0 16px;">Tap below to sign in to your Vendora account. This link expires in 1 hour.</p>
-         <p style="margin:0 0 24px;">${button(verifyUrl, "Sign me in")}</p>
-         <p style="margin:0;font-size:13px;color:#777;">If you didn't request this, you can safely ignore this email.</p>`,
-      ),
-    };
-  }
+  // Note: there is no "magiclink" case. Login uses password + a 6-digit
+  // 2FA code via the signin-2fa edge function, not magic links — nothing
+  // in the product calls signInWithOtp, so this action is intentionally
+  // unsupported (renderEmail returns null → 400).
   if (action === "recovery") {
     return {
       subject: "Reset your Vendora password",
