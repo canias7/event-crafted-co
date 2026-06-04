@@ -3,6 +3,10 @@ project_id = "pahpjjubhbcbwqjpamwv"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  # Admin login: PIN-gated, mints the admin session server-side (bypasses
+  # project captcha). The caller has no JWT yet — must be false.
+  [functions.admin-session]
+    verify_jwt = false
   [functions.contract-send-otp]
     verify_jwt = false
   [functions.proposal-accepted-email]

@@ -32,29 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // The session is established by PinGate (PIN → admin-session edge fn →
+    // setSession) and persisted by supabase-js. Here we just read it and
+    // load the admin profile; we no longer sign in from the client (that
+    // path is captcha-blocked at the project level).
     const init = async () => {
       try {
         const existing = await supabase.auth.getSession();
-        let s = existing.data.session;
-
-        if (!s) {
-          const email = import.meta.env.VITE_ADMIN_EMAIL;
-          const password = import.meta.env.VITE_ADMIN_PASSWORD;
-          if (!email || !password) {
-            setError("Admin credentials are not configured.");
-            return;
-          }
-          const { data, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (signInError) {
-            setError(signInError.message);
-            return;
-          }
-          s = data.session;
-        }
-
+        const s = existing.data.session;
         setSession(s);
         if (s) await loadProfile(s.user.id);
       } catch (e) {
