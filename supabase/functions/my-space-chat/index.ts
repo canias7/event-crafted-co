@@ -567,6 +567,11 @@ Write tools (require an explicit go-ahead from the vendor before calling):
 - \`manage_knowledge(action)\` — add / update / delete persistent business facts
 - \`create_payment_link\` · \`create_invoice\` — billing
 - \`create_document(kind)\` — draft & create a contract or proposal; returns a shareable link (you write the body first)
+- \`manage_contact(action)\` — list / add / update saved customers
+- \`manage_expense(action)\` — list / add business expenses
+- \`add_portfolio_image\` — add an image (by URL, e.g. one you generated) to the public gallery
+- \`manage_listing(action)\` — get_status / submit_for_review (use update_profile to edit listing fields)
+- \`manage_calendar(action=recurring_block_weekday|recurring_unblock_weekday)\` — set permanent weekly off-days
 - \`bulk_update_inquiry_status\` · \`bulk_send_reply\` — batch ops
 - \`manage_faq\` · \`manage_package\` · \`update_profile\` · \`toggle_auto_reply\`
 - \`edit_image\` · \`set_chat_preferences\`
@@ -1533,8 +1538,15 @@ async function toolManageCalendar(
   if (action === "block_range") {
     return await toolBlockCalendarRange(admin, vendorId, input);
   }
+  if (action === "recurring_block_weekday") {
+    return await toolRecurringWeekday(admin, vendorId, input, true);
+  }
+  if (action === "recurring_unblock_weekday") {
+    return await toolRecurringWeekday(admin, vendorId, input, false);
+  }
   return {
-    error: `unknown_action:${action}. Valid: block_date, unblock_date, block_range.`,
+    error:
+      `unknown_action:${action}. Valid: block_date, unblock_date, block_range, recurring_block_weekday, recurring_unblock_weekday.`,
   };
 }
 
@@ -2783,6 +2795,276 @@ async function toolCreateDocument(
   };
 }
 
+// ── Contacts (vendor_customers): list / add / update.
+async function toolManageContact(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const action = String(input?.action ?? "").trim();
+  if (action === "list") {
+    let q = admin
+      .from("vendor_customers")
+      .select("id, name, email, phone, company, notes, created_at")
+      .eq("vendor_id", vendorId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    const search = String(input?.query ?? "").trim();
+    if (search) q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+    const { data, error } = await q;
+    if (error) return { error: error.message };
+    return { contacts: (data ?? []) as Array<any> };
+  }
+  const fields: Record<string, unknown> = {};
+  if (input?.name !== undefined) fields.name = String(input.name).slice(0, 160);
+  if (input?.email !== undefined) fields.email = String(input.email).slice(0, 200);
+  if (input?.phone !== undefined) fields.phone = String(input.phone).slice(0, 60);
+  if (input?.company !== undefined) fields.company = String(input.company).slice(0, 160);
+  if (input?.notes !== undefined) fields.notes = String(input.notes).slice(0, 2000);
+  if (action === "add") {
+    if (!fields.name && !fields.email) {
+      return { error: "a name or email is required to add a contact" };
+    }
+    const { data, error } = await admin
+      .from("vendor_customers")
+      .insert({ vendor_id: vendorId, ...fields })
+      .select("id, name, email")
+      .single();
+    if (error) return { error: error.message };
+    return { added: true, contact: data };
+  }
+  if (action === "update") {
+    const id = String(input?.id ?? "").trim();
+    if (!id) return { error: "id required for update" };
+    if (Object.keys(fields).length === 0) return { error: "nothing_to_update" };
+    const { data, error } = await admin
+      .from("vendor_customers")
+      .update(fields)
+      .eq("id", id)
+      .eq("vendor_id", vendorId)
+      .select("id, name, email")
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data) return { error: "contact_not_found" };
+    return { updated: true, contact: data };
+  }
+  return { error: `unknown_action:${action}. Valid: list, add, update.` };
+}
+
+// ── Expenses (vendor_expenses): list / add.
+async function toolManageExpense(
+  admin: any,
+  vendorId: string,
+  userId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const action = String(input?.action ?? "").trim();
+  if (action === "list") {
+    const { data, error } = await admin
+      .from("vendor_expenses")
+      .select("id, occurred_on, amount_cents, category, description, paid_to")
+      .eq("vendor_id", vendorId)
+      .order("occurred_on", { ascending: false })
+      .limit(25);
+    if (error) return { error: error.message };
+    const rows = (data ?? []) as Array<any>;
+    return {
+      expenses: rows.map((r) => ({
+        id: r.id,
+        date: r.occurred_on,
+        amount_usd: (r.amount_cents ?? 0) / 100,
+        category: r.category,
+        description: r.description,
+        paid_to: r.paid_to,
+      })),
+    };
+  }
+  if (action === "add") {
+    const amt = Number(input?.amount_usd);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      return { error: "amount_usd (> 0) required" };
+    }
+    const occurredOn = typeof input?.occurred_on === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(input.occurred_on)
+      ? input.occurred_on
+      : new Date().toISOString().slice(0, 10);
+    const { data, error } = await admin
+      .from("vendor_expenses")
+      .insert({
+        vendor_id: vendorId,
+        occurred_on: occurredOn,
+        amount_cents: Math.round(amt * 100),
+        currency: "usd",
+        category: input?.category ? String(input.category).slice(0, 80) : null,
+        description: input?.description ? String(input.description).slice(0, 500) : null,
+        paid_to: input?.paid_to ? String(input.paid_to).slice(0, 160) : null,
+        created_by: userId,
+        user_id: userId,
+      })
+      .select("id, occurred_on, amount_cents")
+      .single();
+    if (error) return { error: error.message };
+    return {
+      added: true,
+      expense: {
+        id: (data as any).id,
+        date: (data as any).occurred_on,
+        amount_usd: ((data as any).amount_cents ?? 0) / 100,
+      },
+    };
+  }
+  return { error: `unknown_action:${action}. Valid: list, add.` };
+}
+
+// ── Gallery: add an image (by URL) to the vendor's public portfolio.
+async function toolAddPortfolioImage(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const url = String(input?.image_url ?? "").trim();
+  if (!/^https?:\/\//i.test(url)) return { error: "a valid image_url is required" };
+  let resp: Response;
+  try {
+    resp = await fetch(url);
+  } catch (_e) {
+    return { error: "could not fetch the image url" };
+  }
+  if (!resp.ok) return { error: `could not fetch image (${resp.status})` };
+  const contentType = resp.headers.get("content-type") ?? "image/png";
+  if (!contentType.startsWith("image/")) return { error: "url is not an image" };
+  const ext = contentType.includes("jpeg") || contentType.includes("jpg")
+    ? "jpg"
+    : contentType.includes("webp")
+      ? "webp"
+      : contentType.includes("gif")
+        ? "gif"
+        : "png";
+  const bytes = new Uint8Array(await resp.arrayBuffer());
+  if (bytes.byteLength > 15_000_000) return { error: "image too large (>15MB)" };
+  const path = `${vendorId}/${crypto.randomUUID()}.${ext}`;
+  const { error: upErr } = await admin.storage
+    .from("vendor-portfolios")
+    .upload(path, bytes, { contentType, upsert: false });
+  if (upErr) return { error: upErr.message };
+  const { data: maxRow } = await admin
+    .from("vendor_portfolio_images")
+    .select("display_order")
+    .eq("vendor_id", vendorId)
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = (((maxRow as any)?.display_order as number) ?? 0) + 1;
+  const { error } = await admin
+    .from("vendor_portfolio_images")
+    .insert({
+      vendor_id: vendorId,
+      storage_path: path,
+      caption: input?.caption ? String(input.caption).slice(0, 300) : null,
+      display_order: nextOrder,
+    });
+  if (error) return { error: error.message };
+  return {
+    added: true,
+    image_url:
+      `https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/vendor-portfolios/${path}`,
+  };
+}
+
+// ── Listing lifecycle: get status / submit for approval.
+async function toolManageListing(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const action = String(input?.action ?? "").trim();
+  const { data: row, error: selErr } = await admin
+    .from("vendor_profiles")
+    .select("application_status, business_name")
+    .eq("id", vendorId)
+    .maybeSingle();
+  if (selErr) return { error: selErr.message };
+  if (!row) return { error: "listing_not_found" };
+  const status = (row as any).application_status as string;
+  if (action === "get_status") {
+    return { business_name: (row as any).business_name, application_status: status };
+  }
+  if (action === "submit_for_review") {
+    if (status === "approved") {
+      return { ok: true, application_status: status, note: "Already approved and live." };
+    }
+    if (status === "pending") {
+      return { ok: true, application_status: status, note: "Already submitted — awaiting review." };
+    }
+    const { error } = await admin
+      .from("vendor_profiles")
+      .update({ application_status: "pending" })
+      .eq("id", vendorId);
+    if (error) return { error: error.message };
+    return {
+      ok: true,
+      application_status: "pending",
+      note: "Submitted to Vendora for approval.",
+    };
+  }
+  return { error: `unknown_action:${action}. Valid: get_status, submit_for_review.` };
+}
+
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+// Recurring weekly block/unblock — sets is_unavailable on a weekday rule so the
+// vendor is permanently un/bookable that weekday every week.
+async function toolRecurringWeekday(
+  admin: any,
+  vendorId: string,
+  input: any,
+  block: boolean,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const dow = Number(input?.day_of_week);
+  if (!Number.isInteger(dow) || dow < 0 || dow > 6) {
+    return { error: "day_of_week (0=Sun..6=Sat) required" };
+  }
+  const { data: existing } = await admin
+    .from("vendor_availability_rules")
+    .select("id")
+    .eq("vendor_id", vendorId)
+    .eq("day_of_week", dow)
+    .maybeSingle();
+  if (existing) {
+    const { error } = await admin
+      .from("vendor_availability_rules")
+      .update({ is_unavailable: block })
+      .eq("id", (existing as any).id);
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await admin
+      .from("vendor_availability_rules")
+      .insert({ vendor_id: vendorId, day_of_week: dow, is_unavailable: block });
+    if (error) return { error: error.message };
+  }
+  return {
+    ok: true,
+    weekday: WEEKDAY_NAMES[dow],
+    recurring_block: block,
+    note: block
+      ? `Hosts won't see this vendor as bookable on ${WEEKDAY_NAMES[dow]}s.`
+      : `${WEEKDAY_NAMES[dow]}s are bookable again.`,
+  };
+}
+
 async function toolScheduleAction(
   admin: any,
   vendorId: string,
@@ -3043,6 +3325,18 @@ async function executeTool(
     }
     if (name === "create_document") {
       return await toolCreateDocument(admin, vendorId, input);
+    }
+    if (name === "manage_contact") {
+      return await toolManageContact(admin, vendorId, input);
+    }
+    if (name === "manage_expense") {
+      return await toolManageExpense(admin, vendorId, userId, input);
+    }
+    if (name === "add_portfolio_image") {
+      return await toolAddPortfolioImage(admin, vendorId, input);
+    }
+    if (name === "manage_listing") {
+      return await toolManageListing(admin, vendorId, input);
     }
     if (name === "toggle_auto_reply") {
       return await toolToggleAutoReply(admin, vendorId, userId, input);

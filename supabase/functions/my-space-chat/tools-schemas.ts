@@ -241,14 +241,20 @@ const TOOLS = [
   {
     name: "manage_calendar",
     description:
-      "Block or unblock dates on the vendor's calendar. WRITE ACTION. action='block_date' marks one date unavailable (vacation, personal day, etc.); action='unblock_date' removes a manual block; action='block_range' blocks a contiguous date range. Doesn't affect recurring closed days or actual bookings.",
+      "Block or unblock the vendor's calendar. WRITE ACTION. action='block_date' marks one date unavailable; 'unblock_date' removes a manual block; 'block_range' blocks a contiguous range; 'recurring_block_weekday' marks a weekday permanently unavailable every week (e.g. never works Sundays); 'recurring_unblock_weekday' re-opens that weekday.",
     input_schema: {
       type: "object",
       required: ["action"],
       properties: {
         action: {
           type: "string",
-          enum: ["block_date", "unblock_date", "block_range"],
+          enum: [
+            "block_date",
+            "unblock_date",
+            "block_range",
+            "recurring_block_weekday",
+            "recurring_unblock_weekday",
+          ],
         },
         date: {
           type: "string",
@@ -264,6 +270,13 @@ const TOOLS = [
           type: "string",
           description:
             "YYYY-MM-DD inclusive. Required when action='block_range'.",
+        },
+        day_of_week: {
+          type: "integer",
+          minimum: 0,
+          maximum: 6,
+          description:
+            "0=Sunday … 6=Saturday. Required for recurring_block_weekday / recurring_unblock_weekday.",
         },
       },
     },
@@ -656,6 +669,67 @@ const TOOLS = [
           description:
             "Optional inquiry UUID to link the document to; for contracts it binds the recipient from the host.",
         },
+      },
+    },
+  },
+  {
+    name: "manage_contact",
+    description:
+      "View, add, or update the vendor's saved customers/contacts. action='list' searches by name/email; 'add' creates a contact; 'update' edits one by id. WRITE for add/update.",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["list", "add", "update"] },
+        id: { type: "string", description: "Contact UUID — required for update." },
+        query: { type: "string", description: "Search text for action='list' (optional)." },
+        name: { type: "string" },
+        email: { type: "string" },
+        phone: { type: "string" },
+        company: { type: "string" },
+        notes: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "manage_expense",
+    description:
+      "Track business expenses. action='list' returns recent expenses; 'add' records a new one. WRITE for add. (Refunds and payouts stay manual — refunds move money out and live payouts are in Stripe.)",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["list", "add"] },
+        amount_usd: { type: "number", minimum: 0, description: "Expense amount in USD — required for add." },
+        occurred_on: { type: "string", description: "YYYY-MM-DD; defaults to today." },
+        category: { type: "string", description: "e.g. equipment, travel, software." },
+        description: { type: "string" },
+        paid_to: { type: "string", description: "Vendor/payee name." },
+      },
+    },
+  },
+  {
+    name: "add_portfolio_image",
+    description:
+      "Add an image to the vendor's public portfolio/gallery. Pass the URL of an image (e.g. one you just generated or that the vendor uploaded) and it's uploaded to their portfolio. WRITE ACTION.",
+    input_schema: {
+      type: "object",
+      required: ["image_url"],
+      properties: {
+        image_url: { type: "string", description: "Public URL of the image to add." },
+        caption: { type: "string", description: "Optional caption." },
+      },
+    },
+  },
+  {
+    name: "manage_listing",
+    description:
+      "Manage the vendor's listing lifecycle. action='get_status' returns the listing's approval status; 'submit_for_review' submits the listing to Vendora for approval so it can go live. (Use update_profile to edit listing fields like name, bio, category, price.) WRITE for submit_for_review.",
+    input_schema: {
+      type: "object",
+      required: ["action"],
+      properties: {
+        action: { type: "string", enum: ["get_status", "submit_for_review"] },
       },
     },
   },
