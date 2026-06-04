@@ -307,7 +307,6 @@ async function vendorDecisionEmail(
   if (!email) return null;
   const row = { business_name: businessName ?? "Your business", user_id: userId };
 
-  const link = `${APP_URL}/vendor/dashboard`;
   const business = escape(row.business_name);
   const reasonLine = p.reviewNotes
     ? `<p style="margin:0 0 16px;color:#555;"><strong>Reviewer notes:</strong> ${escape(p.reviewNotes)}</p>`
@@ -355,7 +354,6 @@ async function vendorDecisionEmail(
     <p style="margin:0 0 16px;">Your latest listing update for <strong>${business}</strong> wasn't approved. Your previously approved listing is still live — only the new changes are paused.</p>
     ${reasonLine}
     <p style="margin:0 0 16px;">Sign in, address the feedback, and re-publish whenever you're ready.</p>
-    <p style="margin:0 0 24px;">${button(link, "Open your dashboard")}</p>
     <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
   return {
     to: email,
