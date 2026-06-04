@@ -241,6 +241,53 @@ const MYSPACE_LAST_ACTIVE_KEY = "myspace-last-active";
 
 export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
   const { user } = useAuth();
+  // Listing switcher: which listing My Space works on. Persisted; defaults to
+  // the vendor's oldest listing (their real one, not a later-added demo).
+  const [listings, setListings] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("myspace-vendor-id");
+    } catch {
+      return null;
+    }
+  });
+  // Load the user's listings for the switcher. Oldest first so the default is
+  // their original listing rather than a later-added one.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data: tm } = await supabase
+        .from("vendor_team_members")
+        .select("vendor_id")
+        .eq("user_id", user.id);
+      const ids = ((tm ?? []) as Array<{ vendor_id: string }>).map((r) => r.vendor_id);
+      if (cancelled || ids.length === 0) return;
+      const { data: vps } = await supabase
+        .from("vendor_profiles")
+        .select("id, business_name, created_at")
+        .in("id", ids);
+      if (cancelled || !vps) return;
+      const opts = (vps as Array<{ id: string; business_name: string | null; created_at: string }>)
+        .slice()
+        .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+        .map((v) => ({ id: v.id, name: v.business_name?.trim() || "Listing" }));
+      setListings(opts);
+      setSelectedVendorId((prev) => {
+        if (prev && opts.some((o) => o.id === prev)) return prev;
+        const def = opts[0]?.id ?? null;
+        try {
+          if (def) localStorage.setItem("myspace-vendor-id", def);
+        } catch {
+          /* ignore */
+        }
+        return def;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
   // If it's been a while since the panel was last used, open into a fresh
@@ -718,10 +765,15 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
           signal: ac.signal,
           body: JSON.stringify(
             regenerate
-              ? { regenerate: true, thread_id: currentThreadId }
+              ? {
+                regenerate: true,
+                thread_id: currentThreadId,
+                vendor_id: selectedVendorId ?? undefined,
+              }
               : {
                 text,
                 thread_id: currentThreadId,
+                vendor_id: selectedVendorId ?? undefined,
                 attachments:
                   attachments.length > 0 ? attachments : undefined,
                 replace_message_id: replaceMessageId ?? undefined,
@@ -1345,6 +1397,30 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
           style={{ borderColor: "rgba(0,0,0,0.08)" }}
         >
           <GlassNewChatButton onClick={startNewChat} />
+          {/* Listing switcher — which listing My Space works on. Only shown
+              when the account has more than one listing. */}
+          {listings.length > 1 ? (
+            <select
+              value={selectedVendorId ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSelectedVendorId(v);
+                try {
+                  localStorage.setItem("myspace-vendor-id", v);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              title="Which listing My Space is working on"
+              className="mt-2 w-full text-xs font-bold text-[#18181b] bg-secondary/30 rounded-md px-2 py-1.5 outline-none focus:bg-secondary/50 transition-colors"
+            >
+              {listings.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
           {/* Search across threads (title + message content). */}
           <div className="relative mt-3">
             <Search

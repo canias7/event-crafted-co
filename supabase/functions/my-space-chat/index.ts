@@ -290,7 +290,28 @@ async function callOpenAIImage(
 async function findVendorIdForUser(
   admin: any,
   userId: string,
+  preferredVendorId?: string | null,
 ): Promise<string | null> {
+  // If the client picked a listing (My Space's listing switcher), honor it —
+  // but only after verifying the user actually belongs to that vendor, so a
+  // tampered request can't point the assistant at someone else's account.
+  if (preferredVendorId) {
+    const { data: member } = await admin
+      .from("vendor_team_members")
+      .select("vendor_id")
+      .eq("user_id", userId)
+      .eq("vendor_id", preferredVendorId)
+      .maybeSingle();
+    if (member?.vendor_id) return member.vendor_id as string;
+    const { data: own } = await admin
+      .from("vendor_profiles")
+      .select("id")
+      .eq("id", preferredVendorId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (own?.id) return own.id as string;
+    // Not theirs → fall through to the default resolution below.
+  }
   // Team membership wins (covers both owners and invited team members
   // since the owner is also written to vendor_team_members on profile
   // creation).
@@ -3749,6 +3770,8 @@ serve(async (req) => {
   const payload = await req.json().catch(() => ({}));
   const userText = String(payload?.text ?? "").trim();
   const threadIdIn = payload?.thread_id ? String(payload.thread_id) : null;
+  // Listing switcher: the client may pin which listing the assistant works on.
+  const selectedVendorId = payload?.vendor_id ? String(payload.vendor_id) : null;
   // Attachments are { url, mime, name, size? }. We trust the client
   // to upload them to message-attachments first (RLS-gated bucket).
   const rawAttachments = Array.isArray(payload?.attachments)
@@ -3928,8 +3951,9 @@ serve(async (req) => {
           return;
         }
 
-        // Resolve vendor + build snapshot.
-        const vendorId = await findVendorIdForUser(admin, userId);
+        // Resolve vendor + build snapshot. A client-selected listing (the My
+        // Space listing switcher) overrides the default, if the user owns it.
+        const vendorId = await findVendorIdForUser(admin, userId, selectedVendorId);
         let systemPrompt: string;
         if (vendorId) {
           const snap = await buildVendorSnapshot(
