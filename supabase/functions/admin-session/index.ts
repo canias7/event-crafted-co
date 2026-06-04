@@ -12,8 +12,9 @@
 // captcha-gated.
 //
 // Security model:
-//   - ADMIN_PIN (operator-set secret) is the gate. The PIN is verified
-//     here, NOT baked into the client bundle.
+//   - The PIN is the gate, verified server-side (NOT baked into the client
+//     bundle). Source of truth: the ADMIN_PIN env secret if set, else the
+//     Vault-backed admin_pin checked via the admin_pin_ok RPC.
 //   - A session is only ever minted for an account whose profiles.role
 //     = 'admin'. A caller-supplied email (if any) must resolve to that
 //     admin; otherwise we fall back to the sole admin account.
@@ -62,12 +63,6 @@ function safeEqual(a: string, b: string): boolean {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
-  if (!ADMIN_PIN) {
-    return json(500, {
-      error: "admin_login_not_configured",
-      message: "Set the ADMIN_PIN secret for this project.",
-    });
-  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
@@ -98,7 +93,31 @@ serve(async (req) => {
     const pin = String(body?.pin ?? "");
     const wantEmail = String(body?.email ?? "").trim().toLowerCase();
 
-    if (!pin || !safeEqual(pin, ADMIN_PIN)) {
+    // PIN source of truth: the ADMIN_PIN env secret if an operator set one,
+    // otherwise the Vault-backed admin_pin (checked via the admin_pin_ok RPC,
+    // which returns null when nothing is configured). Keeping the env path
+    // lets an operator override without a redeploy.
+    let pinOk: boolean;
+    if (ADMIN_PIN) {
+      pinOk = !!pin && safeEqual(pin, ADMIN_PIN);
+    } else {
+      const { data: rpcOk, error: rpcErr } = await admin.rpc("admin_pin_ok", {
+        provided: pin,
+      });
+      if (rpcErr) {
+        console.error("[admin-session] admin_pin_ok failed", rpcErr);
+        return json(500, { error: "admin_login_failed" });
+      }
+      if (rpcOk === null || rpcOk === undefined) {
+        return json(500, {
+          error: "admin_login_not_configured",
+          message: "Admin PIN is not configured.",
+        });
+      }
+      pinOk = rpcOk === true;
+    }
+
+    if (!pinOk) {
       await admin.from("admin_login_attempts").insert({ ip });
       return json(401, { error: "invalid_pin" });
     }
