@@ -249,8 +249,7 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
       html: shell(
         "Confirm your account",
         `<p style="margin:0 0 16px;">Welcome to Vendora. Tap the button below to confirm your email and finish setting up your account.</p>
-         <p style="margin:0 0 24px;">${button(verifyUrl, "Confirm my email")}</p>
-         <p style="margin:0;font-size:13px;color:#777;">If the button doesn't work, paste this link into your browser:<br/><span style="word-break:break-all;">${verifyUrl}</span></p>`,
+         <p style="margin:0;">${button(verifyUrl, "Confirm my email")}</p>`,
       ),
     };
   }
