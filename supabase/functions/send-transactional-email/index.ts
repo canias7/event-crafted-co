@@ -317,7 +317,6 @@ async function vendorDecisionEmail(
     const body = `
       <p style="margin:0 0 16px;">Welcome to Vendora! Your application for <strong>${business}</strong> has been approved.</p>
       <p style="margin:0 0 24px;">Sign in to finish setting up your listing — pricing, location, packages, photos. When you're ready, publish it and we'll review the final listing one more time before it goes live in the public directory.</p>
-      <p style="margin:0 0 24px;">${button(link, "Sign in to your dashboard")}</p>
       <p style="margin:0;font-size:13px;color:#777;">Welcome aboard.</p>`;
     return {
       to: email,
