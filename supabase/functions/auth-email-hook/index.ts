@@ -21,7 +21,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 type ActionType =
   | "signup"
   | "recovery"
-  | "email_change"
   | "reauthentication";
 
 interface HookPayload {
@@ -269,17 +268,8 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
       ),
     };
   }
-  if (action === "email_change") {
-    return {
-      subject: "Confirm your new Vendora email",
-      html: shell(
-        "Confirm your new email",
-        `<p style="margin:0 0 16px;">Tap below to confirm <strong>${escape(p.user.email)}</strong> as the new email on your Vendora account.</p>
-         <p style="margin:0 0 24px;">${button(verifyUrl, "Confirm new email")}</p>
-         <p style="margin:0;font-size:13px;color:#777;">If you didn't request this change, contact support immediately.</p>`,
-      ),
-    };
-  }
+  // Note: there is no "email_change" case — the product has no self-serve
+  // email change (Settings directs users to support), so nothing triggers it.
   if (action === "reauthentication") {
     const code = String(p.email_data.token).replace(/[^0-9]/g, "").slice(0, 6);
     return {
