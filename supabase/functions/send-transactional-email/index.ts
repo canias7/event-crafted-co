@@ -342,7 +342,6 @@ async function vendorDecisionEmail(
     const body = `
       <p style="margin:0 0 16px;">Your latest listing update for <strong>${business}</strong> has been approved and is now live in the Vendora directory.</p>
       <p style="margin:0 0 24px;">Hosts browsing your category will see your updated profile, pricing, and photos. Inquiries flow to your inbox as usual.</p>
-      <p style="margin:0 0 24px;">${button(link, "Open your dashboard")}</p>
       <p style="margin:0;font-size:13px;color:#777;">Thanks for keeping your listing fresh.</p>`;
     return {
       to: email,
