@@ -25,6 +25,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import {
+  getAccountStatus,
   getBillingStateForPI,
   getContactForPI,
   getReceiptEmailForPI,
@@ -76,22 +77,30 @@ serve(async (req: Request) => {
   try {
     switch (event.kind) {
       case "account.updated": {
-        // Capabilities flipped — mirror onto the secrets row.
-        const account = event.raw.data.object as {
-          id: string;
-          charges_enabled?: boolean;
-          payouts_enabled?: boolean;
-          details_submitted?: boolean;
-        };
-        await db
-          .from("vendor_payment_secrets")
-          .update({
-            charges_enabled: Boolean(account.charges_enabled),
-            payouts_enabled: Boolean(account.payouts_enabled),
-            details_submitted: Boolean(account.details_submitted),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("stripe_account_id", account.id);
+        // Capabilities flipped — mirror onto the secrets row. Don't trust
+        // the booleans on the event payload: accounts are created via the
+        // Stripe v2 API, where capabilities live under
+        // configuration.recipient.capabilities.* — the top-level v1 fields
+        // are undefined on a v2-shaped event and would coerce to `false`,
+        // wrongly disabling a working vendor. Re-fetch through the
+        // v2-aware normalizer and write the resolved values.
+        const account = event.raw.data.object as { id: string };
+        if (account.id) {
+          try {
+            const fresh = await getAccountStatus(account.id);
+            await db
+              .from("vendor_payment_secrets")
+              .update({
+                charges_enabled: fresh.charges_enabled,
+                payouts_enabled: fresh.payouts_enabled,
+                details_submitted: fresh.details_submitted,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("stripe_account_id", account.id);
+          } catch (err) {
+            console.error("[vendorapay-webhook] account status refetch failed", account.id, err);
+          }
+        }
         break;
       }
 
@@ -115,6 +124,11 @@ serve(async (req: Request) => {
         // branch below overrides with the invoice's recorded
         // currency for an extra layer of safety.
         let currencyForNotify = pi.currency ?? "usd";
+        // Whether THIS event actually flipped a record to paid. A duplicate
+        // succeeded event (distinct event id, so it passes the dedupe table)
+        // must not re-stamp paid_at or re-fire the receipt — we only notify
+        // when the status guard below actually transitioned a row.
+        let didUpdate = false;
 
         // One PaymentIntent maps to exactly one record (pay link OR
         // invoice). Proposals were retired — no proposal_id branch.
@@ -154,9 +168,11 @@ serve(async (req: Request) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", paymentLinkId)
+            .neq("status", "paid")
             .select("vendor_id, title, currency, inquiry_id")
             .maybeSingle();
           const lRow = linkRow as { vendor_id?: string; title?: string; currency?: string | null; inquiry_id?: string | null } | null;
+          if (lRow) didUpdate = true;
           if (lRow?.vendor_id) vendorIdForNotify = lRow.vendor_id;
           if (lRow?.title) descriptionForNotify = lRow.title;
           if (!hostEmailForNotify) hostEmailForNotify = hostEmailForLink;
@@ -240,9 +256,11 @@ serve(async (req: Request) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", invoiceId)
+            .neq("status", "paid")
             .select("vendor_id, invoice_number, bill_to_email, currency")
             .maybeSingle();
           const iRow = invRow as { vendor_id?: string; invoice_number?: string; bill_to_email?: string | null; currency?: string | null } | null;
+          if (iRow) didUpdate = true;
           if (iRow?.vendor_id) vendorIdForNotify = iRow.vendor_id;
           if (iRow?.invoice_number) descriptionForNotify = `Invoice ${iRow.invoice_number}`;
           if (!hostEmailForNotify && iRow?.bill_to_email) hostEmailForNotify = iRow.bill_to_email;
@@ -256,8 +274,10 @@ serve(async (req: Request) => {
         }
 
         // Fire notification side-effect. Best-effort; failures here
-        // don't roll back the payment-status write.
-        if (vendorIdForNotify) {
+        // don't roll back the payment-status write. Only when THIS event
+        // actually transitioned a record to paid — so a duplicate
+        // succeeded event can't send a second receipt.
+        if (didUpdate && vendorIdForNotify) {
           try {
             await fetch(`${SUPABASE_URL}/functions/v1/vendorapay-notify`, {
               method: "POST",
@@ -442,12 +462,14 @@ serve(async (req: Request) => {
       }
     }
   } catch (err) {
-    // Don't roll back the dedupe row — partial writes in this
-    // handler have already committed, so a Stripe retry would
-    // re-run the work and fire duplicate notification emails.
-    // Log loud, ack 200, leave it to ops to reconcile manually.
-    console.error("[vendorapay-webhook] handler error (NOT retried)", event.kind, event.id, err);
-    return new Response("ok (partial: handler error)", { status: 200 });
+    // Roll back the dedupe claim and ask Stripe to retry. The per-record
+    // writes above are now idempotent — paid-writes are status-guarded and
+    // the receipt only fires on an actual transition — so a retry won't
+    // double-pay or double-email, but it WILL recover a payment that a
+    // transient error (e.g. a DB blip) would otherwise have stranded.
+    console.error("[vendorapay-webhook] handler error (will retry)", event.kind, event.id, err);
+    await db.from("stripe_events").delete().eq("id", event.id);
+    return new Response("handler error", { status: 500 });
   }
 
   return new Response("ok", { status: 200 });

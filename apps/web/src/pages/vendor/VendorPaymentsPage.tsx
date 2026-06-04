@@ -4573,6 +4573,7 @@ function InvoicesTab({
   const [sendPickId, setSendPickId] = useState<string>("");
   const [sendPickEmail, setSendPickEmail] = useState<string>("");
   const sendInvoiceTo = useCallback(async (id: string, email: string) => {
+    if (sendingId) return; // a send is already in flight — guard double-submit
     const to = email.trim();
     if (!to) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
@@ -4595,7 +4596,7 @@ function InvoicesTab({
     // Refresh so a draft that just flipped to 'sent' shows its new
     // status (a paid invoice stays paid — the backend only flips draft).
     onChanged();
-  }, [navigate, onChanged]);
+  }, [navigate, onChanged, sendingId]);
 
   const cancelInvoice = useCallback(async (inv: Invoice) => {
     // Destructive + irreversible: status='cancelled' is terminal,
