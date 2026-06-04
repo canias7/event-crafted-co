@@ -74,6 +74,16 @@ serve(async (req) => {
     });
     if (allowed === false) return json(429, { error: "rate_limited" });
 
+    // Also bound per client IP across ALL slugs so iterating valid slugs
+    // can't drive unbounded PaymentIntent creation. Fail open.
+    const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+    const { data: ipAllowed } = await admin.rpc("bump_rate_limit", {
+      _bucket: `vendorapay-link-intent-ip:${ip}`,
+      _max: 60,
+      _window_seconds: 60,
+    });
+    if (ipAllowed === false) return json(429, { error: "rate_limited" });
+
     const { data: linkRow, error: linkErr } = await admin
       .from("payment_links")
       .select("id, vendor_id, title, description, amount_cents, currency, status, expires_at, vendor_tier_snapshot")
@@ -85,10 +95,21 @@ serve(async (req) => {
       return json(400, { error: "link expired" });
     }
 
+    // Secrets are account-level (keyed by the listing owner's user_id);
+    // resolve the owner from the listing, then look up by user_id.
+    const { data: vp } = await admin
+      .from("vendor_profiles")
+      .select("user_id, business_name")
+      .eq("id", linkRow.vendor_id)
+      .maybeSingle();
+    const vpRow = vp as { user_id?: string | null; business_name?: string | null } | null;
+    if (!vpRow?.user_id) {
+      return json(400, { error: "vendor not ready to receive payments" });
+    }
     const { data: secret } = await admin
       .from("vendor_payment_secrets")
       .select("stripe_account_id, charges_enabled")
-      .eq("vendor_id", linkRow.vendor_id)
+      .eq("user_id", vpRow.user_id)
       .maybeSingle();
     const sRow = secret as { stripe_account_id?: string | null; charges_enabled?: boolean | null } | null;
     if (!sRow?.stripe_account_id) {
@@ -114,12 +135,7 @@ serve(async (req) => {
       return json(400, { error: "vendor not ready to receive payments" });
     }
 
-    const { data: vp } = await admin
-      .from("vendor_profiles")
-      .select("business_name")
-      .eq("id", linkRow.vendor_id)
-      .maybeSingle();
-    const vpRow = vp as { business_name?: string | null } | null;
+    // vpRow (business_name + user_id) already resolved above.
     // Snapshot tier captured at link creation; fall back to live tier.
     const snapshotTier = (linkRow as { vendor_tier_snapshot?: string | null }).vendor_tier_snapshot;
     let tier;
@@ -171,7 +187,7 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("[vendorapay-link-intent] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, { error: "intent_failed", detail: message.slice(0, 240) });
+    // Don't surface provider-internal error text to the public client.
+    return json(500, { error: "intent_failed" });
   }
 });

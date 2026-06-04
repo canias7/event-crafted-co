@@ -304,6 +304,15 @@ function formatDate(iso: string | null): string {
   });
 }
 
+// Format a Date as YYYY-MM-DD in LOCAL time (not UTC). Use this when
+// comparing against date-only columns like `occurred_on` — `toISOString`
+// shifts to UTC and drifts the cutoff a day for east-of-UTC vendors.
+function ymdLocal(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${
+    String(d.getDate()).padStart(2, "0")
+  }`;
+}
+
 // "Apr 4, 5:31 PM" — date + time, Stripe-style, for list "Created" cells.
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
@@ -1232,8 +1241,8 @@ function OverviewTab({
         </div>
 
         {/* Recent activity — paid invoices across the whole account.
-            Capped to 6 rows so it stays a compact "what just landed"
-            surface; full payment history lives in the Payments tab. */}
+            Capped to 5 rows (see the .limit(5) fetch) so it stays a compact
+            "what just landed" surface; full history lives in Payments. */}
         <div className="xl:w-1/2">
           <div className="cockpit-data-card">
             <div className="cockpit-data-card-header">
@@ -6029,19 +6038,19 @@ function ExpensesTab({
       occurred_on: form.occurred_on,
       amount_cents: Math.round(amountNum * 100),
       currency: "usd",
-      category: form.category,
+      // An expense tied to a contractor is labor by definition (there's no
+      // separate category picker in this form); tag it so any
+      // category-based reporting stays consistent.
+      category: form.contractor_id ? "labor" : form.category,
       description: form.description.trim(),
       item_name: form.item_name.trim() || null,
       quantity: form.quantity.trim() || null,
       paid_to: form.paid_to.trim() || null,
       notes: null,
-      // Only attach a contractor when one is selected AND the
-      // category is labor — picking a contractor on a "supplies"
-      // expense would muddy the 1099 totals.
-      contractor_id:
-        form.contractor_id && form.category === "labor"
-          ? form.contractor_id
-          : null,
+      // Attach the contractor whenever one is selected. (The 1099 YTD
+      // totals key purely on contractor_id, so this is what makes the
+      // contractor/1099 feature actually work.)
+      contractor_id: form.contractor_id || null,
       created_by: user.id,
     };
     let error;
@@ -6286,7 +6295,7 @@ function ExpensesTab({
       cutoff = new Date(now);
       cutoff.setMonth(cutoff.getMonth() - 12);
     }
-    const cutoffYmd = cutoff ? cutoff.toISOString().slice(0, 10) : null;
+    const cutoffYmd = cutoff ? ymdLocal(cutoff) : null;
     const term = searchTerm.trim().toLowerCase();
     const filtered = rows.filter((r) => {
       if (cutoffYmd && r.occurred_on < cutoffYmd) return false;
@@ -6326,7 +6335,7 @@ function ExpensesTab({
     const monthStr = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const thirty = new Date(now);
     thirty.setDate(thirty.getDate() - 30);
-    const thirtyYmd = thirty.toISOString().slice(0, 10);
+    const thirtyYmd = ymdLocal(thirty);
     let ytdCents = 0;
     let ytdCount = 0;
     let ytdRecurringCents = 0;
@@ -6662,7 +6671,7 @@ function ExpensesTab({
                 className="rounded-lg border-0 px-3 py-2 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
               />
             </div>
-            {form.category === "labor" && contractors.length > 0 && (
+            {contractors.length > 0 && (
               <div>
                 <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1">
                   Contractor (for 1099 tracking)
@@ -7062,6 +7071,14 @@ function SendInvoiceDialog({
       toast.error("Couldn't save customer", { description: custErr.message });
       return;
     }
+    // Recompute totals from the FILTERED line items actually being saved —
+    // not the component-level `subtotalCents` (which sums every row,
+    // including ones dropped for a blank name / zero price). Otherwise the
+    // stored total can exceed the sum of the visible lines and the buyer is
+    // charged more than the itemized amount.
+    const savedSubtotal = parsedItems.reduce((s, it) => s + it.total_cents, 0);
+    const savedTax = Math.round((savedSubtotal * taxRateBps) / 10_000);
+    const savedTotal = savedSubtotal + savedTax;
     // Insert the invoice — invoice_number is filled in by a DB
     // trigger when status flips to 'sent'.
     const { data: newRow, error } = await db
@@ -7074,10 +7091,10 @@ function SendInvoiceDialog({
         due_date: dueDate || null,
         notes: notes.trim() || null,
         line_items: parsedItems,
-        subtotal_cents: subtotalCents,
+        subtotal_cents: savedSubtotal,
         tax_rate_bps: taxRateBps,
-        tax_cents: taxCents,
-        total_cents: totalCents,
+        tax_cents: savedTax,
+        total_cents: savedTotal,
         status: "sent",
         sent_at: new Date().toISOString(),
         invoice_number: "",
@@ -7816,6 +7833,9 @@ function PayLinksTab({
         toast.error("Balance due date must be in the future");
         return;
       }
+      // End-of-day, so "due Aug 14" stays valid through Aug 14 rather than
+      // dying at midnight — matching the single-charge expiry path above.
+      due.setHours(23, 59, 59, 999);
       balanceCents = totalCents - depositCents;
       balanceDueIso = due.toISOString();
     }

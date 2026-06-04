@@ -107,22 +107,22 @@ serve(async (req) => {
       });
     } catch (err) {
       console.error("[vendorapay-status] provider sync failed", err);
-      // Fall through to the cached values so we don't fail the
-      // status check on a transient provider error.
+      // Fall through to the cached values so we don't fail the status
+      // check on a transient provider error — but flag them `stale` so
+      // the client knows these weren't freshly verified and can show a
+      // "couldn't verify" hint instead of trusting a possibly-out-of-date
+      // charges_enabled.
       return json(200, {
         onboarded: true,
         charges_enabled: Boolean(row.charges_enabled),
         payouts_enabled: Boolean(row.payouts_enabled),
         details_submitted: Boolean(row.details_submitted),
         bank: null,
+        stale: true,
       });
     }
   } catch (err) {
     console.error("[vendorapay-status] error", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return json(500, {
-      error: "status_failed",
-      detail: message.slice(0, 240),
-    });
+    return json(500, { error: "status_failed" });
   }
 });
