@@ -131,9 +131,6 @@ serve(async (req) => {
     } else if (kind === "vendor_applied") {
       const e = await vendorAppliedEmail(body as VendorAppliedPayload);
       if (e) emails = [e];
-    } else if (kind === "signin_code") {
-      const e = signinCodeEmail(body as SigninCodePayload);
-      if (e) emails = [e];
     } else if (kind === "outreach_lead") {
       const e = await outreachLeadEmail(body as OutreachLeadPayload);
       if (e) emails = [e];
@@ -400,29 +397,6 @@ async function vendorAppliedEmail(p: VendorAppliedPayload) {
     to: email,
     subject: "Thanks for applying to Vendora",
     html: shellHtml("Application received", body),
-  };
-}
-
-interface SigninCodePayload {
-  email: string;
-  code: string;
-}
-
-function signinCodeEmail(p: SigninCodePayload) {
-  const code = String(p.code).replace(/[^0-9]/g, "").slice(0, 6);
-  const body = `
-    <p style="margin:0 0 16px;">Use this 6-digit code to finish signing in to Vendora:</p>
-    <p style="margin:0 0 24px;text-align:center;">
-      <span style="display:inline-block;font-family:'SF Mono',ui-monospace,'Cascadia Mono',Menlo,monospace;font-size:34px;letter-spacing:0.4em;font-weight:600;color:#1a1a1a;background:#f7f5f2;border:1px solid #ececec;border-radius:8px;padding:18px 28px;">
-        ${escape(code)}
-      </span>
-    </p>
-    <p style="margin:0 0 16px;font-size:13px;color:#555;">This code expires in 10 minutes. Don't share it with anyone — Vendora will never ask for it.</p>
-    <p style="margin:0;font-size:13px;color:#777;">If you didn't try to sign in, you can ignore this email.</p>`;
-  return {
-    to: p.email,
-    subject: `Your Vendora sign-in code is ${code}`,
-    html: shellHtml(`Sign-in code`, body),
   };
 }
 
