@@ -357,11 +357,23 @@ export async function streamClaudeWithTools(
           };
         }),
       );
-      // Strip internal scratch fields before sending back to Claude.
-      const cleanedBlocks = blocks.map((b) => {
-        const { _jsonBuf: _ignored, ...rest } = b ?? {};
-        return rest;
-      });
+      // Strip internal scratch fields before sending back to Claude, and
+      // DROP empty text blocks. Claude sometimes opens a leading text block
+      // and emits no text before a tool_use; rounding-tripping a
+      // `{type:"text", text:""}` block makes the Anthropic API reject the
+      // next request (400: text content blocks must be non-empty), which
+      // surfaced as an intermittent blank/failed My Space reply. Keep only
+      // non-empty text blocks and tool_use blocks.
+      const cleanedBlocks = blocks
+        .map((b) => {
+          const { _jsonBuf: _ignored, ...rest } = b ?? {};
+          return rest;
+        })
+        .filter((b) =>
+          (b.type === "text" &&
+            typeof b.text === "string" && b.text.trim() !== "") ||
+          b.type === "tool_use"
+        );
       messages = [
         ...messages,
         { role: "assistant", content: cleanedBlocks },

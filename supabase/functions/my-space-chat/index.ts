@@ -4132,8 +4132,40 @@ serve(async (req) => {
           user_id: userId,
           thread_id: threadId,
         });
-        const message = err instanceof Error ? err.message : String(err);
-        send({ type: "error", message: message.slice(0, 240) });
+        // Never leave the thread with a user message and no reply. Persist a
+        // fallback assistant message and surface it as a normal `done` so the
+        // UI renders it instead of a silent blank. If we don't even have a
+        // thread yet (error before it was created), fall back to an error
+        // event. The close() in `finally` guarantees the stream terminates.
+        const fallback =
+          "Sorry — something went wrong on my end. Please try again.";
+        try {
+          if (threadId) {
+            const fb = await insertMessage(admin, userId, threadId, {
+              role: "assistant",
+              type: "text",
+              content: fallback,
+            });
+            send({
+              type: "done",
+              assistant_message: {
+                id: fb.id,
+                role: "assistant",
+                type: "text",
+                content: fallback,
+                created_at: fb.created_at,
+              },
+            });
+          } else {
+            send({ type: "error", message: fallback });
+          }
+        } catch (persistErr) {
+          console.error("[my-space-chat] fallback persist failed", persistErr);
+          send({ type: "error", message: fallback });
+        }
+      } finally {
+        // Always terminate the SSE stream — a missing close() left the
+        // client hanging (the intermittent "stuck loading" reply).
         close();
       }
     },
