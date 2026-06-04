@@ -41,16 +41,24 @@ function button(href: string, label: string): string {
 }
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   if (!RESEND_API_KEY) return false;
-  const r = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
-  });
-  if (!r.ok) {
-    console.error("[scan-vendorapay-payment-schedules] resend error", to, await r.text());
-    return false;
+  // The balance link is already live by the time we send this, so a
+  // transient Resend failure shouldn't silently leave the host uninformed —
+  // retry a couple of times with a short backoff.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
+      });
+      if (r.ok) return true;
+      console.error("[scan-vendorapay-payment-schedules] resend error", to, r.status, await r.text());
+    } catch (err) {
+      console.error("[scan-vendorapay-payment-schedules] resend threw", to, err);
+    }
+    if (attempt < 2) await new Promise((res) => setTimeout(res, 500 * (attempt + 1)));
   }
-  return true;
+  return false;
 }
 
 serve(async (req) => {

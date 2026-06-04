@@ -11,7 +11,7 @@
 // listing only — its public listing page reflects the block immediately
 // via VendorAvailabilityPublic. Other listings stay open.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronLeft,
@@ -354,6 +354,7 @@ export default function VendorAppointmentsPage({
     return { start, end };
   }, [viewMonth]);
 
+  const calReqRef = useRef(0);
   const loadCalendar = useCallback(async () => {
     if (queryListingIds.length === 0 || !user?.id) {
       setInquiries([]);
@@ -364,6 +365,7 @@ export default function VendorAppointmentsPage({
       setLoading(false);
       return;
     }
+    const reqId = ++calReqRef.current;
     // Belt-and-braces in standalone mode: only query a listing the
     // user actually owns. (Account mode trusts accountVendorIds —
     // the parent component already derived it from the user's own
@@ -415,6 +417,9 @@ export default function VendorAppointmentsPage({
         .select("day_of_week, is_unavailable, vendor_id")
         .in("vendor_id", queryListingIds),
     ]);
+    // A newer load (month flip / realtime) started while this was in flight
+    // — drop this result so it can't paint a stale month over the new one.
+    if (reqId !== calReqRef.current) return;
     setInquiries((inqRes.data ?? []) as InquiryRow[]);
     const blockRows = (blockRes.data ?? []) as Array<{
       date: string;
@@ -555,12 +560,14 @@ export default function VendorAppointmentsPage({
     void loadAppointments();
   }
 
+  const apptReqRef = useRef(0);
   const loadAppointments = useCallback(async () => {
     if (!user || queryListingIds.length === 0) {
       setAppointments([]);
       setAppointmentsLoading(false);
       return;
     }
+    const reqId = ++apptReqRef.current;
     setAppointmentsLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     // Bound to ~90 days back so years-old history doesn't bloat the
@@ -584,6 +591,8 @@ export default function VendorAppointmentsPage({
       .gte("scheduled_at", lowerBound.toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(1000);
+    // Drop a stale in-flight result superseded by a newer load.
+    if (reqId !== apptReqRef.current) return;
     const rows = (
       (data as Array<
         Appointment & { host: { display_name: string | null } | null }
@@ -598,46 +607,63 @@ export default function VendorAppointmentsPage({
     loadAppointments();
   }, [loadAppointments]);
 
-  const realtimeAppointments = useMemo(
-    () =>
-      selectedListingId
-        ? { table: "appointments", filter: `vendor_id=eq.${selectedListingId}` }
-        : null,
-    [selectedListingId],
+  // Scope realtime to the WHOLE account, not just the selected listing.
+  // The calendar renders across every queryListingId, so a change on a
+  // non-primary listing must also refresh it. The shared channel delivers
+  // all of the user's row changes; we filter in JS by whether the changed
+  // row's vendor_id belongs to this account's listings (the per-row server
+  // filter only supported a single id).
+  const accountIdSet = useMemo(
+    () => new Set(queryListingIds),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryListingKey],
   );
-  useRealtime(realtimeAppointments, () => loadAppointments());
+  const rowInAccount = useCallback(
+    (payload: { new: unknown; old: unknown }) => {
+      const row = (payload.new ?? payload.old) as { vendor_id?: string } | null;
+      return !!row?.vendor_id && accountIdSet.has(row.vendor_id);
+    },
+    [accountIdSet],
+  );
+
+  const realtimeAppointments = useMemo(
+    () => (queryListingIds.length > 0 ? { table: "appointments" } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryListingKey],
+  );
+  useRealtime(realtimeAppointments, (p) => {
+    if (rowInAccount(p)) void loadAppointments();
+  });
 
   // Audit #10: refresh the BOOKED/BLOCKED overlays when an inquiry
   // is won/lost (changes the booked-date set) or a teammate adds a
   // block on vendor_unavailable_dates. Without these, the calendar
   // shows stale state until the vendor manually reloads.
   const realtimeInquiries = useMemo(
-    () =>
-      selectedListingId
-        ? { table: "inquiries", filter: `vendor_id=eq.${selectedListingId}` }
-        : null,
-    [selectedListingId],
+    () => (queryListingIds.length > 0 ? { table: "inquiries" } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryListingKey],
   );
-  useRealtime(realtimeInquiries, () => {
+  useRealtime(realtimeInquiries, (p) => {
     // Inquiries change → calendar grid needs new dot colors AND
     // the appointments list might gain/lose a row. Refresh both.
-    void loadCalendar();
-    void loadAppointments();
+    if (rowInAccount(p)) {
+      void loadCalendar();
+      void loadAppointments();
+    }
   });
   const realtimeUnavailable = useMemo(
-    () =>
-      selectedListingId
-        ? { table: "vendor_unavailable_dates", filter: `vendor_id=eq.${selectedListingId}` }
-        : null,
-    [selectedListingId],
+    () => (queryListingIds.length > 0 ? { table: "vendor_unavailable_dates" } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryListingKey],
   );
-  useRealtime(realtimeUnavailable, () => {
+  useRealtime(realtimeUnavailable, (p) => {
     // Blocked-date rows only affect the calendar grid + the day
     // info panel (which both read from manualBlocks). loadCalendar
     // covers both. Previously this called loadAppointments() which
     // only refreshes the bottom list — vendors on a second tab
     // never saw the hatch update from another tab's block.
-    void loadCalendar();
+    if (rowInAccount(p)) void loadCalendar();
   });
 
   const dayState = useMemo(() => {
