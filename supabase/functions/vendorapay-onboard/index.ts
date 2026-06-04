@@ -119,3 +119,4 @@ serve(async (req) => {
     return json(500, { error: "onboard_failed" });
   }
 });
+

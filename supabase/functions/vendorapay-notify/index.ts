@@ -501,3 +501,4 @@ serve(async (req) => {
     return json(500, { error: "notify_failed", detail: message.slice(0, 240) });
   }
 });
+
