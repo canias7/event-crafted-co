@@ -84,7 +84,11 @@ serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { data: _cronOk, error: _cronErr } = await _authClient.rpc("cron_secret_ok", { provided });
-    if (!_cronErr && _cronOk === false) {
+    // Fail CLOSED on an RPC error (was failing open — an unauthenticated
+    // caller could trigger the sweep if the check errored). Still dormant
+    // when no secret is configured: cron_secret_ok returns true in that
+    // case, so _cronOk === false only when a secret exists and didn't match.
+    if (_cronErr || _cronOk === false) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 401,
         headers: { ...cors, "Content-Type": "application/json" },
