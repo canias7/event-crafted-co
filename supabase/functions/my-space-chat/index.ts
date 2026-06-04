@@ -566,6 +566,7 @@ Write tools (require an explicit go-ahead from the vendor before calling):
 - \`manage_scheduled_action(action)\` — list / schedule / cancel future actions
 - \`manage_knowledge(action)\` — add / update / delete persistent business facts
 - \`create_payment_link\` · \`create_invoice\` — billing
+- \`create_document(kind)\` — draft & create a contract or proposal; returns a shareable link (you write the body first)
 - \`bulk_update_inquiry_status\` · \`bulk_send_reply\` — batch ops
 - \`manage_faq\` · \`manage_package\` · \`update_profile\` · \`toggle_auto_reply\`
 - \`edit_image\` · \`set_chat_preferences\`
@@ -574,7 +575,7 @@ Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
 - Otherwise, write out the proposed action in plain text (e.g. "I'll send: 'Hi Jamie — yes, July 14 works…' to your Aug-3 wedding lead — OK?") and WAIT for the vendor's reply before calling the tool.
 - For \`send_host_reply\` specifically, ALWAYS show the exact body text first and get confirmation unless the vendor literally said "send X" with the full message included.
-- The server enforces this for sends/charges (send_host_reply, bulk_send_reply, send_email, create_payment_link, create_invoice): the first call returns \`confirmation_required\` and does NOT send. When you get that, show the vendor the exact action and wait; after they approve in their next message, call the tool again with the identical arguments to actually send.
+- The server enforces this for sends/charges (send_host_reply, bulk_send_reply, send_email, create_payment_link, create_invoice, create_document): the first call returns \`confirmation_required\` and does NOT send. When you get that, show the vendor the exact action and wait; after they approve in their next message, call the tool again with the identical arguments to actually send.
 
 EXAMPLES (length + flow to mirror):
 - Vendor: "what's my hourly rate?" → If it's in the knowledge base, answer in one line: "Your hourly rate is $150." If it isn't stored: "I don't have a rate saved yet — want me to remember one?" Don't list what else you can do.
@@ -2700,6 +2701,88 @@ async function toolCreateInvoice(
   };
 }
 
+// Create a sendable contract or proposal from a body the model drafted.
+// Proposals → /proposal/<token> (review + accept). Contracts → /sign/<token>
+// (e-signature); a contract needs a bound recipient (recipient_email or an
+// inquiry_id, so the recipient-binding trigger can pull the host's email),
+// otherwise it can't be signed. Runs with the service-role admin client, so it
+// can set recipient_email directly (the column is locked for normal clients).
+async function toolCreateDocument(
+  admin: any,
+  vendorId: string,
+  input: any,
+): Promise<unknown> {
+  if (!vendorId) return { error: "no_vendor_profile" };
+  const kind = input?.kind === "contract"
+    ? "contract"
+    : input?.kind === "proposal"
+      ? "proposal"
+      : null;
+  if (!kind) return { error: "kind must be 'contract' or 'proposal'" };
+  const title = String(input?.title ?? "").trim().slice(0, 160);
+  const body = String(input?.body ?? "").trim();
+  if (!title) return { error: "title required" };
+  if (body.length < 10) return { error: "body required" };
+  const recipientName = input?.recipient_name
+    ? String(input.recipient_name).trim().slice(0, 120)
+    : null;
+  const recipientEmail = input?.recipient_email
+    ? String(input.recipient_email).trim().toLowerCase()
+    : null;
+  const inquiryId = typeof input?.inquiry_id === "string" && input.inquiry_id
+    ? input.inquiry_id
+    : null;
+
+  if (kind === "proposal") {
+    const { data, error } = await admin
+      .from("vendor_proposals")
+      .insert({
+        vendor_id: vendorId,
+        inquiry_id: inquiryId,
+        title,
+        body,
+        recipient_name: recipientName,
+      })
+      .select("view_token")
+      .single();
+    if (error) return { error: error.message };
+    return {
+      created: true,
+      kind,
+      title,
+      link: `https://eventvendora.com/proposal/${(data as any).view_token}`,
+    };
+  }
+
+  // contract — must be bound to a recipient to be signable.
+  if (!recipientEmail && !inquiryId) {
+    return {
+      error:
+        "A contract needs recipient_email (or inquiry_id) so the signing code can reach the client. Ask the vendor for the client's email.",
+    };
+  }
+  const { data, error } = await admin
+    .from("vendor_contracts")
+    .insert({
+      vendor_id: vendorId,
+      inquiry_id: inquiryId,
+      title,
+      body,
+      recipient_name: recipientName,
+      ...(recipientEmail ? { recipient_email: recipientEmail } : {}),
+      status: "sent",
+    })
+    .select("sign_token")
+    .single();
+  if (error) return { error: error.message };
+  return {
+    created: true,
+    kind,
+    title,
+    link: `https://eventvendora.com/sign/${(data as any).sign_token}`,
+  };
+}
+
 async function toolScheduleAction(
   admin: any,
   vendorId: string,
@@ -2797,6 +2880,7 @@ const SENSITIVE_TOOLS = new Set([
   "send_email",
   "create_payment_link",
   "create_invoice",
+  "create_document",
 ]);
 
 // Scheduled-action kinds that actually send something. Scheduling one is
@@ -2953,6 +3037,9 @@ async function executeTool(
     }
     if (name === "create_invoice") {
       return await toolCreateInvoice(admin, vendorId, userId, input);
+    }
+    if (name === "create_document") {
+      return await toolCreateDocument(admin, vendorId, input);
     }
     if (name === "toggle_auto_reply") {
       return await toolToggleAutoReply(admin, vendorId, userId, input);

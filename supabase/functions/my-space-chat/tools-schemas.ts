@@ -634,6 +634,31 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: "create_document",
+    description:
+      "Create a sendable CONTRACT or PROPOSAL from text YOU draft. First write the full document body in the chat — proposals: 'Prepared for [Client Name] · [Event Date] · [Venue / Location]', then a short intro, 'What's included' bullets, 'Investment' (<package> — [Total Amount]), and retainer/validity terms; contracts: concise numbered sections (Parties, Services, Payment, Cancellation, Rescheduling, Liability, Agreement) with [Client Name]/[Event Date]/[Venue / Location]/[Total Amount] placeholders and NO signature lines. Then call this with the final body to create the instance and return a shareable link (proposal → review-and-accept page; contract → e-signature page). For a CONTRACT you MUST pass recipient_email (or inquiry_id) so the signing code can reach the client. WRITE ACTION — confirm with the vendor first.",
+    input_schema: {
+      type: "object",
+      required: ["kind", "title", "body"],
+      properties: {
+        kind: { type: "string", enum: ["contract", "proposal"] },
+        title: { type: "string", description: "Short document title." },
+        body: { type: "string", description: "The full document body text you drafted." },
+        recipient_name: { type: "string", description: "Client's name (optional)." },
+        recipient_email: {
+          type: "string",
+          description:
+            "Client email — REQUIRED for a contract so the signing code reaches them; optional for a proposal.",
+        },
+        inquiry_id: {
+          type: "string",
+          description:
+            "Optional inquiry UUID to link the document to; for contracts it binds the recipient from the host.",
+        },
+      },
+    },
+  },
 ] as const;
 
 export { TOOLS };
