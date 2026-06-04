@@ -1,14 +1,27 @@
 // Vendor-side list of proposals sent to clients, with live status.
-// Sits above the proposal-template gallery in Files → Proposals.
+// Lives in the right column of Files → Proposals, styled to match the
+// Invoices list: per-row Preview / PDF / Copy link / Cancel actions plus
+// a status pill.
 import { useCallback, useEffect, useState } from "react";
-import { Check, Clock, Copy } from "lucide-react";
+import {
+  Check,
+  Clock,
+  Copy,
+  Download,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
+import type { ListingOpt } from "@/components/vendor/ListingPicker";
+import { downloadDocumentPdf } from "@/lib/documentPdf";
 
 interface SentProposal {
   id: string;
+  vendor_id: string;
   title: string;
+  body: string;
   recipient_name: string | null;
   accepted_name: string | null;
   status: string;
@@ -27,13 +40,33 @@ function fmtDate(iso: string | null): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string; icon: "check" | "clock" }> = {
+    sent: { label: "Awaiting", cls: "bg-amber-100 text-amber-800", icon: "clock" },
+    accepted: { label: "Accepted", cls: "bg-emerald-100 text-emerald-700", icon: "check" },
+    cancelled: { label: "Cancelled", cls: "bg-slate-100 text-slate-600", icon: "clock" },
+  };
+  const m = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600", icon: "clock" as const };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.cls}`}
+    >
+      {m.icon === "check" ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+      {m.label}
+    </span>
+  );
+}
+
 export function SentProposalsList({
   accountVendorIds,
+  listings = [],
 }: {
   accountVendorIds: string[];
+  listings?: ListingOpt[];
 }) {
   const [rows, setRows] = useState<SentProposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const idsKey = accountVendorIds.join(",");
 
   const load = useCallback(async () => {
@@ -47,7 +80,7 @@ export function SentProposalsList({
     const { data } = await (supabase as any)
       .from("vendor_proposals")
       .select(
-        "id, title, recipient_name, accepted_name, status, accepted_at, view_token, created_at",
+        "id, vendor_id, title, body, recipient_name, accepted_name, status, accepted_at, view_token, created_at",
       )
       .in("vendor_id", accountVendorIds)
       .order("created_at", { ascending: false })
@@ -74,63 +107,130 @@ export function SentProposalsList({
       .catch(() => toast.error("Couldn't copy the link"));
   }
 
-  if (loading) {
-    return <div className="h-20 rounded-2xl bg-foreground/5 animate-pulse mb-4" />;
+  function brandFor(vendorId: string): string | null {
+    return listings.find((l) => l.id === vendorId)?.business_name ?? null;
   }
-  if (rows.length === 0) return null;
+
+  function downloadPdf(p: SentProposal) {
+    downloadDocumentPdf({
+      title: p.title,
+      body: p.body,
+      vendor_business_name: brandFor(p.vendor_id),
+      kindLabel: "Proposal",
+      completion:
+        p.status === "accepted"
+          ? { label: "Accepted", name: p.accepted_name, at: p.accepted_at }
+          : null,
+    });
+  }
+
+  const cancel = useCallback(
+    async (p: SentProposal) => {
+      // Voiding is terminal: the public /proposal page and the
+      // accept_proposal RPC both refuse any status other than 'sent', so a
+      // cancelled proposal can never be accepted. Always confirm.
+      if (!confirm(`Void "${p.title}"? The client won't be able to accept it.`)) return;
+      setCancellingId(p.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_proposals")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .eq("id", p.id)
+        .eq("status", "sent");
+      setCancellingId(null);
+      if (error) {
+        toast.error("Couldn't void the proposal", { description: error.message });
+        return;
+      }
+      toast.success("Proposal voided");
+      await load();
+    },
+    [load],
+  );
 
   return (
-    <section className="mb-6">
-      <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
-        Sent proposals
-      </h2>
-      <div className="space-y-2">
-        {rows.map((p) => {
-          const accepted = p.status === "accepted";
-          return (
-            <div
-              key={p.id}
-              className="flex items-center gap-3 rounded-xl px-4 py-3"
-              style={{
-                background: "rgba(255,255,255,0.6)",
-                border: "0.5px solid rgba(0,0,0,0.08)",
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{p.title}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {accepted
-                    ? `Accepted by ${p.accepted_name ?? "client"} · ${fmtDate(p.accepted_at)}`
-                    : `${p.recipient_name ? `To ${p.recipient_name} · ` : ""}Sent ${fmtDate(p.created_at)}`}
-                </p>
-              </div>
-              <span
-                className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  accepted
-                    ? "bg-emerald-600 text-white"
-                    : p.status === "sent"
-                      ? "bg-amber-100 text-amber-800 border border-amber-200"
-                      : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                {accepted ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                {accepted ? "Accepted" : p.status === "sent" ? "Awaiting" : p.status}
-              </span>
-              {!accepted && p.status === "sent" ? (
-                <button
-                  type="button"
-                  onClick={() => copyLink(p.view_token)}
-                  title="Copy proposal link"
-                  className="shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
-                >
-                  <Copy className="w-3 h-3" />
-                  Link
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
+    <div
+      data-cockpit-card
+      className="rounded-2xl overflow-hidden"
+      style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(0,0,0,0.08)" }}
+    >
+      <div className="px-4 pt-3 pb-2 border-b border-foreground/5">
+        <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+          Sent proposals
+        </span>
       </div>
-    </section>
+      {loading ? (
+        <div className="h-16 m-4 rounded-xl bg-foreground/5 animate-pulse" />
+      ) : rows.length === 0 ? (
+        <p className="px-4 py-6 text-xs text-muted-foreground">
+          No proposals sent yet. Compose one on the left and send it from the box below.
+        </p>
+      ) : (
+        <div className="max-h-[420px] overflow-y-auto scrollbar-hide">
+          {rows.map((p, idx) => {
+            const accepted = p.status === "accepted";
+            const open = p.status === "sent";
+            return (
+              <div key={p.id} className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}>
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold truncate">{p.title}</span>
+                      <StatusPill status={p.status} />
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-1">
+                      {accepted
+                        ? `Accepted by ${p.accepted_name ?? "client"} · ${fmtDate(p.accepted_at)}`
+                        : `${p.recipient_name ? `To ${p.recipient_name} · ` : ""}Sent ${fmtDate(p.created_at)}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => window.open(`${ORIGIN}/proposal/${p.view_token}`, "_blank")}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadPdf(p)}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    PDF
+                  </button>
+                  {open ? (
+                    <button
+                      type="button"
+                      onClick={() => copyLink(p.view_token)}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Link
+                    </button>
+                  ) : null}
+                  {open ? (
+                    <button
+                      type="button"
+                      onClick={() => void cancel(p)}
+                      disabled={cancellingId === p.id}
+                      className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive rounded-full px-2.5 py-1"
+                    >
+                      {cancellingId === p.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : null}
+                      Void
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

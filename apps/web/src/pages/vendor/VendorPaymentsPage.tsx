@@ -2924,25 +2924,31 @@ function FilesTab(props: {
           onChanged={props.onChanged}
         />
       ) : fileTab === "contracts" ? (
-        <>
-          <SentContractsList accountVendorIds={props.accountVendorIds} />
-          <DocumentCanvas
-            accountVendorIds={props.accountVendorIds}
-            listings={props.listings}
-            kind="contract"
-            starter={CONTRACT_TEMPLATES[0]}
-          />
-        </>
+        <DocumentCanvas
+          accountVendorIds={props.accountVendorIds}
+          listings={props.listings}
+          kind="contract"
+          starter={CONTRACT_TEMPLATES[0]}
+          sentList={
+            <SentContractsList
+              accountVendorIds={props.accountVendorIds}
+              listings={props.listings}
+            />
+          }
+        />
       ) : fileTab === "proposals" ? (
-        <>
-          <SentProposalsList accountVendorIds={props.accountVendorIds} />
-          <DocumentCanvas
-            accountVendorIds={props.accountVendorIds}
-            listings={props.listings}
-            kind="proposal"
-            starter={PROPOSAL_TEMPLATES[0]}
-          />
-        </>
+        <DocumentCanvas
+          accountVendorIds={props.accountVendorIds}
+          listings={props.listings}
+          kind="proposal"
+          starter={PROPOSAL_TEMPLATES[0]}
+          sentList={
+            <SentProposalsList
+              accountVendorIds={props.accountVendorIds}
+              listings={props.listings}
+            />
+          }
+        />
       ) : null}
     </div>
   );
@@ -3455,11 +3461,15 @@ function DocumentCanvas({
   listings,
   kind,
   starter,
+  sentList,
 }: {
   accountVendorIds: string[];
   listings: ListingOpt[];
   kind: "contract" | "proposal";
   starter: DocTemplate;
+  // The "Sent for signature" / "Sent proposals" list, rendered in the
+  // right column above the send box to mirror the Invoices layout.
+  sentList?: React.ReactNode;
 }) {
   // Which listing's templates we're managing. Defaults to the primary
   // listing; the picker in the list view lets multi-listing vendors switch
@@ -3576,10 +3586,6 @@ function DocumentCanvas({
     initialRef.current = { name: row.name, body: row.body };
     setEditingId(row.id);
   }
-  function closeEditor() {
-    setEditingId(null);
-  }
-
   const dirty = name !== initialRef.current.name || body !== initialRef.current.body;
 
   const save = useCallback(async () => {
@@ -3757,151 +3763,171 @@ function DocumentCanvas({
   const editableCls =
     "bg-transparent border-0 outline-none rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.05] focus:bg-foreground/[0.08]";
 
-  // ── Editor view: narrower document on the left, list + send on the right ──
-  // Capped at max-w-5xl (~1024px) so the whole composer (document +
-  // sidebar) is ~33% narrower than the full max-w-screen-2xl tab width.
-  if (editingId !== null) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start max-w-5xl">
-        {/* Document (reduced width so the sidebar fits beside it) */}
-        <Card>
-          <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={closeEditor}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              {kindLabel} templates
-            </button>
-            <Button
-              onClick={save}
-              disabled={saving || !dirty}
-              size="sm"
-              className="rounded-full h-8 text-xs"
-            >
-              {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-              Save template
-            </Button>
+  // ── Layout mirrors Invoices: the document composer on the LEFT, and a
+  // right column with the sent list, a send box, and the saved-template
+  // library stacked together. The composer is always open (lands on the
+  // default template or a blank new one) so there's no separate list-only
+  // mode — switching templates happens from the saved list on the right.
+  return (
+    <div className="grid lg:grid-cols-[3fr_2fr] gap-4 items-start">
+      {/* LEFT: document composer */}
+      <Card>
+        <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3 flex-wrap">
+          {/* Multi-listing accounts pick which listing's templates to
+              manage (renders nothing when there's ≤1 listing). */}
+          <ListingPickerField
+            accountVendorIds={accountVendorIds}
+            listings={listings}
+            value={templateVendorId}
+            onChange={(next) => {
+              // Re-open the new listing's default template on switch.
+              autoOpenedRef.current = false;
+              setTemplateVendorId(next);
+            }}
+            label="Listing"
+            inline
+          />
+          <Button
+            onClick={save}
+            disabled={saving || !dirty}
+            size="sm"
+            className="rounded-full h-8 text-xs ml-auto"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+            Save template
+          </Button>
+        </div>
+
+        <div className="bg-white px-6 sm:px-10 py-8 sm:py-10">
+          <header className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
+              <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
+                {displayLocation}
+              </p>
+            </div>
+            <div className="text-right">
+              <p
+                className="text-[10px] font-bold text-muted-foreground"
+                style={{ letterSpacing: "0.22em" }}
+              >
+                {kindLabel.toUpperCase()}
+              </p>
+              <p className="text-[11px] mt-1 text-muted-foreground">Template</p>
+            </div>
+          </header>
+
+          <hr className="my-6 border-foreground/10" />
+
+          <div className="space-y-5">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={`${kindLabel} name (e.g. Standard ${kindLabel})`}
+              className={`block w-full text-2xl font-bold tracking-tight ${editableCls}`}
+            />
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Type your template body here…"
+              rows={Math.max(16, body.split("\n").length + 2)}
+              className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
+              style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
+            />
           </div>
 
-          <div className="bg-white px-5 sm:px-7 py-7 sm:py-8">
-            <header className="flex items-start justify-between gap-6 flex-wrap">
-              <div className="min-w-0">
-                <h2 className="text-xl font-bold tracking-tight">{displayName}</h2>
-                <p className="text-[11px] mt-0.5 text-muted-foreground tracking-wider">
-                  {displayLocation}
-                </p>
-              </div>
-              <div className="text-right">
-                <p
-                  className="text-[10px] font-bold text-muted-foreground"
-                  style={{ letterSpacing: "0.22em" }}
-                >
-                  {kindLabel.toUpperCase()}
-                </p>
-                <p className="text-[11px] mt-1 text-muted-foreground">Template</p>
-              </div>
-            </header>
+          <footer
+            className="mt-8 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
+            style={{ borderTop: "1px solid #e8e3dd" }}
+          >
+            <span>{displayName}</span>
+            <span>
+              Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+            </span>
+          </footer>
+        </div>
+      </Card>
 
-            <hr className="my-6 border-foreground/10" />
+      {/* RIGHT column: sent list → send box → saved templates (mirrors the
+          Invoices list + "Send an invoice" stack). */}
+      <div className="space-y-4">
+        {sentList}
 
-            <div className="space-y-5">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={`${kindLabel} name (e.g. Standard ${kindLabel})`}
-                className={`block w-full text-2xl font-bold tracking-tight ${editableCls}`}
-              />
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Type your template body here…"
-                rows={Math.max(16, body.split("\n").length + 2)}
-                className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
-                style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
-              />
+        {/* Send this document */}
+        <Card>
+          <div className="p-4 space-y-2">
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              Send this {kindLabel.toLowerCase()}
             </div>
-
-            <footer
-              className="mt-8 pt-5 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2"
-              style={{ borderTop: "1px solid #e8e3dd" }}
+            <p className="text-[11px] text-muted-foreground">
+              {kind === "proposal"
+                ? "Creates a shareable proposal page and emails the link — the client can review and accept it. Save first to keep your edits."
+                : "Creates a signable contract and emails the link — the signing code goes to this email. Save first to keep your edits."}
+            </p>
+            <input
+              type="email"
+              inputMode="email"
+              placeholder="Send to email…"
+              value={sendEmail}
+              onChange={(e) => setSendEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void sendDoc();
+              }}
+              className="w-full rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+            />
+            <Button
+              size="sm"
+              className="rounded-full w-full"
+              onClick={() => void sendDoc()}
+              disabled={!sendEmail.trim() || sending}
             >
-              <span>{displayName}</span>
-              <span>
-                Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
-              </span>
-            </footer>
+              {sending ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <Mail className="w-3.5 h-3.5 mr-1" />
+              )}
+              Send
+            </Button>
           </div>
         </Card>
 
-        {/* Sidebar: send box + the saved list */}
-        <div className="space-y-4 lg:sticky lg:top-4">
-          {/* Send this document */}
-          <Card>
-            <div className="p-4 space-y-2">
-              <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-                Send this {kindLabel.toLowerCase()}
+        {/* Saved templates library */}
+        <Card>
+          <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between border-b border-foreground/5">
+            <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              Saved {kindLabel.toLowerCase()}s
+            </span>
+            <button
+              type="button"
+              onClick={openNew}
+              disabled={!templateVendorId}
+              className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5 disabled:opacity-50"
+            >
+              <Plus className="w-3 h-3" /> New
+            </button>
+          </div>
+          <div className="max-h-[420px] overflow-y-auto scrollbar-hide divide-y divide-black/5">
+            {!loaded ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                {kind === "proposal"
-                  ? "Creates a shareable proposal page and emails the link — the client can review and accept it. Save first to keep your edits."
-                  : "Creates a signable contract and emails the link — the signing code goes to this email. Save first to keep your edits."}
+            ) : rows.length === 0 ? (
+              <p className="px-3 py-4 text-xs text-muted-foreground">
+                No saved templates yet. Click "New" to create one.
               </p>
-              <input
-                type="email"
-                inputMode="email"
-                placeholder="Send to email…"
-                value={sendEmail}
-                onChange={(e) => setSendEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void sendDoc();
-                }}
-                className="w-full rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-              />
-              <Button
-                size="sm"
-                className="rounded-full w-full"
-                onClick={() => void sendDoc()}
-                disabled={!sendEmail.trim() || sending}
-              >
-                {sending ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                ) : (
-                  <Mail className="w-3.5 h-3.5 mr-1" />
-                )}
-                Send
-              </Button>
-            </div>
-          </Card>
-
-          {/* Saved templates list */}
-          <Card>
-            <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-                Saved {kindLabel.toLowerCase()}s
-              </span>
-              <button
-                type="button"
-                onClick={openNew}
-                className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
-              >
-                <Plus className="w-3 h-3" /> New
-              </button>
-            </div>
-            <div className="max-h-[420px] overflow-y-auto scrollbar-hide divide-y divide-black/5">
-              {rows.length === 0 ? (
-                <p className="px-3 py-4 text-xs text-muted-foreground">No saved templates yet.</p>
-              ) : (
-                rows.map((row) => (
+            ) : (
+              rows.map((row) => (
+                <div
+                  key={row.id}
+                  className={`flex items-center gap-2 px-3 py-2.5 hover:bg-black/[0.03] transition-colors group ${
+                    editingId === row.id ? "bg-black/[0.04]" : ""
+                  }`}
+                >
                   <button
-                    key={row.id}
                     type="button"
                     onClick={() => openEdit(row)}
-                    className={`w-full text-left px-3 py-2.5 hover:bg-black/[0.03] transition-colors ${
-                      editingId === row.id ? "bg-black/[0.04]" : ""
-                    }`}
+                    className="flex-1 min-w-0 text-left"
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-[13px] font-semibold text-black truncate">{row.name}</span>
@@ -3915,110 +3941,36 @@ function DocumentCanvas({
                       {row.body.trim().split("\n")[0] || "Empty"}
                     </p>
                   </button>
-                ))
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // ── List view ────────────────────────────────────────────────
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {kind === "contract"
-            ? "Saved contract templates — attach one to a proposal when you quote."
-            : "Saved proposal templates — reuse them to quote faster."}
-        </p>
-        <Button onClick={openNew} disabled={!templateVendorId} className="rounded-full">
-          <Plus className="w-4 h-4 mr-1.5" />
-          New {kindLabel.toLowerCase()}
-        </Button>
-      </div>
-
-      {/* Multi-listing accounts: choose which listing's templates to manage
-          (hidden when there's ≤1 listing). */}
-      <ListingPickerField
-        accountVendorIds={accountVendorIds}
-        listings={listings}
-        value={templateVendorId}
-        onChange={setTemplateVendorId}
-        label="Templates for listing"
-        inline
-      />
-
-      {!loaded ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : rows.length === 0 ? (
-        <EmptyCard>
-          No {kindLabel.toLowerCase()} templates yet. Click "New {kindLabel.toLowerCase()}" to create one.
-        </EmptyCard>
-      ) : (
-        <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md shadow-sm overflow-hidden">
-          <div className="max-h-[520px] overflow-y-auto scrollbar-hide divide-y divide-black/5">
-            {rows.map((row) => (
-              <div
-                key={row.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-black/[0.03] transition-colors group"
-              >
-                <button
-                  type="button"
-                  onClick={() => openEdit(row)}
-                  className="flex-1 min-w-0 text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-black truncate">{row.name}</span>
-                    {row.is_default ? (
-                      <span className="text-[10px] uppercase tracking-wide rounded-full border border-emerald-300 text-emerald-700 px-1.5 py-0.5">
-                        Default
-                      </span>
+                  <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    {!row.is_default ? (
+                      <button
+                        type="button"
+                        onClick={() => void makeDefault(row.id)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-1 rounded"
+                      >
+                        Make default
+                      </button>
                     ) : null}
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {row.body.trim().split("\n")[0] || "Empty"}
-                  </p>
-                </button>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {!row.is_default ? (
                     <button
                       type="button"
-                      onClick={() => void makeDefault(row.id)}
-                      className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                      onClick={() => void remove(row)}
+                      disabled={deletingId === row.id}
+                      className="text-muted-foreground hover:text-destructive px-1 py-1 rounded"
+                      aria-label="Delete template"
                     >
-                      Make default
+                      {deletingId === row.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => openEdit(row)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void remove(row)}
-                    disabled={deletingId === row.id}
-                    className="text-muted-foreground hover:text-destructive px-1.5 py-1 rounded"
-                    aria-label="Delete template"
-                  >
-                    {deletingId === row.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        </div>
-      )}
+        </Card>
+      </div>
     </div>
   );
 }
