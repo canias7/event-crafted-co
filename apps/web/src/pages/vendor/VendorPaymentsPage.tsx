@@ -2050,15 +2050,26 @@ function PaymentsTab({
 // / "1.2M" instead of "$1,200" so 5 ticks fit on a narrow Y axis.
 function formatMoneyCompact(cents: number, currency: string): string {
   const v = cents / 100;
-  const abs = Math.abs(v);
-  const fmt = (n: number, suffix: string) => {
-    const s = n.toFixed(n < 10 ? 1 : 0).replace(/\.0$/, "");
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase(), maximumFractionDigits: 0 })
-      .format(0).replace(/0/g, "") + s + suffix;
-  };
-  if (abs >= 1_000_000) return fmt(v / 1_000_000, "M");
-  if (abs >= 1_000) return fmt(v / 1_000, "k");
-  return formatMoney(cents, currency);
+  // Below 1k there's nothing to abbreviate — show the full amount. At/above
+  // 1k use Intl's compact notation ("$1.2K", "$3M"), which places the
+  // currency symbol correctly for any currency instead of the old
+  // string-replace hack that only worked for a leading "$".
+  if (Math.abs(v) < 1_000) return formatMoney(cents, currency);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(v);
+}
+
+// Parse a user-typed major-unit amount ("12.50" or "12,50") into integer
+// minor units, tolerating a comma decimal separator. Returns NaN for blank
+// or invalid input. `factor` is the currency's minor-unit multiplier
+// (100 for $/€, 1 for zero-decimal currencies like ¥).
+function parseAmountToCents(input: string, factor = 100): number {
+  const n = parseFloat(String(input).replace(",", "."));
+  return Number.isFinite(n) ? Math.round(n * factor) : NaN;
 }
 
 
@@ -2088,7 +2099,7 @@ function exportIncomeCsv(rows: Transaction[]) {
   const lines = [header.join(",")];
   for (const t of rows) {
     const cells = [
-      t.created_at.slice(0, 10),
+      (t.created_at ?? "").slice(0, 10),
       t.description ?? "",
       kindLabel(t.kind).label,
       t.status ?? "",
@@ -2098,7 +2109,11 @@ function exportIncomeCsv(rows: Transaction[]) {
     ];
     lines.push(cells.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","));
   }
-  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  // BOM + CRLF so Excel on Windows opens accented names / emoji correctly
+  // and respects line breaks.
+  const blob = new Blob(["﻿" + lines.join("\r\n")], {
+    type: "text/csv;charset=utf-8",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -2124,10 +2139,16 @@ function TransactionsTab({
 
   const currency = transactions[0]?.currency ?? "usd";
 
-  // Income = money-in rows only; refunds/payouts/fees excluded.
+  // Income = money-in rows only; refunds/payouts/fees excluded. Also scoped
+  // to the displayed currency so the totals never add, say, yen onto a
+  // dollar figure on a multi-currency account.
   const incomeRows = useMemo(
-    () => transactions.filter((t) => kindLabel(t.kind).tone === "in"),
-    [transactions],
+    () =>
+      transactions.filter(
+        (t) =>
+          kindLabel(t.kind).tone === "in" && (t.currency ?? "usd") === currency,
+      ),
+    [transactions, currency],
   );
 
   const summary = useMemo(() => {
@@ -2407,10 +2428,7 @@ function RefundModal({
   // Single source of truth for the refund amount in minor units — used by
   // validation, the submit, and the button preview so they can never
   // disagree. Tolerates a comma decimal separator.
-  const cents = useMemo(() => {
-    const n = parseFloat(String(amount).replace(",", "."));
-    return Number.isFinite(n) ? Math.round(n * factor) : NaN;
-  }, [amount, factor]);
+  const cents = useMemo(() => parseAmountToCents(amount, factor), [amount, factor]);
   const amountValid =
     Number.isFinite(cents) && cents >= 1 && cents <= tx.amount_cents;
 
@@ -5227,7 +5245,7 @@ function CustomersTab({
     toast.success(editing === "new" ? "Contact added" : "Contact updated");
     await refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey, saving, form, editing, newCustomerVendorId, refresh]);
+  }, [accountKey, userId, saving, form, editing, newCustomerVendorId, refresh]);
 
   const remove = useCallback(
     async (c: Customer) => {
@@ -6433,7 +6451,8 @@ function ExpensesTab({
         ].join(","),
       );
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    // BOM + CRLF for clean Excel-on-Windows opening (accents/emoji + breaks).
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -7559,7 +7578,7 @@ function PayLinkPreview({
   expiresDate: string;
   collectContact: boolean;
 }) {
-  const cents = Math.round(parseFloat(amountDollars) * 100);
+  const cents = parseAmountToCents(amountDollars);
   const amountLabel = Number.isFinite(cents) && cents > 0
     ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100)
     : "$0.00";
@@ -7749,7 +7768,7 @@ function PayLinksTab({
   const create = useCallback(async () => {
     const targetVendorId = pickedVendorId ?? defaultVendorId;
     if (!targetVendorId || submitting) return;
-    const totalCents = Math.round(parseFloat(amountDollars) * 100);
+    const totalCents = parseAmountToCents(amountDollars);
     if (!title.trim()) {
       toast.error("Title required");
       return;
