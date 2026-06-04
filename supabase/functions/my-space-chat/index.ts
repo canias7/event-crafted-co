@@ -575,7 +575,7 @@ Confirmation rule for writes:
 - If the vendor said the exact action AND the parameters in their last message ("yes send it", "reply to inquiry X saying we're free July 14", "block Aug 1 for me"), proceed without re-asking.
 - Otherwise, write out the proposed action in plain text (e.g. "I'll send: 'Hi Jamie — yes, July 14 works…' to your Aug-3 wedding lead — OK?") and WAIT for the vendor's reply before calling the tool.
 - For \`send_host_reply\` specifically, ALWAYS show the exact body text first and get confirmation unless the vendor literally said "send X" with the full message included.
-- The server enforces this for sends/charges (send_host_reply, bulk_send_reply, send_email, create_payment_link, create_invoice, create_document): the first call returns \`confirmation_required\` and does NOT send. When you get that, show the vendor the exact action and wait; after they approve in their next message, call the tool again with the identical arguments to actually send.
+- The server enforces this for sends/charges (send_host_reply, bulk_send_reply, send_email, create_payment_link, create_invoice): the first call returns \`confirmation_required\` and does NOT send. When you get that, show the vendor the exact action and wait; after they approve in their next message, call the tool again with the identical arguments to actually send.
 
 EXAMPLES (length + flow to mirror):
 - Vendor: "what's my hourly rate?" → If it's in the knowledge base, answer in one line: "Your hourly rate is $150." If it isn't stored: "I don't have a rate saved yet — want me to remember one?" Don't list what else you can do.
@@ -2880,7 +2880,10 @@ const SENSITIVE_TOOLS = new Set([
   "send_email",
   "create_payment_link",
   "create_invoice",
-  "create_document",
+  // create_document is intentionally NOT gated here: it creates a DRAFT
+  // contract/proposal (a shareable link, nothing is emailed), and its body is
+  // free-text the model re-drafts each turn — which would make the args-hash
+  // confirmation gate loop forever. The model still confirms intent in chat.
 ]);
 
 // Scheduled-action kinds that actually send something. Scheduling one is
