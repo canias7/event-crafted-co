@@ -20,7 +20,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 
 type ActionType =
   | "signup"
-  | "invite"
   | "recovery"
   | "email_change"
   | "reauthentication";
@@ -253,17 +252,8 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
       ),
     };
   }
-  if (action === "invite") {
-    return {
-      subject: "You've been invited to Vendora",
-      html: shell(
-        "You're invited",
-        `<p style="margin:0 0 16px;">You've been invited to join Vendora. Tap below to accept and set up your account.</p>
-         <p style="margin:0 0 24px;">${button(verifyUrl, "Accept invitation")}</p>
-         <p style="margin:0;font-size:13px;color:#777;">If the button doesn't work, paste this link into your browser:<br/><span style="word-break:break-all;">${verifyUrl}</span></p>`,
-      ),
-    };
-  }
+  // Note: there is no "invite" case — the vendor bulk-import flow (the only
+  // caller of GoTrue's inviteUserByEmail) has been retired.
   // Note: there is no "magiclink" case. Login uses password + a 6-digit
   // 2FA code via the signin-2fa edge function, not magic links — nothing
   // in the product calls signInWithOtp, so this action is intentionally
