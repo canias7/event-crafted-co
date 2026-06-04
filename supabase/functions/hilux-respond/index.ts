@@ -32,6 +32,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+// HILUX emails are temporarily disabled while the feature is being reworked.
+// Flip to false to restore the "Action needed — handed you a conversation"
+// handoff email. (HILUX's in-app handoff + auto-reply still function.)
+const HILUX_EMAILS_DISABLED = true;
 const EMAIL_FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
 const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
@@ -432,7 +436,7 @@ serve(async (req) => {
       // time-sensitive HILUX event — a host is waiting and the
       // agent stepped aside — so we email the vendor team
       // immediately, not just the in-app bell. Best-effort.
-      if (RESEND_API_KEY) {
+      if (RESEND_API_KEY && !HILUX_EMAILS_DISABLED) {
         try {
           const vendorName = ctx.vendor.business_name ?? "your business";
           const threadLink = `${APP_URL}${inquiryPath}`;

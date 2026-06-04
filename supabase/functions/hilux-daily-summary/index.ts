@@ -13,6 +13,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+// HILUX emails are temporarily disabled while the feature is being reworked.
+// Flip to false to restore the daily summary email.
+const HILUX_EMAILS_DISABLED = true;
 const EMAIL_FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
 const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
@@ -61,6 +64,9 @@ serve(async (req) => {
 
   if (!RESEND_API_KEY) {
     return json({ ok: true, sent: 0, note: "RESEND_API_KEY not set" }, 200);
+  }
+  if (HILUX_EMAILS_DISABLED) {
+    return json({ ok: true, sent: 0, note: "HILUX emails disabled" }, 200);
   }
 
   const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 3600 * 1000).toISOString();
