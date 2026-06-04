@@ -323,10 +323,24 @@ export default function VendorAppointmentsPage({
     [listings, selectedListingId],
   );
 
+  // The calendar draws a full 6-week (42-cell) grid, so it always shows
+  // leading days from the previous month and trailing days from the next.
+  // Bound the fetched data AND the recurring/manual-block projection to
+  // that SAME visible grid (the Sunday on/before the 1st, through 42 days
+  // later) — matching MonthGrid's gridStart. Otherwise edge cells showed
+  // appointment dots (fetched in a wide window) but missed inquiry/block
+  // dots (previously month-only), so the same day rendered different dots
+  // depending on which month you were viewing it from.
   const monthBounds = useMemo(() => {
-    const start = new Date(viewMonth);
-    const end = new Date(viewMonth);
-    end.setMonth(end.getMonth() + 1);
+    const firstOfMonth = new Date(
+      viewMonth.getFullYear(),
+      viewMonth.getMonth(),
+      1,
+    );
+    const start = new Date(firstOfMonth);
+    start.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 42); // exclusive — full 6-week grid
     return { start, end };
   }, [viewMonth]);
 
