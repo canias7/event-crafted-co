@@ -132,6 +132,16 @@ function statusLabel(s: string): string {
   }
 }
 
+// How a meeting reads on the calendar: confirmed (accepted) or already
+// happened (completed) occupy the day as "booked"; a still-proposed one is
+// "pending". Declined meetings are dead and don't show at all (mirrors how
+// lost/expired inquiries are dropped).
+function apptDayState(status: string): "booked" | "pending" | null {
+  if (status === "accepted" || status === "completed") return "booked";
+  if (status === "proposed") return "pending";
+  return null;
+}
+
 function prettyDay(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
@@ -557,18 +567,23 @@ export default function VendorAppointmentsPage({
     // payload. The calendar grid and "upcoming" lists only need the
     // recent window; deeper history can be exposed via a dedicated
     // archive view later. In account mode this fans out across
-    // every listing the vendor owns.
+    // every listing the vendor owns. When the vendor navigates the
+    // calendar to an older month than that window, extend the lower
+    // bound to cover the month in view — otherwise it shows inquiry
+    // dots but no appointment dots for that month.
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 90);
+    const lowerBound =
+      monthBounds.start < cutoff ? monthBounds.start : cutoff;
     const { data } = await (supabase as any)
       .from("appointments")
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
       )
       .in("vendor_id", queryListingIds)
-      .gte("scheduled_at", cutoff.toISOString())
+      .gte("scheduled_at", lowerBound.toISOString())
       .order("scheduled_at", { ascending: true })
-      .limit(500);
+      .limit(1000);
     const rows = (
       (data as Array<
         Appointment & { host: { display_name: string | null } | null }
@@ -577,7 +592,7 @@ export default function VendorAppointmentsPage({
     setAppointments(rows);
     setAppointmentsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, queryListingKey]);
+  }, [user, queryListingKey, monthBounds]);
 
   useEffect(() => {
     loadAppointments();
@@ -648,10 +663,11 @@ export default function VendorAppointmentsPage({
     // overrides a recurring / manual block — you're not "unavailable"
     // on a day you actually have a confirmed appointment.
     for (const a of appointments) {
-      if (a.status !== "accepted" && a.status !== "proposed") continue;
+      const st = apptDayState(a.status);
+      if (!st) continue;
       const k = ymdKey(new Date(a.scheduled_at));
       const prev = m.get(k);
-      if (a.status === "accepted") m.set(k, "booked");
+      if (st === "booked") m.set(k, "booked");
       else if (prev !== "booked") m.set(k, "pending");
     }
     // Recurring weekday-off rules paint every matching weekday in
@@ -727,9 +743,9 @@ export default function VendorAppointmentsPage({
         put(key, i.vendor_id, "pending");
     }
     for (const a of appointments) {
-      if (a.status !== "accepted" && a.status !== "proposed") continue;
-      const key = ymdKey(new Date(a.scheduled_at));
-      put(key, a.vendor_id, a.status === "accepted" ? "booked" : "pending");
+      const st = apptDayState(a.status);
+      if (!st) continue;
+      put(ymdKey(new Date(a.scheduled_at)), a.vendor_id, st);
     }
     // Recurring weekday rules, projected per listing across the month.
     if (recurringListingIds.size > 0) {
@@ -792,8 +808,9 @@ export default function VendorAppointmentsPage({
         add(key, "pending");
     }
     for (const a of appointments) {
-      if (a.status !== "accepted" && a.status !== "proposed") continue;
-      add(ymdKey(new Date(a.scheduled_at)), a.status === "accepted" ? "booked" : "pending");
+      const st = apptDayState(a.status);
+      if (!st) continue;
+      add(ymdKey(new Date(a.scheduled_at)), st);
     }
     // One blocked dot per blocked date (recurring weekday + manual blocks).
     const blockedDates = new Set<string>();
@@ -806,7 +823,12 @@ export default function VendorAppointmentsPage({
       }
     }
     for (const [date] of blockListingIds) blockedDates.add(date);
-    for (const date of blockedDates) add(date, "blocked");
+    // Only add a blocked dot on days with no real event — a booking or lead
+    // already shows the day is occupied, so stacking a grey block dot next
+    // to a green/amber one is just noise.
+    for (const date of blockedDates) {
+      if (!out.has(date)) add(date, "blocked");
+    }
     const rank: Record<Exclude<DayState, "available">, number> = {
       booked: 3,
       pending: 2,
@@ -887,8 +909,14 @@ export default function VendorAppointmentsPage({
     // (time, kind/title, host, Confirmed/Proposed) so the day panel
     // isn't empty just because there's no inquiry *event* that day.
     for (const a of appointments) {
-      if (a.status !== "accepted" && a.status !== "proposed") continue;
+      const st = apptDayState(a.status);
+      if (!st) continue;
       if (ymdKey(new Date(a.scheduled_at)) !== selectedYmd) continue;
+      const statusWord = a.status === "accepted"
+        ? "Confirmed"
+        : a.status === "completed"
+          ? "Completed"
+          : "Proposed";
       out.push({
         kind: "appointment",
         inquiryId: a.inquiry_id ?? null,
@@ -896,13 +924,11 @@ export default function VendorAppointmentsPage({
         subtitle:
           // Host-less rows are off-platform/personal entries.
           (a.host_id
-            ? (a.host_name ?? "Client") +
-              " · " +
-              (a.status === "accepted" ? "Confirmed" : "Proposed")
+            ? (a.host_name ?? "Client") + " · " + statusWord
             : "Off-platform · personal") +
           labelFor(a.vendor_id),
         amountCents: null,
-        accent: a.status === "accepted" ? "booked" : "pending",
+        accent: st,
         timeLabel: fmtApptTime(a.scheduled_at),
       });
     }
