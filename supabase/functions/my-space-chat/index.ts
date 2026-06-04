@@ -642,9 +642,7 @@ function buildSystemPrompt(
   const listingNote = others.length > 0
     ? `\n\nACTIVE LISTING — this account has ${
       (listingInfo?.listings.length ?? 0)
-    } listings; you are currently working on "${v.business_name ?? "(unnamed)"}". Everything you read or change applies to THIS listing. If the vendor wants a different one (${
-      others.map((l) => l.name).join(", ")
-    }), call set_active_listing with its id (list_listings shows the ids). Always be clear which listing you're acting on if there's any doubt.`
+    } listings; you are currently working on "${v.business_name ?? "(unnamed)"}". Everything you read or change applies to THIS listing. To switch, call set_active_listing with the target listing's id (use list_listings to look up the names/ids). Don't list the other listings unless the vendor asks. Always be clear which listing you're acting on if there's any doubt.`
     : "";
   return `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform.${listingNote}
 
@@ -4082,11 +4080,16 @@ serve(async (req) => {
           });
         } else if (listingCtx.needsSelection) {
           // Several listings, none chosen yet — the assistant must ask first.
-          const names = listingCtx.listings
-            .map((l) => `• ${l.name} (id: ${l.id})`)
-            .join("\n");
+          // Do NOT paste the whole roster into the prompt: that made the model
+          // dump every listing name at the vendor. Name them only when the
+          // list is short; for a long list just say how many and let the
+          // vendor name one (or ask to browse via list_listings).
+          const count = listingCtx.listings.length;
+          const compact = count <= 6
+            ? `Your listings: ${listingCtx.listings.map((l) => l.name).join(", ")}.`
+            : `This account has ${count} listings.`;
           systemPrompt =
-            `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform. This account manages MORE THAN ONE listing, and the vendor hasn't told you which one to work on yet, so you can't read or change anything listing-specific until they pick.\n\nThe listings on this account:\n${names}\n\nBefore doing any listing-specific work, ask the vendor which listing they want to work on (show the names, not the raw ids). Once they answer, call set_active_listing with that listing's id — the choice is remembered for future chats. If they're just chatting generally, you can still help. You can re-show options anytime with list_listings, and switch with set_active_listing.`;
+            `You are My Space, the in-app AI assistant for an event vendor on the Vendora platform. ${compact} The vendor hasn't told you which one to work on yet, so you can't read or change anything listing-specific until they pick.\n\nAsk the vendor — in one short sentence — which listing they'd like to work on. Do NOT paste the full list of their listings unless they explicitly ask to see them (use the list_listings tool for that). When they name a listing, call list_listings to find its id, then call set_active_listing with that id — the choice is remembered for future chats. They can switch anytime. If they're just chatting generally, you can still help.`;
         } else {
           systemPrompt =
             "You are My Space, the in-app AI assistant for an event vendor. The caller doesn't yet have a vendor profile, so you can answer general questions but can't reference their inquiries, calendar, or packages. Encourage them to finish setting up their vendor profile.";
