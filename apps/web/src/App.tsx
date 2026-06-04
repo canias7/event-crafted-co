@@ -83,7 +83,6 @@ import {
   VendorGalleryPage,
   VendorTemplatesPage,
   InquiryDetailPage,
-  AcceptTeamInvitePage,
   ClaimVendorPage,
   PublicReviewPage,
   LiveWatchPage,
@@ -137,7 +136,6 @@ const App = () => (
               <Route path="/live/:token" element={<LiveWatchPage />} />
               <Route path="/g/:token" element={<PublicGallerySharePage />} />
               <Route path="/oauth/consent" element={<OAuthConsentPage />} />
-              <Route path="/accept-team-invite/:token" element={<AcceptTeamInvitePage />} />
               <Route path="/rsvp/:token" element={<PublicEventRsvpPage />} />
               {/* Planning-team feature removed when host portal mirrored
                   to mobile; outstanding invite links bounce to /. */}

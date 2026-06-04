@@ -106,9 +106,6 @@ export const NotificationSettingsPage = lazyWithReload(
 const importNotFound = () => import("@/pages/NotFound");
 export const NotFound = lazyWithReload(importNotFound);
 
-const importAcceptTeamInvite = () => import("@/pages/AcceptTeamInvitePage");
-export const AcceptTeamInvitePage = lazyWithReload(importAcceptTeamInvite);
-
 // ---------------- Customer (host) — mirrors mobile host tabs ----------------
 const importInquiries = () => import("@/pages/customer/InquiriesPage");
 export const InquiriesPage = lazyWithReload(importInquiries);
@@ -221,7 +218,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   },
   { pattern: "/vendors/:id", importer: importVendorDetail },
   { pattern: "/v/:slug", importer: importVendorDetail },
-  { pattern: "/accept-team-invite/:token", importer: importAcceptTeamInvite },
   // Customer — mirrors mobile host tabs (Explore / Inbox / Events / Profile + Settings)
   { pattern: "/customer/explore", importer: importCustomerExplore },
   { pattern: "/customer/inquiries", importer: importInquiries },
