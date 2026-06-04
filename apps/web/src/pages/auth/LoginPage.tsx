@@ -241,10 +241,9 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
 
     setLoading(false);
-    // Honor an explicit return URL first (e.g. team-invite / claim
-    // deep links land users here with ?next=/accept-team-invite/xxx
-    // or location.state.from set by RequireRole). Falls back to the
-    // role-appropriate dashboard otherwise.
+    // Honor an explicit return URL first (e.g. a claim deep link lands
+    // users here with ?next=/claim/xxx, or location.state.from set by
+    // RequireRole). Falls back to the role-appropriate dashboard otherwise.
     if (returnTo) {
       navigate(returnTo);
       return;
