@@ -3500,6 +3500,10 @@ function DocumentCanvas({
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendEmail, setSendEmail] = useState("");
+  // Which saved template the Send box will send. Mirrors the invoice Send
+  // box's "Select invoice…" dropdown — you Save a template, then pick it
+  // here and send it (the SAVED body is sent, not unsaved editor edits).
+  const [sendPickId, setSendPickId] = useState<string>("");
   const [sending, setSending] = useState(false);
   const initialRef = useRef({ name: "", body: "" });
   // Land directly in the composer instead of a bare list.
@@ -3579,12 +3583,16 @@ function DocumentCanvas({
     setBody(starter.content);
     initialRef.current = { name: "", body: starter.content };
     setEditingId("new");
+    // A brand-new, unsaved template can't be sent yet — clear the picker.
+    setSendPickId("");
   }
   function openEdit(row: DocTemplateRow) {
     setName(row.name);
     setBody(row.body);
     initialRef.current = { name: row.name, body: row.body };
     setEditingId(row.id);
+    // Pre-select the just-opened template in the Send box for convenience.
+    setSendPickId(row.id);
   }
   const dirty = name !== initialRef.current.name || body !== initialRef.current.body;
 
@@ -3595,21 +3603,29 @@ function DocumentCanvas({
       return;
     }
     setSaving(true);
+    // Track the saved row's id so we can keep the composer open on it and
+    // pre-select it in the Send box (mirrors saving an invoice draft).
+    let savedId: string | null = editingId !== "new" ? editingId : null;
     if (editingId === "new") {
       // First template for this kind becomes the default automatically.
       const makeDefault = rows.length === 0;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any).from(tableName).insert({
-        vendor_id: templateVendorId,
-        name: name.trim(),
-        body,
-        is_default: makeDefault,
-      });
+      const { data: inserted, error } = await (supabase as any)
+        .from(tableName)
+        .insert({
+          vendor_id: templateVendorId,
+          name: name.trim(),
+          body,
+          is_default: makeDefault,
+        })
+        .select("id")
+        .single();
       setSaving(false);
       if (error) {
         toast.error("Couldn't save", { description: error.message });
         return;
       }
+      savedId = (inserted as { id?: string } | null)?.id ?? null;
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
@@ -3624,7 +3640,11 @@ function DocumentCanvas({
     }
     toast.success(`${kindLabel} template saved`);
     initialRef.current = { name: name.trim(), body };
-    setEditingId(null);
+    // Stay on the saved template and arm the Send box with it.
+    if (savedId) {
+      setEditingId(savedId);
+      setSendPickId(savedId);
+    }
     await load();
   }, [templateVendorId, saving, name, body, editingId, rows.length, tableName, kindLabel, load]);
 
@@ -3659,30 +3679,42 @@ function DocumentCanvas({
         return;
       }
       toast.success("Template deleted");
+      // Clear the Send picker / composer if they pointed at the deleted row.
+      if (sendPickId === row.id) setSendPickId("");
+      if (editingId === row.id) openNew();
       await load();
     },
-    [tableName, load],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tableName, load, sendPickId, editingId],
   );
 
-  // Send the CURRENTLY-OPEN template to a typed recipient — same pattern as
-  // the invoice "Send to" box (manual send, consent-gated). Proposals create a
-  // shareable /proposal/<token> page (with the Accept button); contracts
-  // create a signable /sign/<token> instance bound to the typed email. Both
-  // email the client a button to the live page.
+  // Send a SAVED template to a typed recipient — mirrors the invoice
+  // "Send an invoice" box: pick a saved template from the dropdown, type
+  // the recipient, send. The saved body is sent (Save first to capture
+  // edits). Proposals create a shareable /proposal/<token> page (with the
+  // Accept button); contracts create a signable /sign/<token> instance
+  // bound to the typed email. Both email the client a button to the page.
   const sendDoc = useCallback(async () => {
     const to = sendEmail.trim();
     if (!templateVendorId || sending) return;
+    const tpl = rows.find((r) => r.id === sendPickId);
+    if (!tpl) {
+      toast.error(`Pick a ${kindLabel.toLowerCase()} to send`);
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       toast.error("Enter a valid email");
       return;
     }
-    if (!body.trim()) {
+    const docName = tpl.name.trim() || kindLabel;
+    const docBody = tpl.body;
+    if (!docBody.trim()) {
       toast.error("Nothing to send — add some content first");
       return;
     }
     // Warn if there are still unfilled merge fields (e.g. [Total Amount]) —
     // the chat editor warns too; this keeps the Workspace send consistent.
-    const placeholder = body.match(/\[[^\]]+\]/);
+    const placeholder = docBody.match(/\[[^\]]+\]/);
     if (
       placeholder &&
       !confirm(
@@ -3703,8 +3735,8 @@ function DocumentCanvas({
           .from("vendor_proposals")
           .insert({
             vendor_id: templateVendorId,
-            title: name.trim() || kindLabel,
-            body,
+            title: docName,
+            body: docBody,
           })
           .select("view_token")
           .single();
@@ -3723,8 +3755,8 @@ function DocumentCanvas({
           "create_sent_contract",
           {
             p_vendor_id: templateVendorId,
-            p_title: name.trim() || kindLabel,
-            p_body: body,
+            p_title: docName,
+            p_body: docBody,
             p_recipient_email: to,
           },
         );
@@ -3740,8 +3772,8 @@ function DocumentCanvas({
         body: {
           vendor_id: templateVendorId,
           kind,
-          name: name.trim() || kindLabel,
-          body,
+          name: docName,
+          body: docBody,
           to_email: to,
           ...(ctaUrl ? { cta_url: ctaUrl, cta_label: ctaLabel } : {}),
         },
@@ -3756,7 +3788,7 @@ function DocumentCanvas({
     } finally {
       setSending(false);
     }
-  }, [templateVendorId, sending, sendEmail, body, kind, name, kindLabel, navigate]);
+  }, [templateVendorId, sending, sendEmail, rows, sendPickId, kind, kindLabel, navigate]);
 
   const displayName = templateListing?.business_name?.trim() || "[Your Business Name]";
   const displayLocation = templateListing?.location?.trim() || "[City, State]";
@@ -3854,43 +3886,63 @@ function DocumentCanvas({
       <div className="space-y-4">
         {sentList}
 
-        {/* Send this document */}
-        <Card>
-          <div className="p-4 space-y-2">
-            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-              Send this {kindLabel.toLowerCase()}
+        {/* Send a saved template — mirrors the invoice "Send an invoice"
+            box: pick a saved template, type the recipient, Send. Hidden
+            until at least one template exists (Save one first), same as
+            the invoice send box. */}
+        {rows.length > 0 ? (
+          <Card>
+            <div className="p-4 space-y-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+                Send a {kindLabel.toLowerCase()}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {kind === "proposal"
+                  ? "Creates a shareable proposal page and emails the link — the client can review and accept it. Save first to keep your edits."
+                  : "Creates a signable contract and emails the link — the signing code goes to this email. Save first to keep your edits."}
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={sendPickId}
+                  onChange={(e) => setSendPickId(e.target.value)}
+                  className="rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none min-w-[150px]"
+                >
+                  <option value="">Select {kindLabel.toLowerCase()}…</option>
+                  {rows.map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.name}
+                      {row.is_default ? " (Default)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="email"
+                  inputMode="email"
+                  placeholder="Send to email…"
+                  value={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && sendPickId) void sendDoc();
+                  }}
+                  className="flex-1 min-w-[160px] rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
+                />
+                <Button
+                  size="sm"
+                  className="rounded-full shrink-0"
+                  onClick={() => sendPickId && void sendDoc()}
+                  disabled={!sendPickId || !sendEmail.trim() || sending}
+                >
+                  {sending ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  Send
+                </Button>
+              </div>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              {kind === "proposal"
-                ? "Creates a shareable proposal page and emails the link — the client can review and accept it. Save first to keep your edits."
-                : "Creates a signable contract and emails the link — the signing code goes to this email. Save first to keep your edits."}
-            </p>
-            <input
-              type="email"
-              inputMode="email"
-              placeholder="Send to email…"
-              value={sendEmail}
-              onChange={(e) => setSendEmail(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void sendDoc();
-              }}
-              className="w-full rounded-lg border-0 px-3 py-1.5 text-sm bg-background/60 ring-1 ring-foreground/10 focus:ring-foreground/30 outline-none"
-            />
-            <Button
-              size="sm"
-              className="rounded-full w-full"
-              onClick={() => void sendDoc()}
-              disabled={!sendEmail.trim() || sending}
-            >
-              {sending ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <Mail className="w-3.5 h-3.5 mr-1" />
-              )}
-              Send
-            </Button>
-          </div>
-        </Card>
+          </Card>
+        ) : null}
 
         {/* Saved templates library */}
         <Card>
