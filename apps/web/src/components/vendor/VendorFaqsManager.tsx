@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Vendor-side FAQ editor — vendor maintains their own structured Q&A
 // shown publicly on their profile. The public renderer (VendorFaqList
@@ -272,9 +273,11 @@ export function VendorFaqsManager({
 // block for rich results. Returns null when there's nothing to show.
 export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
   const [faqs, setFaqs] = useState<Array<{ q: string; a: string }>>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("vendor_faqs")
@@ -294,10 +297,14 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
           if (cancelled) return;
           // Quietly degrade if the table isn't deployed yet — the
           // public surface should never look broken to a host.
-          if (isTableMissingError(error)) return;
+          if (isTableMissingError(error)) {
+            setLoading(false);
+            return;
+          }
           setFaqs(
             (data ?? []).map((r) => ({ q: r.question, a: r.answer })),
           );
+          setLoading(false);
         },
       );
     return () => {
@@ -305,6 +312,17 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
     };
   }, [vendorId]);
 
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-10 w-72 mb-4" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
   if (faqs.length === 0) return null;
   return (
     <div>

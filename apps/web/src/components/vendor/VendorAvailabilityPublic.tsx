@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Public-facing availability calendar, Airbnb/Turo style. Combines:
 //   - one-off blocked dates (vendor_unavailable_dates)
@@ -112,7 +113,15 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
     return Array.from(set).map(parseDate);
   }, [oneOffBlocks, weeklyRules, bookedDates]);
 
-  if (!loaded) return null;
+  if (!loaded) {
+    return (
+      <div>
+        <Skeleton className="h-12 w-64 mb-4" />
+        <Skeleton className="h-4 w-80 mb-6" />
+        <Skeleton className="h-[280px] w-full max-w-md rounded-xl" />
+      </div>
+    );
+  }
   // Always render the availability section, even when the vendor has
   // never blocked anything — the calendar exists on every listing so
   // hosts learn to look here before sending an inquiry.
