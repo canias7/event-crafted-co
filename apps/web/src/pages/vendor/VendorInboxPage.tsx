@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Inbox, Loader2, Search, Sparkles } from "lucide-react";
-import { HiluxLogo } from "@/components/super-agents/AgentLogos";
+import { Inbox, Loader2, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,14 +9,6 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Input } from "@/components/ui/input";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { MySpaceToolToggles } from "@/components/super-agents/MySpaceToolToggles";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
@@ -127,7 +118,6 @@ export default function VendorInboxPage() {
   // anymore). We fetch it once for the logged-in user; the sparkle
   // pip on every inbox row reflects that single value.
   const [hiluxEnabled, setHiluxEnabled] = useState(false);
-  const [hiluxToggling, setHiluxToggling] = useState(false);
   // Lead-temperature filter pills. "all" = no filter.
   const [leadFilter, setLeadFilter] = useState<"all" | "hot" | "warm" | "cold">(
     "all",
@@ -236,27 +226,6 @@ export default function VendorInboxPage() {
     });
     setHasMore(full);
     setLoadingMore(false);
-  }
-
-  // Master HILUX toggle from the inbox header. Same field the
-  // settings page writes; we update profiles.hilux_enabled and
-  // bump local state optimistically.
-  async function toggleHilux() {
-    if (!user?.id || hiluxToggling) return;
-    const next = !hiluxEnabled;
-    setHiluxToggling(true);
-    setHiluxEnabled(next);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ hilux_enabled: next })
-      .eq("id", user.id);
-    setHiluxToggling(false);
-    if (error) {
-      setHiluxEnabled(!next);
-      toast.error("Couldn't toggle HILUX.");
-      return;
-    }
-    toast.success(next ? "HILUX is on" : "HILUX is off");
   }
 
   useEffect(() => {
@@ -375,34 +344,6 @@ export default function VendorInboxPage() {
               </p>
             </div>
             <div className="flex items-center gap-1">
-              {/* Auto-reply settings — used to live on the My Space
-                  page; moved here because the toggles are about inbox
-                  behavior, not the chatbox. Sheet trigger keeps the
-                  inbox surface uncluttered. */}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Auto-reply settings"
-                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-secondary/60 text-foreground/70 hover:text-foreground transition-colors"
-                  >
-                    <Bot className="w-4.5 h-4.5" />
-                  </button>
-                </SheetTrigger>
-                <SheetContent
-                  side="right"
-                  className="w-full sm:max-w-md overflow-y-auto"
-                >
-                  <SheetHeader>
-                    <SheetTitle className="font-editorial text-2xl">
-                      Auto-reply
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-4">
-                    <MySpaceToolToggles />
-                  </div>
-                </SheetContent>
-              </Sheet>
               <NotificationBell variant="light" />
             </div>
           </div>
@@ -454,47 +395,6 @@ export default function VendorInboxPage() {
                 </button>
               );
             })}
-
-            {/* HILUX on/off pill — the agent logo + an explicit
-                ON / OFF sign. One tap flips profiles.hilux_enabled
-                (same source of truth as the settings page). */}
-            <button
-              type="button"
-              onClick={toggleHilux}
-              disabled={hiluxToggling}
-              title={hiluxEnabled ? "Tap to turn HILUX off" : "Tap to turn HILUX on"}
-              className={`shrink-0 ml-auto inline-flex items-center gap-1.5 text-[12px] pl-1.5 pr-2 py-1 rounded-full border transition-colors disabled:opacity-60 ${
-                hiluxEnabled
-                  ? "border-zinc-300/60 text-zinc-800 hover:bg-zinc-100/50"
-                  : "border-white/50 text-foreground/65 hover:bg-white/55"
-              }`}
-              style={{
-                background: hiluxEnabled
-                  ? "rgba(0,0,0,0.05)"
-                  : "rgba(255, 255, 255, 0.4)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
-                boxShadow: "0 2px 10px -5px rgba(0,0,0,0.25)",
-              }}
-            >
-              <span className="w-4 h-4 rounded overflow-hidden ring-1 ring-black/5 shrink-0">
-                <HiluxLogo className="w-full h-full block" />
-              </span>
-              <span className="font-medium">HILUX 2.7</span>
-              {hiluxToggling ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <span
-                  className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                    hiluxEnabled
-                      ? "bg-emerald-600 text-white"
-                      : "bg-black/15 text-black/55"
-                  }`}
-                >
-                  {hiluxEnabled ? "On" : "Off"}
-                </span>
-              )}
-            </button>
           </div>
 
           {/* Scroll the conversation list inside a bounded height so it
@@ -667,8 +567,8 @@ function ConversationRow({
             {hiluxEnabled && !row.hilux_paused ? (
               <span
                 className="shrink-0 inline-flex items-center"
-                title="HILUX is answering for you"
-                aria-label="HILUX is answering for you"
+                title="My Space is answering for you"
+                aria-label="My Space is answering for you"
               >
                 <Sparkles className="w-3 h-3 text-accent" />
               </span>
