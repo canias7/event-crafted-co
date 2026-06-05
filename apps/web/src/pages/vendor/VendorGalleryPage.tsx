@@ -1414,7 +1414,7 @@ export default function VendorGalleryPage() {
                   ? isTrashView
                     ? "Trash is empty"
                     : "No matches"
-                  : `${filteredRows.length} image${filteredRows.length === 1 ? "" : "s"}${visibleCount < filteredRows.length ? ` · showing ${visibleCount}` : ""}`}
+                  : `${filteredRows.length} image${filteredRows.length === 1 ? "" : "s"}`}
               {isTrashView && filteredRows.length > 0 ? (
                 <span className="ml-2 text-xs">
                   · Items auto-delete after 30 days
