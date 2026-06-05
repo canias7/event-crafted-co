@@ -87,7 +87,6 @@ import {
   PublicReviewPage,
   LiveWatchPage,
   PublicGallerySharePage,
-  OAuthConsentPage,
 } from "@/router/lazyRoutes";
 
 const App = () => (
@@ -135,7 +134,6 @@ const App = () => (
               <Route path="/proposal/:token" element={<ProposalPage />} />
               <Route path="/live/:token" element={<LiveWatchPage />} />
               <Route path="/g/:token" element={<PublicGallerySharePage />} />
-              <Route path="/oauth/consent" element={<OAuthConsentPage />} />
               <Route path="/rsvp/:token" element={<PublicEventRsvpPage />} />
               {/* Planning-team feature removed when host portal mirrored
                   to mobile; outstanding invite links bounce to /. */}

@@ -110,8 +110,6 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.vendor-signup]
     verify_jwt = false
-  [functions.vendora-mcp]
-    verify_jwt = false
   [functions.my-space-chat]
     verify_jwt = true
   [functions.my-space-action-worker]

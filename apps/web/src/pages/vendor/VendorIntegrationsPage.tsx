@@ -1,11 +1,10 @@
 // Vendor integrations hub. Card grid of connectors grouped by
-// category. Two patterns are live:
+// category. Live:
 //
-//   1. Vendora MCP — inline PAT panel (existing VendoraMcpPanel).
-//   2. VendoraPay — KYC onboarding via vendorapay-onboard edge fn.
-//      White-labeled Stripe Connect; vendors never see the word
-//      "Stripe" on Vendora. VendoraPay is the sole payment
-//      integration on the platform.
+//   • VendoraPay — KYC onboarding via vendorapay-onboard edge fn.
+//     White-labeled Stripe Connect; vendors never see the word
+//     "Stripe" on Vendora. VendoraPay is the sole payment
+//     integration on the platform.
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -14,7 +13,6 @@ import {
   Check,
   ExternalLink,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,9 +21,8 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems } from "@/data/navItems";
-import { VendoraMcpPanel } from "@/components/super-agents/VendoraMcpPanel";
 
-type ConnectorKind = "mcp" | "vendorapay";
+type ConnectorKind = "vendorapay";
 
 interface BaseConnector {
   id: string;
@@ -35,16 +32,13 @@ interface BaseConnector {
   brand: React.ReactNode;
 }
 
-interface McpConnector extends BaseConnector {
-  kind: "mcp";
-}
 interface VendorapayConnector extends BaseConnector {
   // VendoraPay — white-labeled Stripe Connect onboarding. Calls
   // vendorapay-onboard which lives behind the payments.ts module.
   kind: "vendorapay";
 }
 
-type Connector = McpConnector | VendorapayConnector;
+type Connector = VendorapayConnector;
 
 function BrandMark({
   children,
@@ -82,19 +76,6 @@ const CONNECTORS: Connector[] = [
     ),
     kind: "vendorapay",
   },
-  {
-    id: "vendora-mcp",
-    name: "Claude (MCP)",
-    category: "AI assistants",
-    description:
-      "Manage listings, inquiries, and analytics via Claude with a personal access token.",
-    brand: (
-      <BrandMark bg="rgba(217,119,87,0.18)">
-        <Sparkles className="w-5 h-5" style={{ color: "#cf6e3a" }} />
-      </BrandMark>
-    ),
-    kind: "mcp",
-  },
 ];
 
 export default function VendorIntegrationsPage() {
@@ -109,7 +90,6 @@ export default function VendorIntegrationsPage() {
   // chargesEnabled = "the processor has flipped charges/transfers on
   // after KYC review." Both flow from get_vendor_payment_info RPC.
   const [chargesEnabled, setChargesEnabled] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
   // VendoraPay status — reuses the existing get_vendor_payment_info
@@ -220,8 +200,7 @@ export default function VendorIntegrationsPage() {
     return acc;
   }, {});
 
-  function statusOf(c: Connector): "connected" | "available" {
-    if (c.kind === "mcp") return "connected";
+  function statusOf(_c: Connector): "connected" | "available" {
     return vendorapayConnected ? "connected" : "available";
   }
 
@@ -257,7 +236,6 @@ export default function VendorIntegrationsPage() {
               <div className="space-y-2.5">
                 {items.map((c) => {
                   const status = statusOf(c);
-                  const isExpanded = expanded === c.id;
                   return (
                     <div
                       key={c.id}
@@ -294,20 +272,11 @@ export default function VendorIntegrationsPage() {
                         <ConnectorActionButton
                           connector={c}
                           acting={actingId === c.id}
-                          expanded={isExpanded}
-                          onExpand={() =>
-                            setExpanded(isExpanded ? null : c.id)
-                          }
                           onVendorapayConnect={handleVendorapayConnect}
                           onVendorapayDisconnect={handleVendorapayDisconnect}
                           vendorapayConnected={vendorapayConnected}
                         />
                       </div>
-                      {isExpanded && c.kind === "mcp" ? (
-                        <div className="border-t border-foreground/10 p-4 md:p-5">
-                          <VendoraMcpPanel />
-                        </div>
-                      ) : null}
                     </div>
                   );
                 })}
@@ -338,35 +307,18 @@ function StatusPill({
 }
 
 function ConnectorActionButton({
-  connector,
+  connector: _connector,
   acting,
-  expanded,
-  onExpand,
   onVendorapayConnect,
   onVendorapayDisconnect,
   vendorapayConnected,
 }: {
   connector: Connector;
   acting: boolean;
-  expanded: boolean;
-  onExpand: () => void;
   onVendorapayConnect: () => void;
   onVendorapayDisconnect: () => void;
   vendorapayConnected: boolean;
 }) {
-  if (connector.kind === "mcp") {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onExpand}
-        className="rounded-full"
-      >
-        {expanded ? "Hide" : "Manage"}
-      </Button>
-    );
-  }
-  // vendorapay
   if (vendorapayConnected) {
     return (
       <div className="flex items-center gap-2 shrink-0">
