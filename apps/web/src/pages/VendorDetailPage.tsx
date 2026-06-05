@@ -413,10 +413,14 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
-    // Multi-role: any non-admin can send an inquiry (including approved
-    // vendors planning their own events).
     if (profile.role === "admin") {
-      toast.info("Inquiries are sent from host or vendor accounts, not admin.");
+      toast.info("Inquiries are sent from host accounts, not admin.");
+      return;
+    }
+    // Vendors don't send inquiries to vendors — that contact goes through
+    // "Message vendor" (partner threads). Inquiries are host → vendor only.
+    if (isApprovedVendor) {
+      toast.info("Vendors connect through “Message vendor,” not inquiries.");
       return;
     }
     setInquiryPackageId(packageId ?? null);
@@ -854,14 +858,19 @@ export default function VendorDetailPage() {
 
                   {!isPreview && (
                     <>
-                      <Button
-                        onClick={() => handleInquiryClick()}
-                        disabled={authLoading}
-                        className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Send Inquiry
-                      </Button>
+                      {/* Inquiries are host → vendor only. Vendors don't
+                          see "Send Inquiry" — they reach other vendors via
+                          "Message vendor" below. */}
+                      {!isApprovedVendor && (
+                        <Button
+                          onClick={() => handleInquiryClick()}
+                          disabled={authLoading}
+                          className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          Send Inquiry
+                        </Button>
+                      )}
 
                       {/* "Message vendor" button is shown to every approved
                           vendor (listing or not — partner threads are keyed
@@ -944,8 +953,9 @@ export default function VendorDetailPage() {
 
       {!isPreview && <Footer />}
 
-      {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away */}
-      {!isPreview && (
+      {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away.
+          Hidden for vendors (inquiries are host → vendor only). */}
+      {!isPreview && !isApprovedVendor && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
           <div className="flex-1 min-w-0">
             <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
