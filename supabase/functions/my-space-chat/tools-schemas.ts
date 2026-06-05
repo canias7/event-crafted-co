@@ -382,26 +382,9 @@ const TOOLS = [
     },
   },
   {
-    name: "manage_package",
-    description:
-      "Add, update, or delete a vendor service package. WRITE ACTION — confirm name + price with the vendor first.",
-    input_schema: {
-      type: "object",
-      required: ["action"],
-      properties: {
-        action: { type: "string", enum: ["add", "update", "delete"] },
-        id: { type: "string", description: "Required for update/delete." },
-        name: { type: "string" },
-        description: { type: "string" },
-        price_usd: { type: "number" },
-        is_active: { type: "boolean" },
-      },
-    },
-  },
-  {
     name: "update_profile",
     description:
-      "Edit fields on the vendor's profile (business name, bio, location, category, base price, cancellation policy, deposit pct, policy notes). WRITE ACTION — confirm the change with the vendor first.",
+      "Edit fields on the vendor's profile (business name, bio, location, category, base price). WRITE ACTION — confirm the change with the vendor first.",
     input_schema: {
       type: "object",
       properties: {
@@ -410,9 +393,6 @@ const TOOLS = [
         location: { type: "string" },
         category: { type: "string" },
         base_price_usd: { type: "number" },
-        cancellation_policy: { type: "string" },
-        deposit_pct: { type: "integer", minimum: 0, maximum: 100 },
-        policy_notes: { type: "string" },
       },
     },
   },
@@ -540,14 +520,14 @@ const TOOLS = [
   {
     name: "get_sales_analytics",
     description:
-      "Numeric reports about the vendor's sales. Pick a report: 'summary' (total revenue + per-month breakdown — render as a chart); 'top_packages' (best-selling packages by paid-inquiry count); 'repeat_hosts' (hosts who booked more than once); 'funnel' (inquiries received → quotes sent → bookings confirmed over a window). Render with a fenced ```chart code block when the shape is bar/line/pie-friendly.",
+      "Numeric reports about the vendor's sales. Pick a report: 'summary' (total revenue + per-month breakdown — render as a chart); 'repeat_hosts' (hosts who booked more than once); 'funnel' (inquiries received → quotes sent → bookings confirmed over a window). Render with a fenced ```chart code block when the shape is bar/line/pie-friendly.",
     input_schema: {
       type: "object",
       required: ["report"],
       properties: {
         report: {
           type: "string",
-          enum: ["summary", "top_packages", "repeat_hosts", "funnel"],
+          enum: ["summary", "repeat_hosts", "funnel"],
         },
         since: {
           type: "string",
@@ -558,8 +538,7 @@ const TOOLS = [
           type: "integer",
           minimum: 1,
           maximum: 50,
-          description:
-            "Max rows for list-style reports ('top_packages', 'repeat_hosts').",
+          description: "Max rows for list-style reports ('repeat_hosts').",
         },
       },
     },

@@ -483,7 +483,6 @@ async function buildVendorSnapshot(
 
   const [
     { data: vendor },
-    { data: packages },
     { data: unavailable },
     { data: rules },
     { data: booked },
@@ -497,13 +496,6 @@ async function buildVendorSnapshot(
       .select("id, business_name, category, location, my_space_preferences")
       .eq("id", vendorId)
       .maybeSingle(),
-    admin
-      .from("vendor_packages")
-      .select("name, description, price_cents, display_order")
-      .eq("vendor_id", vendorId)
-      .eq("is_active", true)
-      .order("display_order", { ascending: true })
-      .limit(10),
     admin
       .from("vendor_unavailable_dates")
       .select("date")
@@ -578,7 +570,7 @@ async function buildVendorSnapshot(
       category: null,
       location: null,
     },
-    packages: (packages ?? []) as VendorSnapshot["packages"],
+    packages: [],
     calendar: {
       today: todayIso,
       horizonDays: CONTEXT_HORIZON_DAYS,
@@ -1722,12 +1714,11 @@ async function toolGetSalesAnalytics(
 ): Promise<unknown> {
   const report = String(input?.report ?? "").trim();
   if (report === "summary") return await toolGetSalesSummary(admin, vendorId, input);
-  if (report === "top_packages") return await toolGetTopPackages(admin, vendorId, input);
   if (report === "repeat_hosts") return await toolGetRepeatHosts(admin, vendorId, input);
   if (report === "funnel") return await toolGetConversionFunnel(admin, vendorId, input);
   return {
     error:
-      `unknown_report:${report}. Valid: summary, top_packages, repeat_hosts, funnel.`,
+      `unknown_report:${report}. Valid: summary, repeat_hosts, funnel.`,
   };
 }
 
@@ -1988,16 +1979,6 @@ async function toolUpdateProfile(
     if (Number.isFinite(p) && p >= 0) {
       patch.base_price_cents = Math.round(p * 100);
     }
-  }
-  if (input?.cancellation_policy !== undefined) {
-    patch.cancellation_policy = String(input.cancellation_policy);
-  }
-  if (input?.deposit_pct !== undefined) {
-    const d = Number(input.deposit_pct);
-    if (Number.isFinite(d) && d >= 0 && d <= 100) patch.deposit_pct = d;
-  }
-  if (input?.policy_notes !== undefined) {
-    patch.policy_notes = String(input.policy_notes);
   }
   if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
   const { data, error } = await admin
@@ -3624,9 +3605,6 @@ async function executeTool(
     }
     if (name === "manage_faq") {
       return await toolManageFaq(admin, vendorId, input);
-    }
-    if (name === "manage_package") {
-      return await toolManagePackage(admin, vendorId, input);
     }
     if (name === "update_profile") {
       return await toolUpdateProfile(admin, vendorId, input);
