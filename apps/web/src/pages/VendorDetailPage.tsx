@@ -193,12 +193,15 @@ export default function VendorDetailPage() {
     caption: string | null;
   }
   const [realPortfolio, setRealPortfolio] = useState<RealPortfolioItem[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
       setRealPortfolio([]);
+      setPortfolioLoading(false);
       return;
     }
     let cancelled = false;
+    setPortfolioLoading(true);
     supabase
       .from("vendor_portfolio_images")
       .select("storage_path, caption, display_order, created_at")
@@ -214,6 +217,7 @@ export default function VendorDetailPage() {
             caption: r.caption,
           }));
           setRealPortfolio(items);
+          setPortfolioLoading(false);
         });
     return () => {
       cancelled = true;
@@ -609,6 +613,23 @@ export default function VendorDetailPage() {
                       url={vendor.introVideoUrl}
                       title={`${vendor.name} intro`}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Portfolio skeleton while the parent fetch is in flight,
+                  so the section below the bio holds its shape instead of
+                  collapsing into a gap (the sticky sidebar otherwise
+                  towers over an empty column during load). */}
+              {vendor.isReal && portfolioLoading && (
+                <div>
+                  <p className="font-label text-accent mb-4">Portfolio</p>
+                  <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
                   </div>
                 </div>
               )}

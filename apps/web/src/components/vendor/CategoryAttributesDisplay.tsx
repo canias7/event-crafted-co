@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/format";
 import {
@@ -47,7 +48,22 @@ export function CategoryAttributesDisplay({
     };
   }, [vendorId, schema]);
 
-  if (!schema || !attrs) return null;
+  if (!schema) return null;
+  // Schema exists but the attrs fetch is still in flight — hold the
+  // layout with a skeleton so the section doesn't pop in late.
+  if (!attrs) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-9 w-64" />
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-24 rounded-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Skip sections scoped to other subs in the group, then keep only
   // those with at least one populated field.
