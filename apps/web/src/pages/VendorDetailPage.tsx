@@ -160,6 +160,13 @@ export default function VendorDetailPage() {
   // (top nav, "Back to directory" link, "More from this vendor" rail,
   // footer, and the mobile sticky inquiry bar) and show only the body.
   const isPreview = searchParams.get("preview") === "1";
+  // Reset scroll to the top whenever the listing changes. Without this,
+  // clicking a card in "Their other listings" (which lives at the bottom)
+  // navigates to the new listing but leaves the viewer scrolled at the
+  // bottom — so it reads as "the images just changed" instead of opening.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [id, slug]);
   const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
