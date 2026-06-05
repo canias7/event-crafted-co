@@ -113,7 +113,7 @@ export default function VendorCityCategoryPage() {
   );
 
   const title = `${config.display} in ${cityLabel} — Vendora`;
-  const description = `Hand-vetted ${config.display.toLowerCase()} in ${cityLabel}. Browse pricing, packages, real reviews, and book the right ${config.name.toLowerCase()} for your event through Vendora.`;
+  const description = `Hand-vetted ${config.display.toLowerCase()} in ${cityLabel}. Browse pricing, real reviews, and book the right ${config.name.toLowerCase()} for your event through Vendora.`;
 
   useDocumentMeta({
     title,

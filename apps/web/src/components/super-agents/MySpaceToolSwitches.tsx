@@ -198,17 +198,12 @@ const TOOL_GROUPS: ToolGroup[] = [
       {
         name: "update_profile",
         label: "Edit profile",
-        desc: "Edit your business name, bio, location, pricing, or policies.",
+        desc: "Edit your business name, bio, location, or pricing.",
       },
       {
         name: "manage_faq",
         label: "Manage FAQs",
         desc: "Add, edit, or remove your FAQ entries.",
-      },
-      {
-        name: "manage_package",
-        label: "Manage packages",
-        desc: "Add, edit, or remove your service packages.",
       },
       {
         name: "manage_knowledge",

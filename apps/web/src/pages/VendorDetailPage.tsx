@@ -877,7 +877,7 @@ export default function VendorDetailPage() {
                     ${vendor.startingPrice.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-6">
-                    Final pricing depends on date, package, and event details.
+                    Final pricing depends on the date and event details.
                   </p>
 
                   <div className="space-y-3 mb-6">
