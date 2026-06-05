@@ -81,7 +81,6 @@ import heroBeach from "@/assets/hero/beach.jpg?as=picture";
 import heroWedding from "@/assets/hero/wedding.jpg?as=picture";
 import heroEngagement from "@/assets/hero/engagement.jpg?as=picture";
 import { ReportButton } from "@/components/trust/ReportButton";
-import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
 import { SilentErrorBoundary } from "@/components/shared/SilentErrorBoundary";
@@ -382,76 +381,6 @@ export default function VendorDetailPage() {
         conversationReviews.length
       : 0;
 
-  // Pricing packages (active only, sorted by display_order then price).
-  interface VendorPackage {
-    id: string;
-    name: string;
-    description: string | null;
-    price_cents: number;
-    includes: string[];
-  }
-  const [packages, setPackages] = useState<VendorPackage[]>([]);
-  // package_id → { avg, count } from released event reviews on
-  // inquiries tagged with that package. View handles RLS + 14-day
-  // grace; missing packages just render without a rating.
-  const [packageRatings, setPackageRatings] = useState<
-    Record<string, { avg: number; count: number }>
-  >({});
-  useEffect(() => {
-    if (!vendor || !vendor.isReal) {
-      setPackages([]);
-      setPackageRatings({});
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from("vendor_packages")
-      .select("id, name, description, price_cents, includes, display_order")
-      .eq("vendor_id", vendor.id)
-      .eq("is_active", true)
-      .order("display_order", { ascending: true })
-      .order("price_cents", { ascending: true })
-      .then(({ data }) => {
-        if (cancelled) return;
-        const pkgs = (data as VendorPackage[] | null) ?? [];
-        setPackages(pkgs);
-        if (pkgs.length === 0) {
-          setPackageRatings({});
-          return;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("package_rating_summary")
-          .select("package_id, avg_rating, review_count")
-          .in(
-            "package_id",
-            pkgs.map((p) => p.id),
-          )
-          .then(
-            ({
-              data: stats,
-            }: {
-              data:
-                | { package_id: string; avg_rating: number; review_count: number }[]
-                | null;
-            }) => {
-              if (cancelled) return;
-              const map: Record<string, { avg: number; count: number }> = {};
-              for (const s of stats ?? []) {
-                map[s.package_id] = {
-                  avg: Number(s.avg_rating),
-                  count: s.review_count,
-                };
-              }
-              setPackageRatings(map);
-            },
-          );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [vendor]);
-
   // Per-vendor title + OG/Twitter card so social shares of vendor URLs
   // unfurl with the hero image + name + category.
   useDocumentMeta(
@@ -651,82 +580,6 @@ export default function VendorDetailPage() {
                   + italic-serif name + stat strip. Mirrors the mobile
                   vendor profile sheet identity hero. */}
               {vendor.isReal && <VendorBrandCard vendorId={vendor.id} />}
-
-              {/* Packages — only rendered when the vendor has actually
-                  published at least one. No empty-state copy; absence
-                  of packages just hides the section. */}
-              {packages.length > 0 && (
-                <div>
-                  <p className="font-label text-accent mb-4">Packages</p>
-                  <h2 className="font-editorial text-4xl mb-8">
-                    {packages.length === 1
-                      ? "Available package"
-                      : `${packages.length} ways to work together`}
-                  </h2>
-                  <div className={`grid gap-4 ${packages.length >= 3 ? "md:grid-cols-3" : packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md"}`}>
-                    {packages.map((pkg, i) => {
-                      const featured = packages.length >= 2 && i === Math.floor(packages.length / 2);
-                      const stats = packageRatings[pkg.id];
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`relative rounded-sm p-6 border transition-colors flex flex-col ${
-                            featured
-                              ? "border-accent bg-accent/5"
-                              : "border-border bg-card"
-                          }`}
-                        >
-                          {featured && (
-                            <Badge className="absolute -top-2.5 left-6 bg-accent text-accent-foreground">
-                              Most popular
-                            </Badge>
-                          )}
-                          <p className="font-label text-muted-foreground mb-2">
-                            {pkg.name}
-                          </p>
-                          <p className="font-editorial text-3xl mb-3 tnum">
-                            ${(pkg.price_cents / 100).toLocaleString()}
-                          </p>
-                          {stats && stats.count > 0 && (
-                            <div className="flex items-center gap-1.5 mb-3 text-xs">
-                              <Star className="w-3.5 h-3.5 fill-accent text-accent" />
-                              <span className="font-medium tnum">
-                                {stats.avg.toFixed(1)}
-                              </span>
-                              <span className="text-muted-foreground">
-                                ({stats.count})
-                              </span>
-                            </div>
-                          )}
-                          {pkg.description && (
-                            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                              {pkg.description}
-                            </p>
-                          )}
-                          {pkg.includes.length > 0 && (
-                            <ul className="space-y-2.5">
-                              {pkg.includes.map((f, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm">
-                                  <Check className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
-                                  <span className="text-foreground/85">{f}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          <Button
-                            onClick={() => handleInquiryClick(pkg.id)}
-                            disabled={authLoading}
-                            variant={featured ? "default" : "outline"}
-                            className="mt-5 rounded-full"
-                          >
-                            Inquire about this
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               {/* Intro video — optional, only when vendor sets one */}
               {vendor.introVideoUrl && (
@@ -1097,15 +950,6 @@ export default function VendorDetailPage() {
                   Vendora doesn't accept money to influence search ranking. Vendors
                   appear based on fit and review quality, not ad spend.
                 </div>
-
-                {vendor.isReal && (
-                  <VendorPolicyBadges
-                    depositPct={vendor.depositPct}
-                    cancellationPolicy={vendor.cancellationPolicy}
-                    rescheduleWindowDays={vendor.rescheduleWindowDays}
-                    policyNotes={vendor.policyNotes}
-                  />
-                )}
 
                 {vendor.isReal && !isPreview && (
                   <div className="text-center pt-1">
