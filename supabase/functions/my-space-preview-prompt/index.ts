@@ -1,7 +1,7 @@
-// Returns the actual system prompt HILUX would use for the caller's
+// Returns the actual system prompt My Space would use for the caller's
 // vendor listing. Used by the AI Super Agents page to display the
 // prompt next to the toggle controls — gives vendors transparency
-// into what HILUX is told.
+// into what My Space is told.
 //
 // Auth: vendor JWT. Resolves the caller's primary listing
 // automatically (highest-tier listing they own).
@@ -120,7 +120,7 @@ serve(async (req: Request) => {
       business_name: ctx.vendor.business_name,
     });
   } catch (err) {
-    console.error("[hilux-preview-prompt] uncaught", err);
+    console.error("[my-space-preview-prompt] uncaught", err);
     return json(500, { error: err instanceof Error ? err.message : String(err) });
   }
 });

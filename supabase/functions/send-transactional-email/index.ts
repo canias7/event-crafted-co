@@ -69,15 +69,6 @@ interface VendorDecisionPayload {
   reviewNotes?: string | null;
 }
 
-interface ReengagementPayload {
-  to: string;
-  vendorBusinessName: string;
-  hostDisplayName: string;
-  occasion: string;
-  eventType: string;
-  upcomingDate: string;
-  inquiryId: string;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -117,9 +108,6 @@ serve(async (req) => {
       if (e) emails = [e];
     } else if (kind === "new_inquiry") {
       emails = await newInquiryEmails(body as NewInquiryPayload);
-    } else if (kind === "reengagement_opportunity") {
-      const e = reengagementEmail(body as ReengagementPayload);
-      if (e) emails = [e];
     } else if (
       kind === "vendor_approved" ||
       kind === "vendor_rejected" ||
@@ -307,7 +295,6 @@ async function vendorDecisionEmail(
   if (!email) return null;
   const row = { business_name: businessName ?? "Your business", user_id: userId };
 
-  const link = `${APP_URL}/vendor/dashboard`;
   const business = escape(row.business_name);
   const reasonLine = p.reviewNotes
     ? `<p style="margin:0 0 16px;color:#555;"><strong>Reviewer notes:</strong> ${escape(p.reviewNotes)}</p>`
@@ -317,7 +304,6 @@ async function vendorDecisionEmail(
     const body = `
       <p style="margin:0 0 16px;">Welcome to Vendora! Your application for <strong>${business}</strong> has been approved.</p>
       <p style="margin:0 0 24px;">Sign in to finish setting up your listing — pricing, location, packages, photos. When you're ready, publish it and we'll review the final listing one more time before it goes live in the public directory.</p>
-      <p style="margin:0 0 24px;">${button(link, "Sign in to your dashboard")}</p>
       <p style="margin:0;font-size:13px;color:#777;">Welcome aboard.</p>`;
     return {
       to: email,
@@ -328,7 +314,7 @@ async function vendorDecisionEmail(
 
   if (decision === "vendor_rejected") {
     const body = `
-      <p style="margin:0 0 16px;">Thanks for applying to list <strong>${business}</strong> on Vendora. After review, we're not able to approve this application at the moment.</p>
+      <p style="margin:0 0 16px;">Thank you for applying to list <strong>${business}</strong> on Vendora — we really appreciate you taking the time, and the chance to learn about your business.</p>
       ${reasonLine}
       <p style="margin:0 0 16px;">If you'd like to address the feedback and reapply, you're welcome to submit again from the same email.</p>
       <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
@@ -343,7 +329,6 @@ async function vendorDecisionEmail(
     const body = `
       <p style="margin:0 0 16px;">Your latest listing update for <strong>${business}</strong> has been approved and is now live in the Vendora directory.</p>
       <p style="margin:0 0 24px;">Hosts browsing your category will see your updated profile, pricing, and photos. Inquiries flow to your inbox as usual.</p>
-      <p style="margin:0 0 24px;">${button(link, "Open your dashboard")}</p>
       <p style="margin:0;font-size:13px;color:#777;">Thanks for keeping your listing fresh.</p>`;
     return {
       to: email,
@@ -357,7 +342,6 @@ async function vendorDecisionEmail(
     <p style="margin:0 0 16px;">Your latest listing update for <strong>${business}</strong> wasn't approved. Your previously approved listing is still live — only the new changes are paused.</p>
     ${reasonLine}
     <p style="margin:0 0 16px;">Sign in, address the feedback, and re-publish whenever you're ready.</p>
-    <p style="margin:0 0 24px;">${button(link, "Open your dashboard")}</p>
     <p style="margin:0;font-size:13px;color:#777;">Questions? Reply to this email and our team will get back to you.</p>`;
   return {
     to: email,
@@ -397,31 +381,6 @@ async function vendorAppliedEmail(p: VendorAppliedPayload) {
     to: email,
     subject: "Thanks for applying to Vendora",
     html: shellHtml("Application received", body),
-  };
-}
-
-function reengagementEmail(p: ReengagementPayload) {
-  const eventTypeLabel = p.eventType.replace(/_/g, " ");
-  const upcoming = new Date(p.upcomingDate).toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-  const inboxLink = `${APP_URL}/vendor/inbox/${p.inquiryId}`;
-  const body = `
-    <p style="margin:0 0 16px;">${escape(p.hostDisplayName)}'s <strong>${escape(p.occasion)}</strong> is coming up on <strong>${escape(upcoming)}</strong>.</p>
-    <p style="margin:0 0 16px;">You worked together on a ${escape(eventTypeLabel)} — a quick "thinking of you" message right now is the kind of touch that turns a one-time client into a long-term one. Possible follow-ups:</p>
-    <ul style="margin:0 0 24px;padding-left:18px;color:#3a3a3a;font-size:14px;line-height:1.7;">
-      <li>An anniversary photo session or vow renewal</li>
-      <li>A milestone party (birthday, anniversary celebration, family gathering)</li>
-      <li>Holiday-season rebooking or referral to a friend</li>
-    </ul>
-    <p style="margin:0 0 24px;">${button(inboxLink, "Open the original conversation")}</p>
-    <p style="margin:0;font-size:13px;color:#777;">You're getting this because Vendora detects re-engagement opportunities for past clients automatically. Manage notification preferences in <a href="${APP_URL}/settings" style="color:#a08259;">Settings</a>.</p>`;
-  return {
-    to: p.to,
-    subject: `${p.hostDisplayName}'s ${p.occasion} is in 30 days`,
-    html: shellHtml(`Reach out to ${escape(p.hostDisplayName)}`, body),
   };
 }
 

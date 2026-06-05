@@ -47,20 +47,6 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.geocode-vendor]
     verify_jwt = true
-  [functions.hilux-archive-cold]
-    verify_jwt = false
-  [functions.hilux-draft-reply]
-    verify_jwt = true
-  [functions.hilux-follow-up]
-    verify_jwt = false
-  [functions.hilux-preview-prompt]
-    verify_jwt = true
-  [functions.hilux-regenerate]
-    verify_jwt = true
-  [functions.hilux-respond]
-    verify_jwt = false
-  [functions.hilux-sandbox]
-    verify_jwt = true
   [functions.stripe-billing-info]
     verify_jwt = true
   [functions.stripe-change-tier]
@@ -124,11 +110,19 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.vendor-signup]
     verify_jwt = false
-  [functions.vendora-mcp]
-    verify_jwt = false
   [functions.my-space-chat]
     verify_jwt = true
   [functions.my-space-action-worker]
     verify_jwt = false
+  [functions.my-space-archive-cold]
+    verify_jwt = false
+  [functions.my-space-daily-summary]
+    verify_jwt = false
+  [functions.my-space-follow-up]
+    verify_jwt = false
+  [functions.my-space-preview-prompt]
+    verify_jwt = true
   [functions.my-space-proactive]
+    verify_jwt = false
+  [functions.my-space-respond]
     verify_jwt = false

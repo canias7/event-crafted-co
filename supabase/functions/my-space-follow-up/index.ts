@@ -1,7 +1,7 @@
-// HILUX follow-up scanner. Daily cron. Skips threads where the
+// My Space follow-up scanner. Daily cron. Skips threads where the
 // owner profile has hilux_enabled = false. The per-toggle pacing
 // switch was retired (migration 20260522070000) — follow-up is now
-// permanent agent behavior on every HILUX-enabled thread.
+// permanent agent behavior on every My Space-enabled thread.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -40,7 +40,7 @@ function ok(extra: Record<string, unknown> = {}) {
 }
 
 function log(...args: unknown[]) {
-  console.log("[hilux-follow-up]", ...args);
+  console.log("[my-space-follow-up]", ...args);
 }
 
 serve(async (req) => {
@@ -54,7 +54,7 @@ serve(async (req) => {
     const maxAgeIso = new Date(now - MAX_AGE_DAYS * 86400000).toISOString();
     const cooldownIso = new Date(now - COOLDOWN_DAYS * 86400000).toISOString();
 
-    // Candidate threads = HILUX-enabled vendor + thread not paused +
+    // Candidate threads = My Space-enabled vendor + thread not paused +
     // last activity in our nudge window. The hilux_enabled gate is
     // applied per-thread below via loadVendorContext (joining through
     // profiles in this SELECT would be hairy).
@@ -237,14 +237,14 @@ serve(async (req) => {
             thread.id,
             `insert_failed: ${insertErr.message ?? String(insertErr)}`,
           );
-          console.error("[hilux-follow-up] insert failed", insertErr);
+          console.error("[my-space-follow-up] insert failed", insertErr);
           skipped++;
           skipReasons.insert_error = (skipReasons.insert_error ?? 0) + 1;
           continue;
         }
         nudged++;
       } catch (innerErr) {
-        console.error("[hilux-follow-up] thread loop error", thread.id, innerErr);
+        console.error("[my-space-follow-up] thread loop error", thread.id, innerErr);
         skipped++;
         skipReasons.exception = (skipReasons.exception ?? 0) + 1;
       }
@@ -253,7 +253,7 @@ serve(async (req) => {
     log("done", { candidates: (candidates ?? []).length, nudged, skipped, skipReasons });
     return ok({ candidates: (candidates ?? []).length, nudged, skipped, skipReasons });
   } catch (err) {
-    console.error("[hilux-follow-up] uncaught:", err);
+    console.error("[my-space-follow-up] uncaught:", err);
     return ok({ error: err instanceof Error ? err.message : String(err) });
   }
 });

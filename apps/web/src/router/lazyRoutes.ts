@@ -45,9 +45,6 @@ export const LiveWatchPage = lazyWithReload(importLiveWatch);
 const importPublicGalleryShare = () => import("@/pages/PublicGallerySharePage");
 export const PublicGallerySharePage = lazyWithReload(importPublicGalleryShare);
 
-const importOAuthConsent = () => import("@/pages/oauth/OAuthConsentPage");
-export const OAuthConsentPage = lazyWithReload(importOAuthConsent);
-
 
 const importVendorDetail = () => import("@/pages/VendorDetailPage");
 export const VendorDetailPage = lazyWithReload(importVendorDetail);

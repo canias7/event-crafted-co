@@ -1,4 +1,4 @@
-// HILUX v1.8 — vendor-side auto-reply, profile-scoped config.
+// My Space v1.8 — vendor-side auto-reply, profile-scoped config.
 //
 // Trigger fires on host-message insert. We sleep 2s for debounce,
 // then re-check that the message is still the latest. If still
@@ -7,7 +7,7 @@
 // or escalate (a notification per vendor team member). Either way
 // we clear the typing indicator at the end.
 //
-// HILUX config (enabled, instructions, voice, action toggles) lives
+// My Space config (enabled, instructions, voice, action toggles) lives
 // on the OWNER profile, not the listing — see _shared/hilux-prompt.ts
 // loadVendorContext().
 
@@ -32,6 +32,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+// My Space emails are temporarily disabled while the feature is being reworked.
+// Flip to false to restore the "Action needed — handed you a conversation"
+// handoff email. (My Space's in-app handoff + auto-reply still function.)
+const MY_SPACE_EMAILS_DISABLED = true;
 const EMAIL_FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
 const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
@@ -55,7 +59,7 @@ function ok(extra: Record<string, unknown> = {}) {
 }
 
 function log(...args: unknown[]) {
-  console.log("[hilux-respond]", ...args);
+  console.log("[my-space-respond]", ...args);
 }
 
 function sleep(ms: number) {
@@ -109,11 +113,11 @@ serve(async (req) => {
 
     // Pacing-level skip. Short-circuits BEFORE we touch typing
     // indicators or Claude, so a deferred thread never shows
-    // "HILUX is typing..." and we never spend API tokens.
+    // "My Space is typing..." and we never spend API tokens.
 
     // Skip if the vendor was active in this thread in the last 30 min.
-    // "Active" = posted a non-HILUX-generated message. If the vendor
-    // is handling the conversation themselves, HILUX defers.
+    // "Active" = posted a non-My Space-generated message. If the vendor
+    // is handling the conversation themselves, My Space defers.
     const cutoffIso = new Date(Date.now() - 30 * 60_000).toISOString();
     const { data: recentVendor } = await admin
       .from("direct_messages")
@@ -127,7 +131,7 @@ serve(async (req) => {
       return ok({ skipped: "vendor_active_in_thread" });
     }
 
-    // Reply cap: when capRepliesPerInquiry is on, HILUX backs off
+    // Reply cap: when capRepliesPerInquiry is on, My Space backs off
     // after 6 of its own replies in this thread. The vendor handles
     // the rest. Prevents runaway loops on hosts who keep messaging.
     if (ctx.profile.actions.capRepliesPerInquiry) {
@@ -219,9 +223,9 @@ serve(async (req) => {
       hostFirstName = raw.length > 0 ? raw.split(/\s+/)[0] : null;
     }
 
-    // First reply iff HILUX has not spoken in this thread before.
+    // First reply iff My Space has not spoken in this thread before.
     // We key off is_hilux_generated (not sender_role === "vendor")
-    // so a manual vendor reply doesn't suppress HILUX's greeting
+    // so a manual vendor reply doesn't suppress My Space's greeting
     // line when it later picks up the conversation.
     const isFirstReply = !orderedHistory.some(
       (m) => (m as { is_hilux_generated?: boolean }).is_hilux_generated === true,
@@ -255,7 +259,7 @@ serve(async (req) => {
 
     // Charge credits BEFORE the Claude call. Refunded if the call
     // throws so a flaky Anthropic response doesn't bill the vendor.
-    // Out of credits = HILUX stays silent on this thread; the host
+    // Out of credits = My Space stays silent on this thread; the host
     // just doesn't get an auto-reply. (Vendor sees this in the UI
     // balance widget and the activity log once Phase 4 lands.)
     const consume = await consumeCredits(
@@ -291,7 +295,7 @@ serve(async (req) => {
     }
     // Token accumulator: every Claude call below (scoring, intent,
     // field extraction) adds its usage to this so the per-host-msg
-    // cost we log reflects the full HILUX spend, not just the reply.
+    // cost we log reflects the full My Space spend, not just the reply.
     const totalUsage: ClaudeUsage = { ...replyUsage };
     const addUsage = (u: ClaudeUsage | undefined) => {
       if (!u) return;
@@ -301,7 +305,7 @@ serve(async (req) => {
       totalUsage.cache_read_tokens += u.cache_read_tokens;
     };
 
-    // Audit log: write one row per HILUX action (reply / escalate).
+    // Audit log: write one row per My Space action (reply / escalate).
     // Used by the vendor's activity view + the MCP connector's
     // get_action_log tool. Best-effort. The usage argument carries
     // Anthropic token counts for cost view.
@@ -324,7 +328,7 @@ serve(async (req) => {
         cache_creation_tokens: usage?.cache_creation_tokens ?? null,
         cache_read_tokens: usage?.cache_read_tokens ?? null,
       });
-      if (error) console.error("[hilux-respond] action log insert failed", error);
+      if (error) console.error("[my-space-respond] action log insert failed", error);
     };
 
     const scoreInquiryAfter = async () => {
@@ -363,7 +367,7 @@ serve(async (req) => {
             },
             { onConflict: "inquiry_id" },
           );
-        if (scoreErr) console.error("[hilux-respond] lead_score update failed", scoreErr);
+        if (scoreErr) console.error("[my-space-respond] lead_score update failed", scoreErr);
 
         // Lead just turned hot (was not hot before). Log it for the
         // daily summary + activity feed regardless of the notify
@@ -380,23 +384,23 @@ serve(async (req) => {
             const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
               user_id: m.user_id,
               type: "hilux_hot_lead",
-              title: "Hot lead — HILUX flagged this one",
+              title: "Hot lead — My Space flagged this one",
               body: result.reason || "Host is ready to book.",
               link: inquiryPath,
             }));
             if (rows.length > 0) {
               const { error: nerr } = await admin.from("notifications").insert(rows);
-              if (nerr) console.error("[hilux-respond] hot-lead notify failed", nerr);
+              if (nerr) console.error("[my-space-respond] hot-lead notify failed", nerr);
             }
           }
         }
       } catch (err) {
-        console.error("[hilux-respond] lead_score error", err);
+        console.error("[my-space-respond] lead_score error", err);
       }
     };
 
     // The only silent step-aside left is the frustrated-host
-    // handoff. HILUX outputs ESCALATE: only when detectFrustration
+    // handoff. My Space outputs ESCALATE: only when detectFrustration
     // is on; for everything else it always replies (offering to
     // loop in the team when it can't answer). If detectFrustration
     // is off and ESCALATE slips out anyway, we ignore the token and
@@ -407,7 +411,7 @@ serve(async (req) => {
     if (escalateMatch) {
       const reason = escalateMatch[1].trim().slice(0, 200);
       const preview = (triggeringMessage.body ?? "").slice(0, 120);
-      const title = "Upset host — HILUX handed this to you";
+      const title = "Upset host — My Space handed this to you";
       const body = `${preview}${triggeringMessage.body.length > 120 ? "…" : ""} — reason: ${reason}`;
       let notified = 0;
       const { data: members } = await admin
@@ -424,15 +428,15 @@ serve(async (req) => {
       }));
       if (rows.length > 0) {
         const { error: notifErr } = await admin.from("notifications").insert(rows);
-        if (notifErr) console.error("[hilux-respond] notification insert failed", notifErr);
+        if (notifErr) console.error("[my-space-respond] notification insert failed", notifErr);
       }
       notified = rows.length;
 
       // Action-required email. An escalation is the most
-      // time-sensitive HILUX event — a host is waiting and the
+      // time-sensitive My Space event — a host is waiting and the
       // agent stepped aside — so we email the vendor team
       // immediately, not just the in-app bell. Best-effort.
-      if (RESEND_API_KEY) {
+      if (RESEND_API_KEY && !MY_SPACE_EMAILS_DISABLED) {
         try {
           const vendorName = ctx.vendor.business_name ?? "your business";
           const threadLink = `${APP_URL}${inquiryPath}`;
@@ -449,7 +453,7 @@ serve(async (req) => {
               body: JSON.stringify({
                 from: EMAIL_FROM_ADDRESS,
                 to,
-                subject: `Action needed — HILUX handed you a conversation`,
+                subject: `Action needed — My Space handed you a conversation`,
                 html: escalationEmailHtml({
                   vendorName,
                   hostFirstName,
@@ -461,13 +465,13 @@ serve(async (req) => {
             });
             if (!send.ok) {
               console.error(
-                "[hilux-respond] escalation email failed",
+                "[my-space-respond] escalation email failed",
                 await send.text(),
               );
             }
           }
         } catch (err) {
-          console.error("[hilux-respond] escalation email error", err);
+          console.error("[my-space-respond] escalation email error", err);
         }
       }
       log("hilux escalated", { thread: threadId, reason, notified });
@@ -518,10 +522,10 @@ serve(async (req) => {
         .update({ status: "replied" })
         .eq("id", thread.inquiry_id)
         .eq("status", "new");
-      if (statusErr) console.error("[hilux-respond] auto-mark replied failed", statusErr);
+      if (statusErr) console.error("[my-space-respond] auto-mark replied failed", statusErr);
     }
 
-    // Notify the vendor team that HILUX just replied on their
+    // Notify the vendor team that My Space just replied on their
     // behalf. Default OFF — most vendors don't want a push every
     // time. Notification type 'hilux_reply' so the bell can group
     // these separately from real direct-message pings.
@@ -533,13 +537,13 @@ serve(async (req) => {
       const rows = ((members ?? []) as Array<{ user_id: string }>).map((m) => ({
         user_id: m.user_id,
         type: "hilux_reply",
-        title: "HILUX replied for you",
+        title: "My Space replied for you",
         body: sanitized.slice(0, 140),
         link: inquiryPath,
       }));
       if (rows.length > 0) {
         const { error: notifErr } = await admin.from("notifications").insert(rows);
-        if (notifErr) console.error("[hilux-respond] notify failed", notifErr);
+        if (notifErr) console.error("[my-space-respond] notify failed", notifErr);
       }
     }
 
@@ -550,7 +554,7 @@ serve(async (req) => {
     await clearTyping();
     return ok({ replied: true, length: sanitized.length });
   } catch (err) {
-    console.error("[hilux-respond] uncaught:", err);
+    console.error("[my-space-respond] uncaught:", err);
     await clearTyping();
     return ok({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -581,17 +585,17 @@ function escalationEmailHtml(args: {
   return `<!doctype html>
 <html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #111;">
   <div style="display:inline-block;background:#fef2f2;color:#b91c1c;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 10px;border-radius:999px;margin-bottom:14px;">Action needed</div>
-  <p style="font-size:15px;margin:0 0 18px;"><strong>${hostLabel}</strong> sounds upset, so HILUX stepped aside on a conversation for <strong>${escapeHtml(args.vendorName)}</strong> — <strong>they need a personal reply from you.</strong></p>
+  <p style="font-size:15px;margin:0 0 18px;"><strong>${hostLabel}</strong> sounds upset, so My Space stepped aside on a conversation for <strong>${escapeHtml(args.vendorName)}</strong> — <strong>they need a personal reply from you.</strong></p>
   <p style="margin:0 0 24px;"><a href="${escapeHtml(args.threadLink)}" style="background:#b91c1c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;display:inline-block;font-weight:600;font-size:15px;">Reply to the host →</a></p>
   <div style="border-left:3px solid #ddd;padding:8px 16px;margin:0 0 16px;color:#555;">
     <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${hostLabel} wrote</div>
     <div>${hostBody}</div>
   </div>
   <div style="border-left:3px solid #b91c1c;padding:8px 16px;margin:0 0 20px;">
-    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;color:#b91c1c;">Why HILUX escalated</div>
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;color:#b91c1c;">Why My Space escalated</div>
     <div>${reason}</div>
   </div>
   <p style="margin:0;"><a href="${escapeHtml(args.threadLink)}" style="color:#b91c1c;font-weight:600;text-decoration:none;">Open the conversation →</a></p>
-  <p style="color:#999;font-size:11px;margin-top:24px;">HILUX did not send a reply — the conversation is waiting on you. You're getting this because the "Notify me when HILUX escalates" toggle is on.</p>
+  <p style="color:#999;font-size:11px;margin-top:24px;">My Space did not send a reply — the conversation is waiting on you. You're getting this because the "Notify me when My Space escalates" toggle is on.</p>
 </body></html>`;
 }

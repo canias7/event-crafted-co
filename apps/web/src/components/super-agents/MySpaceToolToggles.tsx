@@ -207,7 +207,7 @@ export function MySpaceToolToggles() {
       setPromptError(null);
       (async () => {
         const { data, error } = await supabase.functions.invoke(
-          "hilux-preview-prompt",
+          "my-space-preview-prompt",
           { body: {} },
         );
         if (cancelled) return;

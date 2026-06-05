@@ -1,9 +1,9 @@
-// HILUX daily summary. Scheduled daily (16:00 UTC = 9am PT). For
+// My Space daily summary. Scheduled daily (16:00 UTC = 9am PT). For
 // every profile with hilux_action_daily_summary = true, computes
-// HILUX's last-24h activity and emails a digest to the vendor team.
+// My Space's last-24h activity and emails a digest to the vendor team.
 //
 // Counts: replies sent, escalations, and hot leads detected — the
-// three action types HILUX writes to hilux_action_log. Silent days
+// three action types My Space writes to hilux_action_log. Silent days
 // (zero activity) are skipped rather than emailed.
 
 // deno-lint-ignore-file no-explicit-any
@@ -13,6 +13,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+// My Space emails are temporarily disabled while the feature is being reworked.
+// Flip to false to restore the daily summary email.
+const MY_SPACE_EMAILS_DISABLED = true;
 const EMAIL_FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
 const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
@@ -35,7 +38,7 @@ function json(payload: unknown, status: number) {
 }
 
 function log(...args: unknown[]) {
-  console.log("[hilux-daily-summary]", ...args);
+  console.log("[my-space-daily-summary]", ...args);
 }
 
 interface Counts {
@@ -61,6 +64,9 @@ serve(async (req) => {
 
   if (!RESEND_API_KEY) {
     return json({ ok: true, sent: 0, note: "RESEND_API_KEY not set" }, 200);
+  }
+  if (MY_SPACE_EMAILS_DISABLED) {
+    return json({ ok: true, sent: 0, note: "My Space emails disabled" }, 200);
   }
 
   const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 3600 * 1000).toISOString();
@@ -132,7 +138,7 @@ serve(async (req) => {
         recent: entries.slice(0, 5),
         appUrl: APP_URL,
       });
-      const subject = `HILUX yesterday: ${counts.reply} replies, ${counts.escalate} escalations`;
+      const subject = `My Space yesterday: ${counts.reply} replies, ${counts.escalate} escalations`;
 
       const send = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -196,12 +202,12 @@ function summaryHtml(args: {
         hour: "numeric",
         minute: "2-digit",
       });
-      return `<li style="margin:6px 0;color:#555;"><strong style="color:#111;">${when}</strong> — HILUX ${escapeHtml(label)}${r.detail ? `: <em style="color:#777;">${escapeHtml(r.detail)}</em>` : ""}</li>`;
+      return `<li style="margin:6px 0;color:#555;"><strong style="color:#111;">${when}</strong> — My Space ${escapeHtml(label)}${r.detail ? `: <em style="color:#777;">${escapeHtml(r.detail)}</em>` : ""}</li>`;
     })
     .join("");
   return `<!doctype html>
 <html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #111;">
-  <h2 style="margin:0 0 4px;font-size:20px;">HILUX yesterday for ${escapeHtml(args.vendorName)}</h2>
+  <h2 style="margin:0 0 4px;font-size:20px;">My Space yesterday for ${escapeHtml(args.vendorName)}</h2>
   <p style="color:#666;margin:0 0 24px;">Here's what your always-on agent handled in the last 24 hours.</p>
   <div style="display:flex;margin:0 -4px 24px;">
     ${stat(args.counts.reply, "Replies sent")}
@@ -210,6 +216,6 @@ function summaryHtml(args: {
   </div>
   ${recent ? `<h3 style="font-size:14px;margin:0 0 8px;color:#111;">Recent activity</h3><ul style="margin:0 0 24px;padding:0;list-style:none;font-size:13px;">${recent}</ul>` : ""}
   <p style="margin:0;"><a href="${escapeHtml(args.appUrl)}/vendor/inbox" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">Open your inbox</a></p>
-  <p style="color:#999;font-size:11px;margin-top:32px;">You're getting this because the Daily summary toggle is on for HILUX. Turn it off in your agent settings to stop.</p>
+  <p style="color:#999;font-size:11px;margin-top:32px;">You're getting this because the Daily summary toggle is on for My Space. Turn it off in your agent settings to stop.</p>
 </body></html>`;
 }

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Settings2, X } from "lucide-react";
+import { MySpaceToolSwitches } from "@/components/super-agents/MySpaceToolSwitches";
 
 // Heavy chat — only load its bundle once the user opens the panel.
 const MySpaceChat = lazy(() =>
@@ -12,6 +13,12 @@ const MySpaceChat = lazy(() =>
 // the assistant in an almost-full-screen overlay with a blurred backdrop.
 export function MySpaceLauncher() {
   const [open, setOpen] = useState(false);
+  // Tool-switch settings overlay inside the docked panel. Reset whenever
+  // the panel closes so reopening always lands on the chat.
+  const [showSettings, setShowSettings] = useState(false);
+  useEffect(() => {
+    if (!open) setShowSettings(false);
+  }, [open]);
   const BTN = 56; // w-14 / h-14
   const fabRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -189,17 +196,39 @@ export function MySpaceLauncher() {
             ref={panelRef}
             className="relative w-full max-w-6xl h-[92vh] rounded-2xl overflow-hidden shadow-2xl border border-foreground/10 bg-card animate-in fade-in zoom-in-95 duration-150"
           >
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground/5 hover:bg-foreground/10 text-foreground transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSettings((v) => !v)}
+                aria-label={showSettings ? "Back to chat" : "My Space tools"}
+                aria-pressed={showSettings}
+                className={`w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors ${
+                  showSettings
+                    ? "bg-foreground/15 text-foreground"
+                    : "bg-foreground/5 hover:bg-foreground/10 text-foreground"
+                }`}
+              >
+                <Settings2 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="w-9 h-9 rounded-full inline-flex items-center justify-center bg-foreground/5 hover:bg-foreground/10 text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
             <Suspense fallback={null}>
               <MySpaceChat docked />
             </Suspense>
+            {showSettings && (
+              <div className="absolute inset-0 z-10 bg-card overflow-y-auto">
+                <div className="px-4 md:px-6 pt-14 pb-8 max-w-2xl mx-auto">
+                  <MySpaceToolSwitches />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

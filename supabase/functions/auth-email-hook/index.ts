@@ -20,10 +20,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 
 type ActionType =
   | "signup"
-  | "invite"
-  | "recovery"
-  | "email_change"
-  | "reauthentication";
+  | "recovery";
 
 interface HookPayload {
   user: {
@@ -253,17 +250,8 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
       ),
     };
   }
-  if (action === "invite") {
-    return {
-      subject: "You've been invited to Vendora",
-      html: shell(
-        "You're invited",
-        `<p style="margin:0 0 16px;">You've been invited to join Vendora. Tap below to accept and set up your account.</p>
-         <p style="margin:0 0 24px;">${button(verifyUrl, "Accept invitation")}</p>
-         <p style="margin:0;font-size:13px;color:#777;">If the button doesn't work, paste this link into your browser:<br/><span style="word-break:break-all;">${verifyUrl}</span></p>`,
-      ),
-    };
-  }
+  // Note: there is no "invite" case — the vendor bulk-import flow (the only
+  // caller of GoTrue's inviteUserByEmail) has been retired.
   // Note: there is no "magiclink" case. Login uses password + a 6-digit
   // 2FA code via the signin-2fa edge function, not magic links — nothing
   // in the product calls signInWithOtp, so this action is intentionally
@@ -279,31 +267,10 @@ function renderEmail(p: HookPayload): { subject: string; html: string } | null {
       ),
     };
   }
-  if (action === "email_change") {
-    return {
-      subject: "Confirm your new Vendora email",
-      html: shell(
-        "Confirm your new email",
-        `<p style="margin:0 0 16px;">Tap below to confirm <strong>${escape(p.user.email)}</strong> as the new email on your Vendora account.</p>
-         <p style="margin:0 0 24px;">${button(verifyUrl, "Confirm new email")}</p>
-         <p style="margin:0;font-size:13px;color:#777;">If you didn't request this change, contact support immediately.</p>`,
-      ),
-    };
-  }
-  if (action === "reauthentication") {
-    const code = String(p.email_data.token).replace(/[^0-9]/g, "").slice(0, 6);
-    return {
-      subject: `Your Vendora verification code is ${code}`,
-      html: shell(
-        "Verification code",
-        `<p style="margin:0 0 16px;">Use this 6-digit code to confirm it's you:</p>
-         <p style="margin:0 0 24px;text-align:center;">
-           <span style="display:inline-block;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.4em;font-weight:600;color:#1a1a1a;background:#f7f5f2;border:1px solid #ececec;border-radius:8px;padding:18px 28px;">${escape(code)}</span>
-         </p>
-         <p style="margin:0;font-size:13px;color:#777;">This code expires in 10 minutes. Vendora will never ask you to share it.</p>`,
-      ),
-    };
-  }
+  // Note: there is no "email_change" case — the product has no self-serve
+  // email change (Settings directs users to support), so nothing triggers it.
+  // Note: there is no "reauthentication" case — nothing in the product calls
+  // GoTrue's reauthenticate(); the real login 2FA code is sent by signin-2fa.
   return null;
 }
 
