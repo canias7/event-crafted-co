@@ -12,6 +12,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { MySpaceChat } from "@/components/super-agents/MySpaceChat";
+import { MySpaceToolSwitches } from "@/components/super-agents/MySpaceToolSwitches";
 
 export default function VendorAiSuperagentsPage() {
   return (
@@ -33,8 +34,9 @@ export default function VendorAiSuperagentsPage() {
         {/* Auto-reply toggles moved to /vendor/inbox (gear button in
             the header) since they govern inbox behavior, not the
             chatbox. My Space is now chatbox-only, full width. */}
-        <div className="p-4 md:p-8">
+        <div className="p-4 md:p-8 space-y-6">
           <MySpaceChat />
+          <MySpaceToolSwitches />
         </div>
       </main>
       <MobileNav items={navItems} />

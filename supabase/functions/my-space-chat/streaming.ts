@@ -205,7 +205,24 @@ export async function streamClaudeWithTools(
     description: `[custom] ${r.description}`,
     input_schema: r.input_schema ?? { type: "object", properties: {} },
   }));
-  const allTools = [...TOOLS, ...customToolDefs];
+  // Per-vendor tool switches: drop any built-in tool the vendor has
+  // turned off (profiles.my_space_disabled_tools). Fewer tools = fewer
+  // tokens in the cached tools prefix + sharper selection. Defaults to
+  // all-on ('[]'), so an unset/unmigrated vendor keeps every tool.
+  const { data: prefRow } = await admin
+    .from("profiles")
+    .select("my_space_disabled_tools")
+    .eq("id", userId)
+    .maybeSingle();
+  const disabledRaw = (prefRow as { my_space_disabled_tools?: unknown } | null)
+    ?.my_space_disabled_tools;
+  const disabledTools = new Set<string>(
+    Array.isArray(disabledRaw) ? (disabledRaw as string[]) : [],
+  );
+  const enabledBuiltins = disabledTools.size
+    ? TOOLS.filter((t) => !disabledTools.has(t.name))
+    : TOOLS;
+  const allTools = [...enabledBuiltins, ...customToolDefs];
   if (!ANTHROPIC_API_KEY) throw new Error("anthropic_key_missing");
   let messages = [...initialMessages];
   let finalText = "";
