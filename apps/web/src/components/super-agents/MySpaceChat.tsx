@@ -1582,7 +1582,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               className="text-sm font-bold max-w-md mb-6 leading-relaxed"
               style={{ color: "#18181b" }}
             >
-              Your AI knows your packages, calendar, and active inquiries.
+              Your AI knows your calendar, inquiries, and business details.
               Ask about leads, draft replies, or describe an image to generate.
             </p>
             {/* Centered glassy composer — sits right under the welcome
@@ -1818,7 +1818,6 @@ const TOOL_LABELS: Record<string, string> = {
   bulk_update_inquiry_status: "Bulk-updating inquiries…",
   bulk_send_reply: "Sending bulk replies…",
   manage_faq: "Updating FAQs…",
-  manage_package: "Updating packages…",
   update_profile: "Updating profile…",
   toggle_auto_reply: "Toggling auto-reply…",
   edit_image: "Editing image…",

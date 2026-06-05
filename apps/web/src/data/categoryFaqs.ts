@@ -23,7 +23,7 @@ export const CATEGORY_FAQS: Record<string, FaqItem[]> = {};
 export const CITY_FAQS = (city: string): FaqItem[] => [
   {
     q: `How do I find vendors in ${city} on Vendora?`,
-    a: `Browse the directory and filter by location, or use this page to see only vendors based in or near ${city}. Each profile shows pricing, packages, real reviews, and direct messaging — no calls or chasing required.`,
+    a: `Browse the directory and filter by location, or use this page to see only vendors based in or near ${city}. Each profile shows pricing, real reviews, and direct messaging — no calls or chasing required.`,
   },
   {
     q: `Are ${city} vendors on Vendora vetted?`,
