@@ -531,7 +531,6 @@ export default function VendorGalleryPage() {
     [visibleRows, selected],
   );
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = sentinelRef.current;
@@ -544,7 +543,7 @@ export default function VendorGalleryPage() {
           );
         }
       },
-      { root: scrollRef.current, rootMargin: "400px" },
+      { rootMargin: "400px" },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -1033,27 +1032,20 @@ export default function VendorGalleryPage() {
         title="Vendor Portal"
         backPath="/vendor/me"
       />
-      <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
-        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-8">
-          {/* Title scrolls away with the grid; the filter bar below
-              sticks to the top so it stays reachable, letting the images
-              fill the full height once the title scrolls off. */}
-          <div className="px-4 md:px-8 py-5">
-            <div className="max-w-6xl mx-auto flex items-start justify-between gap-3">
-              <div>
-                <h1 className="font-editorial text-3xl">Gallery</h1>
-                <p className="text-sm text-muted-foreground">
-                  Your media library. Upload once, reuse across listings.
-                </p>
-              </div>
-              <NotificationBell variant="light" />
+      <main className="flex-1 min-w-0 pb-24 md:pb-0">
+        <div className="backdrop-blur-sm px-4 md:px-8 py-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-editorial text-3xl">Gallery</h1>
+              <p className="text-sm text-muted-foreground">
+                Your media library. Upload once, reuse across listings.
+              </p>
             </div>
+            <NotificationBell variant="light" />
           </div>
+        </div>
 
-          {/* Filters scroll away with the title — nothing stays pinned,
-              so scrolling down gives the grid the whole screen. */}
-          <div className="px-4 md:px-8 pb-3">
-            <div className="w-full max-w-6xl mx-auto space-y-5">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-5">
           {/* Album tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <AlbumTab
@@ -1422,7 +1414,7 @@ export default function VendorGalleryPage() {
                   ? isTrashView
                     ? "Trash is empty"
                     : "No matches"
-                  : `${filteredRows.length} image${filteredRows.length === 1 ? "" : "s"}`}
+                  : `${filteredRows.length} image${filteredRows.length === 1 ? "" : "s"}${visibleCount < filteredRows.length ? ` · showing ${visibleCount}` : ""}`}
               {isTrashView && filteredRows.length > 0 ? (
                 <span className="ml-2 text-xs">
                   · Items auto-delete after 30 days
@@ -1468,12 +1460,7 @@ export default function VendorGalleryPage() {
               </div>
             ) : null}
           </div>
-            </div>
-          </div>
 
-          {/* Image grid — scrolls under the sticky filter bar. */}
-          <div className="px-4 md:px-8 pt-5">
-            <div className="max-w-6xl mx-auto space-y-5">
           {/* Bulk action bar */}
           {selecting && selectedVisible.length > 0 ? (
             <div className="flex items-center justify-between gap-3 rounded-full bg-foreground text-background px-4 py-2">
@@ -1650,8 +1637,6 @@ export default function VendorGalleryPage() {
           )}
 
           <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
-            </div>
-          </div>
         </div>
       </main>
       <MobileNav items={vendorNavItems} />
