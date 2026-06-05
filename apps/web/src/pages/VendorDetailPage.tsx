@@ -581,6 +581,24 @@ export default function VendorDetailPage() {
                   vendor profile sheet identity hero. */}
               {vendor.isReal && <VendorBrandCard vendorId={vendor.id} />}
 
+              {/* About — the vendor's bio shown inline, so the
+                  description is visible on the page without having to
+                  flip the brand card. Skips the trivial category
+                  fallback ("rentals on Vendora.") by length. */}
+              {vendor.isReal &&
+                vendor.description &&
+                vendor.description.trim().length > 40 && (
+                  <div>
+                    <p className="font-label text-accent mb-4">About</p>
+                    <h2 className="font-editorial text-4xl mb-6">
+                      About {vendor.name}
+                    </h2>
+                    <p className="text-base text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                      {vendor.description}
+                    </p>
+                  </div>
+                )}
+
               {/* Intro video — optional, only when vendor sets one */}
               {vendor.introVideoUrl && (
                 <div>
