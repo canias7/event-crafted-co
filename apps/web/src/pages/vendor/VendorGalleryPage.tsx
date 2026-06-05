@@ -1050,7 +1050,9 @@ export default function VendorGalleryPage() {
             </div>
           </div>
 
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-background/70 border-b border-border/40 px-4 md:px-8 py-3">
+          {/* Filters scroll away with the title — nothing stays pinned,
+              so scrolling down gives the grid the whole screen. */}
+          <div className="px-4 md:px-8 pb-3">
             <div className="w-full max-w-6xl mx-auto space-y-5">
           {/* Album tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
