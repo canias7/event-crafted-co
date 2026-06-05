@@ -41,10 +41,6 @@ import {
 } from "@/components/vendor/VendorFaqsManager";
 import { SocialEmbedCard } from "@/components/vendor/SocialEmbedCard";
 import { VendorBundlesPublic } from "@/components/vendor/VendorBundlesPublic";
-import {
-  VendorReviewsList,
-  type RealReview,
-} from "@/components/vendor/VendorReviewsList";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 // Lazy: 618-line modal only loads when the user clicks "Send inquiry."
 const InquiryFormModal = lazyWithReload(() =>
@@ -248,49 +244,16 @@ export default function VendorDetailPage() {
   // onto the vendor's public profile. Conversation + event are
   // fetched together and split client-side — conversation is shown as
   // a compact secondary signal, event is the primary review feed.
-  const [eventReviews, setEventReviews] = useState<RealReview[]>([]);
-  const [conversationReviews, setConversationReviews] = useState<RealReview[]>(
-    [],
-  );
-  // Aggregate stats (count + avg) come from a server-side RPC so we
-  // can bound the detail-view fetch at .limit(50) without skewing the
-  // average. Falls back to client-side reduce until the RPC resolves.
+  // Aggregate stats (count + avg) only — the public page shows the
+  // rating number, not the individual review feed. Server-side RPC so
+  // the average reflects all reviews, not a bounded page.
   const [reviewStats, setReviewStats] = useState<{ count: number; avg: number } | null>(null);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
-      setEventReviews([]);
-      setConversationReviews([]);
       setReviewStats(null);
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from("reviews")
-      .select(
-        "id, rating, body, photo_urls, created_at, kind, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
-      )
-      .eq("vendor_id", vendor.id)
-      .eq("rater_role", "host")
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .then(({ data }: { data: (RealReview & { kind: string })[] | null }) => {
-        if (cancelled) return;
-        const rows = data ?? [];
-        const normalized = rows.map((r) => ({
-          ...r,
-          response: Array.isArray(r.response)
-            ? (r.response[0] ?? null)
-            : r.response,
-          inquiry: Array.isArray(r.inquiry)
-            ? (r.inquiry[0] ?? null)
-            : r.inquiry,
-        }));
-        setEventReviews(normalized.filter((r) => r.kind === "event"));
-        setConversationReviews(
-          normalized.filter((r) => r.kind === "conversation"),
-        );
-      });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .rpc("get_vendor_review_stats", { p_vendor_id: vendor.id })
@@ -369,21 +332,12 @@ export default function VendorDetailPage() {
   // surface and don't feed schema.org/AggregateRating.
   // Prefer the server-side stats so the aggregate covers ALL reviews,
   // not just the 50 we pulled for the detail-view list.
-  const reviewsAvg = reviewStats?.count
-    ? reviewStats.avg
-    : eventReviews.length > 0
-      ? eventReviews.reduce((sum, r) => sum + r.rating, 0) / eventReviews.length
-      : vendor?.rating ?? 0;
+  // Aggregate rating only — the individual review feed was removed from
+  // the public page; just the number survives (for SEO + the cards).
+  const reviewsAvg = reviewStats?.count ? reviewStats.avg : vendor?.rating ?? 0;
   const reviewsCount = reviewStats?.count
     ? reviewStats.count
-    : eventReviews.length > 0
-      ? eventReviews.length
-      : vendor?.reviews ?? 0;
-  const conversationAvg =
-    conversationReviews.length > 0
-      ? conversationReviews.reduce((sum, r) => sum + r.rating, 0) /
-        conversationReviews.length
-      : 0;
+    : vendor?.reviews ?? 0;
 
   // Per-vendor title + OG/Twitter card so social shares of vendor URLs
   // unfurl with the hero image + name + category.
@@ -809,39 +763,9 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Reviews. Event reviews are the primary feed; the
-                  conversation-rating summary sits underneath as a
-                  separate "responsiveness" signal. Both render only
-                  when there's something real to show — fresh
-                  listings with zero of either skip this whole block
-                  rather than read as "0.0 · 0 reviews". */}
-              {vendor.isReal && eventReviews.length > 0 && (
-                <VendorReviewsList
-                  realReviews={eventReviews}
-                  samples={[]}
-                  averageRating={reviewsAvg}
-                  totalCount={eventReviews.length}
-                  vendorName={vendor.name}
-                />
-              )}
-              {vendor.isReal && conversationReviews.length > 0 && (
-                <div className="card-soft p-6">
-                  <p className="font-label text-accent mb-3">Chat responsiveness</p>
-                  <h3 className="font-editorial text-2xl">
-                    <span className="tnum">{conversationAvg.toFixed(1)}</span>{" "}
-                    <span className="text-muted-foreground font-light">·</span>{" "}
-                    <span className="text-muted-foreground font-light tnum">
-                      {conversationReviews.length}{" "}
-                      {conversationReviews.length === 1
-                        ? "rating"
-                        : "ratings"}
-                    </span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    What hosts say about messaging with {vendor.name}.
-                  </p>
-                </div>
-              )}
+              {/* The individual review feed was removed from public
+                  listing pages — only the aggregate rating survives (on
+                  the brand card + directory cards). */}
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (
