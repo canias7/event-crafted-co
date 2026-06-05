@@ -598,13 +598,13 @@ export default function VendorDetailPage() {
   }
 
   if (!vendor && vendorsLoading) {
-    return <VendorDetailSkeleton />;
+    return <VendorDetailSkeleton preview={isPreview} />;
   }
 
   if (!vendor) {
     return (
       <div className="min-h-screen public-canvas">
-        <PublicNav />
+        {!isPreview && <PublicNav />}
         <div className="pt-32 pb-24 container mx-auto px-6 text-center">
           <p className="font-label text-muted-foreground mb-4">404</p>
           <h1 className="font-editorial text-4xl mb-3">Vendor not found</h1>
@@ -1221,10 +1221,10 @@ export default function VendorDetailPage() {
 // swap to actual content has near-zero layout shift. Shown while
 // useVendors() hydrates on cold cache / deep-link navigation; warm
 // cache hits skip this entirely and render the real page immediately.
-function VendorDetailSkeleton() {
+function VendorDetailSkeleton({ preview = false }: { preview?: boolean }) {
   return (
     <div className="min-h-screen public-canvas pb-24 lg:pb-0">
-      <PublicNav />
+      {!preview && <PublicNav />}
 
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden bg-muted/40">
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/5 to-foreground/15" />
