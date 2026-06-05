@@ -116,5 +116,15 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = true
   [functions.my-space-action-worker]
     verify_jwt = false
+  [functions.my-space-archive-cold]
+    verify_jwt = false
+  [functions.my-space-daily-summary]
+    verify_jwt = false
+  [functions.my-space-follow-up]
+    verify_jwt = false
+  [functions.my-space-preview-prompt]
+    verify_jwt = true
   [functions.my-space-proactive]
+    verify_jwt = false
+  [functions.my-space-respond]
     verify_jwt = false

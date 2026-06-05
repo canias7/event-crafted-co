@@ -205,14 +205,21 @@ export function MySpaceToolToggles() {
       if (cancelled) return;
       setPromptLoading(true);
       setPromptError(null);
-      // The live prompt preview was served by the hilux-preview-prompt
-      // edge function, which was removed with the HILUX agent. The
-      // toggles below still configure My Space; the prompt preview will
-      // return when HILUX is rebuilt.
-      if (cancelled) return;
-      setPrompt(null);
-      setPromptError("Prompt preview is temporarily unavailable.");
-      setPromptLoading(false);
+      (async () => {
+        const { data, error } = await supabase.functions.invoke(
+          "my-space-preview-prompt",
+          { body: {} },
+        );
+        if (cancelled) return;
+        if (error) {
+          setPromptError(error.message ?? "Couldn't load prompt.");
+          setPrompt(null);
+        } else {
+          const text = (data as { prompt?: string } | null)?.prompt ?? null;
+          setPrompt(text);
+        }
+        setPromptLoading(false);
+      })();
     }, 400);
     return () => {
       cancelled = true;
