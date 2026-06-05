@@ -1,4 +1,4 @@
-// Super Agents — futuristic showcase page for the three agents
+// Super Agents — futuristic showcase page for the vendor agents
 // vendors run inside Vendora: HILUX 2.7 (always-on chat), RAPTOR 3.5
 // (content / prompt-driven fills), AXION 9.1 (image work).
 //
@@ -21,7 +21,6 @@ import {
   useTransform,
 } from "framer-motion";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
-import { HiluxChatDemo } from "@/components/super-agents/HiluxChatDemo";
 import { AxionStoryboardDemo } from "@/components/super-agents/AxionStoryboardDemo";
 
 interface Agent {
@@ -48,26 +47,6 @@ interface Agent {
 }
 
 const AGENTS: Agent[] = [
-  {
-    codename: "HILUX",
-    version: "2.7",
-    role: "Always On",
-    tagline: "Answers every host inquiry the moment it lands.",
-    about:
-      "Lives inside your inbox 24/7. Reads context from the listing, the host's event details, and past conversations to qualify leads, answer the easy stuff instantly, and hand the gnarly ones over to you with a one-line brief.",
-    capabilities: [
-      "Replies in under 60 seconds, any time of day",
-      "Books availability into your calendar automatically",
-      "Routes hot leads straight to your phone",
-      "Drafts you the perfect follow-up two days later",
-    ],
-    accent: "#71717a",
-    accentSoft: "rgba(0, 0, 0, 0.08)",
-    status: "24/7 · Live chat",
-    Icon: Bot,
-    imageSrc: "/agents/hilux.png",
-    Demo: HiluxChatDemo,
-  },
   {
     codename: "RAPTOR",
     version: "3.5",
@@ -385,7 +364,7 @@ export function AgentsSection() {
           maxWidth: 1000,
         }}
       >
-        Three minds. <span className="italic">One vendor.</span>
+        Two minds. <span className="italic">One vendor.</span>
       </motion.h1>
 
       <div className="space-y-24 md:space-y-40">

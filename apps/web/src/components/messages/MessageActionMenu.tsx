@@ -1,11 +1,11 @@
 // Bubble-hover action menu shared across the inquiry/partner chats.
 // Renders an emoji-reaction picker as a popover, plus a small dropdown for
-// Reply / Regenerate. Edit and Delete were intentionally removed — chat
-// messages are not editable or deletable. Positions itself outside the
-// bubble so the trigger doesn't take width.
+// Reply. Edit and Delete were intentionally removed — chat messages are not
+// editable or deletable. Positions itself outside the bubble so the trigger
+// doesn't take width.
 
 import { useState } from "react";
-import { Smile, MoreHorizontal, RefreshCw, Reply } from "lucide-react";
+import { Smile, MoreHorizontal, Reply } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -28,14 +28,12 @@ interface Props {
   // can't be edited or deleted.
   onEdit?: () => void;
   onDelete?: () => void;
-  onRegenerate?: () => void;
 }
 
 export function MessageActionMenu({
   isMine,
   onReact,
   onReply,
-  onRegenerate,
 }: Props) {
   const [reactOpen, setReactOpen] = useState(false);
   return (
@@ -78,7 +76,7 @@ export function MessageActionMenu({
           ))}
         </PopoverContent>
       </Popover>
-      {onReply || onRegenerate ? (
+      {onReply ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -94,12 +92,6 @@ export function MessageActionMenu({
               <DropdownMenuItem onClick={onReply}>
                 <Reply className="w-4 h-4 mr-2" />
                 Reply
-              </DropdownMenuItem>
-            ) : null}
-            {onRegenerate ? (
-              <DropdownMenuItem onClick={onRegenerate}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Regenerate with HILUX
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

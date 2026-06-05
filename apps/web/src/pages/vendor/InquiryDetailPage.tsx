@@ -138,9 +138,6 @@ export default function InquiryDetailPage() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [hiluxPaused, setHiluxPaused] = useState(false);
   const [hiluxToggling, setHiluxToggling] = useState(false);
-  // Tracks the message_id currently being regenerated so a fast
-  // double-click on Regenerate doesn't fire two consumes.
-  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [composer, setComposer] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -636,65 +633,6 @@ export default function InquiryDetailPage() {
       // status-update failure is purely housekeeping that the next
       // realtime tick will re-attempt. Log so we'd notice in Sentry.
       console.error("[InquiryDetail] transitionToReplied failed", error.message);
-    }
-  }
-
-  async function regenerateHilux(messageId: string) {
-    // Audit #6: gate against double-click. The function consumes 2
-    // credits before the latest-message check; a fast second click
-    // would burn credits then 409-refund — racy and ugly.
-    if (regeneratingId) return;
-    setRegeneratingId(messageId);
-    const optimisticToast = toast.loading("HILUX is rewriting…");
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "hilux-regenerate",
-        { body: { message_id: messageId } },
-      );
-      if (error) throw error;
-      const reply = (data as { reply?: string } | null)?.reply;
-      if (!reply) throw new Error("No reply returned");
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? { ...m, body: reply, edited_at: new Date().toISOString() }
-            : m,
-        ),
-      );
-      toast.success("Regenerated.", { id: optimisticToast });
-    } catch (err: unknown) {
-      console.error("[InquiryDetail] regenerate failed", err);
-      // 402 from credit enforcement -> toast with "Top up" CTA.
-      // handleInsufficientCredits returns true if it handled the
-      // error; we bail before the generic toast below.
-      if (await handleInsufficientCredits(err, navigate)) {
-        toast.dismiss(optimisticToast);
-        return;
-      }
-      // hilux-regenerate 409s when a newer message arrived between the
-      // button rendering and the click — surface that clearly instead
-      // of a raw "non-2xx status" HTTP error.
-      let friendly: string | null = null;
-      const ctx = (err as { context?: Response })?.context;
-      if (ctx && typeof ctx.json === "function") {
-        try {
-          const body = await ctx.json();
-          if (body?.error === "not_the_latest_message") {
-            friendly =
-              "A newer message arrived — regenerate only works on HILUX's latest reply.";
-          } else if (typeof body?.error === "string") {
-            friendly = body.error;
-          }
-        } catch {
-          // body wasn't JSON — fall back to the generic message
-        }
-      }
-      const msg = friendly ?? (err instanceof Error ? err.message : String(err));
-      toast.error(friendly ? msg : `Couldn't regenerate: ${msg}`, {
-        id: optimisticToast,
-      });
-    } finally {
-      setRegeneratingId(null);
     }
   }
 
@@ -1198,13 +1136,6 @@ export default function InquiryDetailPage() {
                         onReply={() => setReplyToId(m.id)}
                         onEdit={() => startEditing(m)}
                         onDelete={() => deleteMessage(m.id)}
-                        onRegenerate={
-                          m.is_hilux_generated === true &&
-                          messages.length > 0 &&
-                          messages[messages.length - 1].id === m.id
-                            ? () => regenerateHilux(m.id)
-                            : undefined
-                        }
                       />
                     </div>
                   ) : null}
