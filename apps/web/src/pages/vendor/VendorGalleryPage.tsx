@@ -1034,19 +1034,24 @@ export default function VendorGalleryPage() {
         backPath="/vendor/me"
       />
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 shrink-0">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="font-editorial text-3xl">Gallery</h1>
-              <p className="text-sm text-muted-foreground">
-                Your media library. Upload once, reuse across listings.
-              </p>
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-8">
+          {/* Title scrolls away with the grid; the filter bar below
+              sticks to the top so it stays reachable, letting the images
+              fill the full height once the title scrolls off. */}
+          <div className="px-4 md:px-8 py-5">
+            <div className="max-w-6xl mx-auto flex items-start justify-between gap-3">
+              <div>
+                <h1 className="font-editorial text-3xl">Gallery</h1>
+                <p className="text-sm text-muted-foreground">
+                  Your media library. Upload once, reuse across listings.
+                </p>
+              </div>
+              <NotificationBell variant="light" />
             </div>
-            <NotificationBell variant="light" />
           </div>
-        </div>
 
-        <div className="px-4 md:px-8 pt-4 md:pt-8 pb-3 w-full max-w-6xl mx-auto space-y-5 shrink-0">
+          <div className="sticky top-0 z-20 backdrop-blur-md bg-background/70 border-b border-border/40 px-4 md:px-8 py-3">
+            <div className="w-full max-w-6xl mx-auto space-y-5">
           {/* Album tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <AlbumTab
@@ -1461,14 +1466,12 @@ export default function VendorGalleryPage() {
               </div>
             ) : null}
           </div>
-        </div>
+            </div>
+          </div>
 
-        {/* Only the image grid scrolls — header + filters stay fixed above. */}
-        <div
-          ref={scrollRef}
-          className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 pb-24 md:pb-8"
-        >
-          <div className="max-w-6xl mx-auto space-y-5">
+          {/* Image grid — scrolls under the sticky filter bar. */}
+          <div className="px-4 md:px-8 pt-5">
+            <div className="max-w-6xl mx-auto space-y-5">
           {/* Bulk action bar */}
           {selecting && selectedVisible.length > 0 ? (
             <div className="flex items-center justify-between gap-3 rounded-full bg-foreground text-background px-4 py-2">
@@ -1645,6 +1648,7 @@ export default function VendorGalleryPage() {
           )}
 
           <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
+            </div>
           </div>
         </div>
       </main>
