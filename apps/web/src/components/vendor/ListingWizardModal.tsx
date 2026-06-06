@@ -78,6 +78,16 @@ interface FAQDraft {
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type Attrs = Record<string, AttrValue>;
 
+// A picked-but-not-yet-uploaded photo. The `id` is a stable client id
+// generated at pick time and used for the dnd-kit sortable id + React
+// key. Using the array index instead (`photo-${i}`) made those ids
+// shift on every reorder, so a drag resolved the wrong from/to index
+// and could silently change which photo becomes the cover (index 0).
+interface PickedPhoto {
+  id: string;
+  file: File;
+}
+
 export function ListingWizardModal({
   userId,
   onClose,
@@ -87,7 +97,7 @@ export function ListingWizardModal({
   onClose: () => void;
   onPublished: () => void;
 }) {
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [category, setCategory] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [priceUsd, setPriceUsd] = useState<string>("");
@@ -192,9 +202,9 @@ export function ListingWizardModal({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setPhotos((prev) => {
-      const fromIdx = Number(String(active.id).replace("photo-", ""));
-      const toIdx = Number(String(over.id).replace("photo-", ""));
-      if (Number.isNaN(fromIdx) || Number.isNaN(toIdx)) return prev;
+      const fromIdx = prev.findIndex((p) => p.id === active.id);
+      const toIdx = prev.findIndex((p) => p.id === over.id);
+      if (fromIdx === -1 || toIdx === -1) return prev;
       return arrayMove(prev, fromIdx, toIdx);
     });
   }
@@ -238,7 +248,11 @@ export function ListingWizardModal({
       MAX_PHOTOS,
     );
     if (accepted.length > 0) {
-      setPhotos((prev) => [...prev, ...accepted].slice(0, MAX_PHOTOS));
+      const wrapped: PickedPhoto[] = accepted.map((f) => ({
+        id: crypto.randomUUID(),
+        file: f,
+      }));
+      setPhotos((prev) => [...prev, ...wrapped].slice(0, MAX_PHOTOS));
     }
     const skip = describeRejected(rejected);
     if (skip) toast.warning(skip);
@@ -289,7 +303,7 @@ export function ListingWizardModal({
       setUploadProgress({ done: 0, total: photos.length });
       const upload = await uploadListingPhotos(
         vendorId,
-        photos,
+        photos.map((p) => p.file),
         0,
         (p) => setUploadProgress(p),
         () => cancelledRef.current,
@@ -457,26 +471,30 @@ export function ListingWizardModal({
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext
-                  items={photos.map((_, i) => `photo-${i}`)}
+                  items={photos.map((p) => p.id)}
                   strategy={rectSortingStrategy}
                 >
                   <div className="grid grid-cols-3 gap-2">
-                    {photos.map((f, i) => (
+                    {photos.map((p, i) => (
                       <SortablePhotoTile
-                        key={i}
-                        id={`photo-${i}`}
-                        file={f}
+                        key={p.id}
+                        id={p.id}
+                        file={p.file}
                         isCover={i === 0}
                         onRemove={() =>
-                          setPhotos((prev) => prev.filter((_, j) => j !== i))
+                          setPhotos((prev) => prev.filter((x) => x.id !== p.id))
                         }
                         onMakeCover={
                           i === 0
                             ? undefined
                             : () =>
                                 setPhotos((prev) => {
+                                  const idx = prev.findIndex(
+                                    (x) => x.id === p.id,
+                                  );
+                                  if (idx <= 0) return prev;
                                   const next = [...prev];
-                                  const [moved] = next.splice(i, 1);
+                                  const [moved] = next.splice(idx, 1);
                                   next.unshift(moved);
                                   return next;
                                 })
