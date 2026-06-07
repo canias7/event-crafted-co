@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { UnderConstruction } from "@/components/shared/UnderConstruction";
 import { vendorNavItems } from "@/data/navItems";
 
 // My Vendora is the vendor's operations dashboard. After the
@@ -27,9 +28,16 @@ export default function MyVendoraPage() {
     <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
       <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/" />
       <div className="flex-1 min-w-0 flex flex-col">
-        <Suspense fallback={<TabLoadingFallback />}>
-          <VendorPaymentsPage embedded view={view} />
-        </Suspense>
+        {/* Workspace is temporarily under construction (front-end only —
+            VendorPaymentsPage + its backend stay intact). Overview still
+            renders the real dashboard. */}
+        {view === "workspace" ? (
+          <UnderConstruction title="Workspace" />
+        ) : (
+          <Suspense fallback={<TabLoadingFallback />}>
+            <VendorPaymentsPage embedded view={view} />
+          </Suspense>
+        )}
       </div>
       {/* The floating My Space launcher is mounted app-wide for vendor
           pages via <VendorMySpaceMount /> in App.tsx. */}
