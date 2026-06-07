@@ -1328,13 +1328,31 @@ export default function VendorAppointmentsPage({
             />
           ) : null}
 
-          {!hideUpcoming && (appointments.length > 0 || appointmentsLoading) ? (
+          {!hideUpcoming ? (
             <section>
-              <h2 className="font-display text-lg mb-3">
-                Upcoming appointments
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display text-lg">Appointments</h2>
+                <button
+                  onClick={() => {
+                    // Default to today so the entry has a day even if the
+                    // vendor hasn't tapped one on the grid yet.
+                    if (!selectedYmd) setSelectedYmd(ymdKey(new Date()));
+                    setAListingId(selectedListingId);
+                    setAddOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold hover:bg-foreground/90"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add appointment
+                </button>
+              </div>
               {appointmentsLoading ? (
                 <Skeleton className="h-24 w-full rounded-md" />
+              ) : appointments.length === 0 ? (
+                <div className="card-soft p-6 text-center text-sm text-muted-foreground">
+                  No appointments yet. Calls, consultations, and tastings you
+                  schedule show up here.
+                </div>
               ) : (
                 <AppointmentsList
                   appointments={appointments}
