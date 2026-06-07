@@ -41,10 +41,6 @@ import {
 } from "@/components/vendor/VendorFaqsManager";
 import { SocialEmbedCard } from "@/components/vendor/SocialEmbedCard";
 import { VendorBundlesPublic } from "@/components/vendor/VendorBundlesPublic";
-import {
-  VendorReviewsList,
-  type RealReview,
-} from "@/components/vendor/VendorReviewsList";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 // Lazy: 618-line modal only loads when the user clicks "Send inquiry."
 const InquiryFormModal = lazyWithReload(() =>
@@ -81,7 +77,6 @@ import heroBeach from "@/assets/hero/beach.jpg?as=picture";
 import heroWedding from "@/assets/hero/wedding.jpg?as=picture";
 import heroEngagement from "@/assets/hero/engagement.jpg?as=picture";
 import { ReportButton } from "@/components/trust/ReportButton";
-import { VendorPolicyBadges } from "@/components/vendor/VendorPolicyBadges";
 import { VendorServiceAreaMap } from "@/components/vendor/VendorServiceAreaMap";
 import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttributesDisplay";
 import { SilentErrorBoundary } from "@/components/shared/SilentErrorBoundary";
@@ -165,6 +160,13 @@ export default function VendorDetailPage() {
   // (top nav, "Back to directory" link, "More from this vendor" rail,
   // footer, and the mobile sticky inquiry bar) and show only the body.
   const isPreview = searchParams.get("preview") === "1";
+  // Reset scroll to the top whenever the listing changes. Without this,
+  // clicking a card in "Their other listings" (which lives at the bottom)
+  // navigates to the new listing but leaves the viewer scrolled at the
+  // bottom — so it reads as "the images just changed" instead of opening.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [id, slug]);
   const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
@@ -194,12 +196,15 @@ export default function VendorDetailPage() {
     caption: string | null;
   }
   const [realPortfolio, setRealPortfolio] = useState<RealPortfolioItem[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
       setRealPortfolio([]);
+      setPortfolioLoading(false);
       return;
     }
     let cancelled = false;
+    setPortfolioLoading(true);
     supabase
       .from("vendor_portfolio_images")
       .select("storage_path, caption, display_order, created_at")
@@ -215,6 +220,7 @@ export default function VendorDetailPage() {
             caption: r.caption,
           }));
           setRealPortfolio(items);
+          setPortfolioLoading(false);
         });
     return () => {
       cancelled = true;
@@ -245,49 +251,16 @@ export default function VendorDetailPage() {
   // onto the vendor's public profile. Conversation + event are
   // fetched together and split client-side — conversation is shown as
   // a compact secondary signal, event is the primary review feed.
-  const [eventReviews, setEventReviews] = useState<RealReview[]>([]);
-  const [conversationReviews, setConversationReviews] = useState<RealReview[]>(
-    [],
-  );
-  // Aggregate stats (count + avg) come from a server-side RPC so we
-  // can bound the detail-view fetch at .limit(50) without skewing the
-  // average. Falls back to client-side reduce until the RPC resolves.
+  // Aggregate stats (count + avg) only — the public page shows the
+  // rating number, not the individual review feed. Server-side RPC so
+  // the average reflects all reviews, not a bounded page.
   const [reviewStats, setReviewStats] = useState<{ count: number; avg: number } | null>(null);
   useEffect(() => {
     if (!vendor || !vendor.isReal) {
-      setEventReviews([]);
-      setConversationReviews([]);
       setReviewStats(null);
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from("reviews")
-      .select(
-        "id, rating, body, photo_urls, created_at, kind, host:profiles!reviews_host_id_fkey(display_name), response:review_responses(body), inquiry:inquiries!reviews_inquiry_id_fkey(event_type, event_date)",
-      )
-      .eq("vendor_id", vendor.id)
-      .eq("rater_role", "host")
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .then(({ data }: { data: (RealReview & { kind: string })[] | null }) => {
-        if (cancelled) return;
-        const rows = data ?? [];
-        const normalized = rows.map((r) => ({
-          ...r,
-          response: Array.isArray(r.response)
-            ? (r.response[0] ?? null)
-            : r.response,
-          inquiry: Array.isArray(r.inquiry)
-            ? (r.inquiry[0] ?? null)
-            : r.inquiry,
-        }));
-        setEventReviews(normalized.filter((r) => r.kind === "event"));
-        setConversationReviews(
-          normalized.filter((r) => r.kind === "conversation"),
-        );
-      });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .rpc("get_vendor_review_stats", { p_vendor_id: vendor.id })
@@ -366,91 +339,12 @@ export default function VendorDetailPage() {
   // surface and don't feed schema.org/AggregateRating.
   // Prefer the server-side stats so the aggregate covers ALL reviews,
   // not just the 50 we pulled for the detail-view list.
-  const reviewsAvg = reviewStats?.count
-    ? reviewStats.avg
-    : eventReviews.length > 0
-      ? eventReviews.reduce((sum, r) => sum + r.rating, 0) / eventReviews.length
-      : vendor?.rating ?? 0;
+  // Aggregate rating only — the individual review feed was removed from
+  // the public page; just the number survives (for SEO + the cards).
+  const reviewsAvg = reviewStats?.count ? reviewStats.avg : vendor?.rating ?? 0;
   const reviewsCount = reviewStats?.count
     ? reviewStats.count
-    : eventReviews.length > 0
-      ? eventReviews.length
-      : vendor?.reviews ?? 0;
-  const conversationAvg =
-    conversationReviews.length > 0
-      ? conversationReviews.reduce((sum, r) => sum + r.rating, 0) /
-        conversationReviews.length
-      : 0;
-
-  // Pricing packages (active only, sorted by display_order then price).
-  interface VendorPackage {
-    id: string;
-    name: string;
-    description: string | null;
-    price_cents: number;
-    includes: string[];
-  }
-  const [packages, setPackages] = useState<VendorPackage[]>([]);
-  // package_id → { avg, count } from released event reviews on
-  // inquiries tagged with that package. View handles RLS + 14-day
-  // grace; missing packages just render without a rating.
-  const [packageRatings, setPackageRatings] = useState<
-    Record<string, { avg: number; count: number }>
-  >({});
-  useEffect(() => {
-    if (!vendor || !vendor.isReal) {
-      setPackages([]);
-      setPackageRatings({});
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from("vendor_packages")
-      .select("id, name, description, price_cents, includes, display_order")
-      .eq("vendor_id", vendor.id)
-      .eq("is_active", true)
-      .order("display_order", { ascending: true })
-      .order("price_cents", { ascending: true })
-      .then(({ data }) => {
-        if (cancelled) return;
-        const pkgs = (data as VendorPackage[] | null) ?? [];
-        setPackages(pkgs);
-        if (pkgs.length === 0) {
-          setPackageRatings({});
-          return;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("package_rating_summary")
-          .select("package_id, avg_rating, review_count")
-          .in(
-            "package_id",
-            pkgs.map((p) => p.id),
-          )
-          .then(
-            ({
-              data: stats,
-            }: {
-              data:
-                | { package_id: string; avg_rating: number; review_count: number }[]
-                | null;
-            }) => {
-              if (cancelled) return;
-              const map: Record<string, { avg: number; count: number }> = {};
-              for (const s of stats ?? []) {
-                map[s.package_id] = {
-                  avg: Number(s.avg_rating),
-                  count: s.review_count,
-                };
-              }
-              setPackageRatings(map);
-            },
-          );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [vendor]);
+    : vendor?.reviews ?? 0;
 
   // Per-vendor title + OG/Twitter card so social shares of vendor URLs
   // unfurl with the hero image + name + category.
@@ -526,10 +420,14 @@ export default function VendorDetailPage() {
       setSigninPromptOpen(true);
       return;
     }
-    // Multi-role: any non-admin can send an inquiry (including approved
-    // vendors planning their own events).
     if (profile.role === "admin") {
-      toast.info("Inquiries are sent from host or vendor accounts, not admin.");
+      toast.info("Inquiries are sent from host accounts, not admin.");
+      return;
+    }
+    // Vendors don't send inquiries to vendors — that contact goes through
+    // "Message vendor" (partner threads). Inquiries are host → vendor only.
+    if (isApprovedVendor) {
+      toast.info("Vendors connect through “Message vendor,” not inquiries.");
       return;
     }
     setInquiryPackageId(packageId ?? null);
@@ -598,13 +496,13 @@ export default function VendorDetailPage() {
   }
 
   if (!vendor && vendorsLoading) {
-    return <VendorDetailSkeleton />;
+    return <VendorDetailSkeleton preview={isPreview} />;
   }
 
   if (!vendor) {
     return (
       <div className="min-h-screen public-canvas">
-        <PublicNav />
+        {!isPreview && <PublicNav />}
         <div className="pt-32 pb-24 container mx-auto px-6 text-center">
           <p className="font-label text-muted-foreground mb-4">404</p>
           <h1 className="font-editorial text-4xl mb-3">Vendor not found</h1>
@@ -652,81 +550,23 @@ export default function VendorDetailPage() {
                   vendor profile sheet identity hero. */}
               {vendor.isReal && <VendorBrandCard vendorId={vendor.id} />}
 
-              {/* Packages — only rendered when the vendor has actually
-                  published at least one. No empty-state copy; absence
-                  of packages just hides the section. */}
-              {packages.length > 0 && (
-                <div>
-                  <p className="font-label text-accent mb-4">Packages</p>
-                  <h2 className="font-editorial text-4xl mb-8">
-                    {packages.length === 1
-                      ? "Available package"
-                      : `${packages.length} ways to work together`}
-                  </h2>
-                  <div className={`grid gap-4 ${packages.length >= 3 ? "md:grid-cols-3" : packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md"}`}>
-                    {packages.map((pkg, i) => {
-                      const featured = packages.length >= 2 && i === Math.floor(packages.length / 2);
-                      const stats = packageRatings[pkg.id];
-                      return (
-                        <div
-                          key={pkg.id}
-                          className={`relative rounded-sm p-6 border transition-colors flex flex-col ${
-                            featured
-                              ? "border-accent bg-accent/5"
-                              : "border-border bg-card"
-                          }`}
-                        >
-                          {featured && (
-                            <Badge className="absolute -top-2.5 left-6 bg-accent text-accent-foreground">
-                              Most popular
-                            </Badge>
-                          )}
-                          <p className="font-label text-muted-foreground mb-2">
-                            {pkg.name}
-                          </p>
-                          <p className="font-editorial text-3xl mb-3 tnum">
-                            ${(pkg.price_cents / 100).toLocaleString()}
-                          </p>
-                          {stats && stats.count > 0 && (
-                            <div className="flex items-center gap-1.5 mb-3 text-xs">
-                              <Star className="w-3.5 h-3.5 fill-accent text-accent" />
-                              <span className="font-medium tnum">
-                                {stats.avg.toFixed(1)}
-                              </span>
-                              <span className="text-muted-foreground">
-                                ({stats.count})
-                              </span>
-                            </div>
-                          )}
-                          {pkg.description && (
-                            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                              {pkg.description}
-                            </p>
-                          )}
-                          {pkg.includes.length > 0 && (
-                            <ul className="space-y-2.5">
-                              {pkg.includes.map((f, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm">
-                                  <Check className="w-3.5 h-3.5 text-accent mt-0.5 flex-shrink-0" />
-                                  <span className="text-foreground/85">{f}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          <Button
-                            onClick={() => handleInquiryClick(pkg.id)}
-                            disabled={authLoading}
-                            variant={featured ? "default" : "outline"}
-                            className="mt-5 rounded-full"
-                          >
-                            Inquire about this
-                          </Button>
-                        </div>
-                      );
-                    })}
+              {/* About — the vendor's bio shown inline, so the
+                  description is visible on the page without having to
+                  flip the brand card. Skips the trivial category
+                  fallback ("rentals on Vendora.") by length. */}
+              {vendor.isReal &&
+                vendor.description &&
+                vendor.description.trim().length > 40 && (
+                  <div>
+                    <p className="font-label text-accent mb-4">About</p>
+                    <h2 className="font-editorial text-4xl mb-6">
+                      About {vendor.name}
+                    </h2>
+                    <p className="text-base text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                      {vendor.description}
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Intro video — optional, only when vendor sets one */}
               {vendor.introVideoUrl && (
@@ -738,6 +578,23 @@ export default function VendorDetailPage() {
                       url={vendor.introVideoUrl}
                       title={`${vendor.name} intro`}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Portfolio skeleton while the parent fetch is in flight,
+                  so the section below the bio holds its shape instead of
+                  collapsing into a gap (the sticky sidebar otherwise
+                  towers over an empty column during load). */}
+              {vendor.isReal && portfolioLoading && (
+                <div>
+                  <p className="font-label text-accent mb-4">Portfolio</p>
+                  <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
+                    <Skeleton className="aspect-[4/3] rounded-sm" />
                   </div>
                 </div>
               )}
@@ -917,39 +774,9 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Reviews. Event reviews are the primary feed; the
-                  conversation-rating summary sits underneath as a
-                  separate "responsiveness" signal. Both render only
-                  when there's something real to show — fresh
-                  listings with zero of either skip this whole block
-                  rather than read as "0.0 · 0 reviews". */}
-              {vendor.isReal && eventReviews.length > 0 && (
-                <VendorReviewsList
-                  realReviews={eventReviews}
-                  samples={[]}
-                  averageRating={reviewsAvg}
-                  totalCount={eventReviews.length}
-                  vendorName={vendor.name}
-                />
-              )}
-              {vendor.isReal && conversationReviews.length > 0 && (
-                <div className="card-soft p-6">
-                  <p className="font-label text-accent mb-3">Chat responsiveness</p>
-                  <h3 className="font-editorial text-2xl">
-                    <span className="tnum">{conversationAvg.toFixed(1)}</span>{" "}
-                    <span className="text-muted-foreground font-light">·</span>{" "}
-                    <span className="text-muted-foreground font-light tnum">
-                      {conversationReviews.length}{" "}
-                      {conversationReviews.length === 1
-                        ? "rating"
-                        : "ratings"}
-                    </span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    What hosts say about messaging with {vendor.name}.
-                  </p>
-                </div>
-              )}
+              {/* The individual review feed was removed from public
+                  listing pages — only the aggregate rating survives (on
+                  the brand card + directory cards). */}
 
               {/* Often booked with (cross-sell from booking signal + curated) */}
               {vendor.isReal && (
@@ -1024,7 +851,7 @@ export default function VendorDetailPage() {
                     ${vendor.startingPrice.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-6">
-                    Final pricing depends on date, package, and event details.
+                    Final pricing depends on the date and event details.
                   </p>
 
                   <div className="space-y-3 mb-6">
@@ -1038,14 +865,19 @@ export default function VendorDetailPage() {
 
                   {!isPreview && (
                     <>
-                      <Button
-                        onClick={() => handleInquiryClick()}
-                        disabled={authLoading}
-                        className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Send Inquiry
-                      </Button>
+                      {/* Inquiries are host → vendor only. Vendors don't
+                          see "Send Inquiry" — they reach other vendors via
+                          "Message vendor" below. */}
+                      {!isApprovedVendor && (
+                        <Button
+                          onClick={() => handleInquiryClick()}
+                          disabled={authLoading}
+                          className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          Send Inquiry
+                        </Button>
+                      )}
 
                       {/* "Message vendor" button is shown to every approved
                           vendor (listing or not — partner threads are keyed
@@ -1098,15 +930,6 @@ export default function VendorDetailPage() {
                   appear based on fit and review quality, not ad spend.
                 </div>
 
-                {vendor.isReal && (
-                  <VendorPolicyBadges
-                    depositPct={vendor.depositPct}
-                    cancellationPolicy={vendor.cancellationPolicy}
-                    rescheduleWindowDays={vendor.rescheduleWindowDays}
-                    policyNotes={vendor.policyNotes}
-                  />
-                )}
-
                 {vendor.isReal && !isPreview && (
                   <div className="text-center pt-1">
                     <ReportButton
@@ -1137,8 +960,9 @@ export default function VendorDetailPage() {
 
       {!isPreview && <Footer />}
 
-      {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away */}
-      {!isPreview && (
+      {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away.
+          Hidden for vendors (inquiries are host → vendor only). */}
+      {!isPreview && !isApprovedVendor && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
           <div className="flex-1 min-w-0">
             <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
@@ -1221,10 +1045,10 @@ export default function VendorDetailPage() {
 // swap to actual content has near-zero layout shift. Shown while
 // useVendors() hydrates on cold cache / deep-link navigation; warm
 // cache hits skip this entirely and render the real page immediately.
-function VendorDetailSkeleton() {
+function VendorDetailSkeleton({ preview = false }: { preview?: boolean }) {
   return (
     <div className="min-h-screen public-canvas pb-24 lg:pb-0">
-      <PublicNav />
+      {!preview && <PublicNav />}
 
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden bg-muted/40">
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/5 to-foreground/15" />

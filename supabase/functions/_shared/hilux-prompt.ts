@@ -600,13 +600,11 @@ export async function loadVendorContext(
   const horizonIso = new Date(today.getTime() + horizonDays * 86400000).toISOString().slice(0, 10);
 
   const [
-    { data: packages },
     { data: faqs },
     { data: unavailableRows },
     { data: rules },
     { data: bookedRows },
   ] = await Promise.all([
-    admin.from("vendor_packages").select("name, description, price_cents, display_order").eq("vendor_id", vendor.id).eq("is_active", true).order("display_order", { ascending: true }).limit(10),
     admin.from("vendor_faqs").select("question, answer, display_order").eq("vendor_id", vendor.id).order("display_order", { ascending: true }).limit(15),
     admin.from("vendor_unavailable_dates").select("date").eq("vendor_id", vendor.id).gte("date", todayIso).lte("date", horizonIso),
     admin.from("vendor_availability_rules").select("day_of_week, is_unavailable, start_time, end_time").eq("vendor_id", vendor.id),
@@ -641,11 +639,8 @@ export async function loadVendorContext(
   return {
     vendor,
     profile,
-    packages: ((packages ?? []) as Array<{ name: string; description: string | null; price_cents: number | null }>).map((p) => ({
-      name: p.name,
-      description: p.description,
-      priceUsd: priceUsd(p.price_cents),
-    })),
+    // Packages feature removed — always empty so the prompt skips the section.
+    packages: [],
     faqs: ((faqs ?? []) as Array<{ question: string; answer: string }>).map((f) => ({ question: f.question, answer: f.answer })),
     availability: { busyDates, recurringClosedDays, recurringHourWindows, today: todayIso, horizon: horizonIso },
   };

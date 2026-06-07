@@ -36,10 +36,6 @@ export interface Vendor {
   instagramHandle?: string | null;
   tiktokHandle?: string | null;
   /** Booking terms — surfaced as policy badges on the public profile. */
-  depositPct?: number | null;
-  cancellationPolicy?: string | null;
-  rescheduleWindowDays?: number | null;
-  policyNotes?: string | null;
   /** Owner's profiles.id — used by the partner-thread RPC and any
    *  surface that needs to know "who runs this listing." Pre-baked
    *  into the cache so consumers don't need a second roundtrip. */
@@ -110,10 +106,6 @@ interface VendorProfileRow {
   slug: string | null;
   instagram_handle: string | null;
   tiktok_handle: string | null;
-  deposit_pct: number | null;
-  cancellation_policy: string | null;
-  reschedule_window_days: number | null;
-  policy_notes: string | null;
   // Owner's brand identity, embedded via vendor_brands (the public-safe
   // view over profiles). Listings created via the wizard ship with
   // business_name + bio null, so display falls back to the brand here.
@@ -154,10 +146,6 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     slug: row.slug ?? null,
     instagramHandle: row.instagram_handle ?? null,
     tiktokHandle: row.tiktok_handle ?? null,
-    depositPct: row.deposit_pct ?? null,
-    cancellationPolicy: row.cancellation_policy ?? null,
-    rescheduleWindowDays: row.reschedule_window_days ?? null,
-    policyNotes: row.policy_notes ?? null,
     ownerUserId: row.user_id,
     isReal: true,
     studioVerified: row.brand?.subscription_tier === "studio",
@@ -194,37 +182,12 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
+          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });
       if (!error && data) {
         const vendors = (data as VendorProfileRow[]).map(normalizeDb);
-
-        // Override startingPrice with the lowest active package price for
-        // each vendor. Falls back to base_price_cents (already set above)
-        // when a vendor hasn't built out packages yet.
-        const { data: pkgs } = await supabase
-          .from("vendor_packages")
-          .select("vendor_id, price_cents")
-          .eq("is_active", true);
-        if (pkgs && pkgs.length > 0) {
-          const lowest: Record<string, number> = {};
-          for (const row of pkgs as Array<{
-            vendor_id: string;
-            price_cents: number;
-          }>) {
-            const existing = lowest[row.vendor_id];
-            if (existing == null || row.price_cents < existing) {
-              lowest[row.vendor_id] = row.price_cents;
-            }
-          }
-          for (const v of vendors) {
-            if (lowest[v.id] != null) {
-              v.startingPrice = Math.round(lowest[v.id] / 100);
-            }
-          }
-        }
 
         // Batch-fetch reviews so the directory's "Most reviewed" /
         // "Highest rated" sort options aren't no-ops. Aggregate

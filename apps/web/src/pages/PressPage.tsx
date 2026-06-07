@@ -27,7 +27,7 @@ const SCREENSHOTS = [
   },
   {
     src: featureFlorals,
-    alt: "Vendora vendor profile with portfolio + packages",
+    alt: "Vendora vendor profile with portfolio + reviews",
     caption: "Vendor profile",
   },
   {

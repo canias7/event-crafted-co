@@ -53,9 +53,9 @@ const AGENTS: Agent[] = [
     role: "Wordsmith",
     tagline: "Writes your listing copy in your voice.",
     about:
-      "Drops the blank-page anxiety. Studies your past replies, your reviews, and the markets you serve, then drafts every word your listing needs — bio, FAQs, package descriptions — in a voice that sounds like you on your best day.",
+      "Drops the blank-page anxiety. Studies your past replies, your reviews, and the markets you serve, then drafts every word your listing needs — bio, FAQs, and service descriptions — in a voice that sounds like you on your best day.",
     capabilities: [
-      "One-prompt bios, FAQs, and package descriptions",
+      "One-prompt bios, FAQs, and service descriptions",
       "Tone-matched to your existing reviews + replies",
       "Multilingual — English, Spanish, French, more",
       "A/B tests headline variants against real inquiries",

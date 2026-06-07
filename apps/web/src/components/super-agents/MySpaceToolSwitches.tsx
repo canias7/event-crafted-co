@@ -17,6 +17,7 @@ import {
   FileText,
   Image as ImageIcon,
   Inbox,
+  Info,
   Loader2,
   Lock,
   Settings2,
@@ -25,6 +26,11 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Collapsible,
   CollapsibleContent,
@@ -37,6 +43,8 @@ import { toast } from "sonner";
 interface ToolDef {
   name: string;
   label: string;
+  /** Plain-language explanation shown in the info tooltip. */
+  desc: string;
   /** Sends money/messages off-platform — confirmation-gated server-side. */
   sensitive?: boolean;
 }
@@ -55,81 +63,222 @@ const TOOL_GROUPS: ToolGroup[] = [
     title: "Inbox & inquiries",
     Icon: Inbox,
     tools: [
-      { name: "search_inquiries", label: "Search inquiries" },
-      { name: "get_inquiry", label: "Get inquiry detail" },
-      { name: "search_messages", label: "Search messages" },
-      { name: "summarize_inquiry_thread", label: "Summarize a thread" },
-      { name: "list_recent_notifications", label: "List notifications" },
-      { name: "send_host_reply", label: "Send a host reply", sensitive: true },
-      { name: "bulk_send_reply", label: "Bulk-send replies", sensitive: true },
-      { name: "update_inquiry_status", label: "Update inquiry status" },
-      { name: "bulk_update_inquiry_status", label: "Bulk-update statuses" },
-      { name: "mark_notifications_read", label: "Mark notifications read" },
+      {
+        name: "search_inquiries",
+        label: "Search inquiries",
+        desc: "Find and filter your host inquiries by name, event type, date, or status.",
+      },
+      {
+        name: "get_inquiry",
+        label: "Get inquiry detail",
+        desc: "Pull the full detail of one inquiry, including its recent messages.",
+      },
+      {
+        name: "search_messages",
+        label: "Search messages",
+        desc: "Full-text search across all of your host conversations.",
+      },
+      {
+        name: "summarize_inquiry_thread",
+        label: "Summarize a thread",
+        desc: "Condense a long conversation into a few key bullet points.",
+      },
+      {
+        name: "list_recent_notifications",
+        label: "List notifications",
+        desc: "Read your latest notifications — new inquiries, hot-lead alerts, replies.",
+      },
+      {
+        name: "send_host_reply",
+        label: "Send a host reply",
+        desc: "Send a message to a host in the conversation thread.",
+        sensitive: true,
+      },
+      {
+        name: "bulk_send_reply",
+        label: "Bulk-send replies",
+        desc: "Send the same message to several host threads at once.",
+        sensitive: true,
+      },
+      {
+        name: "update_inquiry_status",
+        label: "Update inquiry status",
+        desc: "Mark an inquiry as replied, closed, or declined.",
+      },
+      {
+        name: "bulk_update_inquiry_status",
+        label: "Bulk-update statuses",
+        desc: "Set the same status on multiple inquiries in one go.",
+      },
+      {
+        name: "mark_notifications_read",
+        label: "Mark notifications read",
+        desc: "Clear unread notifications, individually or all at once.",
+      },
     ],
   },
   {
     title: "Calendar & appointments",
     Icon: Calendar,
     tools: [
-      { name: "check_availability", label: "Check availability" },
-      { name: "manage_appointment", label: "Manage appointments" },
-      { name: "manage_calendar", label: "Block/unblock dates" },
+      {
+        name: "check_availability",
+        label: "Check availability",
+        desc: "Check whether you're free on a given date.",
+      },
+      {
+        name: "manage_appointment",
+        label: "Manage appointments",
+        desc: "Create, update, or respond to appointments with hosts.",
+      },
+      {
+        name: "manage_calendar",
+        label: "Block/unblock dates",
+        desc: "Mark dates unavailable or reopen them on your calendar.",
+      },
     ],
   },
   {
     title: "Money & billing",
     Icon: CreditCard,
     tools: [
-      { name: "create_payment_link", label: "Create payment link", sensitive: true },
-      { name: "create_invoice", label: "Create invoice" },
-      { name: "manage_invoice", label: "Manage invoices" },
-      { name: "manage_expense", label: "Track expenses" },
+      {
+        name: "create_payment_link",
+        label: "Create payment link",
+        desc: "Create a shareable payment link — deposit, balance, or retainer.",
+        sensitive: true,
+      },
+      {
+        name: "create_invoice",
+        label: "Create invoice",
+        desc: "Build a line-item invoice with tax and totals calculated for you.",
+      },
+      {
+        name: "manage_invoice",
+        label: "Manage invoices",
+        desc: "List your invoices or email one to its contact.",
+      },
+      {
+        name: "manage_expense",
+        label: "Track expenses",
+        desc: "Record and review your business expenses.",
+      },
     ],
   },
   {
     title: "Documents & contacts",
     Icon: FileText,
     tools: [
-      { name: "create_document", label: "Create contract/proposal" },
-      { name: "list_documents", label: "List documents" },
-      { name: "manage_contact", label: "Manage contacts" },
+      {
+        name: "create_document",
+        label: "Create contract/proposal",
+        desc: "Draft a sendable contract or proposal from text.",
+      },
+      {
+        name: "list_documents",
+        label: "List documents",
+        desc: "See the contracts and proposals you've sent and their status.",
+      },
+      {
+        name: "manage_contact",
+        label: "Manage contacts",
+        desc: "View, add, or update your saved customers and contacts.",
+      },
     ],
   },
   {
     title: "Profile & business content",
     Icon: UserCircle2,
     tools: [
-      { name: "get_business_info", label: "Look up business info" },
-      { name: "update_profile", label: "Edit profile" },
-      { name: "manage_faq", label: "Manage FAQs" },
-      { name: "manage_package", label: "Manage packages" },
-      { name: "manage_knowledge", label: "Manage knowledge facts" },
-      { name: "set_chat_preferences", label: "Set chat preferences" },
+      {
+        name: "get_business_info",
+        label: "Look up business info",
+        desc: "Look up your FAQs, portfolio, reviews, appointments, and past bookings.",
+      },
+      {
+        name: "update_profile",
+        label: "Edit profile",
+        desc: "Edit your business name, bio, location, or pricing.",
+      },
+      {
+        name: "manage_faq",
+        label: "Manage FAQs",
+        desc: "Add, edit, or remove your FAQ entries.",
+      },
+      {
+        name: "manage_knowledge",
+        label: "Manage knowledge facts",
+        desc: "Save durable facts about your business — pricing rules, brand voice, policies.",
+      },
+      {
+        name: "set_chat_preferences",
+        label: "Set chat preferences",
+        desc: "Save standing preferences applied to every future My Space chat.",
+      },
     ],
   },
   {
     title: "Listings & portfolio",
     Icon: Store,
     tools: [
-      { name: "manage_listing", label: "Manage listing lifecycle" },
-      { name: "list_listings", label: "List listings" },
-      { name: "set_active_listing", label: "Switch active listing" },
-      { name: "add_portfolio_image", label: "Add portfolio image" },
+      {
+        name: "manage_listing",
+        label: "Manage listing lifecycle",
+        desc: "Check your listing's status or submit it for review.",
+      },
+      {
+        name: "list_listings",
+        label: "List listings",
+        desc: "See the listings this account can manage.",
+      },
+      {
+        name: "set_active_listing",
+        label: "Switch active listing",
+        desc: "Choose which listing My Space works on.",
+      },
+      {
+        name: "add_portfolio_image",
+        label: "Add portfolio image",
+        desc: "Add an image to your public portfolio gallery.",
+      },
     ],
   },
   {
     title: "Images",
     Icon: ImageIcon,
-    tools: [{ name: "edit_image", label: "Edit / restyle an image" }],
+    tools: [
+      {
+        name: "edit_image",
+        label: "Edit / restyle an image",
+        desc: "Restyle or edit an image you provide using AI.",
+      },
+    ],
   },
   {
     title: "Automation, analytics & email",
     Icon: Sparkles,
     tools: [
-      { name: "toggle_auto_reply", label: "Toggle auto-reply settings" },
-      { name: "manage_scheduled_action", label: "Schedule future actions" },
-      { name: "get_sales_analytics", label: "Sales analytics" },
-      { name: "send_email", label: "Send an email", sensitive: true },
+      {
+        name: "toggle_auto_reply",
+        label: "Toggle auto-reply settings",
+        desc: "Turn the inbox auto-reply agent and its options on or off.",
+      },
+      {
+        name: "manage_scheduled_action",
+        label: "Schedule future actions",
+        desc: "Schedule, list, or cancel actions to run later.",
+      },
+      {
+        name: "get_sales_analytics",
+        label: "Sales analytics",
+        desc: "Pull revenue reports and month-by-month breakdowns.",
+      },
+      {
+        name: "send_email",
+        label: "Send an email",
+        desc: "Send an email to a contact on your behalf.",
+        sensitive: true,
+      },
     ],
   },
 ];
@@ -262,6 +411,24 @@ export function MySpaceToolSwitches() {
                             aria-label="Sends money or messages — confirmation-gated"
                           />
                         ) : null}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={`What "${tool.label}" does`}
+                              className="shrink-0 text-muted-foreground/50 hover:text-foreground transition-colors"
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            align="start"
+                            className="max-w-[240px] text-xs leading-snug"
+                          >
+                            {tool.desc}
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                       <Switch
                         checked={!disabled.has(tool.name)}

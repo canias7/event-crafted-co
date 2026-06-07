@@ -483,7 +483,6 @@ async function buildVendorSnapshot(
 
   const [
     { data: vendor },
-    { data: packages },
     { data: unavailable },
     { data: rules },
     { data: booked },
@@ -497,13 +496,6 @@ async function buildVendorSnapshot(
       .select("id, business_name, category, location, my_space_preferences")
       .eq("id", vendorId)
       .maybeSingle(),
-    admin
-      .from("vendor_packages")
-      .select("name, description, price_cents, display_order")
-      .eq("vendor_id", vendorId)
-      .eq("is_active", true)
-      .order("display_order", { ascending: true })
-      .limit(10),
     admin
       .from("vendor_unavailable_dates")
       .select("date")
@@ -578,7 +570,7 @@ async function buildVendorSnapshot(
       category: null,
       location: null,
     },
-    packages: (packages ?? []) as VendorSnapshot["packages"],
+    packages: [],
     calendar: {
       today: todayIso,
       horizonDays: CONTEXT_HORIZON_DAYS,
@@ -620,15 +612,6 @@ function buildSystemPrompt(
   const closedDays = snap.calendar.recurringClosedDays
     .map((d) => DOW[d])
     .filter(Boolean);
-  const packagesText = snap.packages.length === 0
-    ? "  (none published yet)"
-    : snap.packages
-      .map((p) =>
-        `  • ${p.name} — ${priceUsd(p.price_cents)}${
-          p.description ? ` — ${p.description.slice(0, 120)}` : ""
-        }`
-      )
-      .join("\n");
   const busyText = snap.calendar.busyDates.length === 0
     ? "  (no busy dates in the next 30 days)"
     : `  ${snap.calendar.busyDates.slice(0, 20).join(", ")}${
@@ -650,7 +633,7 @@ You are talking to the vendor THEMSELVES (the business owner). You are NOT writi
 
 You help them:
 - Draft replies to host inquiries (warm, professional, concise)
-- Brainstorm pricing, packages, and upsells
+- Brainstorm pricing and upsells
 - Plan their day, summarize their inbox, suggest follow-ups
 - Answer questions about their schedule, leads, and active inquiries
 
@@ -661,7 +644,7 @@ Style:
 - If you reference an inquiry, give the host's event date + event type so they can identify it.
 - Reply in whatever language the vendor wrote their last message in (English, Spanish, Portuguese, French, etc.). Mirror their tone.
 - Format with light Markdown — bold for emphasis, bullet lists for options, fenced code blocks when literally showing code or templated text the vendor will paste.
-- When a tool returns numeric / tabular data that visualizes well (revenue-by-month, funnel counts, top packages), include a chart in your reply using a fenced \`\`\`chart code block. JSON shape: \`{ "type": "bar" | "line" | "pie", "data": [{ "label": "Jan", "value": 1200 }, ...], "title": "Revenue by month" }\`. The frontend renders it as a real chart.
+- When a tool returns numeric / tabular data that visualizes well (revenue-by-month, funnel counts, repeat hosts), include a chart in your reply using a fenced \`\`\`chart code block. JSON shape: \`{ "type": "bar" | "line" | "pie", "data": [{ "label": "Jan", "value": 1200 }, ...], "title": "Revenue by month" }\`. The frontend renders it as a real chart.
 
 GROUNDING — never fabricate:
 - Only state specific facts about the vendor's business — inquiry details, host names, event dates, prices, calendar availability, analytics numbers — when they come from a tool result, the VENDOR SNAPSHOT, or the knowledge base below. Never invent, guess, or "fill in" these.
@@ -696,9 +679,6 @@ Business: ${v.business_name ?? "(unnamed)"}${
   }${v.location ? ` · ${v.location}` : ""}
 Today: ${snap.calendar.today}
 Vendor's local timezone: ${snap.vendorTimezone} — when the vendor says relative times like "tomorrow 3pm" or "Friday at noon", interpret in THIS timezone. When passing scheduled_at to manage_appointment, always emit an ISO-8601 string WITH an explicit offset (e.g. "2026-07-14T15:00:00-04:00" or "2026-07-14T19:00:00Z"). The server rejects naked datetimes without a timezone. If the vendor's TZ is unclear, ask before scheduling.
-
-Active packages:
-${packagesText}
 
 Calendar (next ${snap.calendar.horizonDays} days):
   Recurring closed: ${closedDays.length ? closedDays.join(", ") : "(none)"}
@@ -1722,12 +1702,11 @@ async function toolGetSalesAnalytics(
 ): Promise<unknown> {
   const report = String(input?.report ?? "").trim();
   if (report === "summary") return await toolGetSalesSummary(admin, vendorId, input);
-  if (report === "top_packages") return await toolGetTopPackages(admin, vendorId, input);
   if (report === "repeat_hosts") return await toolGetRepeatHosts(admin, vendorId, input);
   if (report === "funnel") return await toolGetConversionFunnel(admin, vendorId, input);
   return {
     error:
-      `unknown_report:${report}. Valid: summary, top_packages, repeat_hosts, funnel.`,
+      `unknown_report:${report}. Valid: summary, repeat_hosts, funnel.`,
   };
 }
 
@@ -1988,16 +1967,6 @@ async function toolUpdateProfile(
     if (Number.isFinite(p) && p >= 0) {
       patch.base_price_cents = Math.round(p * 100);
     }
-  }
-  if (input?.cancellation_policy !== undefined) {
-    patch.cancellation_policy = String(input.cancellation_policy);
-  }
-  if (input?.deposit_pct !== undefined) {
-    const d = Number(input.deposit_pct);
-    if (Number.isFinite(d) && d >= 0 && d <= 100) patch.deposit_pct = d;
-  }
-  if (input?.policy_notes !== undefined) {
-    patch.policy_notes = String(input.policy_notes);
   }
   if (Object.keys(patch).length === 0) return { error: "nothing_to_update" };
   const { data, error } = await admin
@@ -3624,9 +3593,6 @@ async function executeTool(
     }
     if (name === "manage_faq") {
       return await toolManageFaq(admin, vendorId, input);
-    }
-    if (name === "manage_package") {
-      return await toolManagePackage(admin, vendorId, input);
     }
     if (name === "update_profile") {
       return await toolUpdateProfile(admin, vendorId, input);

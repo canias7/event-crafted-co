@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Edit3, Plus, Share2, User } from "lucide-react";
+import { CheckCircle2, Edit3, Loader2, Plus, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -554,6 +554,9 @@ function ListingPreviewModal({
 }) {
   const name = listing.business_name ?? "Listing";
   const isApproved = listing.application_status === "approved";
+  // The iframe cold-boots the whole app, so it's blank for a beat before
+  // React mounts. Show a loader over it until onLoad fires.
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const publicHref = `/vendors/${listing.slug ?? listing.id}`;
   const iframeHref = `${publicHref}?preview=1`;
 
@@ -600,14 +603,23 @@ function ListingPreviewModal({
         {/* Body: live public page for approved listings; fallback
             preview for everything else. */}
         {isApproved ? (
-          <iframe
-            src={iframeHref}
-            title={`Preview of ${name}`}
-            className="flex-1 w-full border-0 bg-background"
-            // Same-origin so the public page can use its normal
-            // Supabase session/cookies; sandbox is implied by the
-            // existing CSP rather than spelled out here.
-          />
+          <div className="relative flex-1 min-h-0">
+            {!iframeLoaded && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading preview…</p>
+              </div>
+            )}
+            <iframe
+              src={iframeHref}
+              title={`Preview of ${name}`}
+              onLoad={() => setIframeLoaded(true)}
+              className="w-full h-full border-0 bg-background"
+              // Same-origin so the public page can use its normal
+              // Supabase session/cookies; sandbox is implied by the
+              // existing CSP rather than spelled out here.
+            />
+          </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
             <div className="relative bg-muted aspect-[16/9]">
