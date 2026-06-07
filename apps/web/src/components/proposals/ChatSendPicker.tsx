@@ -356,28 +356,33 @@ export function ChatSendPicker({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
-          >
-            <Plus className="w-3.5 h-3.5 text-foreground/70" />
-            Send
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-44">
-          {(Object.keys(KIND_META) as SendKind[]).map((k) => {
-            const Icon = KIND_META[k].icon;
-            return (
-              <DropdownMenuItem key={k} onClick={() => setKind(k)}>
-                <Icon className="w-3.5 h-3.5 mr-2 text-foreground/70" />
-                {KIND_META[k].label}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Only the "+" logo opens the menu — the "Send" text is a plain
+          label and intentionally not part of the trigger's hit target. */}
+      <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full pl-1.5 pr-3 py-1.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Send an invoice, pay link, proposal, or contract"
+              className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-foreground/70" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-44">
+            {(Object.keys(KIND_META) as SendKind[]).map((k) => {
+              const Icon = KIND_META[k].icon;
+              return (
+                <DropdownMenuItem key={k} onClick={() => setKind(k)}>
+                  <Icon className="w-3.5 h-3.5 mr-2 text-foreground/70" />
+                  {KIND_META[k].label}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="select-none text-foreground/80">Send</span>
+      </div>
 
       <Dialog
         open={kind !== null}
