@@ -78,6 +78,7 @@ import {
   PayLinkCheckoutPage,
   VendorIntegrationsPage,
   MyVendoraPage,
+  VendorAppointmentsPage,
   VendorSubscriptionPage,
   VendorUsagePage,
   VendorGalleryPage,
@@ -245,7 +246,11 @@ const App = () => (
                   inquiries are triaged in /vendor/inbox, the canonical
                   hub for prospect conversations — so it redirects there. */}
               <Route path="/vendor/leads" element={<Navigate to="/vendor/inbox" replace />} />
-              <Route path="/vendor/appointments" element={<Navigate to="/vendor/workspace?section=calendar" replace />} />
+              {/* Calendar is its own dedicated tab again (standalone
+                  VendorAppointmentsPage = month grid + availability +
+                  the upcoming-appointments list). It also still renders
+                  embedded in the Workspace cockpit's left rail. */}
+              <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<Navigate to="/vendor/workspace" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
               <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />

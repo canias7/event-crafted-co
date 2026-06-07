@@ -59,7 +59,12 @@ interface FAQRow {
 }
 
 type ExistingPhoto = { kind: "existing"; id: string; path: string; url: string };
-type NewPhoto = { kind: "new"; file: File; url: string };
+// New (unsaved) photos carry a stable client id generated at pick time
+// — NOT their array index. dnd-kit's sortable id and React's key must
+// be stable across reorders; deriving them from the index (`new-${i}`)
+// meant the ids changed every time a tile moved, so a drag resolved to
+// the wrong from/to index and could silently reassign the cover photo.
+type NewPhoto = { kind: "new"; id: string; file: File; url: string };
 type PhotoItem = ExistingPhoto | NewPhoto;
 
 export function EditListingModal({
@@ -125,9 +130,8 @@ export function EditListingModal({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setPhotos((prev) => {
-      const ids = prev.map((p, i) => (p.kind === "existing" ? p.id : `new-${i}`));
-      const fromIdx = ids.indexOf(active.id as string);
-      const toIdx = ids.indexOf(over.id as string);
+      const fromIdx = prev.findIndex((p) => p.id === active.id);
+      const toIdx = prev.findIndex((p) => p.id === over.id);
       if (fromIdx === -1 || toIdx === -1) return prev;
       return arrayMove(prev, fromIdx, toIdx);
     });
@@ -280,6 +284,7 @@ export function EditListingModal({
     if (accepted.length > 0) {
       const wrapped: NewPhoto[] = accepted.map((f) => ({
         kind: "new",
+        id: `new-${crypto.randomUUID()}`,
         file: f,
         url: URL.createObjectURL(f),
       }));
@@ -537,14 +542,11 @@ export function EditListingModal({
                 }}
               />
               {(() => {
-                const photoIds = photos.map((p, i) =>
-                  p.kind === "existing" ? p.id : `new-${i}`,
-                );
                 const visibleCount = photosExpanded
                   ? photos.length
                   : Math.min(photos.length, PHOTO_GRID_CAP);
                 const visible = photos.slice(0, visibleCount);
-                const visibleIds = photoIds.slice(0, visibleCount);
+                const visibleIds = visible.map((p) => p.id);
                 return (
                   <>
                     <DndContext
@@ -559,14 +561,14 @@ export function EditListingModal({
                         <div className="grid grid-cols-3 gap-2">
                           {visible.map((p, i) => (
                             <SortablePhotoTile
-                              key={photoIds[i]}
-                              id={photoIds[i]}
+                              key={p.id}
+                              id={p.id}
                               url={p.url}
                               isCover={i === 0}
                               onRemove={() => {
                                 if (p.kind === "new") URL.revokeObjectURL(p.url);
                                 setPhotos((prev) =>
-                                  prev.filter((_, j) => j !== i),
+                                  prev.filter((x) => x.id !== p.id),
                                 );
                               }}
                               onMakeCover={
@@ -574,8 +576,12 @@ export function EditListingModal({
                                   ? undefined
                                   : () =>
                                       setPhotos((prev) => {
+                                        const idx = prev.findIndex(
+                                          (x) => x.id === p.id,
+                                        );
+                                        if (idx <= 0) return prev;
                                         const next = [...prev];
-                                        const [moved] = next.splice(i, 1);
+                                        const [moved] = next.splice(idx, 1);
                                         next.unshift(moved);
                                         return next;
                                       })
