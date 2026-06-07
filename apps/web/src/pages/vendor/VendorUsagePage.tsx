@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorCredits } from "@/hooks/useVendorCredits";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
+import { UnderConstructionPage } from "@/components/shared/UnderConstruction";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
@@ -91,7 +92,14 @@ function fmtHour(h: number): string {
   return h < 12 ? `${h}am` : `${h - 12}pm`;
 }
 
+// Usage is temporarily under construction (front-end only). The full
+// implementation below — VendorUsagePageImpl — and its backend stay
+// intact; re-enable by pointing the default export back at it.
 export default function VendorUsagePage() {
+  return <UnderConstructionPage title="Usage" />;
+}
+
+export function VendorUsagePageImpl() {
   const { ownListing, user } = useAuth();
   const vendorId = ownListing?.id ?? null;
   const credits = useVendorCredits(user?.id ?? null);
