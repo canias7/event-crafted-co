@@ -68,6 +68,11 @@ export const vendorNavItems: NavItem[] = [
   // contacts, settings — stacked) at /vendor/workspace.
   { labelKey: "sidebar.vendor.overview", path: "/vendor/overview", icon: LayoutDashboard },
   { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
+  // Calendar — restored as its own dedicated tab. The standalone
+  // VendorAppointmentsPage shows the month grid + availability blocking
+  // + the full upcoming-appointments list. (A compact copy of the
+  // calendar still lives in the Workspace cockpit's left rail.)
+  { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
   // ---- Identity + creative tools ----
   { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
   // My Space is no longer a standalone tab — it's docked as the assistant
