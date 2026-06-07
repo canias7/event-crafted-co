@@ -16,7 +16,6 @@ import { Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
-  ImagePlus,
   Loader2,
   Pencil,
   Plus,
@@ -534,13 +533,18 @@ export default function VendorAppointmentsPage({
   // host, no inquiry. Stored confirmed (proposed_by 'vendor', accepted)
   // so it reads as the vendor's own committed time on the calendar.
   async function addManualAppointment() {
-    const vid = aListingId ?? selectedListingId;
-    if (!vid || !selectedYmd || addSaving) return;
+    if (!user?.id || !selectedYmd || addSaving) return;
+    // Attach the entry to a listing when the vendor has one; with zero
+    // listings it attaches to the vendor's account directly
+    // (owner_user_id) so a brand-new vendor can keep a personal calendar
+    // before publishing anything.
+    const vid = aListingId ?? selectedListingId ?? null;
     setAddSaving(true);
     const scheduledAt = new Date(`${selectedYmd}T${aTime || "09:00"}:00`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from("appointments").insert({
       vendor_id: vid,
+      owner_user_id: vid ? null : user.id,
       inquiry_id: null,
       host_id: null,
       kind: "other", // off-platform/personal entry — not a host-meeting type
@@ -567,7 +571,7 @@ export default function VendorAppointmentsPage({
 
   const apptReqRef = useRef(0);
   const loadAppointments = useCallback(async () => {
-    if (!user || queryListingIds.length === 0) {
+    if (!user) {
       setAppointments([]);
       setAppointmentsLoading(false);
       return;
@@ -587,15 +591,24 @@ export default function VendorAppointmentsPage({
     cutoff.setDate(cutoff.getDate() - 90);
     const lowerBound =
       monthBounds.start < cutoff ? monthBounds.start : cutoff;
-    const { data } = await (supabase as any)
+    // Pull this account's listing appointments PLUS the vendor's own
+    // listing-less personal entries (owner_user_id). A vendor with no
+    // listing at all still sees their personal calendar.
+    let query = (supabase as any)
       .from("appointments")
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
       )
-      .in("vendor_id", queryListingIds)
       .gte("scheduled_at", lowerBound.toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(1000);
+    query =
+      queryListingIds.length > 0
+        ? query.or(
+            `vendor_id.in.(${queryListingIds.join(",")}),owner_user_id.eq.${user.id}`,
+          )
+        : query.eq("owner_user_id", user.id);
+    const { data } = await query;
     // Drop a stale in-flight result superseded by a newer load.
     if (reqId !== apptReqRef.current) return;
     const rows = (
@@ -625,16 +638,22 @@ export default function VendorAppointmentsPage({
   );
   const rowInAccount = useCallback(
     (payload: { new: unknown; old: unknown }) => {
-      const row = (payload.new ?? payload.old) as { vendor_id?: string } | null;
+      const row = (payload.new ?? payload.old) as {
+        vendor_id?: string | null;
+        owner_user_id?: string | null;
+      } | null;
+      // Listing-less personal entries belong to the account via owner.
+      if (row?.owner_user_id && row.owner_user_id === user?.id) return true;
       return !!row?.vendor_id && accountIdSet.has(row.vendor_id);
     },
-    [accountIdSet],
+    [accountIdSet, user?.id],
   );
 
+  // Always subscribe to appointments — a vendor with zero listings still
+  // has personal (owner-owned) entries that should update live.
   const realtimeAppointments = useMemo(
-    () => (queryListingIds.length > 0 ? { table: "appointments" } : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [queryListingKey],
+    () => ({ table: "appointments" }) as const,
+    [],
   );
   useRealtime(realtimeAppointments, (p) => {
     if (rowInAccount(p)) void loadAppointments();
@@ -957,7 +976,7 @@ export default function VendorAppointmentsPage({
           (a.host_id
             ? (a.host_name ?? "Client") + " · " + statusWord
             : "Off-platform · personal") +
-          labelFor(a.vendor_id),
+          (a.vendor_id ? labelFor(a.vendor_id) : ""),
         amountCents: null,
         accent: st,
         timeLabel: fmtApptTime(a.scheduled_at),
@@ -1125,17 +1144,10 @@ export default function VendorAppointmentsPage({
         )}
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
-          {/* The calendar is account-level and ALWAYS renders its grid
-              (aggregating every listing on the account) — same as the
-              embedded cockpit rail, with no per-listing picker. When the
-              account has no approved listing yet, a slim inline hint
-              explains that blocking / bookings activate once a listing is
-              live; the calendar still shows so the page never reads as a
-              locked wall. */}
-          {!embedded && !listingsLoading && !hasApprovedListing ? (
-            <CalendarListingHint hasListings={listings.length > 0} />
-          ) : null}
-
+          {/* Account-level calendar: always renders the grid (aggregating
+              every listing on the account) with no per-listing picker.
+              Vendors can add personal appointments even with zero
+              listings — those attach to the account, not a listing. */}
           <>
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -1244,7 +1256,6 @@ export default function VendorAppointmentsPage({
                       setAListingId(selectedListingId);
                       setAddOpen(true);
                     }}
-                    disabled={!selectedListingId}
                     className="inline-flex items-center gap-1 rounded-full border border-foreground/15 text-foreground px-3.5 py-2 text-xs font-bold disabled:opacity-60 hover:bg-secondary/50"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -1533,7 +1544,7 @@ export default function VendorAppointmentsPage({
                 e.preventDefault();
                 void addManualAppointment();
               }}
-              disabled={addSaving || !(aListingId ?? selectedListingId)}
+              disabled={addSaving}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {addSaving ? "Adding…" : "Add"}
@@ -1587,59 +1598,6 @@ export default function VendorAppointmentsPage({
 // statusBadge + ListingPicker now live in @/components/vendor/ListingPicker
 // so the Leads page can share the same picker UI.
 
-// Slim inline hint shown above the (always-visible) account calendar
-// when the vendor has no approved listing yet. The calendar still
-// renders — this just explains that blocking / bookings activate once a
-// listing is live, and links to create / review listings. Replaces the
-// old full-screen "Upload your first listing" wall, which wrongly read
-// as a per-listing gate even though the calendar is account-wide.
-function CalendarListingHint({ hasListings }: { hasListings: boolean }) {
-  return (
-    <div
-      className="rounded-2xl px-5 py-4 flex items-center gap-4"
-      style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-      }}
-    >
-      <div
-        className="w-10 h-10 shrink-0 rounded-full inline-flex items-center justify-center"
-        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
-      >
-        <ImagePlus className="w-5 h-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">
-          {hasListings
-            ? "Your listings are under review"
-            : "Add a listing to activate your calendar"}
-        </p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          This calendar covers your whole account. Once{" "}
-          {hasListings
-            ? "a listing is approved"
-            : "you publish your first listing"}
-          , you can block dates and see incoming bookings here.
-        </p>
-      </div>
-      <Link
-        to="/vendor/me"
-        className="shrink-0 inline-flex items-center gap-2 rounded-full bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-      >
-        {hasListings ? (
-          "Review listings"
-        ) : (
-          <>
-            <Plus className="w-4 h-4" />
-            Create a listing
-          </>
-        )}
-      </Link>
-    </div>
-  );
-}
 
 function MonthGrid({
   month,
