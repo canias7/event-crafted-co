@@ -53,10 +53,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
-import {
-  ListingPicker,
-  type ListingOpt,
-} from "@/components/vendor/ListingPicker";
+import { type ListingOpt } from "@/components/vendor/ListingPicker";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -205,24 +202,32 @@ export default function VendorAppointmentsPage({
   //    target one listing — the primary (accountVendorIds[0]) — since
   //    "block this date" needs a concrete destination. A future
   //    per-listing picker on the cockpit calendar can replace that.
-  const isAccountMode = Boolean(accountVendorIds && accountVendorIds.length > 0);
   const [listings, setListings] = useState<ListingOpt[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [localSelectedListingId, setLocalSelectedListingId] = useState<string | null>(
     null,
   );
-  const accountPrimaryId = accountVendorIds && accountVendorIds.length > 0
-    ? accountVendorIds[0]
-    : null;
-  const selectedListingId = accountPrimaryId ?? (listingIdProp !== undefined ? listingIdProp : localSelectedListingId);
+  // The calendar is ALWAYS account-level: one shared availability
+  // calendar that aggregates across every listing on the account —
+  // never scoped to a single listing. Embedded cockpit callers pass
+  // the id set in `accountVendorIds`; the standalone
+  // /vendor/appointments page derives the same set from the listings
+  // it fetched itself. There is no per-listing picker — a vendor's
+  // bookings and blocked dates are one account-wide calendar.
+  const accountIds = accountVendorIds ?? listings.map((l) => l.id);
+  const isAccountMode = accountIds.length > 0;
+  const accountPrimaryId = accountIds.length > 0 ? accountIds[0] : null;
+  const selectedListingId =
+    accountPrimaryId ??
+    (listingIdProp !== undefined ? listingIdProp : localSelectedListingId);
   const setSelectedListingId = setLocalSelectedListingId;
-  // Listing ids any READ query should fan out over. Account mode
-  // uses the full set; standalone mode uses just the picked listing.
+  // Listing ids any READ query fans out over.
   const queryListingIds = isAccountMode
-    ? (accountVendorIds as string[])
-    : (selectedListingId ? [selectedListingId] : []);
+    ? accountIds
+    : selectedListingId
+      ? [selectedListingId]
+      : [];
   const queryListingKey = queryListingIds.join(",");
-  const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   // Blocked-date map: date string → optional reason/title the vendor
@@ -1120,34 +1125,18 @@ export default function VendorAppointmentsPage({
         )}
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
-          {/* Standalone page keeps the full-screen empty states (it's a
-              dedicated route, nothing else to show). The embedded cockpit
-              instead ALWAYS renders the calendar grid below — a vendor
-              should see their account calendar immediately, even before
-              publishing a listing — with just a slim hint that blocking /
-              bookings light up once a listing is live. */}
-          {!embedded && !listingsLoading && listings.length === 0 ? (
-            <NoListingsEmptyState />
-          ) : !embedded &&
-            !listingsLoading &&
-            !listings.some((l) => l.application_status === "approved") ? (
-            <PendingApprovalEmptyState />
-          ) : !embedded ? (
-            <ListingPicker
-              listings={listings}
-              loading={listingsLoading}
-              selectedId={selectedListingId}
-              onSelect={(id) => {
-                setSelectedListingId(id);
-                setListingPickerOpen(false);
-              }}
-              open={listingPickerOpen}
-              onOpenChange={setListingPickerOpen}
-            />
+          {/* The calendar is account-level and ALWAYS renders its grid
+              (aggregating every listing on the account) — same as the
+              embedded cockpit rail, with no per-listing picker. When the
+              account has no approved listing yet, a slim inline hint
+              explains that blocking / bookings activate once a listing is
+              live; the calendar still shows so the page never reads as a
+              locked wall. */}
+          {!embedded && !listingsLoading && !hasApprovedListing ? (
+            <CalendarListingHint hasListings={listings.length > 0} />
           ) : null}
 
-          {(embedded || selectedListingId) && (
-            <>
+          <>
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-editorial text-2xl">{monthLabel}</h2>
@@ -1344,7 +1333,6 @@ export default function VendorAppointmentsPage({
             </section>
           ) : null}
             </>
-          )}
         </div>
       </Shell>
 
@@ -1599,10 +1587,16 @@ export default function VendorAppointmentsPage({
 // statusBadge + ListingPicker now live in @/components/vendor/ListingPicker
 // so the Leads page can share the same picker UI.
 
-function NoListingsEmptyState() {
+// Slim inline hint shown above the (always-visible) account calendar
+// when the vendor has no approved listing yet. The calendar still
+// renders — this just explains that blocking / bookings activate once a
+// listing is live, and links to create / review listings. Replaces the
+// old full-screen "Upload your first listing" wall, which wrongly read
+// as a per-listing gate even though the calendar is account-wide.
+function CalendarListingHint({ hasListings }: { hasListings: boolean }) {
   return (
     <div
-      className="rounded-2xl p-10 md:p-14 text-center"
+      className="rounded-2xl px-5 py-4 flex items-center gap-4"
       style={{
         background: "rgba(255,255,255,0.6)",
         border: "0.5px solid rgba(0,0,0,0.08)",
@@ -1611,60 +1605,37 @@ function NoListingsEmptyState() {
       }}
     >
       <div
-        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
+        className="w-10 h-10 shrink-0 rounded-full inline-flex items-center justify-center"
         style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
       >
-        <ImagePlus className="w-6 h-6" />
+        <ImagePlus className="w-5 h-5" />
       </div>
-      <h2 className="font-editorial italic text-3xl mb-2">
-        Upload your first listing
-      </h2>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        Your calendar covers your whole account. Once you publish your
-        first listing, you'll be able to block dates, see incoming
-        inquiries, and manage availability right here.
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">
+          {hasListings
+            ? "Your listings are under review"
+            : "Add a listing to activate your calendar"}
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          This calendar covers your whole account. Once{" "}
+          {hasListings
+            ? "a listing is approved"
+            : "you publish your first listing"}
+          , you can block dates and see incoming bookings here.
+        </p>
+      </div>
       <Link
         to="/vendor/me"
-        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+        className="shrink-0 inline-flex items-center gap-2 rounded-full bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
       >
-        <Plus className="w-4 h-4" />
-        Create a listing
-      </Link>
-    </div>
-  );
-}
-
-function PendingApprovalEmptyState() {
-  return (
-    <div
-      className="rounded-2xl p-10 md:p-14 text-center"
-      style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-      }}
-    >
-      <div
-        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
-      >
-        <ImagePlus className="w-6 h-6" />
-      </div>
-      <h2 className="font-editorial italic text-3xl mb-2">
-        Your listings are under review
-      </h2>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        Your calendar covers your whole account. Once one of your
-        listings is approved you'll be able to block dates and manage
-        availability here.
-      </p>
-      <Link
-        to="/vendor/me"
-        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
-      >
-        Review my listings
+        {hasListings ? (
+          "Review listings"
+        ) : (
+          <>
+            <Plus className="w-4 h-4" />
+            Create a listing
+          </>
+        )}
       </Link>
     </div>
   );
