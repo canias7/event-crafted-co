@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
+import { Check, Crown, Loader2, Sparkles, Flame, Construction } from "lucide-react";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -555,7 +555,16 @@ export default function VendorSubscriptionPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
-      <main id="main-content" className="flex-1 pb-24 lg:pb-0">
+      <main id="main-content" className="flex-1 pb-24 lg:pb-0 relative">
+        {/* ===== Under construction ===== */}
+        {/* The whole subscription surface is blurred + made
+            non-interactive while billing is being reworked. The
+            sidebar/nav stay live so vendors can route away. Remove
+            this wrapper (and the overlay below) to restore the page. */}
+        <div
+          aria-hidden
+          className="blur-[6px] pointer-events-none select-none"
+        >
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">Subscription</h1>
           <p className="text-sm text-muted-foreground">
@@ -879,6 +888,32 @@ export default function VendorSubscriptionPage() {
             Billing is handled via Stripe. You'll get a receipt by email for
             each charge.
           </p>
+        </div>
+        </div>
+
+        {/* Centered "under construction" notice sitting above the
+            blurred page. pointer-events stay on this layer so any
+            future CTA here would be clickable. */}
+        <div className="absolute inset-0 z-50 flex items-start justify-center p-6 pt-24 md:pt-32">
+          <div
+            className="w-full max-w-md rounded-2xl p-8 text-center"
+            style={{
+              background: "rgba(255,255,255,0.82)",
+              border: "0.5px solid rgba(0,0,0,0.1)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              boxShadow: "0 12px 40px -16px rgba(0,0,0,0.25)",
+            }}
+          >
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-foreground/5">
+              <Construction className="h-7 w-7 text-foreground" />
+            </div>
+            <h2 className="mt-5 font-editorial text-3xl">Under construction</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Plans &amp; billing are getting an upgrade. This page is
+              temporarily unavailable — check back soon.
+            </p>
+          </div>
         </div>
       </main>
 
