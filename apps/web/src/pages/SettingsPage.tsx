@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, ChevronRight, FileText, Globe, HelpCircle, Loader2, LogOut, Lock, Mail, Plug, Trash2 } from "lucide-react";
+import { Bell, ChevronRight, FileText, Loader2, LogOut, Lock, Mail, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
 
 // Account settings — rowed-card layout. Each row is icon + title +
@@ -92,34 +91,6 @@ export default function SettingsPage() {
                   </a>
                 }
               />
-              <RowDivider />
-              <SettingRow
-                Icon={Globe}
-                title="Language"
-                subtitle="Interface language for menus, buttons, and prompts"
-                right={<LanguageSwitcher tone="light" />}
-              />
-              {isApprovedVendor ? (
-                <>
-                  <RowDivider />
-                  <SettingRow
-                    Icon={Plug}
-                    title="Integrations"
-                    subtitle="Connect your Vendora account to Claude (MCP)"
-                    right={
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full"
-                        onClick={() => navigate("/vendor/integrations")}
-                      >
-                        Manage
-                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                      </Button>
-                    }
-                  />
-                </>
-              ) : null}
               {/* Notifications — collapsed into a single row that links
                   to the dedicated /settings/notifications page. Five
                   Bell rows inline made the surface dense; this keeps
@@ -143,27 +114,9 @@ export default function SettingsPage() {
                 }
               />
               <RowDivider />
-              {/* Help / legal — three lightweight rows. Help opens
-                  the FAQ + support email; Terms and Privacy link
-                  the legal pages the user already accepted on
-                  signup so they're a click away if needed. */}
-              <SettingRow
-                Icon={HelpCircle}
-                title="Help & support"
-                subtitle="FAQ + email us if you're stuck"
-                right={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    onClick={() => navigate("/help")}
-                  >
-                    Open
-                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                  </Button>
-                }
-              />
-              <RowDivider />
+              {/* Legal — two lightweight rows linking the Terms and
+                  Privacy pages the user already accepted on signup so
+                  they're a click away if needed. */}
               <SettingRow
                 Icon={FileText}
                 title="Terms of Service"
