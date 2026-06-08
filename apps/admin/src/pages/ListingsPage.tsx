@@ -12,7 +12,11 @@ type Listing = {
   bio: string | null;
   location: string | null;
   base_price_cents: number | null;
-  application_status: "pending" | "approved" | "rejected";
+  // "draft" is a legacy intermediate state from the old mobile flow.
+  // It never surfaces to the admin (filtered out in load()), but the
+  // DB column can still hold it — keep it in the union so that filter
+  // type-checks.
+  application_status: "draft" | "pending" | "approved" | "rejected";
   verified_at: string | null;
   created_at: string;
 };
