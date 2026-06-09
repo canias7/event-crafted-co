@@ -31,6 +31,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.ai-site-compose]
     verify_jwt = false
+  [functions.flatlay-generate]
+    verify_jwt = false
   [functions.ai-site-ics]
     verify_jwt = false
   [functions.ai-site-messages]
