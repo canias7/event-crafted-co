@@ -10,11 +10,13 @@ import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
-// passed "vendor", we route the user to /vendor/me after signup so
-// they can build their first listing. The auth.users row is the
-// same either way — role differentiation happens at the next step
-// (onboarded_at vs. inserting a vendor_profiles row), with DB
-// triggers enforcing the one-role-per-email rule.
+// passed "vendor", we route the user to the "Application received"
+// page (/check-email?role=vendor) after signup — their application is
+// hand-reviewed and they have no portal access until an admin approves
+// it. The auth.users row is the same either way — role differentiation
+// happens at the next step (onboarded_at vs. inserting a
+// vendor_profiles row), with DB triggers enforcing the one-role-per-
+// email rule.
 export default function SignupPage({ role = "host" }: { role?: "host" | "vendor" } = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -59,12 +61,28 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       toast.error(error.message);
       return;
     }
+
+    // Vendors always land on the "Application received" page. Their
+    // application is hand-reviewed and they have NO portal access until
+    // an admin approves it (hasVendorAccess is false while pending), so
+    // routing them to /vendor/me would just bounce them back to "/" and
+    // they'd never see the under-review confirmation. If Supabase
+    // returned a session (email auto-confirm on) we drop it so the
+    // under-review state is truthful — they sign in once the approval
+    // email arrives.
+    if (role === "vendor") {
+      if (data.session) await supabase.auth.signOut();
+      navigate(`/check-email?email=${encodeURIComponent(email)}&role=vendor`);
+      return;
+    }
+
+    // Host flow: confirm-email page when no session yet, else straight in.
     if (!data.session) {
-      navigate(`/check-email?email=${encodeURIComponent(email)}&role=${role}`);
+      navigate(`/check-email?email=${encodeURIComponent(email)}&role=host`);
       return;
     }
     toast.success("Account created");
-    navigate(role === "vendor" ? "/vendor/me" : "/customer/onboarding");
+    navigate("/customer/onboarding");
   }
 
   const isVendor = role === "vendor";

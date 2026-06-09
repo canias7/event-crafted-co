@@ -928,13 +928,14 @@ function WorkspaceAppointments({
   accountVendorIds: string[];
   listings: ListingOpt[];
 }) {
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const idsKey = accountVendorIds.join(",");
 
   const reqIdRef = useRef(0);
   const load = useCallback(async () => {
-    if (accountVendorIds.length === 0) {
+    if (!user) {
       setAppointments([]);
       setLoading(false);
       return;
@@ -945,16 +946,24 @@ function WorkspaceAppointments({
     // so years-old history doesn't bloat the payload.
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 90);
+    // Listing appointments PLUS the vendor's own listing-less personal
+    // entries (owner_user_id) so they show even with zero listings.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    let query = (supabase as any)
       .from("appointments")
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
       )
-      .in("vendor_id", accountVendorIds)
       .gte("scheduled_at", cutoff.toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(500);
+    query =
+      accountVendorIds.length > 0
+        ? query.or(
+            `vendor_id.in.(${accountVendorIds.join(",")}),owner_user_id.eq.${user.id}`,
+          )
+        : query.eq("owner_user_id", user.id);
+    const { data } = await query;
     // A newer load started while this one was in flight — drop this result.
     if (reqId !== reqIdRef.current) return;
     const rows = (
@@ -965,7 +974,7 @@ function WorkspaceAppointments({
     setAppointments(rows);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey]);
+  }, [idsKey, user?.id]);
 
   useEffect(() => {
     load();
@@ -982,16 +991,22 @@ function WorkspaceAppointments({
     [idsKey],
   );
   const realtimeConfig = useMemo(
-    () => (accountVendorIds.length > 0 ? { table: "appointments" } : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [idsKey],
+    () => ({ table: "appointments" }) as const,
+    [],
   );
   const onApptChange = useCallback(
     (payload: { new: unknown; old: unknown }) => {
-      const row = (payload.new ?? payload.old) as { vendor_id?: string } | null;
+      const row = (payload.new ?? payload.old) as {
+        vendor_id?: string | null;
+        owner_user_id?: string | null;
+      } | null;
+      if (row?.owner_user_id && row.owner_user_id === user?.id) {
+        load();
+        return;
+      }
       if (row?.vendor_id && accountIdSet.has(row.vendor_id)) load();
     },
-    [accountIdSet, load],
+    [accountIdSet, load, user?.id],
   );
   useRealtime(realtimeConfig, onApptChange);
 

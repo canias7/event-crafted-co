@@ -16,7 +16,6 @@ import { Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
-  ImagePlus,
   Loader2,
   Pencil,
   Plus,
@@ -53,10 +52,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
-import {
-  ListingPicker,
-  type ListingOpt,
-} from "@/components/vendor/ListingPicker";
+import { type ListingOpt } from "@/components/vendor/ListingPicker";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -205,24 +201,32 @@ export default function VendorAppointmentsPage({
   //    target one listing — the primary (accountVendorIds[0]) — since
   //    "block this date" needs a concrete destination. A future
   //    per-listing picker on the cockpit calendar can replace that.
-  const isAccountMode = Boolean(accountVendorIds && accountVendorIds.length > 0);
   const [listings, setListings] = useState<ListingOpt[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [localSelectedListingId, setLocalSelectedListingId] = useState<string | null>(
     null,
   );
-  const accountPrimaryId = accountVendorIds && accountVendorIds.length > 0
-    ? accountVendorIds[0]
-    : null;
-  const selectedListingId = accountPrimaryId ?? (listingIdProp !== undefined ? listingIdProp : localSelectedListingId);
+  // The calendar is ALWAYS account-level: one shared availability
+  // calendar that aggregates across every listing on the account —
+  // never scoped to a single listing. Embedded cockpit callers pass
+  // the id set in `accountVendorIds`; the standalone
+  // /vendor/appointments page derives the same set from the listings
+  // it fetched itself. There is no per-listing picker — a vendor's
+  // bookings and blocked dates are one account-wide calendar.
+  const accountIds = accountVendorIds ?? listings.map((l) => l.id);
+  const isAccountMode = accountIds.length > 0;
+  const accountPrimaryId = accountIds.length > 0 ? accountIds[0] : null;
+  const selectedListingId =
+    accountPrimaryId ??
+    (listingIdProp !== undefined ? listingIdProp : localSelectedListingId);
   const setSelectedListingId = setLocalSelectedListingId;
-  // Listing ids any READ query should fan out over. Account mode
-  // uses the full set; standalone mode uses just the picked listing.
+  // Listing ids any READ query fans out over.
   const queryListingIds = isAccountMode
-    ? (accountVendorIds as string[])
-    : (selectedListingId ? [selectedListingId] : []);
+    ? accountIds
+    : selectedListingId
+      ? [selectedListingId]
+      : [];
   const queryListingKey = queryListingIds.join(",");
-  const [listingPickerOpen, setListingPickerOpen] = useState(false);
 
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   // Blocked-date map: date string → optional reason/title the vendor
@@ -529,13 +533,26 @@ export default function VendorAppointmentsPage({
   // host, no inquiry. Stored confirmed (proposed_by 'vendor', accepted)
   // so it reads as the vendor's own committed time on the calendar.
   async function addManualAppointment() {
-    const vid = aListingId ?? selectedListingId;
-    if (!vid || !selectedYmd || addSaving) return;
-    setAddSaving(true);
+    if (!user?.id || !selectedYmd || addSaving) return;
+    // Attach the entry to a listing when the vendor has one; with zero
+    // listings it attaches to the vendor's account directly
+    // (owner_user_id) so a brand-new vendor can keep a personal calendar
+    // before publishing anything.
+    const vid = aListingId ?? selectedListingId ?? null;
     const scheduledAt = new Date(`${selectedYmd}T${aTime || "09:00"}:00`);
+    // Block scheduling in the past — appointments are forward-looking
+    // calendar blocks, not a record of things that already happened.
+    if (scheduledAt.getTime() < Date.now()) {
+      toast.error("Can't add an appointment in the past", {
+        description: "Pick today or a future date and time.",
+      });
+      return;
+    }
+    setAddSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from("appointments").insert({
       vendor_id: vid,
+      owner_user_id: vid ? null : user.id,
       inquiry_id: null,
       host_id: null,
       kind: "other", // off-platform/personal entry — not a host-meeting type
@@ -562,7 +579,7 @@ export default function VendorAppointmentsPage({
 
   const apptReqRef = useRef(0);
   const loadAppointments = useCallback(async () => {
-    if (!user || queryListingIds.length === 0) {
+    if (!user) {
       setAppointments([]);
       setAppointmentsLoading(false);
       return;
@@ -582,15 +599,24 @@ export default function VendorAppointmentsPage({
     cutoff.setDate(cutoff.getDate() - 90);
     const lowerBound =
       monthBounds.start < cutoff ? monthBounds.start : cutoff;
-    const { data } = await (supabase as any)
+    // Pull this account's listing appointments PLUS the vendor's own
+    // listing-less personal entries (owner_user_id). A vendor with no
+    // listing at all still sees their personal calendar.
+    let query = (supabase as any)
       .from("appointments")
       .select(
         "id, inquiry_id, vendor_id, host_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
       )
-      .in("vendor_id", queryListingIds)
       .gte("scheduled_at", lowerBound.toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(1000);
+    query =
+      queryListingIds.length > 0
+        ? query.or(
+            `vendor_id.in.(${queryListingIds.join(",")}),owner_user_id.eq.${user.id}`,
+          )
+        : query.eq("owner_user_id", user.id);
+    const { data } = await query;
     // Drop a stale in-flight result superseded by a newer load.
     if (reqId !== apptReqRef.current) return;
     const rows = (
@@ -620,16 +646,22 @@ export default function VendorAppointmentsPage({
   );
   const rowInAccount = useCallback(
     (payload: { new: unknown; old: unknown }) => {
-      const row = (payload.new ?? payload.old) as { vendor_id?: string } | null;
+      const row = (payload.new ?? payload.old) as {
+        vendor_id?: string | null;
+        owner_user_id?: string | null;
+      } | null;
+      // Listing-less personal entries belong to the account via owner.
+      if (row?.owner_user_id && row.owner_user_id === user?.id) return true;
       return !!row?.vendor_id && accountIdSet.has(row.vendor_id);
     },
-    [accountIdSet],
+    [accountIdSet, user?.id],
   );
 
+  // Always subscribe to appointments — a vendor with zero listings still
+  // has personal (owner-owned) entries that should update live.
   const realtimeAppointments = useMemo(
-    () => (queryListingIds.length > 0 ? { table: "appointments" } : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [queryListingKey],
+    () => ({ table: "appointments" }) as const,
+    [],
   );
   useRealtime(realtimeAppointments, (p) => {
     if (rowInAccount(p)) void loadAppointments();
@@ -952,7 +984,7 @@ export default function VendorAppointmentsPage({
           (a.host_id
             ? (a.host_name ?? "Client") + " · " + statusWord
             : "Off-platform · personal") +
-          labelFor(a.vendor_id),
+          (a.vendor_id ? labelFor(a.vendor_id) : ""),
         amountCents: null,
         accent: st,
         timeLabel: fmtApptTime(a.scheduled_at),
@@ -1097,6 +1129,13 @@ export default function VendorAppointmentsPage({
     year: "numeric",
   });
 
+  // Whether the Add-personal-entry selection (grid day + time) is
+  // already in the past. Drives the disabled Add button + inline hint
+  // so vendors can't schedule entries behind the current moment.
+  const addIsPast = selectedYmd
+    ? new Date(`${selectedYmd}T${aTime || "09:00"}:00`).getTime() < Date.now()
+    : false;
+
   // Embedded in the cockpit (which already has a <main>), render a plain
   // wrapper to avoid nested <main> landmarks / a duplicate id.
   const Shell = embedded ? "div" : "main";
@@ -1120,34 +1159,11 @@ export default function VendorAppointmentsPage({
         )}
 
         <div className="p-4 md:p-8 max-w-4xl space-y-6">
-          {/* Standalone page keeps the full-screen empty states (it's a
-              dedicated route, nothing else to show). The embedded cockpit
-              instead ALWAYS renders the calendar grid below — a vendor
-              should see their account calendar immediately, even before
-              publishing a listing — with just a slim hint that blocking /
-              bookings light up once a listing is live. */}
-          {!embedded && !listingsLoading && listings.length === 0 ? (
-            <NoListingsEmptyState />
-          ) : !embedded &&
-            !listingsLoading &&
-            !listings.some((l) => l.application_status === "approved") ? (
-            <PendingApprovalEmptyState />
-          ) : !embedded ? (
-            <ListingPicker
-              listings={listings}
-              loading={listingsLoading}
-              selectedId={selectedListingId}
-              onSelect={(id) => {
-                setSelectedListingId(id);
-                setListingPickerOpen(false);
-              }}
-              open={listingPickerOpen}
-              onOpenChange={setListingPickerOpen}
-            />
-          ) : null}
-
-          {(embedded || selectedListingId) && (
-            <>
+          {/* Account-level calendar: always renders the grid (aggregating
+              every listing on the account) with no per-listing picker.
+              Vendors can add personal appointments even with zero
+              listings — those attach to the account, not a listing. */}
+          <>
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-editorial text-2xl">{monthLabel}</h2>
@@ -1255,7 +1271,6 @@ export default function VendorAppointmentsPage({
                       setAListingId(selectedListingId);
                       setAddOpen(true);
                     }}
-                    disabled={!selectedListingId}
                     className="inline-flex items-center gap-1 rounded-full border border-foreground/15 text-foreground px-3.5 py-2 text-xs font-bold disabled:opacity-60 hover:bg-secondary/50"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -1328,13 +1343,31 @@ export default function VendorAppointmentsPage({
             />
           ) : null}
 
-          {!hideUpcoming && (appointments.length > 0 || appointmentsLoading) ? (
+          {!hideUpcoming ? (
             <section>
-              <h2 className="font-display text-lg mb-3">
-                Upcoming appointments
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display text-lg">Appointments</h2>
+                <button
+                  onClick={() => {
+                    // Default to today so the entry has a day even if the
+                    // vendor hasn't tapped one on the grid yet.
+                    if (!selectedYmd) setSelectedYmd(ymdKey(new Date()));
+                    setAListingId(selectedListingId);
+                    setAddOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold hover:bg-foreground/90"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add appointment
+                </button>
+              </div>
               {appointmentsLoading ? (
                 <Skeleton className="h-24 w-full rounded-md" />
+              ) : appointments.length === 0 ? (
+                <div className="card-soft p-6 text-center text-sm text-muted-foreground">
+                  No appointments yet. Calls, consultations, and tastings you
+                  schedule show up here.
+                </div>
               ) : (
                 <AppointmentsList
                   appointments={appointments}
@@ -1344,7 +1377,6 @@ export default function VendorAppointmentsPage({
             </section>
           ) : null}
             </>
-          )}
         </div>
       </Shell>
 
@@ -1517,6 +1549,12 @@ export default function VendorAppointmentsPage({
                 </select>
               </label>
             </div>
+            {addIsPast ? (
+              <p className="text-xs text-destructive">
+                That date &amp; time is in the past. Pick today or a future
+                date and time.
+              </p>
+            ) : null}
             <label className="block">
               <span className="text-xs font-medium text-muted-foreground">Location (optional)</span>
               <Input
@@ -1545,7 +1583,7 @@ export default function VendorAppointmentsPage({
                 e.preventDefault();
                 void addManualAppointment();
               }}
-              disabled={addSaving || !(aListingId ?? selectedListingId)}
+              disabled={addSaving || addIsPast}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {addSaving ? "Adding…" : "Add"}
@@ -1599,76 +1637,6 @@ export default function VendorAppointmentsPage({
 // statusBadge + ListingPicker now live in @/components/vendor/ListingPicker
 // so the Leads page can share the same picker UI.
 
-function NoListingsEmptyState() {
-  return (
-    <div
-      className="rounded-2xl p-10 md:p-14 text-center"
-      style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-      }}
-    >
-      <div
-        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
-      >
-        <ImagePlus className="w-6 h-6" />
-      </div>
-      <h2 className="font-editorial italic text-3xl mb-2">
-        Upload your first listing
-      </h2>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        Your calendar covers your whole account. Once you publish your
-        first listing, you'll be able to block dates, see incoming
-        inquiries, and manage availability right here.
-      </p>
-      <Link
-        to="/vendor/me"
-        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
-      >
-        <Plus className="w-4 h-4" />
-        Create a listing
-      </Link>
-    </div>
-  );
-}
-
-function PendingApprovalEmptyState() {
-  return (
-    <div
-      className="rounded-2xl p-10 md:p-14 text-center"
-      style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-      }}
-    >
-      <div
-        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
-      >
-        <ImagePlus className="w-6 h-6" />
-      </div>
-      <h2 className="font-editorial italic text-3xl mb-2">
-        Your listings are under review
-      </h2>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        Your calendar covers your whole account. Once one of your
-        listings is approved you'll be able to block dates and manage
-        availability here.
-      </p>
-      <Link
-        to="/vendor/me"
-        className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
-      >
-        Review my listings
-      </Link>
-    </div>
-  );
-}
 
 function MonthGrid({
   month,

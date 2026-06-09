@@ -17,7 +17,11 @@ import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
-import { VendorMySpaceMount } from "@/components/super-agents/VendorMySpaceMount";
+// My Space is temporarily deactivated (under construction). The launcher
+// mount + its full page are kept in the repo; re-enable by restoring the
+// <VendorMySpaceMount /> render below and the /vendor/ai-superagents route.
+// import { VendorMySpaceMount } from "@/components/super-agents/VendorMySpaceMount";
+import { UnderConstructionPage } from "@/components/shared/UnderConstruction";
 import { SkipLink } from "./components/SkipLink";
 import { AmbientBackground } from "./components/AmbientBackground";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
@@ -73,7 +77,6 @@ import {
   VendorEditProfilePage,
   VendorInboxPage,
   VendorPartnersPage,
-  VendorAiSuperagentsPage,
   InvoiceCheckoutPage,
   PayLinkCheckoutPage,
   VendorIntegrationsPage,
@@ -253,7 +256,9 @@ const App = () => (
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
               <Route path="/vendor/payments" element={<Navigate to="/vendor/workspace" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
-              <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><VendorAiSuperagentsPage /></RequireRole>} />
+              {/* My Space (AI Superagents) temporarily under construction.
+                  The VendorAiSuperagentsPage component stays in the repo. */}
+              <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><UnderConstructionPage title="My Space" /></RequireRole>} />
               <Route path="/vendor/integrations" element={<RequireRole role="vendor"><VendorIntegrationsPage /></RequireRole>} />
               <Route path="/vendor/overview" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
               {/* Back-compat: old /vendor/my-vendora now redirects to Overview. */}
@@ -277,8 +282,9 @@ const App = () => (
               wasn't pulling its weight. We'll bring back a leaner
               walkthrough later. */}
           <CommandPaletteLauncher />
-          {/* Floating My Space assistant — on every vendor dashboard page. */}
-          <VendorMySpaceMount />
+          {/* Floating My Space assistant — temporarily deactivated (under
+              construction). Re-enable by restoring the import + this mount. */}
+          {/* <VendorMySpaceMount /> */}
           <Suspense fallback={null}>
             <CookieBanner />
           </Suspense>

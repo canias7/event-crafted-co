@@ -177,11 +177,6 @@ export function CostsPage() {
     };
   }, [summary]);
 
-  const maxActionRev = useMemo(
-    () => summary.reduce((m, r) => Math.max(m, Number(r.revenue_usd), Number(r.cogs_usd)), 0.0001),
-    [summary],
-  );
-
   return (
     <div
       className="min-h-full font-mono"
