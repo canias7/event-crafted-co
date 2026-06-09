@@ -100,6 +100,8 @@ export default function FlatLayBuilderPage() {
   const [busy, setBusy] = useState<null | "form" | "ai">(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const set = (k: keyof typeof STARTER) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setF((prev) => ({ ...prev, [k]: e.target.value }));
@@ -130,7 +132,7 @@ export default function FlatLayBuilderPage() {
       f.dessert.trim() && menuGroup("menu2", "Dessert", f.dessert),
     ].filter(Boolean);
 
-    return {
+    const spec: Record<string, unknown> = {
       name1: f.name1,
       name2: f.name2,
       dateFull,
@@ -155,6 +157,13 @@ export default function FlatLayBuilderPage() {
       ],
       ...GENERIC_EXTRAS,
     };
+    // Couple's own photos drive the gallery + Our Story hero; anything else
+    // (partner portraits, story shots) keeps elegant defaults.
+    if (photos.length) {
+      spec.gallery = photos.map((src, i) => ({ src, name: `photo-${i + 1}.jpg` }));
+      spec.heroPhoto = photos[0];
+    }
+    return spec;
   }
 
   async function call(payload: Record<string, unknown>, which: "form" | "ai") {
@@ -184,6 +193,42 @@ export default function FlatLayBuilderPage() {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function onPickPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-picking the same files
+    if (!files.length) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? SUPABASE_KEY;
+      const urls: string[] = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("image", file);
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-image-upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY },
+          body: fd,
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.image_url) {
+          const map: Record<string, string> = {
+            image_too_large: "A photo is over 12MB — pick something smaller.",
+            unsupported_image_type: "Photos must be JPG, PNG, WebP, GIF, or HEIC.",
+          };
+          throw new Error(map[j?.error ?? ""] ?? "Couldn’t upload a photo. Try again.");
+        }
+        urls.push(j.image_url as string);
+      }
+      setPhotos((prev) => [...prev, ...urls]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -282,6 +327,32 @@ export default function FlatLayBuilderPage() {
               <Field label="Address" textarea rows={2} value={f.address} onChange={set("address")} />
             </Section>
 
+            <Section title="Your photos" hint="First one becomes the hero · the rest fill the gallery">
+              <div className="flex flex-wrap gap-2.5">
+                {photos.map((p, i) => (
+                  <div key={p} className="relative w-[88px] h-[88px] rounded-xl overflow-hidden border border-black/10">
+                    <img src={p} alt="" className="w-full h-full object-cover" />
+                    {i === 0 && (
+                      <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[9px] text-center py-0.5 tracking-wide">HERO</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-[12px] leading-none flex items-center justify-center hover:bg-black"
+                      aria-label="Remove photo"
+                    >×</button>
+                  </div>
+                ))}
+                <label className="w-[88px] h-[88px] rounded-xl border border-dashed border-black/25 flex flex-col items-center justify-center text-[11px] text-black/50 cursor-pointer hover:bg-black/5 transition-colors">
+                  {uploading ? "Uploading…" : <><span className="text-[18px] leading-none mb-0.5">+</span>Add photos</>}
+                  <input type="file" accept="image/*" multiple hidden onChange={onPickPhotos} disabled={uploading} />
+                </label>
+              </div>
+              {photos.length === 0 && (
+                <p className="text-[12px] text-black/40">Optional — leave empty to use elegant stock photos you can swap later.</p>
+              )}
+            </Section>
+
             <Section title="Schedule" hint="One per line · “TIME | Label”">
               <Field label="" textarea rows={4} value={f.schedule} onChange={set("schedule")} />
             </Section>
@@ -313,7 +384,7 @@ export default function FlatLayBuilderPage() {
 
             <div className="sticky bottom-0 -mx-6 md:-mx-10 px-6 md:px-10 py-4 bg-[#fafafa]/90 backdrop-blur border-t border-black/10 flex items-center justify-end gap-3">
               <span className="text-[12px] text-black/40 mr-auto">Photos &amp; colors use elegant defaults — swap them later.</span>
-              <button onClick={submitForm} disabled={busy !== null}
+              <button onClick={submitForm} disabled={busy !== null || uploading}
                 className="rounded-full px-7 py-3 text-[13px] bg-black text-white hover:bg-black/90 disabled:opacity-40 transition-colors">
                 {busy === "form" ? "Creating…" : "Create site"}
               </button>
