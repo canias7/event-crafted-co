@@ -1,34 +1,62 @@
-// AUTO-GENERATED Stage 1 (flat-lay engine). Source of truth: the hand-built
-// Ava & Liam invite (slug ava-liam-leaf-preview). composeFlatLay(spec) emits the
-// flat-lay HTML; the renderer (ai-site-render) injects base CSS + GSAP + OG meta.
+// AUTO-GENERATED flat-lay engine. Source of truth: the hand-built Ava & Liam
+// invite. composeFlatLay(spec) emits the flat-lay HTML; ai-site-render injects
+// base CSS + GSAP + OG meta. Verified: composeFlatLay(DEFAULT_SPEC) reproduces
+// the stored Ava & Liam HTML byte-for-byte.
 //
-// Stage 1 parameterizes the core couple/event scalars. Deep content (schedule,
-// menus, travel, FAQ, story sections, partners, photos) is still baked in with the
-// couple's NAME tokens swapped — Stage 2 turns those into spec arrays.
+// Stage 1: couple/event scalars. Stage 2 (in progress): structured content
+// blocks -> spec arrays; bespoke SVGs live in ICONS keyed by name.
+
+export interface ScheduleItem { iconKey: string; time: string; label: string }
+export interface MenuItem { name: string; desc?: string }
+export interface MenuGroup { iconKey: string; title: string; items: MenuItem[] }
+
+export interface GalleryPhoto { src: string; name: string }
+export interface StorySection { title?: string; body: string; photos: string[] }
+export interface ProposalSection { body: string; proposalPhotos: string[]; engagementPhotos: string[] }
+export interface Partner { photo: string; role: string; bio: string; ffLabel: string; ffacts: string[] }
 
 export interface FlatLaySpec {
   slug: string;
-  name1: string;        // first partner first name      e.g. "Ava"
-  name2: string;        // second partner first name     e.g. "Liam"
-  init1: string;        // monogram initial 1            e.g. "A"
-  init2: string;        // monogram initial 2            e.g. "L"
-  dateFull: string;     // "Saturday, October 11, 2026"
-  dateLong: string;     // "October 11, 2026"
-  timeStart: string;    // "4:00 in the afternoon"
-  timeEnd: string;      // "10:00 in the evening"
-  venue: string;        // "Maple Grove Estate"
-  address: string;      // may contain <br>: "123 Lane,<br>City, ST 00000"
-  mapQuery: string;     // url-encoded venue query: "Maple+Grove+Estate+Hudson+NY"
-  dressCode: string;    // "Garden Formal"
-  signoffPre: string;   // "With all our love,"
+  name1: string; name2: string; init1: string; init2: string;
+  dateFull: string; dateLong: string; timeStart: string; timeEnd: string;
+  venue: string; address: string; mapQuery: string; dressCode: string; signoffPre: string;
+  schedule: ScheduleItem[];
+  menus: MenuGroup[];
+  swatches: string[];
+  gallery: GalleryPhoto[];
+  heroPhoto: string;
+  heroIntro: string;
+  story: { howMet: StorySection; firstDate: StorySection; proposal: ProposalSection };
+  partners: Partner[];
+  travel: AccItem[];
+  faqs: AccItem[];
+  mealOptions: string[];
+  events: { label: string; checked: boolean }[];
 }
+export interface AccItem { iconKey: string; title: string; body: string }
+
+export const ICONS: Record<string, string> = {
+  "sch0": "<svg class=\"sicon\" viewBox=\"0 0 48 40\"><circle cx=\"20\" cy=\"25\" r=\"8.5\"/><circle cx=\"30\" cy=\"25\" r=\"8.5\"/><path d=\"M27 13l3-4 3 4-3 3z\"/></svg>",
+  "sch1": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><path d=\"M9 9h22L20 23z\"/><line x1=\"20\" y1=\"23\" x2=\"20\" y2=\"32\"/><line x1=\"13\" y1=\"32\" x2=\"27\" y2=\"32\"/><line x1=\"26\" y1=\"11\" x2=\"30\" y2=\"6\"/><circle cx=\"30\" cy=\"6\" r=\"1.6\"/></svg>",
+  "sch2": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><path d=\"M11 7v7M14 7v7M8 7v7\"/><path d=\"M11 14v19\"/><path d=\"M30 7c2.6 2 2.6 9 0 12v14\"/></svg>",
+  "sch3": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><path d=\"M16 28V12l13-3v15\"/><circle cx=\"13\" cy=\"28\" r=\"3.2\"/><circle cx=\"26\" cy=\"25\" r=\"3.2\"/></svg>",
+  "menu0": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><rect x=\"11\" y=\"7\" width=\"18\" height=\"26\" rx=\"2\"/><line x1=\"15\" y1=\"14\" x2=\"25\" y2=\"14\"/><line x1=\"15\" y1=\"19\" x2=\"25\" y2=\"19\"/><line x1=\"15\" y1=\"24\" x2=\"22\" y2=\"24\"/></svg>",
+  "menu1": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><path d=\"M13 7h14c0 8-3 12-7 12s-7-4-7-12z\"/><line x1=\"20\" y1=\"19\" x2=\"20\" y2=\"31\"/><line x1=\"14\" y1=\"31\" x2=\"26\" y2=\"31\"/></svg>",
+  "menu2": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><path d=\"M12 19h16l-2 13H14z\"/><path d=\"M12 19c0-6 4-9 8-9s8 3 8 9\"/><line x1=\"20\" y1=\"5\" x2=\"20\" y2=\"10\"/><circle cx=\"20\" cy=\"5\" r=\"1.6\"/></svg>",
+  "trv0": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><rect x=\"11\" y=\"9\" width=\"18\" height=\"24\" rx=\"1.5\"/><line x1=\"15\" y1=\"14\" x2=\"17\" y2=\"14\"/><line x1=\"23\" y1=\"14\" x2=\"25\" y2=\"14\"/><line x1=\"15\" y1=\"19\" x2=\"17\" y2=\"19\"/><line x1=\"23\" y1=\"19\" x2=\"25\" y2=\"19\"/><line x1=\"15\" y1=\"24\" x2=\"17\" y2=\"24\"/><line x1=\"23\" y1=\"24\" x2=\"25\" y2=\"24\"/><path d=\"M17 33v-5h6v5\"/></svg>",
+  "trv1": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><circle cx=\"16\" cy=\"17\" r=\"5.5\"/><path d=\"M20 21l9 9\"/><line x1=\"26\" y1=\"27\" x2=\"29\" y2=\"24\"/><line x1=\"29\" y1=\"30\" x2=\"32\" y2=\"27\"/></svg>",
+  "trv2": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><rect x=\"10\" y=\"8\" width=\"20\" height=\"24\" rx=\"3\"/><path d=\"M17 26V14h4a3.5 3.5 0 0 1 0 7h-4\"/></svg>",
+  "trv3": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><rect x=\"8\" y=\"12\" width=\"24\" height=\"14\" rx=\"2\"/><line x1=\"8\" y1=\"19\" x2=\"32\" y2=\"19\"/><line x1=\"20\" y1=\"12\" x2=\"20\" y2=\"19\"/><circle cx=\"14\" cy=\"29\" r=\"2.4\"/><circle cx=\"26\" cy=\"29\" r=\"2.4\"/></svg>",
+  "faq0": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><circle cx=\"16\" cy=\"15\" r=\"4.5\"/><path d=\"M9 31c0-4.5 3.2-7.5 7-7.5s7 3 7 7.5\"/><circle cx=\"28\" cy=\"17\" r=\"3.4\"/><path d=\"M26 24c3 0 5 2.2 5 6\"/></svg>",
+  "faq1": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><circle cx=\"20\" cy=\"13\" r=\"4\"/><path d=\"M20 17v9\"/><path d=\"M14 21h12\"/><path d=\"M16 32l4-6 4 6\"/></svg>",
+  "faq2": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><rect x=\"10\" y=\"8\" width=\"20\" height=\"24\" rx=\"3\"/><path d=\"M17 26V14h4a3.5 3.5 0 0 1 0 7h-4\"/></svg>",
+  "faq3": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><circle cx=\"20\" cy=\"20\" r=\"6\"/><line x1=\"20\" y1=\"6\" x2=\"20\" y2=\"10\"/><line x1=\"20\" y1=\"30\" x2=\"20\" y2=\"34\"/><line x1=\"6\" y1=\"20\" x2=\"10\" y2=\"20\"/><line x1=\"30\" y1=\"20\" x2=\"34\" y2=\"20\"/><line x1=\"10.2\" y1=\"10.2\" x2=\"13\" y2=\"13\"/><line x1=\"27\" y1=\"27\" x2=\"29.8\" y2=\"29.8\"/><line x1=\"29.8\" y1=\"10.2\" x2=\"27\" y2=\"13\"/><line x1=\"13\" y1=\"27\" x2=\"10.2\" y2=\"29.8\"/></svg>",
+  "faq4": "<svg class=\"sicon\" viewBox=\"0 0 40 40\"><path d=\"M10 12h20v14H22l-5 5v-5h-7z\"/><path d=\"M17 17.6a3 3 0 1 1 4 2.8c-.9.5-1 .9-1 1.7\"/><circle cx=\"20\" cy=\"24.6\" r=\".7\"/></svg>"
+};
 
 export const DEFAULT_SPEC: FlatLaySpec = {
   slug: "ava-liam-leaf-preview",
-  name1: "Ava",
-  name2: "Liam",
-  init1: "A",
-  init2: "L",
+  name1: "Ava", name2: "Liam", init1: "A", init2: "L",
   dateFull: "Saturday, October 11, 2026",
   dateLong: "October 11, 2026",
   timeStart: "4:00 in the afternoon",
@@ -38,6 +66,264 @@ export const DEFAULT_SPEC: FlatLaySpec = {
   mapQuery: "Maple+Grove+Estate+Hudson+NY",
   dressCode: "Garden Formal",
   signoffPre: "With all our love,",
+  schedule: [
+  {
+    "iconKey": "sch0",
+    "time": "4:00 PM",
+    "label": "Ceremony"
+  },
+  {
+    "iconKey": "sch1",
+    "time": "5:00 PM",
+    "label": "Cocktail Hour"
+  },
+  {
+    "iconKey": "sch2",
+    "time": "6:00 PM",
+    "label": "Reception"
+  },
+  {
+    "iconKey": "sch3",
+    "time": "9:00 PM",
+    "label": "Special Activities"
+  }
+],
+  menus: [
+  {
+    "iconKey": "menu0",
+    "title": "Menu",
+    "items": [
+      {
+        "name": "Heirloom Tomato &amp; Burrata",
+        "desc": "basil · aged balsamic"
+      },
+      {
+        "name": "Herb-Roasted Chicken",
+        "desc": "lemon · thyme jus"
+      },
+      {
+        "name": "Pan-Seared Salmon",
+        "desc": "dill butter"
+      },
+      {
+        "name": "Wild Mushroom Risotto",
+        "desc": "vegetarian"
+      },
+      {
+        "name": "Truffle Mashed Potatoes &amp; Greens"
+      }
+    ]
+  },
+  {
+    "iconKey": "menu1",
+    "title": "Bar Menu",
+    "items": [
+      {
+        "name": "The Ava",
+        "desc": "gin · elderflower · citrus"
+      },
+      {
+        "name": "The Liam",
+        "desc": "bourbon · maple · bitters"
+      },
+      {
+        "name": "House Wine",
+        "desc": "cabernet · chardonnay · ros&eacute;"
+      },
+      {
+        "name": "Champagne Toast"
+      },
+      {
+        "name": "Beer &amp; Non-Alcoholic",
+        "desc": "on request"
+      }
+    ]
+  },
+  {
+    "iconKey": "menu2",
+    "title": "Dessert Menu",
+    "items": [
+      {
+        "name": "Vanilla &amp; Raspberry Wedding Cake"
+      },
+      {
+        "name": "Lemon Tartlets"
+      },
+      {
+        "name": "Chocolate Truffles"
+      },
+      {
+        "name": "French Macarons"
+      },
+      {
+        "name": "Coffee &amp; Tea Bar"
+      }
+    ]
+  }
+],
+  swatches: [
+  "#2f3d24",
+  "#5e7548",
+  "#9caa85",
+  "#c7a85e",
+  "#d9c4a0",
+  "#f2ead6"
+],
+  gallery: [
+  {
+    "src": "https://images.unsplash.com/photo-1519741497674-611481863552?w=700&q=80&auto=format,compress&fit=crop",
+    "name": "ava-and-liam.jpg"
+  },
+  {
+    "src": "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=700&q=80&auto=format,compress&fit=crop",
+    "name": "reception.jpg"
+  },
+  {
+    "src": "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=700&q=80&auto=format,compress&fit=crop",
+    "name": "ceremony.jpg"
+  },
+  {
+    "src": "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=700&q=80&auto=format,compress&fit=crop",
+    "name": "toast.jpg"
+  },
+  {
+    "src": "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=700&q=80&auto=format,compress&fit=crop",
+    "name": "the-rings.jpg"
+  },
+  {
+    "src": "https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=700&q=80&auto=format,compress&fit=crop",
+    "name": "celebration.jpg"
+  }
+],
+  heroPhoto: "https://images.unsplash.com/photo-1519741497674-611481863552?w=720&amp;q=80&amp;auto=format,compress&amp;fit=crop",
+  heroIntro: "Two readers, one last copy, and a love story still being written. We&rsquo;d be honored to have you share the day with us.",
+  story: {
+  "howMet": {
+    "title": "The Last Copy",
+    "body": "It was a rainy Tuesday in a little corner bookshop. Ava and Liam both reached for the last copy of the same novel &mdash; and neither would let go. They settled it over coffee next door, and talked until the shop closed.",
+    "photos": [
+      "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop",
+      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop"
+    ]
+  },
+  "firstDate": {
+    "body": "A stroll through the autumn market that was only meant to last an hour. Five hours, two coffees, and one shared cinnamon roll later, they knew this was something rare.",
+    "photos": [
+      "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop",
+      "https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop"
+    ]
+  },
+  "proposal": {
+    "body": "On their anniversary, Liam brought Ava back to that same bookshop. Tucked inside her favorite novel was a hand-written note &mdash; and when she turned around, he was down on one knee.",
+    "proposalPhotos": [
+      "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop",
+      "https://images.unsplash.com/photo-1519741497674-611481863552?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop"
+    ],
+    "engagementPhotos": [
+      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop",
+      "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop"
+    ]
+  }
+},
+  partners: [
+  {
+    "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&amp;q=80&amp;auto=format,compress&amp;fit=crop&amp;crop=faces",
+    "role": "Partner One",
+    "bio": "A book editor with a weakness for rainy days, slow mornings, and anything with cinnamon. She collects old novels and even older love songs.",
+    "ffLabel": "Fun Facts",
+    "ffacts": [
+      "Has read Pride &amp; Prejudice twelve times",
+      "Makes a legendary apple pie",
+      "Named a houseplant after Liam"
+    ]
+  },
+  {
+    "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&amp;q=80&amp;auto=format,compress&amp;fit=crop&amp;crop=faces",
+    "role": "Partner Two",
+    "bio": "An architect who sketches on napkins and never says no to an adventure. He makes the best pancakes and the worst puns.",
+    "ffLabel": "Fun Fact",
+    "ffacts": [
+      "Can fold a paper crane in under a minute"
+    ]
+  }
+],
+  travel: [
+  {
+    "iconKey": "trv0",
+    "title": "Hotel Recommendations",
+    "body": "<div class=\"mline\"><span class=\"mname\">The Maple Inn</span><span class=\"mdesc\">boutique &middot; 5 min from venue</span></div><div class=\"mline\"><span class=\"mname\">Hudson Riverside Hotel</span><span class=\"mdesc\">riverfront &middot; 12 min from venue</span></div><div class=\"mline\"><span class=\"mname\">Grove Country Lodge</span><span class=\"mdesc\">cozy &amp; rustic &middot; 8 min from venue</span></div><a class=\"eimap\" href=\"https://www.google.com/maps/search/?api=1&amp;query=hotels+near+Maple+Grove+Estate+Hudson+NY\" target=\"_blank\" rel=\"noopener\">See hotels on the map</a>"
+  },
+  {
+    "iconKey": "trv1",
+    "title": "Room Block",
+    "body": "<div class=\"eirow\"><span class=\"eik\">Hotel</span><span class=\"eiv\">The Maple Inn</span></div><div class=\"eirow\"><span class=\"eik\">Group Code</span><span class=\"eiv\">AVA &amp; LIAM 2026</span></div><div class=\"eirow\"><span class=\"eik\">Group Rate</span><span class=\"eiv\">$189 per night</span></div><div class=\"eirow\"><span class=\"eik\">Reserve By</span><span class=\"eiv\">September 10, 2026</span></div><a class=\"eimap\" href=\"https://www.google.com/maps/search/?api=1&amp;query=The+Maple+Inn+Hudson+NY\" target=\"_blank\" rel=\"noopener\">Book in the room block</a>"
+  },
+  {
+    "iconKey": "trv2",
+    "title": "Parking",
+    "body": "<div class=\"mline\"><span class=\"mname\">Complimentary on-site parking</span><span class=\"mdesc\">valet from 3:30 PM</span></div><div class=\"mline\"><span class=\"mname\">Self-parking by the carriage house</span></div><div class=\"mline\"><span class=\"mname\">Leave your car overnight</span><span class=\"mdesc\">if you ride the shuttle home</span></div>"
+  },
+  {
+    "iconKey": "trv3",
+    "title": "Shuttle",
+    "body": "<div class=\"mline\"><span class=\"mname\">The Maple Inn &rarr; Maple Grove Estate</span><span class=\"mdesc\">departs 3:15 PM</span></div><div class=\"mline\"><span class=\"mname\">Return trips to the hotel</span><span class=\"mdesc\">9:30 &middot; 10:15 &middot; 11:00 PM</span></div><div class=\"mline\"><span class=\"mname\">Look for the white estate van</span><span class=\"mdesc\">at the hotel lobby doors</span></div>"
+  }
+],
+  faqs: [
+  {
+    "iconKey": "faq0",
+    "title": "Plus-One Policy",
+    "body": "<p class=\"faq-a\">Your invitation is reserved for the guests named when you RSVP. If a plus-one is included for you, the option will appear as you respond. Have a question about your party? Just reach out &mdash; we&rsquo;re happy to help.</p>"
+  },
+  {
+    "iconKey": "faq1",
+    "title": "Children Policy",
+    "body": "<p class=\"faq-a\">We adore your little ones, but we&rsquo;ve planned an adults-only celebration so everyone can relax and dance the night away. Immediate family are, of course, the exception. Thank you for understanding!</p>"
+  },
+  {
+    "iconKey": "faq2",
+    "title": "Parking Instructions",
+    "body": "<p class=\"faq-a\">Enter through the main gate off Maple Grove Lane &mdash; attendants will wave you in and take your keys at the valet stand. Self-parking is just past the carriage house. Please arrive by 3:40 PM so you&rsquo;re seated before the ceremony.</p>"
+  },
+  {
+    "iconKey": "faq3",
+    "title": "Weather Expectations",
+    "body": "<p class=\"faq-a\">Mid-October in Hudson is crisp and golden &mdash; expect highs near 60&deg;F and cool evenings around 45&deg;F. The ceremony is outdoors on the lawn, so a wrap or light coat is a lovely idea. We&rsquo;ll have heaters and cozy blankets on hand, too.</p>"
+  },
+  {
+    "iconKey": "faq4",
+    "title": "More Questions",
+    "body": "<p class=\"faq-a\"><strong>When should I arrive?</strong><br>Doors open at 3:30 PM. Please be seated by 3:50 &mdash; the ceremony begins promptly at 4:00.</p><p class=\"faq-a\"><strong>What should I wear?</strong><br>Garden formal in soft, natural tones. The ceremony is on grass, so block heels are your friend.</p><p class=\"faq-a\"><strong>Can I take photos?</strong><br>We&rsquo;re having an unplugged ceremony &mdash; please keep phones tucked away until after the vows, then snap away and add them to our Photo Gallery!</p><p class=\"faq-a\"><strong>Who do I contact?</strong><br>Reach our coordinator, Sophie, at (555)&nbsp;123-4567, or message Ava &amp; Liam directly.</p>"
+  }
+],
+  mealOptions: [
+  "Herb-Roasted Chicken",
+  "Pan-Seared Salmon",
+  "Wild Mushroom Risotto &middot; V",
+  "Children&rsquo;s Meal"
+],
+  events: [
+  {
+    "label": "Ceremony",
+    "checked": true
+  },
+  {
+    "label": "Reception",
+    "checked": true
+  },
+  {
+    "label": "Welcome Party",
+    "checked": false
+  },
+  {
+    "label": "Rehearsal Dinner",
+    "checked": false
+  },
+  {
+    "label": "Brunch",
+    "checked": false
+  }
+],
 };
 
 const TEMPLATE = `<!doctype html><html lang="en"><head>
@@ -141,7 +427,7 @@ img.card{display:block;object-fit:cover;border-radius:2px}
     <h1 class="names">{{NAME1}} <span class="amp">&amp;</span> {{NAME2}}</h1>
     <div class="invite">are inviting you…</div>
   </section>
-  <section class="cards"><img class="seal" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/wax-seal-v2.png" alt=""></img><img class="euc euc-a" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/eucalyptus-3-v1.png" alt=""><img class="euc euc-b" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/eucalyptus-3-v1.png" alt=""><img class="euc euc-c" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/eucalyptus-3-v1.png" alt=""><div class="flip lace-flip"><div class="fin"><label for="fld" class="face ff lace-card"><span class="l1">Tap here for the</span><span class="l2">Details</span></label><div class="face bk lace-card"><span class="bl-sub">Explore</span><span class="bl-h">The Details</span><div class="dmenu"><details class="dacc"><summary class="ditem">Event Information</summary><div class="dpanel ei"><div class="eirow"><span class="eik">Event</span><span class="eiv">The Wedding of {{NAME1}} &amp; {{NAME2}}</span></div><div class="eirow"><span class="eik">Date</span><span class="eiv">{{DATE_FULL}}</span></div><div class="eirow"><span class="eik">Start Time</span><span class="eiv">{{TIME_START}}</span></div><div class="eirow"><span class="eik">End Time</span><span class="eiv">{{TIME_END}}</span></div><div class="eirow"><span class="eik">Venue</span><span class="eiv">{{VENUE}}</span></div><div class="eirow"><span class="eik">Address</span><span class="eiv">{{ADDRESS}}</span></div><a class="eimap" href="https://www.google.com/maps/search/?api=1&amp;query={{MAP_Q}}" target="_blank" rel="noopener">View on Google Maps</a><div class="dress"><span class="dress-lbl">Dress Code &middot; {{DRESS_CODE}}</span><div class="swatches"><span class="sw" style="background:#2f3d24"></span><span class="sw" style="background:#5e7548"></span><span class="sw" style="background:#9caa85"></span><span class="sw" style="background:#c7a85e"></span><span class="sw" style="background:#d9c4a0"></span><span class="sw" style="background:#f2ead6"></span></div></div></div></details><details class="dacc"><summary class="ditem">Schedule &middot; Food &amp; Drinks</summary><div class="dpanel sch"><span class="sec-h">Schedule</span><div class="sgrid"><div class="sitem"><svg class="sicon" viewBox="0 0 48 40"><circle cx="20" cy="25" r="8.5"/><circle cx="30" cy="25" r="8.5"/><path d="M27 13l3-4 3 4-3 3z"/></svg><span class="stime">4:00 PM</span><span class="slabel">Ceremony</span></div><div class="sitem"><svg class="sicon" viewBox="0 0 40 40"><path d="M9 9h22L20 23z"/><line x1="20" y1="23" x2="20" y2="32"/><line x1="13" y1="32" x2="27" y2="32"/><line x1="26" y1="11" x2="30" y2="6"/><circle cx="30" cy="6" r="1.6"/></svg><span class="stime">5:00 PM</span><span class="slabel">Cocktail Hour</span></div><div class="sitem"><svg class="sicon" viewBox="0 0 40 40"><path d="M11 7v7M14 7v7M8 7v7"/><path d="M11 14v19"/><path d="M30 7c2.6 2 2.6 9 0 12v14"/></svg><span class="stime">6:00 PM</span><span class="slabel">Reception</span></div><div class="sitem"><svg class="sicon" viewBox="0 0 40 40"><path d="M16 28V12l13-3v15"/><circle cx="13" cy="28" r="3.2"/><circle cx="26" cy="25" r="3.2"/></svg><span class="stime">9:00 PM</span><span class="slabel">Special Activities</span></div></div><span class="sec-h sec-h2">Food &amp; Drinks</span><div class="fdmenu"><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><rect x="11" y="7" width="18" height="26" rx="2"/><line x1="15" y1="14" x2="25" y2="14"/><line x1="15" y1="19" x2="25" y2="19"/><line x1="15" y1="24" x2="22" y2="24"/></svg><span>Menu</span></summary><div class="fbody"><div class="mline"><span class="mname">Heirloom Tomato &amp; Burrata</span><span class="mdesc">basil · aged balsamic</span></div><div class="mline"><span class="mname">Herb-Roasted Chicken</span><span class="mdesc">lemon · thyme jus</span></div><div class="mline"><span class="mname">Pan-Seared Salmon</span><span class="mdesc">dill butter</span></div><div class="mline"><span class="mname">Wild Mushroom Risotto</span><span class="mdesc">vegetarian</span></div><div class="mline"><span class="mname">Truffle Mashed Potatoes &amp; Greens</span></div></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><path d="M13 7h14c0 8-3 12-7 12s-7-4-7-12z"/><line x1="20" y1="19" x2="20" y2="31"/><line x1="14" y1="31" x2="26" y2="31"/></svg><span>Bar Menu</span></summary><div class="fbody"><div class="mline"><span class="mname">The {{NAME1}}</span><span class="mdesc">gin · elderflower · citrus</span></div><div class="mline"><span class="mname">The {{NAME2}}</span><span class="mdesc">bourbon · maple · bitters</span></div><div class="mline"><span class="mname">House Wine</span><span class="mdesc">cabernet · chardonnay · ros&eacute;</span></div><div class="mline"><span class="mname">Champagne Toast</span></div><div class="mline"><span class="mname">Beer &amp; Non-Alcoholic</span><span class="mdesc">on request</span></div></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><path d="M12 19h16l-2 13H14z"/><path d="M12 19c0-6 4-9 8-9s8 3 8 9"/><line x1="20" y1="5" x2="20" y2="10"/><circle cx="20" cy="5" r="1.6"/></svg><span>Dessert Menu</span></summary><div class="fbody"><div class="mline"><span class="mname">Vanilla &amp; Raspberry Wedding Cake</span></div><div class="mline"><span class="mname">Lemon Tartlets</span></div><div class="mline"><span class="mname">Chocolate Truffles</span></div><div class="mline"><span class="mname">French Macarons</span></div><div class="mline"><span class="mname">Coffee &amp; Tea Bar</span></div></div></details></div></div></details><details class="dacc"><summary class="ditem">Photo Gallery<span class="dsub">share your photos</span></summary><div class="dpanel gal"><div class="gal-grid" id="galGrid"><figure class="ph"><img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=700&q=80&auto=format,compress&fit=crop" alt="Wedding photo" loading="lazy"><button class="dl" data-src="https://images.unsplash.com/photo-1519741497674-611481863552?w=700&q=80&auto=format,compress&fit=crop" data-name="ava-and-liam.jpg"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button></figure><figure class="ph"><img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=700&q=80&auto=format,compress&fit=crop" alt="Wedding photo" loading="lazy"><button class="dl" data-src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=700&q=80&auto=format,compress&fit=crop" data-name="reception.jpg"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button></figure><figure class="ph"><img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=700&q=80&auto=format,compress&fit=crop" alt="Wedding photo" loading="lazy"><button class="dl" data-src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=700&q=80&auto=format,compress&fit=crop" data-name="ceremony.jpg"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button></figure><figure class="ph"><img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=700&q=80&auto=format,compress&fit=crop" alt="Wedding photo" loading="lazy"><button class="dl" data-src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=700&q=80&auto=format,compress&fit=crop" data-name="toast.jpg"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button></figure><figure class="ph"><img src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=700&q=80&auto=format,compress&fit=crop" alt="Wedding photo" loading="lazy"><button class="dl" data-src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=700&q=80&auto=format,compress&fit=crop" data-name="the-rings.jpg"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button></figure><figure class="ph"><img src="https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=700&q=80&auto=format,compress&fit=crop" alt="Wedding photo" loading="lazy"><button class="dl" data-src="https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=700&q=80&auto=format,compress&fit=crop" data-name="celebration.jpg"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button></figure></div><label class="gal-add"><input type="file" id="galInput" accept="image/*" multiple hidden><span class="plus">+</span> Add Photos</label><div class="gal-note">Tap a photo&rsquo;s arrow to download &middot; add your own above</div></div></details><details class="dacc"><summary class="ditem">Singles Page<span class="dsub">single &amp; ready to mingle</span></summary><div class="dpanel"><span class="sec-h">Singles Mingle</span><p class="faq-a">Flying solo at our wedding? Add yourself to the wall &mdash; or nominate a fabulous single friend! Drop in a photo and a few words about yourself, then scroll down to see who else is looking to mingle. You never know who you&rsquo;ll meet on the dance floor. &#9825;</p><form class="mingle-form" method="POST" action="https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/ai-site-photos?slug={{SLUG}}" enctype="multipart/form-data"><span class="mingle-lbl">Add yourself to the wall</span><input class="mingle-in" type="file" name="file" accept="image/*" required><input class="mingle-in" type="text" name="name" placeholder="Your first name" maxlength="80"><input class="mingle-in" type="text" name="caption" placeholder="A few words about you &mdash; your vibe, what you love&hellip;" maxlength="280"><button class="mingle-btn" type="submit">Add me to the wall</button></form><span class="mingle-meet">&#9662;&ensp;Meet the singles&ensp;&#9662;</span>__PHOTO_ALBUM__</div></details><details class="dacc"><summary class="ditem">Travel &amp; Stay<span class="dsub">getting here &middot; where to stay</span></summary><div class="dpanel"><div class="fdmenu"><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><rect x="11" y="9" width="18" height="24" rx="1.5"/><line x1="15" y1="14" x2="17" y2="14"/><line x1="23" y1="14" x2="25" y2="14"/><line x1="15" y1="19" x2="17" y2="19"/><line x1="23" y1="19" x2="25" y2="19"/><line x1="15" y1="24" x2="17" y2="24"/><line x1="23" y1="24" x2="25" y2="24"/><path d="M17 33v-5h6v5"/></svg><span>Hotel Recommendations</span></summary><div class="fbody"><div class="mline"><span class="mname">The Maple Inn</span><span class="mdesc">boutique &middot; 5 min from venue</span></div><div class="mline"><span class="mname">Hudson Riverside Hotel</span><span class="mdesc">riverfront &middot; 12 min from venue</span></div><div class="mline"><span class="mname">Grove Country Lodge</span><span class="mdesc">cozy &amp; rustic &middot; 8 min from venue</span></div><a class="eimap" href="https://www.google.com/maps/search/?api=1&amp;query=hotels+near+{{MAP_Q}}" target="_blank" rel="noopener">See hotels on the map</a></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><circle cx="16" cy="17" r="5.5"/><path d="M20 21l9 9"/><line x1="26" y1="27" x2="29" y2="24"/><line x1="29" y1="30" x2="32" y2="27"/></svg><span>Room Block</span></summary><div class="fbody"><div class="eirow"><span class="eik">Hotel</span><span class="eiv">The Maple Inn</span></div><div class="eirow"><span class="eik">Group Code</span><span class="eiv">AVA &amp; LIAM 2026</span></div><div class="eirow"><span class="eik">Group Rate</span><span class="eiv">$189 per night</span></div><div class="eirow"><span class="eik">Reserve By</span><span class="eiv">September 10, 2026</span></div><a class="eimap" href="https://www.google.com/maps/search/?api=1&amp;query=The+Maple+Inn+Hudson+NY" target="_blank" rel="noopener">Book in the room block</a></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><rect x="10" y="8" width="20" height="24" rx="3"/><path d="M17 26V14h4a3.5 3.5 0 0 1 0 7h-4"/></svg><span>Parking</span></summary><div class="fbody"><div class="mline"><span class="mname">Complimentary on-site parking</span><span class="mdesc">valet from 3:30 PM</span></div><div class="mline"><span class="mname">Self-parking by the carriage house</span></div><div class="mline"><span class="mname">Leave your car overnight</span><span class="mdesc">if you ride the shuttle home</span></div></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><rect x="8" y="12" width="24" height="14" rx="2"/><line x1="8" y1="19" x2="32" y2="19"/><line x1="20" y1="12" x2="20" y2="19"/><circle cx="14" cy="29" r="2.4"/><circle cx="26" cy="29" r="2.4"/></svg><span>Shuttle</span></summary><div class="fbody"><div class="mline"><span class="mname">The Maple Inn &rarr; {{VENUE}}</span><span class="mdesc">departs 3:15 PM</span></div><div class="mline"><span class="mname">Return trips to the hotel</span><span class="mdesc">9:30 &middot; 10:15 &middot; 11:00 PM</span></div><div class="mline"><span class="mname">Look for the white estate van</span><span class="mdesc">at the hotel lobby doors</span></div></div></details></div></div></details><details class="dacc"><summary class="ditem">FAQ<span class="dsub">good to know</span></summary><div class="dpanel"><div class="fdmenu"><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><circle cx="16" cy="15" r="4.5"/><path d="M9 31c0-4.5 3.2-7.5 7-7.5s7 3 7 7.5"/><circle cx="28" cy="17" r="3.4"/><path d="M26 24c3 0 5 2.2 5 6"/></svg><span>Plus-One Policy</span></summary><div class="fbody"><p class="faq-a">Your invitation is reserved for the guests named when you RSVP. If a plus-one is included for you, the option will appear as you respond. Have a question about your party? Just reach out &mdash; we&rsquo;re happy to help.</p></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><circle cx="20" cy="13" r="4"/><path d="M20 17v9"/><path d="M14 21h12"/><path d="M16 32l4-6 4 6"/></svg><span>Children Policy</span></summary><div class="fbody"><p class="faq-a">We adore your little ones, but we&rsquo;ve planned an adults-only celebration so everyone can relax and dance the night away. Immediate family are, of course, the exception. Thank you for understanding!</p></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><rect x="10" y="8" width="20" height="24" rx="3"/><path d="M17 26V14h4a3.5 3.5 0 0 1 0 7h-4"/></svg><span>Parking Instructions</span></summary><div class="fbody"><p class="faq-a">Enter through the main gate off Maple Grove Lane &mdash; attendants will wave you in and take your keys at the valet stand. Self-parking is just past the carriage house. Please arrive by 3:40 PM so you&rsquo;re seated before the ceremony.</p></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><circle cx="20" cy="20" r="6"/><line x1="20" y1="6" x2="20" y2="10"/><line x1="20" y1="30" x2="20" y2="34"/><line x1="6" y1="20" x2="10" y2="20"/><line x1="30" y1="20" x2="34" y2="20"/><line x1="10.2" y1="10.2" x2="13" y2="13"/><line x1="27" y1="27" x2="29.8" y2="29.8"/><line x1="29.8" y1="10.2" x2="27" y2="13"/><line x1="13" y1="27" x2="10.2" y2="29.8"/></svg><span>Weather Expectations</span></summary><div class="fbody"><p class="faq-a">Mid-October in Hudson is crisp and golden &mdash; expect highs near 60&deg;F and cool evenings around 45&deg;F. The ceremony is outdoors on the lawn, so a wrap or light coat is a lovely idea. We&rsquo;ll have heaters and cozy blankets on hand, too.</p></div></details><details class="facc"><summary class="fsum"><svg class="sicon" viewBox="0 0 40 40"><path d="M10 12h20v14H22l-5 5v-5h-7z"/><path d="M17 17.6a3 3 0 1 1 4 2.8c-.9.5-1 .9-1 1.7"/><circle cx="20" cy="24.6" r=".7"/></svg><span>More Questions</span></summary><div class="fbody"><p class="faq-a"><strong>When should I arrive?</strong><br>Doors open at 3:30 PM. Please be seated by 3:50 &mdash; the ceremony begins promptly at 4:00.</p><p class="faq-a"><strong>What should I wear?</strong><br>Garden formal in soft, natural tones. The ceremony is on grass, so block heels are your friend.</p><p class="faq-a"><strong>Can I take photos?</strong><br>We&rsquo;re having an unplugged ceremony &mdash; please keep phones tucked away until after the vows, then snap away and add them to our Photo Gallery!</p><p class="faq-a"><strong>Who do I contact?</strong><br>Reach our coordinator, Sophie, at (555)&nbsp;123-4567, or message {{NAME1}} &amp; {{NAME2}} directly.</p></div></details></div></div></details></div></div></div></div><div class="flip story-flip"><div class="fin"><label for="fst" class="face ff story-card"><div class="st-sub">the beginning of</div><span class="st-title">Our Story</span><p class="st-p">From a chance hello to forever.</p></label><div class="face bk story-card sb"><div class="shero"><img class="shero-photo" src="https://images.unsplash.com/photo-1519741497674-611481863552?w=720&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="{{NAME1}} &amp; {{NAME2}}"><span class="shero-eyebrow">Our Story</span><span class="st-title">{{NAME1}} &amp; {{NAME2}}</span><span class="shero-date">{{DATE_LONG}}</span><p class="shero-intro">Two readers, one last copy, and a love story still being written. We&rsquo;d be honored to have you share the day with us.</p></div><div class="dmenu smenu"><details class="dacc" open><summary class="ditem">How We Met</summary><div class="dpanel"><span class="story-h">The Last Copy</span><p class="faq-a">It was a rainy Tuesday in a little corner bookshop. {{NAME1}} and {{NAME2}} both reached for the last copy of the same novel &mdash; and neither would let go. They settled it over coffee next door, and talked until the shop closed.</p><div class="sphotos"><img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"><img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"></div></div></details><details class="dacc"><summary class="ditem">First Date</summary><div class="dpanel"><p class="faq-a">A stroll through the autumn market that was only meant to last an hour. Five hours, two coffees, and one shared cinnamon roll later, they knew this was something rare.</p><div class="sphotos"><img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"><img src="https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"></div></div></details><details class="dacc"><summary class="ditem">Proposal Story</summary><div class="dpanel"><p class="faq-a">On their anniversary, {{NAME2}} brought {{NAME1}} back to that same bookshop. Tucked inside her favorite novel was a hand-written note &mdash; and when she turned around, he was down on one knee.</p><span class="ph-lbl">The Proposal</span><div class="sphotos"><img src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"><img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"></div><span class="ph-lbl">The Engagement</span><div class="sphotos"><img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"><img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=520&amp;q=80&amp;auto=format,compress&amp;fit=crop" alt="" loading="lazy"></div></div></details><details class="dacc"><summary class="ditem">Meet the Couple<span class="dsub">the two of us</span></summary><div class="dpanel"><div class="couple"><div class="partner"><img class="pphoto" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&amp;q=80&amp;auto=format,compress&amp;fit=crop&amp;crop=faces" alt="{{NAME1}}"><span class="pname">{{NAME1}}</span><span class="prole">Partner One</span><p class="pbio">A book editor with a weakness for rainy days, slow mornings, and anything with cinnamon. She collects old novels and even older love songs.</p><div class="funfacts"><span class="ff-lbl">Fun Facts</span><ul class="ff-list"><li>Has read Pride &amp; Prejudice twelve times</li><li>Makes a legendary apple pie</li><li>Named a houseplant after {{NAME2}}</li></ul></div></div><div class="partner"><img class="pphoto" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&amp;q=80&amp;auto=format,compress&amp;fit=crop&amp;crop=faces" alt="{{NAME2}}"><span class="pname">{{NAME2}}</span><span class="prole">Partner Two</span><p class="pbio">An architect who sketches on napkins and never says no to an adventure. He makes the best pancakes and the worst puns.</p><div class="funfacts"><span class="ff-lbl">Fun Fact</span><ul class="ff-list"><li>Can fold a paper crane in under a minute</li></ul></div></div></div></div></details></div></div></div></div><img class="envelope" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/envelope-v5.png" alt=""><img class="tray" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/gold-tray-v2.png" alt=""><img class="ringbox" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/ringbox-v7.png" alt="">
+  <section class="cards"><img class="seal" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/wax-seal-v2.png" alt=""></img><img class="euc euc-a" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/eucalyptus-3-v1.png" alt=""><img class="euc euc-b" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/eucalyptus-3-v1.png" alt=""><img class="euc euc-c" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/eucalyptus-3-v1.png" alt=""><div class="flip lace-flip"><div class="fin"><label for="fld" class="face ff lace-card"><span class="l1">Tap here for the</span><span class="l2">Details</span></label><div class="face bk lace-card"><span class="bl-sub">Explore</span><span class="bl-h">The Details</span><div class="dmenu"><details class="dacc"><summary class="ditem">Event Information</summary><div class="dpanel ei"><div class="eirow"><span class="eik">Event</span><span class="eiv">The Wedding of {{NAME1}} &amp; {{NAME2}}</span></div><div class="eirow"><span class="eik">Date</span><span class="eiv">{{DATE_FULL}}</span></div><div class="eirow"><span class="eik">Start Time</span><span class="eiv">{{TIME_START}}</span></div><div class="eirow"><span class="eik">End Time</span><span class="eiv">{{TIME_END}}</span></div><div class="eirow"><span class="eik">Venue</span><span class="eiv">{{VENUE}}</span></div><div class="eirow"><span class="eik">Address</span><span class="eiv">{{ADDRESS}}</span></div><a class="eimap" href="https://www.google.com/maps/search/?api=1&amp;query={{MAP_Q}}" target="_blank" rel="noopener">View on Google Maps</a><div class="dress"><span class="dress-lbl">Dress Code &middot; {{DRESS_CODE}}</span>{{SWATCHES}}</div></div></details><details class="dacc"><summary class="ditem">Schedule &middot; Food &amp; Drinks</summary><div class="dpanel sch"><span class="sec-h">Schedule</span>{{SCHEDULE}}<span class="sec-h sec-h2">Food &amp; Drinks</span>{{MENUS}}</div></details><details class="dacc"><summary class="ditem">Photo Gallery<span class="dsub">share your photos</span></summary><div class="dpanel gal">{{GALLERY}}<label class="gal-add"><input type="file" id="galInput" accept="image/*" multiple hidden><span class="plus">+</span> Add Photos</label><div class="gal-note">Tap a photo&rsquo;s arrow to download &middot; add your own above</div></div></details><details class="dacc"><summary class="ditem">Singles Page<span class="dsub">single &amp; ready to mingle</span></summary><div class="dpanel"><span class="sec-h">Singles Mingle</span><p class="faq-a">Flying solo at our wedding? Add yourself to the wall &mdash; or nominate a fabulous single friend! Drop in a photo and a few words about yourself, then scroll down to see who else is looking to mingle. You never know who you&rsquo;ll meet on the dance floor. &#9825;</p><form class="mingle-form" method="POST" action="https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/ai-site-photos?slug={{SLUG}}" enctype="multipart/form-data"><span class="mingle-lbl">Add yourself to the wall</span><input class="mingle-in" type="file" name="file" accept="image/*" required><input class="mingle-in" type="text" name="name" placeholder="Your first name" maxlength="80"><input class="mingle-in" type="text" name="caption" placeholder="A few words about you &mdash; your vibe, what you love&hellip;" maxlength="280"><button class="mingle-btn" type="submit">Add me to the wall</button></form><span class="mingle-meet">&#9662;&ensp;Meet the singles&ensp;&#9662;</span>__PHOTO_ALBUM__</div></details><details class="dacc"><summary class="ditem">Travel &amp; Stay<span class="dsub">getting here &middot; where to stay</span></summary><div class="dpanel">{{TRAVEL}}</div></details><details class="dacc"><summary class="ditem">FAQ<span class="dsub">good to know</span></summary><div class="dpanel">{{FAQ}}</div></details></div></div></div></div><div class="flip story-flip"><div class="fin"><label for="fst" class="face ff story-card"><div class="st-sub">the beginning of</div><span class="st-title">Our Story</span><p class="st-p">From a chance hello to forever.</p></label><div class="face bk story-card sb"><div class="shero"><img class="shero-photo" src="{{HERO_PHOTO}}" alt="{{NAME1}} &amp; {{NAME2}}"><span class="shero-eyebrow">Our Story</span><span class="st-title">{{NAME1}} &amp; {{NAME2}}</span><span class="shero-date">{{DATE_LONG}}</span><p class="shero-intro">{{HERO_INTRO}}</p></div><div class="dmenu smenu"><details class="dacc" open><summary class="ditem">How We Met</summary><div class="dpanel">{{STORY_HOWMET}}</div></details><details class="dacc"><summary class="ditem">First Date</summary><div class="dpanel">{{STORY_FIRSTDATE}}</div></details><details class="dacc"><summary class="ditem">Proposal Story</summary><div class="dpanel">{{STORY_PROPOSAL}}</div></details><details class="dacc"><summary class="ditem">Meet the Couple<span class="dsub">the two of us</span></summary><div class="dpanel"><div class="couple">{{PARTNERS}}</div></div></details></div></div></div></div><img class="envelope" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/envelope-v5.png" alt=""><img class="tray" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/gold-tray-v2.png" alt=""><img class="ringbox" src="https://pahpjjubhbcbwqjpamwv.supabase.co/storage/v1/object/public/ai-site-images/previews/ringbox-v7.png" alt="">
     <!-- THE DETAILS — tilted left -->
     <div class="cw sl"><div class="card c-details t-left">
       <div class="mono">{{INIT1}} <span class="amp">&amp;</span> {{INIT2}}</div>
@@ -156,7 +442,7 @@ img.card{display:block;object-fit:cover;border-radius:2px}
     </div>
     </div>
     <!-- RSVP — tilted left -->
-    <div class="cw sl2"><div class="flip rsvp-flip"><div class="fin"><label for="frs" class="face ff card post c-rsvp"><div class="sub">Kindly</div><h2>RSVP</h2><svg class="rule" viewBox="0 0 160 14" width="118"><line x1="0" y1="7" x2="62" y2="7" stroke="currentColor" stroke-width=".7"/><circle cx="80" cy="7" r="2.4" fill="currentColor"/><line x1="98" y1="7" x2="160" y2="7" stroke="currentColor" stroke-width=".7"/></svg><div class="rf-note">Tap to respond</div></label><div class="face bk card post c-rsvp"><input class="rstep-in" type="radio" name="rstep" id="rs1" checked><input class="rstep-in" type="radio" name="rstep" id="rs2"><input class="rstep-in" type="radio" name="rstep" id="rs3"><input class="rstep-in" type="radio" name="rstep" id="rs4"><input class="rstep-in" type="radio" name="rstep" id="rs5"><input class="rstep-in" type="radio" name="rstep" id="rs6"><input class="rstep-in" type="radio" name="rstep" id="rs7"><div class="rwiz"><div class="rhead"><span class="sub">Kindly</span><h2>RSVP</h2></div><div class="rstep s1"><span class="rtitle">Guest Information</span><span class="rcap">Who&rsquo;s responding</span><div class="rfld"><label>Guest Name</label><input class="rin" type="text" placeholder="First &amp; last name"></div><div class="rfld"><label>Email Address</label><input class="rin" type="email" placeholder="you@example.com"></div><div class="rfld"><label>Phone Number <em>&middot; optional</em></label><input class="rin" type="tel" placeholder="(555) 123-4567"></div><div class="rnav"><span></span><div class="rdots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><label for="rs2" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s2"><span class="rtitle">Attendance</span><span class="rcap">Will you join us</span><div class="rseg big"><label><input type="radio" name="attend" checked><span>Will Attend</span></label><label><input type="radio" name="attend"><span>Will Not Attend</span></label></div><div class="rnav"><label for="rs1" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><label for="rs3" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s3"><span class="rtitle">Plus One</span><span class="rcap">Bringing a guest</span><div class="rfld"><label>Bringing a Guest?</label><div class="rseg"><label><input type="radio" name="plusone"><span>Yes</span></label><label><input type="radio" name="plusone" checked><span>No</span></label></div></div><div class="rfld"><label>Guest Name</label><input class="rin" type="text" placeholder="Your guest&rsquo;s name"></div><div class="rnav"><label for="rs2" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i></div><label for="rs4" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s4"><span class="rtitle">Event Selection</span><span class="rcap">Which events</span><div class="rchk"><label><input type="checkbox" checked><span class="box"></span>Ceremony</label><label><input type="checkbox" checked><span class="box"></span>Reception</label><label><input type="checkbox"><span class="box"></span>Welcome Party</label><label><input type="checkbox"><span class="box"></span>Rehearsal Dinner</label><label><input type="checkbox"><span class="box"></span>Brunch</label></div><div class="rnav"><label for="rs3" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><label for="rs5" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s5"><span class="rtitle">Meal Selection</span><span class="rcap">Dining preferences</span><div class="rfld"><label>Meal Choice</label><select class="rin"><option>Herb-Roasted Chicken</option><option>Pan-Seared Salmon</option><option>Wild Mushroom Risotto &middot; V</option><option>Children&rsquo;s Meal</option></select></div><div class="rfld"><label>Dietary Restrictions</label><input class="rin" type="text" placeholder="Vegetarian, vegan, gluten-free&hellip;"></div><div class="rfld"><label>Food Allergies</label><input class="rin" type="text" placeholder="Let us know what to avoid"></div><div class="rnav"><label for="rs4" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i></div><label for="rs6" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s6"><span class="rtitle">Additional Information</span><span class="rcap">Notes &amp; extras</span><div class="rfld"><label>Song Request</label><input class="rin" type="text" placeholder="A song to get you on the floor"></div><div class="rfld"><label>Message for the Couple</label><textarea class="rin" rows="3" placeholder="Share your well-wishes&hellip;"></textarea></div><div class="rfld"><label>Transportation Needed?</label><div class="rseg"><label><input type="radio" name="transport"><span>Yes</span></label><label><input type="radio" name="transport" checked><span>No</span></label></div></div><div class="rnav"><label for="rs5" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i></div><label for="rs7" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s7"><span class="rtitle">Confirmation</span><span class="rcap">Review &amp; send</span><p class="faq-a rsum">Use Back to review your answers, then send your RSVP. We&rsquo;ll email a confirmation with everything you need.</p><a class="eimap" href="https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/ai-site-ics?slug={{SLUG}}">Add to your calendar</a><p class="rconf">We can&rsquo;t wait to celebrate with you. &#9825;</p><div class="rnav"><label for="rs6" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i></div><span class="rsend">Send RSVP</span></div></div></div></div></div></div></div>
+    <div class="cw sl2"><div class="flip rsvp-flip"><div class="fin"><label for="frs" class="face ff card post c-rsvp"><div class="sub">Kindly</div><h2>RSVP</h2><svg class="rule" viewBox="0 0 160 14" width="118"><line x1="0" y1="7" x2="62" y2="7" stroke="currentColor" stroke-width=".7"/><circle cx="80" cy="7" r="2.4" fill="currentColor"/><line x1="98" y1="7" x2="160" y2="7" stroke="currentColor" stroke-width=".7"/></svg><div class="rf-note">Tap to respond</div></label><div class="face bk card post c-rsvp"><input class="rstep-in" type="radio" name="rstep" id="rs1" checked><input class="rstep-in" type="radio" name="rstep" id="rs2"><input class="rstep-in" type="radio" name="rstep" id="rs3"><input class="rstep-in" type="radio" name="rstep" id="rs4"><input class="rstep-in" type="radio" name="rstep" id="rs5"><input class="rstep-in" type="radio" name="rstep" id="rs6"><input class="rstep-in" type="radio" name="rstep" id="rs7"><div class="rwiz"><div class="rhead"><span class="sub">Kindly</span><h2>RSVP</h2></div><div class="rstep s1"><span class="rtitle">Guest Information</span><span class="rcap">Who&rsquo;s responding</span><div class="rfld"><label>Guest Name</label><input class="rin" type="text" placeholder="First &amp; last name"></div><div class="rfld"><label>Email Address</label><input class="rin" type="email" placeholder="you@example.com"></div><div class="rfld"><label>Phone Number <em>&middot; optional</em></label><input class="rin" type="tel" placeholder="(555) 123-4567"></div><div class="rnav"><span></span><div class="rdots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><label for="rs2" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s2"><span class="rtitle">Attendance</span><span class="rcap">Will you join us</span><div class="rseg big"><label><input type="radio" name="attend" checked><span>Will Attend</span></label><label><input type="radio" name="attend"><span>Will Not Attend</span></label></div><div class="rnav"><label for="rs1" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><label for="rs3" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s3"><span class="rtitle">Plus One</span><span class="rcap">Bringing a guest</span><div class="rfld"><label>Bringing a Guest?</label><div class="rseg"><label><input type="radio" name="plusone"><span>Yes</span></label><label><input type="radio" name="plusone" checked><span>No</span></label></div></div><div class="rfld"><label>Guest Name</label><input class="rin" type="text" placeholder="Your guest&rsquo;s name"></div><div class="rnav"><label for="rs2" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i></div><label for="rs4" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s4"><span class="rtitle">Event Selection</span><span class="rcap">Which events</span><div class="rchk">{{EVENTS}}</div><div class="rnav"><label for="rs3" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><label for="rs5" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s5"><span class="rtitle">Meal Selection</span><span class="rcap">Dining preferences</span><div class="rfld"><label>Meal Choice</label><select class="rin">{{MEAL_OPTS}}</select></div><div class="rfld"><label>Dietary Restrictions</label><input class="rin" type="text" placeholder="Vegetarian, vegan, gluten-free&hellip;"></div><div class="rfld"><label>Food Allergies</label><input class="rin" type="text" placeholder="Let us know what to avoid"></div><div class="rnav"><label for="rs4" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i></div><label for="rs6" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s6"><span class="rtitle">Additional Information</span><span class="rcap">Notes &amp; extras</span><div class="rfld"><label>Song Request</label><input class="rin" type="text" placeholder="A song to get you on the floor"></div><div class="rfld"><label>Message for the Couple</label><textarea class="rin" rows="3" placeholder="Share your well-wishes&hellip;"></textarea></div><div class="rfld"><label>Transportation Needed?</label><div class="rseg"><label><input type="radio" name="transport"><span>Yes</span></label><label><input type="radio" name="transport" checked><span>No</span></label></div></div><div class="rnav"><label for="rs5" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i></div><label for="rs7" class="rnext">Next &rsaquo;</label></div></div><div class="rstep s7"><span class="rtitle">Confirmation</span><span class="rcap">Review &amp; send</span><p class="faq-a rsum">Use Back to review your answers, then send your RSVP. We&rsquo;ll email a confirmation with everything you need.</p><a class="eimap" href="https://pahpjjubhbcbwqjpamwv.supabase.co/functions/v1/ai-site-ics?slug={{SLUG}}">Add to your calendar</a><p class="rconf">We can&rsquo;t wait to celebrate with you. &#9825;</p><div class="rnav"><label for="rs6" class="rback">&lsaquo; Back</label><div class="rdots"><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i></div><span class="rsend">Send RSVP</span></div></div></div></div></div></div></div>
   </section>
   <section class="signoff"><div class="so-pre">{{SIGNOFF_PRE}}</div><div class="so-sig">{{NAME1}} &amp; {{NAME2}}</div></section>
   <section class="countdown">
@@ -170,25 +456,76 @@ img.card{display:block;object-fit:cover;border-radius:2px}
 </div>
 <script>(function(){function dl(u,n){fetch(u,{mode:"cors"}).then(function(r){return r.blob()}).then(function(b){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n||"photo.jpg";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},5000);}).catch(function(){window.open(u,"_blank")})}document.addEventListener("click",function(e){var d=e.target.closest&&e.target.closest(".dl");if(!d)return;e.preventDefault();dl(d.getAttribute("data-src"),d.getAttribute("data-name"))});var inp=document.getElementById("galInput");if(inp){inp.addEventListener("change",function(){var g=document.getElementById("galGrid");Array.prototype.forEach.call(inp.files,function(f){var u=URL.createObjectURL(f);var fig=document.createElement("figure");fig.className="ph";fig.innerHTML='<img src="'+u+'" alt=""><button class="dl" data-src="'+u+'" data-name="'+f.name+'"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg></button>';g.appendChild(fig)});inp.value=""})}})();</script></body></html>
 `;
+const icon = (k: string) => ICONS[k] ?? "";
+
+function renderSchedule(items: ScheduleItem[]): string {
+  return `<div class="sgrid">` + items.map((it) => `<div class="sitem">${icon(it.iconKey)}<span class="stime">${it.time}</span><span class="slabel">${it.label}</span></div>`).join("") + `</div>`;
+}
+function renderMenus(groups: MenuGroup[]): string {
+  return `<div class="fdmenu">` + groups.map((g) =>
+    `<details class="facc"><summary class="fsum">${icon(g.iconKey)}<span>${g.title}</span></summary><div class="fbody">` +
+    g.items.map((it) => `<div class="mline"><span class="mname">${it.name}</span>${it.desc !== undefined ? `<span class="mdesc">${it.desc}</span>` : ""}</div>`).join("") +
+    `</div></details>`).join("") + `</div>`;
+}
+
+const DL_SVG = `<svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 19h14"/></svg>`;
+const sphotos = (ps: string[]) => `<div class="sphotos">` + ps.map((s) => `<img src="${s}" alt="" loading="lazy">`).join("") + `</div>`;
+
+function renderSwatches(cs: string[]): string {
+  return `<div class="swatches">` + cs.map((c) => `<span class="sw" style="background:${c}"></span>`).join("") + `</div>`;
+}
+function renderGallery(ps: GalleryPhoto[]): string {
+  return `<div class="gal-grid" id="galGrid">` + ps.map((p) =>
+    `<figure class="ph"><img src="${p.src}" alt="Wedding photo" loading="lazy"><button class="dl" data-src="${p.src}" data-name="${p.name}">${DL_SVG}</button></figure>`).join("") + `</div>`;
+}
+function renderHowMet(s: StorySection): string {
+  return `<span class="story-h">${s.title ?? ""}</span><p class="faq-a">${s.body}</p>` + sphotos(s.photos);
+}
+function renderFirstDate(s: StorySection): string {
+  return `<p class="faq-a">${s.body}</p>` + sphotos(s.photos);
+}
+function renderProposal(s: ProposalSection): string {
+  return `<p class="faq-a">${s.body}</p><span class="ph-lbl">The Proposal</span>` + sphotos(s.proposalPhotos) + `<span class="ph-lbl">The Engagement</span>` + sphotos(s.engagementPhotos);
+}
+function renderPartners(spec: FlatLaySpec): string {
+  return spec.partners.map((p, i) => {
+    const name = i === 0 ? spec.name1 : spec.name2;
+    return `<div class="partner"><img class="pphoto" src="${p.photo}" alt="${name}"><span class="pname">${name}</span><span class="prole">${p.role}</span><p class="pbio">${p.bio}</p><div class="funfacts"><span class="ff-lbl">${p.ffLabel}</span><ul class="ff-list">` + p.ffacts.map((f) => `<li>${f}</li>`).join("") + `</ul></div></div>`;
+  }).join("");
+}
+
+function renderAccordion(items: AccItem[]): string {
+  return `<div class="fdmenu">` + items.map((it) =>
+    `<details class="facc"><summary class="fsum">${icon(it.iconKey)}<span>${it.title}</span></summary><div class="fbody">${it.body}</div></details>`).join("") + `</div>`;
+}
+function renderEvents(evs: { label: string; checked: boolean }[]): string {
+  return evs.map((e) => `<label><input type="checkbox"${e.checked ? " checked" : ""}><span class="box"></span>${e.label}</label>`).join("");
+}
 
 export function composeFlatLay(spec: FlatLaySpec): string {
-  const map: Record<string, string> = {
-    "{{SLUG}}": spec.slug,
-    "{{NAME1}}": spec.name1,
-    "{{NAME2}}": spec.name2,
-    "{{INIT1}}": spec.init1,
-    "{{INIT2}}": spec.init2,
-    "{{DATE_FULL}}": spec.dateFull,
-    "{{DATE_LONG}}": spec.dateLong,
-    "{{TIME_START}}": spec.timeStart,
-    "{{TIME_END}}": spec.timeEnd,
-    "{{VENUE}}": spec.venue,
-    "{{ADDRESS}}": spec.address,
-    "{{MAP_Q}}": spec.mapQuery,
-    "{{DRESS_CODE}}": spec.dressCode,
-    "{{SIGNOFF_PRE}}": spec.signoffPre,
-  };
   let out = TEMPLATE;
-  for (const [token, val] of Object.entries(map)) out = out.split(token).join(val);
+  out = out.split("{{SCHEDULE}}").join(renderSchedule(spec.schedule));
+  out = out.split("{{MENUS}}").join(renderMenus(spec.menus));
+  out = out.split("{{TRAVEL}}").join(renderAccordion(spec.travel));
+  out = out.split("{{FAQ}}").join(renderAccordion(spec.faqs));
+  out = out.split("{{MEAL_OPTS}}").join(spec.mealOptions.map((o) => `<option>${o}</option>`).join(""));
+  out = out.split("{{EVENTS}}").join(renderEvents(spec.events));
+  out = out.split("{{SWATCHES}}").join(renderSwatches(spec.swatches));
+  out = out.split("{{GALLERY}}").join(renderGallery(spec.gallery));
+  out = out.split("{{STORY_HOWMET}}").join(renderHowMet(spec.story.howMet));
+  out = out.split("{{STORY_FIRSTDATE}}").join(renderFirstDate(spec.story.firstDate));
+  out = out.split("{{STORY_PROPOSAL}}").join(renderProposal(spec.story.proposal));
+  out = out.split("{{PARTNERS}}").join(renderPartners(spec));
+  out = out.split("{{HERO_PHOTO}}").join(spec.heroPhoto);
+  out = out.split("{{HERO_INTRO}}").join(spec.heroIntro);
+  const scal: Record<string, string> = {
+    "{{SLUG}}": spec.slug, "{{NAME1}}": spec.name1, "{{NAME2}}": spec.name2,
+    "{{INIT1}}": spec.init1, "{{INIT2}}": spec.init2,
+    "{{DATE_FULL}}": spec.dateFull, "{{DATE_LONG}}": spec.dateLong,
+    "{{TIME_START}}": spec.timeStart, "{{TIME_END}}": spec.timeEnd,
+    "{{VENUE}}": spec.venue, "{{ADDRESS}}": spec.address, "{{MAP_Q}}": spec.mapQuery,
+    "{{DRESS_CODE}}": spec.dressCode, "{{SIGNOFF_PRE}}": spec.signoffPre,
+  };
+  for (const [k, v] of Object.entries(scal)) out = out.split(k).join(v);
   return out;
 }
