@@ -71,7 +71,8 @@ serve(async (req) => {
 
   const siteId = String(form.get("site_id") ?? "").trim();
   const file = form.get("image");
-  if (!siteId) return json(400, { error: "missing_site_id" });
+  // site_id is optional: the flat-lay builder uploads photos BEFORE the site
+  // exists (they go into a generic builder/ prefix, then land in the spec).
   if (!(file instanceof File)) return json(400, { error: "missing_image" });
   if (file.size === 0) return json(400, { error: "empty_image" });
   if (file.size > MAX_IMAGE_BYTES) return json(413, { error: "image_too_large" });
@@ -100,20 +101,26 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: site, error: siteErr } = await admin
-    .from("ai_sites")
-    .select("id, slug, owner_user_id")
-    .eq("id", siteId)
-    .maybeSingle();
-  if (siteErr || !site) return json(404, { error: "site_not_found" });
-  const s = site as { id: string; slug: string; owner_user_id: string | null };
-  if (s.owner_user_id && s.owner_user_id !== authedUserId) {
-    return json(403, { error: "not_owner" });
+  // Resolve the storage prefix. With a site_id we verify ownership and use
+  // the site's slug; without one (builder pre-create flow) we use builder/.
+  let prefix = "builder";
+  if (siteId) {
+    const { data: site, error: siteErr } = await admin
+      .from("ai_sites")
+      .select("id, slug, owner_user_id")
+      .eq("id", siteId)
+      .maybeSingle();
+    if (siteErr || !site) return json(404, { error: "site_not_found" });
+    const s = site as { id: string; slug: string; owner_user_id: string | null };
+    if (s.owner_user_id && s.owner_user_id !== authedUserId) {
+      return json(403, { error: "not_owner" });
+    }
+    prefix = s.slug;
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = mimeToExt(file.type);
-  const filename = `${s.slug}/upload-${crypto.randomUUID()}.${ext}`;
+  const filename = `${prefix}/upload-${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadErr } = await admin.storage
     .from("ai-site-images")
