@@ -56,6 +56,11 @@ function extractJson(text: string): any | null {
   return null;
 }
 
+async function sha256(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
@@ -73,36 +78,58 @@ serve(async (req) => {
   }
   if (!prompt) return json(400, { error: "missing_prompt_or_spec" });
 
-  // 1) LLM → partial spec
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "extended-cache-ttl-2025-04-11",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 6000,
-      system: [{ type: "text", text: FLATLAY_SPEC_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    return json(502, { error: `anthropic_${res.status}`, detail: t.slice(0, 300) });
-  }
-  const data = await res.json();
-  const text = (data?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
-  const partial = extractJson(text);
-  if (!partial) return json(502, { error: "spec_parse_failed", raw: text.slice(0, 400) });
+  // Spec response cache: an identical (model + system prompt + request) reuses
+  // the LLM's spec instead of paying for another call. Keying on the system
+  // prompt means improving FLATLAY_SPEC_PROMPT self-invalidates the cache.
+  // Best-effort — cache failures never block generation.
+  const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const cacheKey = await sha256(`${MODEL}\n${FLATLAY_SPEC_PROMPT}\n${prompt}`);
+  let partial: any = null;
+  let cached = false;
+  try {
+    const { data: hit } = await db
+      .from("flatlay_spec_cache")
+      .select("spec")
+      .eq("prompt_hash", cacheKey)
+      .maybeSingle();
+    if (hit?.spec) { partial = hit.spec; cached = true; }
+  } catch { /* cache is optional */ }
 
-  return await finish(partial, prompt, save);
+  if (!partial) {
+    // LLM → partial spec
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "extended-cache-ttl-2025-04-11",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 6000,
+        system: [{ type: "text", text: FLATLAY_SPEC_PROMPT, cache_control: { type: "ephemeral", ttl: "1h" } }],
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      return json(502, { error: `anthropic_${res.status}`, detail: t.slice(0, 300) });
+    }
+    const data = await res.json();
+    const text = (data?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+    partial = extractJson(text);
+    if (!partial) return json(502, { error: "spec_parse_failed", raw: text.slice(0, 400) });
+    try {
+      await db.from("flatlay_spec_cache").upsert({ prompt_hash: cacheKey, spec: partial, model: MODEL });
+    } catch { /* cache is optional */ }
+  }
+
+  return await finish(partial, prompt, save, cached);
 });
 
 // slug + title → compose → optionally save → response (shared by both paths)
-async function finish(partial: any, prompt: string, save: boolean): Promise<Response> {
+async function finish(partial: any, prompt: string, save: boolean, cached = false): Promise<Response> {
   const name1 = partial.name1 ?? "Our";
   const name2 = partial.name2 ?? "Wedding";
   const title = `${name1} & ${name2}`;
@@ -122,6 +149,7 @@ async function finish(partial: any, prompt: string, save: boolean): Promise<Resp
   return json(200, {
     slug, title, html_len: html.length,
     url: `https://eventvendora.com/s/${slug}`,
+    cached,
     ...(save ? {} : { html }),
   });
 }
