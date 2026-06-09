@@ -48,7 +48,16 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
   // service-role auth (bypasses captcha); Step 2's final signIn does
   // not, so the token gets attached there.
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Turnstile tokens are single-use and expire — clearing the token isn't
+  // enough; the widget must re-challenge for a fresh one, or a retry is
+  // rejected as "timeout-or-duplicate".
+  const resetCaptcha = () => {
+    setCaptchaToken("");
+    setCaptchaKey((k) => k + 1);
+  };
   // Client-side cooldown for Resend code so a rapid-fire button-mash
   // doesn't burn through Resend quota / annoy the user with duplicates.
   // Counts down from 30s on every successful resend.
@@ -115,7 +124,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
     toast.success("We emailed you a 6-digit code.");
     setCode("");
-    setCaptchaToken("");
+    resetCaptcha();
     setStep("code");
   }
 
@@ -170,7 +179,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     if (signInError) {
       // Captcha tokens are single-use; on any failure clear the token
       // so the widget can re-issue a fresh one without a manual reset.
-      setCaptchaToken("");
+      resetCaptcha();
       toast.error(signInError.message);
       return;
     }
@@ -290,7 +299,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     setResendCooldown(30);
     // Discard any previously-verified token; the user will solve the
     // widget once before clicking Sign in with the new code.
-    setCaptchaToken("");
+    resetCaptcha();
     toast.success("We sent a new code.");
   }
 
@@ -333,7 +342,8 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           <div className="flex justify-center">
             <TurnstileWidget
               onVerify={setCaptchaToken}
-              onExpire={() => setCaptchaToken("")}
+              onExpire={resetCaptcha}
+              resetKey={captchaKey}
             />
           </div>
           <button
