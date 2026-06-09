@@ -26,7 +26,16 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
   const [showPassword, setShowPassword] = useState(false);
   const [adult, setAdult] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Turnstile tokens are single-use and expire (~5 min). After any failed
+  // submit — or on expiry — drop the stale token and re-challenge for a
+  // fresh one, otherwise a retry is rejected as "timeout-or-duplicate".
+  const resetCaptcha = () => {
+    setCaptchaToken("");
+    setCaptchaKey((k) => k + 1);
+  };
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +68,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
     setLoading(false);
     if (error) {
       toast.error(error.message);
+      resetCaptcha(); // single-use token is now spent — get a fresh one
       return;
     }
 
@@ -253,7 +263,8 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
         <div className="flex justify-center pt-1">
           <TurnstileWidget
             onVerify={setCaptchaToken}
-            onExpire={() => setCaptchaToken("")}
+            onExpire={resetCaptcha}
+            resetKey={captchaKey}
           />
         </div>
         <button

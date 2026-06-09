@@ -75,9 +75,15 @@ function loadTurnstileScript(): Promise<void> {
 export function TurnstileWidget({
   onVerify,
   onExpire,
+  resetKey = 0,
 }: {
   onVerify: (token: string) => void;
   onExpire?: () => void;
+  // Bump this from the parent to force a fresh token (after a failed
+  // submit or on expiry). Turnstile tokens are single-use and time out,
+  // so a retry MUST re-challenge or Cloudflare rejects it as
+  // "timeout-or-duplicate".
+  resetKey?: number;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -115,6 +121,25 @@ export function TurnstileWidget({
     // practice (they wrap setState directly).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-challenge for a fresh token whenever the parent bumps resetKey
+  // (skips the initial mount, which already rendered a widget).
+  const firstResetRef = useRef(true);
+  useEffect(() => {
+    if (firstResetRef.current) {
+      firstResetRef.current = false;
+      return;
+    }
+    const id = widgetIdRef.current;
+    if (id && window.turnstile) {
+      try {
+        window.turnstile.reset(id);
+        setFailed(false);
+      } catch {
+        /* widget not ready — ignore */
+      }
+    }
+  }, [resetKey]);
 
   if (failed) {
     return (

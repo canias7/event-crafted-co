@@ -13,6 +13,14 @@ export default function ForgotPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
+
+  // Turnstile tokens are single-use and expire — re-challenge for a fresh
+  // one after a failure / on expiry, else a retry is "timeout-or-duplicate".
+  const resetCaptcha = () => {
+    setCaptchaToken("");
+    setCaptchaKey((k) => k + 1);
+  };
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,6 +36,7 @@ export default function ForgotPasswordPage() {
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
+      resetCaptcha();
       return;
     }
     setSent(true);
@@ -119,7 +128,8 @@ export default function ForgotPasswordPage() {
           <div className="flex justify-center pt-1">
             <TurnstileWidget
               onVerify={setCaptchaToken}
-              onExpire={() => setCaptchaToken("")}
+              onExpire={resetCaptcha}
+              resetKey={captchaKey}
             />
           </div>
           <button
