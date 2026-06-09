@@ -14,7 +14,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { composeFromPartial, withDefaults, FLATLAY_SPEC_PROMPT } from "../_shared/flatlay_spec.ts";
+import { composeFromPartial, FLATLAY_SPEC_PROMPT } from "../_shared/flatlay_spec.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,7 +64,14 @@ serve(async (req) => {
   try { body = await req.json(); } catch { return json(400, { error: "bad_json" }); }
   const prompt = String(body?.prompt ?? "").trim();
   const save = body?.save !== false; // default true
-  if (!prompt) return json(400, { error: "missing_prompt" });
+
+  // Direct path: caller supplies a (partial) spec — skip the LLM entirely.
+  // Used by the builder form, and for generating without an LLM call.
+  if (body?.spec && typeof body.spec === "object") {
+    const partial = body.spec;
+    return await finish(partial, prompt || "(spec)", save);
+  }
+  if (!prompt) return json(400, { error: "missing_prompt_or_spec" });
 
   // 1) LLM → partial spec
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -91,19 +98,21 @@ serve(async (req) => {
   const partial = extractJson(text);
   if (!partial) return json(502, { error: "spec_parse_failed", raw: text.slice(0, 400) });
 
-  // 2) slug + title
+  return await finish(partial, prompt, save);
+});
+
+// slug + title → compose → optionally save → response (shared by both paths)
+async function finish(partial: any, prompt: string, save: boolean): Promise<Response> {
   const name1 = partial.name1 ?? "Our";
   const name2 = partial.name2 ?? "Wedding";
   const title = `${name1} & ${name2}`;
   const slug = `${slugify(`${name1}-${name2}`)}-${Math.random().toString(36).slice(2, 8)}`;
   partial.slug = slug;
 
-  // 3) compose
   let html: string;
   try { html = composeFromPartial(partial); }
   catch (e) { return json(500, { error: "compose_failed", detail: String(e).slice(0, 300) }); }
 
-  // 4) save
   if (save) {
     const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { error } = await db.from("ai_sites").insert({ slug, title, prompt, html });
@@ -113,7 +122,6 @@ serve(async (req) => {
   return json(200, {
     slug, title, html_len: html.length,
     url: `https://eventvendora.com/s/${slug}`,
-    spec: withDefaults(partial),
     ...(save ? {} : { html }),
   });
-});
+}
