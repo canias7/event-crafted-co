@@ -72,6 +72,18 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       return;
     }
 
+    // Duplicate email: with enumeration protection on, Supabase returns a
+    // FAKE success for an existing email — no error, but the obfuscated
+    // user has an empty identities array. Without this check the user is
+    // told "Application received" when nothing was created.
+    if (data.user && (data.user.identities?.length ?? 0) === 0 && !data.session) {
+      toast.error(
+        "This email already has an account. Sign in instead — or use Forgot password if you can't get in.",
+      );
+      resetCaptcha();
+      return;
+    }
+
     // Vendors always land on the "Application received" page. Their
     // application is hand-reviewed and they have NO portal access until
     // an admin approves it (hasVendorAccess is false while pending), so
