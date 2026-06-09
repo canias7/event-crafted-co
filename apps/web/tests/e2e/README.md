@@ -53,6 +53,30 @@ Notes:
 - The session state file (`.auth/vendor.json`) holds tokens and is
   git-ignored — never commit it.
 - Use a dedicated throwaway vendor, since these tests hit the real backend.
-  A minimal one needs only an auth user + a `profiles` row with
-  `role='vendor'`, `application_status='approved'` (no `vendor_profiles`
-  row, so it stays out of the public directory).
+
+## Fixture data — `seed.sql` (required for `checkout` + `rls` specs)
+
+`checkout.spec.ts` and `rls.spec.ts` depend on **fixed fixture rows** in the
+E2E target project that are **not created by any migration**:
+
+| Fixture | Used by |
+| --- | --- |
+| pay link `e2e-pay-link` (`$250.00`) | `checkout.spec.ts` |
+| invoice `e2e-invoice` (`$1,299.00`, "Wedding photography package") | `checkout.spec.ts` |
+| throwaway vendor listing + >50 inquiries (host-1 owns a subset) | `rls.spec.ts` |
+
+If this data is missing, those specs fail with `Invoice not found` /
+`vendor should own a listing` and **CI goes red with no code cause**. Because
+the fixtures live only in the live project, they can be wiped out-of-band and
+silently rot — restore them by applying the idempotent seed:
+
+```bash
+# service-role / SQL editor on the E2E target project
+psql "$E2E_DATABASE_URL" -f apps/web/tests/e2e/seed.sql
+# or paste seed.sql into the Supabase SQL editor / run via the Supabase MCP
+```
+
+The script is safe to re-run (fixed fixture ids, replace-in-place). It requires
+the two throwaway auth users to already exist:
+`e2e-vendor@eventvendora.test` (`E2E_VENDOR_EMAIL`) and
+`e2e-host-1@eventvendora.test`. See the header of `seed.sql` for details.
