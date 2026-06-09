@@ -82,6 +82,9 @@ export const SuperAgentsPage = lazyWithReload(importSuperAgents);
 const importWebsiteBuilder = () => import("@/pages/WebsiteBuilderPage");
 export const WebsiteBuilderPage = lazyWithReload(importWebsiteBuilder);
 
+const importFlatLayBuilder = () => import("@/pages/FlatLayBuilderPage");
+export const FlatLayBuilderPage = lazyWithReload(importFlatLayBuilder);
+
 const importPublicAiSite = () => import("@/pages/PublicAiSitePage");
 export const PublicAiSitePage = lazyWithReload(importPublicAiSite);
 
@@ -194,6 +197,7 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/press", importer: importPress },
   { pattern: "/super-agents", importer: importSuperAgents },
   { pattern: "/website-builder", importer: importWebsiteBuilder },
+  { pattern: "/flatlay-builder", importer: importFlatLayBuilder },
   { pattern: "/my-sites", importer: importMySites },
   { pattern: "/my-sites/:slug/rsvps", importer: importSiteRsvps },
   { pattern: "/s/:slug", importer: importPublicAiSite },

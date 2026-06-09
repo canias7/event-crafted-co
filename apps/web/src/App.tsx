@@ -59,6 +59,7 @@ import {
   PressPage,
   SuperAgentsPage,
   WebsiteBuilderPage,
+  FlatLayBuilderPage,
   PublicAiSitePage,
   MySitesPage,
   SiteRsvpsPage,
@@ -152,6 +153,7 @@ const App = () => (
               <Route path="/press" element={<PressPage />} />
               <Route path="/super-agents" element={<SuperAgentsPage />} />
               <Route path="/website-builder" element={<WebsiteBuilderPage />} />
+              <Route path="/flatlay-builder" element={<FlatLayBuilderPage />} />
               <Route path="/my-sites" element={<MySitesPage />} />
               <Route path="/my-sites/:slug/rsvps" element={<SiteRsvpsPage />} />
               <Route path="/s/:slug" element={<PublicAiSitePage />} />

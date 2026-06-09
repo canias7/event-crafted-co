@@ -101,7 +101,7 @@ export default function MySitesPage() {
           </span>
         </Link>
         <Link
-          to="/website-builder"
+          to="/flatlay-builder"
           className="text-[13px] bg-black text-white rounded-full px-5 py-2.5 hover:bg-black/90 transition-colors"
         >
           + New site
@@ -120,7 +120,7 @@ export default function MySitesPage() {
               Build your first event site — wedding, birthday, baby shower…
             </div>
             <Link
-              to="/website-builder"
+              to="/flatlay-builder"
               className="inline-block bg-black text-white rounded-full px-6 py-3 text-[13px] hover:bg-black/90 transition-colors"
             >
               Start building
