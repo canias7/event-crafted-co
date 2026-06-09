@@ -539,8 +539,16 @@ export default function VendorAppointmentsPage({
     // (owner_user_id) so a brand-new vendor can keep a personal calendar
     // before publishing anything.
     const vid = aListingId ?? selectedListingId ?? null;
-    setAddSaving(true);
     const scheduledAt = new Date(`${selectedYmd}T${aTime || "09:00"}:00`);
+    // Block scheduling in the past — appointments are forward-looking
+    // calendar blocks, not a record of things that already happened.
+    if (scheduledAt.getTime() < Date.now()) {
+      toast.error("Can't add an appointment in the past", {
+        description: "Pick today or a future date and time.",
+      });
+      return;
+    }
+    setAddSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from("appointments").insert({
       vendor_id: vid,
@@ -1121,6 +1129,13 @@ export default function VendorAppointmentsPage({
     year: "numeric",
   });
 
+  // Whether the Add-personal-entry selection (grid day + time) is
+  // already in the past. Drives the disabled Add button + inline hint
+  // so vendors can't schedule entries behind the current moment.
+  const addIsPast = selectedYmd
+    ? new Date(`${selectedYmd}T${aTime || "09:00"}:00`).getTime() < Date.now()
+    : false;
+
   // Embedded in the cockpit (which already has a <main>), render a plain
   // wrapper to avoid nested <main> landmarks / a duplicate id.
   const Shell = embedded ? "div" : "main";
@@ -1534,6 +1549,12 @@ export default function VendorAppointmentsPage({
                 </select>
               </label>
             </div>
+            {addIsPast ? (
+              <p className="text-xs text-destructive">
+                That date &amp; time is in the past. Pick today or a future
+                date and time.
+              </p>
+            ) : null}
             <label className="block">
               <span className="text-xs font-medium text-muted-foreground">Location (optional)</span>
               <Input
@@ -1562,7 +1583,7 @@ export default function VendorAppointmentsPage({
                 e.preventDefault();
                 void addManualAppointment();
               }}
-              disabled={addSaving}
+              disabled={addSaving || addIsPast}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {addSaving ? "Adding…" : "Add"}
