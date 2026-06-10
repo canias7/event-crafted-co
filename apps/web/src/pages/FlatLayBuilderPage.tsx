@@ -94,14 +94,46 @@ const pipe = (l: string): [string, string] => {
   return i < 0 ? [l.trim(), ""] : [l.slice(0, i).trim(), l.slice(i + 1).trim()];
 };
 
+// Upload one image to ai-site-image-upload (site_id-less builder flow) and
+// return its public URL, throwing a friendly message on failure.
+async function uploadImage(file: File): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? SUPABASE_KEY;
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-image-upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY },
+    body: fd,
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j?.image_url) {
+    const map: Record<string, string> = {
+      image_too_large: "A photo is over 12MB — pick something smaller.",
+      unsupported_image_type: "Photos must be JPG, PNG, WebP, GIF, or HEIC.",
+    };
+    throw new Error(map[j?.error ?? ""] ?? "Couldn’t upload a photo. Try again.");
+  }
+  return j.image_url as string;
+}
+
 export default function FlatLayBuilderPage() {
   const [f, setF] = useState(STARTER);
   const [aiPrompt, setAiPrompt] = useState("");
   const [busy, setBusy] = useState<null | "form" | "ai">(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+
+  // Photo groups — each maps to a spot in the spec. Empty → elegant defaults.
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [p1photo, setP1photo] = useState<string[]>([]);
+  const [p2photo, setP2photo] = useState<string[]>([]);
+  const [howMetPhotos, setHowMetPhotos] = useState<string[]>([]);
+  const [firstDatePhotos, setFirstDatePhotos] = useState<string[]>([]);
+  const [proposalPhotos, setProposalPhotos] = useState<string[]>([]);
+  const [engagementPhotos, setEngagementPhotos] = useState<string[]>([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const onBusy = (b: boolean) => setUploadingCount((c) => Math.max(0, c + (b ? 1 : -1)));
 
   const set = (k: keyof typeof STARTER) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setF((prev) => ({ ...prev, [k]: e.target.value }));
@@ -146,22 +178,29 @@ export default function FlatLayBuilderPage() {
       heroIntro: f.heroIntro,
       schedule,
       menus,
+      // Story sections: include uploaded photos only when present, so a
+      // section the couple left empty keeps its elegant default shots.
       story: {
-        howMet: { title: f.howMetTitle, body: f.howMet },
-        firstDate: { body: f.firstDate },
-        proposal: { body: f.proposal },
+        howMet: { title: f.howMetTitle, body: f.howMet, ...(howMetPhotos.length ? { photos: howMetPhotos } : {}) },
+        firstDate: { body: f.firstDate, ...(firstDatePhotos.length ? { photos: firstDatePhotos } : {}) },
+        proposal: {
+          body: f.proposal,
+          ...(proposalPhotos.length ? { proposalPhotos } : {}),
+          ...(engagementPhotos.length ? { engagementPhotos } : {}),
+        },
       },
+      // Partner portraits: include the uploaded photo only when present, so an
+      // un-set partner keeps the default rather than getting a blank.
       partners: [
-        { role: "Partner One", bio: f.p1bio, ffLabel: "Fun Facts", ffacts: lines(f.p1facts) },
-        { role: "Partner Two", bio: f.p2bio, ffLabel: "Fun Fact", ffacts: lines(f.p2facts) },
+        { role: "Partner One", bio: f.p1bio, ffLabel: "Fun Facts", ffacts: lines(f.p1facts), ...(p1photo[0] ? { photo: p1photo[0] } : {}) },
+        { role: "Partner Two", bio: f.p2bio, ffLabel: "Fun Fact", ffacts: lines(f.p2facts), ...(p2photo[0] ? { photo: p2photo[0] } : {}) },
       ],
       ...GENERIC_EXTRAS,
     };
-    // Couple's own photos drive the gallery + Our Story hero; anything else
-    // (partner portraits, story shots) keeps elegant defaults.
-    if (photos.length) {
-      spec.gallery = photos.map((src, i) => ({ src, name: `photo-${i + 1}.jpg` }));
-      spec.heroPhoto = photos[0];
+    // Gallery photos also seed the Our Story hero (first one).
+    if (gallery.length) {
+      spec.gallery = gallery.map((src, i) => ({ src, name: `photo-${i + 1}.jpg` }));
+      spec.heroPhoto = gallery[0];
     }
     return spec;
   }
@@ -193,42 +232,6 @@ export default function FlatLayBuilderPage() {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setBusy(null);
-    }
-  }
-
-  async function onPickPhotos(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = ""; // allow re-picking the same files
-    if (!files.length) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token ?? SUPABASE_KEY;
-      const urls: string[] = [];
-      for (const file of files) {
-        const fd = new FormData();
-        fd.append("image", file);
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-site-image-upload`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY },
-          body: fd,
-        });
-        const j = await res.json().catch(() => ({}));
-        if (!res.ok || !j?.image_url) {
-          const map: Record<string, string> = {
-            image_too_large: "A photo is over 12MB — pick something smaller.",
-            unsupported_image_type: "Photos must be JPG, PNG, WebP, GIF, or HEIC.",
-          };
-          throw new Error(map[j?.error ?? ""] ?? "Couldn’t upload a photo. Try again.");
-        }
-        urls.push(j.image_url as string);
-      }
-      setPhotos((prev) => [...prev, ...urls]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -328,27 +331,8 @@ export default function FlatLayBuilderPage() {
             </Section>
 
             <Section title="Your photos" hint="First one becomes the hero · the rest fill the gallery">
-              <div className="flex flex-wrap gap-2.5">
-                {photos.map((p, i) => (
-                  <div key={p} className="relative w-[88px] h-[88px] rounded-xl overflow-hidden border border-black/10">
-                    <img src={p} alt="" className="w-full h-full object-cover" />
-                    {i === 0 && (
-                      <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[9px] text-center py-0.5 tracking-wide">HERO</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-[12px] leading-none flex items-center justify-center hover:bg-black"
-                      aria-label="Remove photo"
-                    >×</button>
-                  </div>
-                ))}
-                <label className="w-[88px] h-[88px] rounded-xl border border-dashed border-black/25 flex flex-col items-center justify-center text-[11px] text-black/50 cursor-pointer hover:bg-black/5 transition-colors">
-                  {uploading ? "Uploading…" : <><span className="text-[18px] leading-none mb-0.5">+</span>Add photos</>}
-                  <input type="file" accept="image/*" multiple hidden onChange={onPickPhotos} disabled={uploading} />
-                </label>
-              </div>
-              {photos.length === 0 && (
+              <PhotoUploader photos={gallery} onChange={setGallery} max={10} heroBadge onBusy={onBusy} onError={setError} />
+              {gallery.length === 0 && (
                 <p className="text-[12px] text-black/40">Optional — leave empty to use elegant stock photos you can swap later.</p>
               )}
             </Section>
@@ -363,17 +347,35 @@ export default function FlatLayBuilderPage() {
               <Field label="Dessert" textarea rows={3} value={f.dessert} onChange={set("dessert")} />
             </Section>
 
-            <Section title="Your story">
+            <Section title="Your story" hint="Add a couple photos to each chapter">
               <Field label="How we met — title" value={f.howMetTitle} onChange={set("howMetTitle")} />
               <Field label="How we met" textarea rows={3} value={f.howMet} onChange={set("howMet")} />
+              <PhotoField label="How we met — photos">
+                <PhotoUploader photos={howMetPhotos} onChange={setHowMetPhotos} max={2} onBusy={onBusy} onError={setError} />
+              </PhotoField>
               <Field label="First date" textarea rows={2} value={f.firstDate} onChange={set("firstDate")} />
+              <PhotoField label="First date — photos">
+                <PhotoUploader photos={firstDatePhotos} onChange={setFirstDatePhotos} max={2} onBusy={onBusy} onError={setError} />
+              </PhotoField>
               <Field label="The proposal" textarea rows={2} value={f.proposal} onChange={set("proposal")} />
+              <PhotoField label="Proposal — photos">
+                <PhotoUploader photos={proposalPhotos} onChange={setProposalPhotos} max={2} onBusy={onBusy} onError={setError} />
+              </PhotoField>
+              <PhotoField label="Engagement — photos">
+                <PhotoUploader photos={engagementPhotos} onChange={setEngagementPhotos} max={2} onBusy={onBusy} onError={setError} />
+              </PhotoField>
               <Field label="Hero intro line" value={f.heroIntro} onChange={set("heroIntro")} />
             </Section>
 
-            <Section title="Meet the couple" hint="Fun facts: one per line">
+            <Section title="Meet the couple" hint="A photo of each · fun facts one per line">
+              <PhotoField label="Partner one — photo">
+                <PhotoUploader photos={p1photo} onChange={setP1photo} max={1} onBusy={onBusy} onError={setError} />
+              </PhotoField>
               <Field label="Partner one — bio" textarea rows={2} value={f.p1bio} onChange={set("p1bio")} />
               <Field label="Partner one — fun facts" textarea rows={3} value={f.p1facts} onChange={set("p1facts")} />
+              <PhotoField label="Partner two — photo">
+                <PhotoUploader photos={p2photo} onChange={setP2photo} max={1} onBusy={onBusy} onError={setError} />
+              </PhotoField>
               <Field label="Partner two — bio" textarea rows={2} value={f.p2bio} onChange={set("p2bio")} />
               <Field label="Partner two — fun fact" textarea rows={2} value={f.p2facts} onChange={set("p2facts")} />
             </Section>
@@ -383,8 +385,10 @@ export default function FlatLayBuilderPage() {
             </Section>
 
             <div className="sticky bottom-0 -mx-6 md:-mx-10 px-6 md:px-10 py-4 bg-[#fafafa]/90 backdrop-blur border-t border-black/10 flex items-center justify-end gap-3">
-              <span className="text-[12px] text-black/40 mr-auto">Photos &amp; colors use elegant defaults — swap them later.</span>
-              <button onClick={submitForm} disabled={busy !== null || uploading}
+              <span className="text-[12px] text-black/40 mr-auto">
+                {uploadingCount > 0 ? "Uploading photos…" : "Photos & colors use elegant defaults — swap any you like."}
+              </span>
+              <button onClick={submitForm} disabled={busy !== null || uploadingCount > 0}
                 className="rounded-full px-7 py-3 text-[13px] bg-black text-white hover:bg-black/90 disabled:opacity-40 transition-colors">
                 {busy === "form" ? "Creating…" : "Create site"}
               </button>
@@ -412,6 +416,15 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{children}</div>;
 }
 
+function PhotoField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <span className="block text-[12px] text-black/50 mb-1.5">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 function Field({
   label, value, onChange, textarea, rows, type,
 }: {
@@ -433,5 +446,63 @@ function Field({
         <input className={cls} type={type ?? "text"} value={value} onChange={onChange} />
       )}
     </label>
+  );
+}
+
+// Reusable photo grid: upload up to `max` images, show thumbnails with remove.
+function PhotoUploader({
+  photos, onChange, max = 10, heroBadge, onBusy, onError,
+}: {
+  photos: string[];
+  onChange: (next: string[]) => void;
+  max?: number;
+  heroBadge?: boolean;
+  onBusy?: (busy: boolean) => void;
+  onError?: (msg: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const remaining = max - photos.length;
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, Math.max(0, remaining));
+    e.target.value = "";
+    if (!files.length) return;
+    setBusy(true);
+    onBusy?.(true);
+    try {
+      const urls: string[] = [];
+      for (const file of files) urls.push(await uploadImage(file));
+      onChange([...photos, ...urls]);
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+      onBusy?.(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2.5">
+      {photos.map((p, i) => (
+        <div key={p + i} className="relative w-[88px] h-[88px] rounded-xl overflow-hidden border border-black/10">
+          <img src={p} alt="" className="w-full h-full object-cover" />
+          {heroBadge && i === 0 && (
+            <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[9px] text-center py-0.5 tracking-wide">HERO</span>
+          )}
+          <button
+            type="button"
+            onClick={() => onChange(photos.filter((_, j) => j !== i))}
+            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-[12px] leading-none flex items-center justify-center hover:bg-black"
+            aria-label="Remove photo"
+          >×</button>
+        </div>
+      ))}
+      {remaining > 0 && (
+        <label className="w-[88px] h-[88px] rounded-xl border border-dashed border-black/25 flex flex-col items-center justify-center text-[11px] text-black/50 cursor-pointer hover:bg-black/5 transition-colors">
+          {busy ? "Uploading…" : <><span className="text-[18px] leading-none mb-0.5">+</span>{max === 1 ? "Add photo" : "Add"}</>}
+          <input type="file" accept="image/*" multiple={max > 1} hidden onChange={pick} disabled={busy} />
+        </label>
+      )}
+    </div>
   );
 }
