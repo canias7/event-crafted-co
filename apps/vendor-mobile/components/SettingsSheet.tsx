@@ -23,7 +23,7 @@ import { supabase } from "@/lib/supabase";
 
 // Editorial palette — keep in sync with profile.tsx.
 const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
+const CREAM_DEEP = "#f3f4f6";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
@@ -310,7 +310,7 @@ export function SettingsSheet({
               </Text>
               <View
                 style={{
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f3f4f6",
                   borderRadius: 18,
                   overflow: "hidden",
                 }}
@@ -385,7 +385,7 @@ export function SettingsSheet({
               </Text>
               <View
                 style={{
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f3f4f6",
                   borderRadius: 18,
                   overflow: "hidden",
                 }}
@@ -411,7 +411,7 @@ export function SettingsSheet({
                 onPress={onSignOutPress}
                 style={{
                   marginTop: 24,
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f3f4f6",
                   borderRadius: 18,
                   paddingVertical: 16,
                   flexDirection: "row",
@@ -436,7 +436,7 @@ export function SettingsSheet({
                 onPress={onDeleteAccount}
                 style={{
                   marginTop: 10,
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f3f4f6",
                   borderRadius: 18,
                   borderWidth: 1,
                   borderColor: "#fecaca",
@@ -552,7 +552,7 @@ export function SettingsSheet({
                 placeholderTextColor={INK_DIM}
                 style={{
                   marginTop: 6,
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f3f4f6",
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: "#e5e7eb",
@@ -582,7 +582,7 @@ export function SettingsSheet({
                 placeholderTextColor={INK_DIM}
                 style={{
                   marginTop: 6,
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: "#f3f4f6",
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: "#e5e7eb",

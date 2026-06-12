@@ -63,7 +63,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "#f3f4f6",
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,

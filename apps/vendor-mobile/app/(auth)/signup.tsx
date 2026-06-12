@@ -30,7 +30,7 @@ import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
 const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
+const CREAM_DEEP = "#f3f4f6";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const INK_BORDER = "rgba(20,22,26,0.08)";

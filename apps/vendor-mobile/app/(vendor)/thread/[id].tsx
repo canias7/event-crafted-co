@@ -69,7 +69,7 @@ function isAudioAttachment(a: AttachmentRef): boolean {
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
 const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
+const CREAM_DEEP = "#f3f4f6";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const ACTIVE_GREEN = "#22c55e";

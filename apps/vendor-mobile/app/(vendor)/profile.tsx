@@ -33,7 +33,7 @@ import { SettingsSheet } from "@/components/SettingsSheet";
 // Web palette (apps/web/src/index.css): white surfaces, deep-navy
 // accent, cool neutral grays. No warm cream/champagne.
 const WHITE = "#ffffff";
-const SURFACE = "#f5f5f5";
+const SURFACE = "#f3f4f6";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const ACCENT = "#1b3654";
