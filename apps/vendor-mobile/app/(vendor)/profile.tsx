@@ -1,25 +1,20 @@
-// Profile tab — Instagram-style layout for vendors.
+// Profile tab — listings-only identity hub. Mirrors the web vendor
+// "My Profile" (apps/web/.../VendorMyProfilePage): vendors manage their
+// account identity (logo, name, bio) and their marketplace listings
+// here, nothing else. The old Instagram-style Posts / Reels / Buzz
+// system was removed — that moved to the host side, same as web.
 //
-// Top bar: + (left), email (center, no chevron), ☰ (right). Avatar +
-// business name + Dashboard chip stacked, then a 4-segment view
-// switcher (grid · play · buzz · listing) with live counts pulled
-// from public.vendor_posts / vendor_reels / vendor_buzz.
-//
-// Tapping Create on grid → image picker → MediaComposer → uploads to
-// vendor-posts bucket and inserts vendor_posts row. Same flow for
-// reels (vendor-reels bucket + vendor_reels). Buzz uses BuzzComposer
-// which writes vendor_buzz directly. Listing tab links to the native
-// listing builder; the count is 1 only once the listing has location
-// and price.
+// A vendor account can own multiple vendor_profiles rows; each row IS a
+// listing. Each listing's photos live in vendor_portfolio_images (bucket
+// vendor-portfolios), keyed by vendor_id — the SAME photos the Gallery
+// tab and the listing builder manage. The first photo (display_order)
+// is the listing's cover.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  Animated,
   Dimensions,
-  FlatList,
   Image,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -30,42 +25,25 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import { useVideoPlayer, VideoView } from "expo-video";
-import RAnimated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
-import Svg, {
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Path,
-  RadialGradient,
-  Rect,
-  Stop,
-} from "react-native-svg";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { BuzzComposer } from "@/components/BuzzComposer";
-import { MediaComposer, type MediaKind } from "@/components/MediaComposer";
-import { PhotoLibraryPicker } from "@/components/PhotoLibraryPicker";
 import { SettingsSheet } from "@/components/SettingsSheet";
 
-// Editorial palette + helpers — match the Profile redesign mockup
-// (cream + ink + soft peach gradient, italic serif for personal
-// details, sans for chrome).
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
+// Web palette (apps/web/src/index.css): white surfaces, deep-navy
+// accent, cool neutral grays. No warm cream/champagne.
+const WHITE = "#ffffff";
+const SURFACE = "#f5f5f5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
+const ACCENT = "#1b3654";
+const BORDER = "#e5e7eb";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 function joinedLabel(createdAt: string | null): string {
   if (!createdAt) return "";
   const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return "";
   const now = new Date();
   const sameDay =
     d.getFullYear() === now.getFullYear() &&
@@ -81,36 +59,13 @@ function joinedLabel(createdAt: string | null): string {
   return `Joined ${d.toLocaleDateString(undefined, { year: "numeric" })}`;
 }
 
-type ViewKind = "grid" | "reels" | "buzz" | "listing";
-
-interface PostRow {
-  id: string;
-  image_url: string;
-  caption: string | null;
-  created_at: string;
-}
-interface ReelRow {
-  id: string;
-  video_url: string;
-  thumbnail_url: string | null;
-  caption: string | null;
-  duration_seconds: number | null;
-  created_at: string;
-}
-interface BuzzRow {
-  id: string;
-  body: string;
-  created_at: string;
-}
-
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<VendorProfile | null>(null);
-  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
-  // Identity stored on public.profiles (separate from any listing —
-  // see migration 20260512150000). Falls back to the user's primary
-  // vendor_profiles row only if the profile fields are still null.
+
+  // Identity lives on public.profiles (separate from any one listing —
+  // migration 20260512150000). Falls back to the primary vendor_profiles
+  // row when the profile columns are still null.
   const [identity, setIdentity] = useState<{
     business_name: string | null;
     category: string | null;
@@ -124,46 +79,17 @@ export default function ProfileScreen() {
     bio: null,
     logo_url: null,
   });
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  // Every vendor_profiles row this user owns = their listings.
+  const [listings, setListings] = useState<VendorProfile[]>([]);
   const [stats, setStats] = useState<{
     bookings: number;
     reviews: number;
     rating: number | null;
   }>({ bookings: 0, reviews: 0, rating: null });
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<ViewKind>("grid");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [buzzOpen, setBuzzOpen] = useState(false);
-  const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
-  const [reelPickerOpen, setReelPickerOpen] = useState(false);
-  const [pendingMedia, setPendingMedia] = useState<
-    { asset: ImagePicker.ImagePickerAsset; kind: MediaKind } | null
-  >(null);
-
-  // All vendor_profiles rows this user owns. profile = the first/
-  // primary one (used for top-of-profile identity — logo, name, stats).
-  // listings = the full set, rendered as separate cards on the
-  // "Listing" tab so the vendor can manage multiple.
-  const [listings, setListings] = useState<VendorProfile[]>([]);
-  const [posts, setPosts] = useState<PostRow[]>([]);  const [reels, setReels] = useState<ReelRow[]>([]);
-  const [buzz, setBuzz] = useState<BuzzRow[]>([]);
-  // Lightbox: tapping a grid tile opens a fullscreen modal with a back
-  // button top-left. null when nothing is open.
-  const [openMedia, setOpenMedia] = useState<
-    | { kind: "post"; image_url: string; caption: string | null; created_at: string }
-    | { kind: "reel"; video_url: string; caption: string | null; created_at: string }
-    | null
-  >(null);
-
-  // expo-video player for the reel lightbox. Hook must be called every
-  // render at top level — pass null when no reel is open and the player
-  // is idle. Config callback only runs on initial create; subsequent
-  // source changes are handled by passing the new url to the hook.
-  const reelSource = openMedia?.kind === "reel" ? openMedia.video_url : null;
-  const videoPlayer = useVideoPlayer(reelSource, (player) => {
-    player.loop = true;
-    player.play();
-  });
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -171,7 +97,7 @@ export default function ProfileScreen() {
       supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, application_review_notes, intro_video_url, weekly_digest_enabled, slug, instagram_handle, tiktok_handle, logo_url, created_at",
+          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, slug, logo_url, created_at",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: true }),
@@ -186,11 +112,6 @@ export default function ProfileScreen() {
     const rows = (vpData ?? []) as any[];
     setListings(rows as VendorProfile[]);
     const primary = rows[0] ?? null;
-    setProfile(primary);
-    // Identity comes from profiles; fall back to the primary listing's
-    // values if the profile column is still empty (vendors created
-    // before the 20260512150000 backfill). The user can overwrite via
-    // the Edit profile screen.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const id: any = identityData ?? {};
     setIdentity({
@@ -201,6 +122,7 @@ export default function ProfileScreen() {
       logo_url: id.logo_url ?? primary?.logo_url ?? null,
     });
     setProfileCreatedAt(id.created_at ?? primary?.created_at ?? null);
+    setVerifiedAt(primary?.verified_at ?? null);
     setLoading(false);
   }, [user]);
 
@@ -208,18 +130,15 @@ export default function ProfileScreen() {
     loadProfile();
   }, [loadProfile]);
 
-  // Re-fetch identity when we navigate back from /(vendor)/edit-profile
-  // so saved changes show up immediately on the Profile tab.
+  // Refresh when returning from Edit profile / the listing builder.
   useFocusEffect(
     useCallback(() => {
       loadProfile();
     }, [loadProfile]),
   );
 
-  // Stats card: bookings = won inquiries across all the user's
-  // listings; reviews + rating = aggregate of public reviews on those
-  // listings. Single round-trip per side. Falls back to "—" / "0" when
-  // there's no data yet (matches the mockup's empty-state numerals).
+  // Stats: bookings = won inquiries across all listings; reviews + rating
+  // = aggregate of public reviews on those listings.
   useEffect(() => {
     if (listings.length === 0) {
       setStats({ bookings: 0, reviews: 0, rating: null });
@@ -234,10 +153,7 @@ export default function ProfileScreen() {
           .select("id", { count: "exact", head: true })
           .in("vendor_id", vendorIds)
           .eq("status", "won"),
-        supabase
-          .from("reviews")
-          .select("rating")
-          .in("vendor_id", vendorIds),
+        supabase.from("reviews").select("rating").in("vendor_id", vendorIds),
       ]);
       if (cancelled) return;
       const rs = (reviewRows ?? []) as { rating: number | null }[];
@@ -248,79 +164,29 @@ export default function ProfileScreen() {
         ratings.length === 0
           ? null
           : Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10;
-      setStats({
-        bookings: bookings ?? 0,
-        reviews: rs.length,
-        rating: avg,
-      });
+      setStats({ bookings: bookings ?? 0, reviews: rs.length, rating: avg });
     })();
     return () => {
       cancelled = true;
     };
   }, [listings]);
 
-  const loadFeeds = useCallback(async () => {
-    if (!profile?.id) return;
-    const [postsRes, reelsRes, buzzRes] = await Promise.all([
-      supabase
-        .from("vendor_posts")
-        .select("id, image_url, caption, created_at")
-        .eq("vendor_id", profile.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("vendor_reels")
-        .select(
-          "id, video_url, thumbnail_url, caption, duration_seconds, created_at",
-        )
-        .eq("vendor_id", profile.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("vendor_buzz")
-        .select("id, body, created_at")
-        .eq("vendor_id", profile.id)
-        .order("created_at", { ascending: false }),
-    ]);
-    setPosts((postsRes.data ?? []) as PostRow[]);
-    setReels((reelsRes.data ?? []) as ReelRow[]);
-    setBuzz((buzzRes.data ?? []) as BuzzRow[]);
-  }, [profile?.id]);
-
-  useEffect(() => {
-    loadFeeds();
-  }, [loadFeeds]);
-
-  // Count of *publishable* listings — used by the Profile stat row.
-  // A listing counts once it has the bare minimum to live in the
-  // marketplace (approved status + location + starting price).
-  const listingsCount = listings.filter(
-    (l) =>
-      l.application_status === "approved" &&
-      l.location &&
-      l.base_price_cents != null,
-  ).length;
-
-  // Share the vendor's public listing URL — uses slug when available
-  // so the receiver lands on the SEO-friendly path.
   async function shareProfile() {
-    if (!profile) return;
-    const slugOrId = profile.slug ?? profile.id;
+    const primary = listings[0];
+    if (!primary) return;
+    const slugOrId = primary.slug ?? primary.id;
     const url = `https://eventvendora.com/vendors/${slugOrId}`;
     await Share.share({
-      message: `${profile.business_name ?? "Check out my listing"} on Vendora — ${url}`,
+      message: `${identity.business_name ?? "Check out my listing"} on Vendora — ${url}`,
       url,
     }).catch(() => {});
   }
 
-  // Edit profile → opens the profile-level edit screen which writes
-  // to public.profiles. Listings have their own builder reached from
-  // the Listing tab; this button is intentionally separate.
   function openEditProfile() {
     router.push("/(vendor)/edit-profile" as never);
   }
 
-  // Insert a fresh draft and jump to its editor. Used by the "+
-  // Listing" row in CreateSheet so vendors can create additional
-  // marketplace listings without being blocked by the existing one.
+  // Insert a fresh draft listing and jump to its editor.
   async function createNewListing() {
     if (!user?.id) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -337,263 +203,135 @@ export default function ProfileScreen() {
     router.push(`/(vendor)/listing?id=${data.id}` as never);
   }
 
-  function openCreatePost() {
-    setPhotoPickerOpen(true);
-  }
-
-  function openCreateReel() {
-    setReelPickerOpen(true);
-  }
-
-  async function pickMedia(
-    src: "camera" | "library",
-    kind: "Images" | "Videos",
-  ) {
-    const mediaTypes =
-      kind === "Videos"
-        ? ImagePicker.MediaTypeOptions.Videos
-        : ImagePicker.MediaTypeOptions.Images;
-    const noun = kind === "Videos" ? "video" : "photo";
-    const composerKind: MediaKind = kind === "Videos" ? "video" : "photo";
-
-    if (src === "camera") {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert(
-          "Camera access needed",
-          `Enable camera access in Settings to capture a ${noun}.`,
-        );
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes,
-        quality: 0.85,
-        videoMaxDuration: 60,
-      });
-      if (!result.canceled && result.assets[0]) {
-        setPendingMedia({ asset: result.assets[0], kind: composerKind });
-      }
-      return;
-    }
-
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(
-        "Library access needed",
-        `Enable photo library access in Settings to pick a ${noun}.`,
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
-      quality: 0.85,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPendingMedia({ asset: result.assets[0], kind: composerKind });
-    }
-  }
-
   const businessInitial =
     identity.business_name?.trim()?.[0]?.toUpperCase() ??
-    profile?.business_name?.trim()?.[0]?.toUpperCase() ??
     user?.email?.[0]?.toUpperCase() ??
     "V";
 
   return (
-    <View className="flex-1" style={{ backgroundColor: CREAM }}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 140 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero banner — warm peach plate. Three layered tints fake a
-            soft gradient without adding expo-linear-gradient (native
-            dep would block OTA). */}
-        <View style={{ height: 220, backgroundColor: "#f0d4ba" }}>
-          <View
-            pointerEvents="none"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "#d9c0a4",
-              opacity: 0.45,
-            }}
-          />
-          <View
-            pointerEvents="none"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 110,
-              backgroundColor: "#f3dcc2",
-              opacity: 0.7,
-            }}
-          />
-          <SafeAreaView edges={["top"]}>
-            {/* Top row: +  email pill  ☰ */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 14,
-                paddingTop: 6,
-              }}
-            >
-              <Pressable
-                hitSlop={8}
-                onPress={() => setCreateOpen(true)}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 999,
-                  backgroundColor: CREAM_DEEP,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Feather name="plus" size={20} color={INK} />
-              </Pressable>
-
-              <View
-                style={{
-                  flex: 1,
-                  marginHorizontal: 10,
-                  backgroundColor: CREAM_DEEP,
-                  borderRadius: 999,
-                  paddingHorizontal: 16,
-                  paddingVertical: 9,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    color: INK,
-                    fontSize: 14,
-                    fontWeight: "500",
-                  }}
-                >
-                  {user?.email ?? ""}
-                </Text>
-              </View>
-
-              <Pressable
-                hitSlop={8}
-                onPress={() => setMenuOpen(true)}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 999,
-                  backgroundColor: CREAM_DEEP,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Feather name="menu" size={20} color={INK} />
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </View>
-
-        {/* Cream Ocean flip card — mirrors how a host sees this vendor in
-            the host app's VendorProfileSheet. Logo + name + bookings/
-            rating/joined on the front, blank canvas on the back. Tap
-            the rotate-cw button to flip. */}
-        <CreamOceanCard
-          businessName={identity.business_name}
-          logoUrl={identity.logo_url}
-          initial={businessInitial}
-          verifiedAt={profile?.verified_at ?? null}
-          createdAt={profileCreatedAt}
-          bio={identity.bio}
-        />
-
-        {/* Share + Edit profile actions sit just below the card. */}
+    <View style={{ flex: 1, backgroundColor: WHITE }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: WHITE }}>
+        {/* Top bar: New listing (left) · Share + Settings (right) */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "flex-end",
-            paddingHorizontal: 18,
-            marginTop: 14,
+            paddingHorizontal: 14,
+            paddingTop: 4,
+            paddingBottom: 4,
           }}
         >
-          <Pressable
-            onPress={shareProfile}
-            hitSlop={8}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 999,
-              backgroundColor: CREAM_DEEP,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 10,
-            }}
-          >
-            <Feather name="share" size={18} color={INK} />
-          </Pressable>
+          <IconButton icon="plus" onPress={createNewListing} />
+          <View style={{ flex: 1 }} />
+          <IconButton icon="share" onPress={shareProfile} />
+          <View style={{ width: 10 }} />
+          <IconButton icon="menu" onPress={() => setMenuOpen(true)} />
+        </View>
+      </SafeAreaView>
+
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Identity header — logo + name + category/location + joined. */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 16,
+            paddingHorizontal: 18,
+            marginTop: 8,
+          }}
+        >
+          <View>
+            <Avatar logoUrl={identity.logo_url} initial={businessInitial} />
+            {verifiedAt ? (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  right: -4,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: ACCENT,
+                  borderWidth: 3,
+                  borderColor: WHITE,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="check" size={11} color={WHITE} />
+              </View>
+            ) : null}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              numberOfLines={2}
+              style={{
+                fontFamily: SERIF,
+                fontStyle: "italic",
+                fontWeight: "700",
+                fontSize: 28,
+                lineHeight: 32,
+                letterSpacing: -0.5,
+                color: INK,
+              }}
+            >
+              {identity.business_name ?? "Your business"}
+            </Text>
+            {identity.category || identity.location ? (
+              <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
+                {identity.category ?? ""}
+                {identity.category && identity.location ? " · " : ""}
+                {identity.location ?? ""}
+              </Text>
+            ) : null}
+            {profileCreatedAt ? (
+              <Text style={{ marginTop: 2, fontSize: 12, color: INK_DIM }}>
+                {joinedLabel(profileCreatedAt)}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Edit profile action */}
+        <View style={{ paddingHorizontal: 18, marginTop: 14 }}>
           <Pressable
             onPress={openEditProfile}
             style={{
+              alignSelf: "flex-start",
               backgroundColor: INK,
               borderRadius: 999,
               paddingHorizontal: 18,
-              paddingVertical: 12,
+              paddingVertical: 11,
               flexDirection: "row",
               alignItems: "center",
             }}
           >
-            <Feather name="edit-2" size={14} color={CREAM} />
-            <Text
-              style={{
-                color: CREAM,
-                fontSize: 14,
-                fontWeight: "600",
-                marginLeft: 6,
-              }}
-            >
+            <Feather name="edit-2" size={14} color={WHITE} />
+            <Text style={{ color: WHITE, fontSize: 14, fontWeight: "600", marginLeft: 6 }}>
               Edit profile
             </Text>
           </Pressable>
         </View>
 
-        {/* Bio below the card — back-of-card rendering kept crashing
-            on this build, so we keep the bio paragraph here in the
-            normal flow. Italic serif placeholder when empty. */}
-        <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
-          {identity.bio?.trim() ? (
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                color: INK,
-                fontSize: 17,
-                lineHeight: 24,
-              }}
-            >
-              {identity.bio}
-            </Text>
-          ) : (
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                color: INK_DIM,
-                fontSize: 16,
-                lineHeight: 22,
-              }}
-            >
-              Add a short bio from Edit profile.
-            </Text>
-          )}
+        {/* Bio */}
+        <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              color: identity.bio?.trim() ? INK : INK_DIM,
+              fontSize: identity.bio?.trim() ? 17 : 16,
+              lineHeight: 24,
+            }}
+          >
+            {identity.bio?.trim() ? identity.bio : "Add a short bio from Edit profile."}
+          </Text>
         </View>
 
-        {/* Stats card */}
+        {/* Stats row */}
         <View
           style={{
             marginHorizontal: 18,
@@ -601,144 +339,43 @@ export default function ProfileScreen() {
             paddingVertical: 16,
             borderTopWidth: 1,
             borderBottomWidth: 1,
-            borderColor: "#e5e7eb",
+            borderColor: BORDER,
             flexDirection: "row",
             alignItems: "center",
           }}
         >
           <StatCell value={String(stats.bookings)} label="BOOKINGS" />
-          <View
-            style={{
-              width: 1,
-              alignSelf: "stretch",
-              backgroundColor: "#e5e7eb",
-            }}
-          />
+          <Divider />
           <StatCell
             value={stats.rating != null ? stats.rating.toFixed(1) : "—"}
             label="RATING"
           />
-          <View
-            style={{
-              width: 1,
-              alignSelf: "stretch",
-              backgroundColor: "#e5e7eb",
-            }}
-          />
+          <Divider />
           <StatCell value={String(stats.reviews)} label="REVIEWS" />
         </View>
 
-        {/* Tabs — chip-pill row */}
-        <View
-          style={{
-            marginTop: 22,
-            paddingHorizontal: 18,
-            flexDirection: "row",
-            gap: 8,
-          }}
-        >
-          <ViewTab
-            active={view === "grid"}
-            onPress={() => setView("grid")}
-            label="Posts"
-            count={posts.length}
-          />
-          <ViewTab
-            active={view === "reels"}
-            onPress={() => setView("reels")}
-            label="Reels"
-            count={reels.length}
-          />
-          <ViewTab
-            active={view === "buzz"}
-            onPress={() => setView("buzz")}
-            label="Buzz"
-            count={buzz.length}
-          />
-          <ViewTab
-            active={view === "listing"}
-            onPress={() => setView("listing")}
-            label="Listings"
-            count={listingsCount}
-          />
+        {/* Listings — the only content surface now. */}
+        <View style={{ paddingHorizontal: 18, marginTop: 24 }}>
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 22,
+              fontWeight: "700",
+              color: INK,
+            }}
+          >
+            Your listings
+          </Text>
         </View>
-
-        <View className="mt-4 px-2">
-          {view === "grid" ? (
-            posts.length === 0 ? (
-              <View className="items-center px-4 pt-10">
-                <EmptyState
-                  icon="grid"
-                  title="No posts yet"
-                  body="Share photos from past events to build trust with hosts."
-                  ctaLabel="Create"
-                  onCta={openCreatePost}
-                />
-              </View>
-            ) : (
-              <PostGrid
-                posts={posts}
-                onPressItem={(p) =>
-                  setOpenMedia({
-                    kind: "post",
-                    image_url: p.image_url,
-                    caption: p.caption,
-                    created_at: p.created_at,
-                  })
-                }
-              />
-            )
-          ) : view === "reels" ? (
-            reels.length === 0 ? (
-              <View className="items-center px-4 pt-10">
-                <EmptyState
-                  icon="play"
-                  title="No reels yet"
-                  body="Short videos help your listing convert."
-                  ctaLabel="Create"
-                  onCta={openCreateReel}
-                />
-              </View>
-            ) : (
-              <ReelGrid
-                reels={reels}
-                onPressItem={(r) =>
-                  setOpenMedia({
-                    kind: "reel",
-                    video_url: r.video_url,
-                    caption: r.caption,
-                    created_at: r.created_at,
-                  })
-                }
-              />
-            )
-          ) : view === "buzz" ? (
-            buzz.length === 0 ? (
-              <View className="items-center px-4 pt-10">
-                <EmptyState
-                  icon="align-left"
-                  title="No buzz yet"
-                  body="Post quick updates, behind-the-scenes notes, or news for your followers."
-                  ctaLabel="Create"
-                  onCta={() => setBuzzOpen(true)}
-                />
-              </View>
-            ) : (
-              <BuzzList items={buzz} />
-            )
-          ) : (
-            <View className="items-center px-4 pt-10">
-              <ListingTab
-                loading={loading}
-                listings={listings}
-                onEdit={(id) =>
-                  router.push(`/(vendor)/listing?id=${id}` as never)
-                }
-                onCreateNew={createNewListing}
-                onChanged={loadProfile}
-              />
-            </View>
-          )}
+        <View style={{ marginTop: 12, paddingHorizontal: 8 }}>
+          <ListingTab
+            loading={loading}
+            listings={listings}
+            onEdit={(id) => router.push(`/(vendor)/listing?id=${id}` as never)}
+            onCreateNew={createNewListing}
+            onChanged={loadProfile}
+          />
         </View>
       </ScrollView>
 
@@ -748,192 +385,78 @@ export default function ProfileScreen() {
         email={user?.email ?? ""}
         onSignOut={signOut}
       />
-
-      <CreateSheet
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onPost={() => {
-          setCreateOpen(false);
-          openCreatePost();
-        }}
-        onReel={() => {
-          setCreateOpen(false);
-          openCreateReel();
-        }}
-        onBuzz={() => {
-          setCreateOpen(false);
-          setBuzzOpen(true);
-        }}
-        onListing={() => {
-          setCreateOpen(false);
-          createNewListing();
-        }}
-      />
-
-      <BuzzComposer
-        visible={buzzOpen}
-        userId={user?.id ?? null}
-        vendorId={profile?.id ?? null}
-        onClose={() => setBuzzOpen(false)}
-        onPosted={loadFeeds}
-      />
-
-      <MediaComposer
-        visible={pendingMedia !== null}
-        kind={pendingMedia?.kind ?? "photo"}
-        asset={pendingMedia?.asset ?? null}
-        userId={user?.id ?? null}
-        vendorId={profile?.id ?? null}
-        onClose={() => setPendingMedia(null)}
-        onPosted={loadFeeds}
-      />
-
-      <PhotoLibraryPicker
-        visible={photoPickerOpen}
-        mediaType="photo"
-        onClose={() => setPhotoPickerOpen(false)}
-        onPicked={(picked) => {
-          setPhotoPickerOpen(false);
-          setPendingMedia({
-            asset: {
-              uri: picked.uri,
-              width: picked.width ?? 0,
-              height: picked.height ?? 0,
-              type: "image",
-              mimeType: picked.type ?? "image/jpeg",
-            } as unknown as ImagePicker.ImagePickerAsset,
-            kind: "photo",
-          });
-        }}
-      />
-
-      <PhotoLibraryPicker
-        visible={reelPickerOpen}
-        mediaType="video"
-        onClose={() => setReelPickerOpen(false)}
-        onPicked={(picked) => {
-          setReelPickerOpen(false);
-          setPendingMedia({
-            asset: {
-              uri: picked.uri,
-              width: picked.width ?? 0,
-              height: picked.height ?? 0,
-              type: "video",
-              duration: picked.duration ?? null,
-              mimeType: picked.type ?? "video/mp4",
-            } as unknown as ImagePicker.ImagePickerAsset,
-            kind: "video",
-          });
-        }}
-      />
-
-      {/* Lightbox: tap a grid tile → fullscreen view of the image (or
-          a play-icon placeholder for reels, since expo-av isn't wired
-          up yet). Back chevron sits in the top-left over a SafeArea so
-          it never collides with the notch. */}
-      <Modal
-        visible={openMedia !== null}
-        animationType="fade"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setOpenMedia(null)}
-      >
-        <SafeAreaView className="flex-1 bg-foreground" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-2 py-2">
-            <Pressable
-              onPress={() => setOpenMedia(null)}
-              hitSlop={12}
-              className="h-10 w-10 items-center justify-center rounded-full active:opacity-60"
-            >
-              <Feather name="chevron-left" size={28} color="#fff" />
-            </Pressable>
-            <View className="w-10" />
-          </View>
-          {/* Inset the media so it doesn't crowd the screen edges —
-              feels more like a card lifted off the dark backdrop than
-              an edge-to-edge takeover. */}
-          <View className="flex-1 items-center justify-center px-5 py-4">
-            {openMedia?.kind === "post" ? (
-              <Image
-                source={{ uri: openMedia.image_url }}
-                style={{ width: "100%", height: "100%", borderRadius: 12 }}
-                resizeMode="contain"
-              />
-            ) : openMedia?.kind === "reel" ? (
-              <VideoView
-                player={videoPlayer}
-                style={{ width: "100%", height: "100%", borderRadius: 12 }}
-                contentFit="contain"
-                nativeControls
-              />
-            ) : null}
-          </View>
-          {openMedia?.caption ? (
-            <View className="px-5 pb-5">
-              <Text className="text-base text-background">
-                {openMedia.caption}
-              </Text>
-              <Text className="mt-2 text-xs text-background/60">
-                {new Date(openMedia.created_at).toLocaleString()}
-              </Text>
-            </View>
-          ) : null}
-        </SafeAreaView>
-      </Modal>
     </View>
   );
 }
 
-// Chip-pill tab. Active state = cream-deep capsule with INK label +
-// count; inactive = transparent with muted ink.
-function ViewTab({
-  active,
+function IconButton({
+  icon,
   onPress,
-  label,
-  count,
 }: {
-  active: boolean;
+  icon: keyof typeof Feather.glyphMap;
   onPress: () => void;
-  label: string;
-  count: number;
 }) {
   return (
     <Pressable
+      hitSlop={8}
       onPress={onPress}
       style={{
-        paddingHorizontal: 14,
-        paddingVertical: 9,
+        width: 38,
+        height: 38,
         borderRadius: 999,
-        backgroundColor: active ? CREAM_DEEP : "transparent",
-        flexDirection: "row",
+        backgroundColor: SURFACE,
         alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <Text
-        style={{
-          color: active ? INK : INK_DIM,
-          fontSize: 15,
-          fontWeight: active ? "700" : "500",
-          marginRight: 6,
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          color: active ? INK_DIM : INK_DIM,
-          fontSize: 14,
-          fontWeight: "500",
-        }}
-      >
-        {count}
-      </Text>
+      <Feather name={icon} size={18} color={INK} />
     </Pressable>
   );
 }
 
-// Single stat (Bookings / Rating / Reviews). Large italic-serif numeral
-// over a tracked uppercase label. Used in the stats row above the
-// tab pills.
+function Avatar({ logoUrl, initial }: { logoUrl: string | null; initial: string }) {
+  return (
+    <View
+      style={{
+        width: 96,
+        height: 96,
+        borderRadius: 20,
+        overflow: "hidden",
+        backgroundColor: logoUrl ? WHITE : ACCENT,
+        borderWidth: 1,
+        borderColor: BORDER,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {logoUrl ? (
+        <Image
+          source={{ uri: logoUrl }}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <Text
+          style={{
+            color: WHITE,
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontWeight: "700",
+            fontSize: 44,
+          }}
+        >
+          {initial}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function Divider() {
+  return <View style={{ width: 1, alignSelf: "stretch", backgroundColor: BORDER }} />;
+}
+
 function StatCell({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ flex: 1, alignItems: "center", paddingVertical: 2 }}>
@@ -979,163 +502,26 @@ function EmptyState({
   return (
     <View className="items-center">
       <View className="h-16 w-16 items-center justify-center rounded-full border border-border">
-        <Feather name={icon} size={24} color="#737373" />
+        <Feather name={icon} size={24} color={INK_DIM} />
       </View>
       <Text className="mt-4 text-lg font-semibold text-foreground">{title}</Text>
-      <Text className="mt-1 text-center text-base text-muted-foreground">
-        {body}
-      </Text>
+      <Text className="mt-1 text-center text-base text-muted-foreground">{body}</Text>
       {ctaLabel && onCta ? (
         <Pressable
           onPress={onCta}
           className="mt-5 rounded-full bg-foreground px-6 py-2.5 active:opacity-80"
         >
-          <Text className="text-sm font-semibold text-background">
-            {ctaLabel}
-          </Text>
+          <Text className="text-sm font-semibold text-background">{ctaLabel}</Text>
         </Pressable>
       ) : null}
     </View>
   );
 }
 
-// Square grid of post images, 3 across. Tapping a tile opens the
-// fullscreen lightbox modal at the root of the screen.
-function PostGrid({
-  posts,
-  onPressItem,
-}: {
-  posts: PostRow[];
-  onPressItem: (p: PostRow) => void;
-}) {
-  return (
-    <FlatList
-      data={posts}
-      keyExtractor={(p) => p.id}
-      numColumns={3}
-      scrollEnabled={false}
-      renderItem={({ item }) => (
-        <Pressable
-          onPress={() => onPressItem(item)}
-          style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}
-        >
-          <View
-            style={{
-              flex: 1,
-              borderRadius: 12,
-              overflow: "hidden",
-              shadowColor: "#000",
-              shadowOpacity: 0.10,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-              backgroundColor: "#f5f5f5",
-            }}
-          >
-            <Image
-              source={{ uri: item.image_url }}
-              style={{ flex: 1 }}
-              resizeMode="cover"
-            />
-          </View>
-        </Pressable>
-      )}
-    />
-  );
-}
-
-// Same as PostGrid but with a play-icon overlay so it reads as video.
-function ReelGrid({
-  reels,
-  onPressItem,
-}: {
-  reels: ReelRow[];
-  onPressItem: (r: ReelRow) => void;
-}) {
-  return (
-    <FlatList
-      data={reels}
-      keyExtractor={(r) => r.id}
-      numColumns={3}
-      scrollEnabled={false}
-      renderItem={({ item }) => (
-        <Pressable
-          onPress={() => onPressItem(item)}
-          style={{ flex: 1 / 3, aspectRatio: 1, padding: 4 }}
-        >
-          <View
-            style={{
-              flex: 1,
-              borderRadius: 12,
-              overflow: "hidden",
-              shadowColor: "#000",
-              shadowOpacity: 0.10,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-              backgroundColor: "#1a1a1a",
-            }}
-          >
-            {/* Use the stored thumbnail when we have one (added by the
-                MediaComposer once expo-video-thumbnails is wired up).
-                Fall back to a dark tile + play icon for older reels
-                that were uploaded before thumbnail generation
-                existed. */}
-            {item.thumbnail_url ? (
-              <Image
-                source={{ uri: item.thumbnail_url }}
-                style={{ flex: 1 }}
-                resizeMode="cover"
-              />
-            ) : null}
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: item.thumbnail_url
-                  ? "rgba(0,0,0,0.18)"
-                  : "transparent",
-              }}
-            >
-              <Feather name="play" size={28} color="#fff" />
-            </View>
-          </View>
-        </Pressable>
-      )}
-    />
-  );
-}
-
-function BuzzList({ items }: { items: BuzzRow[] }) {
-  return (
-    <View className="gap-3 px-2">
-      {items.map((b) => (
-        <View
-          key={b.id}
-          className="rounded-xl border border-border bg-background p-4"
-        >
-          <Text className="text-base text-foreground">{b.body}</Text>
-          <Text className="mt-2 text-xs text-muted-foreground">
-            {new Date(b.created_at).toLocaleString()}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// Renders every vendor_profiles row this user owns as its own card.
-// Each card has three flavors keyed off application_status:
-//   - approved (+ has location + base price) → "Live" card, tappable
-//   - pending                                → dimmed "Under review"
-//   - draft / rejected / anything else       → "Draft" card with CTA
-// An "Add another listing" tile sits at the end so the vendor can
-// spin up a second / third / nth listing without leaving the tab.
+// Renders every vendor_profiles row this user owns as its own card —
+// approved+complete listings as photo cards, drafts/rejected as rows,
+// pending as a dimmed "under review" card. An "Add another listing" tile
+// closes the list.
 function ListingTab({
   loading,
   listings,
@@ -1150,17 +536,23 @@ function ListingTab({
   onChanged: () => void;
 }) {
   if (loading) {
-    return <Text className="text-sm text-muted-foreground">Loading…</Text>;
+    return (
+      <View className="items-center px-4 pt-10">
+        <Text className="text-sm text-muted-foreground">Loading…</Text>
+      </View>
+    );
   }
   if (listings.length === 0) {
     return (
-      <EmptyState
-        icon="shopping-bag"
-        title="No listings yet"
-        body="Add your location and starting price to publish your listing to the marketplace."
-        ctaLabel="Create listing"
-        onCta={onCreateNew}
-      />
+      <View className="items-center px-4 pt-10">
+        <EmptyState
+          icon="shopping-bag"
+          title="No listings yet"
+          body="Add your location and starting price to publish your listing to the marketplace."
+          ctaLabel="Create listing"
+          onCta={onCreateNew}
+        />
+      </View>
     );
   }
   return (
@@ -1182,14 +574,14 @@ function ListingTab({
               borderRadius: 18,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: "#e5e7eb",
+              borderColor: BORDER,
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
               opacity: pressed ? 0.7 : 1,
             }}
           >
-            <Feather name="plus" size={16} color="#14161a" />
+            <Feather name="plus" size={16} color={INK} />
             <Text className="ml-2 text-sm font-semibold text-foreground">
               Add another listing
             </Text>
@@ -1218,6 +610,7 @@ function ListingCard({
     listing.base_price_cents != null;
   const isPending = listing.application_status === "pending";
 
+  // Cover = first portfolio image (the gallery photos for this listing).
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1261,11 +654,8 @@ function ListingCard({
               .update({ application_status: "draft" })
               .eq("id", listing.id);
             setBusy(false);
-            if (error) {
-              Alert.alert("Couldn't remove listing", error.message);
-            } else {
-              onChanged();
-            }
+            if (error) Alert.alert("Couldn't remove listing", error.message);
+            else onChanged();
           },
         },
       ],
@@ -1289,18 +679,15 @@ function ListingCard({
               { p_vendor_id: listing.id },
             );
             setBusy(false);
-            if (error) {
-              Alert.alert("Couldn't delete listing", error.message);
-            } else {
-              onChanged();
-            }
+            if (error) Alert.alert("Couldn't delete listing", error.message);
+            else onChanged();
           },
         },
       ],
     );
   }
 
-  // Draft / rejected card — full-width row with status pill + CTA
+  // Draft / rejected — full-width row with status + CTA.
   if (!isComplete && !isPending) {
     return (
       <Pressable onPress={onEdit}>
@@ -1309,15 +696,12 @@ function ListingCard({
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "#ffffff",
+              backgroundColor: WHITE,
               borderRadius: 18,
               padding: 14,
               opacity: pressed ? 0.85 : 1,
-              shadowColor: "#14161a",
-              shadowOpacity: 0.10,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 1,
+              borderWidth: 1,
+              borderColor: BORDER,
             }}
           >
             <View
@@ -1325,18 +709,15 @@ function ListingCard({
                 width: 56,
                 height: 56,
                 borderRadius: 14,
-                backgroundColor: "#f5f5f5",
+                backgroundColor: SURFACE,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Feather name="shopping-bag" size={22} color="#14161a" />
+              <Feather name="shopping-bag" size={22} color={INK} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text
-                className="text-base font-semibold text-foreground"
-                numberOfLines={1}
-              >
+              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
                 {listing.business_name ?? "Untitled listing"}
               </Text>
               <Text className="mt-0.5 text-xs text-muted-foreground">
@@ -1345,7 +726,7 @@ function ListingCard({
                   : "Draft — tap to finish setup"}
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#5e636e" />
+            <Feather name="chevron-right" size={20} color={INK_DIM} />
           </View>
         )}
       </Pressable>
@@ -1353,17 +734,13 @@ function ListingCard({
   }
 
   return (
-    <Pressable
-      onPress={onEdit}
-      className="active:opacity-90"
-      style={{ width: Math.round(Dimensions.get("window").width * 0.4) }}
-    >
+    <Pressable onPress={onEdit} className="active:opacity-90">
       <View
         style={{
           borderRadius: 18,
           overflow: "hidden",
           backgroundColor: "#1a1a1a",
-          aspectRatio: 1,
+          aspectRatio: 4 / 3,
           width: "100%",
         }}
       >
@@ -1377,7 +754,7 @@ function ListingCard({
         ) : (
           <View
             className="flex-1 items-center justify-center px-6"
-            style={{ backgroundColor: "#f4f4f5" }}
+            style={{ backgroundColor: SURFACE }}
           >
             <Feather name="image" size={28} color="#a1a1aa" />
             <Text className="mt-2 text-center text-xs text-muted-foreground">
@@ -1397,7 +774,6 @@ function ListingCard({
               backgroundColor: "rgba(0,0,0,0.4)",
               alignItems: "center",
               justifyContent: "center",
-              paddingHorizontal: 12,
             }}
           >
             <Feather name="clock" size={28} color="#fff" />
@@ -1415,51 +791,9 @@ function ListingCard({
               gap: 8,
             }}
           >
-            <Pressable
-              onPress={onEdit}
-              hitSlop={6}
-              disabled={busy}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 999,
-                backgroundColor: "rgba(255,255,255,0.92)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name="edit-2" size={16} color="#14161a" />
-            </Pressable>
-            <Pressable
-              onPress={unpublish}
-              hitSlop={6}
-              disabled={busy}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 999,
-                backgroundColor: "rgba(255,255,255,0.92)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name="eye-off" size={16} color="#14161a" />
-            </Pressable>
-            <Pressable
-              onPress={destroy}
-              hitSlop={6}
-              disabled={busy}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 999,
-                backgroundColor: "rgba(255,255,255,0.92)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name="trash-2" size={16} color="#dc2828" />
-            </Pressable>
+            <CardAction icon="edit-2" onPress={onEdit} disabled={busy} />
+            <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
+            <CardAction icon="trash-2" color="#dc2828" onPress={destroy} disabled={busy} />
           </View>
         )}
       </View>
@@ -1474,10 +808,7 @@ function ListingCard({
         >
           {listing.business_name ?? "Vendor"}
         </Text>
-        <Text
-          numberOfLines={1}
-          className="mt-0.5 text-sm text-muted-foreground"
-        >
+        <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground">
           {listing.category ?? "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
@@ -1498,787 +829,32 @@ function ListingCard({
   );
 }
 
-
-// Bottom-sheet style menu opened by the "+" button. The "Listing"
-// row is always present now — vendors can run multiple marketplace
-// listings off a single account, and CreateSheet's job is to give
-// them every "new content" surface, including a new listing.
-function CreateSheet({
-  open,
-  onClose,
-  onPost,
-  onReel,
-  onBuzz,
-  onListing,
+function CardAction({
+  icon,
+  onPress,
+  disabled,
+  color = "#14161a",
 }: {
-  open: boolean;
-  onClose: () => void;
-  onPost: () => void;
-  onReel: () => void;
-  onBuzz: () => void;
-  onListing: () => void;
+  icon: keyof typeof Feather.glyphMap;
+  onPress: () => void;
+  disabled?: boolean;
+  color?: string;
 }) {
-  // Dark editorial sheet — black canvas with cream serif numerals on
-  // each row, a tan "EARN" badge on the Listing entry to signal that
-  // a marketplace listing is the money path, and a faint divider
-  // between rows so it reads like a numbered table of contents.
-  type CreateOption = {
-    serial: string;
-    label: string;
-    sub: string;
-    badge?: string;
-    onPress: () => void;
-  };
-  const SHEET_BG = "#0e0c0a";
-  const SHEET_TEXT = "#ffffff";
-  const SHEET_TEXT_DIM = "rgba(250,245,236,0.55)";
-  const SHEET_DIVIDER = "rgba(250,245,236,0.10)";
-  const SHEET_X_BG = "rgba(250,245,236,0.10)";
-  const BADGE_BG = "#f5f5f5";
-  const BADGE_FG = "#14161a";
-  const SERIF =
-    Platform.OS === "ios" ? "Times New Roman" : "serif";
-
-  const options: CreateOption[] = [
-    {
-      serial: "01",
-      label: "Post",
-      sub: "Photo for your grid",
-      onPress: onPost,
-    },
-    {
-      serial: "02",
-      label: "Reel",
-      sub: "Short vertical video",
-      onPress: onReel,
-    },
-    {
-      serial: "03",
-      label: "Buzz",
-      sub: "Quick text update",
-      onPress: onBuzz,
-    },
-    {
-      serial: "04",
-      label: "Listing",
-      sub: "Set up your marketplace listing",
-      badge: "EARN",
-      onPress: onListing,
-    },
-  ];
-
-  return (
-    <Modal
-      visible={open}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      {/* Backdrop dim — taps fall through to close. */}
-      <Pressable
-        onPress={onClose}
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }}
-      />
-      <SafeAreaView
-        edges={["bottom"]}
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: SHEET_BG,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-        }}
-      >
-        {/* Grabber */}
-        <View
-          style={{
-            alignSelf: "center",
-            width: 44,
-            height: 4,
-            borderRadius: 999,
-            backgroundColor: "rgba(250,245,236,0.25)",
-            marginTop: 10,
-            marginBottom: 14,
-          }}
-        />
-
-        {/* Title row */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 24,
-            paddingBottom: 8,
-          }}
-        >
-          <Text
-            style={{
-              color: SHEET_TEXT,
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontSize: 30,
-              fontWeight: "500",
-            }}
-          >
-            Create
-          </Text>
-          <Pressable onPress={onClose} hitSlop={10}>
-            {({ pressed }) => (
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 999,
-                  backgroundColor: SHEET_X_BG,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: pressed ? 0.6 : 1,
-                }}
-              >
-                <Feather name="x" size={16} color={SHEET_TEXT} />
-              </View>
-            )}
-          </Pressable>
-        </View>
-
-        {/* Rows */}
-        <View style={{ paddingHorizontal: 24, paddingBottom: 12 }}>
-          {options.map((o, idx) => (
-            <Pressable
-              key={o.label}
-              onPress={o.onPress}
-              android_ripple={{ color: SHEET_DIVIDER }}
-            >
-              {({ pressed }) => (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 18,
-                    borderTopWidth: 1,
-                    borderTopColor: SHEET_DIVIDER,
-                    borderBottomWidth: idx === options.length - 1 ? 1 : 0,
-                    borderBottomColor: SHEET_DIVIDER,
-                    opacity: pressed ? 0.65 : 1,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: SHEET_TEXT_DIM,
-                      fontSize: 13,
-                      width: 32,
-                      letterSpacing: 0.4,
-                    }}
-                  >
-                    {o.serial}
-                  </Text>
-                  <View style={{ flex: 1 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: SHEET_TEXT,
-                          fontFamily: SERIF,
-                          fontStyle: "italic",
-                          fontSize: 24,
-                          fontWeight: "500",
-                        }}
-                      >
-                        {o.label}
-                      </Text>
-                      {o.badge ? (
-                        <View
-                          style={{
-                            marginLeft: 10,
-                            backgroundColor: BADGE_BG,
-                            paddingHorizontal: 8,
-                            paddingVertical: 3,
-                            borderRadius: 6,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: BADGE_FG,
-                              fontSize: 10,
-                              fontWeight: "800",
-                              letterSpacing: 0.8,
-                            }}
-                          >
-                            {o.badge}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text
-                      style={{
-                        marginTop: 2,
-                        color: SHEET_TEXT_DIM,
-                        fontSize: 13,
-                      }}
-                    >
-                      {o.sub}
-                    </Text>
-                  </View>
-                  <Feather
-                    name="chevron-right"
-                    size={20}
-                    color={SHEET_TEXT_DIM}
-                  />
-                </View>
-              )}
-            </Pressable>
-          ))}
-        </View>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
-// Cream Ocean flip card — same component the host app's vendor sheet
-// uses, ported over so the vendor sees themselves the way hosts do.
-// Front: logo + business name + bookings/rating/joined. Back: blank.
-// Tap the rotate button top-right to flip.
-function CreamOceanCard({
-  businessName,
-  logoUrl,
-  initial,
-  verifiedAt,
-  createdAt,
-  bio,
-}: {
-  businessName: string | null;
-  logoUrl: string | null;
-  initial: string;
-  verifiedAt: string | null;
-  createdAt: string | null;
-  bio: string | null;
-}) {
-  const CARD_W = Dimensions.get("window").width - 36;
-  const CARD_H = 230;
-
-  // Flip animation that mirrors the HTML reference pattern: ONE parent
-  // Animated.View rotates 0deg → 180deg, both faces sit as children
-  // with the back wearing a static rotateY(180deg). Equivalent to CSS
-  // transform-style: preserve-3d. Only one animation interpolation
-  // instead of two — simpler, fewer surfaces for iOS hit-testing to
-  // misbehave through.
-  // Reanimated flip — runs on the UI thread so it's smooth even
-  // under JS-thread load. UI-thread rotateY interpolation is way
-  // more reliable than RN's built-in Animated for iOS 3D transforms.
-  const flipProgress = useSharedValue(0);
-  const [flipped, setFlipped] = useState(false);
-  // Closure-safe state + tap debounce while animating.
-  const flippedRef = useRef(false);
-  const isAnimatingRef = useRef(false);
-  const toggleFlip = () => {
-    if (isAnimatingRef.current) return;
-    isAnimatingRef.current = true;
-    const next = !flippedRef.current;
-    flippedRef.current = next;
-    setFlipped(next);
-    flipProgress.value = withTiming(next ? 1 : 0, {
-      duration: 600,
-      easing: Easing.bezier(0.4, 0, 0.2, 1),
-    });
-    setTimeout(() => {
-      isAnimatingRef.current = false;
-    }, 620);
-  };
-
-  const cardAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1600 },
-      { rotateY: `${flipProgress.value * 180}deg` },
-    ],
-  }));
-  // Hard opacity cut at the halfway point — front fades out as parent
-  // crosses 90deg, back fades in. Sidesteps backfaceVisibility being
-  // unreliable on iOS RN.
-  const frontAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: flipProgress.value < 0.5 ? 1 : 0,
-  }));
-  const backAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: flipProgress.value < 0.5 ? 0 : 1,
-  }));
-
   return (
     <Pressable
-      onPress={toggleFlip}
+      onPress={onPress}
+      hitSlop={6}
+      disabled={disabled}
       style={{
-        marginHorizontal: 18,
-        marginTop: 12,
-        height: CARD_H,
+        width: 36,
+        height: 36,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.92)",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <RAnimated.View
-        style={[
-          {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          },
-          cardAnimatedStyle,
-        ]}
-      >
-        {/* Front face. Opacity-gated via Reanimated worklet — hard cut
-            at the halfway point of rotation since iOS backfaceVisibility
-            on RN is unreliable. */}
-        <RAnimated.View
-          pointerEvents={flipped ? "none" : "auto"}
-          style={[
-            {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              borderRadius: 22,
-              backgroundColor: "#ffffff",
-              borderWidth: 1,
-              borderColor: "#ebe1ce",
-              overflow: "hidden",
-              shadowColor: INK,
-              shadowOpacity: 0.1,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 12 },
-              elevation: 4,
-            },
-            frontAnimatedStyle,
-          ]}
-        >
-          <CreamOceanFront
-            businessName={businessName}
-            logoUrl={logoUrl}
-            initial={initial}
-            verifiedAt={verifiedAt}
-            createdAt={createdAt}
-            width={CARD_W}
-            height={CARD_H}
-            onFlip={toggleFlip}
-          />
-        </RAnimated.View>
-
-        {/* Back face — static rotateY(180deg) so its content is upright
-            once the parent reaches 180deg. */}
-        <RAnimated.View
-          pointerEvents={flipped ? "auto" : "none"}
-          style={[
-            {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              borderRadius: 22,
-              backgroundColor: "#ffffff",
-              borderWidth: 1,
-              borderColor: "#ebe1ce",
-              overflow: "hidden",
-              shadowColor: INK,
-              shadowOpacity: 0.1,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 12 },
-              elevation: 4,
-              transform: [{ rotateY: "180deg" }],
-            },
-            backAnimatedStyle,
-          ]}
-        >
-          <CreamOceanBack
-            width={CARD_W}
-            height={CARD_H}
-            onFlip={toggleFlip}
-            bio={bio}
-          />
-        </RAnimated.View>
-      </RAnimated.View>
+      <Feather name={icon} size={16} color={color} />
     </Pressable>
   );
-}
-
-function CreamOceanFront({
-  businessName,
-  logoUrl,
-  initial,
-  verifiedAt,
-  createdAt,
-  width,
-  height,
-  onFlip,
-}: {
-  businessName: string | null;
-  logoUrl: string | null;
-  initial: string;
-  verifiedAt: string | null;
-  createdAt: string | null;
-  width: number;
-  height: number;
-  onFlip: () => void;
-}) {
-  return (
-    <>
-      <Svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        pointerEvents="none"
-        style={{ position: "absolute", top: 0, left: 0 }}
-      >
-        <Defs>
-          <SvgLinearGradient id="bgFv" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#ffffff" />
-            <Stop offset="1" stopColor="#f3f4f6" />
-          </SvgLinearGradient>
-          <RadialGradient id="sunFv" cx="0.18" cy="0.18" rx="0.55" ry="0.55">
-            <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.55" />
-            <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
-          </RadialGradient>
-          <SvgLinearGradient id="rippleFv" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#a8893f" stopOpacity="0" />
-            <Stop offset="0.5" stopColor="#fff0c8" stopOpacity="0.55" />
-            <Stop offset="1" stopColor="#a8893f" stopOpacity="0" />
-          </SvgLinearGradient>
-          <SvgLinearGradient id="swellFv" x1="0" y1="1" x2="0" y2="0">
-            <Stop offset="0" stopColor="#d9c599" stopOpacity="0.55" />
-            <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.3" />
-            <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
-          </SvgLinearGradient>
-        </Defs>
-        <Rect x={0} y={0} width={width} height={height} fill="url(#bgFv)" />
-        <Rect x={0} y={0} width={width} height={height} fill="url(#sunFv)" />
-        <Rect x={0} y={height * 0.32} width={width} height={1.5} fill="url(#rippleFv)" />
-        <Rect x={0} y={height * 0.48} width={width} height={1.5} fill="url(#rippleFv)" opacity={0.7} />
-        <Rect x={0} y={height * 0.62} width={width} height={1.5} fill="url(#rippleFv)" opacity={0.55} />
-        <Rect x={0} y={height * 0.76} width={width} height={1.5} fill="url(#rippleFv)" opacity={0.4} />
-        <Path
-          d={`M -20 ${height} Q ${width / 2} ${height * 0.55} ${width + 20} ${height} Z`}
-          fill="url(#swellFv)"
-        />
-      </Svg>
-
-      <View style={{ padding: 18 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 18,
-            marginBottom: 18,
-          }}
-        >
-          <View
-            style={{
-              shadowColor: INK,
-              shadowOpacity: 0.3,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 4,
-            }}
-          >
-            <CreamOceanAvatar
-              size={110}
-              logoUrl={logoUrl}
-              initial={initial}
-              fontSize={72}
-              radius={20}
-            />
-            {verifiedAt ? (
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: -4,
-                  right: -4,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: "#b8472f",
-                  borderWidth: 3,
-                  borderColor: "#ffffff",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Feather name="check" size={11} color="#ffffff" />
-              </View>
-            ) : null}
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontWeight: "700",
-                fontSize: 32,
-                lineHeight: 34,
-                letterSpacing: -0.6,
-                color: INK,
-                paddingRight: 28,
-              }}
-              numberOfLines={2}
-            >
-              {businessName ?? "Your business"}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            backgroundColor: "rgba(255, 251, 242, 0.65)",
-            borderWidth: 1,
-            borderColor: "rgba(235, 225, 206, 0.7)",
-            borderRadius: 14,
-            paddingVertical: 12,
-            shadowColor: INK,
-            shadowOpacity: 0.10,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 1,
-          }}
-        >
-          <CreamOceanStat label="Bookings" value="0" />
-          <View
-            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
-          />
-          <CreamOceanStat label="Rating" value="—" italic />
-          <View
-            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
-          />
-          <CreamOceanStat
-            label="Joined"
-            value={shortJoined(createdAt)}
-            italic
-          />
-        </View>
-      </View>
-
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.85)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-cw" size={18} color="#ff0000" />
-      </Pressable>
-    </>
-  );
-}
-
-function CreamOceanBack({
-  width,
-  height,
-  onFlip,
-  bio,
-}: {
-  width: number;
-  height: number;
-  onFlip: () => void;
-  bio: string | null;
-}) {
-  const hasBio = !!bio?.trim();
-  return (
-    <>
-      <Svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        pointerEvents="none"
-        style={{ position: "absolute", top: 0, left: 0 }}
-      >
-        <Defs>
-          <SvgLinearGradient id="bgBv" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#ffffff" />
-            <Stop offset="1" stopColor="#f3f4f6" />
-          </SvgLinearGradient>
-          <RadialGradient id="sunBv" cx="0.82" cy="0.18" rx="0.55" ry="0.55">
-            <Stop offset="0" stopColor="#ffe6b4" stopOpacity="0.5" />
-            <Stop offset="1" stopColor="#ffe6b4" stopOpacity="0" />
-          </RadialGradient>
-          <SvgLinearGradient id="swellBv" x1="0" y1="1" x2="0" y2="0">
-            <Stop offset="0" stopColor="#d9c599" stopOpacity="0.5" />
-            <Stop offset="0.5" stopColor="#ecdfc1" stopOpacity="0.25" />
-            <Stop offset="1" stopColor="#ecdfc1" stopOpacity="0" />
-          </SvgLinearGradient>
-        </Defs>
-        <Rect x={0} y={0} width={width} height={height} fill="url(#bgBv)" />
-        <Rect x={0} y={0} width={width} height={height} fill="url(#sunBv)" />
-        <Path
-          d={`M -20 0 Q ${width / 2} ${height * 0.45} ${width + 20} 0 Z`}
-          fill="url(#swellBv)"
-        />
-      </Svg>
-
-      <Pressable
-        onPress={onFlip}
-        hitSlop={8}
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: "rgba(255, 251, 242, 0.85)",
-          borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
-      </Pressable>
-    </>
-  );
-}
-
-function CreamOceanAvatar({
-  size,
-  logoUrl,
-  initial,
-  fontSize,
-  radius,
-}: {
-  size: number;
-  logoUrl: string | null;
-  initial: string;
-  fontSize: number;
-  radius: number;
-}) {
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: radius,
-        overflow: "hidden",
-        backgroundColor: "#14161a",
-      }}
-    >
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <Defs>
-          <RadialGradient id={`avAv-${size}`} cx="0.3" cy="0.3" rx="0.6" ry="0.6">
-            <Stop offset="0" stopColor="#b8472f" stopOpacity="0.55" />
-            <Stop offset="1" stopColor="#b8472f" stopOpacity="0" />
-          </RadialGradient>
-          <RadialGradient id={`avBv-${size}`} cx="0.7" cy="0.75" rx="0.6" ry="0.6">
-            <Stop offset="0" stopColor="#b89556" stopOpacity="0.3" />
-            <Stop offset="1" stopColor="#b89556" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect x={0} y={0} width={size} height={size} fill={`url(#avAv-${size})`} />
-        <Rect x={0} y={0} width={size} height={size} fill={`url(#avBv-${size})`} />
-      </Svg>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text
-          style={{
-            color: "#ffffff",
-            fontFamily: SERIF,
-            fontStyle: "italic",
-            fontWeight: "700",
-            fontSize,
-            lineHeight: fontSize * 1.05,
-            letterSpacing: -1,
-          }}
-        >
-          {initial}
-        </Text>
-      </View>
-      {logoUrl ? (
-        <Image
-          source={{ uri: logoUrl }}
-          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
-        />
-      ) : null}
-    </View>
-  );
-}
-
-function CreamOceanStat({
-  label,
-  value,
-  italic,
-}: {
-  label: string;
-  value: string;
-  italic?: boolean;
-}) {
-  return (
-    <View style={{ flex: 1, paddingHorizontal: 8, alignItems: "center" }}>
-      <Text
-        style={{
-          fontSize: 9,
-          fontWeight: "700",
-          letterSpacing: 1.8,
-          textTransform: "uppercase",
-          color: "#9c8f80",
-          marginBottom: 3,
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          fontFamily: SERIF,
-          fontWeight: italic ? "500" : "600",
-          fontStyle: italic ? "italic" : "normal",
-          fontSize: italic ? 14 : 16,
-          color: italic ? "#5a4f44" : INK,
-        }}
-        numberOfLines={1}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function shortJoined(iso: string | null | undefined): string {
-  if (!iso) return "today";
-  const then = new Date(iso);
-  if (Number.isNaN(then.getTime())) return "today";
-  const now = new Date();
-  const isSameDay =
-    then.getFullYear() === now.getFullYear() &&
-    then.getMonth() === now.getMonth() &&
-    then.getDate() === now.getDate();
-  if (isSameDay) return "today";
-  const months =
-    (now.getFullYear() - then.getFullYear()) * 12 +
-    (now.getMonth() - then.getMonth());
-  if (months < 12) {
-    return then.toLocaleDateString(undefined, { month: "short" });
-  }
-  return then.toLocaleDateString(undefined, { year: "numeric" });
 }

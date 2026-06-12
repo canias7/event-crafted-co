@@ -164,7 +164,7 @@ export default function LoginScreen() {
       }
     }
     setSubmitting(false);
-    router.replace("/(vendor)/home");
+    router.replace("/(vendor)/profile");
   }
 
   return (

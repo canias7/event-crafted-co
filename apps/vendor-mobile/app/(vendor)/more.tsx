@@ -38,13 +38,6 @@ export default function MoreScreen() {
           }}
         >
           <MenuRow
-            icon="home"
-            label="Home feed"
-            body="Posts and updates from vendors"
-            onPress={() => router.push("/(vendor)/home" as never)}
-          />
-          <MenuDivider />
-          <MenuRow
             icon="grid"
             label="Studio"
             body="AI Superagents, content tools"
