@@ -40,8 +40,8 @@ import { DetailsSection } from "@/components/listing/DetailsSection";
 // different app section.
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 const BORDER = "#e5e7eb";
 const ACCENT = "#1B3654";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";

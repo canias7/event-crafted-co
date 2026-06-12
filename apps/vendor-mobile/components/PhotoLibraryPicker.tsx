@@ -33,7 +33,7 @@ import * as ImagePicker from "expo-image-picker";
 
 const COLS = 4;
 const ACCENT = "#1B3654";
-const INK = "#0a0a0a";
+const INK = "#14161a";
 const MUTED = "#737373";
 
 interface PickedAsset {

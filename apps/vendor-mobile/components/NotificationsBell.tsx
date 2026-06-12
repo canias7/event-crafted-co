@@ -46,7 +46,7 @@ interface NotificationRow {
 }
 
 export function NotificationsBell({
-  iconColor = "#0a0a0a",
+  iconColor = "#14161a",
 }: { iconColor?: string }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -143,7 +143,7 @@ export function NotificationsBell({
                 minWidth: 16,
                 height: 16,
                 borderRadius: 999,
-                backgroundColor: "#dc2626",
+                backgroundColor: "#dc2828",
                 paddingHorizontal: 4,
                 alignItems: "center",
                 justifyContent: "center",
@@ -183,7 +183,7 @@ export function NotificationsBell({
             >
               <Text
                 className="text-sm font-semibold"
-                style={{ color: unread > 0 ? "#0a0a0a" : "#a89b8a" }}
+                style={{ color: unread > 0 ? "#14161a" : "#a89b8a" }}
               >
                 Mark read
               </Text>
@@ -197,7 +197,7 @@ export function NotificationsBell({
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
-                <Feather name="bell-off" size={28} color="#6b7280" />
+                <Feather name="bell-off" size={28} color="#5e636e" />
                 <Text className="mt-3 text-sm text-muted-foreground text-center">
                   No notifications yet.
                 </Text>
@@ -218,7 +218,7 @@ export function NotificationsBell({
                           width: 8,
                           height: 8,
                           borderRadius: 999,
-                          backgroundColor: "#dc2626",
+                          backgroundColor: "#dc2828",
                           marginTop: 7,
                         }}
                       />
@@ -244,7 +244,7 @@ export function NotificationsBell({
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          backgroundColor: "#0a0a0a",
+                          backgroundColor: "#14161a",
                           alignItems: "center",
                           justifyContent: "center",
                         }}

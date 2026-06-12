@@ -21,9 +21,9 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const INK_BORDER = "rgba(20,22,26,0.08)";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
