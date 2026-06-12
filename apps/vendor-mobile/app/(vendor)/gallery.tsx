@@ -13,10 +13,14 @@ import {
   Alert,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -31,8 +35,10 @@ import { compressForUpload } from "@/lib/imageManipulation";
 const MAX_PHOTOS = 100;
 const UPLOAD_CONCURRENCY = 5;
 
+const WHITE = "#ffffff";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
+const BORDER = "#e5e7eb";
 
 type ListingRow = {
   id: string;
@@ -45,6 +51,7 @@ type PortfolioRow = {
   id: string;
   storage_path: string;
   display_order: number;
+  caption: string | null;
   url: string;
 };
 
@@ -62,13 +69,18 @@ export default function GalleryScreen() {
     done: number;
     total: number;
   } | null>(null);
+  // Per-photo caption editor (alt text / SEO — matches web's caption
+  // field). null when the modal is closed.
+  const [captionFor, setCaptionFor] = useState<PortfolioRow | null>(null);
+  const [captionText, setCaptionText] = useState("");
 
   const loadPhotos = useCallback(async (vendorId: string) => {
     const { data, error } = await supabase
       .from("vendor_portfolio_images")
-      .select("id, storage_path, display_order")
+      .select("id, storage_path, display_order, caption")
       .eq("vendor_id", vendorId)
-      .order("display_order", { ascending: true });
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true });
     if (error) return;
     const enriched = ((data ?? []) as Omit<PortfolioRow, "url">[]).map((r) => ({
       ...r,
@@ -252,7 +264,7 @@ export default function GalleryScreen() {
       const { data: ins, error } = await (supabase as any)
         .from("vendor_portfolio_images")
         .insert(successful)
-        .select("id, storage_path, display_order");
+        .select("id, storage_path, display_order, caption");
       if (error) throw error;
       const enriched = ((ins ?? []) as Omit<PortfolioRow, "url">[]).map((r) => ({
         ...r,
@@ -323,15 +335,36 @@ export default function GalleryScreen() {
     );
   }
 
+  // Persist a per-photo caption (vendor_portfolio_images.caption). Empty
+  // string clears it back to null. Mirrors the web caption field.
+  async function saveCaption() {
+    const target = captionFor;
+    if (!target) return;
+    const text = captionText.trim();
+    setCaptionFor(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_portfolio_images")
+      .update({ caption: text || null })
+      .eq("id", target.id);
+    if (error) {
+      Alert.alert("Couldn't save caption", error.message);
+      return;
+    }
+    setPhotos((curr) =>
+      curr.map((p) => (p.id === target.id ? { ...p, caption: text || null } : p)),
+    );
+  }
+
   function photoMenu(p: PortfolioRow) {
     const isCover = photos[0]?.id === p.id;
     const options: Array<{
       text: string;
       style?: "default" | "cancel" | "destructive";
       onPress?: () => void;
-    }> = [{ text: "Cancel", style: "cancel" }];
+    }> = [];
     if (!isCover) {
-      options.unshift({
+      options.push({
         text: "Make cover",
         onPress: () => {
           void makeCover(p);
@@ -339,12 +372,20 @@ export default function GalleryScreen() {
       });
     }
     options.push({
+      text: p.caption ? "Edit caption" : "Add caption",
+      onPress: () => {
+        setCaptionText(p.caption ?? "");
+        setCaptionFor(p);
+      },
+    });
+    options.push({
       text: "Delete",
       style: "destructive",
       onPress: () => {
         void deletePhoto(p);
       },
     });
+    options.push({ text: "Cancel", style: "cancel" });
     Alert.alert("Photo options", undefined, options);
   }
 
@@ -525,8 +566,8 @@ export default function GalleryScreen() {
                 lineHeight: 20,
               }}
             >
-              Tap to pick from your library. The first photo becomes your
-              listing cover.
+              Tap to pick from your library. Bright, recent photos work
+              best — and the first becomes your listing cover.
             </Text>
           </Pressable>
         ) : (
@@ -547,7 +588,7 @@ export default function GalleryScreen() {
                   height: TILE,
                   borderRadius: 12,
                   overflow: "hidden",
-                  backgroundColor: "#f0f0f0",
+                  backgroundColor: "#f3f4f6",
                 }}
               >
                 <Image
@@ -579,6 +620,23 @@ export default function GalleryScreen() {
                     </Text>
                   </View>
                 ) : null}
+                {p.caption ? (
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 6,
+                      right: 6,
+                      width: 22,
+                      height: 22,
+                      borderRadius: 999,
+                      backgroundColor: "rgba(10,10,10,0.78)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Feather name="message-square" size={12} color="#ffffff" />
+                  </View>
+                ) : null}
               </Pressable>
             ))}
           </View>
@@ -593,10 +651,94 @@ export default function GalleryScreen() {
               textAlign: "center",
             }}
           >
-            Long-press a photo for options — make it the cover or delete it.
+            Long-press a photo to set the cover, add a caption, or delete it.
           </Text>
         ) : null}
       </ScrollView>
+
+      {/* Caption editor — alt text / SEO per photo, matching web. */}
+      <Modal
+        visible={captionFor !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCaptionFor(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            paddingHorizontal: 24,
+          }}
+        >
+          <View style={{ backgroundColor: WHITE, borderRadius: 20, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: INK }}>
+              Photo caption
+            </Text>
+            <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
+              Adds alt text for accessibility and SEO. Shows on your public
+              listing.
+            </Text>
+            <TextInput
+              value={captionText}
+              onChangeText={setCaptionText}
+              placeholder="Describe this photo…"
+              placeholderTextColor={INK_DIM}
+              multiline
+              maxLength={200}
+              style={{
+                marginTop: 14,
+                minHeight: 76,
+                borderWidth: 1,
+                borderColor: BORDER,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: INK,
+                fontSize: 15,
+                textAlignVertical: "top",
+              }}
+            />
+            <View
+              style={{
+                marginTop: 16,
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                gap: 10,
+              }}
+            >
+              <Pressable
+                onPress={() => setCaptionFor(null)}
+                style={{
+                  paddingHorizontal: 18,
+                  height: 44,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: BORDER,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: INK, fontWeight: "600" }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void saveCaption()}
+                style={{
+                  paddingHorizontal: 22,
+                  height: 44,
+                  borderRadius: 999,
+                  backgroundColor: INK,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: WHITE, fontWeight: "700" }}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
