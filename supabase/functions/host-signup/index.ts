@@ -389,9 +389,26 @@ serve(async (req) => {
       .update({ used_at: new Date().toISOString() })
       .eq("email", email);
 
+    // Mint a one-time magiclink token (service role) so the app can
+    // establish a session via verifyOtp instead of the captcha-protected
+    // password grant. The project has bot/abuse captcha enabled, which a
+    // native app can't satisfy. generateLink only mints — it sends no
+    // email. The account was just created with email_confirm:true above.
+    const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
+    const tokenHash =
+      (linkData as { properties?: { hashed_token?: string } } | null)
+        ?.properties?.hashed_token ?? null;
+    if (linkErr || !tokenHash) {
+      return json({ error: "Account created but session setup failed" }, 500);
+    }
+
     return json({
       ok: true,
       userId: created?.user?.id ?? null,
+      token_hash: tokenHash,
     });
   }
 

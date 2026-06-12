@@ -91,7 +91,7 @@ export default function LoginScreen() {
       setError(invokeErr.message);
       return;
     }
-    const r = data as { ok?: boolean; reason?: string } | null;
+    const r = data as { ok?: boolean; reason?: string; token_hash?: string } | null;
     if (!r?.ok) {
       setSubmitting(false);
       const reason = r?.reason ?? "unknown";
@@ -102,10 +102,20 @@ export default function LoginScreen() {
       else setError("Couldn't verify code.");
       return;
     }
+    if (!r.token_hash) {
+      setSubmitting(false);
+      setError("Couldn't complete sign-in. Please try again.");
+      return;
+    }
+    // Establish the session with the server-minted magiclink token rather
+    // than signInWithPassword: the project has captcha bot-protection
+    // enabled, which the app can't satisfy. verifyOtp's /verify endpoint
+    // is captcha-exempt, and the password + 6-digit code were already
+    // checked server-side, so this is no weaker.
     const { data: signInData, error: signInErr } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
+      await supabase.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: r.token_hash,
       });
     if (signInErr) {
       setSubmitting(false);

@@ -43,6 +43,7 @@ interface SignupResponse {
   ok?: boolean;
   reason?: string;
   error?: string;
+  token_hash?: string;
 }
 
 const REASON_COPY: Record<string, string> = {
@@ -127,10 +128,19 @@ export default function SignupScreen() {
       setError(data.error);
       return;
     }
-    // User created with email_confirm:true. Sign in to get the session.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
+    // User created with email_confirm:true. Establish the session with
+    // the server-minted magiclink token (verifyOtp) rather than
+    // signInWithPassword — the project's captcha bot-protection blocks
+    // the password grant from inside the app, and there's no widget to
+    // render. The /verify endpoint is captcha-exempt.
+    if (!data?.token_hash) {
+      setSubmitting(false);
+      setError("Account created, but sign-in failed. Try logging in.");
+      return;
+    }
+    const { error: signInErr } = await supabase.auth.verifyOtp({
+      type: "magiclink",
+      token_hash: data.token_hash,
     });
     setSubmitting(false);
     if (signInErr) {
