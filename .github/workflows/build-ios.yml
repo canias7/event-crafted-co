@@ -37,6 +37,13 @@ name: Build iOS (native)
 #   SUPABASE_URL, SUPABASE_ANON_KEY
 
 on:
+  # Push a `trigger-build/**` branch to build + submit the VENDOR app
+  # without the Actions UI (mirrors mobile-ota.yml's trigger-ota/**).
+  # Push always builds vendor and submits to TestFlight. Host builds, or
+  # a build-without-submit, use the "Run workflow" dispatch below.
+  push:
+    branches:
+      - "trigger-build/**"
   workflow_dispatch:
     inputs:
       app:
@@ -51,12 +58,12 @@ on:
 
 # Cancel any older in-flight run when a new one starts.
 concurrency:
-  group: build-ios-${{ github.event.inputs.app }}
+  group: build-ios-${{ github.event.inputs.app || 'vendor' }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build iOS for ${{ inputs.app }}-mobile
+    name: Build iOS for ${{ inputs.app || 'vendor' }}-mobile
     # macos-26 ships with Xcode 26.x (Swift 6.0+). macos-latest currently
     # points to macos-15 with Xcode 16.4 (Swift 5.10), which can't compile
     # expo-modules-core's Swift 6 syntax (e.g. @MainActor in extension
@@ -64,7 +71,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 60
     env:
-      APP_DIR: apps/${{ inputs.app }}-mobile
+      APP_DIR: apps/${{ inputs.app || 'vendor' }}-mobile
 
     steps:
       - name: Checkout
@@ -317,12 +324,12 @@ jobs:
       - name: Upload .ipa as workflow artifact (audit trail)
         uses: actions/upload-artifact@v4
         with:
-          name: ios-${{ inputs.app }}-ipa-${{ github.run_id }}
+          name: ios-${{ inputs.app || 'vendor' }}-ipa-${{ github.run_id }}
           path: ${{ env.APP_DIR }}/ios/build/ipa/*.ipa
           retention-days: 14
 
       - name: Decode App Store Connect API key
-        if: ${{ inputs.submit }}
+        if: ${{ inputs.submit || github.event_name == 'push' }}
         run: |
           mkdir -p ~/private_keys
           echo -n "${{ secrets.ASC_API_KEY_BASE64 }}" \
@@ -330,7 +337,7 @@ jobs:
             > ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
 
       - name: Upload to TestFlight
-        if: ${{ inputs.submit }}
+        if: ${{ inputs.submit || github.event_name == 'push' }}
         working-directory: ${{ env.APP_DIR }}/ios/build/ipa
         run: |
           IPA=$(ls *.ipa | head -1)
