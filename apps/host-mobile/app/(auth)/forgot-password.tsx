@@ -40,16 +40,20 @@ export default function ForgotPasswordScreen() {
     if (!email.trim()) return;
     setSubmitting(true);
     const redirectTo = Linking.createURL("reset-password");
-    const { error: e } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
-      { redirectTo },
+    // Go through the password-reset edge function instead of
+    // supabase.auth.resetPasswordForEmail: the project's bot/abuse
+    // captcha blocks the /recover endpoint from inside the app. The
+    // function mints the recovery link with the service role
+    // (captcha-exempt) and emails it; the link still deep-links into
+    // reset-password. It returns ok:true for unknown emails too
+    // (anti-enumeration), so a clean response reveals nothing.
+    const { error: invokeErr } = await supabase.functions.invoke(
+      "password-reset",
+      { body: { email: email.trim().toLowerCase(), redirectTo } },
     );
     setSubmitting(false);
-    // Don't reveal whether the email exists — succeed silently either
-    // way to prevent enumeration. Only surface an error if Supabase
-    // itself rejects the request (rate-limit, bad email format, etc).
-    if (e && !/rate|invalid/i.test(e.message)) {
-      setError(e.message);
+    if (invokeErr) {
+      setError(invokeErr.message);
       return;
     }
     setSent(true);
