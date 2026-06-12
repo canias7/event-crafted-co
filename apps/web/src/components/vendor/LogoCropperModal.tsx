@@ -1,15 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Lightweight in-page logo cropper. The user picks an image, we show
 // it inside a square viewport with a circular preview cutout, and the
 // user drags to position + slides to zoom. Apply renders the selected
-// crop into a 512×512 JPEG via an offscreen <canvas> and hands that
+// crop into a square JPEG via an offscreen <canvas> and hands that
 // File back to the parent for upload.
+//
+// Fit model: the slider lets the user zoom OUT until their whole logo
+// fits inside the frame (with padding), not just COVER it. Wide
+// wordmarks and tall logos used to be un-fittable — the old minimum
+// zoom forced the image to fill the circle, so anything non-square got
+// cropped and there was no way to see the whole mark. We open at
+// "contain" (entire logo visible) and let zoom range from well below
+// that (room to sit inside the circular crop) up to a tight crop.
 
-const VIEWPORT = 320; // px — the on-screen square
 const OUTPUT = 512; // px — the final cropped JPEG dimension
+const BG = "#ffffff"; // padding behind a logo that doesn't fill the frame
 
 interface Props {
   file: File;
@@ -18,10 +26,19 @@ interface Props {
 }
 
 export function LogoCropperModal({ file, onCancel, onApply }: Props) {
+  // On-screen square size. Fixed 320 on desktop, but clamp to the
+  // viewport width so the crop square doesn't overflow narrow phones
+  // (mobile view). Computed once — the modal is transient.
+  const viewport = useMemo(() => {
+    if (typeof window === "undefined") return 320;
+    return Math.min(320, Math.max(220, window.innerWidth - 72));
+  }, []);
+
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [minZoom, setMinZoom] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(4);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -43,12 +60,21 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
 
   function handleImgLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const i = e.currentTarget;
-    setImgSize({ w: i.naturalWidth, h: i.naturalHeight });
-    // Minimum zoom: smaller side fills the viewport (image must
-    // always cover the crop circle).
-    const base = VIEWPORT / Math.min(i.naturalWidth, i.naturalHeight);
-    setMinZoom(base);
-    setZoom(base);
+    const w = i.naturalWidth;
+    const h = i.naturalHeight;
+    setImgSize({ w, h });
+    // cover  → smaller side fills the viewport (image fully covers the
+    //          crop circle; this was the old hard minimum).
+    // contain → larger side fits the viewport (whole image visible).
+    const cover = viewport / Math.min(w, h);
+    const contain = viewport / Math.max(w, h);
+    // Let the user shrink below "contain" so a wide/tall logo can sit
+    // comfortably INSIDE the circular crop with margin — that's the
+    // whole point of this change.
+    setMinZoom(contain * 0.55);
+    setMaxZoom(cover * 4);
+    // Open showing the entire logo, not a forced-cover crop.
+    setZoom(contain);
     setOffset({ x: 0, y: 0 });
   }
 
@@ -60,8 +86,10 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
   ) {
     const w = size.w * z;
     const h = size.h * z;
-    const maxX = Math.max(0, (w - VIEWPORT) / 2);
-    const maxY = Math.max(0, (h - VIEWPORT) / 2);
+    // When the image is smaller than the viewport (zoomed past
+    // contain), max becomes 0 and the image stays centered.
+    const maxX = Math.max(0, (w - viewport) / 2);
+    const maxY = Math.max(0, (h - viewport) / 2);
     return {
       x: Math.max(-maxX, Math.min(maxX, x)),
       y: Math.max(-maxY, Math.min(maxY, y)),
@@ -95,11 +123,18 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
     canvas.height = OUTPUT;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    // The on-screen viewport shows a VIEWPORT×VIEWPORT square whose
+    // Fill the frame first so any padding around a contained logo
+    // renders as a clean background instead of JPEG's transparent→black
+    // default.
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, OUTPUT, OUTPUT);
+    // The on-screen viewport shows a viewport×viewport square whose
     // center is at the image's center + offset, scaled by zoom. We
-    // need the source rectangle in image-space.
-    const srcW = VIEWPORT / zoom;
-    const srcH = VIEWPORT / zoom;
+    // need the source rectangle in image-space. When zoomed past
+    // contain, this rect extends beyond the image bounds — drawImage
+    // simply leaves those pixels untouched, so the BG fill shows.
+    const srcW = viewport / zoom;
+    const srcH = viewport / zoom;
     const srcX = imgSize.w / 2 - srcW / 2 - offset.x / zoom;
     const srcY = imgSize.h / 2 - srcH / 2 - offset.y / zoom;
     ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUTPUT, OUTPUT);
@@ -114,6 +149,8 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
       0.92,
     );
   }
+
+  const radius = viewport / 2 - 8;
 
   return (
     <div
@@ -141,15 +178,16 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
 
         <h2 className="font-editorial italic text-2xl mb-1">Adjust your logo</h2>
         <p className="text-xs text-muted-foreground mb-5">
-          Drag to position. Slide to zoom.
+          Drag to position. Slide to zoom — zoom all the way out to fit your
+          whole logo.
         </p>
 
         <div
           className="relative mx-auto select-none overflow-hidden rounded-2xl"
           style={{
-            width: VIEWPORT,
-            height: VIEWPORT,
-            background: "#0a0a0a",
+            width: viewport,
+            height: viewport,
+            background: BG,
             touchAction: "none",
             cursor: dragging ? "grabbing" : "grab",
           }}
@@ -186,33 +224,28 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
               dims; the circle keeps the underlying image fully visible. */}
           <svg
             className="absolute inset-0 pointer-events-none"
-            width={VIEWPORT}
-            height={VIEWPORT}
-            viewBox={`0 0 ${VIEWPORT} ${VIEWPORT}`}
+            width={viewport}
+            height={viewport}
+            viewBox={`0 0 ${viewport} ${viewport}`}
           >
             <defs>
               <mask id="logo-crop-hole">
-                <rect width={VIEWPORT} height={VIEWPORT} fill="white" />
-                <circle
-                  cx={VIEWPORT / 2}
-                  cy={VIEWPORT / 2}
-                  r={VIEWPORT / 2 - 8}
-                  fill="black"
-                />
+                <rect width={viewport} height={viewport} fill="white" />
+                <circle cx={viewport / 2} cy={viewport / 2} r={radius} fill="black" />
               </mask>
             </defs>
             <rect
-              width={VIEWPORT}
-              height={VIEWPORT}
-              fill="rgba(0,0,0,0.55)"
+              width={viewport}
+              height={viewport}
+              fill="rgba(0,0,0,0.45)"
               mask="url(#logo-crop-hole)"
             />
             <circle
-              cx={VIEWPORT / 2}
-              cy={VIEWPORT / 2}
-              r={VIEWPORT / 2 - 8}
+              cx={viewport / 2}
+              cy={viewport / 2}
+              r={radius}
               fill="none"
-              stroke="rgba(255,255,255,0.9)"
+              stroke="rgba(0,0,0,0.25)"
               strokeWidth="1.5"
             />
           </svg>
@@ -229,7 +262,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
             id="logo-zoom"
             type="range"
             min={minZoom}
-            max={minZoom * 4}
+            max={maxZoom}
             step={0.01}
             value={zoom}
             onChange={(e) => onZoomChange(Number(e.target.value))}
