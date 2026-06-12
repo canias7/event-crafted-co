@@ -74,9 +74,9 @@ function FeaturedTile({
         height: HEIGHT,
         borderRadius: 20,
         overflow: "hidden",
-        // Solid peach base color in case the svg gradient fails to
-        // render — at least the tile still looks featured.
-        backgroundColor: "#fbc88a",
+        // Solid navy base in case the svg gradient fails to render — at
+        // least the tile still looks featured (web brand accent navy).
+        backgroundColor: "#1b3654",
       }}
     >
       <Svg
@@ -86,9 +86,9 @@ function FeaturedTile({
       >
         <Defs>
           <SvgLinearGradient id="aiBg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#fbc88a" stopOpacity="1" />
-            <Stop offset="0.5" stopColor="#fcd9a3" stopOpacity="1" />
-            <Stop offset="1" stopColor="#fce6c4" stopOpacity="1" />
+            <Stop offset="0" stopColor="#1b3654" stopOpacity="1" />
+            <Stop offset="0.5" stopColor="#23476f" stopOpacity="1" />
+            <Stop offset="1" stopColor="#2c5e96" stopOpacity="1" />
           </SvgLinearGradient>
         </Defs>
         <Rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="url(#aiBg)" />
@@ -105,7 +105,7 @@ function FeaturedTile({
       >
         <View style={{ flex: 1, paddingRight: 10 }}>
           <Text
-            style={{ fontSize: 18, fontWeight: "700", color: "#1a1a1a" }}
+            style={{ fontSize: 18, fontWeight: "700", color: "#ffffff" }}
             numberOfLines={1}
           >
             {title}
@@ -115,14 +115,14 @@ function FeaturedTile({
               marginTop: 2,
               fontSize: 13,
               lineHeight: 17,
-              color: "rgba(26,26,26,0.7)",
+              color: "rgba(255,255,255,0.85)",
             }}
             numberOfLines={2}
           >
             {subtitle}
           </Text>
         </View>
-        <Feather name="chevron-right" size={18} color="#1a1a1a" />
+        <Feather name="chevron-right" size={18} color="#ffffff" />
       </View>
     </Pressable>
   );
