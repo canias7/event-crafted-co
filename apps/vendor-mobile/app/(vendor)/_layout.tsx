@@ -102,13 +102,13 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFocused ? "#0a0a0a" : "transparent",
+                backgroundColor: isFocused ? "#14161a" : "transparent",
               }}
             >
               <Feather
                 name={iconName}
                 size={20}
-                color={isFocused ? "#ffffff" : "#6b7280"}
+                color={isFocused ? "#ffffff" : "#5e636e"}
               />
             </Pressable>
           );

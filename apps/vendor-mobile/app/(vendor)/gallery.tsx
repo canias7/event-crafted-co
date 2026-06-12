@@ -31,8 +31,8 @@ import { compressForUpload } from "@/lib/imageManipulation";
 const MAX_PHOTOS = 100;
 const UPLOAD_CONCURRENCY = 5;
 
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 
 type ListingRow = {
   id: string;

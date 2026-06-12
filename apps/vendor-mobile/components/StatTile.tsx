@@ -17,7 +17,7 @@ export function StatTile({ label, value, hint }: StatTileProps) {
         borderRadius: 24,
         backgroundColor: "#ffffff",
         padding: 18,
-        shadowColor: "#0a0a0a",
+        shadowColor: "#14161a",
         shadowOpacity: 0.10,
         shadowRadius: 24,
         shadowOffset: { width: 0, height: 10 },

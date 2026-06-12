@@ -59,8 +59,8 @@ import { SettingsSheet } from "@/components/SettingsSheet";
 // details, sans for chrome).
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 function joinedLabel(createdAt: string | null): string {
@@ -1189,7 +1189,7 @@ function ListingTab({
               opacity: pressed ? 0.7 : 1,
             }}
           >
-            <Feather name="plus" size={16} color="#0a0a0a" />
+            <Feather name="plus" size={16} color="#14161a" />
             <Text className="ml-2 text-sm font-semibold text-foreground">
               Add another listing
             </Text>
@@ -1313,7 +1313,7 @@ function ListingCard({
               borderRadius: 18,
               padding: 14,
               opacity: pressed ? 0.85 : 1,
-              shadowColor: "#0a0a0a",
+              shadowColor: "#14161a",
               shadowOpacity: 0.10,
               shadowRadius: 12,
               shadowOffset: { width: 0, height: 4 },
@@ -1330,7 +1330,7 @@ function ListingCard({
                 justifyContent: "center",
               }}
             >
-              <Feather name="shopping-bag" size={22} color="#0a0a0a" />
+              <Feather name="shopping-bag" size={22} color="#14161a" />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text
@@ -1345,7 +1345,7 @@ function ListingCard({
                   : "Draft — tap to finish setup"}
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#6b7280" />
+            <Feather name="chevron-right" size={20} color="#5e636e" />
           </View>
         )}
       </Pressable>
@@ -1428,7 +1428,7 @@ function ListingCard({
                 justifyContent: "center",
               }}
             >
-              <Feather name="edit-2" size={16} color="#0a0a0a" />
+              <Feather name="edit-2" size={16} color="#14161a" />
             </Pressable>
             <Pressable
               onPress={unpublish}
@@ -1443,7 +1443,7 @@ function ListingCard({
                 justifyContent: "center",
               }}
             >
-              <Feather name="eye-off" size={16} color="#0a0a0a" />
+              <Feather name="eye-off" size={16} color="#14161a" />
             </Pressable>
             <Pressable
               onPress={destroy}
@@ -1458,7 +1458,7 @@ function ListingCard({
                 justifyContent: "center",
               }}
             >
-              <Feather name="trash-2" size={16} color="#dc2626" />
+              <Feather name="trash-2" size={16} color="#dc2828" />
             </Pressable>
           </View>
         )}
@@ -1535,7 +1535,7 @@ function CreateSheet({
   const SHEET_DIVIDER = "rgba(250,245,236,0.10)";
   const SHEET_X_BG = "rgba(250,245,236,0.10)";
   const BADGE_BG = "#f5f5f5";
-  const BADGE_FG = "#0a0a0a";
+  const BADGE_FG = "#14161a";
   const SERIF =
     Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -2171,7 +2171,7 @@ function CreamOceanAvatar({
         height: size,
         borderRadius: radius,
         overflow: "hidden",
-        backgroundColor: "#0a0a0a",
+        backgroundColor: "#14161a",
       }}
     >
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>

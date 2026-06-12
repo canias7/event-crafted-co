@@ -18,8 +18,8 @@ import Svg, { Circle } from "react-native-svg";
 import { captureRef } from "react-native-view-shot";
 
 const OUTPUT = 512; // final JPEG dimension
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 
 export function LogoCropperModal({
   uri,

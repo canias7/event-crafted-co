@@ -357,7 +357,7 @@ function TagsField({
                 width: 26,
                 height: 26,
                 borderRadius: 999,
-                backgroundColor: "#0a0a0a",
+                backgroundColor: "#14161a",
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: draft.trim() ? 1 : 0.3,

@@ -35,8 +35,8 @@ import { supabase } from "@/lib/supabase";
 
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 const BORDER = "#e5e7eb";
 const PENDING_BG = "#fbeed1";
 const PENDING_FG = "#9c6a1a";

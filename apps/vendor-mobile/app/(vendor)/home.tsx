@@ -391,7 +391,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadFeeds(true)}
-            tintColor="#0a0a0a"
+            tintColor="#14161a"
           />
         }
       >
@@ -412,7 +412,7 @@ export default function HomeScreen() {
         ) : null}
         {loadingFeeds ? (
           <View className="items-center py-8">
-            <ActivityIndicator color="#0a0a0a" />
+            <ActivityIndicator color="#14161a" />
           </View>
         ) : null}
         {view === "grid" ? (
@@ -572,11 +572,11 @@ function ViewTab({
           : null),
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
+      <Feather name={iconName} size={22} color={active ? "#14161a" : "#737373"} />
       {count != null ? (
         <Text
           className="mt-1 text-sm font-semibold"
-          style={{ color: active ? "#0a0a0a" : "#737373" }}
+          style={{ color: active ? "#14161a" : "#737373" }}
         >
           {count}
         </Text>
@@ -975,7 +975,7 @@ function ListingCard({
           <Feather
             name="heart"
             size={26}
-            color={saved ? "#dc2626" : "#fff"}
+            color={saved ? "#dc2828" : "#fff"}
           />
         </Pressable>
       </View>
