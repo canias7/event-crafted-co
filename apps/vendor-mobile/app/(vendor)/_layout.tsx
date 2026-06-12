@@ -1,5 +1,9 @@
 // Vendor mobile tab layout — 5 tabs with a custom floating pill tab bar.
 //
+// Tabs: Inbox · Gallery · My Profile · Calendar · More. Home (feed),
+// Studio and Dashboard live in the More menu; Settings opens from
+// More (and from Profile's ☰).
+//
 // Style spec: pill floats ~16px above the bottom safe area, white bg,
 // soft shadow. Inactive tabs are line icons (Feather), active tab is a
 // solid black circle with a white icon. No text labels.
@@ -14,14 +18,14 @@ import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  home: "home",
-  calendar: "calendar",
   inbox: "inbox",
-  studio: "grid",
+  gallery: "image",
   profile: "user",
+  calendar: "calendar",
+  more: "more-horizontal",
 };
 
-const ORDER = ["home", "calendar", "inbox", "studio", "profile"];
+const ORDER = ["inbox", "gallery", "profile", "calendar", "more"];
 
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -133,6 +137,7 @@ export default function VendorLayout() {
   return (
     <Tabs
       tabBar={(props) => <FloatingTabBar {...props} />}
+      initialRouteName="inbox"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
@@ -143,12 +148,16 @@ export default function VendorLayout() {
         tabBarStyle: { position: "absolute" },
       }}
     >
-      <Tabs.Screen name="home" options={{ title: "Home" }} />
-      <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
       <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
-      <Tabs.Screen name="studio" options={{ title: "Studio" }} />
+      <Tabs.Screen name="gallery" options={{ title: "Gallery" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
-      {/* Dashboard is reached from Profile's "Dashboard" chip, not a tab. */}
+      <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
+      <Tabs.Screen name="more" options={{ title: "More" }} />
+      {/* Home feed + Studio moved off the pill into the More menu —
+          still real tab routes so router.push reaches them. */}
+      <Tabs.Screen name="home" options={{ href: null }} />
+      <Tabs.Screen name="studio" options={{ href: null }} />
+      {/* Dashboard is reached from the More menu, not a tab. */}
       <Tabs.Screen name="dashboard" options={{ href: null }} />
       {/* Listing builder — reached from the Profile tab's "Create
           listing" CTA / 4-segment toggle. Hidden from the bottom nav
