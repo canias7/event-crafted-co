@@ -1,7 +1,7 @@
 // Auth gate. Decides where to send the user the moment the app boots:
 //   - still resolving session → show a tiny loader so we don't flash
 //     login then immediately redirect away
-//   - signed in → /(vendor)/home
+//   - signed in → /(vendor)/profile
 //   - signed out → /(auth)/welcome (auth-method picker; tapping
 //                  "Log in" or "Sign up" routes onward)
 
@@ -20,5 +20,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={user ? "/(vendor)/home" : "/(auth)/welcome"} />;
+  return <Redirect href={user ? "/(vendor)/profile" : "/(auth)/welcome"} />;
 }

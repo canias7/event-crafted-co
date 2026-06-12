@@ -63,7 +63,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "#f3f4f6",
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -153,9 +153,7 @@ export default function VendorLayout() {
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
       <Tabs.Screen name="more" options={{ title: "More" }} />
-      {/* Home feed + Studio moved off the pill into the More menu —
-          still real tab routes so router.push reaches them. */}
-      <Tabs.Screen name="home" options={{ href: null }} />
+      {/* Studio is reached from the More menu, not a tab. */}
       <Tabs.Screen name="studio" options={{ href: null }} />
       {/* Dashboard is reached from the More menu, not a tab. */}
       <Tabs.Screen name="dashboard" options={{ href: null }} />

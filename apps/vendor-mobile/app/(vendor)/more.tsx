@@ -32,18 +32,11 @@ export default function MoreScreen() {
 
         <View
           style={{
-            backgroundColor: "#f5f5f5",
+            backgroundColor: "#f3f4f6",
             borderRadius: 20,
             overflow: "hidden",
           }}
         >
-          <MenuRow
-            icon="home"
-            label="Home feed"
-            body="Posts and updates from vendors"
-            onPress={() => router.push("/(vendor)/home" as never)}
-          />
-          <MenuDivider />
           <MenuRow
             icon="grid"
             label="Studio"
@@ -69,7 +62,7 @@ export default function MoreScreen() {
         <View
           style={{
             marginTop: 16,
-            backgroundColor: "#f5f5f5",
+            backgroundColor: "#f3f4f6",
             borderRadius: 20,
             overflow: "hidden",
           }}
@@ -132,7 +125,7 @@ function MenuRow({
           width: 40,
           height: 40,
           borderRadius: 13,
-          backgroundColor: "#e9e9e9",
+          backgroundColor: "#e5e7eb",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -154,6 +147,6 @@ function MenuRow({
 
 function MenuDivider() {
   return (
-    <View style={{ height: 1, backgroundColor: "#e9e9e9", marginLeft: 69 }} />
+    <View style={{ height: 1, backgroundColor: "#e5e7eb", marginLeft: 69 }} />
   );
 }
