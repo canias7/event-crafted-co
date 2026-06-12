@@ -17,6 +17,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -30,6 +31,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { LogoCropperModal } from "@/components/LogoCropperModal";
 
 const CREAM = "#ffffff";
 const INK = "#0a0a0a";
@@ -57,6 +59,8 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  // Image picked but not yet cropped — drives the in-app cropper.
+  const [logoToCrop, setLogoToCrop] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -90,6 +94,10 @@ export default function EditProfileScreen() {
     setForm((prev) => ({ ...prev, [k]: v }));
   }
 
+  // Pick from the library WITHOUT the OS 1:1 crop, then hand the image
+  // to our own cropper (LogoCropperModal) which mirrors web — zoom out
+  // to fit a whole logo, with white padding. allowsEditing:false also
+  // means we get the full image so the cropper has pixels to work with.
   async function pickLogo() {
     if (!user?.id || logoUploading) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -102,58 +110,37 @@ export default function EditProfileScreen() {
     }
     const pick = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      // Logos render at ~110px max — we don't need megabyte-scale
-      // originals. 0.55 quality + the iOS crop already brings most
-      // photos down to ~200 KB.
-      quality: 0.55,
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsEditing: false,
+      quality: 1,
     });
     if (pick.canceled || !pick.assets?.[0]) return;
-    const asset = pick.assets[0];
+    setLogoToCrop(pick.assets[0].uri);
+  }
+
+  // Upload the cropper's output — already a 512×512 JPEG composed on a
+  // white background, so we just read bytes and upload (no resize, no
+  // format guessing).
+  async function uploadLogo(croppedUri: string) {
+    if (!user?.id) return;
+    setLogoToCrop(null);
     setLogoUploading(true);
     try {
-      // Read the picked file as an ArrayBuffer instead of going through
-      // fetch().blob(). The blob path is unreliable on iOS for the
-      // cropped image URI ImagePicker hands back when allowsEditing is
-      // true — supabase-js gets a Blob with size=0 and the server
-      // responds with "No content provided". ArrayBuffer reads the
-      // bytes eagerly and uploads cleanly.
-      const resp = await fetch(asset.uri);
-      const arrayBuffer = await resp.arrayBuffer();
-      // 10 MB cap on logos so we don't bloat the CDN with high-res
-      // camera roll originals when we only use them small.
-      if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
-        Alert.alert("Photo too large", "Pick a logo under 10 MB.");
-        return;
-      }
+      // ArrayBuffer (not fetch().blob()) — the blob path is unreliable
+      // on iOS for local file URIs (supabase-js gets size=0 and the
+      // server responds "No content provided").
+      const arrayBuffer = await (await fetch(croppedUri)).arrayBuffer();
       if (arrayBuffer.byteLength === 0) {
         Alert.alert(
           "Couldn't read photo",
-          "The picked image came back empty. Try a different photo.",
+          "The cropped image came back empty. Try again.",
         );
         return;
       }
-      const ext = (asset.uri.split(".").pop() || "jpg")
-        .toLowerCase()
-        .split("?")[0]; // strip any query string the picker may append
-      const path = `${user.id}/profile-logo-${Date.now()}.${ext}`;
-      // MIME priority: explicit picker value → known-ext map → jpeg.
-      const extMime: Record<string, string> = {
-        jpg: "image/jpeg",
-        jpeg: "image/jpeg",
-        png: "image/png",
-        gif: "image/gif",
-        webp: "image/webp",
-        heic: "image/heic",
-        heif: "image/heif",
-      };
-      const contentType =
-        asset.mimeType || extMime[ext] || "image/jpeg";
+      const path = `${user.id}/profile-logo-${Date.now()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("vendor-posts")
         .upload(path, arrayBuffer, {
-          contentType,
+          contentType: "image/jpeg",
           upsert: false,
         });
       if (upErr) throw upErr;
@@ -367,6 +354,22 @@ export default function EditProfileScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* In-app logo cropper — opens after a pick, replaces the OS crop. */}
+      <Modal
+        visible={logoToCrop !== null}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setLogoToCrop(null)}
+      >
+        {logoToCrop ? (
+          <LogoCropperModal
+            uri={logoToCrop}
+            onCancel={() => setLogoToCrop(null)}
+            onApply={uploadLogo}
+          />
+        ) : null}
+      </Modal>
     </View>
   );
 }
