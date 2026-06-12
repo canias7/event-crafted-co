@@ -1,18 +1,36 @@
-// Vendor calendar tab.
+// Vendor calendar tab — full parity with the web vendor Calendar
+// (apps/web/src/pages/vendor/VendorAppointmentsPage.tsx). One shared,
+// account-level availability calendar that aggregates EVERY listing the
+// vendor owns (never scoped to a single listing).
 //
-// Three data streams render onto a month grid:
-//   • inquiries (status = 'won')       → BOOKED   (ink fill, cream digit)
-//   • inquiries (new/replied)          → PENDING  (soft amber fill)
-//   • vendor_unavailable_dates         → BLOCKED  (diagonal hatch)
+// Four data streams render onto a 6-week month grid:
+//   • inquiries (status = 'won')          → BOOKED   (ink fill / green dot)
+//   • inquiries (new/replied/drafted)     → PENDING  (amber fill / dot)
+//   • appointments (accepted/completed)   → BOOKED
+//   • appointments (proposed)             → PENDING
+//   • vendor_unavailable_dates (manual)   → BLOCKED  (diagonal hatch)
+//   • vendor_availability_rules (weekday) → BLOCKED  (recurring "never
+//                                           work Sundays" projection)
 //
-// The stat row up top counts won / pending / estimated earnings for the
-// currently-viewed month. Earnings = sum of budget_min_cents (a
-// conservative floor — inquiries don't carry a firm price field yet).
+// Parity surfaces (matches web feature-for-feature):
+//   - Month grid with single-listing full-cell colors OR, when the vendor
+//     has >1 listing, one status dot per event ("account" multi-dot view).
+//   - Tap a day → day panel: bookings, appointments, and the manual block
+//     (with inline title edit). Block / unblock with optional title; an
+//     already-booked day can't be blocked (it's auto-unavailable).
+//   - Per-listing block target ("All listings" vs one) when >1 listing.
+//   - Recurring weekly blocks: 7-day toggle strip → vendor_availability_rules.
+//   - Add personal entry: vendor-side appointment (type/time/duration/
+//     location/notes) for vacations, external bookings, calls, tastings.
+//   - Appointments list: Upcoming / Needs response / Past / All with
+//     accept / decline / mark-complete / cancel / open-inquiry.
 //
-// Tapping a day filters the list at the bottom to that day; "+ Block"
-// is wired as a UI hook for the upcoming manual-block sheet.
+// The header stats row (Booked/Pending/Earnings) was intentionally REMOVED
+// to match web — vendors don't transact in-app, so the dollar figure was
+// misleading. Deferred (web-only, needs a native dep): ICS "Add to
+// calendar" export.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +47,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Line } from "react-native-svg";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -44,11 +62,36 @@ const HATCH = "#d1d5db";
 const HATCH_BG = "#f3f4f6";
 const GREEN = "#16a34a";
 const AMBER = "#d97706";
+// Status dots for the multi-listing account view (match web STATUS_DOT).
+const DOT_BOOKED = "#059669";
+const DOT_PENDING = "#d97706";
+const DOT_BLOCKED = "#a1a1aa";
+// Stable per-listing palette (mirrors apps/web/src/lib/listingColors).
+const LISTING_PALETTE = [
+  "#1b3654",
+  "#7c3aed",
+  "#0891b2",
+  "#b45309",
+  "#be123c",
+  "#15803d",
+  "#a21caf",
+  "#4338ca",
+];
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
+const DAY_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type DayState = "available" | "booked" | "pending" | "blocked";
+type EventState = Exclude<DayState, "available">;
+type BlockTarget = string | "all";
+
+interface ListingOpt {
+  id: string;
+  business_name: string | null;
+  category: string | null;
+  application_status: string | null;
+}
 
 interface InquiryRow {
   id: string;
@@ -58,8 +101,57 @@ interface InquiryRow {
   budget_min_cents: number | null;
   budget_max_cents: number | null;
   host_id: string;
+  vendor_id: string;
   host: { display_name: string | null } | null;
 }
+
+interface AppointmentRow {
+  id: string;
+  inquiry_id: string | null;
+  vendor_id: string | null;
+  host_id: string | null;
+  owner_user_id: string | null;
+  kind: string;
+  title: string | null;
+  location: string | null;
+  scheduled_at: string;
+  duration_minutes: number;
+  status: "proposed" | "accepted" | "declined" | "cancelled" | "completed";
+  proposed_by: "host" | "vendor";
+  notes: string | null;
+  host: { display_name: string | null } | null;
+}
+
+const KIND_LABEL: Record<string, string> = {
+  consultation: "Consultation",
+  walkthrough: "Walkthrough",
+  tasting: "Tasting",
+  fitting: "Fitting",
+  phone_call: "Phone call",
+  other: "Meeting",
+};
+
+const DURATION_OPTS: Array<{ value: number; label: string }> = [
+  { value: 30, label: "30m" },
+  { value: 45, label: "45m" },
+  { value: 60, label: "1h" },
+  { value: 90, label: "1.5h" },
+  { value: 120, label: "2h" },
+  { value: 240, label: "Half day" },
+  { value: 480, label: "Full day" },
+];
+
+const TIME_QUICK = ["09:00", "12:00", "14:00", "17:00", "19:00"];
+
+const ENTRY_TYPE_SUGGESTIONS = [
+  "Personal",
+  "Vacation",
+  "External shoot",
+  "Consultation",
+  "Walkthrough",
+  "Tasting",
+  "Phone call",
+];
 
 function ymdKey(d: Date): string {
   const y = d.getFullYear();
@@ -76,7 +168,7 @@ function parseYmd(s: string | null): Date | null {
 }
 
 function fmtMoneyShort(cents: number): string {
-  if (cents >= 1_000_000) return `$${(cents / 100_000_000).toFixed(1)}M`;
+  if (cents >= 100_000_000) return `$${(cents / 100_000_000).toFixed(1)}M`;
   if (cents >= 100_000) return `$${(cents / 100_000).toFixed(1)}k`;
   return `$${Math.round(cents / 100)}`;
 }
@@ -100,6 +192,14 @@ function statusLabel(s: string): string {
   }
 }
 
+// Confirmed/completed appointments occupy the day as booked; a proposed
+// one is pending. Declined/cancelled are dead and don't show.
+function apptDayState(status: string): "booked" | "pending" | null {
+  if (status === "accepted" || status === "completed") return "booked";
+  if (status === "proposed") return "pending";
+  return null;
+}
+
 function prettyDay(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
@@ -110,29 +210,54 @@ function prettyDay(ymd: string): string {
   });
 }
 
+function fmtApptTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function isValidHHMM(s: string): boolean {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s.trim());
+  if (!m) return false;
+  const h = Number(m[1]);
+  const mi = Number(m[2]);
+  return h >= 0 && h <= 23 && mi >= 0 && mi <= 59;
+}
+
 export default function CalendarScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const [blocking, setBlocking] = useState(false);
-  // Every vendor_profiles row this user owns. Calendar aggregates
-  // bookings + pending inquiries across all of them so a vendor with
-  // multiple marketplace listings still sees one unified schedule.
-  const [vendorIds, setVendorIds] = useState<string[]>([]);
+
+  // Every vendor_profiles row this user owns. The calendar is ALWAYS
+  // account-level: it aggregates bookings / appointments / blocks across
+  // all listings. Writes target the block-target picker (all vs one).
+  const [listings, setListings] = useState<ListingOpt[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Manual blocks the vendor has placed on specific dates across any
-  // of their listings. Kept separate from `busy` (google-calendar
-  // sync) since they're a different model + the rest of the marketplace
-  // (e.g. the host explore filter) joins on this table directly.
-  // Map<date, reason> so the day-info card can render the vendor's
-  // typed title ("Christian's birthday") instead of generic
-  // "Blocked". Reason is private to the vendor side — public
-  // availability surface only reads `date`.
+  const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
+  // date → optional reason/title the vendor typed.
   const [manualBlocks, setManualBlocks] = useState<Map<string, string | null>>(
     () => new Map(),
   );
+  // date → set of listing ids that have it blocked (dot attribution).
+  const [blockListingIds, setBlockListingIds] = useState<
+    Map<string, Set<string>>
+  >(() => new Map());
+  // weekday (0=Sun..6=Sat) the vendor is recurringly unavailable.
+  const [recurringOff, setRecurringOff] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [recurringListingIds, setRecurringListingIds] = useState<
+    Map<number, Set<string>>
+  >(() => new Map());
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blocking, setBlocking] = useState(false);
+  const [savingRecurring, setSavingRecurring] = useState<number | null>(null);
+  const [blockTarget, setBlockTarget] = useState<BlockTarget>("all");
+
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -141,75 +266,204 @@ export default function CalendarScreen() {
     ymdKey(new Date()),
   );
 
+  const vendorIds = useMemo(() => listings.map((l) => l.id), [listings]);
+  const vendorIdKey = vendorIds.join(",");
+  const accountPrimaryId = vendorIds.length > 0 ? vendorIds[0] : null;
+  const showListingColors = listings.length > 1;
+  const hasListings = vendorIds.length > 0;
+
+  // Load this user's listings up front.
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const { data } = await supabase
         .from("vendor_profiles")
-        .select("id")
-        .eq("user_id", user.id);
-      setVendorIds(((data ?? []) as { id: string }[]).map((r) => r.id));
+        .select("id, business_name, category, application_status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      setListings((data ?? []) as ListingOpt[]);
     })();
   }, [user?.id]);
 
+  // Keep block-target valid if a listing leaves the set.
+  useEffect(() => {
+    if (blockTarget !== "all" && !vendorIdKey.split(",").includes(blockTarget)) {
+      setBlockTarget("all");
+    }
+  }, [blockTarget, vendorIdKey]);
+
+  // The grid always draws a full 6 weeks (42 cells). Bound every fetched
+  // stream + the recurring projection to that SAME visible window so edge
+  // cells don't render inconsistent dots between months.
   const monthBounds = useMemo(() => {
-    const start = new Date(viewMonth);
-    const end = new Date(viewMonth);
-    end.setMonth(end.getMonth() + 1);
+    const firstOfMonth = new Date(
+      viewMonth.getFullYear(),
+      viewMonth.getMonth(),
+      1,
+    );
+    const start = new Date(firstOfMonth);
+    start.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 42); // exclusive
     return { start, end };
   }, [viewMonth]);
 
+  const reqRef = useRef(0);
   const load = useCallback(
     async (isRefresh: boolean) => {
-      if (vendorIds.length === 0 || !user?.id) {
+      if (!user?.id) {
         setLoading(false);
         return;
       }
+      if (vendorIds.length === 0) {
+        // A vendor with no listings still has personal (owner-owned)
+        // appointments — fetch those so a brand-new vendor sees them.
+        setInquiries([]);
+        setManualBlocks(new Map());
+        setBlockListingIds(new Map());
+        setRecurringOff(new Set());
+        setRecurringListingIds(new Map());
+      }
+      const reqId = ++reqRef.current;
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
+
       const startYmd = ymdKey(monthBounds.start);
       const endYmd = ymdKey(monthBounds.end);
-      const [inqRes, blockRes] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("inquiries")
-          .select(
-            "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, host:profiles!inquiries_host_id_fkey(display_name)",
-          )
-          .in("vendor_id", vendorIds)
-          .gte("event_date", startYmd)
-          .lt("event_date", endYmd),
-        supabase
-          .from("vendor_unavailable_dates")
-          .select("date, reason")
-          .in("vendor_id", vendorIds)
-          .gte("date", startYmd)
-          .lt("date", endYmd),
-      ]);
-      const firstErr = inqRes.error ?? blockRes.error ?? null;
-      if (firstErr) setError(firstErr.message);
-      else {
-        setInquiries((inqRes.data ?? []) as InquiryRow[]);
-        setManualBlocks(
-          new Map(
-            ((blockRes.data ?? []) as Array<{
-              date: string;
-              reason: string | null;
-            }>).map((r) => [r.date, r.reason]),
-          ),
+      // Appointments reach ~90 days back (or to the viewed month, whichever
+      // is earlier) so the list + dots cover history without a huge payload.
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      const apptLower =
+        monthBounds.start < cutoff ? monthBounds.start : cutoff;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let apptQuery = (supabase as any)
+        .from("appointments")
+        .select(
+          "id, inquiry_id, vendor_id, host_id, owner_user_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
+        )
+        .gte("scheduled_at", apptLower.toISOString())
+        .order("scheduled_at", { ascending: true })
+        .limit(1000);
+      apptQuery =
+        vendorIds.length > 0
+          ? apptQuery.or(
+              `vendor_id.in.(${vendorIds.join(",")}),owner_user_id.eq.${user.id}`,
+            )
+          : apptQuery.eq("owner_user_id", user.id);
+
+      const promises: PromiseLike<unknown>[] = [apptQuery];
+      if (vendorIds.length > 0) {
+        promises.push(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("inquiries")
+            .select(
+              "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, vendor_id, host:profiles!inquiries_host_id_fkey(display_name)",
+            )
+            .in("vendor_id", vendorIds)
+            .gte("event_date", startYmd)
+            .lt("event_date", endYmd),
+          supabase
+            .from("vendor_unavailable_dates")
+            .select("date, reason, vendor_id")
+            .in("vendor_id", vendorIds)
+            .gte("date", startYmd)
+            .lt("date", endYmd),
+          supabase
+            .from("vendor_availability_rules")
+            .select("day_of_week, is_unavailable, vendor_id")
+            .in("vendor_id", vendorIds),
         );
       }
+
+      const results = (await Promise.all(promises)) as Array<{
+        data: unknown;
+        error: { message?: string } | null;
+      }>;
+      if (reqId !== reqRef.current) return;
+
+      const apptRes = results[0];
+      const firstErr =
+        apptRes.error ??
+        results[1]?.error ??
+        results[2]?.error ??
+        results[3]?.error ??
+        null;
+      if (firstErr) setError(firstErr.message ?? "Couldn't load the calendar.");
+
+      setAppointments((apptRes.data ?? []) as AppointmentRow[]);
+
+      if (vendorIds.length > 0) {
+        setInquiries((results[1]?.data ?? []) as InquiryRow[]);
+
+        const blockRows = (results[2]?.data ?? []) as Array<{
+          date: string;
+          reason: string | null;
+          vendor_id: string;
+        }>;
+        const reasonByDate = new Map<string, string | null>();
+        const listingsByDate = new Map<string, Set<string>>();
+        for (const r of blockRows) {
+          reasonByDate.set(r.date, r.reason);
+          let s = listingsByDate.get(r.date);
+          if (!s) {
+            s = new Set();
+            listingsByDate.set(r.date, s);
+          }
+          s.add(r.vendor_id);
+        }
+        setManualBlocks(reasonByDate);
+        setBlockListingIds(listingsByDate);
+
+        const recurringRows = (
+          (results[3]?.data ?? []) as Array<{
+            day_of_week: number;
+            is_unavailable: boolean;
+            vendor_id: string;
+          }>
+        ).filter((r) => r.is_unavailable);
+        setRecurringOff(new Set(recurringRows.map((r) => r.day_of_week)));
+        const recurringByDow = new Map<number, Set<string>>();
+        for (const r of recurringRows) {
+          let s = recurringByDow.get(r.day_of_week);
+          if (!s) {
+            s = new Set();
+            recurringByDow.set(r.day_of_week, s);
+          }
+          s.add(r.vendor_id);
+        }
+        setRecurringListingIds(recurringByDow);
+      }
+
       if (isRefresh) setRefreshing(false);
       else setLoading(false);
     },
-    [vendorIds, user?.id, monthBounds],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.id, vendorIdKey, monthBounds],
   );
 
   useEffect(() => {
     load(false);
   }, [load]);
 
+  // Reload when the tab regains focus so changes made elsewhere (inbox,
+  // web) appear without a manual pull-to-refresh.
+  useFocusEffect(
+    useCallback(() => {
+      load(true);
+    }, [load]),
+  );
+
+  // ---- write-target resolution ----
+  const writeTargetIds = useCallback((): string[] => {
+    if (blockTarget === "all") return vendorIds;
+    return vendorIds.includes(blockTarget) ? [blockTarget] : [];
+  }, [blockTarget, vendorIds]);
+
+  // ---- aggregate day state (single-listing full-cell grid) ----
   const dayState = useMemo(() => {
     const m = new Map<string, DayState>();
     for (const i of inquiries) {
@@ -223,50 +477,115 @@ export default function CalendarScreen() {
           i.status === "replied" ||
           i.status === "drafted") &&
         prev !== "booked"
-      )
+      ) {
         m.set(key, "pending");
+      }
     }
-    for (const key of manualBlocks.keys()) {
-      const prev = m.get(key);
-      if (prev !== "booked" && prev !== "pending") m.set(key, "blocked");
+    for (const a of appointments) {
+      const st = apptDayState(a.status);
+      if (!st) continue;
+      const k = ymdKey(new Date(a.scheduled_at));
+      const prev = m.get(k);
+      if (st === "booked") m.set(k, "booked");
+      else if (prev !== "booked") m.set(k, "pending");
+    }
+    if (recurringOff.size > 0) {
+      const cursor = new Date(monthBounds.start);
+      const end = new Date(monthBounds.end);
+      while (cursor < end) {
+        if (recurringOff.has(cursor.getDay())) {
+          const k = ymdKey(cursor);
+          const prev = m.get(k);
+          if (prev !== "booked" && prev !== "pending") m.set(k, "blocked");
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    for (const ymd of manualBlocks.keys()) {
+      const prev = m.get(ymd);
+      if (prev !== "booked" && prev !== "pending") m.set(ymd, "blocked");
     }
     return m;
-  }, [inquiries, manualBlocks]);
+  }, [inquiries, appointments, manualBlocks, recurringOff, monthBounds]);
 
-  const stats = useMemo(() => {
-    let booked = 0;
-    let pending = 0;
-    let earningsCents = 0;
+  // ---- per-day status dots (multi-listing account view) ----
+  const dayStatusDots = useMemo(() => {
+    const out = new Map<string, EventState[]>();
+    const add = (key: string, st: EventState) => {
+      const arr = out.get(key) ?? [];
+      arr.push(st);
+      out.set(key, arr);
+    };
     for (const i of inquiries) {
-      if (i.status === "won") {
-        booked++;
-        earningsCents += i.budget_min_cents ?? i.budget_max_cents ?? 0;
-      } else if (
+      const d = parseYmd(i.event_date);
+      if (!d) continue;
+      const key = ymdKey(d);
+      if (i.status === "won") add(key, "booked");
+      else if (
         i.status === "new" ||
         i.status === "replied" ||
         i.status === "drafted"
-      ) {
-        pending++;
+      )
+        add(key, "pending");
+    }
+    for (const a of appointments) {
+      const st = apptDayState(a.status);
+      if (!st) continue;
+      add(ymdKey(new Date(a.scheduled_at)), st);
+    }
+    const blockedDates = new Set<string>();
+    if (recurringListingIds.size > 0) {
+      const cursor = new Date(monthBounds.start);
+      const end = new Date(monthBounds.end);
+      while (cursor < end) {
+        if (recurringListingIds.get(cursor.getDay()))
+          blockedDates.add(ymdKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
       }
     }
-    return { booked, pending, earningsCents };
-  }, [inquiries]);
+    for (const [date] of blockListingIds) blockedDates.add(date);
+    for (const date of blockedDates) {
+      if (!out.has(date)) add(date, "blocked");
+    }
+    const rank: Record<EventState, number> = {
+      booked: 3,
+      pending: 2,
+      blocked: 1,
+    };
+    for (const arr of out.values()) arr.sort((a, b) => rank[b] - rank[a]);
+    return out;
+  }, [inquiries, appointments, blockListingIds, recurringListingIds, monthBounds]);
 
+  // ---- day panel items for the selected date ----
   const selectedItems = useMemo(() => {
     if (!selectedYmd) return [];
+    const listingNameById = new Map(
+      listings.map((l) => [
+        l.id,
+        l.business_name?.trim() || l.category || "Listing",
+      ]),
+    );
+    const labelFor = (vid: string | null) =>
+      showListingColors && vid ? ` · ${listingNameById.get(vid) ?? "Listing"}` : "";
     const out: Array<{
-      kind: "inquiry" | "busy";
+      kind: "inquiry" | "busy" | "appointment";
       inquiryId: string | null;
       title: string;
       subtitle: string;
       amountCents: number | null;
-      accent: string;
+      accent: EventState;
       timeLabel: string | null;
     }> = [];
     for (const i of inquiries) {
-      if (!i.event_date) continue;
       const d = parseYmd(i.event_date);
       if (!d || ymdKey(d) !== selectedYmd) continue;
+      if (
+        i.status !== "won" &&
+        i.status !== "new" &&
+        i.status !== "replied" &&
+        i.status !== "drafted"
+      )
+        continue;
       out.push({
         kind: "inquiry",
         inquiryId: i.id,
@@ -274,17 +593,40 @@ export default function CalendarScreen() {
           ? i.event_type[0].toUpperCase() + i.event_type.slice(1)
           : "Booking",
         subtitle:
-          (i.host?.display_name ?? "Host") + " · " + statusLabel(i.status),
+          (i.host?.display_name ?? "Host") +
+          " · " +
+          statusLabel(i.status) +
+          labelFor(i.vendor_id),
         amountCents: i.budget_min_cents ?? i.budget_max_cents,
-        accent: i.status === "won" ? GREEN : AMBER,
+        accent: i.status === "won" ? "booked" : "pending",
         timeLabel: null,
+      });
+    }
+    for (const a of appointments) {
+      const st = apptDayState(a.status);
+      if (!st) continue;
+      if (ymdKey(new Date(a.scheduled_at)) !== selectedYmd) continue;
+      const statusWord =
+        a.status === "accepted"
+          ? "Confirmed"
+          : a.status === "completed"
+            ? "Completed"
+            : "Proposed";
+      out.push({
+        kind: "appointment",
+        inquiryId: a.inquiry_id ?? null,
+        title: a.title?.trim() || KIND_LABEL[a.kind] || "Meeting",
+        subtitle:
+          (a.host_id
+            ? (a.host?.display_name ?? "Client") + " · " + statusWord
+            : "Off-platform · personal") + labelFor(a.vendor_id),
+        amountCents: null,
+        accent: st,
+        timeLabel: fmtApptTime(a.scheduled_at),
       });
     }
     if (manualBlocks.has(selectedYmd)) {
       const reason = (manualBlocks.get(selectedYmd) ?? "").trim();
-      // 'Blocked manually' is the legacy hardcoded fallback before
-      // the title input existed. Treat as no-title so old rows
-      // render cleanly as 'Blocked'.
       const isLegacyFallback = reason === "Blocked manually";
       out.push({
         kind: "busy",
@@ -292,25 +634,37 @@ export default function CalendarScreen() {
         title: reason && !isLegacyFallback ? reason : "Blocked",
         subtitle: "Marked unavailable",
         amountCents: null,
-        accent: INK_DIM,
+        accent: "blocked",
         timeLabel: "All day",
       });
     }
     return out;
-  }, [selectedYmd, inquiries, manualBlocks]);
+  }, [selectedYmd, inquiries, appointments, manualBlocks, listings, showListingColors]);
 
-  // Tap a booking → open the host conversation. ensure_inquiry_thread
-  // is idempotent so consecutive taps just resolve to the existing
-  // direct_thread row.
+  const isSelectedBlocked = !!selectedYmd && manualBlocks.has(selectedYmd);
+  // A day with an accepted appointment is already unavailable to hosts, so
+  // manually blocking it is redundant — disable Block and say so.
+  const isSelectedBooked = useMemo(
+    () =>
+      !!selectedYmd &&
+      appointments.some(
+        (a) =>
+          a.status === "accepted" &&
+          ymdKey(new Date(a.scheduled_at)) === selectedYmd,
+      ),
+    [selectedYmd, appointments],
+  );
+
+  // ---- tap a booking → open the host conversation ----
   const openBooking = useCallback(
     async (inquiryId: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc(
+      const { data, error: err } = await (supabase as any).rpc(
         "ensure_inquiry_thread",
         { p_inquiry_id: inquiryId },
       );
-      if (error || !data) {
-        Alert.alert("Couldn't open thread", error?.message ?? "Try the inbox.");
+      if (err || !data) {
+        Alert.alert("Couldn't open thread", err?.message ?? "Try the inbox.");
         return;
       }
       router.push(`/(vendor)/thread/${data as string}` as never);
@@ -318,107 +672,106 @@ export default function CalendarScreen() {
     [router],
   );
 
-  const isSelectedBlocked = !!selectedYmd && manualBlocks.has(selectedYmd);
-  // Title input for the block flow. Modal opens on the Block tap
-  // (create mode, editingBlockDate=null) or on tapping an already-
-  // blocked day-info card (edit mode, editingBlockDate=YYYY-MM-DD).
-  // Alert.prompt is iOS-only so a custom Modal is the cross-
-  // platform path.
-  const [blockTitleModalOpen, setBlockTitleModalOpen] = useState(false);
+  // ---- block / unblock the selected day ----
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [blockTitleInput, setBlockTitleInput] = useState("");
   const [editingBlockDate, setEditingBlockDate] = useState<string | null>(null);
 
-  // Block / unblock the selected day. Block path opens a Modal
-  // with an optional title input ('Christian's birthday', etc).
-  // Unblock path stays a plain Alert.alert confirm — no input
-  // needed. Writes one vendor_unavailable_dates row per
-  // vendor_profile (or deletes them all if currently blocked).
   const commitBlock = useCallback(async () => {
     const targetDate = editingBlockDate ?? selectedYmd;
-    if (!targetDate || vendorIds.length === 0 || blocking) return;
+    if (!targetDate || blocking) return;
     setBlocking(true);
     const trimmed = blockTitleInput.trim();
     const reason = trimmed.length > 0 ? trimmed : "Blocked manually";
-    let error;
+    let err: { message?: string } | null = null;
     if (editingBlockDate) {
-      // Edit mode: UPDATE the reason on every listing's row for
-      // this date. No insert — the rows already exist.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await (supabase as any)
-        .from("vendor_unavailable_dates")
-        .update({ reason })
-        .in("vendor_id", vendorIds)
-        .eq("date", editingBlockDate);
-      error = res.error;
+      // Edit: UPDATE reason on whichever listings actually have this date.
+      const blockedOn = blockListingIds.get(editingBlockDate);
+      const targetIds =
+        blockedOn && blockedOn.size > 0 ? Array.from(blockedOn) : vendorIds;
+      if (targetIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const res = await (supabase as any)
+          .from("vendor_unavailable_dates")
+          .update({ reason })
+          .in("vendor_id", targetIds)
+          .eq("date", editingBlockDate);
+        err = res.error;
+      }
     } else {
-      // Create mode: upsert one row per listing.
-      const rows = vendorIds.map((vid) => ({
-        vendor_id: vid,
-        date: targetDate,
-        reason,
-      }));
+      const targetIds = writeTargetIds();
+      if (targetIds.length === 0) {
+        setBlocking(false);
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await (supabase as any)
         .from("vendor_unavailable_dates")
-        .upsert(rows, { onConflict: "vendor_id,date" });
-      error = res.error;
+        .upsert(
+          targetIds.map((vid) => ({ vendor_id: vid, date: targetDate, reason })),
+          { onConflict: "vendor_id,date" },
+        );
+      err = res.error;
     }
     setBlocking(false);
-    setBlockTitleModalOpen(false);
+    setBlockModalOpen(false);
     setBlockTitleInput("");
     setEditingBlockDate(null);
-    if (error) {
+    if (err) {
       Alert.alert(
         editingBlockDate ? "Couldn't update title" : "Couldn't block",
-        error.message,
+        err.message ?? "Try again.",
       );
       return;
     }
     load(false);
   }, [
     selectedYmd,
-    vendorIds,
     blocking,
     blockTitleInput,
     editingBlockDate,
+    blockListingIds,
+    vendorIds,
+    writeTargetIds,
     load,
   ]);
 
   function openEditBlock(date: string) {
     const current = manualBlocks.get(date) ?? "";
-    // Don't pre-fill the legacy fallback — it'd nudge vendors to
-    // keep that awkward literal as their title.
-    const initial = current === "Blocked manually" ? "" : current;
-    setBlockTitleInput(initial);
+    setBlockTitleInput(current === "Blocked manually" ? "" : current);
     setEditingBlockDate(date);
-    setBlockTitleModalOpen(true);
+    setBlockModalOpen(true);
   }
 
   const commitUnblock = useCallback(async () => {
-    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    if (!selectedYmd || blocking) return;
+    const targetIds = writeTargetIds();
+    if (targetIds.length === 0) return;
     setBlocking(true);
-    const { error } = await supabase
+    const { error: err } = await supabase
       .from("vendor_unavailable_dates")
       .delete()
-      .in("vendor_id", vendorIds)
+      .in("vendor_id", targetIds)
       .eq("date", selectedYmd);
     setBlocking(false);
-    if (error) {
-      Alert.alert("Couldn't unblock", error.message);
+    if (err) {
+      Alert.alert("Couldn't unblock", err.message);
       return;
     }
     load(false);
-  }, [selectedYmd, vendorIds, blocking, load]);
+  }, [selectedYmd, blocking, writeTargetIds, load]);
 
   const toggleSelectedDayBlock = useCallback(() => {
-    if (!selectedYmd || vendorIds.length === 0 || blocking) return;
+    if (!selectedYmd || blocking || writeTargetIds().length === 0) return;
     if (isSelectedBlocked) {
       Alert.alert(
-        "Unblock this day?",
-        `Re-open ${prettyDay(selectedYmd)} across ${
-          vendorIds.length === 1
-            ? "your listing"
-            : `your ${vendorIds.length} listings`
+        "Re-open this day?",
+        `${prettyDay(selectedYmd)} becomes bookable again on ${
+          blockTarget === "all"
+            ? vendorIds.length === 1
+              ? "your listing"
+              : `your ${vendorIds.length} listings`
+            : "the selected listing"
         }.`,
         [
           { text: "Cancel", style: "cancel" },
@@ -426,20 +779,145 @@ export default function CalendarScreen() {
         ],
       );
     } else {
-      // Block path: open the title-input Modal. Title is optional;
-      // hitting Block with an empty input falls back to the legacy
-      // "Blocked manually" reason and renders as plain "Blocked"
-      // in the day-info area.
       setBlockTitleInput("");
-      setBlockTitleModalOpen(true);
+      setEditingBlockDate(null);
+      setBlockModalOpen(true);
     }
   }, [
     selectedYmd,
-    vendorIds,
     blocking,
+    writeTargetIds,
     isSelectedBlocked,
+    blockTarget,
+    vendorIds,
     commitUnblock,
   ]);
+
+  // ---- recurring weekly blocks ----
+  const toggleRecurring = useCallback(
+    async (dow: number, willBeOff: boolean) => {
+      if (savingRecurring !== null) return;
+      const targetIds = writeTargetIds();
+      if (targetIds.length === 0) return;
+      setSavingRecurring(dow);
+      setRecurringOff((prev) => {
+        const next = new Set(prev);
+        if (willBeOff) next.add(dow);
+        else next.delete(dow);
+        return next;
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: err } = await (supabase as any)
+        .from("vendor_availability_rules")
+        .upsert(
+          targetIds.map((vid) => ({
+            vendor_id: vid,
+            day_of_week: dow,
+            is_unavailable: willBeOff,
+          })),
+          { onConflict: "vendor_id,day_of_week" },
+        );
+      setSavingRecurring(null);
+      if (err) {
+        setRecurringOff((prev) => {
+          const next = new Set(prev);
+          if (willBeOff) next.delete(dow);
+          else next.add(dow);
+          return next;
+        });
+        Alert.alert("Couldn't update", err.message);
+        return;
+      }
+      load(false);
+    },
+    [savingRecurring, writeTargetIds, load],
+  );
+
+  // ---- add personal entry (vendor-side appointment) ----
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [aTitle, setATitle] = useState("");
+  const [aTime, setATime] = useState("09:00");
+  const [aDuration, setADuration] = useState(60);
+  const [aLocation, setALocation] = useState("");
+  const [aNotes, setANotes] = useState("");
+  const [aListingId, setAListingId] = useState<string | null>(null);
+
+  const addIsPast = useMemo(() => {
+    if (!selectedYmd || !isValidHHMM(aTime)) return false;
+    return new Date(`${selectedYmd}T${aTime}:00`).getTime() < Date.now();
+  }, [selectedYmd, aTime]);
+
+  const addManualAppointment = useCallback(async () => {
+    if (!user?.id || !selectedYmd || addSaving) return;
+    if (!isValidHHMM(aTime)) {
+      Alert.alert("Pick a valid time", "Use 24-hour HH:MM, e.g. 14:30.");
+      return;
+    }
+    const vid = aListingId ?? accountPrimaryId;
+    const scheduledAt = new Date(`${selectedYmd}T${aTime}:00`);
+    if (scheduledAt.getTime() < Date.now()) {
+      Alert.alert("Can't add in the past", "Pick today or a future time.");
+      return;
+    }
+    setAddSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: err } = await (supabase as any).from("appointments").insert({
+      vendor_id: vid,
+      owner_user_id: vid ? null : user.id,
+      inquiry_id: null,
+      host_id: null,
+      kind: "other",
+      title: aTitle.trim() || null,
+      location: aLocation.trim() || null,
+      scheduled_at: scheduledAt.toISOString(),
+      duration_minutes: aDuration,
+      status: "accepted",
+      proposed_by: "vendor",
+      notes: aNotes.trim() || null,
+    });
+    setAddSaving(false);
+    if (err) {
+      Alert.alert("Couldn't add to calendar", err.message ?? "Try again.");
+      return;
+    }
+    setAddOpen(false);
+    setATitle("");
+    setALocation("");
+    setANotes("");
+    load(false);
+  }, [
+    user?.id,
+    selectedYmd,
+    addSaving,
+    aTime,
+    aListingId,
+    accountPrimaryId,
+    aTitle,
+    aLocation,
+    aDuration,
+    aNotes,
+    load,
+  ]);
+
+  // ---- appointment status mutations (accept/decline/complete/cancel) ----
+  const [apptPendingId, setApptPendingId] = useState<string | null>(null);
+  const setApptStatus = useCallback(
+    async (appt: AppointmentRow, status: AppointmentRow["status"]) => {
+      setApptPendingId(appt.id);
+      const { error: err } = await supabase
+        .from("appointments")
+        .update({ status })
+        .eq("id", appt.id);
+      setApptPendingId(null);
+      if (err) {
+        Alert.alert("Couldn't update", err.message);
+        return;
+      }
+      load(false);
+    },
+    [load],
+  );
 
   function shiftMonth(delta: number) {
     const next = new Date(viewMonth);
@@ -447,10 +925,24 @@ export default function CalendarScreen() {
     setViewMonth(next);
   }
 
+  function jumpToToday() {
+    const today = new Date();
+    setViewMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setSelectedYmd(ymdKey(today));
+  }
+
   const monthLabel = viewMonth.toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
   });
+
+  const listingColorById = useMemo(() => {
+    const m = new Map<string, string>();
+    listings.forEach((l, idx) => {
+      m.set(l.id, LISTING_PALETTE[idx % LISTING_PALETTE.length]);
+    });
+    return m;
+  }, [listings]);
 
   return (
     <View style={{ flex: 1, backgroundColor: CREAM }}>
@@ -484,23 +976,14 @@ export default function CalendarScreen() {
             >
               <Text style={{ color: "#dc2828", fontSize: 13 }}>{error}</Text>
               <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
-                <Text
-                  style={{
-                    color: "#dc2828",
-                    fontSize: 13,
-                    fontWeight: "700",
-                  }}
-                >
+                <Text style={{ color: "#dc2828", fontSize: 13, fontWeight: "700" }}>
                   Try again
                 </Text>
               </Pressable>
             </View>
           ) : null}
-          {loading ? (
-            <View style={{ paddingVertical: 60, alignItems: "center" }}>
-              <ActivityIndicator color={INK} />
-            </View>
-          ) : null}
+
+          {/* Header */}
           <View
             style={{
               flexDirection: "row",
@@ -524,18 +1007,7 @@ export default function CalendarScreen() {
                 Manage your bookings & availability
               </Text>
             </View>
-            <Pressable
-              onPress={() => {
-                // Jump the calendar back to today and select today
-                // in the day list. The "filter" framing was leftover
-                // chrome; this is the action vendors actually want
-                // when they tap a header-right icon on a calendar.
-                const today = new Date();
-                setViewMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-                setSelectedYmd(ymdKey(today));
-              }}
-              hitSlop={6}
-            >
+            <Pressable onPress={jumpToToday} hitSlop={6}>
               {({ pressed }) => (
                 <View
                   style={{
@@ -554,38 +1026,7 @@ export default function CalendarScreen() {
             </Pressable>
           </View>
 
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 18 }}>
-            <StatCard
-              variant="ink"
-              value={String(stats.booked)}
-              label="Booked"
-              footer="this month"
-              footerColor={GREEN}
-            />
-            <StatCard
-              variant="paper"
-              value={String(stats.pending)}
-              label="Pending"
-              footer={
-                stats.pending === 0
-                  ? "all clear"
-                  : `${stats.pending} ${stats.pending === 1 ? "inquiry" : "inquiries"}`
-              }
-              footerColor={AMBER}
-            />
-            <StatCard
-              variant="paper"
-              value={
-                stats.earningsCents > 0
-                  ? fmtMoneyShort(stats.earningsCents)
-                  : "$0"
-              }
-              label="Earnings"
-              footer="est."
-              footerColor={GREEN}
-            />
-          </View>
-
+          {/* Month nav */}
           <View
             style={{
               marginTop: 22,
@@ -611,6 +1052,7 @@ export default function CalendarScreen() {
             </View>
           </View>
 
+          {/* Calendar card */}
           <View
             style={{
               marginTop: 12,
@@ -620,19 +1062,28 @@ export default function CalendarScreen() {
               paddingTop: 12,
               paddingBottom: 14,
               shadowColor: INK,
-              shadowOpacity: 0.10,
+              shadowOpacity: 0.1,
               shadowRadius: 20,
               shadowOffset: { width: 0, height: 6 },
               elevation: 2,
             }}
           >
-            <MonthGrid
-              month={viewMonth}
-              dayState={dayState}
-              selectedYmd={selectedYmd}
-              onSelect={(k) => setSelectedYmd(k)}
-            />
+            {loading ? (
+              <View style={{ paddingVertical: 70, alignItems: "center" }}>
+                <ActivityIndicator color={INK} />
+              </View>
+            ) : (
+              <MonthGrid
+                month={viewMonth}
+                dayState={dayState}
+                dayStatusDots={dayStatusDots}
+                showListingColors={showListingColors}
+                selectedYmd={selectedYmd}
+                onSelect={(k) => setSelectedYmd(k)}
+              />
+            )}
 
+            {/* Legend */}
             <View
               style={{
                 marginTop: 14,
@@ -643,51 +1094,52 @@ export default function CalendarScreen() {
                 justifyContent: "space-around",
               }}
             >
-              <LegendDot
-                swatch={
-                  <View
-                    style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: 4,
-                      backgroundColor: INK,
-                    }}
+              {showListingColors ? (
+                <>
+                  <LegendDot swatch={<Dot color={DOT_BOOKED} />} label="Booked" />
+                  <LegendDot swatch={<Dot color={DOT_PENDING} />} label="Pending" />
+                  <LegendDot swatch={<Dot color={DOT_BLOCKED} />} label="Blocked" />
+                </>
+              ) : (
+                <>
+                  <LegendDot
+                    swatch={
+                      <View
+                        style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: INK }}
+                      />
+                    }
+                    label="Booked"
                   />
-                }
-                label="Booked"
-              />
-              <LegendDot
-                swatch={
-                  <View
-                    style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: 4,
-                      backgroundColor: PENDING_BG,
-                    }}
+                  <LegendDot
+                    swatch={
+                      <View
+                        style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: PENDING_BG }}
+                      />
+                    }
+                    label="Pending"
                   />
-                }
-                label="Pending"
-              />
-              <LegendDot
-                swatch={
-                  <View
-                    style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: 4,
-                      backgroundColor: HATCH_BG,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <Hatch size={12} />
-                  </View>
-                }
-                label="Blocked"
-              />
+                  <LegendDot
+                    swatch={
+                      <View
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: 4,
+                          backgroundColor: HATCH_BG,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <Hatch size={12} />
+                      </View>
+                    }
+                    label="Blocked"
+                  />
+                </>
+              )}
             </View>
           </View>
 
+          {/* Selected-day header + actions */}
           {selectedYmd ? (
             <View
               style={{
@@ -704,47 +1156,121 @@ export default function CalendarScreen() {
                   fontStyle: "italic",
                   fontSize: 20,
                   fontWeight: "500",
+                  flex: 1,
                 }}
+                numberOfLines={1}
               >
                 {prettyDay(selectedYmd)}
               </Text>
-              <Pressable
-                onPress={toggleSelectedDayBlock}
-                disabled={blocking}
-              >
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      backgroundColor: INK,
-                      paddingHorizontal: 14,
-                      paddingVertical: 9,
-                      borderRadius: 999,
-                      opacity: pressed || blocking ? 0.6 : 1,
-                    }}
-                  >
-                    <Feather
-                      name={isSelectedBlocked ? "x" : "plus"}
-                      size={14}
-                      color={CREAM}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text
-                      style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Pressable
+                  onPress={() => {
+                    setAListingId(accountPrimaryId);
+                    setAddOpen(true);
+                  }}
+                >
+                  {({ pressed }) => (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: BORDER,
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        borderRadius: 999,
+                        opacity: pressed ? 0.6 : 1,
+                      }}
                     >
-                      {blocking
-                        ? "Saving…"
-                        : isSelectedBlocked
-                          ? "Unblock"
-                          : "Block"}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
+                      <Feather name="plus" size={14} color={INK} style={{ marginRight: 4 }} />
+                      <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>Add</Text>
+                    </View>
+                  )}
+                </Pressable>
+                <Pressable
+                  onPress={toggleSelectedDayBlock}
+                  disabled={
+                    blocking ||
+                    writeTargetIds().length === 0 ||
+                    (isSelectedBooked && !isSelectedBlocked)
+                  }
+                >
+                  {({ pressed }) => (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: INK,
+                        paddingHorizontal: 14,
+                        paddingVertical: 9,
+                        borderRadius: 999,
+                        opacity:
+                          pressed ||
+                          blocking ||
+                          writeTargetIds().length === 0 ||
+                          (isSelectedBooked && !isSelectedBlocked)
+                            ? 0.5
+                            : 1,
+                      }}
+                    >
+                      <Feather
+                        name={isSelectedBlocked ? "x" : "plus"}
+                        size={14}
+                        color={CREAM}
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}>
+                        {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
             </View>
           ) : null}
 
+          {/* Per-listing block target (account view, >1 listing) */}
+          {selectedYmd && showListingColors ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginTop: 10 }}
+              contentContainerStyle={{ gap: 8, alignItems: "center" }}
+            >
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: "800",
+                  letterSpacing: 1,
+                  color: INK_DIM,
+                }}
+              >
+                BLOCK APPLIES TO
+              </Text>
+              <TargetChip
+                label="All listings"
+                active={blockTarget === "all"}
+                onPress={() => setBlockTarget("all")}
+              />
+              {listings.map((l) => (
+                <TargetChip
+                  key={l.id}
+                  label={l.business_name?.trim() || l.category || "Listing"}
+                  color={listingColorById.get(l.id)}
+                  active={blockTarget === l.id}
+                  onPress={() => setBlockTarget(l.id)}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+
+          {isSelectedBooked && !isSelectedBlocked ? (
+            <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
+              Already booked — this day is automatically unavailable to hosts.
+            </Text>
+          ) : null}
+
+          {/* Day panel */}
           {selectedYmd ? (
             <View style={{ marginTop: 12 }}>
               {selectedItems.length === 0 ? (
@@ -761,221 +1287,291 @@ export default function CalendarScreen() {
                   </Text>
                 </View>
               ) : (
-                selectedItems.map((it, idx) => (
-                  <BookingRow
-                    key={idx}
-                    item={it}
-                    onPress={
-                      it.kind === "inquiry" && it.inquiryId
-                        ? () => openBooking(it.inquiryId as string)
-                        : it.kind === "busy" && selectedYmd
-                          ? () => openEditBlock(selectedYmd)
-                          : undefined
-                    }
-                  />
-                ))
+                selectedItems.map((it, idx) =>
+                  it.kind === "busy" && selectedYmd ? (
+                    <BlockedDayCard
+                      key={idx}
+                      title={it.title}
+                      onPress={() => openEditBlock(selectedYmd)}
+                    />
+                  ) : (
+                    <BookingRow
+                      key={idx}
+                      item={it}
+                      onPress={
+                        it.kind === "inquiry" && it.inquiryId
+                          ? () => openBooking(it.inquiryId as string)
+                          : it.kind === "appointment" && it.inquiryId
+                            ? () => openBooking(it.inquiryId as string)
+                            : undefined
+                      }
+                    />
+                  ),
+                )
               )}
             </View>
           ) : null}
+
+          {/* Recurring weekly blocks */}
+          {hasListings ? (
+            <RecurringBlocksSection
+              recurringOff={recurringOff}
+              savingDow={savingRecurring}
+              onToggle={toggleRecurring}
+            />
+          ) : null}
+
+          {/* Appointments list */}
+          <AppointmentsSection
+            appointments={appointments}
+            pendingId={apptPendingId}
+            onSetStatus={setApptStatus}
+            onOpenInquiry={openBooking}
+            onAdd={() => {
+              if (!selectedYmd) setSelectedYmd(ymdKey(new Date()));
+              setAListingId(accountPrimaryId);
+              setAddOpen(true);
+            }}
+          />
         </ScrollView>
       </SafeAreaView>
 
-      {/* Block-title modal. Opens when the vendor taps Block on
-          an open day. Optional input — empty Block falls back to
-          the legacy 'Blocked manually' reason which displays as
-          plain 'Blocked' on the web day-info card. */}
-      <Modal
-        visible={blockTitleModalOpen}
-        animationType="fade"
-        transparent
-        onRequestClose={() => {
-          setBlockTitleModalOpen(false);
+      {/* Block-title modal */}
+      <CenterModal
+        visible={blockModalOpen}
+        onClose={() => {
+          setBlockModalOpen(false);
           setBlockTitleInput("");
           setEditingBlockDate(null);
         }}
+        title={
+          editingBlockDate
+            ? `Edit title — ${prettyDay(editingBlockDate)}`
+            : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`
+        }
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1, justifyContent: "center", padding: 24 }}
-        >
-          <Pressable
+        <Text style={{ fontSize: 13, color: INK_DIM, lineHeight: 18, marginTop: 6 }}>
+          {editingBlockDate
+            ? "Change the title for this blocked day. Leave blank to clear it."
+            : "Add an optional title so you remember why (“Christian’s birthday”). Only you see it — hosts just see the day as unavailable."}
+        </Text>
+        <TextInput
+          value={blockTitleInput}
+          onChangeText={setBlockTitleInput}
+          placeholder="What is it? (optional)"
+          placeholderTextColor={INK_DIM}
+          autoFocus
+          maxLength={80}
+          returnKeyType="done"
+          onSubmitEditing={commitBlock}
+          style={{
+            marginTop: 14,
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            fontSize: 15,
+            color: INK,
+          }}
+        />
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+          <SmallBtn
+            label="Cancel"
             onPress={() => {
-              setBlockTitleModalOpen(false);
+              setBlockModalOpen(false);
               setBlockTitleInput("");
               setEditingBlockDate(null);
             }}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.45)",
-            }}
           />
-          <View
-            style={{
-              backgroundColor: CREAM,
-              borderRadius: 20,
-              padding: 22,
-              gap: 14,
-            }}
+          <SmallBtn
+            label={blocking ? "Saving…" : editingBlockDate ? "Save" : "Block"}
+            primary
+            onPress={commitBlock}
+          />
+        </View>
+      </CenterModal>
+
+      {/* Add personal entry modal */}
+      <CenterModal
+        visible={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Add personal entry"
+      >
+        <Text style={{ fontSize: 13, color: INK_DIM, marginTop: 6, lineHeight: 18 }}>
+          {selectedYmd ? prettyDay(selectedYmd) : ""} · block off-platform time —
+          vacation, an external booking, a personal appointment. Private to you.
+        </Text>
+
+        <ScrollView style={{ marginTop: 12 }} keyboardShouldPersistTaps="handled">
+          {showListingColors ? (
+            <>
+              <FieldLabel text="Listing" />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+              >
+                {listings.map((l) => (
+                  <TargetChip
+                    key={l.id}
+                    label={l.business_name?.trim() || l.category || "Listing"}
+                    color={listingColorById.get(l.id)}
+                    active={aListingId === l.id}
+                    onPress={() => setAListingId(l.id)}
+                  />
+                ))}
+              </ScrollView>
+            </>
+          ) : null}
+
+          <FieldLabel text="Type" />
+          <TextInput
+            value={aTitle}
+            onChangeText={setATitle}
+            placeholder="Vacation, External shoot…"
+            placeholderTextColor={INK_DIM}
+            style={inputStyle}
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingVertical: 8 }}
           >
-            <Text
-              style={{ fontFamily: SERIF, fontSize: 22, color: INK }}
-            >
-              {editingBlockDate
-                ? `Edit title — ${prettyDay(editingBlockDate)}`
-                : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`}
-            </Text>
-            <Text style={{ fontSize: 13, color: INK_DIM, lineHeight: 18 }}>
-              {editingBlockDate
-                ? "Change the title for this blocked day. Leave blank to clear it."
-                : 'Add an optional title so you remember why ("Christian\'s birthday"). Only you see it — hosts just see the day as unavailable.'}
-            </Text>
-            <TextInput
-              value={blockTitleInput}
-              onChangeText={setBlockTitleInput}
-              placeholder="What is it? (optional)"
-              placeholderTextColor={INK_DIM}
-              autoFocus
-              maxLength={80}
-              returnKeyType="done"
-              onSubmitEditing={commitBlock}
-              style={{
-                borderWidth: 1,
-                borderColor: BORDER,
-                borderRadius: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 15,
-                color: INK,
-              }}
-            />
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "flex-end",
-                gap: 10,
-              }}
-            >
+            {ENTRY_TYPE_SUGGESTIONS.map((t) => (
               <Pressable
-                onPress={() => {
-                  setBlockTitleModalOpen(false);
-                  setBlockTitleInput("");
-                  setEditingBlockDate(null);
-                }}
-                disabled={blocking}
+                key={t}
+                onPress={() => setATitle(t)}
                 style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  height: 30,
                   borderRadius: 999,
+                  backgroundColor: aTitle === t ? INK : CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Text style={{ color: INK_DIM, fontWeight: "600" }}>
-                  Cancel
+                <Text style={{ color: aTitle === t ? CREAM : INK, fontSize: 12, fontWeight: "600" }}>
+                  {t}
                 </Text>
               </Pressable>
+            ))}
+          </ScrollView>
+
+          <FieldLabel text="Time (24h)" />
+          <TextInput
+            value={aTime}
+            onChangeText={setATime}
+            placeholder="09:00"
+            placeholderTextColor={INK_DIM}
+            keyboardType="numbers-and-punctuation"
+            maxLength={5}
+            style={inputStyle}
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingVertical: 8 }}
+          >
+            {TIME_QUICK.map((t) => (
               <Pressable
-                onPress={commitBlock}
-                disabled={blocking}
+                key={t}
+                onPress={() => setATime(t)}
                 style={{
-                  paddingHorizontal: 18,
-                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  height: 30,
                   borderRadius: 999,
-                  backgroundColor: INK,
-                  opacity: blocking ? 0.5 : 1,
+                  backgroundColor: aTime === t ? INK : CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Text style={{ color: CREAM, fontWeight: "700" }}>
-                  {blocking
-                    ? "Saving…"
-                    : editingBlockDate
-                      ? "Save"
-                      : "Block"}
+                <Text style={{ color: aTime === t ? CREAM : INK, fontSize: 12, fontWeight: "600" }}>
+                  {t}
                 </Text>
               </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+            ))}
+          </ScrollView>
+
+          <FieldLabel text="Duration" />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+          >
+            {DURATION_OPTS.map((d) => (
+              <Pressable
+                key={d.value}
+                onPress={() => setADuration(d.value)}
+                style={{
+                  paddingHorizontal: 12,
+                  height: 32,
+                  borderRadius: 999,
+                  backgroundColor: aDuration === d.value ? INK : CREAM_DEEP,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: aDuration === d.value ? CREAM : INK,
+                    fontSize: 12,
+                    fontWeight: "600",
+                  }}
+                >
+                  {d.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {addIsPast ? (
+            <Text style={{ color: "#dc2828", fontSize: 12, marginTop: 8 }}>
+              That date & time is in the past. Pick today or later.
+            </Text>
+          ) : null}
+
+          <FieldLabel text="Location (optional)" />
+          <TextInput
+            value={aLocation}
+            onChangeText={setALocation}
+            placeholder="Address, Zoom…"
+            placeholderTextColor={INK_DIM}
+            style={inputStyle}
+          />
+
+          <FieldLabel text="Notes (optional)" />
+          <TextInput
+            value={aNotes}
+            onChangeText={setANotes}
+            placeholder="Anything to remember"
+            placeholderTextColor={INK_DIM}
+            multiline
+            style={[inputStyle, { height: 70, textAlignVertical: "top" }]}
+          />
+        </ScrollView>
+
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+          <SmallBtn label="Cancel" onPress={() => setAddOpen(false)} />
+          <SmallBtn
+            label={addSaving ? "Adding…" : "Add"}
+            primary
+            disabled={addSaving || addIsPast}
+            onPress={addManualAppointment}
+          />
+        </View>
+      </CenterModal>
     </View>
   );
 }
 
-function StatCard({
-  variant,
-  value,
-  label,
-  footer,
-  footerColor,
-}: {
-  variant: "ink" | "paper";
-  value: string;
-  label: string;
-  footer: string;
-  footerColor: string;
-}) {
-  const isInk = variant === "ink";
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: isInk ? INK : "#ffffff",
-        borderRadius: 18,
-        paddingHorizontal: 14,
-        paddingTop: 14,
-        paddingBottom: 12,
-        shadowColor: INK,
-        shadowOpacity: isInk ? 0 : 0.04,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 4 },
-      }}
-    >
-      <Text
-        style={{
-          color: isInk ? CREAM : INK,
-          fontFamily: SERIF,
-          fontSize: 26,
-          fontWeight: "700",
-        }}
-        numberOfLines={1}
-      >
-        {value}
-      </Text>
-      <Text
-        style={{
-          marginTop: 4,
-          color: isInk ? "rgba(255,255,255,0.7)" : INK_DIM,
-          fontSize: 10,
-          fontWeight: "600",
-          letterSpacing: 0.6,
-        }}
-      >
-        {label.toUpperCase()}
-      </Text>
-      <Text
-        style={{
-          marginTop: 6,
-          color: footerColor,
-          fontSize: 12,
-          fontWeight: "600",
-        }}
-        numberOfLines={1}
-      >
-        {footer}
-      </Text>
-    </View>
-  );
+// ---------------- sub-components ----------------
+
+function Dot({ color }: { color: string }) {
+  return <View style={{ width: 12, height: 12, borderRadius: 999, backgroundColor: color }} />;
 }
 
-function ChevButton({
-  dir,
-  onPress,
-}: {
-  dir: "left" | "right";
-  onPress: () => void;
-}) {
+function ChevButton({ dir, onPress }: { dir: "left" | "right"; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
@@ -989,31 +1585,56 @@ function ChevButton({
         justifyContent: "center",
       }}
     >
-      <Feather
-        name={dir === "left" ? "chevron-left" : "chevron-right"}
-        size={18}
-        color={INK}
-      />
+      <Feather name={dir === "left" ? "chevron-left" : "chevron-right"} size={18} color={INK} />
     </Pressable>
   );
 }
 
-function LegendDot({
-  swatch,
-  label,
-}: {
-  swatch: React.ReactNode;
-  label: string;
-}) {
+function LegendDot({ swatch, label }: { swatch: React.ReactNode; label: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       {swatch}
-      <Text
-        style={{ marginLeft: 6, color: INK, fontSize: 12, fontWeight: "700" }}
-      >
-        {label}
-      </Text>
+      <Text style={{ marginLeft: 6, color: INK, fontSize: 12, fontWeight: "700" }}>{label}</Text>
     </View>
+  );
+}
+
+function TargetChip({
+  label,
+  active,
+  onPress,
+  color,
+}: {
+  label: string;
+  active?: boolean;
+  onPress?: () => void;
+  color?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        height: 32,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        backgroundColor: active ? INK : CREAM_DEEP,
+      }}
+    >
+      {color ? (
+        <View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 999,
+            backgroundColor: color,
+            marginRight: 6,
+          }}
+        />
+      ) : null}
+      <Text style={{ color: active ? CREAM : INK, fontSize: 12, fontWeight: "600" }}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -1043,11 +1664,15 @@ function Hatch({ size }: { size: number }) {
 function MonthGrid({
   month,
   dayState,
+  dayStatusDots,
+  showListingColors,
   selectedYmd,
   onSelect,
 }: {
   month: Date;
   dayState: Map<string, DayState>;
+  dayStatusDots: Map<string, EventState[]>;
+  showListingColors: boolean;
   selectedYmd: string | null;
   onSelect: (k: string) => void;
 }) {
@@ -1068,12 +1693,7 @@ function MonthGrid({
         {DAY_HEADERS.map((d, i) => (
           <View key={i} style={{ flex: 1, alignItems: "center" }}>
             <Text
-              style={{
-                color: INK_DIM,
-                fontSize: 11,
-                fontWeight: "600",
-                letterSpacing: 0.5,
-              }}
+              style={{ color: INK_DIM, fontSize: 11, fontWeight: "600", letterSpacing: 0.5 }}
             >
               {d}
             </Text>
@@ -1093,6 +1713,8 @@ function MonthGrid({
                 day={d.getDate()}
                 inMonth={inMonth}
                 state={state}
+                dots={showListingColors ? dayStatusDots.get(key) ?? [] : []}
+                showDots={showListingColors}
                 selected={selected}
                 onPress={() => onSelect(key)}
               />
@@ -1104,19 +1726,72 @@ function MonthGrid({
   );
 }
 
+const DOT_COLOR: Record<EventState, string> = {
+  booked: DOT_BOOKED,
+  pending: DOT_PENDING,
+  blocked: DOT_BLOCKED,
+};
+
 function DayCell({
   day,
   inMonth,
   state,
+  dots,
+  showDots,
   selected,
   onPress,
 }: {
   day: number;
   inMonth: boolean;
   state: DayState;
+  dots: EventState[];
+  showDots: boolean;
   selected: boolean;
   onPress: () => void;
 }) {
+  // Account view: number + one status dot per event (cap 4 + "+N").
+  if (showDots) {
+    const MAX = 4;
+    const shown = dots.slice(0, MAX);
+    const extra = dots.length - shown.length;
+    return (
+      <View style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}>
+        <Pressable
+          onPress={onPress}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: selected ? 2 : 0,
+            borderColor: INK,
+          }}
+        >
+          <Text
+            style={{ color: inMonth ? INK : "#d1d5db", fontSize: 14, fontWeight: "600" }}
+          >
+            {day}
+          </Text>
+          {dots.length > 0 ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 2, height: 6, marginTop: 1 }}>
+              {shown.map((st, i) => (
+                <View
+                  key={i}
+                  style={{ width: 5, height: 5, borderRadius: 999, backgroundColor: DOT_COLOR[st] }}
+                />
+              ))}
+              {extra > 0 ? (
+                <Text style={{ fontSize: 7, color: INK_DIM }}>+{extra}</Text>
+              ) : null}
+            </View>
+          ) : null}
+        </Pressable>
+      </View>
+    );
+  }
+
+  // Single-listing full-cell color grid.
   const baseBg =
     state === "booked"
       ? INK
@@ -1125,7 +1800,6 @@ function DayCell({
         : state === "blocked"
           ? HATCH_BG
           : "transparent";
-
   const digitColor = !inMonth
     ? "#d1d5db"
     : state === "booked"
@@ -1151,15 +1825,7 @@ function DayCell({
         }}
       >
         {state === "blocked" ? (
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          >
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
             <Hatch size={38} />
           </View>
         ) : null}
@@ -1168,8 +1834,7 @@ function DayCell({
             color: digitColor,
             fontSize: 14,
             fontWeight: state === "booked" ? "700" : "600",
-            fontFamily:
-              state === "booked" || state === "pending" ? SERIF : undefined,
+            fontFamily: state === "booked" || state === "pending" ? SERIF : undefined,
           }}
         >
           {day}
@@ -1191,22 +1856,60 @@ function DayCell({
   );
 }
 
+function BlockedDayCard({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 10,
+            paddingVertical: 14,
+            paddingHorizontal: 14,
+            shadowColor: INK,
+            shadowOpacity: 0.1,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: 4 },
+            opacity: pressed ? 0.85 : 1,
+          }}
+        >
+          <View style={{ width: 4, height: 36, borderRadius: 999, backgroundColor: DOT_BLOCKED }} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={{ color: INK, fontSize: 15, fontWeight: "700" }} numberOfLines={1}>
+                {title}
+              </Text>
+              <Feather name="edit-2" size={11} color={INK_DIM} style={{ marginLeft: 6 }} />
+            </View>
+            <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}>Marked unavailable</Text>
+          </View>
+          <Text style={{ color: INK_DIM, fontSize: 12 }}>All day</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 function BookingRow({
   item,
   onPress,
 }: {
   item: {
-    kind: "inquiry" | "busy";
+    kind: "inquiry" | "busy" | "appointment";
     inquiryId: string | null;
     title: string;
     subtitle: string;
     amountCents: number | null;
-    accent: string;
+    accent: EventState;
     timeLabel: string | null;
   };
   onPress?: () => void;
 }) {
   const tappable = !!onPress;
+  const accentColor = DOT_COLOR[item.accent];
   return (
     <Pressable onPress={onPress} disabled={!tappable}>
       {({ pressed }) => (
@@ -1219,81 +1922,532 @@ function BookingRow({
             marginBottom: 10,
             overflow: "hidden",
             shadowColor: INK,
-            shadowOpacity: 0.10,
+            shadowOpacity: 0.1,
             shadowRadius: 18,
             shadowOffset: { width: 0, height: 4 },
             opacity: pressed && tappable ? 0.85 : 1,
           }}
         >
-          <View
-            style={{
-              width: 4,
-              alignSelf: "stretch",
-              backgroundColor: item.accent,
-            }}
-          />
-          {item.timeLabel ? (
-            <View
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                alignItems: "center",
-                width: 76,
-              }}
-            >
-              <Text
-                style={{
-                  color: INK,
-                  fontSize: 16,
-                  fontWeight: "700",
-                  fontFamily: SERIF,
-                }}
-              >
-                {item.timeLabel.split(" ")[0]}
-              </Text>
-              <Text
-                style={{
-                  color: INK_DIM,
-                  fontSize: 10,
-                  fontWeight: "700",
-                  letterSpacing: 0.6,
-                }}
-              >
-                {item.timeLabel.split(" ").slice(1).join(" ")}
+          <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accentColor }} />
+          {item.timeLabel && item.timeLabel !== "All day" ? (
+            <View style={{ paddingHorizontal: 12, paddingVertical: 14, alignItems: "center", width: 70 }}>
+              <Text style={{ color: INK, fontSize: 14, fontWeight: "700", fontFamily: SERIF }} numberOfLines={1}>
+                {item.timeLabel}
               </Text>
             </View>
           ) : (
             <View style={{ width: 12 }} />
           )}
           <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
-            <Text
-              style={{ color: INK, fontSize: 15, fontWeight: "700" }}
-              numberOfLines={1}
-            >
+            <Text style={{ color: INK, fontSize: 15, fontWeight: "700" }} numberOfLines={1}>
               {item.title}
             </Text>
-            <Text
-              style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}
-              numberOfLines={1}
-            >
+            <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }} numberOfLines={1}>
               {item.subtitle}
             </Text>
           </View>
           {item.amountCents != null ? (
             <Text
-              style={{
-                color: INK,
-                fontSize: 15,
-                fontWeight: "700",
-                marginRight: 14,
-                fontFamily: SERIF,
-              }}
+              style={{ color: INK, fontSize: 15, fontWeight: "700", marginRight: 14, fontFamily: SERIF }}
             >
               {fmtMoneyShort(item.amountCents)}
             </Text>
+          ) : item.timeLabel === "All day" ? (
+            <Text style={{ color: INK_DIM, fontSize: 12, marginRight: 14 }}>All day</Text>
           ) : null}
         </View>
       )}
     </Pressable>
+  );
+}
+
+// 7-day toggle strip for recurring weekly off-days.
+function RecurringBlocksSection({
+  recurringOff,
+  savingDow,
+  onToggle,
+}: {
+  recurringOff: Set<number>;
+  savingDow: number | null;
+  onToggle: (dow: number, willBeOff: boolean) => void;
+}) {
+  return (
+    <View
+      style={{
+        marginTop: 24,
+        backgroundColor: "#ffffff",
+        borderRadius: 18,
+        padding: 16,
+        shadowColor: INK,
+        shadowOpacity: 0.06,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 4 },
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+        <Text style={{ fontSize: 17, fontWeight: "700", color: INK }}>Recurring blocks</Text>
+        <Text style={{ fontSize: 12, color: INK_DIM }}>
+          {recurringOff.size > 0 ? `${recurringOff.size}× weekly` : "Repeat every week"}
+        </Text>
+      </View>
+      <Text style={{ marginTop: 4, fontSize: 12, color: INK_DIM, lineHeight: 17 }}>
+        Tap a day to mark it permanently unavailable every future week. Hosts won't see you as
+        bookable on that weekday.
+      </Text>
+      <View style={{ flexDirection: "row", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+        {DAY_HEADERS.map((short, dow) => {
+          const isOff = recurringOff.has(dow);
+          const saving = savingDow === dow;
+          return (
+            <Pressable
+              key={dow}
+              onPress={() => onToggle(dow, !isOff)}
+              disabled={savingDow !== null}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 999,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: isOff ? INK : CREAM_DEEP,
+                opacity: savingDow !== null && !saving ? 0.5 : 1,
+              }}
+              accessibilityLabel={`${DAY_FULL[dow]} ${isOff ? "off" : "on"}`}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color={isOff ? CREAM : INK} />
+              ) : (
+                <Text style={{ color: isOff ? CREAM : INK_DIM, fontSize: 13, fontWeight: "700" }}>
+                  {short}
+                </Text>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// Appointments list with Upcoming / Needs response / Past / All filters
+// plus per-card accept / decline / mark-complete / cancel / open-inquiry.
+function AppointmentsSection({
+  appointments,
+  pendingId,
+  onSetStatus,
+  onOpenInquiry,
+  onAdd,
+}: {
+  appointments: AppointmentRow[];
+  pendingId: string | null;
+  onSetStatus: (a: AppointmentRow, s: AppointmentRow["status"]) => void;
+  onOpenInquiry: (inquiryId: string) => void;
+  onAdd: () => void;
+}) {
+  const [filter, setFilter] = useState<"upcoming" | "needs_response" | "past" | "all">(
+    "upcoming",
+  );
+
+  const counts = useMemo(() => {
+    const now = Date.now();
+    const c = { upcoming: 0, needs_response: 0, past: 0, all: appointments.length };
+    for (const a of appointments) {
+      const t = new Date(a.scheduled_at).getTime();
+      if (a.status === "proposed" && a.proposed_by === "host") c.needs_response++;
+      if ((a.status === "accepted" || a.status === "proposed") && t >= now) c.upcoming++;
+      if (t < now) c.past++;
+    }
+    return c;
+  }, [appointments]);
+
+  const visible = useMemo(() => {
+    const now = Date.now();
+    return appointments.filter((a) => {
+      const t = new Date(a.scheduled_at).getTime();
+      switch (filter) {
+        case "upcoming":
+          return (a.status === "accepted" || a.status === "proposed") && t >= now;
+        case "past":
+          return t < now;
+        case "needs_response":
+          return a.status === "proposed" && a.proposed_by === "host";
+        case "all":
+          return true;
+      }
+    });
+  }, [appointments, filter]);
+
+  const filterOpts: Array<{ value: typeof filter; label: string; count: number }> = [
+    { value: "upcoming", label: "Upcoming", count: counts.upcoming },
+    { value: "needs_response", label: "Needs response", count: counts.needs_response },
+    { value: "past", label: "Past", count: counts.past },
+    { value: "all", label: "All", count: counts.all },
+  ];
+
+  return (
+    <View style={{ marginTop: 24 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 10,
+        }}
+      >
+        <Text style={{ fontSize: 17, fontWeight: "700", color: INK }}>Appointments</Text>
+        <Pressable onPress={onAdd}>
+          {({ pressed }) => (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: INK,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                opacity: pressed ? 0.6 : 1,
+              }}
+            >
+              <Feather name="plus" size={13} color={CREAM} style={{ marginRight: 4 }} />
+              <Text style={{ color: CREAM, fontSize: 12, fontWeight: "700" }}>Add appointment</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+
+      {appointments.length === 0 ? (
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 18,
+            paddingVertical: 24,
+            paddingHorizontal: 16,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: INK_DIM, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
+            No appointments yet. Calls, consultations, and tastings you schedule show up here.
+          </Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingBottom: 10 }}
+          >
+            {filterOpts.map((opt) => (
+              <Pressable
+                key={opt.value}
+                onPress={() => setFilter(opt.value)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  height: 32,
+                  paddingHorizontal: 12,
+                  borderRadius: 999,
+                  backgroundColor: filter === opt.value ? INK : CREAM_DEEP,
+                }}
+              >
+                <Text
+                  style={{
+                    color: filter === opt.value ? CREAM : INK_DIM,
+                    fontSize: 12,
+                    fontWeight: "600",
+                  }}
+                >
+                  {opt.label}
+                </Text>
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    color: filter === opt.value ? "rgba(255,255,255,0.7)" : INK_DIM,
+                    fontSize: 12,
+                  }}
+                >
+                  {opt.count}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {visible.length === 0 ? (
+            <Text style={{ color: INK_DIM, fontSize: 13, textAlign: "center", paddingVertical: 20 }}>
+              Nothing matches that filter.
+            </Text>
+          ) : (
+            visible.map((appt) => (
+              <AppointmentCard
+                key={appt.id}
+                appt={appt}
+                pending={pendingId === appt.id}
+                onSetStatus={onSetStatus}
+                onOpenInquiry={onOpenInquiry}
+              />
+            ))
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+function AppointmentCard({
+  appt,
+  pending,
+  onSetStatus,
+  onOpenInquiry,
+}: {
+  appt: AppointmentRow;
+  pending: boolean;
+  onSetStatus: (a: AppointmentRow, s: AppointmentRow["status"]) => void;
+  onOpenInquiry: (inquiryId: string) => void;
+}) {
+  const when = new Date(appt.scheduled_at);
+  const inPast = when.getTime() < Date.now();
+  const isPersonal = !appt.host_id;
+  const heading = appt.title?.trim() || KIND_LABEL[appt.kind] || "Meeting";
+  const needsMyResponse = appt.status === "proposed" && appt.proposed_by === "host";
+  const canCancel = appt.status === "accepted" || appt.status === "proposed";
+  const canMarkComplete = appt.status === "accepted" && inPast;
+
+  const statusText = isPersonal
+    ? "Personal"
+    : appt.status === "accepted"
+      ? "Confirmed"
+      : appt.status === "completed"
+        ? "Completed"
+        : appt.status === "proposed"
+          ? "Proposed"
+          : appt.status === "declined"
+            ? "Declined"
+            : "Cancelled";
+
+  function confirmCancel() {
+    Alert.alert("Cancel this appointment?", "The other party will be notified.", [
+      { text: "Keep it", style: "cancel" },
+      { text: "Cancel appointment", style: "destructive", onPress: () => onSetStatus(appt, "cancelled") },
+    ]);
+  }
+
+  return (
+    <View
+      style={{
+        backgroundColor: "#ffffff",
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 10,
+        shadowColor: INK,
+        shadowOpacity: 0.06,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 4 },
+      }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: INK }} numberOfLines={1}>
+            {heading}
+            {appt.host?.display_name ? (
+              <Text style={{ color: INK_DIM, fontWeight: "400" }}> with {appt.host.display_name}</Text>
+            ) : null}
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: 12, color: INK_DIM }}>
+            {isPersonal
+              ? "Off-platform · personal"
+              : appt.proposed_by === "vendor"
+                ? "Proposed by you"
+                : "Proposed by the host"}
+          </Text>
+        </View>
+        <View
+          style={{
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 999,
+            backgroundColor: CREAM_DEEP,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: "700", color: INK_DIM }}>{statusText}</Text>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 10 }}>
+        <Meta icon="calendar" text={when.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} />
+        <Meta icon="clock" text={`${fmtApptTime(appt.scheduled_at)} · ${appt.duration_minutes} min`} />
+        {appt.location ? <Meta icon="map-pin" text={appt.location} /> : null}
+      </View>
+
+      {appt.notes ? (
+        <Text
+          style={{
+            marginTop: 10,
+            fontSize: 13,
+            color: "rgba(20,22,26,0.8)",
+            lineHeight: 18,
+            borderLeftWidth: 2,
+            borderLeftColor: BORDER,
+            paddingLeft: 10,
+          }}
+        >
+          {appt.notes}
+        </Text>
+      ) : null}
+
+      {needsMyResponse || canCancel || canMarkComplete || appt.inquiry_id ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
+          {needsMyResponse ? (
+            <>
+              <ActionBtn label="Accept" icon="check" primary disabled={pending} onPress={() => onSetStatus(appt, "accepted")} />
+              <ActionBtn label="Decline" icon="x" disabled={pending} onPress={() => onSetStatus(appt, "declined")} />
+            </>
+          ) : null}
+          {canMarkComplete ? (
+            <ActionBtn label="Mark complete" icon="check-circle" disabled={pending} onPress={() => onSetStatus(appt, "completed")} />
+          ) : null}
+          {canCancel && !needsMyResponse ? (
+            <ActionBtn label="Cancel" icon="x-circle" muted disabled={pending} onPress={confirmCancel} />
+          ) : null}
+          {appt.inquiry_id ? (
+            <Pressable
+              onPress={() => onOpenInquiry(appt.inquiry_id as string)}
+              style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center" }}
+              hitSlop={6}
+            >
+              <Text style={{ color: INK, fontSize: 12, fontWeight: "700" }}>Open inquiry</Text>
+              <Feather name="chevron-right" size={14} color={INK} />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function Meta({ icon, text }: { icon: keyof typeof Feather.glyphMap; text: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Feather name={icon} size={13} color={INK_DIM} style={{ marginRight: 5 }} />
+      <Text style={{ fontSize: 12, color: INK_DIM }} numberOfLines={1}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+function ActionBtn({
+  label,
+  icon,
+  primary,
+  muted,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+  primary?: boolean;
+  muted?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  const fg = primary ? CREAM : muted ? INK_DIM : INK;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        height: 32,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        backgroundColor: primary ? INK : muted ? "transparent" : CREAM_DEEP,
+        borderWidth: muted ? 1 : 0,
+        borderColor: BORDER,
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <Feather name={icon} size={13} color={fg} style={{ marginRight: 4 }} />
+      <Text style={{ color: fg, fontSize: 12, fontWeight: "700" }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function SmallBtn({
+  label,
+  onPress,
+  primary,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  primary?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={{
+        paddingHorizontal: 18,
+        height: 42,
+        borderRadius: 999,
+        backgroundColor: primary ? INK : CREAM,
+        borderWidth: primary ? 0 : 1,
+        borderColor: BORDER,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <Text style={{ color: primary ? CREAM : INK, fontWeight: "700" }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function FieldLabel({ text }: { text: string }) {
+  return (
+    <Text style={{ marginTop: 12, marginBottom: 6, fontSize: 12, fontWeight: "600", color: INK_DIM }}>
+      {text}
+    </Text>
+  );
+}
+
+const inputStyle = {
+  borderWidth: 1,
+  borderColor: BORDER,
+  borderRadius: 12,
+  paddingHorizontal: 14,
+  paddingVertical: 11,
+  fontSize: 15,
+  color: INK,
+} as const;
+
+function CenterModal({
+  visible,
+  onClose,
+  title,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}
+      >
+        <Pressable
+          onPress={onClose}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }}
+        />
+        <View style={{ backgroundColor: CREAM, borderRadius: 20, padding: 20, maxHeight: "82%" }}>
+          <Text style={{ fontFamily: SERIF, fontSize: 22, color: INK }}>{title}</Text>
+          {children}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
