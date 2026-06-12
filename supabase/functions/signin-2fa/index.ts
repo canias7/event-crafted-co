@@ -255,7 +255,27 @@ serve(async (req) => {
       .from("signin_2fa_codes")
       .update({ used_at: new Date().toISOString() })
       .eq("id", r.id);
-    return json({ ok: true });
+
+    // Mint a one-time magiclink token with the service role and hand it
+    // back. The client exchanges it via supabase.auth.verifyOtp() to
+    // establish a session WITHOUT calling the captcha-protected password
+    // grant — the project has bot/abuse captcha enabled, which a native
+    // app can't satisfy (there's no widget to render). The /verify
+    // endpoint verifyOtp hits is exempt from captcha. The password was
+    // already checked above via verify_user_password, and the 6-digit
+    // code was just confirmed, so this doesn't weaken the flow.
+    // generateLink only mints the token here — it does NOT send an email.
+    const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
+    const tokenHash =
+      (linkData as { properties?: { hashed_token?: string } } | null)
+        ?.properties?.hashed_token ?? null;
+    if (linkErr || !tokenHash) {
+      return json({ error: "Could not establish session" }, 500);
+    }
+    return json({ ok: true, token_hash: tokenHash });
   }
 
   return json({ error: "Unknown action" }, 400);
