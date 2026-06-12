@@ -268,6 +268,17 @@ export function ListingWizardModal({
     let createdVendorId: string | null = null;
     const uploadedPaths: string[] = [];
     try {
+      // 0. Carry the business name from the signup profile onto the
+      //    listing row — the slug trigger derives the public slug from
+      //    it at INSERT time, so omitting it mints a generic
+      //    "vendor-N" slug forever. Best-effort: a failed fetch just
+      //    falls back to the trigger's deduped default.
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("business_name")
+        .eq("id", userId)
+        .maybeSingle();
+
       // 1. Insert the listing row as a draft. The
       //    vendor_profiles_add_owner trigger backfills
       //    vendor_team_members so subsequent uploads pass the
@@ -283,6 +294,7 @@ export function ListingWizardModal({
         .from("vendor_profiles")
         .insert({
           user_id: userId,
+          business_name: prof?.business_name ?? null,
           category,
           location: trimmedLocation,
           base_price_cents: priceCents,
