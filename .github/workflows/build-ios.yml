@@ -113,66 +113,18 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: false
 
-      # Mirrors EAS's `autoIncrement: true`: query App Store Connect
-      # for the max build number under the current app version and add
-      # 1. Without this the build number resets to 1 on each fresh
-      # pipeline, and TestFlight sorts builds by number descending —
-      # so the previous EAS build (#27 / #41) keeps showing as
-      # "latest" even though our build is newer chronologically.
+      # Build number = epoch seconds. Monotonic + unique per build, so it
+      # can NEVER collide. The old approach queried App Store Connect for
+      # max(build)+1, but it intermittently returned a stale max and
+      # produced DUPLICATE CFBundleVersions — which Apple silently rejects
+      # in TestFlight processing, so the new builds never appeared (we
+      # kept re-uploading "46"). Epoch (~1.78e9) is far above any past
+      # build number and well under Apple's per-component limit (2^32), so
+      # every build sorts as the newest in TestFlight. (altool still
+      # decodes the ASC key later for the upload itself.)
       - name: Compute next build number
-        env:
-          ASC_API_KEY_ID:          ${{ secrets.ASC_API_KEY_ID }}
-          ASC_API_KEY_ISSUER_ID:   ${{ secrets.ASC_API_KEY_ISSUER_ID }}
-          ASC_API_KEY_BASE64:      ${{ secrets.ASC_API_KEY_BASE64 }}
-          ASC_APP_ID:              ${{ inputs.app == 'host' && '6767471797' || '6767470298' }}
         run: |
-          # Decode the .p8 key once for this step.
-          mkdir -p ~/private_keys
-          P8="$HOME/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
-          echo -n "$ASC_API_KEY_BASE64" | base64 --decode > "$P8"
-          # Use Python (preinstalled) + pip-install pyjwt to mint a JWT.
-          # --break-system-packages: macOS-26 runner has PEP 668
-          # externally-managed Python; bypass is safe for an ephemeral
-          # CI runner.
-          # Intentionally UNPINNED: the runner ships cryptography via
-          # Homebrew, and pinning to a lower version makes pip try to
-          # uninstall the brew-managed package, which fails with
-          # "no RECORD file" (#1418's pin broke the build this way).
-          # Unpinned lets pip reuse the already-present versions.
-          pip3 install --quiet --break-system-packages pyjwt cryptography
-          NEXT=$(python3 <<'PY'
-          import os, time, json, urllib.request, jwt
-          from pathlib import Path
-          kid    = os.environ["ASC_API_KEY_ID"]
-          issuer = os.environ["ASC_API_KEY_ISSUER_ID"]
-          app_id = os.environ["ASC_APP_ID"]
-          pk = Path(os.path.expanduser(f"~/private_keys/AuthKey_{kid}.p8")).read_text()
-          now = int(time.time())
-          tok = jwt.encode(
-              {"iss": issuer, "iat": now, "exp": now + 600, "aud": "appstoreconnect-v1"},
-              pk, algorithm="ES256", headers={"kid": kid, "typ": "JWT"},
-          )
-          # limit=200 (the API max) so we take max() over EVERY build, not
-          # a top-N slice. `version` is a STRING and ASC sorts it
-          # lexicographically, so "99" outranks "100" — a sort+small-limit
-          # query would miss the true numeric max once build numbers cross
-          # a digit boundary, mint a duplicate, and get rejected by Apple.
-          # max(int(...)) over the full page is sort-independent and safe
-          # as long as total builds stay under 200 (we're at ~40).
-          req = urllib.request.Request(
-              f"https://api.appstoreconnect.apple.com/v1/builds?filter[app]={app_id}&limit=200",
-              headers={"Authorization": f"Bearer {tok}"},
-          )
-          data = json.loads(urllib.request.urlopen(req).read())
-          nums = []
-          for b in data.get("data", []):
-              try:
-                  nums.append(int(b["attributes"]["version"]))
-              except (TypeError, ValueError):
-                  pass
-          print(max(nums) + 1 if nums else 1)
-          PY
-          )
+          NEXT=$(date +%s)
           echo "Next build number: $NEXT"
           echo "BUILD_NUMBER=$NEXT" >> $GITHUB_ENV
 
