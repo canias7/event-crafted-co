@@ -96,7 +96,10 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # Pinned to the version proven by the last green build (run #21).
+          # Bump deliberately, not implicitly, so a Bun release can't change
+          # dependency resolution under a build we can't re-test from here.
+          bun-version: "1.3.14"
 
       # --linker=hoisted: Metro's babel plugin can't resolve preset-expo
       # through Bun's default isolated symlink layout. Same workaround as
@@ -201,12 +204,11 @@ jobs:
 
       - name: Install CocoaPods
         working-directory: ${{ env.APP_DIR }}/ios
-        # NOTE: cocoapods (here) and bun (setup-bun) are intentionally
-        # left unpinned for now — pin them to the exact versions from a
-        # known-green run's logs rather than a guess, so we don't break a
-        # toolchain we can't re-test from here.
+        # Pinned to the version proven by the last green build (run #21).
+        # CocoaPods ships behavior-changing releases; pinning keeps the
+        # pod install step reproducible.
         run: |
-          gem install cocoapods --no-document
+          gem install cocoapods --no-document --version 1.16.2
           pod install --repo-update
 
       # Imports cert into a runner-only keychain. Auto-cleans on job
