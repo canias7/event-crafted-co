@@ -25,6 +25,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { compressForUpload } from "@/lib/imageManipulation";
 
 // Keep in sync with listing.tsx (and web's ListingWizardModal).
 const MAX_PHOTOS = 100;
@@ -198,17 +199,17 @@ export default function GalleryScreen() {
         if (myIdx >= assets.length) return;
         const asset = assets[myIdx];
         try {
-          const ext = (asset.uri.split(".").pop() ?? "jpg")
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "");
-          const path = `${vendorId}/${Date.now()}-${baseOrder + myIdx}-${myIdx}.${ext}`;
-          const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
+          // Downscale to 2400px / JPEG 0.85 before upload (same as web
+          // + the listing builder). Output is always JPEG.
+          const { uri: upUri, mime } = await compressForUpload(asset);
+          const path = `${vendorId}/${Date.now()}-${baseOrder + myIdx}-${myIdx}.jpg`;
+          const arrayBuffer = await (await fetch(upUri)).arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
           if (bytes.byteLength === 0) throw new Error("Empty file");
           const up = await supabase.storage
             .from("vendor-portfolios")
             .upload(path, bytes, {
-              contentType: asset.mimeType ?? "image/jpeg",
+              contentType: mime,
               upsert: false,
             });
           if (up.error) throw up.error;

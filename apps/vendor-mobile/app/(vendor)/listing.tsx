@@ -31,6 +31,7 @@ import * as ImagePicker from "expo-image-picker";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
 
@@ -299,13 +300,14 @@ export default function ListingScreen() {
         if (myIdx >= assets.length) return;
         const asset = assets[myIdx];
         try {
-          const ext = (asset.uri.split(".").pop() ?? "jpg")
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "");
+          // Downscale to 2400px / JPEG 0.85 before upload — same as web
+          // (lib/imageManipulation). Output is always JPEG, so the path
+          // ext is .jpg.
+          const { uri: upUri, mime } = await compressForUpload(asset);
           // Date.now() + baseOrder + myIdx keeps paths unique even
           // when workers fire within the same millisecond.
-          const path = `${profile!.id}/${Date.now()}-${baseOrder + myIdx}-${myIdx}.${ext}`;
-          const arrayBuffer = await (await fetch(asset.uri)).arrayBuffer();
+          const path = `${profile!.id}/${Date.now()}-${baseOrder + myIdx}-${myIdx}.jpg`;
+          const arrayBuffer = await (await fetch(upUri)).arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
           if (bytes.byteLength === 0) {
             throw new Error("Empty file");
@@ -313,7 +315,7 @@ export default function ListingScreen() {
           const up = await supabase.storage
             .from("vendor-portfolios")
             .upload(path, bytes, {
-              contentType: asset.mimeType ?? "image/jpeg",
+              contentType: mime,
               upsert: false,
             });
           if (up.error) throw up.error;
