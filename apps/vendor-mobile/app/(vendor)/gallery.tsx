@@ -422,7 +422,7 @@ export default function GalleryScreen() {
                     borderRadius: 999,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: active ? INK : "#f5f5f5",
+                    backgroundColor: active ? INK : "#f3f4f6",
                   }}
                 >
                   <Text
@@ -449,7 +449,7 @@ export default function GalleryScreen() {
           // No listing yet — send them to the builder first.
           <View
             style={{
-              backgroundColor: "#f5f5f5",
+              backgroundColor: "#f3f4f6",
               borderRadius: 20,
               padding: 24,
               alignItems: "center",
@@ -499,7 +499,7 @@ export default function GalleryScreen() {
           <Pressable
             onPress={addPhotos}
             style={{
-              backgroundColor: "#f5f5f5",
+              backgroundColor: "#f3f4f6",
               borderRadius: 20,
               padding: 24,
               alignItems: "center",

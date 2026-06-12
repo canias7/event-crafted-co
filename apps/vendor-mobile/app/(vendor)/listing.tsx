@@ -39,7 +39,7 @@ import { DetailsSection } from "@/components/listing/DetailsSection";
 // vendor profile screen so the listing builder doesn't feel like a
 // different app section.
 const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
+const CREAM_DEEP = "#f3f4f6";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e5e7eb";
