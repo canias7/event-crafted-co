@@ -134,10 +134,12 @@ jobs:
           # --break-system-packages: macOS-26 runner has PEP 668
           # externally-managed Python; bypass is safe for an ephemeral
           # CI runner.
-          # Major-version pinned so a breaking pyjwt/cryptography release
-          # can't silently take down signed builds; patch/minor wheels
-          # still flow for security fixes.
-          pip3 install --quiet --break-system-packages "pyjwt>=2,<3" "cryptography>=42,<45"
+          # Intentionally UNPINNED: the runner ships cryptography via
+          # Homebrew, and pinning to a lower version makes pip try to
+          # uninstall the brew-managed package, which fails with
+          # "no RECORD file" (#1418's pin broke the build this way).
+          # Unpinned lets pip reuse the already-present versions.
+          pip3 install --quiet --break-system-packages pyjwt cryptography
           NEXT=$(python3 <<'PY'
           import os, time, json, urllib.request, jwt
           from pathlib import Path
