@@ -142,10 +142,22 @@ export default function ListingScreen() {
       }
       prof = ((rows ?? []) as ProfileRow[])[0] ?? null;
       if (!prof) {
+        // Seed business_name from the signup profile — the slug
+        // trigger derives the public slug from it at INSERT, so an
+        // empty name mints a generic "vendor-N" slug forever.
+        const { data: bn } = await supabase
+          .from("profiles")
+          .select("business_name")
+          .eq("id", user.id)
+          .maybeSingle();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: created, error: insErr } = await (supabase as any)
           .from("vendor_profiles")
-          .insert({ user_id: user.id, application_status: "draft" })
+          .insert({
+            user_id: user.id,
+            application_status: "draft",
+            business_name: bn?.business_name ?? null,
+          })
           .select(PROFILE_COLS)
           .single();
         if (insErr) {
