@@ -38,12 +38,12 @@ const CREAM_DEEP = "#f5f5f5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e5e7eb";
-const PENDING_BG = "#fbeed1";
-const PENDING_FG = "#9c6a1a";
-const HATCH = "#cbbfac";
-const HATCH_BG = "#efe6d6";
+const PENDING_BG = "#fef3c7";
+const PENDING_FG = "#92400e";
+const HATCH = "#d1d5db";
+const HATCH_BG = "#f3f4f6";
 const GREEN = "#16a34a";
-const AMBER = "#d99e2b";
+const AMBER = "#d97706";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -475,18 +475,18 @@ export default function CalendarScreen() {
               style={{
                 marginBottom: 12,
                 borderRadius: 12,
-                backgroundColor: "#fdecea",
+                backgroundColor: "#fef2f2",
                 borderWidth: 1,
-                borderColor: "#f5c5c0",
+                borderColor: "#fecaca",
                 paddingHorizontal: 14,
                 paddingVertical: 12,
               }}
             >
-              <Text style={{ color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: "#dc2828", fontSize: 13 }}>{error}</Text>
               <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
                 <Text
                   style={{
-                    color: "#9b2c1b",
+                    color: "#dc2828",
                     fontSize: 13,
                     fontWeight: "700",
                   }}
@@ -946,7 +946,7 @@ function StatCard({
       <Text
         style={{
           marginTop: 4,
-          color: isInk ? "rgba(250,245,236,0.7)" : INK_DIM,
+          color: isInk ? "rgba(255,255,255,0.7)" : INK_DIM,
           fontSize: 10,
           fontWeight: "600",
           letterSpacing: 0.6,
@@ -1127,7 +1127,7 @@ function DayCell({
           : "transparent";
 
   const digitColor = !inMonth
-    ? "#cbbfac"
+    ? "#d1d5db"
     : state === "booked"
       ? CREAM
       : state === "pending"

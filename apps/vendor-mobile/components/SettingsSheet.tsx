@@ -310,7 +310,7 @@ export function SettingsSheet({
               </Text>
               <View
                 style={{
-                  backgroundColor: "#fbf4e6",
+                  backgroundColor: "#f5f5f5",
                   borderRadius: 18,
                   overflow: "hidden",
                 }}
@@ -325,7 +325,7 @@ export function SettingsSheet({
                         style={{
                           paddingHorizontal: 10,
                           paddingVertical: 5,
-                          backgroundColor: "#d4ead8",
+                          backgroundColor: "#dcfce7",
                           borderRadius: 999,
                           flexDirection: "row",
                           alignItems: "center",
@@ -336,13 +336,13 @@ export function SettingsSheet({
                             width: 6,
                             height: 6,
                             borderRadius: 999,
-                            backgroundColor: "#2f7a40",
+                            backgroundColor: "#15803d",
                             marginRight: 5,
                           }}
                         />
                         <Text
                           style={{
-                            color: "#2f7a40",
+                            color: "#15803d",
                             fontSize: 12,
                             fontWeight: "700",
                           }}
@@ -385,7 +385,7 @@ export function SettingsSheet({
               </Text>
               <View
                 style={{
-                  backgroundColor: "#fbf4e6",
+                  backgroundColor: "#f5f5f5",
                   borderRadius: 18,
                   overflow: "hidden",
                 }}
@@ -411,7 +411,7 @@ export function SettingsSheet({
                 onPress={onSignOutPress}
                 style={{
                   marginTop: 24,
-                  backgroundColor: "#fbf4e6",
+                  backgroundColor: "#f5f5f5",
                   borderRadius: 18,
                   paddingVertical: 16,
                   flexDirection: "row",
@@ -436,10 +436,10 @@ export function SettingsSheet({
                 onPress={onDeleteAccount}
                 style={{
                   marginTop: 10,
-                  backgroundColor: "#fbf4e6",
+                  backgroundColor: "#f5f5f5",
                   borderRadius: 18,
                   borderWidth: 1,
-                  borderColor: "#d99c98",
+                  borderColor: "#fecaca",
                   paddingVertical: 16,
                   flexDirection: "row",
                   alignItems: "center",
@@ -552,7 +552,7 @@ export function SettingsSheet({
                 placeholderTextColor={INK_DIM}
                 style={{
                   marginTop: 6,
-                  backgroundColor: "#fbf4e6",
+                  backgroundColor: "#f5f5f5",
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: "#e5e7eb",
@@ -582,7 +582,7 @@ export function SettingsSheet({
                 placeholderTextColor={INK_DIM}
                 style={{
                   marginTop: 6,
-                  backgroundColor: "#fbf4e6",
+                  backgroundColor: "#f5f5f5",
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: "#e5e7eb",
@@ -650,7 +650,7 @@ function SettingsRow({
           width: 38,
           height: 38,
           borderRadius: 12,
-          backgroundColor: "#efe5d2",
+          backgroundColor: "#e5e7eb",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -708,7 +708,7 @@ function RowDivider() {
     <View
       style={{
         height: 1,
-        backgroundColor: "#efe5d2",
+        backgroundColor: "#e5e7eb",
         marginLeft: 64,
       }}
     />
@@ -733,7 +733,7 @@ function Toggle({
         width: 48,
         height: 28,
         borderRadius: 999,
-        backgroundColor: value ? "#3a7d4a" : "#dccbb0",
+        backgroundColor: value ? "#16a34a" : "#d1d5db",
         padding: 3,
         opacity: disabled ? 0.6 : 1,
       }}
