@@ -12,8 +12,8 @@ import Constants from "expo-constants";
 import { useAuth } from "@/lib/auth";
 import { SettingsSheet } from "@/components/SettingsSheet";
 
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 
 export default function MoreScreen() {
   const router = useRouter();

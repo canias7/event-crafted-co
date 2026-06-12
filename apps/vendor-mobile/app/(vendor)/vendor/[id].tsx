@@ -218,7 +218,7 @@ export default function VendorDetailScreen() {
             hitSlop={8}
             className="active:opacity-70"
           >
-            <Feather name="chevron-left" size={26} color="#0a0a0a" />
+            <Feather name="chevron-left" size={26} color="#14161a" />
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-6">
@@ -312,7 +312,7 @@ export default function VendorDetailScreen() {
               <RoundButton
                 onPress={toggleSaved}
                 icon="heart"
-                iconColor={saved ? "#dc2626" : "#0a0a0a"}
+                iconColor={saved ? "#dc2828" : "#14161a"}
                 fillHeart={saved}
               />
             </View>
@@ -384,7 +384,7 @@ export default function VendorDetailScreen() {
                     <Feather
                       name="package"
                       size={14}
-                      color="#0a0a0a"
+                      color="#14161a"
                     />
                     <Text className="text-base font-bold text-foreground">
                       {packages.length || "—"}
@@ -606,7 +606,7 @@ function RoundButton({
       <Feather
         name={icon}
         size={18}
-        color={iconColor ?? "#0a0a0a"}
+        color={iconColor ?? "#14161a"}
         // expo's Feather doesn't support fill; render filled heart by
         // overlaying a colored circle inside on save.
       />
@@ -618,7 +618,7 @@ function RoundButton({
             width: 10,
             height: 10,
             borderRadius: 999,
-            backgroundColor: iconColor ?? "#dc2626",
+            backgroundColor: iconColor ?? "#dc2828",
           }}
         />
       ) : null}

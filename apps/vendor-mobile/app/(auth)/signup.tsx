@@ -31,11 +31,11 @@ import { supabase } from "@/lib/supabase";
 
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const INK_BORDER = "rgba(20,22,26,0.08)";
 const INPUT_BG = "#ffffff";
-const ERROR = "#b42318";
+const ERROR = "#dc2828";
 const ACCENT = "#1B3654";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
@@ -533,7 +533,7 @@ function CodeStep(p: CodeStepProps) {
         </View>
 
         {p.error ? (
-          <Text style={{ color: "#b42318", fontSize: 14 }}>{p.error}</Text>
+          <Text style={{ color: "#dc2828", fontSize: 14 }}>{p.error}</Text>
         ) : null}
 
         <Pressable
@@ -675,7 +675,7 @@ function CategoryPicker({
         onPress={onClose}
         style={{
           flex: 1,
-          backgroundColor: "rgba(26,20,16,0.45)",
+          backgroundColor: "rgba(20,22,26,0.45)",
           justifyContent: "flex-end",
         }}
       >

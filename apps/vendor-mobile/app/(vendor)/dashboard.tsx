@@ -113,7 +113,7 @@ export default function DashboardScreen() {
           onPress={() => router.replace("/(vendor)/profile")}
           className="active:opacity-60"
         >
-          <Feather name="arrow-left" size={22} color="#0a0a0a" />
+          <Feather name="arrow-left" size={22} color="#14161a" />
         </Pressable>
       </View>
       <ScrollView
@@ -122,7 +122,7 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#0a0a0a"
+            tintColor="#14161a"
           />
         }
       >
@@ -140,7 +140,7 @@ export default function DashboardScreen() {
         ) : null}
         {loading ? (
           <View className="items-center py-8">
-            <ActivityIndicator color="#0a0a0a" />
+            <ActivityIndicator color="#14161a" />
           </View>
         ) : null}
 
@@ -175,7 +175,7 @@ export default function DashboardScreen() {
               borderRadius: 24,
               backgroundColor: "#ffffff",
               padding: 16,
-              shadowColor: "#0a0a0a",
+              shadowColor: "#14161a",
               shadowOpacity: 0.10,
               shadowRadius: 20,
               shadowOffset: { width: 0, height: 8 },
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
               overflow: "hidden",
               borderRadius: 24,
               backgroundColor: "#ffffff",
-              shadowColor: "#0a0a0a",
+              shadowColor: "#14161a",
               shadowOpacity: 0.10,
               shadowRadius: 20,
               shadowOffset: { width: 0, height: 8 },

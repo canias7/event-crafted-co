@@ -24,8 +24,8 @@ import { supabase } from "@/lib/supabase";
 // Editorial palette — keep in sync with profile.tsx.
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 export function SettingsSheet({
@@ -239,7 +239,7 @@ export function SettingsSheet({
               width: 36,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "rgba(26,20,16,0.18)",
+              backgroundColor: "rgba(20,22,26,0.08)",
               marginBottom: 14,
             }}
           />
@@ -446,10 +446,10 @@ export function SettingsSheet({
                   justifyContent: "center",
                 }}
               >
-                <Feather name="trash-2" size={16} color="#b42318" />
+                <Feather name="trash-2" size={16} color="#dc2828" />
                 <Text
                   style={{
-                    color: "#b42318",
+                    color: "#dc2828",
                     fontSize: 16,
                     fontWeight: "700",
                     marginLeft: 8,

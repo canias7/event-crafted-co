@@ -146,7 +146,7 @@ export function BuzzComposer({
                 color:
                   trimmed.length > MAX_LEN - 20
                     ? trimmed.length >= MAX_LEN
-                      ? "#b42318"
+                      ? "#dc2828"
                       : "#1B3654"
                     : "#737373",
               }}

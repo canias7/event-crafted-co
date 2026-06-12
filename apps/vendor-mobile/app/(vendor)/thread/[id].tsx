@@ -70,8 +70,8 @@ const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", 
 
 const CREAM = "#ffffff";
 const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
 const ACTIVE_GREEN = "#22c55e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
