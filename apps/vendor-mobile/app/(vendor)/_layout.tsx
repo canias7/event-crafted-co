@@ -1,8 +1,7 @@
 // Vendor mobile tab layout — 5 tabs with a custom floating pill tab bar.
 //
-// Tabs: Inbox · Gallery · My Profile · Calendar · More. Home (feed),
-// Studio and Dashboard live in the More menu; Settings opens from
-// More (and from Profile's ☰).
+// Tabs: Inbox · Gallery · My Profile · Calendar · More. Settings opens
+// from the More menu.
 //
 // Style spec: pill floats ~16px above the bottom safe area, white bg,
 // soft shadow. Inactive tabs are line icons (Feather), active tab is a
@@ -153,10 +152,6 @@ export default function VendorLayout() {
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
       <Tabs.Screen name="more" options={{ title: "More" }} />
-      {/* Studio is reached from the More menu, not a tab. */}
-      <Tabs.Screen name="studio" options={{ href: null }} />
-      {/* Dashboard is reached from the More menu, not a tab. */}
-      <Tabs.Screen name="dashboard" options={{ href: null }} />
       {/* Listing builder — reached from the Profile tab's "Create
           listing" CTA / 4-segment toggle. Hidden from the bottom nav
           because it's a one-and-done flow per vendor. */}

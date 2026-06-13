@@ -73,6 +73,13 @@ export function NotificationsBell({
                 "[NotificationsBell] mark-read failed",
                 error.message,
               );
+              // Roll the optimistic read back so the badge count stays
+              // honest when the write didn't land.
+              setRows((prev) =>
+                prev.map((r) =>
+                  r.id === n.id ? { ...r, read_at: null } : r,
+                ),
+              );
             }
           });
       }
@@ -109,6 +116,10 @@ export function NotificationsBell({
     if (!user?.id) return;
     // Optimistic first so the bell badge drops to 0 immediately.
     const now = new Date().toISOString();
+    const wasUnread = new Set(
+      rows.filter((r) => r.read_at == null).map((r) => r.id),
+    );
+    if (wasUnread.size === 0) return;
     setRows((prev) =>
       prev.map((r) => ({ ...r, read_at: r.read_at ?? now })),
     );
@@ -120,6 +131,10 @@ export function NotificationsBell({
     if (error) {
       // eslint-disable-next-line no-console
       console.warn("[NotificationsBell] mark-all-read failed", error.message);
+      // Restore exactly the rows we optimistically flipped.
+      setRows((prev) =>
+        prev.map((r) => (wasUnread.has(r.id) ? { ...r, read_at: null } : r)),
+      );
     }
   }
 
