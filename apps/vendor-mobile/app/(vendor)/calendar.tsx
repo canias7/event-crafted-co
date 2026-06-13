@@ -313,133 +313,154 @@ export default function CalendarScreen() {
     async (isRefresh: boolean) => {
       if (!user?.id) {
         setLoading(false);
+        setRefreshing(false);
         return;
-      }
-      if (vendorIds.length === 0) {
-        // A vendor with no listings still has personal (owner-owned)
-        // appointments — fetch those so a brand-new vendor sees them.
-        setInquiries([]);
-        setManualBlocks(new Map());
-        setBlockListingIds(new Map());
-        setRecurringOff(new Set());
-        setRecurringListingIds(new Map());
       }
       const reqId = ++reqRef.current;
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
 
-      const startYmd = ymdKey(monthBounds.start);
-      const endYmd = ymdKey(monthBounds.end);
-      // Appointments reach ~90 days back (or to the viewed month, whichever
-      // is earlier) so the list + dots cover history without a huge payload.
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 90);
-      const apptLower =
-        monthBounds.start < cutoff ? monthBounds.start : cutoff;
+      try {
+        if (vendorIds.length === 0) {
+          // A vendor with no listings still has personal (owner-owned)
+          // appointments — fetch those so a brand-new vendor sees them.
+          setInquiries([]);
+          setManualBlocks(new Map());
+          setBlockListingIds(new Map());
+          setRecurringOff(new Set());
+          setRecurringListingIds(new Map());
+        }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let apptQuery = (supabase as any)
-        .from("appointments")
-        .select(
-          "id, inquiry_id, vendor_id, host_id, owner_user_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
-        )
-        .gte("scheduled_at", apptLower.toISOString())
-        .order("scheduled_at", { ascending: true })
-        .limit(1000);
-      apptQuery =
-        vendorIds.length > 0
-          ? apptQuery.or(
-              `vendor_id.in.(${vendorIds.join(",")}),owner_user_id.eq.${user.id}`,
-            )
-          : apptQuery.eq("owner_user_id", user.id);
+        const startYmd = ymdKey(monthBounds.start);
+        const endYmd = ymdKey(monthBounds.end);
+        // Appointments reach ~90 days back (or to the viewed month,
+        // whichever is earlier) so the list + dots cover history without a
+        // huge payload.
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 90);
+        const apptLower =
+          monthBounds.start < cutoff ? monthBounds.start : cutoff;
 
-      const promises: PromiseLike<unknown>[] = [apptQuery];
-      if (vendorIds.length > 0) {
-        promises.push(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
-            .from("inquiries")
-            .select(
-              "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, vendor_id, host:profiles!inquiries_host_id_fkey(display_name)",
-            )
-            .in("vendor_id", vendorIds)
-            .gte("event_date", startYmd)
-            .lt("event_date", endYmd),
-          supabase
-            .from("vendor_unavailable_dates")
-            .select("date, reason, vendor_id")
-            .in("vendor_id", vendorIds)
-            .gte("date", startYmd)
-            .lt("date", endYmd),
-          supabase
-            .from("vendor_availability_rules")
-            .select("day_of_week, is_unavailable, vendor_id")
-            .in("vendor_id", vendorIds),
-        );
-      }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let apptQuery = (supabase as any)
+          .from("appointments")
+          .select(
+            "id, inquiry_id, vendor_id, host_id, owner_user_id, kind, title, location, scheduled_at, duration_minutes, status, proposed_by, notes, host:profiles!appointments_host_id_fkey(display_name)",
+          )
+          .gte("scheduled_at", apptLower.toISOString())
+          .order("scheduled_at", { ascending: true })
+          .limit(1000);
+        apptQuery =
+          vendorIds.length > 0
+            ? apptQuery.or(
+                `vendor_id.in.(${vendorIds.join(",")}),owner_user_id.eq.${user.id}`,
+              )
+            : apptQuery.eq("owner_user_id", user.id);
 
-      const results = (await Promise.all(promises)) as Array<{
-        data: unknown;
-        error: { message?: string } | null;
-      }>;
-      if (reqId !== reqRef.current) return;
+        const promises: PromiseLike<unknown>[] = [apptQuery];
+        if (vendorIds.length > 0) {
+          promises.push(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase as any)
+              .from("inquiries")
+              .select(
+                "id, status, event_date, event_type, budget_min_cents, budget_max_cents, host_id, vendor_id, host:profiles!inquiries_host_id_fkey(display_name)",
+              )
+              .in("vendor_id", vendorIds)
+              .gte("event_date", startYmd)
+              .lt("event_date", endYmd),
+            supabase
+              .from("vendor_unavailable_dates")
+              .select("date, reason, vendor_id")
+              .in("vendor_id", vendorIds)
+              .gte("date", startYmd)
+              .lt("date", endYmd),
+            supabase
+              .from("vendor_availability_rules")
+              .select("day_of_week, is_unavailable, vendor_id")
+              .in("vendor_id", vendorIds),
+          );
+        }
 
-      const apptRes = results[0];
-      const firstErr =
-        apptRes.error ??
-        results[1]?.error ??
-        results[2]?.error ??
-        results[3]?.error ??
-        null;
-      if (firstErr) setError(firstErr.message ?? "Couldn't load the calendar.");
-
-      setAppointments((apptRes.data ?? []) as AppointmentRow[]);
-
-      if (vendorIds.length > 0) {
-        setInquiries((results[1]?.data ?? []) as InquiryRow[]);
-
-        const blockRows = (results[2]?.data ?? []) as Array<{
-          date: string;
-          reason: string | null;
-          vendor_id: string;
+        const results = (await Promise.all(promises)) as Array<{
+          data: unknown;
+          error: { message?: string } | null;
         }>;
-        const reasonByDate = new Map<string, string | null>();
-        const listingsByDate = new Map<string, Set<string>>();
-        for (const r of blockRows) {
-          reasonByDate.set(r.date, r.reason);
-          let s = listingsByDate.get(r.date);
-          if (!s) {
-            s = new Set();
-            listingsByDate.set(r.date, s);
-          }
-          s.add(r.vendor_id);
-        }
-        setManualBlocks(reasonByDate);
-        setBlockListingIds(listingsByDate);
+        // A newer load (month flip / focus / refresh) superseded this one —
+        // drop its results so it can't paint stale data. The finally below
+        // skips clearing the spinner too (the current request owns it).
+        if (reqId !== reqRef.current) return;
 
-        const recurringRows = (
-          (results[3]?.data ?? []) as Array<{
-            day_of_week: number;
-            is_unavailable: boolean;
+        const apptRes = results[0];
+        const firstErr =
+          apptRes.error ??
+          results[1]?.error ??
+          results[2]?.error ??
+          results[3]?.error ??
+          null;
+        if (firstErr)
+          setError(firstErr.message ?? "Couldn't load the calendar.");
+
+        setAppointments((apptRes.data ?? []) as AppointmentRow[]);
+
+        if (vendorIds.length > 0) {
+          setInquiries((results[1]?.data ?? []) as InquiryRow[]);
+
+          const blockRows = (results[2]?.data ?? []) as Array<{
+            date: string;
+            reason: string | null;
             vendor_id: string;
-          }>
-        ).filter((r) => r.is_unavailable);
-        setRecurringOff(new Set(recurringRows.map((r) => r.day_of_week)));
-        const recurringByDow = new Map<number, Set<string>>();
-        for (const r of recurringRows) {
-          let s = recurringByDow.get(r.day_of_week);
-          if (!s) {
-            s = new Set();
-            recurringByDow.set(r.day_of_week, s);
+          }>;
+          const reasonByDate = new Map<string, string | null>();
+          const listingsByDate = new Map<string, Set<string>>();
+          for (const r of blockRows) {
+            reasonByDate.set(r.date, r.reason);
+            let s = listingsByDate.get(r.date);
+            if (!s) {
+              s = new Set();
+              listingsByDate.set(r.date, s);
+            }
+            s.add(r.vendor_id);
           }
-          s.add(r.vendor_id);
-        }
-        setRecurringListingIds(recurringByDow);
-      }
+          setManualBlocks(reasonByDate);
+          setBlockListingIds(listingsByDate);
 
-      if (isRefresh) setRefreshing(false);
-      else setLoading(false);
+          const recurringRows = (
+            (results[3]?.data ?? []) as Array<{
+              day_of_week: number;
+              is_unavailable: boolean;
+              vendor_id: string;
+            }>
+          ).filter((r) => r.is_unavailable);
+          setRecurringOff(new Set(recurringRows.map((r) => r.day_of_week)));
+          const recurringByDow = new Map<number, Set<string>>();
+          for (const r of recurringRows) {
+            let s = recurringByDow.get(r.day_of_week);
+            if (!s) {
+              s = new Set();
+              recurringByDow.set(r.day_of_week, s);
+            }
+            s.add(r.vendor_id);
+          }
+          setRecurringListingIds(recurringByDow);
+        }
+      } catch (err) {
+        if (reqId === reqRef.current) {
+          setError(
+            (err as { message?: string })?.message ??
+              "Couldn't load the calendar.",
+          );
+        }
+      } finally {
+        // Only the latest request clears the spinners — a superseded
+        // request must not flip them off while a newer fetch is mid-flight
+        // (that was the bug that left the grid stuck on a spinner forever).
+        if (reqId === reqRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user?.id, vendorIdKey, monthBounds],
