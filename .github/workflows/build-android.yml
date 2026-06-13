@@ -182,12 +182,21 @@ jobs:
       # overrides the 4-ABI default expo writes earlier in the file
       # (Java Properties: last key wins). arm64-v8a + armeabi-v7a cover
       # effectively every real Android phone.
-      - name: Limit native ABIs (CI build speed)
+      - name: Tune gradle.properties for CI (ABIs + JVM memory)
         working-directory: ${{ env.APP_DIR }}/android
         run: |
+          # Only the two ARM ABIs — x86/x86_64 are emulator/Chromebook-only
+          # and ~double the native compile. Last key wins over expo's 4-ABI
+          # default written earlier in the file.
           echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> gradle.properties
-          echo "--- effective reactNativeArchitectures ---"
-          grep -n "reactNativeArchitectures" gradle.properties || true
+          # Raise Gradle JVM heap + Metaspace. expo's default caps Metaspace
+          # at 512m, which OOM'd this large new-arch build
+          # ("java.lang.OutOfMemoryError: Metaspace"), crashing the daemon
+          # mid-bundleRelease and leaving the job to be cancelled. The runner
+          # has ~16GB, so give Gradle real headroom. Last key wins.
+          echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "--- effective gradle.properties (CI overrides) ---"
+          grep -nE "reactNativeArchitectures|org.gradle.jvmargs" gradle.properties || true
 
       - name: Build AAB
         working-directory: ${{ env.APP_DIR }}/android
