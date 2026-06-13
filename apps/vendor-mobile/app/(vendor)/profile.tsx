@@ -13,23 +13,22 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  Dimensions,
   Image,
   Platform,
   Pressable,
   ScrollView,
   Share,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path, Defs, LinearGradient, Stop, Rect } from "react-native-svg";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { SettingsSheet } from "@/components/SettingsSheet";
 
 // Web palette (apps/web/src/index.css): white surfaces, deep-navy
 // accent, cool neutral grays. No warm cream/champagne.
@@ -37,7 +36,6 @@ const WHITE = "#ffffff";
 const SURFACE = "#f3f4f6";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
-const ACCENT = "#1b3654";
 const BORDER = "#e5e7eb";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -90,7 +88,7 @@ function StudioBadge({ size = 20 }: { size?: number }) {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   // Identity lives on public.profiles (separate from any one listing —
   // migration 20260512150000). Falls back to the primary vendor_profiles
@@ -120,7 +118,6 @@ export default function ProfileScreen() {
   // ratings of hosts and inflate the score).
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -241,54 +238,175 @@ export default function ProfileScreen() {
     router.push(`/(vendor)/listing?id=${data.id}` as never);
   }
 
-  const businessInitial =
-    identity.business_name?.trim()?.[0]?.toUpperCase() ??
-    user?.email?.[0]?.toUpperCase() ??
-    "V";
-
   return (
     <View style={{ flex: 1, backgroundColor: WHITE }}>
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: WHITE }}>
-        {/* Top bar: New listing (left) · Share + Settings (right) */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingHorizontal: 14,
-            paddingTop: 4,
-            paddingBottom: 4,
-          }}
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: WHITE }}>
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
         >
-          <IconButton icon="plus" onPress={createNewListing} />
-          <View style={{ flex: 1 }} />
-          <IconButton icon="share" onPress={shareProfile} />
-          <View style={{ width: 10 }} />
-          <IconButton icon="menu" onPress={() => setMenuOpen(true)} />
-        </View>
-      </SafeAreaView>
+          {/* Page header — mirrors web "My Profile". */}
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontWeight: "700",
+              fontSize: 34,
+              color: INK,
+            }}
+          >
+            My Profile
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: 13, color: INK_DIM }}>
+            Your listings — manage your marketplace presence here.
+          </Text>
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 140 }}
-        showsVerticalScrollIndicator={false}
+          {/* Brand identity card — mirrors web BrandCardShell + HeaderCard:
+              gradient + ripple shell, a Bio flip-chip, avatar / name /
+              RATING·JOINED / Share profile + Edit identity. */}
+          <View style={{ marginTop: 16 }}>
+            <BrandCard
+              logoUrl={identity.logo_url}
+              businessName={identity.business_name ?? user?.email ?? "Vendor"}
+              bio={identity.bio}
+              ratingAvg={ratingAvg}
+              joined={joinedYear(profileCreatedAt)}
+              verified={!!verifiedAt}
+              studio={tier === "studio"}
+              onShare={shareProfile}
+              onEditIdentity={openEditProfile}
+            />
+          </View>
+
+          {/* New listing + listings grid. */}
+          <View style={{ marginTop: 22 }}>
+            <ListingTab
+              loading={loading}
+              listings={listings}
+              onEdit={(id) => router.push(`/(vendor)/listing?id=${id}` as never)}
+              onCreateNew={createNewListing}
+              onChanged={loadProfile}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+// Brand identity card — the mobile mirror of web's BrandCardShell +
+// HeaderCard. A white→#f3f4f6 gradient shell with faint ripple lines, a
+// top-left Bio chip that flips the card to the vendor's bio, and a front
+// face holding the avatar, name, RATING/JOINED, Share profile + Edit
+// identity buttons.
+function BrandCard({
+  logoUrl,
+  businessName,
+  bio,
+  ratingAvg,
+  joined,
+  verified,
+  studio,
+  onShare,
+  onEditIdentity,
+}: {
+  logoUrl: string | null;
+  businessName: string;
+  bio: string | null;
+  ratingAvg: number | null;
+  joined: string;
+  verified: boolean;
+  studio: boolean;
+  onShare: () => void;
+  onEditIdentity: () => void;
+}) {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <View
+      style={{
+        borderRadius: 28,
+        borderWidth: 1,
+        borderColor: "#e4e4e7",
+        overflow: "hidden",
+        backgroundColor: WHITE,
+        minHeight: 312,
+        shadowColor: "#000",
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 3,
+      }}
+    >
+      <CardCanvas />
+
+      {/* Bio / Back flip chip — top-left, matches web. */}
+      <Pressable
+        onPress={() => setFlipped((f) => !f)}
+        style={{
+          position: "absolute",
+          top: 12,
+          left: 12,
+          zIndex: 5,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "rgba(255,255,255,0.7)",
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: "rgba(0,0,0,0.28)",
+          borderRadius: 999,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
+        }}
       >
-        {/* Identity header — logo + name + category/location + joined. */}
-        <View
+        <Feather name={flipped ? "rotate-ccw" : "info"} size={11} color={INK} />
+        <Text
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 16,
-            paddingHorizontal: 18,
-            marginTop: 8,
+            marginLeft: 5,
+            fontSize: 10,
+            fontWeight: "700",
+            letterSpacing: 1.8,
+            color: INK,
           }}
         >
-          <View>
-            <Avatar logoUrl={identity.logo_url} initial={businessInitial} />
-            {verifiedAt ? (
+          {flipped ? "BACK" : "BIO"}
+        </Text>
+      </Pressable>
+
+      {flipped ? (
+        <View style={{ padding: 22, paddingTop: 52 }}>
+          <Text
+            style={{
+              fontSize: 10,
+              fontWeight: "700",
+              letterSpacing: 2,
+              color: INK_DIM,
+            }}
+          >
+            ABOUT {businessName.toUpperCase()}
+          </Text>
+          <Text
+            style={{
+              marginTop: 12,
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 18,
+              lineHeight: 27,
+              color: bio?.trim() ? "rgba(20,22,26,0.85)" : INK_DIM,
+            }}
+          >
+            {bio?.trim() ? bio : `No bio yet for ${businessName}.`}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ padding: 22, paddingTop: 52, alignItems: "center" }}>
+          {/* Avatar with verified + studio badges. */}
+          <View style={{ alignSelf: "flex-start" }}>
+            <Avatar logoUrl={logoUrl} />
+            {verified ? (
               <View
                 style={{
                   position: "absolute",
-                  bottom: -4,
-                  right: -4,
+                  bottom: -2,
+                  right: -2,
                   width: 26,
                   height: 26,
                   borderRadius: 13,
@@ -302,163 +420,147 @@ export default function ProfileScreen() {
                 <Feather name="check" size={11} color={WHITE} />
               </View>
             ) : null}
-            {tier === "studio" ? (
+            {studio ? (
               <View style={{ position: "absolute", top: -6, right: -6 }}>
                 <StudioBadge size={24} />
               </View>
             ) : null}
           </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              numberOfLines={2}
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontWeight: "700",
-                fontSize: 28,
-                lineHeight: 32,
-                letterSpacing: -0.5,
-                color: INK,
-              }}
-            >
-              {identity.business_name ?? "Your business"}
-            </Text>
-            {identity.category || identity.location ? (
-              <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
-                {identity.category ?? ""}
-                {identity.category && identity.location ? " · " : ""}
-                {identity.location ?? ""}
-              </Text>
-            ) : null}
-          </View>
-        </View>
 
-        {/* Edit profile action */}
-        <View style={{ paddingHorizontal: 18, marginTop: 14 }}>
-          <Pressable
-            onPress={openEditProfile}
-            style={{
-              alignSelf: "flex-start",
-              backgroundColor: INK,
-              borderRadius: 999,
-              paddingHorizontal: 18,
-              paddingVertical: 11,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-          >
-            <Feather name="edit-2" size={14} color={WHITE} />
-            <Text style={{ color: WHITE, fontSize: 14, fontWeight: "600", marginLeft: 6 }}>
-              Edit profile
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Bio */}
-        <View style={{ paddingHorizontal: 18, marginTop: 16 }}>
           <Text
+            numberOfLines={2}
             style={{
+              marginTop: 16,
+              textAlign: "center",
               fontFamily: SERIF,
               fontStyle: "italic",
-              color: identity.bio?.trim() ? INK : INK_DIM,
-              fontSize: identity.bio?.trim() ? 17 : 16,
-              lineHeight: 24,
-            }}
-          >
-            {identity.bio?.trim() ? identity.bio : "Add a short bio from Edit profile."}
-          </Text>
-        </View>
-
-        {/* Stats row */}
-        <View
-          style={{
-            marginHorizontal: 18,
-            marginTop: 22,
-            paddingVertical: 16,
-            borderTopWidth: 1,
-            borderBottomWidth: 1,
-            borderColor: BORDER,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
-          <StatCell
-            value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
-            label="RATING"
-          />
-          <Divider />
-          <StatCell value={joinedYear(profileCreatedAt)} label="JOINED" />
-        </View>
-
-        {/* Listings — the only content surface now. */}
-        <View style={{ paddingHorizontal: 18, marginTop: 24 }}>
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontSize: 22,
               fontWeight: "700",
+              fontSize: 30,
+              lineHeight: 34,
+              letterSpacing: -0.5,
               color: INK,
             }}
           >
-            Your listings
+            {businessName}
           </Text>
-        </View>
-        <View style={{ marginTop: 12, paddingHorizontal: 8 }}>
-          <ListingTab
-            loading={loading}
-            listings={listings}
-            onEdit={(id) => router.push(`/(vendor)/listing?id=${id}` as never)}
-            onCreateNew={createNewListing}
-            onChanged={loadProfile}
-          />
-        </View>
-      </ScrollView>
 
-      <SettingsSheet
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        email={user?.email ?? ""}
-        onSignOut={signOut}
-      />
+          <View
+            style={{
+              marginTop: 16,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 48,
+            }}
+          >
+            <CardStat
+              value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+              label="RATING"
+            />
+            <CardStat value={joined} label="JOINED" />
+          </View>
+
+          <View style={{ marginTop: 20, gap: 10, alignSelf: "stretch", alignItems: "center" }}>
+            <OutlineBtn icon="share-2" label="Share profile" onPress={onShare} />
+            <OutlineBtn icon="edit-2" label="Edit identity" onPress={onEditIdentity} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
-function IconButton({
+// Gradient + ripple-line backdrop behind the brand card content.
+function CardCanvas() {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Svg style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id="brandgrad" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="1" stopColor="#f3f4f6" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#brandgrad)" />
+      </Svg>
+      {[0.32, 0.48, 0.62, 0.76].map((t, i) => (
+        <View
+          key={t}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: `${t * 100}%`,
+            height: 1.5,
+            backgroundColor: `rgba(0,0,0,${0.06 - i * 0.012})`,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+function CardStat({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={{ alignItems: "center" }}>
+      <Text style={{ fontSize: 20, fontWeight: "700", color: INK }}>{value}</Text>
+      <Text
+        style={{
+          marginTop: 2,
+          fontSize: 10,
+          fontWeight: "600",
+          letterSpacing: 1.2,
+          color: INK_DIM,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function OutlineBtn({
   icon,
+  label,
   onPress,
 }: {
   icon: keyof typeof Feather.glyphMap;
+  label: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
-      hitSlop={8}
       onPress={onPress}
       style={{
-        width: 38,
-        height: 38,
-        borderRadius: 999,
-        backgroundColor: SURFACE,
+        flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
+        alignSelf: "stretch",
+        borderWidth: 1,
+        borderColor: BORDER,
+        backgroundColor: "rgba(255,255,255,0.75)",
+        borderRadius: 999,
+        paddingVertical: 11,
       }}
     >
-      <Feather name={icon} size={18} color={INK} />
+      <Feather name={icon} size={14} color={INK} />
+      <Text style={{ marginLeft: 7, fontSize: 14, fontWeight: "600", color: INK }}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
-function Avatar({ logoUrl, initial }: { logoUrl: string | null; initial: string }) {
+// Circular avatar — vendor logo when set, else web's neutral person
+// silhouette on a warm gray.
+function Avatar({ logoUrl }: { logoUrl: string | null }) {
   return (
     <View
       style={{
         width: 96,
         height: 96,
-        borderRadius: 20,
+        borderRadius: 48,
         overflow: "hidden",
-        backgroundColor: logoUrl ? WHITE : ACCENT,
+        backgroundColor: logoUrl ? WHITE : "#e5e1da",
         borderWidth: 1,
         borderColor: BORDER,
         alignItems: "center",
@@ -473,51 +575,8 @@ function Avatar({ logoUrl, initial }: { logoUrl: string | null; initial: string 
           accessibilityIgnoresInvertColors
         />
       ) : (
-        <Text
-          style={{
-            color: WHITE,
-            fontFamily: SERIF,
-            fontStyle: "italic",
-            fontWeight: "700",
-            fontSize: 44,
-          }}
-        >
-          {initial}
-        </Text>
+        <Feather name="user" size={44} color="#9b948a" />
       )}
-    </View>
-  );
-}
-
-function Divider() {
-  return <View style={{ width: 1, alignSelf: "stretch", backgroundColor: BORDER }} />;
-}
-
-function StatCell({ value, label }: { value: string; label: string }) {
-  return (
-    <View style={{ flex: 1, alignItems: "center", paddingVertical: 2 }}>
-      <Text
-        style={{
-          color: INK,
-          fontFamily: SERIF,
-          fontWeight: "700",
-          fontSize: 26,
-          lineHeight: 30,
-        }}
-      >
-        {value}
-      </Text>
-      <Text
-        style={{
-          marginTop: 4,
-          color: INK_DIM,
-          fontSize: 11,
-          fontWeight: "700",
-          letterSpacing: 1.4,
-        }}
-      >
-        {label}
-      </Text>
     </View>
   );
 }
@@ -592,7 +651,27 @@ function ListingTab({
     );
   }
   return (
-    <View className="w-full px-4" style={{ gap: 18 }}>
+    <View style={{ gap: 18 }}>
+      {/* New listing — right-aligned above the grid (matches web). */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+        <Pressable
+          onPress={onCreateNew}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 999,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+          }}
+        >
+          <Feather name="plus" size={14} color={INK} />
+          <Text style={{ marginLeft: 6, fontSize: 13, fontWeight: "700", color: INK }}>
+            New listing
+          </Text>
+        </Pressable>
+      </View>
       {listings.map((l) => (
         <ListingCard
           key={l.id}
@@ -601,29 +680,6 @@ function ListingTab({
           onChanged={onChanged}
         />
       ))}
-      <Pressable onPress={onCreateNew}>
-        {({ pressed }) => (
-          <View
-            style={{
-              marginTop: 4,
-              paddingVertical: 18,
-              borderRadius: 18,
-              borderWidth: 1,
-              borderStyle: "dashed",
-              borderColor: BORDER,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              opacity: pressed ? 0.7 : 1,
-            }}
-          >
-            <Feather name="plus" size={16} color={INK} />
-            <Text className="ml-2 text-sm font-semibold text-foreground">
-              Add another listing
-            </Text>
-          </View>
-        )}
-      </Pressable>
     </View>
   );
 }
