@@ -55,7 +55,11 @@ jobs:
   build:
     name: Build Android for ${{ inputs.app || 'vendor' }}-mobile
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # A cold new-architecture Gradle build (compiles RN + Hermes C++ from
+    # source) routinely runs ~40-55 min on a 2-core ubuntu runner. 40 min
+    # cancelled it mid-`bundleRelease`; give it the same 60 the iOS build
+    # gets. Gradle caching (below) trims subsequent runs.
+    timeout-minutes: 60
     env:
       APP_DIR: apps/${{ inputs.app || 'vendor' }}-mobile
 
@@ -78,6 +82,9 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
+          # Cache ~/.gradle (deps + wrapper) across runs to speed up
+          # bundleRelease. Keyed on gradle files by the action.
+          cache: "gradle"
 
       - name: Install JS deps
         run: bun install --frozen-lockfile --linker=hoisted
