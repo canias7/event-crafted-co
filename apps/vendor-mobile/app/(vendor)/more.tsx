@@ -1,7 +1,7 @@
 // More tab — overflow menu for everything that isn't one of the four
-// main tabs (Inbox · Gallery · Profile · Calendar). Home feed, Studio
-// and Dashboard moved here when the tab bar was restructured; Settings
-// opens the same account sheet as the Profile tab's ☰ button.
+// main tabs (Inbox · Gallery · Profile · Calendar). Holds Edit brand
+// profile and Settings; Settings opens the same account sheet as the
+// Profile tab's ☰ button.
 
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
@@ -37,20 +37,6 @@ export default function MoreScreen() {
             overflow: "hidden",
           }}
         >
-          <MenuRow
-            icon="grid"
-            label="Studio"
-            body="AI Superagents, content tools"
-            onPress={() => router.push("/(vendor)/studio" as never)}
-          />
-          <MenuDivider />
-          <MenuRow
-            icon="bar-chart-2"
-            label="Dashboard"
-            body="Inquiries, response rate, revenue"
-            onPress={() => router.push("/(vendor)/dashboard" as never)}
-          />
-          <MenuDivider />
           <MenuRow
             icon="edit-3"
             label="Edit brand profile"
@@ -142,11 +128,5 @@ function MenuRow({
       </View>
       <Feather name="chevron-right" size={20} color={INK_DIM} />
     </Pressable>
-  );
-}
-
-function MenuDivider() {
-  return (
-    <View style={{ height: 1, backgroundColor: "#e5e7eb", marginLeft: 69 }} />
   );
 }
