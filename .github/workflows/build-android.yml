@@ -175,6 +175,20 @@ jobs:
           console.log('Patched build.gradle');
           JS
 
+      # Build only the two ARM ABIs. x86 / x86_64 are emulator- and
+      # Chromebook-only and roughly DOUBLE the native (RN + Hermes C++)
+      # compile — which blew even the 60-min budget on a cold new-arch
+      # build (run #11 timed out mid-`bundleRelease`). Appended last so it
+      # overrides the 4-ABI default expo writes earlier in the file
+      # (Java Properties: last key wins). arm64-v8a + armeabi-v7a cover
+      # effectively every real Android phone.
+      - name: Limit native ABIs (CI build speed)
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> gradle.properties
+          echo "--- effective reactNativeArchitectures ---"
+          grep -n "reactNativeArchitectures" gradle.properties || true
+
       - name: Build AAB
         working-directory: ${{ env.APP_DIR }}/android
         run: |
