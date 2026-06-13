@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import Svg, { Path } from "react-native-svg";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -40,23 +41,51 @@ const ACCENT = "#1b3654";
 const BORDER = "#e5e7eb";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-function joinedLabel(createdAt: string | null): string {
-  if (!createdAt) return "";
+// Joined year for the header stat (matches web's "Joined" stat).
+function joinedYear(createdAt: string | null): string {
+  if (!createdAt) return "—";
   const d = new Date(createdAt);
-  if (Number.isNaN(d.getTime())) return "";
-  const now = new Date();
-  const sameDay =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
-  if (sameDay) return "Joined today";
-  const days = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  if (days < 7) return `Joined ${days}d ago`;
-  if (days < 30) return `Joined ${Math.floor(days / 7)}w ago`;
-  if (days < 365) {
-    return `Joined ${d.toLocaleDateString(undefined, { month: "short", year: "numeric" })}`;
-  }
-  return `Joined ${d.toLocaleDateString(undefined, { year: "numeric" })}`;
+  return Number.isNaN(d.getTime()) ? "—" : String(d.getFullYear());
+}
+
+// Listing ordering (mirrors web VendorMyProfilePage): approved (live)
+// listings first, then pending/submitted, then everything else
+// (draft / rejected / null). created_at ASC breaks ties.
+function statusRank(s: string | null): number {
+  if (s === "approved") return 0;
+  if (s === "pending" || s === "submitted") return 1;
+  return 2;
+}
+
+// Status pill copy + tones for a listing card (matches web's Live /
+// Pending review / Rejected / Draft directory-card pills).
+function statusMeta(s: string | null): { label: string; bg: string; fg: string } {
+  if (s === "approved") return { label: "Live", bg: "#d1fae5", fg: "#047857" };
+  if (s === "rejected") return { label: "Rejected", bg: "#fee2e2", fg: "#b91c1c" };
+  if (s === "pending" || s === "submitted")
+    return { label: "Pending review", bg: "rgba(20,22,26,0.08)", fg: "#374151" };
+  return { label: "Draft", bg: "rgba(20,22,26,0.08)", fg: "#374151" };
+}
+
+// Studio-tier verified seal — the 16-point starburst + check used on
+// web (StudioVerifiedBadge). Solid fill instead of the web gradient.
+function StudioBadge({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64">
+      <Path
+        d="M32 2 L36 6.5 L42 4.5 L44 10 L50 10 L50 16 L55.5 18 L53.5 24 L58 28 L54 32 L58 36 L53.5 40 L55.5 46 L50 48 L50 54 L44 54 L42 59.5 L36 57.5 L32 62 L28 57.5 L22 59.5 L20 54 L14 54 L14 48 L8.5 46 L10.5 40 L6 36 L10 32 L6 28 L10.5 24 L8.5 18 L14 16 L14 10 L20 10 L22 4.5 L28 6.5 Z"
+        fill="#1d6dde"
+      />
+      <Path
+        d="M21 33 L29 41 L44 24"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth={5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
 }
 
 export default function ProfileScreen() {
@@ -81,13 +110,15 @@ export default function ProfileScreen() {
   });
   const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
   const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  // Subscription tier (per-user, on profiles). 'studio' shows the
+  // verified seal next to the name, mirroring web's StudioVerifiedBadge.
+  const [tier, setTier] = useState<string>("free");
   // Every vendor_profiles row this user owns = their listings.
   const [listings, setListings] = useState<VendorProfile[]>([]);
-  const [stats, setStats] = useState<{
-    bookings: number;
-    reviews: number;
-    rating: number | null;
-  }>({ bookings: 0, reviews: 0, rating: null });
+  // Header rating — average of HOST reviews of this vendor (matches
+  // web; averaging all reviews would fold in the vendor's outgoing
+  // ratings of hosts and inflate the score).
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -104,12 +135,21 @@ export default function ProfileScreen() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("profiles")
-        .select("business_name, category, location, bio, logo_url, created_at")
+        .select(
+          "business_name, category, location, bio, logo_url, created_at, subscription_tier",
+        )
         .eq("id", user.id)
         .maybeSingle(),
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (vpData ?? []) as any[];
+    // Approved listings first, then pending, then drafts/rejected —
+    // created_at ASC breaks ties (matches web).
+    rows.sort((a, b) => {
+      const r = statusRank(a.application_status) - statusRank(b.application_status);
+      if (r !== 0) return r;
+      return String(a.created_at ?? "").localeCompare(String(b.created_at ?? ""));
+    });
     setListings(rows as VendorProfile[]);
     const primary = rows[0] ?? null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,6 +163,7 @@ export default function ProfileScreen() {
     });
     setProfileCreatedAt(id.created_at ?? primary?.created_at ?? null);
     setVerifiedAt(primary?.verified_at ?? null);
+    setTier(typeof id.subscription_tier === "string" ? id.subscription_tier : "free");
     setLoading(false);
   }, [user]);
 
@@ -137,34 +178,31 @@ export default function ProfileScreen() {
     }, [loadProfile]),
   );
 
-  // Stats: bookings = won inquiries across all listings; reviews + rating
-  // = aggregate of public reviews on those listings.
+  // Header rating = average of HOST reviews across all listings. The
+  // rater_role='host' filter matches web — without it the average would
+  // also include the vendor's outgoing ratings of hosts and lie.
   useEffect(() => {
     if (listings.length === 0) {
-      setStats({ bookings: 0, reviews: 0, rating: null });
+      setRatingAvg(null);
       return;
     }
     const vendorIds = listings.map((l) => l.id);
     let cancelled = false;
     (async () => {
-      const [{ count: bookings }, { data: reviewRows }] = await Promise.all([
-        supabase
-          .from("inquiries")
-          .select("id", { count: "exact", head: true })
-          .in("vendor_id", vendorIds)
-          .eq("status", "won"),
-        supabase.from("reviews").select("rating").in("vendor_id", vendorIds),
-      ]);
+      const { data: reviewRows } = await supabase
+        .from("reviews")
+        .select("rating")
+        .in("vendor_id", vendorIds)
+        .eq("rater_role", "host");
       if (cancelled) return;
-      const rs = (reviewRows ?? []) as { rating: number | null }[];
-      const ratings = rs
+      const ratings = ((reviewRows ?? []) as { rating: number | null }[])
         .map((r) => r.rating)
         .filter((r): r is number => typeof r === "number");
-      const avg =
+      setRatingAvg(
         ratings.length === 0
           ? null
-          : Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10;
-      setStats({ bookings: bookings ?? 0, reviews: rs.length, rating: avg });
+          : Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10,
+      );
     })();
     return () => {
       cancelled = true;
@@ -254,7 +292,7 @@ export default function ProfileScreen() {
                   width: 26,
                   height: 26,
                   borderRadius: 13,
-                  backgroundColor: ACCENT,
+                  backgroundColor: "#10b981",
                   borderWidth: 3,
                   borderColor: WHITE,
                   alignItems: "center",
@@ -262,6 +300,11 @@ export default function ProfileScreen() {
                 }}
               >
                 <Feather name="check" size={11} color={WHITE} />
+              </View>
+            ) : null}
+            {tier === "studio" ? (
+              <View style={{ position: "absolute", top: -6, right: -6 }}>
+                <StudioBadge size={24} />
               </View>
             ) : null}
           </View>
@@ -285,11 +328,6 @@ export default function ProfileScreen() {
                 {identity.category ?? ""}
                 {identity.category && identity.location ? " · " : ""}
                 {identity.location ?? ""}
-              </Text>
-            ) : null}
-            {profileCreatedAt ? (
-              <Text style={{ marginTop: 2, fontSize: 12, color: INK_DIM }}>
-                {joinedLabel(profileCreatedAt)}
               </Text>
             ) : null}
           </View>
@@ -344,14 +382,12 @@ export default function ProfileScreen() {
             alignItems: "center",
           }}
         >
-          <StatCell value={String(stats.bookings)} label="BOOKINGS" />
-          <Divider />
           <StatCell
-            value={stats.rating != null ? stats.rating.toFixed(1) : "—"}
+            value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
             label="RATING"
           />
           <Divider />
-          <StatCell value={String(stats.reviews)} label="REVIEWS" />
+          <StatCell value={joinedYear(profileCreatedAt)} label="JOINED" />
         </View>
 
         {/* Listings — the only content surface now. */}
@@ -604,11 +640,10 @@ function ListingCard({
   const [heroUrl, setHeroUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const isComplete =
-    listing.application_status === "approved" &&
-    !!listing.location &&
-    listing.base_price_cents != null;
-  const isPending = listing.application_status === "pending";
+  const status = listing.application_status ?? "draft";
+  const isApproved = status === "approved";
+  const isPending = status === "pending";
+  const meta = statusMeta(status);
 
   // Cover = first portfolio image (the gallery photos for this listing).
   useEffect(() => {
@@ -687,52 +722,11 @@ function ListingCard({
     );
   }
 
-  // Draft / rejected — full-width row with status + CTA.
-  if (!isComplete && !isPending) {
-    return (
-      <Pressable onPress={onEdit}>
-        {({ pressed }) => (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: WHITE,
-              borderRadius: 18,
-              padding: 14,
-              opacity: pressed ? 0.85 : 1,
-              borderWidth: 1,
-              borderColor: BORDER,
-            }}
-          >
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 14,
-                backgroundColor: SURFACE,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name="shopping-bag" size={22} color={INK} />
-            </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                {listing.business_name ?? "Untitled listing"}
-              </Text>
-              <Text className="mt-0.5 text-xs text-muted-foreground">
-                {listing.application_status === "rejected"
-                  ? "Rejected — tap to revise"
-                  : "Draft — tap to finish setup"}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={INK_DIM} />
-          </View>
-        )}
-      </Pressable>
-    );
-  }
-
+  // Every listing renders as the same directory-style card with a
+  // status pill (matches web's VendorMyProfilePage grid): cover photo
+  // (4:3) on top, name / category·location / price below. Pending
+  // listings dim under an "Under review" overlay; everything else
+  // exposes quick edit / unpublish / delete actions.
   return (
     <Pressable onPress={onEdit} className="active:opacity-90">
       <View
@@ -762,6 +756,24 @@ function ListingCard({
             </Text>
           </View>
         )}
+
+        {/* Status pill — top-left on every card. */}
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            backgroundColor: meta.bg,
+            borderRadius: 999,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: "700", color: meta.fg }}>
+            {meta.label}
+          </Text>
+        </View>
+
         {isPending ? (
           <View
             pointerEvents="none"
@@ -792,7 +804,9 @@ function ListingCard({
             }}
           >
             <CardAction icon="edit-2" onPress={onEdit} disabled={busy} />
-            <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
+            {isApproved ? (
+              <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
+            ) : null}
             <CardAction icon="trash-2" color="#dc2828" onPress={destroy} disabled={busy} />
           </View>
         )}
@@ -806,7 +820,7 @@ function ListingCard({
               : "text-base font-semibold text-foreground"
           }
         >
-          {listing.business_name ?? "Vendor"}
+          {listing.business_name ?? "Untitled listing"}
         </Text>
         <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground">
           {listing.category ?? "—"}
@@ -816,13 +830,6 @@ function ListingCard({
           <Text className="mt-1 text-sm text-foreground/80">
             From ${Math.round(listing.base_price_cents / 100).toLocaleString()}
           </Text>
-        ) : null}
-        {isPending ? (
-          <View className="mt-3 self-start rounded-full bg-amber-100 px-3 py-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
-              In review
-            </Text>
-          </View>
         ) : null}
       </View>
     </Pressable>
