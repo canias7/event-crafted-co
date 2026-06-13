@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -455,7 +456,10 @@ function InquiryCard({ row }: { row: InquiryRow }) {
       p_inquiry_id: row.id,
     });
     setOpening(false);
-    if (error || !data) return;
+    if (error || !data) {
+      Alert.alert("Couldn't open conversation", error?.message ?? "Please try again.");
+      return;
+    }
     router.push(`/(vendor)/thread/${data as string}` as never);
   }
 

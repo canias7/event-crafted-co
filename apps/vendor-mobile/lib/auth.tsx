@@ -28,10 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+      })
+      .catch((err) => {
+        // A failed session read (e.g. SecureStore hiccup) must not strand
+        // the app on the loading splash — clear loading and let
+        // onAuthStateChange settle the real session when it can.
+        // eslint-disable-next-line no-console
+        console.warn("[auth] getSession failed", err);
+      })
+      .finally(() => setLoading(false));
 
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
