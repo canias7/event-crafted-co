@@ -82,6 +82,19 @@ jobs:
       - name: Install JS deps
         run: bun install --frozen-lockfile --linker=hoisted
 
+      # versionCode = epoch seconds. Monotonic + unique so Play never
+      # rejects a duplicate (the workflow had no versionCode bump at all,
+      # so every build shipped expo's default of 1). Set in app.json
+      # BEFORE prebuild so it lands in build.gradle. Mirrors
+      # build-ios.yml's buildNumber. Epoch (~1.78e9) is under Play's
+      # 2.1e9 versionCode ceiling.
+      - name: Set versionCode in app.json
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          CODE=$(date +%s)
+          echo "Using versionCode $CODE"
+          CODE=$CODE node -e "const fs=require('fs');const p=require('./app.json');p.expo.android=p.expo.android||{};p.expo.android.versionCode=Number(process.env.CODE);fs.writeFileSync('./app.json',JSON.stringify(p,null,2));console.log('Set android.versionCode to',p.expo.android.versionCode);"
+
       - name: Expo prebuild (generate android/)
         working-directory: ${{ env.APP_DIR }}
         run: |
@@ -121,34 +134,38 @@ jobs:
 
       # Patch app/build.gradle to use the injected signing config if it
       # doesn't already have one. Idempotent — bails if already present.
+      # The node heredoc MUST sit at the run-block base indentation so the
+      # closing 'JS' lands in column 0: bash does not recognize an indented
+      # heredoc terminator, and the old (nested-in-`if`) version failed
+      # with "here-document delimited by end-of-file / unexpected end of
+      # file" before the build ever started.
       - name: Patch build.gradle with signing config
         working-directory: ${{ env.APP_DIR }}/android/app
         run: |
-          if ! grep -q "VENDORA_RELEASE_STORE_FILE" build.gradle; then
-            # Insert signingConfigs.release block above buildTypes
-            node <<'JS'
-            const fs = require('fs');
-            const path = 'build.gradle';
-            let content = fs.readFileSync(path, 'utf8');
-            const signingBlock = `
-                signingConfigs {
-                    release {
-                        if (project.hasProperty('VENDORA_RELEASE_STORE_FILE')) {
-                            storeFile file(VENDORA_RELEASE_STORE_FILE)
-                            storePassword VENDORA_RELEASE_STORE_PASSWORD
-                            keyAlias VENDORA_RELEASE_KEY_ALIAS
-                            keyPassword VENDORA_RELEASE_KEY_PASSWORD
-                        }
-                    }
-                }`;
-            // Insert before buildTypes
-            content = content.replace(/(\s+buildTypes\s*\{)/, signingBlock + '$1');
-            // Switch release buildType from debug signing to release signing
-            content = content.replace(/signingConfig\s+signingConfigs\.debug/g, 'signingConfig signingConfigs.release');
-            fs.writeFileSync(path, content);
-            console.log('Patched build.gradle');
-            JS
+          if grep -q "VENDORA_RELEASE_STORE_FILE" build.gradle; then
+            echo "build.gradle already has signing config; skipping"
+            exit 0
           fi
+          node <<'JS'
+          const fs = require('fs');
+          const path = 'build.gradle';
+          let content = fs.readFileSync(path, 'utf8');
+          const signingBlock = `
+              signingConfigs {
+                  release {
+                      if (project.hasProperty('VENDORA_RELEASE_STORE_FILE')) {
+                          storeFile file(VENDORA_RELEASE_STORE_FILE)
+                          storePassword VENDORA_RELEASE_STORE_PASSWORD
+                          keyAlias VENDORA_RELEASE_KEY_ALIAS
+                          keyPassword VENDORA_RELEASE_KEY_PASSWORD
+                      }
+                  }
+              }`;
+          content = content.replace(/(\s+buildTypes\s*\{)/, signingBlock + '$1');
+          content = content.replace(/signingConfig\s+signingConfigs\.debug/g, 'signingConfig signingConfigs.release');
+          fs.writeFileSync(path, content);
+          console.log('Patched build.gradle');
+          JS
 
       - name: Build AAB
         working-directory: ${{ env.APP_DIR }}/android
