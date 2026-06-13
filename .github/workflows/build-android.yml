@@ -82,9 +82,10 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
-          # Cache ~/.gradle (deps + wrapper) across runs to speed up
-          # bundleRelease. Keyed on gradle files by the action.
-          cache: "gradle"
+          # NOTE: do NOT enable `cache: gradle` here — this is a CNG flow,
+          # so there are no *.gradle files at checkout (android/ is created
+          # later by `expo prebuild`). setup-java's cache then errors with
+          # "No file ... matched", failing the job in ~15s.
 
       - name: Install JS deps
         run: bun install --frozen-lockfile --linker=hoisted
