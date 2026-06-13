@@ -3,7 +3,7 @@
     "name": "Vendora for Vendors",
     "slug": "vendora-vendor",
     "scheme": "vendora-vendor",
-    "version": "0.1.7",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",

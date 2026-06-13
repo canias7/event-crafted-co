@@ -1,10 +1,9 @@
 // NativeWind / Tailwind config for vendor-mobile.
 //
-// Palette is the "cream + ink" set originally inlined in
-// app/(auth)/welcome.tsx (CREAM / CREAM_DEEP / INK / INK_DIM /
-// INK_BORDER). Lifting it into Tailwind tokens so every screen
-// that uses bg-background / text-foreground / bg-muted / etc.
-// picks up the warm aesthetic without per-screen overrides.
+// Palette mirrors the web app's design tokens (apps/web/src/index.css)
+// so bg-background / text-foreground / bg-muted / text-muted-foreground /
+// text-accent render the SAME colors as the web. Web tokens are HSL in
+// index.css; the hex equivalents are inlined here.
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -15,19 +14,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // CREAM — main canvas
+        // web --background (0 0% 100%) — main canvas / cards
         background: "#ffffff",
-        // INK — body text + solid CTAs
-        foreground: "#0a0a0a",
-        // CREAM_DEEP — secondary surfaces (sign-in button, message
-        // bubbles received, filter chips inactive, "muted" backgrounds)
-        muted: "#f5f5f5",
-        // INK at 60% over CREAM, rendered as solid for stability
-        "muted-foreground": "#6b7280",
-        // INK at ~18% over CREAM, solid
+        // web --foreground (220 14% 9%) — navy-tinted ink, NOT pure black
+        foreground: "#14161a",
+        // web --secondary (220 14% 96%) — the cool surface used for chips,
+        // received message bubbles, inactive filters, "muted" backgrounds
+        muted: "#f3f4f6",
+        secondary: "#f3f4f6",
+        // web --muted-foreground (220 8% 40%)
+        "muted-foreground": "#5e636e",
+        // web --border (foreground @ 8%) — solid approximation
         border: "#e5e7eb",
-        // Brand accent kept for "approved / available" affordances.
-        accent: "#16a34a",
+        // web --accent (215 55% 22%) — deep brand navy (#1b3654). Used for
+        // links, focus rings, badges, the wordmark.
+        accent: "#1b3654",
         "accent-foreground": "#ffffff",
       },
     },
