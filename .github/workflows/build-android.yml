@@ -112,15 +112,29 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       # Per-app keystore — host and vendor have separate signing keys.
-      - name: Decode keystore
+      - name: Decode + validate keystore
         working-directory: ${{ env.APP_DIR }}/android/app
         env:
           KEYSTORE_BASE64: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_BASE64 || secrets.ANDROID_KEYSTORE_VENDOR_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_PASSWORD || secrets.ANDROID_KEYSTORE_VENDOR_PASSWORD }}
         run: |
-          echo -n "$KEYSTORE_BASE64" \
-            | base64 --decode \
-            > release.keystore
-          ls -la release.keystore
+          # Strip any CR / LF / spaces the secret may carry (CRLF paste or
+          # 76-column wrapping) before decoding — GNU base64 errors on a
+          # stray \r and silently corrupts the output, which later surfaces
+          # only at signReleaseBundle as the cryptic "Tag number over 30 is
+          # not supported".
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > release.keystore
+          echo "Keystore size: $(wc -c < release.keystore) bytes"
+          echo "First 4 bytes (feedfeed = JKS, 3082 = PKCS12):"
+          head -c 4 release.keystore | xxd || true
+          # Fail fast with an actionable message if the store can't be
+          # opened, instead of burning 14 min of build first.
+          if ! keytool -list -keystore release.keystore -storepass "$KEYSTORE_PASSWORD" >/dev/null 2>keytool_err.txt; then
+            echo "::error::release.keystore could not be opened. Re-check the ANDROID_KEYSTORE_VENDOR_BASE64 secret (must be clean base64 of the EAS keystore) and ANDROID_KEYSTORE_VENDOR_PASSWORD."
+            cat keytool_err.txt || true
+            exit 1
+          fi
+          echo "Keystore opened OK."
 
       # Inject signing config so ./gradlew bundleRelease produces a
       # signed AAB. Without these lines Gradle defaults to debug signing.
@@ -182,12 +196,21 @@ jobs:
       # overrides the 4-ABI default expo writes earlier in the file
       # (Java Properties: last key wins). arm64-v8a + armeabi-v7a cover
       # effectively every real Android phone.
-      - name: Limit native ABIs (CI build speed)
+      - name: Tune gradle.properties for CI (ABIs + JVM memory)
         working-directory: ${{ env.APP_DIR }}/android
         run: |
+          # Only the two ARM ABIs — x86/x86_64 are emulator/Chromebook-only
+          # and ~double the native compile. Last key wins over expo's 4-ABI
+          # default written earlier in the file.
           echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> gradle.properties
-          echo "--- effective reactNativeArchitectures ---"
-          grep -n "reactNativeArchitectures" gradle.properties || true
+          # Raise Gradle JVM heap + Metaspace. expo's default caps Metaspace
+          # at 512m, which OOM'd this large new-arch build
+          # ("java.lang.OutOfMemoryError: Metaspace"), crashing the daemon
+          # mid-bundleRelease and leaving the job to be cancelled. The runner
+          # has ~16GB, so give Gradle real headroom. Last key wins.
+          echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "--- effective gradle.properties (CI overrides) ---"
+          grep -nE "reactNativeArchitectures|org.gradle.jvmargs" gradle.properties || true
 
       - name: Build AAB
         working-directory: ${{ env.APP_DIR }}/android
