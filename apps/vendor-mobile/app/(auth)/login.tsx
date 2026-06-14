@@ -91,7 +91,12 @@ export default function LoginScreen() {
       setError(invokeErr.message);
       return;
     }
-    const r = data as { ok?: boolean; reason?: string; token_hash?: string } | null;
+    const r = data as {
+      ok?: boolean;
+      reason?: string;
+      access_token?: string;
+      refresh_token?: string;
+    } | null;
     if (!r?.ok) {
       setSubmitting(false);
       const reason = r?.reason ?? "unknown";
@@ -102,20 +107,19 @@ export default function LoginScreen() {
       else setError("Couldn't verify code.");
       return;
     }
-    if (!r.token_hash) {
+    if (!r.access_token || !r.refresh_token) {
       setSubmitting(false);
       setError("Couldn't complete sign-in. Please try again.");
       return;
     }
-    // Establish the session with the server-minted magiclink token rather
-    // than signInWithPassword: the project has captcha bot-protection
-    // enabled, which the app can't satisfy. verifyOtp's /verify endpoint
-    // is captcha-exempt, and the password + 6-digit code were already
-    // checked server-side, so this is no weaker.
+    // The edge function already minted the session server-side (password +
+    // 6-digit code were verified there). Install it with setSession, which
+    // never hits the project's captcha bot-protection — unlike the client
+    // verifyOtp/password grant, which GoTrue rejects in a native app.
     const { data: signInData, error: signInErr } =
-      await supabase.auth.verifyOtp({
-        type: "magiclink",
-        token_hash: r.token_hash,
+      await supabase.auth.setSession({
+        access_token: r.access_token,
+        refresh_token: r.refresh_token,
       });
     if (signInErr) {
       setSubmitting(false);

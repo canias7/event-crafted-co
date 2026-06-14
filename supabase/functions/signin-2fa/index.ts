@@ -20,6 +20,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <noreply@eventvendora.com>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const CODE_TTL_MIN = 10;
@@ -256,15 +257,20 @@ serve(async (req) => {
       .update({ used_at: new Date().toISOString() })
       .eq("id", r.id);
 
-    // Mint a one-time magiclink token with the service role and hand it
-    // back. The client exchanges it via supabase.auth.verifyOtp() to
-    // establish a session WITHOUT calling the captcha-protected password
-    // grant — the project has bot/abuse captcha enabled, which a native
-    // app can't satisfy (there's no widget to render). The /verify
-    // endpoint verifyOtp hits is exempt from captcha. The password was
-    // already checked above via verify_user_password, and the 6-digit
-    // code was just confirmed, so this doesn't weaken the flow.
-    // generateLink only mints the token here — it does NOT send an email.
+    // Mint the session SERVER-SIDE and hand back its tokens — the same
+    // pattern the admin-session function uses. The project has bot/abuse
+    // captcha enabled, which a native app can't satisfy (no widget to
+    // render). Having the CLIENT exchange a token_hash via verifyOtp was
+    // STILL being rejected by GoTrue ("captcha protection: request
+    // disallowed"), so we do the whole generateLink -> verifyOtp exchange
+    // here (service role + anon /verify, neither captcha-gated) and return
+    // access/refresh tokens. The client then calls supabase.auth.setSession(),
+    // which never touches captcha. Password + 6-digit code were already
+    // verified above, so this doesn't weaken the flow. generateLink only
+    // mints the token — it does NOT send an email.
+    if (!SUPABASE_ANON_KEY) {
+      return json({ error: "Could not establish session" }, 500);
+    }
     const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
       type: "magiclink",
       email,
@@ -275,7 +281,23 @@ serve(async (req) => {
     if (linkErr || !tokenHash) {
       return json({ error: "Could not establish session" }, 500);
     }
-    return json({ ok: true, token_hash: tokenHash });
+    const anon = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+    });
+    const { data: verified, error: verifyErr } = await anon.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "email",
+    });
+    const session = verified?.session;
+    if (verifyErr || !session) {
+      return json({ error: "Could not establish session" }, 500);
+    }
+    return json({
+      ok: true,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
+    });
   }
 
   return json({ error: "Unknown action" }, 400);
