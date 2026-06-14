@@ -1,0 +1,157 @@
+name: Build Android APK (sideload)
+
+# Standalone, installable RELEASE apk for direct sideloading — no Play
+# Store and NO real upload keystore required. The apk is signed with an
+# EPHEMERAL keystore generated in CI: perfectly fine for installing
+# directly on a device, but NOT a Play upload build (different signature).
+#
+# Trigger: push a `trigger-apk/**` branch (or Run workflow). Builds the
+# vendor app by default. The apk is uploaded as a workflow artifact AND
+# attached to a prerelease so you can download it straight onto a phone.
+#
+# Carries the hard-won build settings from build-android.yml:
+#   - ARM-only ABIs (x86/x86_64 are emulator-only, ~2x the compile)
+#   - bigger Gradle heap/Metaspace (default 512m Metaspace OOM'd the daemon)
+
+on:
+  push:
+    branches:
+      - "trigger-apk/**"
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Which app?"
+        type: choice
+        options: [vendor, host]
+        default: vendor
+
+permissions:
+  contents: write # create the prerelease + upload the apk asset
+
+concurrency:
+  group: build-apk-${{ github.event.inputs.app || 'vendor' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build sideload APK for ${{ inputs.app || 'vendor' }}-mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      APP_DIR: apps/${{ inputs.app || 'vendor' }}-mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile --linker=hoisted
+
+      - name: Expo prebuild (generate android/)
+        working-directory: ${{ env.APP_DIR }}
+        run: npx expo prebuild --platform android --clean --no-install
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Generate ephemeral signing keystore
+        working-directory: ${{ env.APP_DIR }}/android/app
+        run: |
+          keytool -genkeypair -v \
+            -keystore release.keystore \
+            -alias sideload \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass sideload123 -keypass sideload123 \
+            -dname "CN=Vendora, OU=Mobile, O=EventCrafted, L=NA, ST=NA, C=US"
+          ls -la release.keystore
+
+      # Append signing creds + ARM-only ABIs + bigger JVM memory. Plain
+      # echoes (no heredoc) so there's no terminator-indentation footgun.
+      - name: Tune gradle.properties
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          {
+            echo ""
+            echo "VENDORA_RELEASE_STORE_FILE=release.keystore"
+            echo "VENDORA_RELEASE_STORE_PASSWORD=sideload123"
+            echo "VENDORA_RELEASE_KEY_ALIAS=sideload"
+            echo "VENDORA_RELEASE_KEY_PASSWORD=sideload123"
+            echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a"
+            echo "org.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=2048m -Dfile.encoding=UTF-8"
+          } >> gradle.properties
+
+      # Wire the release buildType to the generated keystore. node -e
+      # (single-quoted) avoids a YAML heredoc entirely.
+      - name: Patch build.gradle signing
+        working-directory: ${{ env.APP_DIR }}/android/app
+        run: |
+          node -e '
+            const fs = require("fs");
+            const p = "build.gradle";
+            let c = fs.readFileSync(p, "utf8");
+            if (!c.includes("VENDORA_RELEASE_STORE_FILE")) {
+              const block = "\n    signingConfigs {\n        release {\n            if (project.hasProperty(\"VENDORA_RELEASE_STORE_FILE\")) {\n                storeFile file(VENDORA_RELEASE_STORE_FILE)\n                storePassword VENDORA_RELEASE_STORE_PASSWORD\n                keyAlias VENDORA_RELEASE_KEY_ALIAS\n                keyPassword VENDORA_RELEASE_KEY_PASSWORD\n            }\n        }\n    }";
+              c = c.replace(/(\s+buildTypes\s*\{)/, block + "$1");
+              c = c.replace(/signingConfig\s+signingConfigs\.debug/g, "signingConfig signingConfigs.release");
+              fs.writeFileSync(p, c);
+              console.log("Patched build.gradle for release signing");
+            } else {
+              console.log("build.gradle already patched");
+            }
+          '
+
+      - name: Build release APK
+        working-directory: ${{ env.APP_DIR }}/android
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Locate APK
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          ls -la app/build/outputs/apk/release/
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "Found: $APK"
+          echo "APK_DIR=${{ env.APP_DIR }}/android/app/build/outputs/apk/release" >> $GITHUB_ENV
+
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app || 'vendor' }}-android-apk-${{ github.run_id }}
+          path: ${{ env.APK_DIR }}/*.apk
+          retention-days: 14
+
+      # Publish a prerelease with the apk attached so it can be downloaded
+      # directly on a phone browser (no zip, no auth dance). gh CLI is
+      # preinstalled on the runner and uses the workflow GITHUB_TOKEN.
+      - name: Publish prerelease with APK
+        working-directory: ${{ env.APK_DIR }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.app || 'vendor' }}-apk-${{ github.run_id }}"
+          gh release create "$TAG" *.apk \
+            --repo "${{ github.repository }}" \
+            --title "Vendor Android APK (sideload) — run ${{ github.run_id }}" \
+            --notes "Sideload-only, debug-signed APK of the vendor app. NOT a Play Store build. On your phone: open this release, download the .apk, and allow install from unknown sources." \
+            --prerelease
+          echo "Release: https://github.com/${{ github.repository }}/releases/tag/$TAG"
