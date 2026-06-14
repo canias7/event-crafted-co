@@ -232,12 +232,12 @@ jobs:
           path: ${{ env.AAB_PATH }}
           retention-days: 14
 
-      - name: Upload to Google Play (Internal track)
+      - name: Upload to Google Play (Production track)
         if: ${{ inputs.submit || github.event_name == 'push' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: ${{ inputs.app == 'host' && 'co.eventcrafted.host' || 'co.eventcrafted.vendor' }}
           releaseFiles: ${{ env.AAB_PATH }}
-          track: internal
+          track: production
           status: completed
