@@ -55,6 +55,9 @@ export const VendorCategoryPage = lazyWithReload(importVendorCategory);
 const importPrivacy = () => import("@/pages/PrivacyPage");
 export const PrivacyPage = lazyWithReload(importPrivacy);
 
+const importAccountDeletion = () => import("@/pages/AccountDeletionPage");
+export const AccountDeletionPage = lazyWithReload(importAccountDeletion);
+
 const importTerms = () => import("@/pages/TermsPage");
 export const TermsPage = lazyWithReload(importTerms);
 
