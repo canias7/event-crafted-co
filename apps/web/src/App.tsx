@@ -52,6 +52,7 @@ import {
   VendorDetailPage,
   VendorCategoryPage,
   PrivacyPage,
+  AccountDeletionPage,
   TermsPage,
   HelpPage,
   ChangelogPage,
@@ -144,6 +145,7 @@ const App = () => (
                   to mobile; outstanding invite links bounce to /. */}
               <Route path="/accept-planning-invite/:token" element={<Navigate to="/" replace />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/account-deletion" element={<AccountDeletionPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
