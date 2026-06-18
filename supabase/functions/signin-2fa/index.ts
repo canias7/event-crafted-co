@@ -24,6 +24,15 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const CODE_TTL_MIN = 10;
+
+// App-review login bypass. The Google Play / App Store reviewers can't
+// receive the emailed 2FA code (they only get the credentials we hand
+// them), so this single dedicated account gets a FIXED code and no email.
+// The password is still verified server-side via verify_user_password, so
+// this does NOT weaken security — without the real password, the fixed
+// code is useless. Remove the account (or this constant) after review.
+const REVIEW_BYPASS_EMAIL = "playreview@eventvendora.com";
+const REVIEW_BYPASS_CODE = "000000";
 const MAX_ATTEMPTS = 5;
 
 const cors = {
@@ -196,7 +205,10 @@ serve(async (req) => {
       .is("used_at", null)
       .eq("email", email);
 
-    const code = randomCode();
+    // App-review account uses a fixed code and gets no email (reviewers
+    // can't read an inbox). The password was already verified above.
+    const isReview = email === REVIEW_BYPASS_EMAIL;
+    const code = isReview ? REVIEW_BYPASS_CODE : randomCode();
     const code_hash = await sha256(code);
     const expires_at = new Date(Date.now() + CODE_TTL_MIN * 60_000).toISOString();
     const { error: insErr } = await sb.from("signin_2fa_codes").insert({
@@ -206,8 +218,10 @@ serve(async (req) => {
     });
     if (insErr) return json({ error: insErr.message }, 500);
 
-    const sent = await sendCodeEmail(email, code);
-    if (!sent) return json({ error: "Failed to send code" }, 500);
+    if (!isReview) {
+      const sent = await sendCodeEmail(email, code);
+      if (!sent) return json({ error: "Failed to send code" }, 500);
+    }
 
     return json({ ok: true, expiresInMinutes: CODE_TTL_MIN });
   }
