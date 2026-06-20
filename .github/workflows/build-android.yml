@@ -237,7 +237,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ inputs.app == 'host' && 'co.eventcrafted.host' || 'co.eventcrafted.vendor' }}
+          packageName: ${{ inputs.app == 'host' && 'co.eventcrafted.host' || 'com.eventvendora.forVendors' }}
           releaseFiles: ${{ env.AAB_PATH }}
-          track: production
+          track: internal
           status: completed
