@@ -46,8 +46,10 @@ const BORDER = "#e5e7eb";
 const ACCENT = "#1B3654";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-// Vendor cap is 5 listings — the "1 of 5" indicator at the top right.
-const LISTING_LIMIT = 5;
+// Minimum photos required to publish a listing. Mirrors the web wizard
+// and the enforce_listing_min_photos DB trigger — a listing can't go to
+// review (or be approved) with fewer than this.
+const MIN_PHOTOS = 3;
 // Per-listing photo cap matches web (ListingWizardModal MAX_PHOTOS).
 // Bumped from the original 5 once the public detail page learned how
 // to overflow into the "All photos" modal — vendors with portfolios
@@ -105,11 +107,6 @@ export default function ListingScreen() {
   const [basePrice, setBasePrice] = useState("");
 
   const [setupError, setSetupError] = useState<string | null>(null);
-  // "1 of N" header indicator. Resolved when loadAll fetches every
-  // vendor_profiles row for this user — number is the 1-based index
-  // of THIS listing within that set (or 1 if this is the first).
-  const [listingIndex, setListingIndex] = useState(1);
-  const [listingCount, setListingCount] = useState(1);
 
   const loadAll = useCallback(async () => {
     if (!user) return;
@@ -192,18 +189,6 @@ export default function ListingScreen() {
         }),
       );
       setPhotos(enriched);
-
-      // Resolve "X of 5" — this listing's index within the user's
-      // ordered listings. Fired once after the row loads.
-      const { data: allRows } = await supabase
-        .from("vendor_profiles")
-        .select("id, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-      const ordered = (allRows ?? []) as Array<{ id: string }>;
-      const idx = ordered.findIndex((r) => r.id === row.id);
-      setListingIndex(idx >= 0 ? idx + 1 : 1);
-      setListingCount(Math.max(ordered.length, 1));
     }
     setLoading(false);
   }, [user]);
@@ -472,11 +457,26 @@ export default function ListingScreen() {
     };
   }
 
-  async function save({ publish }: { publish: boolean }) {
+  async function save({
+    publish,
+    requireComplete = false,
+    navigateAfter = false,
+  }: {
+    publish: boolean;
+    requireComplete?: boolean;
+    navigateAfter?: boolean;
+  }) {
     if (!profile?.id) return;
-    if (publish) {
+    // Publishing requires a complete listing — category, at least
+    // MIN_PHOTOS photos, location, and a starting price. This runs on
+    // every "Publish" tap (new, draft, pending, or approved) so a vendor
+    // can never push an incomplete listing into review by skipping the
+    // category picker or photo upload.
+    if (requireComplete) {
       const missing: string[] = [];
       if (!category) missing.push("Category");
+      if (photos.length < MIN_PHOTOS)
+        missing.push(`At least ${MIN_PHOTOS} photos`);
       if (!location.trim()) missing.push("Location");
       if (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
         missing.push("Starting price");
@@ -534,11 +534,23 @@ export default function ListingScreen() {
         : p,
     );
     setBusy(false);
+    // After a Publish, leave the builder and return to the profile so
+    // the vendor isn't stranded on the listing page. Draft saves stay
+    // put so the vendor can keep editing.
+    if (navigateAfter) {
+      Alert.alert(
+        publish ? "Submitted for review" : "Changes saved",
+        publish
+          ? "We'll review your listing within 2–3 business days."
+          : undefined,
+        [{ text: "OK", onPress: () => router.back() }],
+      );
+      return;
+    }
     Alert.alert(publish ? "Submitted for review" : "Saved");
   }
 
   const status = profile?.application_status;
-  const submitted = status === "pending" || status === "approved";
 
   if (loading) {
     return (
@@ -604,7 +616,8 @@ export default function ListingScreen() {
           >
             vendora-listing
           </Text>
-          <CircleButton icon="more-horizontal" onPress={() => undefined} />
+          {/* Spacer keeps the title centered (the dead "more" menu was removed). */}
+          <View style={{ width: 36 }} />
         </View>
 
         {/* Sub header — back · italic title · "X of N" */}
@@ -629,35 +642,8 @@ export default function ListingScreen() {
           >
             {heading}
           </Text>
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontSize: 15,
-              color: INK_DIM,
-              minWidth: 44,
-              textAlign: "right",
-            }}
-          >
-            {listingIndex} of {LISTING_LIMIT}
-          </Text>
-        </View>
-
-        {/* Progress underline — filled portion = listingIndex / LIMIT */}
-        <View
-          style={{
-            height: 2,
-            backgroundColor: BORDER,
-            marginHorizontal: 16,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              height: "100%",
-              width: `${Math.min(100, (listingIndex / LISTING_LIMIT) * 100)}%`,
-              backgroundColor: INK,
-            }}
-          />
+          {/* Spacer balances the back chevron so the title stays centered. */}
+          <View style={{ width: 36 }} />
         </View>
 
         <ScrollView
@@ -829,8 +815,9 @@ export default function ListingScreen() {
         </ScrollView>
 
         {/* Sticky action bar — Save draft (text pill) + Publish (filled).
-            Approved/pending listings show a single "Save changes" so we
-            don't bounce them back into review on an accidental tap. */}
+            Publish always validates (category + photos + location + price)
+            and returns to the profile on success. Approved/pending listings
+            show a single Publish that saves edits without re-review. */}
         <View
           style={{
             position: "absolute",
@@ -849,12 +836,14 @@ export default function ListingScreen() {
         >
           {status === "pending" || status === "approved" ? (
             <Pressable
-              onPress={() => save({ publish: false })}
+              onPress={() =>
+                save({ publish: false, requireComplete: true, navigateAfter: true })
+              }
               disabled={busy}
               style={[publishPillStyle, { flex: 1 }]}
             >
               <Text style={publishPillText}>
-                {busy ? "Saving…" : "Save changes"}
+                {busy ? "Publishing…" : "Publish"}
               </Text>
             </Pressable>
           ) : (
@@ -869,7 +858,9 @@ export default function ListingScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => save({ publish: true })}
+                onPress={() =>
+                  save({ publish: true, requireComplete: true, navigateAfter: true })
+                }
                 disabled={busy}
                 style={[publishPillStyle, { flex: 1 }]}
               >

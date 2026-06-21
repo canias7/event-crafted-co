@@ -652,26 +652,9 @@ function ListingTab({
   }
   return (
     <View style={{ gap: 18 }}>
-      {/* New listing — right-aligned above the grid (matches web). */}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-        <Pressable
-          onPress={onCreateNew}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: BORDER,
-            borderRadius: 999,
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-          }}
-        >
-          <Feather name="plus" size={14} color={INK} />
-          <Text style={{ marginLeft: 6, fontSize: 13, fontWeight: "700", color: INK }}>
-            New listing
-          </Text>
-        </Pressable>
-      </View>
+      {/* One listing per account for now — the "New listing" button is
+          intentionally hidden once a listing exists. Multiple listings
+          per account will return later. */}
       {listings.map((l) => (
         <ListingCard
           key={l.id}

@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Edit3, Loader2, Plus, Share2, User } from "lucide-react";
+import { CheckCircle2, Edit3, Loader2, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -406,17 +406,9 @@ function ListingsList({
   }
   return (
     <div>
-      <div className="mb-3 flex justify-end">
-        <Button
-          onClick={onAddListing}
-          variant="outline"
-          size="sm"
-          className="rounded-full"
-        >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          New listing
-        </Button>
-      </div>
+      {/* One listing per account for now — the "New listing" button is
+          intentionally hidden once a listing exists, matching mobile.
+          Multiple listings per account will return later. */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
         {listings.map((l) => (
           <ListingDirectoryCard
