@@ -134,9 +134,12 @@ async function sendAlreadyRegisteredEmail(email: string): Promise<boolean> {
       <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">You already have an account</td></tr>
       <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">
         <p style="margin:0 0 16px;">Someone (probably you) just tried to sign up for Vendora with this email, but you already have an account. Tap below to log in:</p>
-        <p style="margin:0 0 24px;text-align:center;">
-          <a href="${loginUrl}" style="display:inline-block;background:#1a1410;color:#faf5ec;text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;padding:14px 28px;">Log in to Vendora</a>
-        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px;"><tr>
+          <td align="center" bgcolor="#1a1410" style="border-radius:8px;">
+            <a href="${loginUrl}" target="_blank" rel="noopener" style="display:block;background:#1a1410;color:#faf5ec;text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;padding:14px 28px;">Log in to Vendora</a>
+          </td>
+        </tr></table>
+        <p style="margin:0 0 24px;font-size:13px;color:#555;text-align:center;">Or open this link:<br><a href="${loginUrl}" target="_blank" rel="noopener" style="color:#1a73e8;text-decoration:underline;word-break:break-all;">${loginUrl}</a></p>
         <p style="margin:0 0 16px;font-size:13px;color:#555;">If you didn't try to sign up, you can safely ignore this email — nothing has changed on your account.</p>
       </td></tr>
       <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">Vendora · Premium event planning &amp; vendor marketplace</td></tr>
