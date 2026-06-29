@@ -39,6 +39,7 @@ import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributes
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
+import type { PricingType } from "@vendora/core";
 import {
   UploadCancelledError,
   describeRejected,
@@ -66,6 +67,7 @@ interface ListingDraft {
   category: string;
   location: string;
   priceUsd: string;
+  pricingType: PricingType;
   attrs: Attrs;
   faqs: FAQDraft[];
   savedAt: number;
@@ -101,6 +103,7 @@ export function ListingWizardModal({
   const [category, setCategory] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [priceUsd, setPriceUsd] = useState<string>("");
+  const [pricingType, setPricingType] = useState<PricingType>("flat");
   const [attrs, setAttrs] = useState<Attrs>({});
   const [faqs, setFaqs] = useState<FAQDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -136,6 +139,7 @@ export function ListingWizardModal({
       if (draft.category) setCategory(draft.category);
       if (draft.location) setLocation(draft.location);
       if (draft.priceUsd) setPriceUsd(draft.priceUsd);
+      if (draft.pricingType) setPricingType(draft.pricingType);
       if (draft.attrs && typeof draft.attrs === "object") setAttrs(draft.attrs);
       if (Array.isArray(draft.faqs) && draft.faqs.length > 0) setFaqs(draft.faqs);
       const ageMin = Math.round((Date.now() - (draft.savedAt ?? 0)) / 60000);
@@ -170,6 +174,7 @@ export function ListingWizardModal({
       category,
       location,
       priceUsd,
+      pricingType,
       attrs,
       faqs,
       savedAt: Date.now(),
@@ -179,7 +184,7 @@ export function ListingWizardModal({
     } catch {
       // localStorage full / private mode — silently skip.
     }
-  }, [userId, category, location, priceUsd, attrs, faqs]);
+  }, [userId, category, location, priceUsd, pricingType, attrs, faqs]);
 
   function attemptClose() {
     if (submitting) {
@@ -231,11 +236,13 @@ export function ListingWizardModal({
       );
     if (!category) errs.push("Pick a category.");
     if (!trimmedLocation) errs.push("Add a city + state.");
-    if (priceCents <= 0) errs.push("Set a price.");
+    // Custom pricing needs no number; flat/hourly require an amount.
+    if (pricingType !== "custom" && priceCents <= 0)
+      errs.push(pricingType === "hourly" ? "Set an hourly rate." : "Set a price.");
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
       errs.push("Every FAQ needs both a question and an answer.");
     return errs;
-  }, [photos.length, category, trimmedLocation, priceCents, faqs]);
+  }, [photos.length, category, trimmedLocation, pricingType, priceCents, faqs]);
 
   const canSubmit = validation.length === 0 && !submitting;
 
@@ -297,7 +304,8 @@ export function ListingWizardModal({
           business_name: prof?.business_name ?? null,
           category,
           location: trimmedLocation,
-          base_price_cents: priceCents,
+          pricing_type: pricingType,
+          base_price_cents: pricingType === "custom" ? null : priceCents,
           category_attributes: attrs,
           application_status: "draft",
         })
@@ -575,8 +583,35 @@ export function ListingWizardModal({
                   />
                 </div>
                 <div>
+                  <Label htmlFor="pricing-type" className="font-semibold">
+                    Pricing <span className="text-red-500">•</span>
+                  </Label>
+                  <select
+                    id="pricing-type"
+                    value={pricingType}
+                    onChange={(e) =>
+                      setPricingType(e.target.value as PricingType)
+                    }
+                    className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="flat">Flat rate</option>
+                    <option value="hourly">Hourly rate</option>
+                    <option value="custom">Custom (contact for quote)</option>
+                  </select>
+                </div>
+              </div>
+              {/* Custom pricing hides the amount entirely — the listing reads
+                  "Custom pricing" and clients contact the vendor for a quote. */}
+              {pricingType === "custom" ? (
+                <p className="text-sm text-muted-foreground italic">
+                  Your listing will show “Custom pricing” — clients contact you
+                  for a quote.
+                </p>
+              ) : (
+                <div className="max-w-[220px]">
                   <Label htmlFor="price" className="font-semibold">
-                    Price <span className="text-red-500">•</span>
+                    {pricingType === "hourly" ? "Hourly rate ($/hr)" : "Flat rate"}{" "}
+                    <span className="text-red-500">•</span>
                   </Label>
                   <div className="relative mt-1">
                     <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
@@ -594,7 +629,7 @@ export function ListingWizardModal({
                     />
                   </div>
                 </div>
-              </div>
+              )}
               <p className="text-sm text-muted-foreground italic">
                 Set your business name + bio once from your profile — they
                 sync to every listing automatically.

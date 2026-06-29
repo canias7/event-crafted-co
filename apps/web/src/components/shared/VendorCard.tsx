@@ -4,6 +4,7 @@ import {
   Heart,
   ImageIcon,
 } from "lucide-react";
+import { formatListingPrice } from "@vendora/core";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
@@ -69,6 +70,7 @@ interface VendorCardProps {
     rating: number;
     reviews: number;
     startingPrice: number;
+    pricingType?: "flat" | "hourly" | "custom" | null;
     distance: string;
     availability: string;
     image: string;
@@ -160,7 +162,10 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
               {vendor.location ?? vendor.distance}
             </p>
             <p className="text-xs tnum font-medium">
-              From ${vendor.startingPrice.toLocaleString()}
+              {formatListingPrice(
+                vendor.pricingType,
+                vendor.startingPrice * 100,
+              )}
             </p>
           </div>
         </div>

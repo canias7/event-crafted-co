@@ -32,6 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan } from "@/hooks/useVendorPlan";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { formatListingPrice } from "@vendora/core";
 
 interface VendorRow {
   id: string;
@@ -40,6 +41,7 @@ interface VendorRow {
   location: string | null;
   bio: string | null;
   base_price_cents: number | null;
+  pricing_type: "flat" | "hourly" | "custom" | null;
   logo_url: string | null;
   verified_at: string | null;
   application_status: string | null;
@@ -90,7 +92,7 @@ export default function VendorMyProfilePage() {
     const { data: vps } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, location, bio, base_price_cents, logo_url, verified_at, application_status, slug, created_at",
+        "id, business_name, category, location, bio, base_price_cents, pricing_type, logo_url, verified_at, application_status, slug, created_at",
       )
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
@@ -445,9 +447,7 @@ function ListingDirectoryCard({
   const [previewOpen, setPreviewOpen] = useState(false);
   const name = listing.business_name ?? "Listing";
   const price =
-    listing.base_price_cents != null && listing.base_price_cents > 0
-      ? `From $${Math.round(listing.base_price_cents / 100).toLocaleString()}`
-      : null;
+    formatListingPrice(listing.pricing_type, listing.base_price_cents) || null;
   const statusLabel =
     listing.application_status === "approved"
       ? "Live"

@@ -23,7 +23,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
+import { CATEGORY_GROUPS, formatListingPrice, groupOfSub } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -58,6 +58,7 @@ interface ListingRow {
   category: string | null;
   location: string | null;
   base_price_cents: number | null;
+  pricing_type: "flat" | "hourly" | "custom" | null;
   bio: string | null;
   logo_url: string | null;
   slug: string | null;
@@ -159,7 +160,7 @@ export default function ExploreScreen() {
         supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, location, base_price_cents, bio, logo_url, slug",
+            "id, business_name, category, location, base_price_cents, pricing_type, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
           // Only show listings that are actually publish-ready —
@@ -169,7 +170,7 @@ export default function ExploreScreen() {
           .not("location", "is", null)
           .not("bio", "is", null)
           .not("category", "is", null)
-          .gt("base_price_cents", 0)
+          .or("base_price_cents.gt.0,pricing_type.eq.custom")
           .order("created_at", { ascending: false })
           .limit(100),
         supabase
@@ -623,9 +624,7 @@ function ListingCard({
 }) {
   const router = useRouter();
   const price =
-    listing.base_price_cents != null
-      ? `From $${Math.round(listing.base_price_cents / 100).toLocaleString()}`
-      : null;
+    formatListingPrice(listing.pricing_type, listing.base_price_cents) || null;
   return (
     <Pressable
       onPress={() =>

@@ -33,6 +33,7 @@ import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributes
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
+import type { PricingType } from "@vendora/core";
 import { vendorImageUrl } from "@/lib/storage";
 import {
   UploadCancelledError,
@@ -81,6 +82,7 @@ export function EditListingModal({
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [priceUsd, setPriceUsd] = useState("");
+  const [pricingType, setPricingType] = useState<PricingType>("flat");
   const [attrs, setAttrs] = useState<Attrs>({});
   const [faqs, setFaqs] = useState<FAQRow[]>([]);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -168,7 +170,7 @@ export function EditListingModal({
         supabase
           .from("vendor_profiles")
           .select(
-            "category, location, base_price_cents, category_attributes, application_status",
+            "category, location, base_price_cents, pricing_type, category_attributes, application_status",
           )
           .eq("id", vendorId)
           .maybeSingle(),
@@ -194,6 +196,7 @@ export function EditListingModal({
         category: string | null;
         location: string | null;
         base_price_cents: number | null;
+        pricing_type: PricingType | null;
         category_attributes: Attrs | null;
         application_status: string | null;
       };
@@ -202,6 +205,7 @@ export function EditListingModal({
       setPriceUsd(
         vp.base_price_cents != null ? String(vp.base_price_cents / 100) : "",
       );
+      setPricingType(vp.pricing_type ?? "flat");
       setAttrs(vp.category_attributes ?? {});
       originalCategoryRef.current = vp.category ?? "";
       originalStatusRef.current = vp.application_status ?? null;
@@ -265,11 +269,12 @@ export function EditListingModal({
       );
     if (!category) errs.push("Pick a category.");
     if (!trimmedLocation) errs.push("Add a city + state.");
-    if (priceCents <= 0) errs.push("Set a price.");
+    if (pricingType !== "custom" && priceCents <= 0)
+      errs.push(pricingType === "hourly" ? "Set an hourly rate." : "Set a price.");
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
       errs.push("Every FAQ needs both a question and an answer.");
     return errs;
-  }, [photos.length, category, trimmedLocation, priceCents, faqs]);
+  }, [photos.length, category, trimmedLocation, pricingType, priceCents, faqs]);
 
   const canSave = validation.length === 0 && !saving && !loading;
 
@@ -324,7 +329,8 @@ export function EditListingModal({
         .update({
           category,
           location: trimmedLocation,
-          base_price_cents: priceCents,
+          pricing_type: pricingType,
+          base_price_cents: pricingType === "custom" ? null : priceCents,
           category_attributes: attrs,
           ...(triggerReview ? { application_status: "pending" } : {}),
         })
@@ -660,8 +666,33 @@ export function EditListingModal({
                     />
                   </div>
                   <div>
+                    <Label htmlFor="edit-pricing-type" className="font-semibold">
+                      Pricing <span className="text-red-500">•</span>
+                    </Label>
+                    <select
+                      id="edit-pricing-type"
+                      value={pricingType}
+                      onChange={(e) =>
+                        setPricingType(e.target.value as PricingType)
+                      }
+                      className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="flat">Flat rate</option>
+                      <option value="hourly">Hourly rate</option>
+                      <option value="custom">Custom (contact for quote)</option>
+                    </select>
+                  </div>
+                </div>
+                {pricingType === "custom" ? (
+                  <p className="mt-3 text-sm text-muted-foreground italic">
+                    Your listing will show “Custom pricing” — clients contact
+                    you for a quote.
+                  </p>
+                ) : (
+                  <div className="mt-3 max-w-[220px]">
                     <Label htmlFor="edit-price" className="font-semibold">
-                      Price <span className="text-red-500">•</span>
+                      {pricingType === "hourly" ? "Hourly rate ($/hr)" : "Flat rate"}{" "}
+                      <span className="text-red-500">•</span>
                     </Label>
                     <div className="relative mt-1">
                       <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
@@ -679,7 +710,7 @@ export function EditListingModal({
                       />
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </section>
 

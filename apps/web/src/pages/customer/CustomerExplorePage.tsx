@@ -19,6 +19,7 @@ import { customerNavItems } from "@/data/navItems";
 import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { supabase } from "@/integrations/supabase/client";
+import { formatListingPrice } from "@vendora/core";
 
 type Tab = "listing" | "grid" | "reels" | "buzz";
 
@@ -51,6 +52,7 @@ interface ListingRow {
   category: string | null;
   location: string | null;
   base_price_cents: number | null;
+  pricing_type: "flat" | "hourly" | "custom" | null;
   bio: string | null;
   logo_url: string | null;
   slug: string | null;
@@ -102,12 +104,12 @@ export default function CustomerExplorePage() {
         supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, location, base_price_cents, bio, logo_url, slug",
+            "id, business_name, category, location, base_price_cents, pricing_type, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
           .not("location", "is", null)
           .not("category", "is", null)
-          .gt("base_price_cents", 0)
+          .or("base_price_cents.gt.0,pricing_type.eq.custom")
           .order("created_at", { ascending: false })
           .limit(60),
         supabase
@@ -390,8 +392,8 @@ function ListingCard({
           </h3>
           <p className="text-xs text-muted-foreground truncate">
             {l.location ?? ""}
-            {l.base_price_cents
-              ? ` · from $${(l.base_price_cents / 100).toLocaleString()}`
+            {formatListingPrice(l.pricing_type, l.base_price_cents)
+              ? ` · ${formatListingPrice(l.pricing_type, l.base_price_cents)}`
               : ""}
           </p>
         </div>
