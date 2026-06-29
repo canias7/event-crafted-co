@@ -859,7 +859,7 @@ function ListingCard({
               : "text-base font-semibold text-foreground"
           }
         >
-          {listing.business_name ?? "Untitled listing"}
+          {listing.business_name?.trim() || listing.category || "Your listing"}
         </Text>
         <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground">
           {listing.category ?? "—"}
