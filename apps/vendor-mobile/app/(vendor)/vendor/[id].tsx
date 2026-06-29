@@ -25,7 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { formatListingPrice } from "@vendora/core";
+import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -36,7 +36,10 @@ type VendorRow = {
   bio: string | null;
   location: string | null;
   base_price_cents: number | null;
-  pricing_type: "flat" | "hourly" | "custom" | null;
+  pricing_models: string[] | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  custom_pricing: boolean | null;
   application_status: string | null;
   slug: string | null;
   verified_at: string | null;
@@ -96,7 +99,7 @@ export default function VendorDetailScreen() {
       const baseQuery = supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, location, base_price_cents, pricing_type, application_status, slug, verified_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, business_name, category, bio, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, application_status, slug, verified_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         );
       const { data: vp } = isUuid
         ? await baseQuery.eq("id", id).maybeSingle()
@@ -115,7 +118,10 @@ export default function VendorDetailScreen() {
         bio: row.bio,
         location: row.location,
         base_price_cents: row.base_price_cents,
-        pricing_type: row.pricing_type,
+        pricing_models: row.pricing_models,
+        price_min_cents: row.price_min_cents,
+        price_max_cents: row.price_max_cents,
+        custom_pricing: row.custom_pricing,
         application_status: row.application_status,
         slug: row.slug,
         verified_at: row.verified_at,
@@ -236,7 +242,8 @@ export default function VendorDetailScreen() {
   const screenWidth = Dimensions.get("window").width;
   const galleryHeight = Math.round(screenWidth * 0.95);
   const price =
-    formatListingPrice(vendor.pricing_type, vendor.base_price_cents) || null;
+    formatListingPrice(vendor.price_min_cents, vendor.price_max_cents) || null;
+  const models = pricingModelsLabel(vendor.pricing_models);
 
   async function shareListing() {
     if (!vendor) return;
@@ -539,11 +546,33 @@ export default function VendorDetailScreen() {
                 <Text className="mt-0.5 text-xs text-muted-foreground">
                   {vendor.category ?? "Marketplace listing"}
                 </Text>
+                {models ? (
+                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                    {models}
+                  </Text>
+                ) : null}
+                {vendor.custom_pricing ? (
+                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                    Pricing varies by event details.
+                  </Text>
+                ) : null}
               </>
             ) : (
-              <Text className="text-xl font-bold text-foreground">
-                Pricing on request
-              </Text>
+              <>
+                <Text className="text-xl font-bold text-foreground">
+                  Pricing on request
+                </Text>
+                {models ? (
+                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                    {models}
+                  </Text>
+                ) : null}
+                {vendor.custom_pricing ? (
+                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                    Pricing varies by event details.
+                  </Text>
+                ) : null}
+              </>
             )}
           </View>
           {/* Vendors browsing other vendors don't "inquire" — this

@@ -33,7 +33,7 @@ import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributes
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
-import type { PricingType } from "@vendora/core";
+import { PRICING_MODELS, PRICING_MODEL_LABELS, type PricingModel } from "@vendora/core";
 import { vendorImageUrl } from "@/lib/storage";
 import {
   UploadCancelledError,
@@ -81,8 +81,10 @@ export function EditListingModal({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
-  const [priceUsd, setPriceUsd] = useState("");
-  const [pricingType, setPricingType] = useState<PricingType>("flat");
+  const [pricingModels, setPricingModels] = useState<string[]>([]);
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [customPricing, setCustomPricing] = useState(false);
   const [attrs, setAttrs] = useState<Attrs>({});
   const [faqs, setFaqs] = useState<FAQRow[]>([]);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -170,7 +172,7 @@ export function EditListingModal({
         supabase
           .from("vendor_profiles")
           .select(
-            "category, location, base_price_cents, pricing_type, category_attributes, application_status",
+            "category, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, category_attributes, application_status",
           )
           .eq("id", vendorId)
           .maybeSingle(),
@@ -196,16 +198,23 @@ export function EditListingModal({
         category: string | null;
         location: string | null;
         base_price_cents: number | null;
-        pricing_type: PricingType | null;
+        pricing_models: string[] | null;
+        price_min_cents: number | null;
+        price_max_cents: number | null;
+        custom_pricing: boolean | null;
         category_attributes: Attrs | null;
         application_status: string | null;
       };
       setCategory(vp.category ?? "");
       setLocation(vp.location ?? "");
-      setPriceUsd(
-        vp.base_price_cents != null ? String(vp.base_price_cents / 100) : "",
+      setPriceMin(
+        vp.price_min_cents != null ? String(vp.price_min_cents / 100) : "",
       );
-      setPricingType(vp.pricing_type ?? "flat");
+      setPriceMax(
+        vp.price_max_cents != null ? String(vp.price_max_cents / 100) : "",
+      );
+      setPricingModels(vp.pricing_models ?? []);
+      setCustomPricing(vp.custom_pricing ?? false);
       setAttrs(vp.category_attributes ?? {});
       originalCategoryRef.current = vp.category ?? "";
       originalStatusRef.current = vp.application_status ?? null;
@@ -256,8 +265,8 @@ export function EditListingModal({
   );
 
   const trimmedLocation = location.trim();
-  const priceNum = Number(priceUsd);
-  const priceCents = Number.isFinite(priceNum) ? Math.round(priceNum * 100) : 0;
+  const minCents = priceMin ? Math.round(Number(priceMin) * 100) : null;
+  const maxCents = priceMax ? Math.round(Number(priceMax) * 100) : null;
 
   const validation = useMemo(() => {
     const errs: string[] = [];
@@ -269,12 +278,13 @@ export function EditListingModal({
       );
     if (!category) errs.push("Pick a category.");
     if (!trimmedLocation) errs.push("Add a city + state.");
-    if (pricingType !== "custom" && priceCents <= 0)
-      errs.push(pricingType === "hourly" ? "Set an hourly rate." : "Set a price.");
+    if (pricingModels.length === 0) errs.push("Pick at least one pricing model.");
+    if (!customPricing && (!minCents || minCents <= 0))
+      errs.push("Set a minimum price (or turn on Custom pricing).");
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
       errs.push("Every FAQ needs both a question and an answer.");
     return errs;
-  }, [photos.length, category, trimmedLocation, pricingType, priceCents, faqs]);
+  }, [photos.length, category, trimmedLocation, pricingModels, priceMin, priceMax, customPricing, minCents, faqs]);
 
   const canSave = validation.length === 0 && !saving && !loading;
 
@@ -329,8 +339,11 @@ export function EditListingModal({
         .update({
           category,
           location: trimmedLocation,
-          pricing_type: pricingType,
-          base_price_cents: pricingType === "custom" ? null : priceCents,
+          pricing_models: pricingModels,
+          price_min_cents: minCents,
+          price_max_cents: maxCents,
+          custom_pricing: customPricing,
+          base_price_cents: minCents,
           category_attributes: attrs,
           ...(triggerReview ? { application_status: "pending" } : {}),
         })
@@ -665,52 +678,45 @@ export function EditListingModal({
                       className="mt-1"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="edit-pricing-type" className="font-semibold">
-                      Pricing <span className="text-red-500">•</span>
-                    </Label>
-                    <select
-                      id="edit-pricing-type"
-                      value={pricingType}
-                      onChange={(e) =>
-                        setPricingType(e.target.value as PricingType)
-                      }
-                      className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="flat">Flat rate</option>
-                      <option value="hourly">Hourly rate</option>
-                      <option value="custom">Custom (contact for quote)</option>
-                    </select>
-                  </div>
                 </div>
-                {pricingType === "custom" ? (
-                  <p className="mt-3 text-sm text-muted-foreground italic">
-                    Your listing will show “Custom pricing” — clients contact
-                    you for a quote.
-                  </p>
-                ) : (
-                  <div className="mt-3 max-w-[220px]">
-                    <Label htmlFor="edit-price" className="font-semibold">
-                      {pricingType === "hourly" ? "Hourly rate ($/hr)" : "Flat rate"}{" "}
-                      <span className="text-red-500">•</span>
+                <div>
+                    <Label className="font-semibold">
+                      Pricing model <span className="text-red-500">•</span>
                     </Label>
-                    <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                        $
-                      </span>
-                      <Input
-                        id="edit-price"
-                        value={priceUsd}
-                        onChange={(e) =>
-                          setPriceUsd(e.target.value.replace(/[^0-9.]/g, ""))
-                        }
-                        placeholder="0"
-                        inputMode="decimal"
-                        className="pl-7"
-                      />
+                    <p className="text-xs text-muted-foreground mt-0.5">Pick all that apply.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {PRICING_MODELS.map((m) => {
+                        const active = pricingModels.includes(m);
+                        return (
+                          <button type="button" key={m}
+                            onClick={() => setPricingModels((cur) => cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m])}
+                            className={`rounded-full border px-3.5 py-2 text-sm font-medium ${active ? "border-foreground bg-foreground text-background" : "border-input bg-background"}`}>
+                            {PRICING_MODEL_LABELS[m as PricingModel]}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-price-min" className="font-semibold">Typical min <span className="text-red-500">•</span></Label>
+                      <div className="relative mt-1">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
+                        <Input id="edit-price-min" value={priceMin} onChange={(e) => setPriceMin(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0" inputMode="decimal" className="pl-7" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-price-max" className="font-semibold">Typical max</Label>
+                      <div className="relative mt-1">
+                        <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
+                        <Input id="edit-price-max" value={priceMax} onChange={(e) => setPriceMax(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="—" inputMode="decimal" className="pl-7" />
+                      </div>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={customPricing} onChange={(e) => setCustomPricing(e.target.checked)} />
+                    <span>Custom pricing — final pricing may vary by event details</span>
+                  </label>
               </div>
             </section>
 

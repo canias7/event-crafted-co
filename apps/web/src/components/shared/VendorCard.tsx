@@ -4,7 +4,7 @@ import {
   Heart,
   ImageIcon,
 } from "lucide-react";
-import { formatListingPrice } from "@vendora/core";
+import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
@@ -70,7 +70,10 @@ interface VendorCardProps {
     rating: number;
     reviews: number;
     startingPrice: number;
-    pricingType?: "flat" | "hourly" | "custom" | null;
+    priceMinCents?: number | null;
+    priceMaxCents?: number | null;
+    customPricing?: boolean | null;
+    pricingModels?: string[] | null;
     distance: string;
     availability: string;
     image: string;
@@ -162,12 +165,14 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
               {vendor.location ?? vendor.distance}
             </p>
             <p className="text-xs tnum font-medium">
-              {formatListingPrice(
-                vendor.pricingType,
-                vendor.startingPrice * 100,
-              )}
+              {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
             </p>
           </div>
+          {pricingModelsLabel(vendor.pricingModels) ? (
+            <p className="text-[10px] text-muted-foreground truncate pt-0.5">
+              {pricingModelsLabel(vendor.pricingModels)}
+            </p>
+          ) : null}
         </div>
       </motion.div>
     </Link>

@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { formatListingPrice } from "@vendora/core";
+import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 import { Film, Grid3x3, MessageCircle, Store } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,7 +45,10 @@ interface ListingRow {
   category: string | null;
   location: string | null;
   base_price_cents: number | null;
-  pricing_type: "flat" | "hourly" | "custom" | null;
+  pricing_models: string[] | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  custom_pricing: boolean | null;
   bio: string | null;
   logo_url: string | null;
   slug: string | null;
@@ -96,12 +99,12 @@ export default function PublicExplorePage() {
         supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, location, base_price_cents, pricing_type, bio, logo_url, slug",
+            "id, business_name, category, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
           .not("location", "is", null)
           .not("category", "is", null)
-          .or("base_price_cents.gt.0,pricing_type.eq.custom")
+          .or("price_min_cents.gt.0,custom_pricing.eq.true")
           .order("created_at", { ascending: false })
           .limit(60),
         supabase
@@ -350,10 +353,15 @@ function ListingCard({ listing: l }: { listing: ListingRow }) {
         </h3>
         <p className="text-xs text-muted-foreground truncate">
           {l.location ?? ""}
-          {formatListingPrice(l.pricing_type, l.base_price_cents)
-            ? ` · ${formatListingPrice(l.pricing_type, l.base_price_cents)}`
+          {formatListingPrice(l.price_min_cents, l.price_max_cents)
+            ? ` · ${formatListingPrice(l.price_min_cents, l.price_max_cents)}`
             : ""}
         </p>
+        {pricingModelsLabel(l.pricing_models) ? (
+          <p className="text-xs text-muted-foreground truncate">
+            {pricingModelsLabel(l.pricing_models)}
+          </p>
+        ) : null}
       </div>
     </Link>
   );

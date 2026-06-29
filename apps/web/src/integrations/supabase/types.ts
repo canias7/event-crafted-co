@@ -5146,6 +5146,10 @@ export type Database = {
           appointment_buffer_before_minutes: number
           base_price_cents: number | null
           pricing_type: string
+          pricing_models: string[] | null
+          price_min_cents: number | null
+          price_max_cents: number | null
+          custom_pricing: boolean
           bio: string | null
           business_name: string | null
           cancellation_policy: string | null
@@ -5192,6 +5196,10 @@ export type Database = {
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
           pricing_type?: string
+          pricing_models?: string[] | null
+          price_min_cents?: number | null
+          price_max_cents?: number | null
+          custom_pricing?: boolean
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
@@ -5238,6 +5246,10 @@ export type Database = {
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
           pricing_type?: string
+          pricing_models?: string[] | null
+          price_min_cents?: number | null
+          price_max_cents?: number | null
+          custom_pricing?: boolean
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
@@ -6001,6 +6013,10 @@ export type Database = {
           appointment_buffer_before_minutes: number
           base_price_cents: number | null
           pricing_type: string
+          pricing_models: string[] | null
+          price_min_cents: number | null
+          price_max_cents: number | null
+          custom_pricing: boolean
           bio: string | null
           business_name: string | null
           cancellation_policy: string | null
