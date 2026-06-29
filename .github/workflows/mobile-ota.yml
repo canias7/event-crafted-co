@@ -38,8 +38,9 @@ jobs:
           INPUT_APPS: ${{ inputs.apps }}
           INPUT_MSG: ${{ inputs.message }}
         run: |
-          # Default for push-triggered runs.
-          APPS_INPUT="${INPUT_APPS:-vendor}"
+          # Default for push-triggered runs (both apps — the pricing-type
+          # change touches vendor-mobile and host-mobile).
+          APPS_INPUT="${INPUT_APPS:-both}"
           MSG_INPUT="${INPUT_MSG:-OTA update from $GITHUB_REF_NAME}"
           case "$APPS_INPUT" in
             both)   echo 'list=["vendor-mobile","host-mobile"]' >> "$GITHUB_OUTPUT" ;;
