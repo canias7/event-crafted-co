@@ -26,6 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Path, Defs, LinearGradient, Stop, Rect } from "react-native-svg";
+import { formatListingPrice } from "@vendora/core";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -125,7 +126,7 @@ export default function ProfileScreen() {
       supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, location, verified_at, application_status, slug, logo_url, created_at",
+          "id, business_name, category, bio, base_price_cents, pricing_type, location, verified_at, application_status, slug, logo_url, created_at",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: true }),
@@ -683,6 +684,11 @@ function ListingCard({
   const isApproved = status === "approved";
   const isPending = status === "pending";
   const meta = statusMeta(status);
+  // pricing_type isn't on the shared VendorProfile type yet; it's selected
+  // from vendor_profiles and used by formatListingPrice for the card label.
+  const pricingType =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((listing as any).pricing_type ?? null) as "flat" | "hourly" | "custom" | null;
 
   // Cover = first portfolio image (the gallery photos for this listing).
   useEffect(() => {
@@ -865,9 +871,9 @@ function ListingCard({
           {listing.category ?? "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
-        {listing.base_price_cents != null ? (
+        {formatListingPrice(pricingType, listing.base_price_cents) ? (
           <Text className="mt-1 text-sm text-foreground/80">
-            From ${Math.round(listing.base_price_cents / 100).toLocaleString()}
+            {formatListingPrice(pricingType, listing.base_price_cents)}
           </Text>
         ) : null}
       </View>

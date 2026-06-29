@@ -50,6 +50,7 @@ const InquiryFormModal = lazyWithReload(() =>
 );
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
+import { formatListingPrice } from "@vendora/core";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 
 // vite-imagetools auto-pictureifies anything in /assets/vendor-*,
@@ -846,9 +847,12 @@ export default function VendorDetailPage() {
             <aside className="lg:col-span-1">
               <div className="lg:sticky lg:top-24 space-y-4">
                 <div className="bg-card border border-border rounded-sm p-6 card-shadow">
-                  <p className="font-label text-muted-foreground mb-2">Starting at</p>
+                  <p className="font-label text-muted-foreground mb-2">Pricing</p>
                   <p className="font-editorial text-4xl mb-1 tnum">
-                    ${vendor.startingPrice.toLocaleString()}
+                    {formatListingPrice(
+                      vendor.pricingType,
+                      vendor.startingPrice * 100,
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground mb-6">
                     Final pricing depends on the date and event details.
@@ -966,10 +970,13 @@ export default function VendorDetailPage() {
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
           <div className="flex-1 min-w-0">
             <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
-              From
+              Price
             </p>
             <p className="font-display text-lg tnum leading-tight">
-              ${vendor.startingPrice.toLocaleString()}
+              {formatListingPrice(
+                vendor.pricingType,
+                vendor.startingPrice * 100,
+              )}
             </p>
           </div>
           <Button

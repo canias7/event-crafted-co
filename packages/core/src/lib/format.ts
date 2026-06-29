@@ -24,3 +24,26 @@ export function formatCount(n: number): string {
   if (n < 1_000_000) return `${(n / 1_000).toFixed(1)}K`;
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
+
+/** How a vendor prices a listing. */
+export type PricingType = "flat" | "hourly" | "custom";
+
+/**
+ * Canonical price label for a vendor listing, shared by web + both mobile
+ * apps so a listing reads identically everywhere:
+ *   - flat   → "$500"
+ *   - hourly → "$100/hour"
+ *   - custom → "Custom pricing" (no number)
+ * base_price_cents holds the flat price or the hourly rate; it is null for
+ * custom. Returns "" for flat/hourly when no amount is set, so callers can
+ * decide whether to render anything.
+ */
+export function formatListingPrice(
+  pricingType: PricingType | string | null | undefined,
+  baseCents: number | null | undefined,
+): string {
+  if (pricingType === "custom") return "Custom pricing";
+  if (baseCents == null || baseCents <= 0) return "";
+  const amount = `$${Math.round(baseCents / 100).toLocaleString()}`;
+  return pricingType === "hourly" ? `${amount}/hour` : amount;
+}

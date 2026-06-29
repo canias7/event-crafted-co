@@ -10,6 +10,8 @@ export interface Vendor {
   rating: number;
   reviews: number;
   startingPrice: number;
+  /** flat / hourly / custom — drives how the price label reads. */
+  pricingType?: "flat" | "hourly" | "custom" | null;
   distance: string;
   availability: string;
   image: string;
@@ -97,6 +99,7 @@ interface VendorProfileRow {
   category: string;
   bio: string | null;
   base_price_cents: number | null;
+  pricing_type: "flat" | "hourly" | "custom" | null;
   location: string | null;
   service_radius_miles: number | null;
   portfolio_summary: string | null;
@@ -137,6 +140,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     reviews: 0,
     startingPrice:
       row.base_price_cents != null ? Math.round(row.base_price_cents / 100) : 0,
+    pricingType: row.pricing_type ?? "flat",
     distance: row.location ?? "",
     availability: row.verified_at ? "available" : "limited",
     image: categoryImageFallback[row.category] ?? "vendor-venue",
@@ -182,7 +186,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, user_id, business_name, category, bio, base_price_cents, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
+          "id, user_id, business_name, category, bio, base_price_cents, pricing_type, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });

@@ -5145,6 +5145,7 @@ export type Database = {
           appointment_buffer_after_minutes: number
           appointment_buffer_before_minutes: number
           base_price_cents: number | null
+          pricing_type: string
           bio: string | null
           business_name: string | null
           cancellation_policy: string | null
@@ -5190,6 +5191,7 @@ export type Database = {
           appointment_buffer_after_minutes?: number
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
+          pricing_type?: string
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
@@ -5235,6 +5237,7 @@ export type Database = {
           appointment_buffer_after_minutes?: number
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
+          pricing_type?: string
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
@@ -5997,6 +6000,7 @@ export type Database = {
           appointment_buffer_after_minutes: number
           appointment_buffer_before_minutes: number
           base_price_cents: number | null
+          pricing_type: string
           bio: string | null
           business_name: string | null
           cancellation_policy: string | null

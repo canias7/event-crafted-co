@@ -67,6 +67,7 @@ type ProfileRow = {
   category: string | null;
   location: string | null;
   base_price_cents: number | null;
+  pricing_type: "flat" | "hourly" | "custom" | null;
   application_status: "draft" | "pending" | "approved" | "rejected" | null;
 };
 
@@ -78,7 +79,7 @@ type PortfolioRow = {
 };
 
 const PROFILE_COLS =
-  "id, category, base_price_cents, location, application_status";
+  "id, category, base_price_cents, pricing_type, location, application_status";
 
 export default function ListingScreen() {
   const router = useRouter();
@@ -105,6 +106,9 @@ export default function ListingScreen() {
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [pricingType, setPricingType] = useState<"flat" | "hourly" | "custom">(
+    "flat",
+  );
 
   const [setupError, setSetupError] = useState<string | null>(null);
 
@@ -175,6 +179,7 @@ export default function ListingScreen() {
           ? (row.base_price_cents / 100).toString()
           : "",
       );
+      setPricingType(row.pricing_type ?? "flat");
       const { data: imgs } = await supabase
         .from("vendor_portfolio_images")
         .select("id, storage_path, display_order")
@@ -451,9 +456,14 @@ export default function ListingScreen() {
     return {
       category: category || null,
       location: location.trim() || null,
-      base_price_cents: basePrice
-        ? Math.round(Number.parseFloat(basePrice) * 100)
-        : null,
+      pricing_type: pricingType,
+      // Custom pricing has no number — clients contact the vendor for a quote.
+      base_price_cents:
+        pricingType === "custom"
+          ? null
+          : basePrice
+            ? Math.round(Number.parseFloat(basePrice) * 100)
+            : null,
     };
   }
 
@@ -478,8 +488,12 @@ export default function ListingScreen() {
       if (photos.length < MIN_PHOTOS)
         missing.push(`At least ${MIN_PHOTOS} photos`);
       if (!location.trim()) missing.push("Location");
-      if (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
-        missing.push("Starting price");
+      // Custom pricing needs no number; flat/hourly require an amount.
+      if (
+        pricingType !== "custom" &&
+        (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
+      )
+        missing.push(pricingType === "hourly" ? "Hourly rate" : "Flat rate");
       if (missing.length > 0) {
         Alert.alert(
           "Can't publish yet",
@@ -753,17 +767,69 @@ export default function ListingScreen() {
             </Pressable>
 
             <View style={{ height: 14 }} />
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <FieldLabel required>Location</FieldLabel>
-                <TextField
-                  value={location}
-                  onChangeText={setLocation}
-                  placeholder="City, State"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <FieldLabel required>Starting price</FieldLabel>
+            <FieldLabel required>Location</FieldLabel>
+            <TextField
+              value={location}
+              onChangeText={setLocation}
+              placeholder="City, State"
+            />
+
+            <View style={{ height: 16 }} />
+            <FieldLabel required>Pricing</FieldLabel>
+            {/* Flat / Hourly / Custom segmented picker. Custom hides the
+                amount entirely — the listing reads "Custom pricing" and the
+                client contacts the vendor for a quote. */}
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+              {(["flat", "hourly", "custom"] as const).map((t) => {
+                const active = pricingType === t;
+                const label =
+                  t === "flat" ? "Flat" : t === "hourly" ? "Hourly" : "Custom";
+                return (
+                  <Pressable
+                    key={t}
+                    onPress={() => setPricingType(t)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: active ? INK : BORDER,
+                      backgroundColor: active ? INK : "#ffffff",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: active ? CREAM : INK,
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {pricingType === "custom" ? (
+              <Text
+                style={{
+                  fontFamily: SERIF,
+                  fontSize: 14,
+                  fontStyle: "italic",
+                  color: INK_DIM,
+                  marginTop: 12,
+                }}
+              >
+                Your listing will show "Custom pricing" — clients contact you
+                for a quote.
+              </Text>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <FieldLabel required>
+                  {pricingType === "hourly" ? "Hourly rate" : "Flat rate"}
+                </FieldLabel>
                 <View style={fieldBox()}>
                   <Text style={{ color: INK_DIM, fontSize: 16, marginRight: 6 }}>
                     $
@@ -776,9 +842,14 @@ export default function ListingScreen() {
                     keyboardType="decimal-pad"
                     style={{ flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
                   />
+                  {pricingType === "hourly" ? (
+                    <Text style={{ color: INK_DIM, fontSize: 16, marginLeft: 6 }}>
+                      /hour
+                    </Text>
+                  ) : null}
                 </View>
               </View>
-            </View>
+            )}
           </SectionBlock>
 
           {/* STEP 2 · DETAILS */}

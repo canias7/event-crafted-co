@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { formatListingPrice } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -35,6 +36,7 @@ type VendorRow = {
   bio: string | null;
   location: string | null;
   base_price_cents: number | null;
+  pricing_type: "flat" | "hourly" | "custom" | null;
   application_status: string | null;
   slug: string | null;
   verified_at: string | null;
@@ -94,7 +96,7 @@ export default function VendorDetailScreen() {
       const baseQuery = supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, location, base_price_cents, application_status, slug, verified_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, business_name, category, bio, location, base_price_cents, pricing_type, application_status, slug, verified_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
         );
       const { data: vp } = isUuid
         ? await baseQuery.eq("id", id).maybeSingle()
@@ -113,6 +115,7 @@ export default function VendorDetailScreen() {
         bio: row.bio,
         location: row.location,
         base_price_cents: row.base_price_cents,
+        pricing_type: row.pricing_type,
         application_status: row.application_status,
         slug: row.slug,
         verified_at: row.verified_at,
@@ -233,9 +236,7 @@ export default function VendorDetailScreen() {
   const screenWidth = Dimensions.get("window").width;
   const galleryHeight = Math.round(screenWidth * 0.95);
   const price =
-    vendor.base_price_cents != null
-      ? `$${Math.round(vendor.base_price_cents / 100).toLocaleString()}`
-      : null;
+    formatListingPrice(vendor.pricing_type, vendor.base_price_cents) || null;
 
   async function shareListing() {
     if (!vendor) return;
@@ -533,7 +534,7 @@ export default function VendorDetailScreen() {
                   className="text-xl font-bold text-foreground"
                   style={{ textDecorationLine: "underline" }}
                 >
-                  From {price}
+                  {price}
                 </Text>
                 <Text className="mt-0.5 text-xs text-muted-foreground">
                   {vendor.category ?? "Marketplace listing"}
