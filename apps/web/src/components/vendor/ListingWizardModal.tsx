@@ -39,7 +39,7 @@ import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributes
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
-import type { PricingType } from "@vendora/core";
+import { PRICING_MODELS, PRICING_MODEL_LABELS, type PricingModel } from "@vendora/core";
 import {
   UploadCancelledError,
   describeRejected,
@@ -66,8 +66,10 @@ function draftKey(userId: string) {
 interface ListingDraft {
   category: string;
   location: string;
-  priceUsd: string;
-  pricingType: PricingType;
+  pricingModels: string[];
+  priceMin: string;
+  priceMax: string;
+  customPricing: boolean;
   attrs: Attrs;
   faqs: FAQDraft[];
   savedAt: number;
@@ -102,8 +104,10 @@ export function ListingWizardModal({
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [category, setCategory] = useState<string>("");
   const [location, setLocation] = useState<string>("");
-  const [priceUsd, setPriceUsd] = useState<string>("");
-  const [pricingType, setPricingType] = useState<PricingType>("flat");
+  const [pricingModels, setPricingModels] = useState<string[]>([]);
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [customPricing, setCustomPricing] = useState(false);
   const [attrs, setAttrs] = useState<Attrs>({});
   const [faqs, setFaqs] = useState<FAQDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -138,8 +142,10 @@ export function ListingWizardModal({
       const draft = JSON.parse(raw) as ListingDraft;
       if (draft.category) setCategory(draft.category);
       if (draft.location) setLocation(draft.location);
-      if (draft.priceUsd) setPriceUsd(draft.priceUsd);
-      if (draft.pricingType) setPricingType(draft.pricingType);
+      if (Array.isArray(draft.pricingModels)) setPricingModels(draft.pricingModels);
+      if (draft.priceMin) setPriceMin(draft.priceMin);
+      if (draft.priceMax) setPriceMax(draft.priceMax);
+      if (typeof draft.customPricing === "boolean") setCustomPricing(draft.customPricing);
       if (draft.attrs && typeof draft.attrs === "object") setAttrs(draft.attrs);
       if (Array.isArray(draft.faqs) && draft.faqs.length > 0) setFaqs(draft.faqs);
       const ageMin = Math.round((Date.now() - (draft.savedAt ?? 0)) / 60000);
@@ -162,7 +168,10 @@ export function ListingWizardModal({
     const hasContent =
       !!category ||
       !!location.trim() ||
-      !!priceUsd.trim() ||
+      pricingModels.length > 0 ||
+      !!priceMin.trim() ||
+      !!priceMax.trim() ||
+      customPricing ||
       Object.keys(attrs).length > 0 ||
       faqs.length > 0;
     const key = draftKey(userId);
@@ -173,8 +182,10 @@ export function ListingWizardModal({
     const draft: ListingDraft = {
       category,
       location,
-      priceUsd,
-      pricingType,
+      pricingModels,
+      priceMin,
+      priceMax,
+      customPricing,
       attrs,
       faqs,
       savedAt: Date.now(),
@@ -184,7 +195,7 @@ export function ListingWizardModal({
     } catch {
       // localStorage full / private mode — silently skip.
     }
-  }, [userId, category, location, priceUsd, pricingType, attrs, faqs]);
+  }, [userId, category, location, pricingModels, priceMin, priceMax, customPricing, attrs, faqs]);
 
   function attemptClose() {
     if (submitting) {
@@ -220,8 +231,8 @@ export function ListingWizardModal({
   );
 
   const trimmedLocation = location.trim();
-  const priceNum = Number(priceUsd);
-  const priceCents = Number.isFinite(priceNum) ? Math.round(priceNum * 100) : 0;
+  const minCents = priceMin ? Math.round(Number(priceMin) * 100) : null;
+  const maxCents = priceMax ? Math.round(Number(priceMax) * 100) : null;
 
   // Hard-block publish: ≥3 photos, category, location, price > 0.
   // FAQs are optional but any added row must be filled (otherwise we'd
@@ -236,13 +247,14 @@ export function ListingWizardModal({
       );
     if (!category) errs.push("Pick a category.");
     if (!trimmedLocation) errs.push("Add a city + state.");
-    // Custom pricing needs no number; flat/hourly require an amount.
-    if (pricingType !== "custom" && priceCents <= 0)
-      errs.push(pricingType === "hourly" ? "Set an hourly rate." : "Set a price.");
+    // Custom pricing needs no number; otherwise require a minimum.
+    if (pricingModels.length === 0) errs.push("Pick at least one pricing model.");
+    if (!customPricing && (!minCents || minCents <= 0))
+      errs.push("Set a minimum price (or turn on Custom pricing).");
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
       errs.push("Every FAQ needs both a question and an answer.");
     return errs;
-  }, [photos.length, category, trimmedLocation, pricingType, priceCents, faqs]);
+  }, [photos.length, category, trimmedLocation, pricingModels, priceMin, priceMax, customPricing, minCents, faqs]);
 
   const canSubmit = validation.length === 0 && !submitting;
 
@@ -304,8 +316,11 @@ export function ListingWizardModal({
           business_name: prof?.business_name ?? null,
           category,
           location: trimmedLocation,
-          pricing_type: pricingType,
-          base_price_cents: pricingType === "custom" ? null : priceCents,
+          pricing_models: pricingModels,
+          price_min_cents: minCents,
+          price_max_cents: maxCents,
+          custom_pricing: customPricing,
+          base_price_cents: minCents,
           category_attributes: attrs,
           application_status: "draft",
         })
@@ -582,54 +597,58 @@ export function ListingWizardModal({
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="pricing-type" className="font-semibold">
-                    Pricing <span className="text-red-500">•</span>
-                  </Label>
-                  <select
-                    id="pricing-type"
-                    value={pricingType}
-                    onChange={(e) =>
-                      setPricingType(e.target.value as PricingType)
-                    }
-                    className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="flat">Flat rate</option>
-                    <option value="hourly">Hourly rate</option>
-                    <option value="custom">Custom (contact for quote)</option>
-                  </select>
+              </div>
+              <div>
+                <Label className="font-semibold">
+                  Pricing model <span className="text-red-500">•</span>
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Pick all that apply.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PRICING_MODELS.map((m) => {
+                    const active = pricingModels.includes(m);
+                    return (
+                      <button
+                        type="button"
+                        key={m}
+                        onClick={() =>
+                          setPricingModels((cur) =>
+                            cur.includes(m)
+                              ? cur.filter((x) => x !== m)
+                              : [...cur, m],
+                          )
+                        }
+                        className={`rounded-full border px-3.5 py-2 text-sm font-medium ${active ? "border-foreground bg-foreground text-background" : "border-input bg-background"}`}
+                      >
+                        {PRICING_MODEL_LABELS[m as PricingModel]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              {/* Custom pricing hides the amount entirely — the listing reads
-                  "Custom pricing" and clients contact the vendor for a quote. */}
-              {pricingType === "custom" ? (
-                <p className="text-sm text-muted-foreground italic">
-                  Your listing will show “Custom pricing” — clients contact you
-                  for a quote.
-                </p>
-              ) : (
-                <div className="max-w-[220px]">
-                  <Label htmlFor="price" className="font-semibold">
-                    {pricingType === "hourly" ? "Hourly rate ($/hr)" : "Flat rate"}{" "}
-                    <span className="text-red-500">•</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price-min" className="font-semibold">
+                    Typical min <span className="text-red-500">•</span>
                   </Label>
                   <div className="relative mt-1">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      id="price"
-                      value={priceUsd}
-                      onChange={(e) =>
-                        setPriceUsd(e.target.value.replace(/[^0-9.]/g, ""))
-                      }
-                      placeholder="0"
-                      inputMode="decimal"
-                      className="pl-7"
-                    />
+                    <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
+                    <Input id="price-min" value={priceMin} onChange={(e) => setPriceMin(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0" inputMode="decimal" className="pl-7" />
                   </div>
                 </div>
-              )}
+                <div>
+                  <Label htmlFor="price-max" className="font-semibold">Typical max</Label>
+                  <div className="relative mt-1">
+                    <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
+                    <Input id="price-max" value={priceMax} onChange={(e) => setPriceMax(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="—" inputMode="decimal" className="pl-7" />
+                  </div>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={customPricing} onChange={(e) => setCustomPricing(e.target.checked)} />
+                <span>Custom pricing — final pricing may vary by event details</span>
+              </label>
               <p className="text-sm text-muted-foreground italic">
                 Set your business name + bio once from your profile — they
                 sync to every listing automatically.

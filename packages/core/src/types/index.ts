@@ -12,7 +12,10 @@ export interface VendorProfile {
   category: string | null;
   bio: string | null;
   base_price_cents: number | null;
-  pricing_type: "flat" | "hourly" | "custom" | null;
+  pricing_models: string[] | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  custom_pricing: boolean | null;
   location: string | null;
   verified_at: string | null;
   application_status: "draft" | "pending" | "approved" | "rejected" | null;

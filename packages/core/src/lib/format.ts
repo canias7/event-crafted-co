@@ -25,25 +25,72 @@ export function formatCount(n: number): string {
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
 
-/** How a vendor prices a listing. */
-export type PricingType = "flat" | "hourly" | "custom";
+/** The ways a vendor can price a listing (multi-select). */
+export type PricingModel =
+  | "fixed_packages"
+  | "hourly"
+  | "per_person"
+  | "starting_at"
+  | "custom_quote";
+
+export const PRICING_MODELS: PricingModel[] = [
+  "fixed_packages",
+  "hourly",
+  "per_person",
+  "starting_at",
+  "custom_quote",
+];
+
+export const PRICING_MODEL_LABELS: Record<PricingModel, string> = {
+  fixed_packages: "Fixed Packages",
+  hourly: "Hourly",
+  per_person: "Per Person",
+  starting_at: "Starting At",
+  custom_quote: "Custom Quote",
+};
+
+/** "Fixed Packages · Per Person" — the human label for a listing's models. */
+export function pricingModelsLabel(models?: string[] | null): string {
+  if (!models || models.length === 0) return "";
+  return models
+    .map((m) => PRICING_MODEL_LABELS[m as PricingModel] ?? m)
+    .join(" · ");
+}
+
+function dollars(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString()}`;
+}
 
 /**
- * Canonical price label for a vendor listing, shared by web + both mobile
- * apps so a listing reads identically everywhere:
- *   - flat   → "$500"
- *   - hourly → "$100/hour"
- *   - custom → "Custom pricing" (no number)
- * base_price_cents holds the flat price or the hourly rate; it is null for
- * custom. Returns "" for flat/hourly when no amount is set, so callers can
- * decide whether to render anything.
+ * Typical price RANGE for a listing:
+ *   - both → "$500 – $2,000" (or "$500" when min === max)
+ *   - min  → "From $500"
+ *   - max  → "Up to $2,000"
+ *   - none → "" (caller decides, e.g. "Custom pricing")
+ */
+export function formatPriceRange(
+  minCents: number | null | undefined,
+  maxCents: number | null | undefined,
+): string {
+  const hasMin = minCents != null && minCents > 0;
+  const hasMax = maxCents != null && maxCents > 0;
+  if (hasMin && hasMax) {
+    return minCents === maxCents
+      ? dollars(minCents as number)
+      : `${dollars(minCents as number)} – ${dollars(maxCents as number)}`;
+  }
+  if (hasMin) return `From ${dollars(minCents as number)}`;
+  if (hasMax) return `Up to ${dollars(maxCents as number)}`;
+  return "";
+}
+
+/**
+ * Canonical price label shown to customers everywhere. Falls back to
+ * "Custom pricing" when there's no usable range (custom-quote listings).
  */
 export function formatListingPrice(
-  pricingType: PricingType | string | null | undefined,
-  baseCents: number | null | undefined,
+  minCents: number | null | undefined,
+  maxCents: number | null | undefined,
 ): string {
-  if (pricingType === "custom") return "Custom pricing";
-  if (baseCents == null || baseCents <= 0) return "";
-  const amount = `$${Math.round(baseCents / 100).toLocaleString()}`;
-  return pricingType === "hourly" ? `${amount}/hour` : amount;
+  return formatPriceRange(minCents, maxCents) || "Custom pricing";
 }

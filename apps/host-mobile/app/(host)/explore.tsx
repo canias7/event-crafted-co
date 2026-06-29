@@ -23,7 +23,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { CATEGORY_GROUPS, formatListingPrice, groupOfSub } from "@vendora/core";
+import {
+  CATEGORY_GROUPS,
+  formatListingPrice,
+  groupOfSub,
+  pricingModelsLabel,
+} from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -58,7 +63,10 @@ interface ListingRow {
   category: string | null;
   location: string | null;
   base_price_cents: number | null;
-  pricing_type: "flat" | "hourly" | "custom" | null;
+  pricing_models: string[] | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  custom_pricing: boolean | null;
   bio: string | null;
   logo_url: string | null;
   slug: string | null;
@@ -160,7 +168,7 @@ export default function ExploreScreen() {
         supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, location, base_price_cents, pricing_type, bio, logo_url, slug",
+            "id, business_name, category, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
           // Only show listings that are actually publish-ready —
@@ -170,7 +178,7 @@ export default function ExploreScreen() {
           .not("location", "is", null)
           .not("bio", "is", null)
           .not("category", "is", null)
-          .or("base_price_cents.gt.0,pricing_type.eq.custom")
+          .or("price_min_cents.gt.0,custom_pricing.eq.true")
           .order("created_at", { ascending: false })
           .limit(100),
         supabase
@@ -624,7 +632,9 @@ function ListingCard({
 }) {
   const router = useRouter();
   const price =
-    formatListingPrice(listing.pricing_type, listing.base_price_cents) || null;
+    formatListingPrice(listing.price_min_cents, listing.price_max_cents) ||
+    null;
+  const models = pricingModelsLabel(listing.pricing_models);
   return (
     <Pressable
       onPress={() =>
@@ -699,6 +709,14 @@ function ListingCard({
         </Text>
         {price ? (
           <Text className="mt-1 text-sm text-foreground/80">{price}</Text>
+        ) : null}
+        {models ? (
+          <Text
+            numberOfLines={1}
+            className="mt-0.5 text-xs text-muted-foreground"
+          >
+            {models}
+          </Text>
         ) : null}
       </View>
     </Pressable>

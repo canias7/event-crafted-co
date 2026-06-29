@@ -32,7 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan } from "@/hooks/useVendorPlan";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { formatListingPrice } from "@vendora/core";
+import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 
 interface VendorRow {
   id: string;
@@ -41,7 +41,10 @@ interface VendorRow {
   location: string | null;
   bio: string | null;
   base_price_cents: number | null;
-  pricing_type: "flat" | "hourly" | "custom" | null;
+  pricing_models: string[] | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  custom_pricing: boolean | null;
   logo_url: string | null;
   verified_at: string | null;
   application_status: string | null;
@@ -92,7 +95,7 @@ export default function VendorMyProfilePage() {
     const { data: vps } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, location, bio, base_price_cents, pricing_type, logo_url, verified_at, application_status, slug, created_at",
+        "id, business_name, category, location, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, logo_url, verified_at, application_status, slug, created_at",
       )
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
@@ -447,7 +450,7 @@ function ListingDirectoryCard({
   const [previewOpen, setPreviewOpen] = useState(false);
   const name = listing.business_name ?? "Listing";
   const price =
-    formatListingPrice(listing.pricing_type, listing.base_price_cents) || null;
+    formatListingPrice(listing.price_min_cents, listing.price_max_cents) || null;
   const statusLabel =
     listing.application_status === "approved"
       ? "Live"
@@ -497,6 +500,11 @@ function ListingDirectoryCard({
           {price ? (
             <p className="text-xs text-foreground/80 mt-0.5 tnum">{price}</p>
           ) : null}
+          {pricingModelsLabel(listing.pricing_models) && (
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+              {pricingModelsLabel(listing.pricing_models)}
+            </p>
+          )}
         </div>
       </button>
       <ListingPreviewModal

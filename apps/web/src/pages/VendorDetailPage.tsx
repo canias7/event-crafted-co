@@ -50,7 +50,7 @@ const InquiryFormModal = lazyWithReload(() =>
 );
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
-import { formatListingPrice } from "@vendora/core";
+import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 
 // vite-imagetools auto-pictureifies anything in /assets/vendor-*,
@@ -849,13 +849,17 @@ export default function VendorDetailPage() {
                 <div className="bg-card border border-border rounded-sm p-6 card-shadow">
                   <p className="font-label text-muted-foreground mb-2">Pricing</p>
                   <p className="font-editorial text-4xl mb-1 tnum">
-                    {formatListingPrice(
-                      vendor.pricingType,
-                      vendor.startingPrice * 100,
-                    )}
+                    {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
                   </p>
+                  {pricingModelsLabel(vendor.pricingModels) ? (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {pricingModelsLabel(vendor.pricingModels)}
+                    </p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground mb-6">
-                    Final pricing depends on the date and event details.
+                    {vendor.customPricing
+                      ? "Custom pricing — final cost varies by event details."
+                      : "Final pricing depends on the date and event details."}
                   </p>
 
                   <div className="space-y-3 mb-6">
@@ -973,10 +977,7 @@ export default function VendorDetailPage() {
               Price
             </p>
             <p className="font-display text-lg tnum leading-tight">
-              {formatListingPrice(
-                vendor.pricingType,
-                vendor.startingPrice * 100,
-              )}
+              {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
             </p>
           </div>
           <Button

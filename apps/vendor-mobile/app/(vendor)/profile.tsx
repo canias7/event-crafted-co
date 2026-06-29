@@ -26,7 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Path, Defs, LinearGradient, Stop, Rect } from "react-native-svg";
-import { formatListingPrice } from "@vendora/core";
+import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
       supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, base_price_cents, pricing_type, location, verified_at, application_status, slug, logo_url, created_at",
+          "id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, verified_at, application_status, slug, logo_url, created_at",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: true }),
@@ -684,11 +684,6 @@ function ListingCard({
   const isApproved = status === "approved";
   const isPending = status === "pending";
   const meta = statusMeta(status);
-  // pricing_type isn't on the shared VendorProfile type yet; it's selected
-  // from vendor_profiles and used by formatListingPrice for the card label.
-  const pricingType =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((listing as any).pricing_type ?? null) as "flat" | "hourly" | "custom" | null;
 
   // Cover = first portfolio image (the gallery photos for this listing).
   useEffect(() => {
@@ -871,11 +866,23 @@ function ListingCard({
           {listing.category ?? "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
-        {formatListingPrice(pricingType, listing.base_price_cents) ? (
+        {formatListingPrice(listing.price_min_cents, listing.price_max_cents) ? (
           <Text className="mt-1 text-sm text-foreground/80">
-            {formatListingPrice(pricingType, listing.base_price_cents)}
+            {formatListingPrice(listing.price_min_cents, listing.price_max_cents)}
           </Text>
         ) : null}
+        {(() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const models = pricingModelsLabel((listing as any).pricing_models);
+          return models ? (
+            <Text
+              style={{ fontSize: 12, color: INK_DIM, marginTop: 2 }}
+              numberOfLines={1}
+            >
+              {models}
+            </Text>
+          ) : null;
+        })()}
       </View>
     </Pressable>
   );

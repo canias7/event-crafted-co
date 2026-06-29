@@ -28,7 +28,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { CATEGORY_GROUPS } from "@vendora/core";
+import {
+  CATEGORY_GROUPS,
+  PRICING_MODELS,
+  PRICING_MODEL_LABELS,
+} from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
@@ -67,7 +71,10 @@ type ProfileRow = {
   category: string | null;
   location: string | null;
   base_price_cents: number | null;
-  pricing_type: "flat" | "hourly" | "custom" | null;
+  pricing_models: string[] | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  custom_pricing: boolean | null;
   application_status: "draft" | "pending" | "approved" | "rejected" | null;
 };
 
@@ -79,7 +86,7 @@ type PortfolioRow = {
 };
 
 const PROFILE_COLS =
-  "id, category, base_price_cents, pricing_type, location, application_status";
+  "id, category, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, application_status";
 
 export default function ListingScreen() {
   const router = useRouter();
@@ -105,10 +112,10 @@ export default function ListingScreen() {
   // Form state
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
-  const [basePrice, setBasePrice] = useState("");
-  const [pricingType, setPricingType] = useState<"flat" | "hourly" | "custom">(
-    "flat",
-  );
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [pricingModels, setPricingModels] = useState<string[]>([]);
+  const [customPricing, setCustomPricing] = useState(false);
 
   const [setupError, setSetupError] = useState<string | null>(null);
 
@@ -174,12 +181,18 @@ export default function ListingScreen() {
     if (row) {
       setCategory(row.category ?? "");
       setLocation(row.location ?? "");
-      setBasePrice(
-        row.base_price_cents != null
-          ? (row.base_price_cents / 100).toString()
+      setPriceMin(
+        row.price_min_cents != null
+          ? (row.price_min_cents / 100).toString()
           : "",
       );
-      setPricingType(row.pricing_type ?? "flat");
+      setPriceMax(
+        row.price_max_cents != null
+          ? (row.price_max_cents / 100).toString()
+          : "",
+      );
+      setPricingModels(row.pricing_models ?? []);
+      setCustomPricing(row.custom_pricing ?? false);
       const { data: imgs } = await supabase
         .from("vendor_portfolio_images")
         .select("id, storage_path, display_order")
@@ -453,17 +466,21 @@ export default function ListingScreen() {
   }
 
   function buildPayload(): Record<string, unknown> {
+    const minCents = priceMin
+      ? Math.round(Number.parseFloat(priceMin) * 100)
+      : null;
+    const maxCents = priceMax
+      ? Math.round(Number.parseFloat(priceMax) * 100)
+      : null;
     return {
       category: category || null,
       location: location.trim() || null,
-      pricing_type: pricingType,
-      // Custom pricing has no number — clients contact the vendor for a quote.
-      base_price_cents:
-        pricingType === "custom"
-          ? null
-          : basePrice
-            ? Math.round(Number.parseFloat(basePrice) * 100)
-            : null,
+      pricing_models: pricingModels,
+      price_min_cents: minCents,
+      price_max_cents: maxCents,
+      custom_pricing: customPricing,
+      // Keep base_price_cents synced to the minimum for back-compat.
+      base_price_cents: minCents,
     };
   }
 
@@ -488,12 +505,13 @@ export default function ListingScreen() {
       if (photos.length < MIN_PHOTOS)
         missing.push(`At least ${MIN_PHOTOS} photos`);
       if (!location.trim()) missing.push("Location");
-      // Custom pricing needs no number; flat/hourly require an amount.
+      if (pricingModels.length === 0) missing.push("A pricing model");
+      // A minimum price is required unless pricing is marked custom.
       if (
-        pricingType !== "custom" &&
-        (!basePrice.trim() || Number.parseFloat(basePrice) <= 0)
+        !customPricing &&
+        (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
       )
-        missing.push(pricingType === "hourly" ? "Hourly rate" : "Flat rate");
+        missing.push("A minimum price (or turn on Custom pricing)");
       if (missing.length > 0) {
         Alert.alert(
           "Can't publish yet",
@@ -775,81 +793,138 @@ export default function ListingScreen() {
             />
 
             <View style={{ height: 16 }} />
-            <FieldLabel required>Pricing</FieldLabel>
-            {/* Flat / Hourly / Custom segmented picker. Custom hides the
-                amount entirely — the listing reads "Custom pricing" and the
-                client contacts the vendor for a quote. */}
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-              {(["flat", "hourly", "custom"] as const).map((t) => {
-                const active = pricingType === t;
-                const label =
-                  t === "flat" ? "Flat" : t === "hourly" ? "Hourly" : "Custom";
+            <FieldLabel required>Pricing model</FieldLabel>
+            <Text style={{ fontSize: 12, color: INK_DIM, marginTop: 2 }}>
+              Pick all that apply.
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                marginTop: 8,
+              }}
+            >
+              {PRICING_MODELS.map((m) => {
+                const active = pricingModels.includes(m);
                 return (
                   <Pressable
-                    key={t}
-                    onPress={() => setPricingType(t)}
+                    key={m}
+                    onPress={() =>
+                      setPricingModels((cur) =>
+                        cur.includes(m)
+                          ? cur.filter((x) => x !== m)
+                          : [...cur, m],
+                      )
+                    }
                     style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      borderRadius: 12,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 999,
                       borderWidth: 1,
                       borderColor: active ? INK : BORDER,
                       backgroundColor: active ? INK : "#ffffff",
-                      alignItems: "center",
                     }}
                   >
                     <Text
                       style={{
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: "700",
                         color: active ? CREAM : INK,
                       }}
                     >
-                      {label}
+                      {PRICING_MODEL_LABELS[m]}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
 
-            {pricingType === "custom" ? (
-              <Text
-                style={{
-                  fontFamily: SERIF,
-                  fontSize: 14,
-                  fontStyle: "italic",
-                  color: INK_DIM,
-                  marginTop: 12,
-                }}
-              >
-                Your listing will show "Custom pricing" — clients contact you
-                for a quote.
-              </Text>
-            ) : (
-              <View style={{ marginTop: 12 }}>
-                <FieldLabel required>
-                  {pricingType === "hourly" ? "Hourly rate" : "Flat rate"}
-                </FieldLabel>
+            <View style={{ height: 16 }} />
+            <FieldLabel>Typical price range</FieldLabel>
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
+                  Minimum
+                </Text>
                 <View style={fieldBox()}>
                   <Text style={{ color: INK_DIM, fontSize: 16, marginRight: 6 }}>
                     $
                   </Text>
                   <TextInput
-                    value={basePrice}
-                    onChangeText={setBasePrice}
+                    value={priceMin}
+                    onChangeText={setPriceMin}
                     placeholder="0"
                     placeholderTextColor={INK_DIM}
                     keyboardType="decimal-pad"
                     style={{ flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
                   />
-                  {pricingType === "hourly" ? (
-                    <Text style={{ color: INK_DIM, fontSize: 16, marginLeft: 6 }}>
-                      /hour
-                    </Text>
-                  ) : null}
                 </View>
               </View>
-            )}
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
+                  Maximum (optional)
+                </Text>
+                <View style={fieldBox()}>
+                  <Text style={{ color: INK_DIM, fontSize: 16, marginRight: 6 }}>
+                    $
+                  </Text>
+                  <TextInput
+                    value={priceMax}
+                    onChangeText={setPriceMax}
+                    placeholder="—"
+                    placeholderTextColor={INK_DIM}
+                    keyboardType="decimal-pad"
+                    style={{ flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={{ height: 16 }} />
+            <Pressable
+              onPress={() => setCustomPricing((v) => !v)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <FieldLabel>Custom pricing</FieldLabel>
+                <Text
+                  style={{
+                    fontFamily: SERIF,
+                    fontSize: 13,
+                    fontStyle: "italic",
+                    color: INK_DIM,
+                    marginTop: 2,
+                  }}
+                >
+                  Final pricing may vary by event details.
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 52,
+                  height: 30,
+                  borderRadius: 999,
+                  backgroundColor: customPricing ? INK : BORDER,
+                  padding: 3,
+                  justifyContent: "center",
+                }}
+              >
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    backgroundColor: "#ffffff",
+                    alignSelf: customPricing ? "flex-end" : "flex-start",
+                  }}
+                />
+              </View>
+            </Pressable>
           </SectionBlock>
 
           {/* STEP 2 · DETAILS */}
