@@ -827,6 +827,12 @@ export default function VendorSubscriptionPage() {
           </div>
 
           {/* ===== Top-up grid ===== */}
+          {/* Hidden entirely while the catalog has no top-up rows —
+              the live-mode Stripe account doesn't have credit packs
+              yet (old test-mode packs were wiped at go-live). Seed
+              vendor_credit_packages with kind='topup' rows to bring
+              this section back. */}
+          {topups.length > 0 && (
           <div>
             <h3 className="font-editorial text-2xl mb-1">Top up credits</h3>
             <p className="text-sm text-muted-foreground mb-3">
@@ -882,6 +888,7 @@ export default function VendorSubscriptionPage() {
               })}
             </div>
           </div>
+          )}
 
           <p className="text-xs text-muted-foreground px-2">
             Billing is handled via Stripe. You'll get a receipt by email for
