@@ -33,7 +33,8 @@ export interface Vendor {
   isReal: boolean;
   /** Approved verification kinds (identity / insurance / business_license) — public-safe. */
   verifiedKinds?: string[];
-  /** True when subscription_tier === 'studio'. Shows the blue
+  /** True when subscription_tier is 'pro' or 'studio' (Premium).
+   *  Verified profile is a Pro-and-up perk. Shows the blue
    *  "verified" check on the vendor's card + profile. Distinct from
    *  verifiedKinds (KYC document verification). */
   studioVerified?: boolean;
@@ -161,7 +162,9 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     tiktokHandle: row.tiktok_handle ?? null,
     ownerUserId: row.user_id,
     isReal: true,
-    studioVerified: row.brand?.subscription_tier === "studio",
+    studioVerified:
+      row.brand?.subscription_tier === "pro" ||
+      row.brand?.subscription_tier === "studio",
   };
 }
 

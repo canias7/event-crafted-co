@@ -38,11 +38,11 @@ function VerifiedSeal({ className }: { className?: string }) {
   );
 }
 
-// Blue verified seal next to a vendor's name when they're on the
-// Studio tier. Subscription-tier verification — distinct from the
-// document-verification badges (ID / insurance / business license)
-// in VerificationBadges.tsx. Renders compact by default; pass a
-// larger size where the surface is the vendor's hero profile.
+// Blue verified seal next to a vendor's name when they're on a paid
+// tier (Pro or Premium). Subscription-tier verification — distinct
+// from the document-verification badges (ID / insurance / business
+// license) in VerificationBadges.tsx. Renders compact by default;
+// pass a larger size where the surface is the vendor's hero profile.
 export function StudioVerifiedBadge({
   size = "default",
   showLabel = false,
@@ -56,7 +56,7 @@ export function StudioVerifiedBadge({
     return (
       <span
         className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
-        title="Verified Studio vendor"
+        title="Verified vendor"
         style={{
           background:
             "linear-gradient(135deg, rgba(56,134,255,0.18) 0%, rgba(56,134,255,0.08) 100%)",
@@ -72,7 +72,7 @@ export function StudioVerifiedBadge({
 
   return (
     <span
-      title="Verified Studio vendor"
+      title="Verified vendor"
       className="inline-flex items-center justify-center"
       aria-label="Verified"
     >

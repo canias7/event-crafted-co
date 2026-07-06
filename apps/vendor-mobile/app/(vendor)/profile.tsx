@@ -109,9 +109,14 @@ export default function ProfileScreen() {
   });
   const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
   const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
-  // Subscription tier (per-user, on profiles). 'studio' shows the
-  // verified seal next to the name, mirroring web's StudioVerifiedBadge.
+  // Subscription tier (per-user, on profiles). Pro and Premium
+  // ('studio' slug) show the verified seal next to the name,
+  // mirroring web's StudioVerifiedBadge.
   const [tier, setTier] = useState<string>("free");
+  // Plan listing cap (Free 1 / Pro 4 / Premium 10, null = unlimited
+  // grandfather flag). Drives whether "New listing" shows once
+  // listings exist; the same cap is enforced server-side.
+  const [listingCap, setListingCap] = useState<number | null>(1);
   // Every vendor_profiles row this user owns = their listings.
   const [listings, setListings] = useState<VendorProfile[]>([]);
   // Header rating — average of HOST reviews of this vendor (matches
@@ -122,23 +127,29 @@ export default function ProfileScreen() {
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
-    const [{ data: vpData }, { data: identityData }] = await Promise.all([
-      supabase
-        .from("vendor_profiles")
-        .select(
-          "id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, verified_at, application_status, slug, logo_url, created_at",
-        )
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("profiles")
-        .select(
-          "business_name, category, location, bio, logo_url, created_at, subscription_tier",
-        )
-        .eq("id", user.id)
-        .maybeSingle(),
-    ]);
+    const [{ data: vpData }, { data: identityData }, { data: capData }] =
+      await Promise.all([
+        supabase
+          .from("vendor_profiles")
+          .select(
+            "id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, verified_at, application_status, slug, logo_url, created_at",
+          )
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("profiles")
+          .select(
+            "business_name, category, location, bio, logo_url, created_at, subscription_tier",
+          )
+          .eq("id", user.id)
+          .maybeSingle(),
+        // Plan listing cap via RPC (covers the unlimited_listings
+        // grandfather flag the client can't derive from tier alone).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc("user_listing_cap", { p_user_id: user.id }),
+      ]);
+    setListingCap(typeof capData === "number" ? capData : null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (vpData ?? []) as any[];
     // Approved listings first, then pending, then drafts/rejected —
@@ -225,6 +236,16 @@ export default function ProfileScreen() {
   // Insert a fresh draft listing and jump to its editor.
   async function createNewListing() {
     if (!user?.id) return;
+    // Plan cap pre-check (Free 1 / Pro 4 / Premium 10). The server
+    // enforces the same cap via trg_enforce_listing_cap; this just
+    // gives a friendlier message than the raised exception.
+    if (listingCap !== null && listings.length >= listingCap) {
+      Alert.alert(
+        "Listing limit reached",
+        `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}. Upgrade your plan on the web to add more.`,
+      );
+      return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("vendor_profiles")
@@ -232,7 +253,12 @@ export default function ProfileScreen() {
       .select("id")
       .single();
     if (error || !data?.id) {
-      Alert.alert("Couldn't create listing", error?.message ?? "Unknown error");
+      Alert.alert(
+        "Couldn't create listing",
+        error?.message?.includes("listing_cap_reached")
+          ? "Your plan's listing limit is reached. Upgrade your plan on the web to add more."
+          : (error?.message ?? "Unknown error"),
+      );
       return;
     }
     await loadProfile();
@@ -273,7 +299,7 @@ export default function ProfileScreen() {
               ratingAvg={ratingAvg}
               joined={joinedYear(profileCreatedAt)}
               verified={!!verifiedAt}
-              studio={tier === "studio"}
+              studio={tier === "studio" || tier === "pro"}
               onShare={shareProfile}
               onEditIdentity={openEditProfile}
             />
@@ -284,6 +310,7 @@ export default function ProfileScreen() {
             <ListingTab
               loading={loading}
               listings={listings}
+              listingCap={listingCap}
               onEdit={(id) => router.push(`/(vendor)/listing?id=${id}` as never)}
               onCreateNew={createNewListing}
               onChanged={loadProfile}
@@ -621,12 +648,15 @@ function EmptyState({
 function ListingTab({
   loading,
   listings,
+  listingCap,
   onEdit,
   onCreateNew,
   onChanged,
 }: {
   loading: boolean;
   listings: VendorProfile[];
+  /** Plan cap (Free 1 / Pro 4 / Premium 10); null = unlimited. */
+  listingCap: number | null;
   onEdit: (id: string) => void;
   onCreateNew: () => void;
   onChanged: () => void;
@@ -651,11 +681,47 @@ function ListingTab({
       </View>
     );
   }
+  const underCap = listingCap === null || listings.length < listingCap;
   return (
     <View style={{ gap: 18 }}>
-      {/* One listing per account for now — the "New listing" button is
-          intentionally hidden once a listing exists. Multiple listings
-          per account will return later. */}
+      {/* Plan-based listing caps: Free 1 / Pro 4 / Premium 10. The
+          "New listing" button shows while the account is under its
+          cap (enforced server-side too via trg_enforce_listing_cap). */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Text style={{ fontSize: 12, color: INK_DIM }}>
+          {listings.length}
+          {listingCap !== null ? ` of ${listingCap}` : ""} listing
+          {listingCap === 1 && listings.length === 1 ? "" : "s"}
+        </Text>
+        {underCap ? (
+          <Pressable
+            onPress={onCreateNew}
+            hitSlop={8}
+            style={{
+              borderWidth: 1,
+              borderColor: "rgba(0,0,0,0.18)",
+              borderRadius: 999,
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+              backgroundColor: "#fff",
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
+              New listing
+            </Text>
+          </Pressable>
+        ) : (
+          <Text style={{ fontSize: 12, color: INK_DIM }}>
+            Upgrade for more listings
+          </Text>
+        )}
+      </View>
       {listings.map((l) => (
         <ListingCard
           key={l.id}

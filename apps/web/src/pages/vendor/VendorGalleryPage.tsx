@@ -85,9 +85,12 @@ import {
 } from "@/lib/galleryImage";
 import {
   ensureGalleryCapacity,
+  formatBytes,
+  getGalleryStorageStatus,
   purgeGalleryStorageObject,
   purgeGalleryStorageObjects,
   removeGalleryFileWithRetry,
+  type GalleryStorageStatus,
 } from "@/lib/galleryStorage";
 
 interface GalleryRow {
@@ -152,8 +155,12 @@ function thumbUrl(url: string, width: number): string {
 export default function VendorGalleryPage() {
   const { user } = useAuth();
   // Gallery is available to every vendor tier, including Free. Per-tier
-  // image caps are still enforced server-side via user_image_cap.
+  // STORAGE caps (Free 100 MB / Pro 1 GB / Premium 5 GB) are enforced
+  // server-side by the vendor-gallery storage RLS policy.
   const [rows, setRows] = useState<GalleryRow[] | null>(null);
+  // Storage meter for the header — refreshed after uploads/purges.
+  const [storageStatus, setStorageStatus] =
+    useState<GalleryStorageStatus | null>(null);
   const [albums, setAlbums] = useState<Album[] | null>(null);
   // Two independent axes — album scope (or Trash) and an optional
   // smart filter that composes on top. Click "Last 7 days" inside an
@@ -576,12 +583,13 @@ export default function VendorGalleryPage() {
       return;
     }
 
-    // Per-tier image cap pre-check via the shared helper. Returns
-    // false (after toasting the user) when the upload would exceed
-    // the cap. Mirrors what Axion's save-to-gallery does so both
-    // surfaces show the same "Upgrade" CTA instead of letting the
-    // storage RLS reject leak a raw error.
-    const okToUpload = await ensureGalleryCapacity(user.id, list.length);
+    // Per-tier STORAGE cap pre-check via the shared helper (bytes,
+    // not image count — Free 100 MB / Pro 1 GB / Premium 5 GB).
+    // Returns false (after toasting the user) when the upload would
+    // exceed the cap, instead of letting the storage RLS reject
+    // leak a raw error.
+    const incomingBytes = list.reduce((sum, f) => sum + f.size, 0);
+    const okToUpload = await ensureGalleryCapacity(user.id, incomingBytes);
     if (!okToUpload) return;
 
     const targetAlbumId =
@@ -1021,9 +1029,24 @@ export default function VendorGalleryPage() {
     [rows],
   );
 
+  // Keep the storage meter fresh. Keyed on `rows` so every upload,
+  // trash-restore, and permanent purge re-reads usage (usage counts
+  // storage objects, so trashed-but-not-purged images still occupy
+  // space).
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    void getGalleryStorageStatus(user.id).then((s) => {
+      if (!cancelled && s) setStorageStatus(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, rows]);
+
   // Gallery is available to every vendor tier, including Free — no
-  // paywall. Per-tier image caps still apply via user_image_cap (Free
-  // is currently uncapped).
+  // paywall. Per-tier storage caps apply (Free 100 MB / Pro 1 GB /
+  // Premium 5 GB); the header meter below tracks usage.
 
   return (
     <div className="min-h-screen vendor-canvas flex">
@@ -1040,6 +1063,38 @@ export default function VendorGalleryPage() {
               <p className="text-sm text-muted-foreground">
                 Your media library. Upload once, reuse across listings.
               </p>
+              {storageStatus && (
+                <div className="mt-2 w-56 max-w-full">
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground mb-1">
+                    <span className="tnum">
+                      {formatBytes(storageStatus.usedBytes)}
+                      {storageStatus.capBytes !== null &&
+                        ` of ${formatBytes(storageStatus.capBytes)}`}{" "}
+                      used
+                    </span>
+                    {storageStatus.capBytes !== null &&
+                      storageStatus.usedBytes >=
+                        storageStatus.capBytes * 0.8 && (
+                        <a
+                          href="/vendor/subscription"
+                          className="font-medium text-foreground underline underline-offset-2"
+                        >
+                          Upgrade
+                        </a>
+                      )}
+                  </div>
+                  {storageStatus.capBytes !== null && (
+                    <div className="h-1 rounded-full bg-foreground/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-foreground/60"
+                        style={{
+                          width: `${Math.min(100, (storageStatus.usedBytes / storageStatus.capBytes) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <NotificationBell variant="light" />
           </div>

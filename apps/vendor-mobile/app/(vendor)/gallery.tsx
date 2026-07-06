@@ -58,6 +58,16 @@ const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB, matches web
 const UPLOAD_CONCURRENCY = 4;
 const BUCKET = "vendor-gallery";
 
+// Human label for the plan storage caps (Free 100 MB / Pro 1 GB /
+// Premium 5 GB) — matches web's formatBytes.
+function formatBytesLabel(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1).replace(/\.0$/, "")} GB`;
+  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
 // Album scope tokens (UI-only states, like web). Real albums are UUIDs.
 const ALL = "__all__";
 const NONE = "__none__";
@@ -260,16 +270,23 @@ export default function GalleryScreen() {
     });
     if (result.canceled || result.assets.length === 0) return;
 
-    // Cap check (best-effort — RLS is the real gate). cap = null → uncapped.
+    // STORAGE cap check (best-effort — the vendor-gallery storage RLS
+    // policy is the real gate). Caps are bytes now, not image counts:
+    // Free 100 MB / Pro 1 GB / Premium 5 GB, cap_bytes = null → uncapped.
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: cap } = await (supabase as any).rpc("user_image_cap", {
-        p_user_id: user.id,
-      });
-      if (typeof cap === "number" && activeCount + result.assets.length > cap) {
+      const { data: statusRows } = await (supabase as any).rpc(
+        "gallery_storage_status",
+        { p_user_id: user.id },
+      );
+      const status = Array.isArray(statusRows) ? statusRows[0] : statusRows;
+      const capBytes =
+        status && status.cap_bytes !== null ? Number(status.cap_bytes) : null;
+      const usedBytes = status ? Number(status.used_bytes ?? 0) : 0;
+      if (capBytes !== null && usedBytes >= capBytes) {
         Alert.alert(
-          "Library full",
-          `Your plan allows ${cap} photos. You have ${activeCount}. Delete some or upgrade to add ${result.assets.length} more.`,
+          "Gallery storage full",
+          `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) or upgrade your plan on the web to add more.`,
         );
         return;
       }
