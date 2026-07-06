@@ -355,22 +355,22 @@ const TIER_FEE_COPY: Record<
   free: {
     rate: "5.0% + $0.30 all-in",
     vendoraCut: "~2.1% to Vendora",
-    sub: "Free plan rate. Upgrade to Pro or Studio to lower the per-charge fee.",
+    sub: "Free plan rate. Upgrade to Pro or Premium to lower the per-charge fee.",
   },
   starter: {
     rate: "5.0% + $0.30 all-in",
     vendoraCut: "~2.1% to Vendora",
-    sub: "Starter plan rate. Upgrade to Pro or Studio to lower the per-charge fee.",
+    sub: "Starter plan rate. Upgrade to Pro or Premium to lower the per-charge fee.",
   },
   pro: {
     rate: "4.0% + $0.30 all-in",
     vendoraCut: "~1.1% to Vendora",
-    sub: "Pro plan rate. Upgrade to Studio for Stripe-only pricing.",
+    sub: "Pro plan rate. Upgrade to Premium for processor-only pricing.",
   },
   studio: {
-    rate: "2.9% + $0.30 (Stripe pass-through)",
+    rate: "2.9% + $0.30 (processor pass-through)",
     vendoraCut: "$0 to Vendora",
-    sub: "Studio plan perk: you pay only the processor's cost. Vendora takes nothing on top.",
+    sub: "Premium plan perk: you pay only the processor's cost. Vendora takes nothing on top.",
   },
 };
 

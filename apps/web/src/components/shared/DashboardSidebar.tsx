@@ -14,11 +14,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { useLiveVendorBalance } from "@/hooks/useVendorCredits";
 
+// 'studio' is Premium's internal slug (kept for Stripe/webhook
+// compat); 'starter' is a retired, grandfathered tier.
 const TIER_LABEL: Record<VendorTier, string> = {
   free: "Free plan",
   starter: "Starter plan",
   pro: "Pro plan",
-  studio: "Studio plan",
+  studio: "Premium plan",
 };
 
 // Per-tier accent colors for the chip + glow. Red for the top tier
@@ -31,7 +33,7 @@ const TIER_CHIP: Record<VendorTier, { bg: string; ring: string; text: string; sh
   studio:  { bg: "rgba(220,38,38,0.15)",   ring: "rgba(220,38,38,0.5)",    text: "rgb(185,28,28)",    shadow: "0 0 12px rgba(220,38,38,0.55)" },
 };
 const TIER_NAME: Record<VendorTier, string> = {
-  free: "Free", starter: "Starter", pro: "Pro", studio: "Studio",
+  free: "Free", starter: "Starter", pro: "Pro", studio: "Premium",
 };
 
 interface NavItem {

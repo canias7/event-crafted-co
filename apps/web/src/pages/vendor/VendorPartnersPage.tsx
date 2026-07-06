@@ -1729,6 +1729,23 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
     );
     setStarting(null);
     if (error || !data) {
+      // Starting a V2V conversation is a Pro-and-up feature; the
+      // RPC raises 'v2v_requires_pro' for Free vendors. Replying in
+      // existing threads stays open to everyone.
+      if (error?.message?.includes("v2v_requires_pro")) {
+        toast.error("Vendor-to-vendor messaging is a Pro feature.", {
+          description:
+            "Upgrade to Pro or Premium to start conversations with other vendors.",
+          action: {
+            label: "Upgrade",
+            onClick: () => {
+              window.location.href = "/vendor/subscription";
+            },
+          },
+          duration: 8000,
+        });
+        return;
+      }
       toast.error(error?.message ?? "Couldn't start the thread.");
       return;
     }

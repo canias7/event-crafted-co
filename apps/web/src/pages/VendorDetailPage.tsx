@@ -485,6 +485,22 @@ export default function VendorDetailPage() {
         { p_other_user_id: listingOwnerUserId },
       );
       if (error) {
+        // V2V initiation is Pro-and-up; the RPC raises
+        // 'v2v_requires_pro' for Free vendors.
+        if (error.message?.includes("v2v_requires_pro")) {
+          toast.error("Vendor-to-vendor messaging is a Pro feature.", {
+            description:
+              "Upgrade to Pro or Premium to start conversations with other vendors.",
+            action: {
+              label: "Upgrade",
+              onClick: () => {
+                navigate("/vendor/subscription");
+              },
+            },
+            duration: 8000,
+          });
+          return;
+        }
         toast.error(error.message);
         return;
       }

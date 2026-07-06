@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Crown, Loader2, Sparkles, Flame, Construction } from "lucide-react";
+import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,11 +24,17 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 
 // Subscription + AI credits surface for the vendor.
 //
-// Vendora's plan model (post credits launch):
-//   Free        — 1 listing, no included AI credits (100 trial on signup).
-//   Starter $14.99 / mo  — 1 listing,  200 AI credits/mo.
-//   Pro     $39    / mo  — 5 listings, 800 AI credits/mo, featured search.
-//   Studio  $99    / mo  — unlimited listings, 2,500 AI credits/mo, team seats.
+// Vendora's plan model (Free / Pro / Premium):
+//   Free    — 100 MB gallery storage, 1 listing.
+//   Pro     — 1 GB gallery storage, 4 listings, verified profile,
+//             V2V messaging, Vendora CRM. 800 AI credits/mo.
+//   Premium — 5 GB gallery storage, 10 listings, AI employee (HILUX).
+//             2,500 AI credits/mo.
+//
+// Premium keeps the legacy 'studio' tier slug internally (Stripe
+// products, webhook, profiles.subscription_tier) — only display
+// copy says Premium. Starter is retired: catalog rows deactivated,
+// existing subscribers grandfathered.
 //
 // AI credits buy HILUX replies (2 cr), Axion images (10 cr), Mux
 // minutes (1 cr/min). 1 credit ≈ $0.025 retail. Top-up packs
@@ -87,7 +93,7 @@ const FREE_TIER: TierRow = {
   priceId: null,
   monthlyCredits: 0,
   listings: "1 listing",
-  highlights: ["100 trial credits on signup"],
+  highlights: ["100 MB gallery storage", "100 trial credits on signup"],
   billingInterval: "month",
 };
 
@@ -105,7 +111,8 @@ const TOPUP_SHORT_NAMES: Record<string, string> = {
 const TIER_SHORT_NAMES: Record<string, string> = {
   "Vendora Starter": "Starter",
   "Vendora Pro": "Pro",
-  "Vendora Studio": "Studio",
+  "Vendora Studio": "Premium",
+  "Vendora Premium": "Premium",
 };
 
 interface PlanState {
@@ -556,15 +563,6 @@ export default function VendorSubscriptionPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-24 lg:pb-0 relative">
-        {/* ===== Under construction ===== */}
-        {/* The whole subscription surface is blurred + made
-            non-interactive while billing is being reworked. The
-            sidebar/nav stay live so vendors can route away. Remove
-            this wrapper (and the overlay below) to restore the page. */}
-        <div
-          aria-hidden
-          className="blur-[6px] pointer-events-none select-none"
-        >
         <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">Subscription</h1>
           <p className="text-sm text-muted-foreground">
@@ -616,7 +614,7 @@ export default function VendorSubscriptionPage() {
                     className="mt-4 font-editorial leading-[0.95] text-4xl md:text-5xl"
                     style={{ color: "#fafafa" }}
                   >
-                    Vendora Starter, Pro &amp; Studio
+                    Vendora Pro &amp; Premium
                   </h2>
                   <h3 className="font-editorial leading-tight text-2xl md:text-3xl text-white/90 mt-1">
                     Locked in at up to {maxSavePct}% off
@@ -679,7 +677,7 @@ export default function VendorSubscriptionPage() {
                 when those Stripe prices exist; until then the
                 toggle's Yearly side shows just Free + a 'coming
                 soon' notice. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {tiers
                 .filter(
                   (t) =>
@@ -764,7 +762,8 @@ export default function VendorSubscriptionPage() {
                           <Check className="w-3 h-3 text-accent shrink-0 mt-[3px]" />
                           <span className="inline-flex items-center gap-1">
                             {h}
-                            {h === "Become verified" && (
+                            {(h === "Become verified" ||
+                              h === "Verified profile") && (
                               <StudioVerifiedBadge />
                             )}
                           </span>
@@ -888,32 +887,6 @@ export default function VendorSubscriptionPage() {
             Billing is handled via Stripe. You'll get a receipt by email for
             each charge.
           </p>
-        </div>
-        </div>
-
-        {/* Centered "under construction" notice sitting above the
-            blurred page. pointer-events stay on this layer so any
-            future CTA here would be clickable. */}
-        <div className="absolute inset-0 z-50 flex items-start justify-center p-6 pt-24 md:pt-32">
-          <div
-            className="w-full max-w-md rounded-2xl p-8 text-center"
-            style={{
-              background: "rgba(255,255,255,0.82)",
-              border: "0.5px solid rgba(0,0,0,0.1)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-              boxShadow: "0 12px 40px -16px rgba(0,0,0,0.25)",
-            }}
-          >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-foreground/5">
-              <Construction className="h-7 w-7 text-foreground" />
-            </div>
-            <h2 className="mt-5 font-editorial text-3xl">Under construction</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Plans &amp; billing are getting an upgrade. This page is
-              temporarily unavailable — check back soon.
-            </p>
-          </div>
         </div>
       </main>
 

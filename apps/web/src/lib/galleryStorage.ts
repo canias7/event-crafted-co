@@ -1,46 +1,69 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Pre-check the vendor-gallery image cap before uploading. RLS
-// enforces the cap server-side too (see
-// 20260523204601_vendor_image_cap_per_tier + later narrowings), but
-// uploads that violate the policy come back as cryptic
-// "row violates row-level security policy" strings — no upgrade
-// hint. This helper checks user_image_cap + user_image_count via
-// the public RPCs and pops the friendly "out of room, here's
-// upgrade" toast before the upload even attempts.
-//
-// Returns `false` to indicate "stop, the caller's already toasted
-// the user." Returns `true` when the cap allows `addCount` more
-// uploads (or when there's no cap = grandfathered).
-//
-// Used from both /vendor/gallery uploads and Axion's save-to-gallery
-// flow so a Free vendor saving an Axion image sees the same upgrade
-// prompt as a vendor uploading from the gallery page itself.
+// Gallery caps are STORAGE-BASED (bytes in the vendor-gallery
+// bucket), per the Free / Pro / Premium plan model:
+//   Free 100 MB · Pro 1 GB · Premium 5 GB · grandfathered = uncapped.
+// Listing/portfolio photos live in vendor-portfolios and are NOT
+// counted. Enforced server-side by the "vendor gallery storage cap"
+// policy on storage.objects; these helpers exist so the client can
+// pop a friendly "out of room, here's upgrade" toast instead of
+// letting the RLS reject leak a cryptic error.
+
+export interface GalleryStorageStatus {
+  usedBytes: number;
+  /** null = unlimited (grandfathered). */
+  capBytes: number | null;
+}
+
+export async function getGalleryStorageStatus(
+  userId: string,
+): Promise<GalleryStorageStatus | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc(
+    "gallery_storage_status",
+    { p_user_id: userId },
+  );
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return {
+    usedBytes: Number(row.used_bytes ?? 0),
+    capBytes: row.cap_bytes === null ? null : Number(row.cap_bytes),
+  };
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+// Pre-check the vendor-gallery storage cap before uploading.
+// `addBytes` is the total size of the incoming files. Returns
+// `false` to indicate "stop, the caller's already toasted the
+// user." Returns `true` when the cap allows the upload (or when
+// there's no cap = grandfathered).
 export async function ensureGalleryCapacity(
   userId: string,
-  addCount: number,
+  addBytes: number,
 ): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ data: cntData }, { data: capData }] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any).rpc("user_image_count", { p_user_id: userId }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any).rpc("user_image_cap", { p_user_id: userId }),
-  ]);
-  const currentCount = typeof cntData === "number" ? cntData : 0;
-  const cap = typeof capData === "number" ? capData : null;
-  if (cap === null) return true; // grandfathered / unlimited
-  if (currentCount + addCount <= cap) return true;
+  const status = await getGalleryStorageStatus(userId);
+  // Fail open on RPC error — the storage RLS policy is the real
+  // enforcement; worst case the vendor sees its (uglier) error.
+  if (!status || status.capBytes === null) return true;
+  if (status.usedBytes + addBytes <= status.capBytes) return true;
 
-  const remaining = Math.max(0, cap - currentCount);
+  const remaining = Math.max(0, status.capBytes - status.usedBytes);
   toast.error(
     remaining === 0
-      ? "You've hit your plan's gallery cap."
-      : `Only ${remaining} gallery image${remaining === 1 ? "" : "s"} left on your plan.`,
+      ? "You've used all your plan's gallery storage."
+      : `Only ${formatBytes(remaining)} of gallery storage left on your plan.`,
     {
       description:
-        "Upgrade your plan or remove some gallery images. Listing photos aren't affected.",
+        "Upgrade your plan or remove some gallery images (emptying Trash frees space too). Listing photos aren't affected.",
       action: {
         label: "Upgrade",
         onClick: () => {

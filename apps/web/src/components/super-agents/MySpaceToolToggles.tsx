@@ -254,13 +254,39 @@ export function MySpaceToolToggles() {
 
   const toggleEnabled = async (next: boolean) => {
     const ok = await persist({ hilux_enabled: next }, "enabled");
-    if (ok) {
-      toast.success(
-        next
-          ? "Inbox auto-reply is on. My Space will answer host messages."
-          : "Inbox auto-reply paused.",
-      );
+    if (!ok) return;
+    if (next && user?.id) {
+      // The AI employee is Premium-only: a BEFORE trigger on
+      // profiles (trg_enforce_hilux_premium) silently coerces
+      // hilux_enabled back to false below Premium, so the update
+      // "succeeds" without taking effect. Re-read the row and, if
+      // the server kept it off, tell the vendor why.
+      const { data } = await supabase
+        .from("profiles")
+        .select("hilux_enabled")
+        .eq("id", user.id)
+        .maybeSingle();
+      if ((data as { hilux_enabled?: boolean } | null)?.hilux_enabled !== true) {
+        setProfile((prev) => (prev ? { ...prev, hilux_enabled: false } : prev));
+        toast.error("The AI employee is a Premium feature.", {
+          description:
+            "Upgrade to Premium to have HILUX answer your inquiries for you.",
+          action: {
+            label: "Upgrade",
+            onClick: () => {
+              window.location.href = "/vendor/subscription";
+            },
+          },
+          duration: 8000,
+        });
+        return;
+      }
     }
+    toast.success(
+      next
+        ? "Inbox auto-reply is on. My Space will answer host messages."
+        : "Inbox auto-reply paused.",
+    );
   };
 
   const toggleAction = async (key: ActionKey, next: boolean) => {

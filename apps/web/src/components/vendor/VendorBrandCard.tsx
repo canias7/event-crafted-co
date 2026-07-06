@@ -84,7 +84,11 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
     ? String(new Date(row.created_at).getFullYear())
     : null;
   const verified = !!row.verified_at;
-  const studioVerified = row.brand?.subscription_tier === "studio";
+  // Verified profile is a Pro-and-up perk ('studio' = Premium's
+  // internal slug).
+  const studioVerified =
+    row.brand?.subscription_tier === "pro" ||
+    row.brand?.subscription_tier === "studio";
   const logoUrl = row.logo_url ?? null;
 
   return (

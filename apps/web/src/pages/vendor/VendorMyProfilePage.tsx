@@ -61,11 +61,17 @@ interface AccountProfile {
 
 export default function VendorMyProfilePage() {
   const { user } = useAuth();
-  // Studio-tier verification badge on the header logo. Reads from
+  // Paid-tier verification badge on the header logo. Reads from
   // profiles.subscription_tier per the per-user subscription model
-  // (migration 20260524000000).
+  // (migration 20260524000000). Verified profile is a Pro-and-up
+  // perk under the Free / Pro / Premium plan model ('studio' is
+  // Premium's internal slug).
   const { tier } = useVendorPlan(user?.id ?? null);
-  const studioVerified = tier === "studio";
+  const studioVerified = tier === "pro" || tier === "studio";
+  // Plan listing cap (Free 1 / Pro 4 / Premium 10, null = unlimited
+  // grandfather flag) — drives whether "New listing" shows once
+  // listings exist. Server-side trigger enforces the same cap.
+  const [listingCap, setListingCap] = useState<number | null>(1);
   const [loading, setLoading] = useState(true);
   const [primary, setPrimary] = useState<VendorRow | null>(null);
   const [account, setAccount] = useState<AccountProfile | null>(null);
@@ -169,6 +175,23 @@ export default function VendorMyProfilePage() {
     load();
   }, [load]);
 
+  // Listing cap via RPC (covers the unlimited_listings grandfather
+  // flag, which the client can't derive from tier alone). Re-runs
+  // when the tier flips so an upgrade unlocks the button live.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as any)
+      .rpc("user_listing_cap", { p_user_id: user.id })
+      .then(({ data }: { data: number | null }) => {
+        if (!cancelled) setListingCap(typeof data === "number" ? data : null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, tier]);
+
   const memberSince = useMemo(() => {
     const stamp = account?.created_at ?? primary?.created_at ?? null;
     if (!stamp) return "—";
@@ -259,6 +282,7 @@ export default function VendorMyProfilePage() {
               <ListingsList
                 listings={listings}
                 heroByListing={heroByListing}
+                listingCap={listingCap}
                 onAddListing={openListingWizard}
                 onEditListing={setEditingVendorId}
               />
@@ -393,11 +417,14 @@ function Stat({ label, value }: { label: string; value: string }) {
 function ListingsList({
   listings,
   heroByListing,
+  listingCap,
   onAddListing,
   onEditListing,
 }: {
   listings: VendorRow[];
   heroByListing: Record<string, string>;
+  /** Plan cap (Free 1 / Pro 4 / Premium 10); null = unlimited. */
+  listingCap: number | null;
   onAddListing: () => void;
   onEditListing: (vendorId: string) => void;
 }) {
@@ -409,11 +436,32 @@ function ListingsList({
       </div>
     );
   }
+  const underCap = listingCap === null || listings.length < listingCap;
   return (
     <div>
-      {/* One listing per account for now — the "New listing" button is
-          intentionally hidden once a listing exists, matching mobile.
-          Multiple listings per account will return later. */}
+      {/* Plan-based listing caps: Free 1 / Pro 4 / Premium 10. The
+          "New listing" button shows while the account is under its
+          cap; at cap it swaps for an upgrade hint. The same cap is
+          enforced server-side (trg_enforce_listing_cap). */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-xs text-muted-foreground tnum">
+          {listings.length}
+          {listingCap !== null ? ` of ${listingCap}` : ""} listing
+          {listingCap === 1 && listings.length === 1 ? "" : "s"}
+        </p>
+        {underCap ? (
+          <Button size="sm" variant="outline" onClick={onAddListing}>
+            New listing
+          </Button>
+        ) : (
+          <Link
+            to="/vendor/subscription"
+            className="text-xs font-medium underline underline-offset-2 text-foreground"
+          >
+            Upgrade for more listings
+          </Link>
+        )}
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
         {listings.map((l) => (
           <ListingDirectoryCard
