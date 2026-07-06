@@ -37,7 +37,7 @@
       }
     },
     "android": {
-      "package": "co.eventcrafted.vendor",
+      "package": "com.eventvendora.forVendors",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
