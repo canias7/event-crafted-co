@@ -198,6 +198,9 @@ serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const vendorId = body?.vendor_id as string | undefined;
   const targetPriceId = body?.price_id as string | undefined;
+  // Mobile callers get a return_url that bounces back into the app
+  // via the web /mobile/checkout-return page. Whitelisted value only.
+  const isMobile = body?.platform === "vendor-mobile";
 
   // Audit #5: vendor_id is OPTIONAL. A vendor with no listings yet
   // still needs to manage billing. JWT proves identity for their own
@@ -220,7 +223,9 @@ serve(async (req: Request) => {
 
   const sessionArgs: Stripe.BillingPortal.SessionCreateParams = {
     customer: profile.stripe_customer_id as string,
-    return_url: `${APP_URL}/vendor/subscription`,
+    return_url: isMobile
+      ? `${APP_URL}/mobile/checkout-return?portal=1&app=vendor`
+      : `${APP_URL}/vendor/subscription`,
   };
 
   const portalConfigId = await getOrCreatePortalConfig(stripe, db);
@@ -239,7 +244,11 @@ serve(async (req: Request) => {
           },
           after_completion: {
             type: "redirect",
-            redirect: { return_url: `${APP_URL}/vendor/subscription?upgraded=1` },
+            redirect: {
+              return_url: isMobile
+                ? `${APP_URL}/mobile/checkout-return?upgraded=1&app=vendor`
+                : `${APP_URL}/vendor/subscription?upgraded=1`,
+            },
           },
         };
       }

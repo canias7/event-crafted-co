@@ -64,6 +64,11 @@ serve(async (req: Request) => {
   const vendorId = body?.vendor_id as string | undefined;
   const requestedPriceId = (body?.price_id as string | undefined) ?? STRIPE_PRO_PRICE_ID;
   if (!requestedPriceId) return json({ error: "price_id required (and STRIPE_PRO_PRICE_ID fallback unset)" }, 400);
+  // Mobile callers get bounced back into the app after Checkout via
+  // the web /mobile/checkout-return page (which deep-links to the
+  // app scheme). Whitelisted values only — never a caller-supplied
+  // URL, so this can't become an open redirect.
+  const isMobile = body?.platform === "vendor-mobile";
 
   // Audit #5: vendor_id is OPTIONAL. A vendor with no listings yet
   // still needs to be able to subscribe — the JWT alone proves
@@ -163,8 +168,12 @@ serve(async (req: Request) => {
     subscription_data: { metadata: { user_id: userId, vendor_id: vendorId } },
     metadata: { user_id: userId, vendor_id: vendorId },
     allow_promotion_codes: true,
-    success_url: `${APP_URL}/vendor/subscription?upgraded=1`,
-    cancel_url: `${APP_URL}/vendor/subscription?cancelled=1`,
+    success_url: isMobile
+      ? `${APP_URL}/mobile/checkout-return?upgraded=1&app=vendor`
+      : `${APP_URL}/vendor/subscription?upgraded=1`,
+    cancel_url: isMobile
+      ? `${APP_URL}/mobile/checkout-return?cancelled=1&app=vendor`
+      : `${APP_URL}/vendor/subscription?cancelled=1`,
   });
 
   return json({ url: session.url, session_id: session.id });

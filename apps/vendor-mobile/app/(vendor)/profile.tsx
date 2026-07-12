@@ -242,7 +242,14 @@ export default function ProfileScreen() {
     if (listingCap !== null && listings.length >= listingCap) {
       Alert.alert(
         "Listing limit reached",
-        `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}. Upgrade your plan on the web to add more.`,
+        `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}. Upgrade your plan to add more.`,
+        [
+          { text: "Not now", style: "cancel" },
+          {
+            text: "Upgrade plan",
+            onPress: () => router.push("/(vendor)/subscription" as never),
+          },
+        ],
       );
       return;
     }
@@ -256,7 +263,7 @@ export default function ProfileScreen() {
       Alert.alert(
         "Couldn't create listing",
         error?.message?.includes("listing_cap_reached")
-          ? "Your plan's listing limit is reached. Upgrade your plan on the web to add more."
+          ? "Your plan's listing limit is reached. Upgrade your plan to add more."
           : (error?.message ?? "Unknown error"),
       );
       return;
@@ -717,9 +724,7 @@ function ListingTab({
             </Text>
           </Pressable>
         ) : (
-          <Text style={{ fontSize: 12, color: INK_DIM }}>
-            Upgrade for more listings
-          </Text>
+          <UpgradeLink />
         )}
       </View>
       {listings.map((l) => (
@@ -731,6 +736,22 @@ function ListingTab({
         />
       ))}
     </View>
+  );
+}
+
+// Cap-reached affordance next to the listings header — routes to the
+// in-app subscription screen (plans upgrade in-app now, not on web).
+function UpgradeLink() {
+  const router = useRouter();
+  return (
+    <Pressable
+      onPress={() => router.push("/(vendor)/subscription" as never)}
+      hitSlop={8}
+    >
+      <Text style={{ fontSize: 12, fontWeight: "600", color: INK, textDecorationLine: "underline" }}>
+        Upgrade for more listings
+      </Text>
+    </Pressable>
   );
 }
 
