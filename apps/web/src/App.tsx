@@ -38,6 +38,9 @@ const SignContractPage = lazyWithReload(() =>
 const ProposalPage = lazyWithReload(() =>
   import("./pages/public/ProposalPage").then((m) => ({ default: m.default })),
 );
+const MobileCheckoutReturnPage = lazyWithReload(() =>
+  import("./pages/public/MobileCheckoutReturnPage").then((m) => ({ default: m.default })),
+);
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { RouteFallback } from "@/components/shared/RouteFallback";
 // All lazy-loaded pages live in @/router/lazyRoutes — keeps the lazy
@@ -150,6 +153,9 @@ const App = () => (
               <Route path="/help" element={<HelpPage />} />
               <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
               <Route path="/pay/invoice/:slug" element={<InvoiceCheckoutPage />} />
+              {/* Stripe redirect target for purchases started in the
+                  mobile apps — deep-links back into the app. */}
+              <Route path="/mobile/checkout-return" element={<MobileCheckoutReturnPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />

@@ -54,6 +54,22 @@ export default function MoreScreen() {
           }}
         >
           <MenuRow
+            icon="zap"
+            label="Subscription"
+            body="Plan, credits & billing"
+            onPress={() => router.push("/(vendor)/subscription" as never)}
+          />
+        </View>
+
+        <View
+          style={{
+            marginTop: 16,
+            backgroundColor: "#f3f4f6",
+            borderRadius: 20,
+            overflow: "hidden",
+          }}
+        >
+          <MenuRow
             icon="settings"
             label="Settings"
             body="Account, password, notifications"

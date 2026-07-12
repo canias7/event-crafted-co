@@ -51,6 +51,9 @@ serve(async (req: Request) => {
   const vendorId = body?.vendor_id as string | undefined;
   const priceId = body?.price_id as string | undefined;
   if (!priceId) return json({ error: "price_id required" }, 400);
+  // Mobile callers bounce back into the app via /mobile/checkout-return
+  // (same whitelist pattern as stripe-subscription-checkout).
+  const isMobile = body?.platform === "vendor-mobile";
 
   // Audit #5: vendor_id is OPTIONAL now. When the vendor has no
   // listings yet (just signed up, or had all listings rejected),
@@ -128,8 +131,12 @@ serve(async (req: Request) => {
     payment_intent_data: { metadata: { user_id: userId, vendor_id: vendorId, kind: "credit_topup" } },
     metadata: { user_id: userId, vendor_id: vendorId, kind: "credit_topup" },
     allow_promotion_codes: true,
-    success_url: `${APP_URL}/vendor/subscription?topup=1`,
-    cancel_url: `${APP_URL}/vendor/subscription?topup_cancelled=1`,
+    success_url: isMobile
+      ? `${APP_URL}/mobile/checkout-return?topup=1&app=vendor`
+      : `${APP_URL}/vendor/subscription?topup=1`,
+    cancel_url: isMobile
+      ? `${APP_URL}/mobile/checkout-return?topup_cancelled=1&app=vendor`
+      : `${APP_URL}/vendor/subscription?topup_cancelled=1`,
   });
 
   return json({ url: session.url, session_id: session.id });

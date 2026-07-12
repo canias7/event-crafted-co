@@ -156,6 +156,9 @@ export default function VendorLayout() {
           listing" CTA / 4-segment toggle. Hidden from the bottom nav
           because it's a one-and-done flow per vendor. */}
       <Tabs.Screen name="listing" options={{ href: null }} />
+      {/* Subscription — reached from More and upgrade prompts, not a
+          tab of its own. */}
+      <Tabs.Screen name="subscription" options={{ href: null }} />
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       <Tabs.Screen name="thread/[id]" options={{ href: null }} />
       <Tabs.Screen name="partner-thread/[id]" options={{ href: null }} />

@@ -38,7 +38,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
@@ -124,6 +124,7 @@ function extFromUrl(url: string): string {
 
 export default function GalleryScreen() {
   const { user } = useAuth();
+  const router = useRouter();
 
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -286,7 +287,14 @@ export default function GalleryScreen() {
       if (capBytes !== null && usedBytes >= capBytes) {
         Alert.alert(
           "Gallery storage full",
-          `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) or upgrade your plan on the web to add more.`,
+          `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) or upgrade your plan to add more.`,
+          [
+            { text: "Not now", style: "cancel" },
+            {
+              text: "Upgrade plan",
+              onPress: () => router.push("/(vendor)/subscription" as never),
+            },
+          ],
         );
         return;
       }
