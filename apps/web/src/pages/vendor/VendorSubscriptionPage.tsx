@@ -93,7 +93,7 @@ const FREE_TIER: TierRow = {
   priceId: null,
   monthlyCredits: 0,
   listings: "1 listing",
-  highlights: ["100 MB gallery storage", "100 trial credits on signup"],
+  highlights: ["100 MB of gallery storage"],
   billingInterval: "month",
 };
 
