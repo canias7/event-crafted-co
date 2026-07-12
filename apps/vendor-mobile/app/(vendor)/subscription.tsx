@@ -72,7 +72,7 @@ const FREE_TIER: TierRow = {
   priceId: null,
   monthlyCredits: 0,
   listings: "1 listing",
-  highlights: ["100 MB of gallery storage"],
+  highlights: ["100 MB of gallery storage", "1 listing"],
   billingInterval: "month",
 };
 
@@ -583,12 +583,9 @@ export default function SubscriptionScreen() {
                   ${tier.priceMonthly.toFixed(2)} billed annually
                 </Text>
               ) : null}
-              <Text style={{ color: INK_DIM, fontSize: 12, marginTop: 2 }}>
-                {tier.monthlyCredits > 0
-                  ? `${tier.monthlyCredits.toLocaleString()} credits/mo · ${tier.listings}`
-                  : tier.listings}
-              </Text>
-
+              {/* Cards show only the confirmed plan bullets — listings
+                  live in highlights now and credits are hidden from
+                  marketing copy (still visible on the plan summary). */}
               <View style={{ marginTop: 12, gap: 6 }}>
                 {tier.highlights.map((h) => (
                   <View key={h} style={{ flexDirection: "row", alignItems: "flex-start" }}>

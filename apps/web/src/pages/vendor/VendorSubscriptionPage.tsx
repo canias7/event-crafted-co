@@ -93,7 +93,7 @@ const FREE_TIER: TierRow = {
   priceId: null,
   monthlyCredits: 0,
   listings: "1 listing",
-  highlights: ["100 MB of gallery storage"],
+  highlights: ["100 MB of gallery storage", "1 listing"],
   billingInterval: "month",
 };
 
@@ -745,11 +745,10 @@ export default function VendorSubscriptionPage() {
                         ${tier.priceMonthly.toFixed(2)} billed annually
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {tier.monthlyCredits > 0
-                        ? `${tier.monthlyCredits.toLocaleString()} credits/mo · ${tier.listings}`
-                        : tier.listings}
-                    </p>
+                    {/* Cards show only the confirmed plan bullets —
+                        listings live in highlights now and credits are
+                        hidden from marketing copy (usage tab still
+                        shows the balance + grant). */}
                     {tier.wasMonthly && offerActive && !isCurrent && (
                       <p className="text-[10px] text-[#18181b] font-medium mt-0.5">
                         Launch pricing — limited time
