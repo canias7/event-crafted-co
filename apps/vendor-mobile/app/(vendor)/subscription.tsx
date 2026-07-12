@@ -105,7 +105,6 @@ interface PlanState {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
-  monthlyGrant: number;
 }
 
 // Pulls the error message out of a supabase.functions.invoke failure —
@@ -131,7 +130,6 @@ export default function SubscriptionScreen() {
   const { user } = useAuth();
 
   const [plan, setPlan] = useState<PlanState | null>(null);
-  const [balance, setBalance] = useState(0);
   const [tiers, setTiers] = useState<TierRow[]>([FREE_TIER]);
   const [topups, setTopups] = useState<TopupRow[]>([]);
   const [billingInterval, setBillingInterval] = useState<"month" | "year">(
@@ -188,38 +186,29 @@ export default function SubscriptionScreen() {
     };
   }, []);
 
-  // Plan state (profiles) + credit balance (vendor_credit_balances).
+  // Plan state (profiles). Credits deliberately don't surface on this
+  // screen — the confirmed plan copy is storage/listings/features only.
   const load = useCallback(async () => {
     if (!user?.id) {
       setPlan(null);
       setLoading(false);
       return;
     }
-    const [{ data: prof }, { data: bal }] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("profiles")
-        .select(
-          "subscription_tier, subscription_status, subscription_cancel_at_period_end, subscription_current_period_end, stripe_customer_id, monthly_grant",
-        )
-        .eq("id", user.id)
-        .maybeSingle(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("vendor_credit_balances")
-        .select("balance")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prof } = await (supabase as any)
+      .from("profiles")
+      .select(
+        "subscription_tier, subscription_status, subscription_cancel_at_period_end, subscription_current_period_end, stripe_customer_id",
+      )
+      .eq("id", user.id)
+      .maybeSingle();
     setPlan({
       tier: (prof?.subscription_tier as TierId) ?? "free",
       status: prof?.subscription_status ?? null,
       cancelAtPeriodEnd: !!prof?.subscription_cancel_at_period_end,
       currentPeriodEnd: prof?.subscription_current_period_end ?? null,
       stripeCustomerId: prof?.stripe_customer_id ?? null,
-      monthlyGrant: prof?.monthly_grant ?? 0,
     });
-    setBalance(bal?.balance ?? 0);
     setLoading(false);
   }, [user?.id]);
 
@@ -303,7 +292,7 @@ export default function SubscriptionScreen() {
         `Switch to ${tier.name}?`,
         `You'll be charged $${tier.priceMonthly.toFixed(2)} today and start a fresh ${
           tier.billingInterval === "year" ? "12-month" : "30-day"
-        } cycle. +${tier.monthlyCredits.toLocaleString()} credits are added right away.`,
+        } cycle. Time you already paid for stays with you.`,
         [
           { text: "Cancel", style: "cancel" },
           { text: "Confirm switch", onPress: () => void confirmTierSwitch(tier) },
@@ -360,9 +349,7 @@ export default function SubscriptionScreen() {
       } else {
         Alert.alert(
           `Switched to ${tier.name}`,
-          `$${((result.charged_now_cents ?? 0) / 100).toFixed(2)} charged today, +${(
-            result.granted_now ?? 0
-          ).toLocaleString()} credits added.`,
+          `$${((result.charged_now_cents ?? 0) / 100).toFixed(2)} charged today. Your new plan is active.`,
         );
       }
       await load();
@@ -423,7 +410,7 @@ export default function SubscriptionScreen() {
       <ScrollView contentContainerClassName="px-5 pb-32 pt-6">
         <Text className="text-4xl font-bold text-foreground">Subscription</Text>
         <Text className="mt-2 mb-6 text-base text-muted-foreground">
-          Plans, credits and billing
+          Plans and billing
         </Text>
 
         {/* Current plan + credits summary */}
@@ -453,27 +440,6 @@ export default function SubscriptionScreen() {
               Renews {renewalLabel}
             </Text>
           ) : null}
-
-          <View style={{ flexDirection: "row", marginTop: 16, gap: 24 }}>
-            <View>
-              <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>
-                Credits
-              </Text>
-              <Text style={{ color: "#ffffff", fontSize: 18, fontWeight: "700", marginTop: 2 }}>
-                {balance.toLocaleString()}
-              </Text>
-            </View>
-            {(plan?.monthlyGrant ?? 0) > 0 ? (
-              <View>
-                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>
-                  Monthly grant
-                </Text>
-                <Text style={{ color: "#ffffff", fontSize: 18, fontWeight: "700", marginTop: 2 }}>
-                  {(plan?.monthlyGrant ?? 0).toLocaleString()}
-                </Text>
-              </View>
-            ) : null}
-          </View>
 
           {hasBilling ? (
             <Pressable
