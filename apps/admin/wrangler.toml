@@ -1,0 +1,5 @@
+# Cloudflare Pages project config for apps/admin (PIN-gated admin panel).
+# Deployed by .github/workflows/cloudflare-pages.yml via `wrangler pages deploy`.
+name = "vendora-admin"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"

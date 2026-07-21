@@ -1,0 +1,5 @@
+# Ports the vercel.json `headers` block for the admin panel:
+# keep it out of search indexes and disallow framing.
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY

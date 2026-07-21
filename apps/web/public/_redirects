@@ -1,0 +1,8 @@
+# Cloudflare Pages routing.
+#
+# Precedence on Pages: Functions run first, then static assets, then
+# these _redirects rules. So:
+#   - /s/<slug>        -> handled by functions/s/[slug].ts (never reaches here)
+#   - /assets/*, /preview/*, favicon, etc. -> served as static files
+#   - everything else  -> SPA fallback below (client-side React router)
+/*    /index.html   200
