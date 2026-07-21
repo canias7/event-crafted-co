@@ -1,0 +1,5 @@
+# Cloudflare Pages project config for apps/web (public site).
+# Deployed by .github/workflows/cloudflare-pages.yml via `wrangler pages deploy`.
+name = "vendora-web"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"

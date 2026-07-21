@@ -1,0 +1,80 @@
+name: Deploy to Cloudflare Pages
+
+# Replaces Vercel auto-deploy. Builds the two Vite SPAs (apps/web and
+# apps/admin) and ships them to Cloudflare Pages via Wrangler.
+#
+# Required repo secrets (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN   - token with "Cloudflare Pages: Edit" permission
+#   CLOUDFLARE_ACCOUNT_ID  - from the Workers & Pages dashboard sidebar
+#
+# Optional secrets (override the public defaults below if set):
+#   VITE_STRIPE_PUBLISHABLE_KEY  - pk_live_... for production Stripe
+#   VITE_SENTRY_DSN              - enables Sentry error reporting
+#   VITE_ADMIN_EMAIL             - admin-session email hint (admin app)
+#
+# The Pages projects "vendora-web" and "vendora-admin" must already exist
+# in the Cloudflare dashboard (Workers & Pages > Create > Pages).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "apps/admin/**"
+      - "packages/**"
+      - "bun.lock"
+      - ".github/workflows/cloudflare-pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build + deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Public, browser-embedded config. Real production values (Supabase is a
+    # public anon key) with secret overrides for anything sensitive.
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://pahpjjubhbcbwqjpamwv.supabase.co' }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_CtDX5E4wcZZAAjx7JtGRgw_ZaPNmjS0' }}
+      VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID || 'pahpjjubhbcbwqjpamwv' }}
+      VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51TUfYG2VPrcT6XA1FyL2J2UqspP3DV2xefMLchBPOnzIiDTv54Z3GEHqCfKA5ApMFJEuKmIaQBcZjNG0IUgIE1e200ZqJKUTsz' }}
+      VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+      VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
+      VITE_GIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web
+        run: bun run build
+        working-directory: apps/web
+
+      - name: Deploy web to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUNT_ID }}
+          workingDirectory: apps/web
+          command: pages deploy --branch=main
+
+      - name: Build admin
+        run: bun run build
+        working-directory: apps/admin
+
+      - name: Deploy admin to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUNT_ID }}
+          workingDirectory: apps/admin
+          command: pages deploy --branch=main
