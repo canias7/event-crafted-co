@@ -381,6 +381,15 @@ export default function SubscriptionScreen() {
 
   // ----- render ---------------------------------------------------------
 
+  // On iOS, Apple guideline 3.1.1 forbids selling digital subscriptions /
+  // credits through any payment system other than Apple In-App Purchase —
+  // including opening Stripe in a web view or linking out to the web to buy.
+  // So the iOS build is a read-only companion: it shows the vendor's current
+  // plan (synced from the web) but exposes no purchase, tier-switch, top-up,
+  // or billing-portal actions. Vendors manage billing on eventvendora.com.
+  // Web and Android keep the full Stripe purchasing flow below.
+  const isIOS = Platform.OS === "ios";
+
   const currentTier = plan?.tier ?? "free";
   const hasBilling = currentTier !== "free" && Boolean(plan?.stripeCustomerId);
   const hasYearly = tiers.some(
@@ -441,7 +450,7 @@ export default function SubscriptionScreen() {
             </Text>
           ) : null}
 
-          {hasBilling ? (
+          {hasBilling && !isIOS ? (
             <Pressable
               onPress={openPortal}
               disabled={acting !== null}
@@ -469,7 +478,33 @@ export default function SubscriptionScreen() {
           ) : null}
         </View>
 
-        {/* Plan picker */}
+        {/* iOS: no in-app purchasing (Apple 3.1.1). Read-only notice that
+            points vendors to the web to manage their plan. Plain text only —
+            no tappable link or button, which Apple also disallows. */}
+        {isIOS ? (
+          <View
+            style={{
+              backgroundColor: SURFACE,
+              borderRadius: 20,
+              padding: 18,
+              marginTop: 28,
+            }}
+          >
+            <Text style={{ color: INK, fontSize: 18, fontWeight: "700" }}>
+              Manage your plan on the web
+            </Text>
+            <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
+              To choose a plan, switch tiers, buy credit top-ups, or update
+              your billing details, sign in to your account at eventvendora.com
+              from any web browser. Your current plan is shown above and stays
+              in sync with the app automatically.
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Plan picker (web + Android only) */}
+        {!isIOS ? (
+          <>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
           <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF }}>
             Choose a plan
@@ -658,10 +693,13 @@ export default function SubscriptionScreen() {
             })}
           </>
         ) : null}
+          </>
+        ) : null}
 
         <Text style={{ color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
-          Billing is handled securely by Stripe on eventvendora.com. You'll
-          get an email receipt for each charge.
+          {isIOS
+            ? "Subscriptions and credits are managed on eventvendora.com. Your current plan is shown above and stays in sync with the app."
+            : "Billing is handled securely by Stripe on eventvendora.com. You'll get an email receipt for each charge."}
         </Text>
       </ScrollView>
     </SafeAreaView>
