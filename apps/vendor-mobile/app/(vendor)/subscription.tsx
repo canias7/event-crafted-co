@@ -30,7 +30,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -44,14 +43,6 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 // Matches the `scheme` in app.json; openAuthSessionAsync dismisses
 // the browser sheet when Stripe lands on this URL.
 const RETURN_URL = "vendora-vendor://checkout-return";
-
-// Web subscription page. Apple guideline 3.1.1 bars selling digital
-// subscriptions/credits in the iOS app via non-IAP payments, but US apps
-// may link out to the developer's website in the EXTERNAL default browser
-// (Safari) — NOT an in-app web view, which is what got the app rejected.
-// On iOS we open this URL with Linking.openURL (external Safari); the vendor
-// subscribes on the web and the change syncs back on next focus.
-const WEB_SUBSCRIPTION_URL = "https://eventvendora.com/vendor/subscription";
 
 type TierId = "free" | "starter" | "pro" | "studio";
 
@@ -487,9 +478,10 @@ export default function SubscriptionScreen() {
           ) : null}
         </View>
 
-        {/* iOS: no in-app purchasing (Apple 3.1.1). Read-only notice that
-            points vendors to the web to manage their plan. Plain text only —
-            no tappable link or button, which Apple also disallows. */}
+        {/* iOS: no purchase surface at all (Apple 3.1.1). Apple rejected both
+            the in-app Stripe checkout AND a button linking out to the web, so
+            the iOS build shows the current plan read-only with no purchase
+            link, button, price, or call to action of any kind. */}
         {isIOS ? (
           <View
             style={{
@@ -500,38 +492,13 @@ export default function SubscriptionScreen() {
             }}
           >
             <Text style={{ color: INK, fontSize: 18, fontWeight: "700" }}>
-              Choose or manage your plan on the web
+              Your plan
             </Text>
             <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
-              Plans, credit top-ups, and billing are handled on
-              eventvendora.com. Tap below to open it in your browser; any change
-              syncs back to the app automatically.
+              Your current plan is shown above and stays in sync automatically.
+              Plan changes made on your account are reflected here the next time
+              you open this screen.
             </Text>
-            <Pressable
-              onPress={() => {
-                void Linking.openURL(WEB_SUBSCRIPTION_URL).catch(() => {
-                  Alert.alert(
-                    "Couldn't open the browser",
-                    `Visit ${WEB_SUBSCRIPTION_URL} to manage your plan.`,
-                  );
-                });
-              }}
-              style={{
-                marginTop: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                alignSelf: "flex-start",
-                backgroundColor: INK,
-                borderRadius: 999,
-                paddingHorizontal: 18,
-                paddingVertical: 11,
-              }}
-            >
-              <Feather name="external-link" size={14} color="#ffffff" />
-              <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "700", marginLeft: 8 }}>
-                Open eventvendora.com
-              </Text>
-            </Pressable>
           </View>
         ) : null}
 
