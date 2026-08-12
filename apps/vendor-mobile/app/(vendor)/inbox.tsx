@@ -75,6 +75,7 @@ function relativeTime(iso: string | null): string {
 
 export default function InboxScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("inquiries");
   const [search, setSearch] = useState("");
   const [inquiryFilter, setInquiryFilter] = useState<"all" | "new" | "replied" | "booked">("all");
@@ -286,22 +287,36 @@ export default function InboxScreen() {
             />
           </ScrollView>
         ) : (
-          <View className="flex-row items-center gap-2 px-5 pb-2">
-            <Chip
-              active={partnerFilter === "all"}
-              label="All"
-              onPress={() => setPartnerFilter("all")}
-            />
-            <Chip
-              active={partnerFilter === "unread"}
-              label="Unread"
-              onPress={() => setPartnerFilter("unread")}
-            />
-            <Chip
-              active={partnerFilter === "active"}
-              label="Active"
-              onPress={() => setPartnerFilter("active")}
-            />
+          <View className="flex-row items-center px-5 pb-2">
+            <View className="flex-row items-center gap-2 flex-1">
+              <Chip
+                active={partnerFilter === "all"}
+                label="All"
+                onPress={() => setPartnerFilter("all")}
+              />
+              <Chip
+                active={partnerFilter === "unread"}
+                label="Unread"
+                onPress={() => setPartnerFilter("unread")}
+              />
+              <Chip
+                active={partnerFilter === "active"}
+                label="Active"
+                onPress={() => setPartnerFilter("active")}
+              />
+            </View>
+            {/* Discovery entry point. The search field above only filters
+                threads you already have; this is how you reach vendors you
+                haven't messaged yet. */}
+            <Pressable
+              onPress={() => router.push("/(vendor)/find-vendor")}
+              hitSlop={8}
+              className="ml-2 h-9 w-9 rounded-full bg-foreground items-center justify-center active:opacity-70"
+              accessibilityRole="button"
+              accessibilityLabel="Find a vendor to message"
+            >
+              <Feather name="plus" size={18} color="#ffffff" />
+            </Pressable>
           </View>
         )}
 
@@ -342,13 +357,36 @@ export default function InboxScreen() {
               </View>
             )
           ) : filteredPartners.length === 0 ? (
-            <Empty
-              msg={
-                search || partnerFilter !== "all"
-                  ? "No threads match."
-                  : "No partner threads yet. Reach out to other vendors from their listing page."
-              }
-            />
+            /* Name the actual reason the list is empty. The old copy just
+               said "No threads match." which read as "you have none" even
+               when a stale search term was hiding everything. */
+            <View className="px-5 py-12 items-center">
+              <Text className="text-center text-sm text-muted-foreground">
+                {search
+                  ? `No conversations match “${search}”. This searches your existing threads only.`
+                  : partnerFilter !== "all"
+                    ? "No conversations match that filter."
+                    : "No partner conversations yet. Find another vendor to start one."}
+              </Text>
+              {search ? (
+                <Pressable
+                  onPress={() => setSearch("")}
+                  className="mt-3 rounded-full bg-muted px-4 py-2 active:opacity-70"
+                >
+                  <Text className="text-sm font-semibold text-foreground">
+                    Clear search
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                onPress={() => router.push("/(vendor)/find-vendor")}
+                className="mt-3 rounded-full bg-foreground px-5 py-2.5 active:opacity-70"
+              >
+                <Text className="text-sm font-semibold text-background">
+                  Find a vendor
+                </Text>
+              </Pressable>
+            </View>
           ) : (
             <View className="px-5">
               {filteredPartners.map((p, i) => (

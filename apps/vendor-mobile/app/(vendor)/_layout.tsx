@@ -162,6 +162,9 @@ export default function VendorLayout() {
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       <Tabs.Screen name="thread/[id]" options={{ href: null }} />
       <Tabs.Screen name="partner-thread/[id]" options={{ href: null }} />
+      {/* Vendor discovery — pushed from the Inbox's Partners tab, not a
+          tab of its own. */}
+      <Tabs.Screen name="find-vendor" options={{ href: null }} />
       <Tabs.Screen name="edit-profile" options={{ href: null }} />
     </Tabs>
   );
