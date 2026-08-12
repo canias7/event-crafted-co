@@ -14,7 +14,6 @@ import {
   Platform,
   Pressable,
   StatusBar,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -421,7 +420,11 @@ function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  // Photo band height. Derived from the asset's own 900x780 aspect so the
+  // image is shown at close to its natural proportions — capped at 46% of the
+  // screen so it stays a band and the copy below has room.
+  const photoHeight = Math.min(screenWidth * (780 / 900), screenHeight * 0.46);
   // Wordmark size. 0.21 of the viewport measured out to almost exactly the
   // full screen width on device — technically un-clipped, but touching both
   // edges with no breathing room, and it made FitRow fire on every launch
@@ -499,12 +502,22 @@ export default function WelcomeScreen() {
     <View style={{ flex: 1, backgroundColor: PHOTO_BASE }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Full-bleed event photography. PHOTO_BASE sits underneath so the
-          screen is never white-on-white for the frame or two before the
-          image decodes. */}
+      {/* Photography as a top band, not full-bleed.
+          Every hero in the asset library is 1920x1080 — landscape. Filling a
+          ~9:20 phone screen from a 16:9 source means scaling ~4x and keeping
+          a narrow vertical strip, which is why it read as heavily zoomed. A
+          band near the source's own aspect shows the actual scene. The asset
+          ramps to opaque PHOTO_BASE at its bottom edge, so it melts into the
+          background below with no visible seam. */}
       <Image
         source={require("../../assets/welcome-hero.jpg")}
-        style={StyleSheet.absoluteFill}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: photoHeight,
+        }}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
       />
@@ -520,7 +533,9 @@ export default function WelcomeScreen() {
           style={{
             flex: 1,
             paddingHorizontal: 32,
-            paddingTop: "18%",
+            // Sits the wordmark over the darker middle of the photo band and
+            // drops the value lines onto the solid field below it.
+            paddingTop: "26%",
             alignItems: "center",
           }}
         >
