@@ -30,7 +30,10 @@ const INK = "#14161a";
 // inline literals so the whole surface stays consistent.
 const ON_PHOTO = "#ffffff";
 const ON_PHOTO_DIM = "rgba(255,255,255,0.78)";
-const PHOTO_BASE = "#111417"; // shows while the image decodes
+// Must match the colour the hero asset's baked gradient resolves to at its
+// lower edge (rgba(15,17,20,1)) exactly — a near-miss shows up as a visible
+// seam where the photo band meets the page.
+const PHOTO_BASE = "#0f1114";
 
 // Why the app exists, in the three beats a vendor cares about. Sits between
 // the tagline and the auth buttons — previously that band was empty, so the
@@ -48,21 +51,29 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 // easing it's paired with.
 const CHAR_RISE = 18;
 
-// Per-character timing (ms). Mirrors the HTML constants.
-const OPENER_PER_CHAR = 55;
-const PHRASE_PER_CHAR = 42;
-const WORDMARK_PER_CHAR = 110;
-const TAGLINE_PER_CHAR = 42;
+// Per-character timing (ms).
+//
+// These were ported straight from the HTML prototype and totalled roughly
+// 15 seconds before the auth buttons were the only thing left moving —
+// long enough that the sequence read as sluggish, and long enough that the
+// value lines (which follow the tagline) were effectively never seen. Roughly
+// halved: the per-character cadence is quicker and, more importantly, the
+// dead holds between steps are much shorter. The letter-level motion itself
+// is unchanged — that's tuned in AnimatedChar.
+const OPENER_PER_CHAR = 32;
+const PHRASE_PER_CHAR = 26;
+const WORDMARK_PER_CHAR = 80;
+const TAGLINE_PER_CHAR = 26;
 
 // Pause durations between sequence steps.
-const OPENER_PRE_DELAY = 400;
-const OPENER_HOLD = 1700;
-const PHRASE_HOLD_BETWEEN = 450;
-const STACK_HOLD_AFTER = 1400;
-const STACK_FADE = 800;
-const WORDMARK_PRE_DELAY = 200;
-const WORDMARK_HOLD = 700;
-const TAGLINE_HOLD = 1200;
+const OPENER_PRE_DELAY = 300;
+const OPENER_HOLD = 700;
+const PHRASE_HOLD_BETWEEN = 250;
+const STACK_HOLD_AFTER = 500;
+const STACK_FADE = 500;
+const WORDMARK_PRE_DELAY = 150;
+const WORDMARK_HOLD = 400;
+const TAGLINE_HOLD = 500;
 
 const OPENER_TEXT = "The night is fine when the people align.";
 // 30..36 = "people" — rendered bold instead of italic on that range.
@@ -533,10 +544,15 @@ export default function WelcomeScreen() {
           style={{
             flex: 1,
             paddingHorizontal: 32,
-            // Sits the wordmark over the darker middle of the photo band and
-            // drops the value lines onto the solid field below it.
-            paddingTop: "26%",
             alignItems: "center",
+            // Centre the copy in the space that's actually free — between the
+            // photo band and the auth buttons. It used to be top-aligned at a
+            // fixed 26%, which left a large void between the last value line
+            // and the buttons. Starting just past halfway down the band keeps
+            // the wordmark overlapping the photo where it reads best.
+            justifyContent: "center",
+            paddingTop: photoHeight * 0.55,
+            paddingBottom: 150,
           }}
         >
           {scene === "opener" ? (
