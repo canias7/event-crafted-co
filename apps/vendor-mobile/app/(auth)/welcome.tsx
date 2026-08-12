@@ -72,23 +72,44 @@ const PHRASES = [
 
 const TAGLINE = "for those who plan, and those who craft.";
 
-// Darkening scrim over the hero photo.
+// Shrinks its content to fit the screen when it would otherwise overflow.
 //
-// Built from stacked translucent bands rather than expo-linear-gradient on
-// purpose: that's a native module, so adding it would force a full rebuild
-// and another App Store review. This is pure JS, so the whole redesign still
-// ships over the air. Eight bands read as a smooth ramp at this scale.
-const SCRIM_BANDS = [0.18, 0.24, 0.3, 0.38, 0.48, 0.58, 0.68, 0.8];
+// The wordmark and intro lines render one <Text> per character so each can
+// animate independently, which means React Native can't shrink or re-flow
+// them the way it would a single Text — an over-wide line just runs off the
+// edge. A first attempt sized the wordmark from an estimated glyph-width
+// ratio and still clipped, because the Android serif fallback is wider than
+// the estimate. Measuring the laid-out row is exact, so this replaces the
+// guess entirely.
+//
+// Scale is applied as a transform, which doesn't feed back into layout, and
+// latches once so measurement can't oscillate.
+function FitRow({ children }: { children: React.ReactNode }) {
+  const [scale, setScale] = useState(1);
+  const availableRef = useRef(0);
+  const settledRef = useRef(false);
 
-function Scrim() {
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {SCRIM_BANDS.map((opacity, i) => (
-        <View
-          key={i}
-          style={{ flex: 1, backgroundColor: `rgba(10,12,14,${opacity})` }}
-        />
-      ))}
+    <View
+      style={{ width: "100%", alignItems: "center" }}
+      onLayout={(e) => {
+        availableRef.current = e.nativeEvent.layout.width;
+      }}
+    >
+      <View
+        onLayout={(e) => {
+          const contentWidth = e.nativeEvent.layout.width;
+          const available = availableRef.current;
+          if (settledRef.current || !available || contentWidth <= 0) return;
+          if (contentWidth > available) {
+            settledRef.current = true;
+            setScale(available / contentWidth);
+          }
+        }}
+        style={{ transform: [{ scale }] }}
+      >
+        {children}
+      </View>
     </View>
   );
 }
@@ -374,14 +395,12 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  // "Vendora" was hardcoded at 86pt, which is wider than a narrow phone —
-  // the V and the trailing a were clipped off both screen edges. Size it
-  // from the viewport instead: the 7 glyphs of this serif occupy roughly
-  // 0.56em each, so ~3.9em total. Solve for the width we can actually use
-  // (screen minus 24pt gutters each side) and cap at the original 86 so
-  // large phones and tablets don't inflate it.
-  const WORDMARK_EM_RATIO = 3.9;
-  const wordmarkSize = Math.min(86, (screenWidth - 48) / WORDMARK_EM_RATIO);
+  // Starting size for the wordmark. FitRow measures the rendered row and
+  // scales it down if it still overflows, so this only has to be a sane
+  // ceiling rather than an exact fit — an earlier version tried to compute
+  // the exact size from a glyph-width estimate and clipped anyway, because
+  // the Android serif fallback is wider than the estimate.
+  const wordmarkSize = Math.min(86, screenWidth * 0.21);
   const [scene, setScene] = useState<Scene>("opener");
   const [phrasesShown, setPhrasesShown] = useState(0);
   const [stackFading, setStackFading] = useState(false);
@@ -461,10 +480,10 @@ export default function WelcomeScreen() {
         resizeMode="cover"
         accessibilityIgnoresInvertColors
       />
-      {/* Scrim: light at the top so the image reads, heavy at the bottom so
-          the wordmark, value lines, and buttons keep contrast over whatever
-          part of the photo lands behind them. */}
-      <Scrim />
+      {/* No scrim view here on purpose: the darkening ramp is baked into the
+          asset itself. Stacking translucent Views to fake a gradient left
+          visible horizontal seams on device, and expo-linear-gradient is a
+          native module that would cost a rebuild plus an App Store review. */}
 
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         {/* Upper text area — non-interactive on purpose. */}
@@ -516,36 +535,35 @@ export default function WelcomeScreen() {
           {scene === "wordmark" || scene === "done" ? (
             <View style={{ alignItems: "center" }}>
               {/* Wordmark — "Vendor" upright + italic "a" */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "baseline",
-                  // Gutter so the wordmark can never render flush to the
-                  // screen edge even if the ratio estimate is slightly off
-                  // on an unusual font fallback.
-                  paddingHorizontal: 16,
-                }}
-              >
-                <AnimatedLine
-                  text="Vendor"
-                  startDelay={WORDMARK_PRE_DELAY}
-                  perChar={WORDMARK_PER_CHAR}
-                  bold
-                  fontSize={wordmarkSize}
-                  letterSpacing={-3.5}
-                  immediate={skipped}
-                />
-                <AnimatedChar
-                  char="a"
-                  delay={WORDMARK_PRE_DELAY + 6 * WORDMARK_PER_CHAR}
-                  italic
-                  bold
-                  fontSize={wordmarkSize}
-                  letterSpacing={-3.5}
-                  immediate={skipped}
-                />
-              </View>
+              <FitRow>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "baseline",
+                    paddingHorizontal: 16,
+                  }}
+                >
+                  <AnimatedLine
+                    text="Vendor"
+                    startDelay={WORDMARK_PRE_DELAY}
+                    perChar={WORDMARK_PER_CHAR}
+                    bold
+                    fontSize={wordmarkSize}
+                    letterSpacing={-3.5}
+                    immediate={skipped}
+                  />
+                  <AnimatedChar
+                    char="a"
+                    delay={WORDMARK_PRE_DELAY + 6 * WORDMARK_PER_CHAR}
+                    italic
+                    bold
+                    fontSize={wordmarkSize}
+                    letterSpacing={-3.5}
+                    immediate={skipped}
+                  />
+                </View>
+              </FitRow>
               <View style={{ marginTop: 20 }}>
                 <AnimatedLine
                   text={TAGLINE}
