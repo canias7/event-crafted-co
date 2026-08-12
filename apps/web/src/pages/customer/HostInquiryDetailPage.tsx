@@ -43,12 +43,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProposeAppointmentModal } from "@/components/appointments/ProposeAppointmentModal";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
+import { ShareVendorButton } from "@/components/messages/ShareVendorButton";
 import {
   uploadAttachments,
   validateAttachment,
   ACCEPTED_MIME,
   MAX_FILES,
-  type MessageAttachment,
+  type MessageAttachmentItem,
+  type VendorCardAttachment,
 } from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
 
@@ -78,7 +80,7 @@ interface Message {
   body: string;
   sender_role: "host" | "vendor" | "agent";
   created_at: string;
-  attachments?: MessageAttachment[];
+  attachments?: MessageAttachmentItem[];
   edited_at?: string | null;
   deleted_at?: string | null;
   reply_to_message_id?: string | null;
@@ -631,6 +633,28 @@ export default function HostInquiryDetailPage() {
       accepted.push(f);
     }
     setPendingFiles((prev) => [...prev, ...accepted]);
+  }
+
+  // Post a vendor profile as its own message. Kept separate from sendMessage
+  // so sharing doesn't consume or clear the user's in-progress draft and
+  // pending file selection.
+  async function shareVendorCard(
+    card: VendorCardAttachment,
+  ): Promise<boolean> {
+    if (!threadId || !user) return false;
+    const { error } = await supabase.from("direct_messages").insert({
+      thread_id: threadId,
+      sender_id: user.id,
+      sender_role: "host",
+      body: `Shared a vendor: ${card.business_name}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      attachments: [card],
+    } as any);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    return true;
   }
 
   async function sendMessage() {
@@ -1271,6 +1295,10 @@ export default function HostInquiryDetailPage() {
               >
                 <Paperclip className="w-4 h-4" />
               </button>
+              {/* Introduce a vendor: sends their profile as a card. Tapping it
+                  opens the profile — it does not create a thread on the
+                  recipient's behalf. */}
+              <ShareVendorButton disabled={sending} onShare={shareVendorCard} />
               <VoiceRecorder
                 disabled={sending || pendingFiles.length >= MAX_FILES}
                 onRecorded={(file) => {

@@ -26,6 +26,51 @@ export interface MessageAttachment {
   mime: string;
 }
 
+/**
+ * A vendor profile shared into a conversation as a tappable card — e.g. a
+ * host introducing one vendor to another. Lives in the same `attachments`
+ * jsonb array as file attachments, so no schema change was needed.
+ *
+ * Discriminated by `kind`. File attachments written before this existed have
+ * no `kind` field, so absence-of-kind means "file" (see isVendorCard).
+ *
+ * The display fields are a SNAPSHOT taken at send time. We deliberately don't
+ * re-query the vendor on render: the card stays readable if the vendor later
+ * changes their name or unpublishes, and a long thread doesn't fire a lookup
+ * per card. `vendor_id` is the link target for current data.
+ */
+export interface VendorCardAttachment {
+  kind: "vendor_card";
+  vendor_id: string;
+  business_name: string;
+  category: string | null;
+  location: string | null;
+  logo_url: string | null;
+}
+
+/** Anything that can appear in a message's `attachments` array. */
+export type MessageAttachmentItem = MessageAttachment | VendorCardAttachment;
+
+export function isVendorCard(
+  a: MessageAttachmentItem,
+): a is VendorCardAttachment {
+  return (a as VendorCardAttachment).kind === "vendor_card";
+}
+
+/**
+ * Narrow to a file attachment. Guards on storage_path rather than just
+ * "not a vendor card" so a malformed row can't reach the file renderer,
+ * which dereferences `mime` and `storage_path`.
+ */
+export function isFileAttachment(
+  a: MessageAttachmentItem,
+): a is MessageAttachment {
+  const f = a as MessageAttachment;
+  return (
+    !isVendorCard(a) && typeof f.storage_path === "string" && typeof f.mime === "string"
+  );
+}
+
 export function attachmentUrl(path: string): string {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }

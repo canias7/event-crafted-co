@@ -1,9 +1,15 @@
 import { FileText, Image as ImageIcon, Download } from "lucide-react";
-import { attachmentUrl, type MessageAttachment } from "@/lib/messageAttachments";
+import {
+  attachmentUrl,
+  isFileAttachment,
+  isVendorCard,
+  type MessageAttachmentItem,
+} from "@/lib/messageAttachments";
 import { AudioBubble } from "@/components/messages/AudioBubble";
+import { SharedVendorCard } from "@/components/messages/SharedVendorCard";
 
 interface Props {
-  attachments: MessageAttachment[];
+  attachments: MessageAttachmentItem[];
   /** Light = lighter card backgrounds, dark = darker bubbles. */
   variant?: "neutral" | "tinted";
 }
@@ -19,7 +25,15 @@ export function MessageAttachments({ attachments }: Props) {
 
   return (
     <div className="mt-3 space-y-2">
-      {attachments.map((a) => {
+      {attachments.map((item, i) => {
+        // Shared vendor profile — a host introducing a vendor into the chat.
+        if (isVendorCard(item)) {
+          return <SharedVendorCard key={`vc-${item.vendor_id}-${i}`} card={item} />;
+        }
+        // Anything that isn't a well-formed file attachment is skipped rather
+        // than crashing the whole thread on a malformed row.
+        if (!isFileAttachment(item)) return null;
+        const a = item;
         const url = attachmentUrl(a.storage_path);
         const isImage = a.mime.startsWith("image/");
         const isAudio = a.mime.startsWith("audio/");
