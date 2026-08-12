@@ -44,6 +44,11 @@ const VALUE_LINES = [
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
+// How far each glyph drifts up as it fades in. A slightly longer travel than
+// the original 14 reads as a drift rather than a snap, given the softer
+// easing it's paired with.
+const CHAR_RISE = 18;
+
 // Per-character timing (ms). Mirrors the HTML constants.
 const OPENER_PER_CHAR = 55;
 const PHRASE_PER_CHAR = 42;
@@ -120,23 +125,28 @@ function ValueLines({ delay }: { delay: number }) {
   const translateY = useRef(new Animated.Value(10)).current;
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 620,
-          easing: Easing.bezier(0.22, 1, 0.36, 1),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 700,
-          easing: Easing.bezier(0.22, 1, 0.36, 1),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, delay);
-    return () => clearTimeout(t);
+    // Native-scheduled delay, same reasoning as AnimatedChar: a JS timer here
+    // would fire late while the intro is still mounting glyphs.
+    const anim = Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        delay,
+        duration: 620,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        delay,
+        duration: 780,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+    ]);
+    anim.start();
+    return () => anim.stop();
   }, [delay, opacity, translateY]);
 
   return (
@@ -199,27 +209,44 @@ function AnimatedChar({
   immediate,
 }: AnimatedCharProps) {
   const opacity = useRef(new Animated.Value(immediate ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(immediate ? 0 : 14)).current;
+  const translateY = useRef(new Animated.Value(immediate ? 0 : CHAR_RISE)).current;
 
   useEffect(() => {
     if (immediate) return;
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 500,
-          easing: Easing.bezier(0.22, 1, 0.36, 1),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 600,
-          easing: Easing.bezier(0.22, 1, 0.36, 1),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, delay);
-    return () => clearTimeout(t);
+    // The stagger is expressed as Animated's own `delay`, not a setTimeout.
+    //
+    // Both animations already ran on the native driver, but a JS-thread timer
+    // decided when each one STARTED — and the JS thread is busy during this
+    // screen's mount (dozens of Animated.Text nodes, image decode, layout).
+    // Timers fired late and unevenly, so letters arrived in clumps and the
+    // sequence read as lagging rather than drifting into place. With `delay`
+    // the schedule is owned by the native driver and the cadence is exact.
+    //
+    // isInteraction: false keeps these decorative animations from holding
+    // InteractionManager and delaying real work behind them.
+    const anim = Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        delay,
+        duration: 620,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        delay,
+        // Longer and softer than the opacity fade so the glyph is still
+        // easing upward as it becomes visible — that's what reads as
+        // floating instead of popping.
+        duration: 880,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+    ]);
+    anim.start();
+    return () => anim.stop();
   }, [delay, immediate, opacity, translateY]);
 
   return (
