@@ -14,6 +14,7 @@ import {
   Pressable,
   StatusBar,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -272,6 +273,15 @@ function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  // "Vendora" was hardcoded at 86pt, which is wider than a narrow phone —
+  // the V and the trailing a were clipped off both screen edges. Size it
+  // from the viewport instead: the 7 glyphs of this serif occupy roughly
+  // 0.56em each, so ~3.9em total. Solve for the width we can actually use
+  // (screen minus 24pt gutters each side) and cap at the original 86 so
+  // large phones and tablets don't inflate it.
+  const WORDMARK_EM_RATIO = 3.9;
+  const wordmarkSize = Math.min(86, (screenWidth - 48) / WORDMARK_EM_RATIO);
   const [scene, setScene] = useState<Scene>("opener");
   const [phrasesShown, setPhrasesShown] = useState(0);
   const [stackFading, setStackFading] = useState(false);
@@ -397,6 +407,10 @@ export default function WelcomeScreen() {
                   flexDirection: "row",
                   justifyContent: "center",
                   alignItems: "baseline",
+                  // Gutter so the wordmark can never render flush to the
+                  // screen edge even if the ratio estimate is slightly off
+                  // on an unusual font fallback.
+                  paddingHorizontal: 16,
                 }}
               >
                 <AnimatedLine
@@ -404,7 +418,7 @@ export default function WelcomeScreen() {
                   startDelay={WORDMARK_PRE_DELAY}
                   perChar={WORDMARK_PER_CHAR}
                   bold
-                  fontSize={86}
+                  fontSize={wordmarkSize}
                   letterSpacing={-3.5}
                   immediate={skipped}
                 />
@@ -413,7 +427,7 @@ export default function WelcomeScreen() {
                   delay={WORDMARK_PRE_DELAY + 6 * WORDMARK_PER_CHAR}
                   italic
                   bold
-                  fontSize={86}
+                  fontSize={wordmarkSize}
                   letterSpacing={-3.5}
                   immediate={skipped}
                 />
