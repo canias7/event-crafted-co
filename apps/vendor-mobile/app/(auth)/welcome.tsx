@@ -395,12 +395,13 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  // Starting size for the wordmark. FitRow measures the rendered row and
-  // scales it down if it still overflows, so this only has to be a sane
-  // ceiling rather than an exact fit — an earlier version tried to compute
-  // the exact size from a glyph-width estimate and clipped anyway, because
-  // the Android serif fallback is wider than the estimate.
-  const wordmarkSize = Math.min(86, screenWidth * 0.21);
+  // Wordmark size. 0.21 of the viewport measured out to almost exactly the
+  // full screen width on device — technically un-clipped, but touching both
+  // edges with no breathing room, and it made FitRow fire on every launch
+  // (render big, then visibly snap smaller, which read as broken). 0.175
+  // lands the lockup at roughly 85% width, so it has margins and FitRow
+  // stays a silent backstop instead of part of the normal path.
+  const wordmarkSize = Math.min(78, screenWidth * 0.175);
   const [scene, setScene] = useState<Scene>("opener");
   const [phrasesShown, setPhrasesShown] = useState(0);
   const [stackFading, setStackFading] = useState(false);
@@ -582,11 +583,23 @@ export default function WelcomeScreen() {
                 />
               </View>
 
-              {/* Value lines. Fade in only once the intro has fully landed —
-                  during the animation they'd compete with the wordmark. */}
-              {scene === "done" ? (
-                <ValueLines delay={skipped ? 0 : 200} />
-              ) : null}
+              {/* Value lines follow the tagline directly.
+                  They were previously gated on scene === "done", which only
+                  arrives after the full ~14s intro plus a hold — so in
+                  practice nobody ever saw them. Timing off the tagline
+                  instead means they land as part of the sequence and are on
+                  screen well before the timeline finishes. */}
+              <ValueLines
+                delay={
+                  skipped
+                    ? 0
+                    : WORDMARK_PRE_DELAY +
+                      7 * WORDMARK_PER_CHAR +
+                      WORDMARK_HOLD +
+                      TAGLINE.length * TAGLINE_PER_CHAR +
+                      250
+                }
+              />
             </View>
           ) : null}
         </View>
