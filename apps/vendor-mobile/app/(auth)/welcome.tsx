@@ -10,9 +10,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Image,
   Platform,
   Pressable,
   StatusBar,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -20,11 +22,25 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
+// INK is still the text colour on the light "Sign up" pill; the rest of the
+// old cream-surface palette went away when this screen moved onto photography.
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
-const INK_BORDER = "rgba(20,22,26,0.08)";
+
+// The welcome screen sits on full-bleed event photography behind a dark
+// scrim, so every glyph on it is light. Kept as named tokens rather than
+// inline literals so the whole surface stays consistent.
+const ON_PHOTO = "#ffffff";
+const ON_PHOTO_DIM = "rgba(255,255,255,0.78)";
+const PHOTO_BASE = "#111417"; // shows while the image decodes
+
+// Why the app exists, in the three beats a vendor cares about. Sits between
+// the tagline and the auth buttons — previously that band was empty, so the
+// first screen never said what Vendora does.
+const VALUE_LINES = [
+  "Get discovered by event hosts",
+  "Manage every booking in one place",
+  "Get paid securely",
+];
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -56,6 +72,90 @@ const PHRASES = [
 
 const TAGLINE = "for those who plan, and those who craft.";
 
+// Darkening scrim over the hero photo.
+//
+// Built from stacked translucent bands rather than expo-linear-gradient on
+// purpose: that's a native module, so adding it would force a full rebuild
+// and another App Store review. This is pure JS, so the whole redesign still
+// ships over the air. Eight bands read as a smooth ramp at this scale.
+const SCRIM_BANDS = [0.18, 0.24, 0.3, 0.38, 0.48, 0.58, 0.68, 0.8];
+
+function Scrim() {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {SCRIM_BANDS.map((opacity, i) => (
+        <View
+          key={i}
+          style={{ flex: 1, backgroundColor: `rgba(10,12,14,${opacity})` }}
+        />
+      ))}
+    </View>
+  );
+}
+
+// The three value beats, revealed together after the intro settles.
+function ValueLines({ delay }: { delay: number }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 620,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(t);
+  }, [delay, opacity, translateY]);
+
+  return (
+    <Animated.View
+      style={{
+        marginTop: 28,
+        gap: 10,
+        opacity,
+        transform: [{ translateY }],
+      }}
+    >
+      {VALUE_LINES.map((line) => (
+        <View
+          key={line}
+          style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+        >
+          <View
+            style={{
+              width: 4,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: ON_PHOTO,
+              opacity: 0.85,
+            }}
+          />
+          <Text
+            style={{
+              color: ON_PHOTO_DIM,
+              fontSize: 14.5,
+              letterSpacing: 0.1,
+            }}
+          >
+            {line}
+          </Text>
+        </View>
+      ))}
+    </Animated.View>
+  );
+}
+
 interface AnimatedCharProps {
   char: string;
   delay: number;
@@ -73,7 +173,7 @@ function AnimatedChar({
   italic,
   bold,
   fontSize,
-  color = INK,
+  color = ON_PHOTO,
   letterSpacing = 0,
   immediate,
 }: AnimatedCharProps) {
@@ -349,8 +449,22 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: CREAM }}>
-      <StatusBar barStyle="dark-content" backgroundColor={CREAM} />
+    <View style={{ flex: 1, backgroundColor: PHOTO_BASE }}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Full-bleed event photography. PHOTO_BASE sits underneath so the
+          screen is never white-on-white for the frame or two before the
+          image decodes. */}
+      <Image
+        source={require("../../assets/welcome-hero.jpg")}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+      />
+      {/* Scrim: light at the top so the image reads, heavy at the bottom so
+          the wordmark, value lines, and buttons keep contrast over whatever
+          part of the photo lands behind them. */}
+      <Scrim />
 
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         {/* Upper text area — non-interactive on purpose. */}
@@ -445,10 +559,16 @@ export default function WelcomeScreen() {
                   perChar={TAGLINE_PER_CHAR}
                   italic
                   fontSize={16}
-                  color={INK_DIM}
+                  color={ON_PHOTO_DIM}
                   immediate={skipped}
                 />
               </View>
+
+              {/* Value lines. Fade in only once the intro has fully landed —
+                  during the animation they'd compete with the wordmark. */}
+              {scene === "done" ? (
+                <ValueLines delay={skipped ? 0 : 200} />
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -469,6 +589,8 @@ export default function WelcomeScreen() {
           zIndex: 40,
         }}
       >
+        {/* Primary inverts on photo: solid white reads as the brightest
+            thing on a dark scrim, so it stays the obvious first action. */}
         <Pressable
           onPress={() => router.push("/(auth)/signup")}
           style={{
@@ -476,11 +598,11 @@ export default function WelcomeScreen() {
             maxWidth: 320,
             height: 54,
             borderRadius: 999,
-            backgroundColor: INK,
+            backgroundColor: ON_PHOTO,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: INK,
-            shadowOpacity: 0.18,
+            shadowColor: "#000000",
+            shadowOpacity: 0.3,
             shadowRadius: 20,
             shadowOffset: { width: 0, height: 8 },
             elevation: 6,
@@ -489,7 +611,7 @@ export default function WelcomeScreen() {
         >
           <Text
             style={{
-              color: CREAM,
+              color: INK,
               fontSize: 17,
               fontWeight: "600",
               fontFamily: SERIF,
@@ -499,6 +621,8 @@ export default function WelcomeScreen() {
           </Text>
         </Pressable>
 
+        {/* Secondary is a translucent glass pill — the photo shows through,
+            which keeps the hierarchy clear without a second solid slab. */}
         <Pressable
           onPress={() => router.push("/(auth)/login")}
           style={{
@@ -506,21 +630,16 @@ export default function WelcomeScreen() {
             maxWidth: 320,
             height: 54,
             borderRadius: 999,
-            backgroundColor: CREAM_DEEP,
+            backgroundColor: "rgba(255,255,255,0.14)",
             borderWidth: 1,
-            borderColor: INK_BORDER,
+            borderColor: "rgba(255,255,255,0.45)",
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: INK,
-            shadowOpacity: 0.10,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 3,
           }}
         >
           <Text
             style={{
-              color: INK,
+              color: ON_PHOTO,
               fontSize: 17,
               fontWeight: "600",
               fontFamily: SERIF,
