@@ -187,26 +187,33 @@ export default function VendorSignupScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable
-            onPress={() => {
-              if (step === "code") {
-                setStep("business");
-                setCode("");
-                setError(null);
-              } else if (step === "business") {
-                setStep("account");
-              } else {
-                router.back();
-              }
-            }}
-            hitSlop={12}
-            style={{ alignSelf: "flex-start", paddingVertical: 8 }}
-            disabled={step === "done"}
-          >
-            <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
-              ← Back
-            </Text>
-          </Pressable>
+          {/* Hidden on the final step: the application is already submitted,
+              so there's nothing to go back to. It used to render `disabled`
+              with no visual difference, so it read as a live control that
+              did nothing when tapped. "Back to start" is the action there. */}
+          {step === "done" ? null : (
+            <Pressable
+              onPress={() => {
+                if (step === "code") {
+                  setStep("business");
+                  setCode("");
+                  setError(null);
+                } else if (step === "business") {
+                  setStep("account");
+                } else if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(auth)/welcome");
+                }
+              }}
+              hitSlop={12}
+              style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+            >
+              <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+                ← Back
+              </Text>
+            </Pressable>
+          )}
 
           {step === "account" ? (
             <AccountStep
@@ -249,7 +256,14 @@ export default function VendorSignupScreen() {
             />
           ) : null}
 
-          {step === "done" ? <ThanksView onClose={() => router.back()} /> : null}
+          {/* "Back to start" goes to welcome explicitly rather than
+              router.back(): back() is a no-op when this screen is the first
+              in the stack (deep link, or a fresh launch into signup), which
+              left the button doing nothing. replace() also drops the
+              completed signup from history so it can't be swiped back into. */}
+          {step === "done" ? (
+            <ThanksView onClose={() => router.replace("/(auth)/welcome")} />
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
