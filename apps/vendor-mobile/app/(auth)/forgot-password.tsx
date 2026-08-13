@@ -1,31 +1,42 @@
-// Host password reset — request step. User enters their email, we
-// call supabase.auth.resetPasswordForEmail with a deep-link redirect
-// (vendora-host://reset-password). Supabase mails a magic link that,
-// when tapped, opens the app with recovery tokens in the URL fragment.
-// The reset-password screen picks them up and lets the user pick a new
+// Vendor password reset — request step. User enters their email, we
+// call the password-reset edge function with a deep-link redirect
+// (vendora-vendor://reset-password). It mails a recovery link that,
+// when tapped, opens the app with tokens in the URL fragment. The
+// reset-password screen picks them up and lets the user pick a new
 // password.
+//
+// Dark Vendora theme mirroring signup/login. No function-form style
+// props (device interop drops them); TouchableOpacity for feedback.
 
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
+  StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
-import { Feather } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#14161a";
-const INK_DIM = "#5e636e";
-const INK_BORDER = "rgba(20,22,26,0.08)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#dc2828";
+// Same palette as welcome / signup / login.
+const PAGE = "#0d0f13";
+const CREAM = "#f4efe6";
+const INK_ON_GOLD = "#14161a";
+const GOLD = "#d9bd82";
+const GOLD_DIM = "rgba(217,189,130,0.45)";
+const MUTED = "rgba(255,255,255,0.72)";
+const FAINT = "rgba(255,255,255,0.45)";
+const HAIRLINE = "rgba(255,255,255,0.14)";
+const INPUT_BG = "rgba(255,255,255,0.05)";
+const ERROR = "#f0938a";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 export default function ForgotPasswordScreen() {
@@ -60,154 +71,205 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Feather name="chevron-left" size={26} color={INK} />
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 48,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(auth)/login");
+              }
+            }}
+            hitSlop={12}
+            style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+          >
+            <Text style={{ color: MUTED, fontSize: 16, fontWeight: "500" }}>
+              ← Back
+            </Text>
           </Pressable>
-        </View>
 
-        {!sent ? (
-          <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontSize: 36,
-                fontWeight: "700",
-                color: INK,
-                letterSpacing: -1,
-              }}
-            >
-              Forgot your password?
-            </Text>
-            <Text
-              style={{
-                marginTop: 10,
-                color: INK_DIM,
-                fontSize: 15,
-                lineHeight: 22,
-              }}
-            >
-              Enter your email and we'll send a reset link. Tap it on
-              this device to pick a new password.
-            </Text>
-
-            <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  color: INK_DIM,
-                  fontSize: 12,
-                  fontWeight: "700",
-                  letterSpacing: 0.8,
-                }}
-              >
-                EMAIL
-              </Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-                returnKeyType="send"
-                onSubmitEditing={onSubmit}
-                placeholder="you@example.com"
-                placeholderTextColor={INK_DIM}
-                style={{
-                  marginTop: 6,
-                  backgroundColor: INPUT_BG,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: INK_BORDER,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  color: INK,
-                  fontSize: 16,
-                }}
+          {!sent ? (
+            <>
+              <StepHeader
+                eyebrow="RESET PASSWORD"
+                title="Forgot your password?"
+                subtitle="Enter your email and we'll send a reset link. Tap it on this device to pick a new password."
               />
-            </View>
 
-            {error ? (
-              <Text
-                style={{
-                  marginTop: 12,
-                  color: ERROR,
-                  fontSize: 13,
-                }}
+              <View style={{ marginTop: 28, gap: 20 }}>
+                <View>
+                  <Text style={fieldLabel}>EMAIL</Text>
+                  <View style={inputRow}>
+                    <MaterialCommunityIcons
+                      name="email-outline"
+                      size={20}
+                      color={GOLD}
+                      style={{ marginRight: 10 }}
+                    />
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      autoComplete="email"
+                      returnKeyType="send"
+                      onSubmitEditing={onSubmit}
+                      placeholder="you@example.com"
+                      placeholderTextColor={FAINT}
+                      selectionColor={GOLD}
+                      keyboardAppearance="dark"
+                      style={inputText}
+                    />
+                  </View>
+                </View>
+
+                {error ? <Text style={errorText}>{error}</Text> : null}
+
+                <TouchableOpacity
+                  onPress={onSubmit}
+                  disabled={submitting || !email.trim()}
+                  activeOpacity={0.85}
+                  style={{
+                    ...primaryBtn,
+                    opacity: submitting || !email.trim() ? 0.5 : 1,
+                  }}
+                >
+                  <Text style={primaryBtnText}>
+                    {submitting ? "Sending…" : "Send reset link"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <StepHeader
+                eyebrow="RESET PASSWORD"
+                title="Check your email"
+                subtitle={`If an account exists for ${email}, you'll get a reset link within a minute. Open it on this device to set a new password.`}
+              />
+
+              <TouchableOpacity
+                onPress={() => router.replace("/(auth)/login")}
+                activeOpacity={0.85}
+                style={{ ...primaryBtn, marginTop: 28 }}
               >
-                {error}
-              </Text>
-            ) : null}
-
-            <Pressable
-              onPress={onSubmit}
-              disabled={submitting || !email.trim()}
-              style={{
-                marginTop: 18,
-                backgroundColor: INK,
-                borderRadius: 999,
-                height: 54,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: submitting || !email.trim() ? 0.5 : 1,
-              }}
-            >
-              <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
-                {submitting ? "Sending…" : "Send reset link"}
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontSize: 36,
-                fontWeight: "700",
-                color: INK,
-                letterSpacing: -1,
-              }}
-            >
-              Check your email
-            </Text>
-            <Text
-              style={{
-                marginTop: 12,
-                fontSize: 15,
-                color: INK_DIM,
-                lineHeight: 22,
-              }}
-            >
-              If an account exists for{" "}
-              <Text style={{ color: INK, fontWeight: "600" }}>{email}</Text>,
-              you'll get a reset link within a minute. Open it on this
-              device to set a new password.
-            </Text>
-
-            <Pressable
-              onPress={() => router.replace("/(auth)/login")}
-              style={{
-                marginTop: 24,
-                backgroundColor: INK,
-                borderRadius: 999,
-                height: 54,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
-                Back to sign in
-              </Text>
-            </Pressable>
-          </View>
-        )}
+                <Text style={primaryBtnText}>Back to sign in</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+// Gold hairlines meeting a four-point star — same divider as signup/login.
+function StarDivider() {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 28,
+        gap: 14,
+      }}
+    >
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+    </View>
+  );
+}
+
+function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
+  return (
+    <View style={{ marginTop: 24 }}>
+      <Text style={eyebrowLabel}>{p.eyebrow}</Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 38,
+          lineHeight: 46,
+          fontWeight: "700",
+          color: CREAM,
+          letterSpacing: -0.5,
+          marginTop: 10,
+        }}
+      >
+        {p.title}
+      </Text>
+      <Text style={subhead}>{p.subtitle}</Text>
+      <StarDivider />
+    </View>
+  );
+}
+
+const eyebrowLabel = {
+  color: GOLD,
+  fontSize: 12,
+  fontWeight: "600" as const,
+  letterSpacing: 3,
+};
+const subhead = {
+  marginTop: 10,
+  fontSize: 17,
+  color: MUTED,
+  fontStyle: "italic" as const,
+  fontFamily: SERIF,
+  lineHeight: 24,
+};
+const fieldLabel = {
+  marginBottom: 8,
+  fontSize: 13,
+  fontWeight: "700" as const,
+  color: CREAM,
+  letterSpacing: 1.5,
+};
+const inputRow = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  backgroundColor: INPUT_BG,
+  borderColor: HAIRLINE,
+  borderWidth: 1,
+  borderRadius: 16,
+  paddingHorizontal: 16,
+  minHeight: 60,
+};
+const inputText = {
+  flex: 1,
+  fontSize: 16,
+  color: CREAM,
+  paddingVertical: 16,
+};
+const primaryBtn = {
+  marginTop: 4,
+  backgroundColor: GOLD,
+  borderRadius: 999,
+  height: 56,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+};
+const primaryBtnText = {
+  color: INK_ON_GOLD,
+  fontSize: 17,
+  fontWeight: "600" as const,
+};
+const errorText = {
+  color: ERROR,
+  fontSize: 14,
+  lineHeight: 20,
+};
