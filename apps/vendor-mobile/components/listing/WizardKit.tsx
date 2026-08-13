@@ -1,0 +1,670 @@
+// Shared building blocks for the category-specific listing wizards
+// (venue-listing, food-listing, and the six groups still to come).
+// One place for the step rail, chip selectors, fields, photo grid, and
+// pill styles so every category form looks and behaves identically —
+// per the user's reference designs.
+//
+// No function-form style props anywhere (device interop drops them).
+
+import { useCallback, useEffect, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import {
+  Alert,
+  Image,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { supabase } from "@/lib/supabase";
+import { compressForUpload } from "@/lib/imageManipulation";
+
+export const CREAM = "#fdfcfa";
+export const INK = "#14161a";
+export const INK_DIM = "#6b6f78";
+export const BORDER = "#e5e2dc";
+export const GOLD = "#c9a86a";
+export const GOLD_SOFT = "rgba(201,168,106,0.16)";
+export const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+export const MIN_PHOTOS = 3;
+export const MAX_PHOTOS = 100;
+
+export const darkPill = {
+  backgroundColor: INK,
+  borderRadius: 999,
+  height: 54,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+};
+export const darkPillText = {
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "600" as const,
+};
+export const lightPill = {
+  borderWidth: 1,
+  borderColor: BORDER,
+  backgroundColor: "#ffffff",
+  borderRadius: 999,
+  height: 54,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+};
+export const lightPillText = {
+  color: INK,
+  fontSize: 16,
+  fontWeight: "600" as const,
+};
+
+export function StepRail({
+  steps,
+  step,
+  onJump,
+}: {
+  steps: readonly string[];
+  step: number;
+  onJump: (i: number) => void;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "flex-start",
+        paddingHorizontal: 18,
+        paddingTop: 4,
+        paddingBottom: 8,
+      }}
+    >
+      {steps.map((label, i) => {
+        const done = i < step;
+        const current = i === step;
+        return (
+          <View
+            key={label}
+            style={{ flex: 1, alignItems: "center", flexDirection: "row" }}
+          >
+            {i > 0 ? (
+              <View
+                style={{
+                  flex: 1,
+                  height: 1.5,
+                  backgroundColor: done || current ? INK : BORDER,
+                  marginTop: 14,
+                }}
+              />
+            ) : null}
+            <Pressable onPress={() => onJump(i)} style={{ alignItems: "center" }}>
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: done ? INK : current ? GOLD : "transparent",
+                  borderWidth: done || current ? 0 : 1.5,
+                  borderColor: BORDER,
+                }}
+              >
+                {done ? (
+                  <Feather name="check" size={14} color="#fff" />
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: current ? "#fff" : INK_DIM,
+                    }}
+                  >
+                    {i + 1}
+                  </Text>
+                )}
+              </View>
+              <Text
+                style={{
+                  marginTop: 4,
+                  fontSize: 10,
+                  fontWeight: current ? "700" : "500",
+                  color: current ? INK : INK_DIM,
+                }}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+export function StepTitle({
+  title,
+  sub,
+  topGap,
+}: {
+  title: string;
+  sub: string;
+  topGap?: boolean;
+}) {
+  return (
+    <View style={{ marginTop: topGap ? 30 : 6, marginBottom: 6 }}>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 26,
+          fontWeight: "700",
+          color: INK,
+          letterSpacing: -0.3,
+        }}
+      >
+        {title}
+      </Text>
+      <Text style={{ marginTop: 3, fontSize: 13, color: INK_DIM }}>{sub}</Text>
+    </View>
+  );
+}
+
+export function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <View style={{ marginTop: 16 }}>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+        {label}
+        {required ? <Text style={{ color: "#c0392b" }}> *</Text> : null}
+      </Text>
+      <View style={{ marginTop: 8 }}>{children}</View>
+    </View>
+  );
+}
+
+export function Input(props: ComponentProps<typeof TextInput>) {
+  const { multiline } = props;
+  return (
+    <TextInput
+      placeholderTextColor={INK_DIM}
+      {...props}
+      style={{
+        backgroundColor: "#ffffff",
+        borderWidth: 1,
+        borderColor: BORDER,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        fontSize: 15,
+        color: INK,
+        minHeight: multiline ? 96 : undefined,
+        textAlignVertical: multiline ? "top" : "auto",
+      }}
+    />
+  );
+}
+
+// Multi-select chip grid with an optional inline "+ Add other".
+export function ChipMulti({
+  options,
+  selected,
+  onChange,
+  allowCustom,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  allowCustom?: boolean;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const custom = selected.filter((s) => !options.includes(s));
+  const all = [...options, ...custom];
+
+  function commitCustom() {
+    const v = draft.trim();
+    setDraft("");
+    setAdding(false);
+    if (!v) return;
+    if (!selected.includes(v)) onChange([...selected, v]);
+  }
+
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      {all.map((opt) => {
+        const on = selected.includes(opt);
+        return (
+          <TouchableOpacity
+            key={opt}
+            onPress={() =>
+              onChange(on ? selected.filter((s) => s !== opt) : [...selected, opt])
+            }
+            activeOpacity={0.7}
+            style={{
+              borderRadius: 999,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              backgroundColor: on ? GOLD : "#ffffff",
+              borderWidth: 1,
+              borderColor: on ? GOLD : BORDER,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: on ? "#ffffff" : INK,
+              }}
+            >
+              {opt}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+      {allowCustom ? (
+        adding ? (
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            onSubmitEditing={commitCustom}
+            onBlur={commitCustom}
+            autoFocus
+            placeholder="Type and press return"
+            placeholderTextColor={INK_DIM}
+            style={{
+              borderRadius: 999,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              backgroundColor: GOLD_SOFT,
+              borderWidth: 1,
+              borderColor: GOLD,
+              fontSize: 13,
+              color: INK,
+              minWidth: 160,
+            }}
+          />
+        ) : (
+          <TouchableOpacity
+            onPress={() => setAdding(true)}
+            activeOpacity={0.7}
+            style={{
+              borderRadius: 999,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              backgroundColor: "#ffffff",
+              borderWidth: 1,
+              borderColor: BORDER,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Feather name="plus" size={12} color={INK_DIM} />
+            <Text style={{ fontSize: 13, fontWeight: "600", color: INK_DIM }}>
+              Add other
+            </Text>
+          </TouchableOpacity>
+        )
+      ) : null}
+    </View>
+  );
+}
+
+export function ChipSingle({
+  options,
+  selected,
+  onChange,
+}: {
+  options: string[];
+  selected: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      {options.map((opt) => {
+        const on = selected === opt;
+        return (
+          <TouchableOpacity
+            key={opt}
+            onPress={() => onChange(on ? "" : opt)}
+            activeOpacity={0.7}
+            style={{
+              borderRadius: 999,
+              paddingHorizontal: 16,
+              paddingVertical: 9,
+              backgroundColor: on ? GOLD : "#ffffff",
+              borderWidth: 1,
+              borderColor: on ? GOLD : BORDER,
+            }}
+          >
+            <Text
+              style={{ fontSize: 13, fontWeight: "600", color: on ? "#fff" : INK }}
+            >
+              {opt}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// Free-text tag list (preferred partners, etc.).
+export function TagList({
+  items,
+  onChange,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (next: string[]) => void;
+  placeholder: string;
+}) {
+  const [draft, setDraft] = useState("");
+  function commit() {
+    const v = draft.trim();
+    setDraft("");
+    if (!v || items.includes(v)) return;
+    onChange([...items, v]);
+  }
+  return (
+    <View>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: items.length ? 8 : 0,
+        }}
+      >
+        {items.map((it) => (
+          <TouchableOpacity
+            key={it}
+            onPress={() => onChange(items.filter((x) => x !== it))}
+            activeOpacity={0.7}
+            style={{
+              borderRadius: 999,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              backgroundColor: GOLD_SOFT,
+              borderWidth: 1,
+              borderColor: GOLD,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>{it}</Text>
+            <Feather name="x" size={12} color={INK_DIM} />
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Input
+        value={draft}
+        onChangeText={setDraft}
+        onSubmitEditing={commit}
+        onBlur={commit}
+        placeholder={placeholder}
+      />
+    </View>
+  );
+}
+
+export function ReviewChecklist({ missing }: { missing: string[] }) {
+  if (missing.length === 0) {
+    return (
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+          backgroundColor: GOLD_SOFT,
+          borderRadius: 14,
+          padding: 14,
+        }}
+      >
+        <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
+        <Text style={{ flex: 1, fontSize: 14, color: INK }}>
+          Everything required is filled in. Publish when you&rsquo;re ready.
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <View
+      style={{
+        backgroundColor: "#ffffff",
+        borderWidth: 1,
+        borderColor: BORDER,
+        borderRadius: 14,
+        padding: 14,
+      }}
+    >
+      <Text style={{ fontSize: 14, fontWeight: "700", color: INK }}>
+        Still needed to publish:
+      </Text>
+      {missing.map((m) => (
+        <View
+          key={m}
+          style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}
+        >
+          <Feather name="circle" size={12} color={INK_DIM} />
+          <Text style={{ fontSize: 14, color: INK_DIM }}>{m}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Self-contained listing photo grid — same tables/bucket/mechanics as the
+// generic builder (vendor_portfolio_images / vendor-portfolios). Manages
+// its own load/add/delete; reports the current count so wizards can gate
+// publish on MIN_PHOTOS.
+export function ListingPhotosGrid({
+  vendorId,
+  onCount,
+}: {
+  vendorId: string;
+  onCount?: (n: number) => void;
+}) {
+  type PhotoRow = {
+    id: string;
+    storage_path: string;
+    display_order: number;
+    url: string;
+  };
+  const [photos, setPhotos] = useState<PhotoRow[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("vendor_portfolio_images")
+      .select("id, storage_path, display_order")
+      .eq("vendor_id", vendorId)
+      .order("display_order", { ascending: true });
+    const rows = ((data ?? []) as Omit<PhotoRow, "url">[]).map((i) => ({
+      ...i,
+      url: supabase.storage
+        .from("vendor-portfolios")
+        .getPublicUrl(i.storage_path).data.publicUrl,
+    }));
+    setPhotos(rows);
+    onCount?.(rows.length);
+  }, [vendorId, onCount]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function addPhotos() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Library access needed",
+        "Enable photo library access in Settings to upload listing photos.",
+      );
+      return;
+    }
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      Alert.alert("Photo limit reached", `Listings cap at ${MAX_PHOTOS} photos.`);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    const assets = result.assets.filter((a) => {
+      const mime = (a.mimeType ?? "").toLowerCase();
+      const uri = (a.uri ?? "").toLowerCase();
+      return !(
+        mime === "image/heic" ||
+        mime === "image/heif" ||
+        uri.endsWith(".heic") ||
+        uri.endsWith(".heif")
+      );
+    });
+    if (assets.length < result.assets.length) {
+      Alert.alert(
+        "Some photos were skipped",
+        "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
+      );
+    }
+    if (assets.length === 0) return;
+    setUploading(true);
+    const baseOrder =
+      photos.length === 0
+        ? 0
+        : Math.max(...photos.map((p) => p.display_order)) + 1;
+    const rows: Array<{
+      vendor_id: string;
+      storage_path: string;
+      display_order: number;
+    }> = [];
+    for (let i = 0; i < assets.length; i++) {
+      try {
+        const { uri: upUri, mime } = await compressForUpload(assets[i]);
+        const path = `${vendorId}/${Date.now()}-${baseOrder + i}-${i}.jpg`;
+        const bytes = await (await fetch(upUri)).arrayBuffer();
+        if (bytes.byteLength === 0) continue;
+        const up = await supabase.storage
+          .from("vendor-portfolios")
+          .upload(path, bytes, { contentType: mime, upsert: false });
+        if (up.error) continue;
+        rows.push({
+          vendor_id: vendorId,
+          storage_path: path,
+          display_order: baseOrder + i,
+        });
+      } catch {
+        // Skip the bad asset, keep the batch moving.
+      }
+    }
+    if (rows.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("vendor_portfolio_images").insert(rows);
+    }
+    setUploading(false);
+    if (rows.length < assets.length) {
+      Alert.alert(
+        "Some photos didn't upload",
+        `${assets.length - rows.length} photo(s) failed. Try them again.`,
+      );
+    }
+    await load();
+  }
+
+  function deletePhoto(p: PhotoRow) {
+    Alert.alert("Delete this photo?", undefined, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from("vendor_portfolio_images")
+            .delete()
+            .eq("id", p.id);
+          setPhotos((prev) => {
+            const next = prev.filter((x) => x.id !== p.id);
+            onCount?.(next.length);
+            return next;
+          });
+        },
+      },
+    ]);
+  }
+
+  return (
+    <View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {photos.map((p, i) => (
+          <Pressable
+            key={p.id}
+            onLongPress={() => deletePhoto(p)}
+            style={{ width: "31%", aspectRatio: 1 }}
+          >
+            <Image
+              source={{ uri: p.url }}
+              style={{ width: "100%", height: "100%", borderRadius: 12 }}
+              resizeMode="cover"
+            />
+            {i === 0 ? (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 6,
+                  left: 6,
+                  backgroundColor: "rgba(0,0,0,0.65)",
+                  borderRadius: 999,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
+                  COVER
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        ))}
+        <TouchableOpacity
+          onPress={addPhotos}
+          disabled={uploading}
+          activeOpacity={0.7}
+          style={{
+            width: "31%",
+            aspectRatio: 1,
+            borderWidth: 1.5,
+            borderStyle: "dashed",
+            borderColor: "rgba(20,22,26,0.25)",
+            borderRadius: 12,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {uploading ? (
+            <Text style={{ fontSize: 11, color: INK_DIM }}>Uploading…</Text>
+          ) : (
+            <Feather name="plus" size={22} color={INK_DIM} />
+          )}
+        </TouchableOpacity>
+      </View>
+      <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
+        Long-press a photo to delete it. Your first photo is the cover.
+      </Text>
+    </View>
+  );
+}
