@@ -32,9 +32,13 @@ on:
   # without the Actions UI (mirrors mobile-ota.yml's trigger-ota/**).
   # Push always builds vendor and submits to Play Internal. Host builds,
   # or a build-without-submit, use the "Run workflow" dispatch below.
-  push:
-    branches:
-      - "trigger-build/**"
+  # DISABLED ON THIS TRIGGER BRANCH. This branch exists only to re-run the
+  # iOS build after the 1.0.1 version bump; the Android AAB from the previous
+  # trigger is fine (Play keys off versionCode, which is epoch-based and
+  # already unique), so a second ~50-minute Gradle build would be pure waste.
+  # push:
+  #   branches:
+  #     - "trigger-build/**"
   workflow_dispatch:
     inputs:
       app:
