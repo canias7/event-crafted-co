@@ -54,6 +54,12 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 // and the enforce_listing_min_photos DB trigger — a listing can't go to
 // review (or be approved) with fewer than this.
 const MIN_PHOTOS = 3;
+// Categories in the Venues group get their own category-specific
+// builder (venue-listing.tsx) instead of this generic form. Other
+// groups follow one by one.
+const VENUE_SUBS: string[] =
+  CATEGORY_GROUPS.find((g) => g.slug === "venues")?.subs.slice() ?? [];
+
 // Per-listing photo cap matches web (ListingWizardModal MAX_PHOTOS).
 // Bumped from the original 5 once the public detail page learned how
 // to overflow into the "All photos" modal — vendors with portfolios
@@ -177,6 +183,11 @@ export default function ListingScreen() {
     }
 
     const row = prof;
+    // Venue-group listings use the venue wizard, not this generic form.
+    if (row?.category && VENUE_SUBS.includes(row.category)) {
+      router.replace(`/(vendor)/venue-listing?id=${row.id}` as never);
+      return;
+    }
     setProfile(row);
     if (row) {
       setCategory(row.category ?? "");
@@ -1126,6 +1137,20 @@ export default function ListingScreen() {
                         onPress={() => {
                           setCategory(sub);
                           setCategoryPickerOpen(false);
+                          // Venue categories have their own builder —
+                          // persist the choice and hand the listing over.
+                          if (VENUE_SUBS.includes(sub) && profile?.id) {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            void (supabase as any)
+                              .from("vendor_profiles")
+                              .update({ category: sub })
+                              .eq("id", profile.id)
+                              .then(() => {
+                                router.replace(
+                                  `/(vendor)/venue-listing?id=${profile.id}` as never,
+                                );
+                              });
+                          }
                         }}
                       >
                         <View
