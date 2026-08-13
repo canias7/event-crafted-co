@@ -51,19 +51,11 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 100;
 
-const STEPS = ["Basics", "Spaces", "Amenities", "Services", "Review"] as const;
+// One shared form for the whole Venues group — the vendor's chosen
+// SUBcategory (Event Venues / Outdoor Spaces / …) is their venue type;
+// the form doesn't re-ask it.
+const STEPS = ["Basics", "About", "Spaces", "Amenities", "More"] as const;
 
-const VENUE_TYPES = [
-  "Banquet Hall",
-  "Garden / Outdoor",
-  "Hotel / Resort",
-  "Rooftop",
-  "Historic Building",
-  "Industrial / Loft",
-  "Restaurant / Private Dining",
-  "Beachfront",
-  "Estate / Mansion",
-];
 const BEST_FOR = [
   "Weddings",
   "Corporate events",
@@ -120,28 +112,34 @@ const SERVICES = [
 interface VenueSpace {
   key: string;
   name: string;
+  /** e.g. Ballroom, Terrace, Garden — free text. */
+  type: string;
   setting: "Indoor" | "Outdoor" | "";
   sqft: string;
   ceremony: string;
   reception: string;
   seated: string;
+  standing: string;
 }
 
 function emptySpace(): VenueSpace {
   return {
     key: Math.random().toString(36).slice(2),
     name: "",
+    type: "",
     setting: "",
     sqft: "",
     ceremony: "",
     reception: "",
     seated: "",
+    standing: "",
   };
 }
 
 type ProfileRow = {
   id: string;
   category: string | null;
+  business_name: string | null;
   location: string | null;
   price_min_cents: number | null;
   price_max_cents: number | null;
@@ -158,7 +156,7 @@ type PhotoRow = {
 };
 
 const COLS =
-  "id, category, location, price_min_cents, price_max_cents, application_status, category_details";
+  "id, category, business_name, location, price_min_cents, price_max_cents, application_status, category_details";
 
 export default function VenueListingScreen() {
   const router = useRouter();
@@ -171,8 +169,8 @@ export default function VenueListingScreen() {
   const [step, setStep] = useState(0);
 
   // Basics
+  const [venueName, setVenueName] = useState("");
   const [tagline, setTagline] = useState("");
-  const [venueTypes, setVenueTypes] = useState<string[]>([]);
   const [capacityMin, setCapacityMin] = useState("");
   const [capacityMax, setCapacityMax] = useState("");
   const [address, setAddress] = useState("");
@@ -195,9 +193,14 @@ export default function VenueListingScreen() {
   const [permits, setPermits] = useState<string[]>([]);
   const [quietHours, setQuietHours] = useState("");
 
+  const [cancellationPolicy, setCancellationPolicy] = useState("");
+
   // Services + pricing
   const [services, setServices] = useState<string[]>([]);
   const [partners, setPartners] = useState<string[]>([]);
+  const [pricingType, setPricingType] = useState<
+    "Per event" | "Hourly" | "Custom" | ""
+  >("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [priceIncludes, setPriceIncludes] = useState("");
@@ -223,8 +226,8 @@ export default function VenueListingScreen() {
     setProfile(row);
     if (row) {
       const d = row.category_details ?? {};
+      setVenueName(row.business_name ?? "");
       setTagline(d.tagline ?? "");
-      setVenueTypes(Array.isArray(d.venue_types) ? d.venue_types : []);
       setCapacityMin(d.capacity_min != null ? String(d.capacity_min) : "");
       setCapacityMax(d.capacity_max != null ? String(d.capacity_max) : "");
       setAddress(row.location ?? "");
@@ -247,6 +250,8 @@ export default function VenueListingScreen() {
       setPolicies(Array.isArray(d.policies) ? d.policies : []);
       setPermits(Array.isArray(d.permits) ? d.permits : []);
       setQuietHours(d.quiet_hours ?? "");
+      setCancellationPolicy(d.cancellation_policy ?? "");
+      setPricingType(d.pricing_type ?? "");
       setServices(Array.isArray(d.services) ? d.services : []);
       setPartners(Array.isArray(d.partners) ? d.partners : []);
       setPriceMin(
@@ -286,7 +291,6 @@ export default function VenueListingScreen() {
     return {
       group: "venues",
       tagline: tagline.trim(),
-      venue_types: venueTypes,
       capacity_min: capacityMin ? Number.parseInt(capacityMin, 10) : null,
       capacity_max: capacityMax ? Number.parseInt(capacityMax, 10) : null,
       service_areas: serviceAreas.trim(),
@@ -305,6 +309,8 @@ export default function VenueListingScreen() {
       policies,
       permits,
       quiet_hours: quietHours.trim(),
+      cancellation_policy: cancellationPolicy.trim(),
+      pricing_type: pricingType,
       services,
       partners,
       price_includes: priceIncludes.trim(),
@@ -323,6 +329,16 @@ export default function VenueListingScreen() {
     const maxCents = priceMax
       ? Math.round(Number.parseFloat(priceMax) * 100)
       : null;
+    // Pricing type maps onto the marketplace's pricing_models so listing
+    // cards and search render it exactly like generic listings.
+    const pricingModels =
+      pricingType === "Per event"
+        ? ["fixed_packages"]
+        : pricingType === "Hourly"
+          ? ["hourly"]
+          : pricingType === "Custom"
+            ? ["custom_quote"]
+            : [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("vendor_profiles")
@@ -330,10 +346,13 @@ export default function VenueListingScreen() {
         // Venues-group listings keep a real marketplace category; default
         // to the group's generic sub if none was ever picked.
         category: profile.category || "Event Venues",
+        business_name: venueName.trim() || null,
         location: address.trim() || null,
         price_min_cents: minCents,
         price_max_cents: maxCents,
         base_price_cents: minCents,
+        pricing_models: pricingModels,
+        custom_pricing: pricingType === "Custom",
         category_details: detailsPayload(),
         ...(status ? { application_status: status } : {}),
       })
@@ -350,15 +369,20 @@ export default function VenueListingScreen() {
 
   function missingForPublish(): string[] {
     const missing: string[] = [];
+    if (!venueName.trim()) missing.push("Venue name");
     if (!tagline.trim()) missing.push("Short tagline");
-    if (venueTypes.length === 0) missing.push("At least one venue type");
     if (!capacityMin.trim() || !capacityMax.trim()) missing.push("Capacity (min–max)");
     if (!address.trim()) missing.push("Location");
     if (!description.trim()) missing.push("Full description");
     if (spaces.filter((s) => s.name.trim()).length === 0)
       missing.push("At least one event space");
-    if (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
-      missing.push("Starting price");
+    // Custom pricing skips the numeric starting price, same as the
+    // generic builder's custom_pricing toggle.
+    if (
+      pricingType !== "Custom" &&
+      (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
+    )
+      missing.push("Starting price (or choose Custom pricing)");
     if (photos.length < MIN_PHOTOS)
       missing.push(`At least ${MIN_PHOTOS} photos`);
     return missing;
@@ -614,22 +638,21 @@ export default function VenueListingScreen() {
           {step === 0 ? (
             <>
               <StepTitle
-                title="Basic information"
+                title="Basics"
                 sub="Tell hosts the essentials about your venue."
               />
+              <Field label="Venue name" required>
+                <Input
+                  value={venueName}
+                  onChangeText={setVenueName}
+                  placeholder="e.g., The Grand Oak Estate"
+                />
+              </Field>
               <Field label="Short tagline" required>
                 <Input
                   value={tagline}
                   onChangeText={setTagline}
                   placeholder="e.g., Timeless moments. Unforgettable events."
-                />
-              </Field>
-              <Field label="Venue type (select all that apply)" required>
-                <ChipMulti
-                  options={VENUE_TYPES}
-                  selected={venueTypes}
-                  onChange={setVenueTypes}
-                  allowCustom
                 />
               </Field>
               <Field label="Capacity (min – max)" required>
@@ -683,11 +706,14 @@ export default function VenueListingScreen() {
                   keyboardType="number-pad"
                 />
               </Field>
+            </>
+          ) : null}
 
+          {step === 1 ? (
+            <>
               <StepTitle
                 title="About your venue"
                 sub="What makes the space special."
-                topGap
               />
               <Field label="Full description" required>
                 <Input
@@ -725,12 +751,33 @@ export default function VenueListingScreen() {
             </>
           ) : null}
 
-          {step === 1 ? (
+          {step === 2 ? (
             <>
               <StepTitle
                 title="Spaces & capacity"
                 sub="Add your event spaces and capacities."
               />
+              <TouchableOpacity
+                onPress={() => setSpaces((prev) => [...prev, emptySpace()])}
+                activeOpacity={0.7}
+                style={{
+                  marginTop: 8,
+                  borderWidth: 1.5,
+                  borderStyle: "dashed",
+                  borderColor: "rgba(20,22,26,0.25)",
+                  borderRadius: 16,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <Feather name="plus" size={16} color={INK} />
+                <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
+                  Add {spaces.length === 0 ? "event space" : "another space"}
+                </Text>
+              </TouchableOpacity>
               {spaces.map((s, i) => (
                 <SpaceCard
                   key={s.key}
@@ -743,31 +790,10 @@ export default function VenueListingScreen() {
                   }
                 />
               ))}
-              <TouchableOpacity
-                onPress={() => setSpaces((prev) => [...prev, emptySpace()])}
-                activeOpacity={0.7}
-                style={{
-                  marginTop: 12,
-                  borderWidth: 1.5,
-                  borderStyle: "dashed",
-                  borderColor: "rgba(20,22,26,0.25)",
-                  borderRadius: 16,
-                  paddingVertical: 16,
-                  alignItems: "center",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <Feather name="plus" size={16} color={INK} />
-                <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
-                  Add {spaces.length === 0 ? "a space" : "another space"}
-                </Text>
-              </TouchableOpacity>
             </>
           ) : null}
 
-          {step === 2 ? (
+          {step === 3 ? (
             <>
               <StepTitle
                 title="Amenities"
@@ -802,10 +828,18 @@ export default function VenueListingScreen() {
                   placeholder='e.g., "Music off by 10 PM"'
                 />
               </Field>
+              <Field label="Cancellation policy">
+                <Input
+                  value={cancellationPolicy}
+                  onChangeText={setCancellationPolicy}
+                  placeholder="e.g., Full refund up to 60 days out, 50% up to 30 days"
+                  multiline
+                />
+              </Field>
             </>
           ) : null}
 
-          {step === 3 ? (
+          {step === 4 ? (
             <>
               <StepTitle
                 title="Services & offerings"
@@ -826,6 +860,13 @@ export default function VenueListingScreen() {
               </Field>
 
               <StepTitle title="Pricing" sub="Where your pricing starts." topGap />
+              <Field label="Pricing type">
+                <ChipSingle
+                  options={["Per event", "Hourly", "Custom"]}
+                  selected={pricingType}
+                  onChange={(v) => setPricingType(v as typeof pricingType)}
+                />
+              </Field>
               <Field label="Starting price (USD)" required>
                 <Input
                   value={priceMin}
@@ -1407,10 +1448,9 @@ function SpaceCard({
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(!space.name);
-  const chips = [
-    space.setting || null,
-    space.sqft ? `${space.sqft} sq ft` : null,
-  ].filter(Boolean) as string[];
+  const chips = [space.setting || null, space.type.trim() || null].filter(
+    Boolean,
+  ) as string[];
   return (
     <View
       style={{
@@ -1427,9 +1467,19 @@ function SpaceCard({
         style={{ flexDirection: "row", alignItems: "center" }}
       >
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: INK }}>
-            {space.name.trim() || "New space"}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text
+              style={{ flex: 1, fontSize: 16, fontWeight: "700", color: INK }}
+              numberOfLines={1}
+            >
+              {space.name.trim() || "New space"}
+            </Text>
+            {space.sqft ? (
+              <Text style={{ fontSize: 12, color: INK_DIM, marginLeft: 8 }}>
+                {space.sqft} sq ft
+              </Text>
+            ) : null}
+          </View>
           {chips.length > 0 ? (
             <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
               {chips.map((c) => (
@@ -1468,6 +1518,11 @@ function SpaceCard({
             onChangeText={(v) => onChange({ ...space, name: v })}
             placeholder="Space name (e.g., Grand Ballroom)"
           />
+          <Input
+            value={space.type}
+            onChangeText={(v) => onChange({ ...space, type: v })}
+            placeholder="Space type (e.g., Ballroom, Terrace, Garden)"
+          />
           <ChipSingle
             options={["Indoor", "Outdoor"]}
             selected={space.setting}
@@ -1479,15 +1534,16 @@ function SpaceCard({
             placeholder="Square footage"
             keyboardType="number-pad"
           />
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {(
               [
                 ["ceremony", "Ceremony"],
                 ["reception", "Reception"],
                 ["seated", "Seated dinner"],
+                ["standing", "Standing"],
               ] as const
             ).map(([k, label]) => (
-              <View key={k} style={{ flex: 1 }}>
+              <View key={k} style={{ flexBasis: "47%", flexGrow: 1 }}>
                 <Text style={{ fontSize: 11, color: INK_DIM, marginBottom: 4 }}>
                   {label}
                 </Text>
