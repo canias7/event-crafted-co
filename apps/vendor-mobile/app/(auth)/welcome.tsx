@@ -80,23 +80,24 @@ export default function WelcomeScreen() {
     <View style={{ flex: 1, backgroundColor: PAGE }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* aspectRatio, NOT a computed height. On device the photo rendered
-          as a zoomed centre-crop: the width useWindowDimensions reports can
-          differ from the width this absolutely-positioned view actually
-          lays out at (Samsung screen-zoom / display-size settings skew it),
-          so height-from-reported-width gave the view a wider aspect than
-          the asset and resizeMode="cover" scaled-and-cropped to fill it.
-          With aspectRatio the layout engine derives the height from the
-          view's REAL width, the view's shape always equals the asset's
-          shape, and cover has nothing to crop. */}
+      {/* Explicit numeric width AND height — nothing else. This style has
+          now failed twice on device in fancier forms: with left+right:0 the
+          width constraint was dropped and the image laid out at its
+          intrinsic ~1800dp (screen showed a corner of a giant photo), and
+          aspectRatio fared no better. The styling interop on this screen
+          demonstrably mishandles derived constraints (it also ate the
+          Pressable function styles), so the image box is pinned to plain
+          numbers measured from the device. Numeric width/height are the
+          one thing every RN style path applies faithfully; with the box
+          matching the asset's 900:860 aspect, cover has nothing to crop. */}
       <Image
         source={require("../../assets/welcome-hero.jpg")}
         style={{
           position: "absolute",
           top: 0,
           left: 0,
-          right: 0,
-          aspectRatio: 900 / 860,
+          width: width,
+          height: photoHeight,
         }}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
