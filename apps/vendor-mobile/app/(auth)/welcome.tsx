@@ -1,8 +1,9 @@
-// Animated brand intro + auth-method picker. Mirrors the web design at
-// /tmp-design/vendora.html: a cream stage with character-by-character
-// fade/translate reveals across two scenes, finishing on the Vendora
-// wordmark. After the animation settles, four auth buttons fade in
-// over the bottom edge.
+// Brand intro + auth-method picker.
+//
+// Full-bleed event photography, blurred and dimmed into an atmospheric
+// backdrop, with the copy typed on character by character across two scenes
+// before landing on the Vendora wordmark, tagline, and value lines. The auth
+// pills stay docked at the bottom throughout.
 //
 // Tap anywhere during the intro to skip straight to the final state.
 
@@ -45,11 +46,6 @@ const VALUE_LINES = [
 ];
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
-
-// How far each glyph drifts up as it fades in. A slightly longer travel than
-// the original 14 reads as a drift rather than a snap, given the softer
-// easing it's paired with.
-const CHAR_RISE = 18;
 
 // Per-character timing (ms).
 //
@@ -218,46 +214,33 @@ function AnimatedChar({
   letterSpacing = 0,
   immediate,
 }: AnimatedCharProps) {
+  // Typewriter reveal: each glyph simply appears when its turn comes.
+  //
+  // This replaces a fade-and-rise per character, which kept reading as the
+  // letters "lagging" rather than settling. The cause was structural, not a
+  // tuning problem: with an ~880ms travel against an ~80ms stagger, a dozen
+  // glyphs were in flight at once, each at a different vertical offset, so
+  // the line never looked like a line until the whole thing finished. A hard
+  // cut has no in-between state that can look wrong — and it's what typing
+  // actually looks like.
+  //
+  // 60ms is quick enough to read as instant without a harsh pop. Still driven
+  // by Animated's own delay, so the cadence stays exact under JS-thread load.
   const opacity = useRef(new Animated.Value(immediate ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(immediate ? 0 : CHAR_RISE)).current;
 
   useEffect(() => {
     if (immediate) return;
-    // The stagger is expressed as Animated's own `delay`, not a setTimeout.
-    //
-    // Both animations already ran on the native driver, but a JS-thread timer
-    // decided when each one STARTED — and the JS thread is busy during this
-    // screen's mount (dozens of Animated.Text nodes, image decode, layout).
-    // Timers fired late and unevenly, so letters arrived in clumps and the
-    // sequence read as lagging rather than drifting into place. With `delay`
-    // the schedule is owned by the native driver and the cadence is exact.
-    //
-    // isInteraction: false keeps these decorative animations from holding
-    // InteractionManager and delaying real work behind them.
-    const anim = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        delay,
-        duration: 620,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-        isInteraction: false,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        delay,
-        // Longer and softer than the opacity fade so the glyph is still
-        // easing upward as it becomes visible — that's what reads as
-        // floating instead of popping.
-        duration: 880,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
-        useNativeDriver: true,
-        isInteraction: false,
-      }),
-    ]);
+    const anim = Animated.timing(opacity, {
+      toValue: 1,
+      delay,
+      duration: 60,
+      easing: Easing.linear,
+      useNativeDriver: true,
+      isInteraction: false,
+    });
     anim.start();
     return () => anim.stop();
-  }, [delay, immediate, opacity, translateY]);
+  }, [delay, immediate, opacity]);
 
   return (
     <Animated.Text
@@ -269,7 +252,6 @@ function AnimatedChar({
         color,
         letterSpacing,
         opacity,
-        transform: [{ translateY }],
         lineHeight: fontSize * 1.05,
       }}
     >
@@ -291,6 +273,10 @@ interface AnimatedLineProps {
   fadeOut?: boolean;
   // When true, the entire line is shown immediately (replay short-circuit).
   immediate?: boolean;
+  /** Keep on one line. Pair with FitRow so it scales down instead of
+   *  overflowing — otherwise a long line wraps and, because each glyph is its
+   *  own Text, the break can land inside a word ("an / d those wh"). */
+  nowrap?: boolean;
 }
 
 // Renders text char-by-char with a flex-row layout. Words don't break
@@ -309,6 +295,7 @@ function AnimatedLine({
   letterSpacing,
   fadeOut,
   immediate,
+  nowrap,
 }: AnimatedLineProps) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -343,7 +330,7 @@ function AnimatedLine({
       style={{
         opacity: fadeAnim,
         flexDirection: "row",
-        flexWrap: "wrap",
+        flexWrap: nowrap ? "nowrap" : "wrap",
         justifyContent: "center",
       }}
     >
@@ -431,11 +418,7 @@ function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  // Photo band height. Derived from the asset's own 900x780 aspect so the
-  // image is shown at close to its natural proportions — capped at 46% of the
-  // screen so it stays a band and the copy below has room.
-  const photoHeight = Math.min(screenWidth * (780 / 900), screenHeight * 0.46);
+  const { width: screenWidth } = useWindowDimensions();
   // Wordmark size. 0.21 of the viewport measured out to almost exactly the
   // full screen width on device — technically un-clipped, but touching both
   // edges with no breathing room, and it made FitRow fire on every launch
@@ -514,21 +497,16 @@ export default function WelcomeScreen() {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       {/* Photography as a top band, not full-bleed.
-          Every hero in the asset library is 1920x1080 — landscape. Filling a
-          ~9:20 phone screen from a 16:9 source means scaling ~4x and keeping
-          a narrow vertical strip, which is why it read as heavily zoomed. A
-          band near the source's own aspect shows the actual scene. The asset
-          ramps to opaque PHOTO_BASE at its bottom edge, so it melts into the
-          background below with no visible seam. */}
+          Every hero in the asset library is 1920x1080 — landscape, so filling
+          a ~9:20 screen only reveals about a quarter of the source width and
+          magnifies it. Rather than fight that with a band (which read as the
+          photo covering half the page), the asset is exported blurred and
+          heavily dimmed: at that point it's atmosphere rather than a photo
+          you study, the upscaling doesn't show, and text is legible anywhere
+          on it. */}
       <Image
         source={require("../../assets/welcome-hero.jpg")}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: photoHeight,
-        }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
       />
@@ -545,14 +523,11 @@ export default function WelcomeScreen() {
             flex: 1,
             paddingHorizontal: 32,
             alignItems: "center",
-            // Centre the copy in the space that's actually free — between the
-            // photo band and the auth buttons. It used to be top-aligned at a
-            // fixed 26%, which left a large void between the last value line
-            // and the buttons. Starting just past halfway down the band keeps
-            // the wordmark overlapping the photo where it reads best.
+            // Centred on the full-bleed background, biased up by the height of
+            // the auth pills so the block sits optically centred rather than
+            // crowding them.
             justifyContent: "center",
-            paddingTop: photoHeight * 0.55,
-            paddingBottom: 150,
+            paddingBottom: 140,
           }}
         >
           {scene === "opener" ? (
@@ -623,9 +598,14 @@ export default function WelcomeScreen() {
                   />
                 </View>
               </FitRow>
+              {/* nowrap + FitRow keeps the tagline on one line. Left to wrap
+                  it broke inside a word ("...plan, an / d those wh"), because
+                  each glyph is its own Text and the row wraps between them. */}
               <View style={{ marginTop: 20 }}>
+                <FitRow>
                 <AnimatedLine
                   text={TAGLINE}
+                  nowrap
                   startDelay={
                     skipped
                       ? 0
@@ -639,6 +619,7 @@ export default function WelcomeScreen() {
                   color={ON_PHOTO_DIM}
                   immediate={skipped}
                 />
+                </FitRow>
               </View>
 
               {/* Value lines follow the tagline directly.
