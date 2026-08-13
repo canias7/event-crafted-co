@@ -13,10 +13,10 @@ import {
   Image,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   StatusBar,
   Text,
+  TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -182,28 +182,34 @@ export default function WelcomeScreen() {
           ))}
         </View>
 
-        <Pressable
+        {/* Plain style objects only — NOT the function form. NativeWind's
+            global component interop silently discarded function-form style
+            props on device: the pills rendered as bare unstyled text while
+            every statically-styled sibling was fine. TouchableOpacity gives
+            the press feedback the function form existed for. */}
+        <TouchableOpacity
           onPress={() => router.push("/(auth)/signup")}
           accessibilityRole="button"
-          style={({ pressed }) => ({
+          activeOpacity={0.85}
+          style={{
             marginTop: 34,
             height: 56,
             borderRadius: 999,
             backgroundColor: GOLD,
             alignItems: "center",
             justifyContent: "center",
-            opacity: pressed ? 0.85 : 1,
-          })}
+          }}
         >
           <Text style={{ color: INK_ON_GOLD, fontSize: 17, fontWeight: "600" }}>
             Sign up
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
-        <Pressable
+        <TouchableOpacity
           onPress={() => router.push("/(auth)/login")}
           accessibilityRole="button"
-          style={({ pressed }) => ({
+          activeOpacity={0.7}
+          style={{
             marginTop: 12,
             height: 56,
             borderRadius: 999,
@@ -211,13 +217,12 @@ export default function WelcomeScreen() {
             borderColor: "rgba(255,255,255,0.35)",
             alignItems: "center",
             justifyContent: "center",
-            opacity: pressed ? 0.7 : 1,
-          })}
+          }}
         >
           <Text style={{ color: WHITE, fontSize: 17, fontWeight: "600" }}>
             Sign in
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
         {/* No social-auth row: Google / Apple / Facebook sign-in isn't
             implemented anywhere in this project (mobile or web), and rendering
