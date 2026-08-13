@@ -102,6 +102,7 @@ export async function tryRegisterPushToken(
 // We map them to the matching mobile routes:
 //   - any link containing /thread/<uuid> or ?thread=<uuid>  → /(vendor)/thread/<uuid>
 //   - any /inquir(y|ies)/ link                              → /(vendor)/inbox
+//   - listing-status decisions (approved/rejected)          → /(vendor)/profile
 //   - everything else                                       → /(vendor)/inbox
 function routeFromLink(link: string | null | undefined): string | null {
   if (!link) return "/(vendor)/inbox";
@@ -110,6 +111,9 @@ function routeFromLink(link: string | null | undefined): string | null {
   m = link.match(/[?&]thread=([0-9a-f-]{36})/i);
   if (m) return `/(vendor)/thread/${m[1]}`;
   if (/\/inquir(y|ies)\//i.test(link)) return "/(vendor)/inbox";
+  // notify_listing_status sends /vendor/listing-status — the listing
+  // cards with their status pills live on the Profile tab.
+  if (/listing-status/i.test(link)) return "/(vendor)/profile";
   return "/(vendor)/inbox";
 }
 

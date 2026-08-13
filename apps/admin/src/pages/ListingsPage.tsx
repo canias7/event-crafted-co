@@ -153,7 +153,13 @@ export function ListingsPage() {
           }
         });
     }
-    toast.success(`Marked ${status} — vendor emailed`);
+    // Email via the invoke above; phone push via the DB trigger
+    // notify_listing_status → notifications → push fanout.
+    toast.success(
+      status === "approved" || status === "rejected"
+        ? `Marked ${status} — vendor emailed + push sent`
+        : `Marked ${status}`,
+    );
     setRows((p) =>
       p.map((r) => (r.id === row.id ? { ...r, application_status: status } : r)),
     );
