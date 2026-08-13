@@ -34,6 +34,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const focusedRoute = state.routes[state.index]?.name;
   if (
     focusedRoute === "listing" ||
+    focusedRoute === "venue-listing" ||
     focusedRoute === "thread/[id]" ||
     focusedRoute === "partner-thread/[id]" ||
     focusedRoute === "edit-profile"
@@ -176,6 +177,9 @@ export default function VendorLayout() {
       {/* Setup checklist — pushed from the Profile tab's "You're almost
           live!" banner, not a tab of its own. */}
       <Tabs.Screen name="setup" options={{ href: null }} />
+      {/* Venue wizard — the category-specific builder for the Venues
+          group; listing.tsx redirects here for venue categories. */}
+      <Tabs.Screen name="venue-listing" options={{ href: null }} />
     </Tabs>
   );
 }
