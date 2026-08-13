@@ -13,7 +13,7 @@
 // logo reads as a round avatar.
 
 import { useRef, useState } from "react";
-import { Dimensions, Image, Pressable, Text, View } from "react-native";
+import { Alert, Dimensions, Image, Pressable, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { captureRef } from "react-native-view-shot";
 
@@ -37,6 +37,12 @@ export function LogoCropperModal({
   const shotRef = useRef<View>(null);
   const [busy, setBusy] = useState(false);
 
+  // Capture straight to a base64 data URI — NOT a tmpfile. The tmpfile
+  // path required reading the file back with fetch(file://…), which is
+  // unreliable on Android; data-uri keeps the bytes in JS the whole way.
+  // And never fail silently: the empty catch here is why a vendor's
+  // "Use logo" tap could do nothing with no explanation (verified: no
+  // storage object was ever created for their attempt).
   async function apply() {
     if (busy) return;
     setBusy(true);
@@ -46,11 +52,15 @@ export function LogoCropperModal({
         height: OUTPUT,
         format: "jpg",
         quality: 0.92,
-        result: "tmpfile",
+        result: "data-uri",
       });
       onApply(out);
-    } catch {
+    } catch (e) {
       setBusy(false);
+      Alert.alert(
+        "Couldn't process logo",
+        e instanceof Error ? e.message : "Something went wrong composing the image. Please try again.",
+      );
     }
   }
 
