@@ -54,11 +54,21 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 // and the enforce_listing_min_photos DB trigger — a listing can't go to
 // review (or be approved) with fewer than this.
 const MIN_PHOTOS = 3;
-// Categories in the Venues group get their own category-specific
-// builder (venue-listing.tsx) instead of this generic form. Other
+// Category groups with their own category-specific builder. Categories
+// in these groups leave this generic form for their wizard; remaining
 // groups follow one by one.
-const VENUE_SUBS: string[] =
-  CATEGORY_GROUPS.find((g) => g.slug === "venues")?.subs.slice() ?? [];
+const WIZARD_ROUTES: Record<string, string> = {
+  venues: "venue-listing",
+  "food-beverage": "food-listing",
+};
+
+// The wizard route for a category (subcategory name), or null when the
+// category's group still uses this generic form.
+function wizardRouteFor(category: string | null | undefined): string | null {
+  if (!category) return null;
+  const group = CATEGORY_GROUPS.find((g) => g.subs.includes(category));
+  return group ? (WIZARD_ROUTES[group.slug] ?? null) : null;
+}
 
 // Per-listing photo cap matches web (ListingWizardModal MAX_PHOTOS).
 // Bumped from the original 5 once the public detail page learned how
@@ -183,9 +193,10 @@ export default function ListingScreen() {
     }
 
     const row = prof;
-    // Venue-group listings use the venue wizard, not this generic form.
-    if (row?.category && VENUE_SUBS.includes(row.category)) {
-      router.replace(`/(vendor)/venue-listing?id=${row.id}` as never);
+    // Groups with their own wizard leave this generic form.
+    const wizard = wizardRouteFor(row?.category);
+    if (row && wizard) {
+      router.replace(`/(vendor)/${wizard}?id=${row.id}` as never);
       return;
     }
     setProfile(row);
@@ -1137,9 +1148,10 @@ export default function ListingScreen() {
                         onPress={() => {
                           setCategory(sub);
                           setCategoryPickerOpen(false);
-                          // Venue categories have their own builder —
-                          // persist the choice and hand the listing over.
-                          if (VENUE_SUBS.includes(sub) && profile?.id) {
+                          // Categories with their own builder — persist
+                          // the choice and hand the listing over.
+                          const wizard = wizardRouteFor(sub);
+                          if (wizard && profile?.id) {
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             void (supabase as any)
                               .from("vendor_profiles")
@@ -1147,7 +1159,7 @@ export default function ListingScreen() {
                               .eq("id", profile.id)
                               .then(() => {
                                 router.replace(
-                                  `/(vendor)/venue-listing?id=${profile.id}` as never,
+                                  `/(vendor)/${wizard}?id=${profile.id}` as never,
                                 );
                               });
                           }
