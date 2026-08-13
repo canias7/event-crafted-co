@@ -28,10 +28,11 @@ name: Build Android (native)
 #   SUPABASE_URL, SUPABASE_ANON_KEY
 
 on:
-  # Push a `trigger-build/**` branch to build + submit the VENDOR app
-  # without the Actions UI (mirrors mobile-ota.yml's trigger-ota/**).
-  # Push always builds vendor and submits to Play Internal. Host builds,
-  # or a build-without-submit, use the "Run workflow" dispatch below.
+  # Push a `trigger-build/**` branch to build + submit an app without the
+  # Actions UI (mirrors mobile-ota.yml's trigger-ota/**).
+  # NOTE: on this trigger branch the push default is flipped to HOST so the
+  # host app can be built while a vendor build is already in flight. On main
+  # the push default is vendor.
   push:
     branches:
       - "trigger-build/**"
@@ -48,12 +49,12 @@ on:
         default: true
 
 concurrency:
-  group: build-android-${{ github.event.inputs.app || 'vendor' }}
+  group: build-android-${{ github.event.inputs.app || 'host' }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build Android for ${{ inputs.app || 'vendor' }}-mobile
+    name: Build Android for ${{ inputs.app || 'host' }}-mobile
     runs-on: ubuntu-latest
     # A cold new-architecture Gradle build (compiles RN + Hermes C++ from
     # source) routinely runs ~40-55 min on a 2-core ubuntu runner. 40 min
@@ -61,7 +62,7 @@ jobs:
     # gets. Gradle caching (below) trims subsequent runs.
     timeout-minutes: 60
     env:
-      APP_DIR: apps/${{ inputs.app || 'vendor' }}-mobile
+      APP_DIR: apps/${{ inputs.app || 'host' }}-mobile
 
     steps:
       - name: Checkout
@@ -115,8 +116,8 @@ jobs:
       - name: Decode + validate keystore
         working-directory: ${{ env.APP_DIR }}/android/app
         env:
-          KEYSTORE_BASE64: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_BASE64 || secrets.ANDROID_KEYSTORE_VENDOR_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_PASSWORD || secrets.ANDROID_KEYSTORE_VENDOR_PASSWORD }}
+          KEYSTORE_BASE64: ${{ (inputs.app || 'host') == 'host' && secrets.ANDROID_KEYSTORE_HOST_BASE64 || secrets.ANDROID_KEYSTORE_VENDOR_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ (inputs.app || 'host') == 'host' && secrets.ANDROID_KEYSTORE_HOST_PASSWORD || secrets.ANDROID_KEYSTORE_VENDOR_PASSWORD }}
         run: |
           # Strip any CR / LF / spaces the secret may carry (CRLF paste or
           # 76-column wrapping) before decoding — GNU base64 errors on a
@@ -141,9 +142,9 @@ jobs:
       - name: Configure gradle signing
         working-directory: ${{ env.APP_DIR }}/android
         env:
-          KEYSTORE_PASSWORD: ${{ inputs.app == 'host' && secrets.ANDROID_KEYSTORE_HOST_PASSWORD || secrets.ANDROID_KEYSTORE_VENDOR_PASSWORD }}
-          KEY_ALIAS:        ${{ inputs.app == 'host' && secrets.ANDROID_KEY_HOST_ALIAS        || secrets.ANDROID_KEY_VENDOR_ALIAS }}
-          KEY_PASSWORD:     ${{ inputs.app == 'host' && secrets.ANDROID_KEY_HOST_PASSWORD     || secrets.ANDROID_KEY_VENDOR_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ (inputs.app || 'host') == 'host' && secrets.ANDROID_KEYSTORE_HOST_PASSWORD || secrets.ANDROID_KEYSTORE_VENDOR_PASSWORD }}
+          KEY_ALIAS:        ${{ (inputs.app || 'host') == 'host' && secrets.ANDROID_KEY_HOST_ALIAS        || secrets.ANDROID_KEY_VENDOR_ALIAS }}
+          KEY_PASSWORD:     ${{ (inputs.app || 'host') == 'host' && secrets.ANDROID_KEY_HOST_PASSWORD     || secrets.ANDROID_KEY_VENDOR_PASSWORD }}
         run: |
           cat >> gradle.properties <<EOF
 
@@ -228,7 +229,7 @@ jobs:
       - name: Upload AAB as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-${{ inputs.app || 'vendor' }}-aab-${{ github.run_id }}
+          name: android-${{ inputs.app || 'host' }}-aab-${{ github.run_id }}
           path: ${{ env.AAB_PATH }}
           retention-days: 14
 
@@ -240,7 +241,7 @@ jobs:
           # Play Console package for the vendor app is
           # com.eventvendora.forVendors (matches app.json android.package),
           # NOT the iOS-style co.eventcrafted.vendor.
-          packageName: ${{ inputs.app == 'host' && 'co.eventcrafted.host' || 'com.eventvendora.forVendors' }}
+          packageName: ${{ (inputs.app || 'host') == 'host' && 'co.eventcrafted.host' || 'com.eventvendora.forVendors' }}
           releaseFiles: ${{ env.AAB_PATH }}
           # Internal track, not production: the Play API refuses to create
           # an app's FIRST production release ("Precondition check failed")
