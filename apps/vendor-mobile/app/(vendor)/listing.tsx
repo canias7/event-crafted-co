@@ -486,10 +486,13 @@ export default function ListingScreen() {
 
   async function save({
     publish,
+    toDraft = false,
     requireComplete = false,
     navigateAfter = false,
   }: {
     publish: boolean;
+    /** Withdraw the listing to draft (out of the review queue). */
+    toDraft?: boolean;
     requireComplete?: boolean;
     navigateAfter?: boolean;
   }) {
@@ -523,7 +526,11 @@ export default function ListingScreen() {
     setBusy(true);
     const payload = {
       ...buildPayload(),
-      ...(publish ? { application_status: "pending" as const } : {}),
+      ...(publish
+        ? { application_status: "pending" as const }
+        : toDraft
+          ? { application_status: "draft" as const }
+          : {}),
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
@@ -571,10 +578,16 @@ export default function ListingScreen() {
     // put so the vendor can keep editing.
     if (navigateAfter) {
       Alert.alert(
-        publish ? "Submitted for review" : "Changes saved",
+        publish
+          ? "Submitted for review"
+          : toDraft
+            ? "Saved as draft"
+            : "Changes saved",
         publish
           ? "We'll review your listing within 2–3 business days."
-          : undefined,
+          : toDraft
+            ? "Your listing is out of review until you publish it again."
+            : undefined,
         [{ text: "OK", onPress: () => router.back() }],
       );
       return;
@@ -960,10 +973,12 @@ export default function ListingScreen() {
           {/* STEP 4 (Team) removed along with vendor_team_bios. */}
         </ScrollView>
 
-        {/* Sticky action bar — Save draft (text pill) + Publish (filled).
-            Publish always validates (category + photos + location + price)
-            and returns to the profile on success. Approved/pending listings
-            show a single Publish that saves edits without re-review. */}
+        {/* Sticky action bar.
+            - draft/rejected: Save draft + Publish (Publish validates
+              category + >=3 photos + location + price; the server
+              additionally refuses review entry below 3 photos).
+            - pending: Save draft (withdraws from review) + Save changes.
+            - approved: a single Save changes (edits don't re-review). */}
         <View
           style={{
             position: "absolute",
@@ -980,7 +995,7 @@ export default function ListingScreen() {
             borderColor: BORDER,
           }}
         >
-          {status === "pending" || status === "approved" ? (
+          {status === "approved" ? (
             <Pressable
               onPress={() =>
                 save({ publish: false, requireComplete: true, navigateAfter: true })
@@ -989,9 +1004,34 @@ export default function ListingScreen() {
               style={[publishPillStyle, { flex: 1 }]}
             >
               <Text style={publishPillText}>
-                {busy ? "Publishing…" : "Publish"}
+                {busy ? "Saving…" : "Save changes"}
               </Text>
             </Pressable>
+          ) : status === "pending" ? (
+            <>
+              <Pressable
+                onPress={() =>
+                  save({ publish: false, toDraft: true, navigateAfter: true })
+                }
+                disabled={busy}
+                style={[savePillStyle, { flex: 1 }]}
+              >
+                <Text style={savePillText}>
+                  {busy ? "Saving…" : "Save draft"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  save({ publish: false, requireComplete: true, navigateAfter: true })
+                }
+                disabled={busy}
+                style={[publishPillStyle, { flex: 1 }]}
+              >
+                <Text style={publishPillText}>
+                  {busy ? "Saving…" : "Save changes"}
+                </Text>
+              </Pressable>
+            </>
           ) : (
             <>
               <Pressable
