@@ -11,6 +11,9 @@
 //   3. Once we have a session, render the new-password form.
 //   4. updateUser → success → route to /(vendor) and let the auth gate
 //      pick up the now-authenticated session.
+//
+// Dark Vendora theme mirroring signup/login. No function-form style
+// props (device interop drops them); TouchableOpacity for feedback.
 
 import { useEffect, useState } from "react";
 import {
@@ -18,22 +21,30 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
+  StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
-import { Feather } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#14161a";
-const INK_DIM = "#5e636e";
-const INK_BORDER = "rgba(20,22,26,0.08)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#dc2828";
+// Same palette as welcome / signup / login.
+const PAGE = "#0d0f13";
+const CREAM = "#f4efe6";
+const INK_ON_GOLD = "#14161a";
+const GOLD = "#d9bd82";
+const GOLD_DIM = "rgba(217,189,130,0.45)";
+const MUTED = "rgba(255,255,255,0.72)";
+const FAINT = "rgba(255,255,255,0.45)";
+const HAIRLINE = "rgba(255,255,255,0.14)";
+const INPUT_BG = "rgba(255,255,255,0.05)";
+const ERROR = "#f0938a";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 type State = "loading" | "ready" | "submitting" | "done" | "error";
@@ -110,183 +121,228 @@ export default function ResetPasswordScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: CREAM,
+          backgroundColor: PAGE,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator color={INK} />
+        <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+        <ActivityIndicator color={GOLD} />
       </View>
     );
   }
 
   if (state === "error") {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
-        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
-          <Pressable onPress={() => router.replace("/(auth)/login")} hitSlop={8}>
-            <Feather name="chevron-left" size={26} color={INK} />
-          </Pressable>
-        </View>
-        <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontSize: 32,
-              fontWeight: "700",
-              color: INK,
-            }}
-          >
-            Link expired
-          </Text>
-          <Text style={{ marginTop: 10, color: INK_DIM, fontSize: 15 }}>
-            {error ?? "This password reset link is no longer valid."}
-          </Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+        <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
           <Pressable
-            onPress={() => router.replace("/(auth)/forgot-password")}
-            style={{
-              marginTop: 24,
-              backgroundColor: INK,
-              borderRadius: 999,
-              height: 54,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            onPress={() => router.replace("/(auth)/login")}
+            hitSlop={12}
+            style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
-            <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
-              Request a new link
+            <Text style={{ color: MUTED, fontSize: 16, fontWeight: "500" }}>
+              ← Back
             </Text>
           </Pressable>
+
+          <StepHeader
+            eyebrow="RESET PASSWORD"
+            title="Link expired"
+            subtitle={error ?? "This password reset link is no longer valid."}
+          />
+
+          <TouchableOpacity
+            onPress={() => router.replace("/(auth)/forgot-password")}
+            activeOpacity={0.85}
+            style={{ ...primaryBtn, marginTop: 28 }}
+          >
+            <Text style={primaryBtnText}>Request a new link</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontSize: 36,
-              fontWeight: "700",
-              color: INK,
-              letterSpacing: -1,
-            }}
-          >
-            {state === "done" ? "Password updated" : "Set a new password"}
-          </Text>
-          {state === "done" ? (
-            <Text
-              style={{
-                marginTop: 12,
-                color: INK_DIM,
-                fontSize: 15,
-                lineHeight: 22,
-              }}
-            >
-              You're signed in. Sending you to your inbox…
-            </Text>
-          ) : (
-            <>
-              <Text
-                style={{
-                  marginTop: 10,
-                  color: INK_DIM,
-                  fontSize: 15,
-                  lineHeight: 22,
-                }}
-              >
-                Pick a password you don't use elsewhere. At least 8
-                characters.
-              </Text>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 48,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <StepHeader
+            eyebrow={state === "done" ? "ALL SET" : "RESET PASSWORD"}
+            title={state === "done" ? "Password updated" : "Set a new password"}
+            subtitle={
+              state === "done"
+                ? "You're signed in. Sending you to your profile…"
+                : "Pick a password you don't use elsewhere. At least 8 characters."
+            }
+          />
 
-              <View style={{ marginTop: 24 }}>
-                <Text
-                  style={{
-                    color: INK_DIM,
-                    fontSize: 12,
-                    fontWeight: "700",
-                    letterSpacing: 0.8,
-                  }}
-                >
-                  NEW PASSWORD
-                </Text>
-                <View
-                  style={{
-                    marginTop: 6,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: INPUT_BG,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: INK_BORDER,
-                    paddingRight: 8,
-                  }}
-                >
+          {state === "done" ? null : (
+            <View style={{ marginTop: 28, gap: 20 }}>
+              <View>
+                <Text style={fieldLabel}>NEW PASSWORD</Text>
+                <View style={inputRow}>
+                  <MaterialCommunityIcons
+                    name="lock-outline"
+                    size={20}
+                    color={GOLD}
+                    style={{ marginRight: 10 }}
+                  />
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     autoComplete="password-new"
                     placeholder="••••••••"
-                    placeholderTextColor={INK_DIM}
-                    style={{
-                      flex: 1,
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      color: INK,
-                      fontSize: 16,
-                    }}
+                    placeholderTextColor={FAINT}
+                    selectionColor={GOLD}
+                    keyboardAppearance="dark"
+                    style={inputText}
                   />
-                  <Pressable
+                  <TouchableOpacity
                     onPress={() => setShowPassword((v) => !v)}
-                    hitSlop={8}
-                    style={{ paddingHorizontal: 8 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.7}
+                    style={{ paddingLeft: 10 }}
                   >
-                    <Feather
-                      name={showPassword ? "eye-off" : "eye"}
-                      size={18}
-                      color={INK_DIM}
-                    />
-                  </Pressable>
+                    <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
+                      {showPassword ? "Hide" : "Show"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              {error ? (
-                <Text style={{ marginTop: 12, color: ERROR, fontSize: 13 }}>
-                  {error}
-                </Text>
-              ) : null}
+              {error ? <Text style={errorText}>{error}</Text> : null}
 
-              <Pressable
+              <TouchableOpacity
                 onPress={onSubmit}
                 disabled={state === "submitting" || password.length < 8}
+                activeOpacity={0.85}
                 style={{
-                  marginTop: 18,
-                  backgroundColor: INK,
-                  borderRadius: 999,
-                  height: 54,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  ...primaryBtn,
                   opacity:
                     state === "submitting" || password.length < 8 ? 0.5 : 1,
                 }}
               >
-                <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+                <Text style={primaryBtnText}>
                   {state === "submitting" ? "Saving…" : "Save password"}
                 </Text>
-              </Pressable>
-            </>
+              </TouchableOpacity>
+            </View>
           )}
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+// Gold hairlines meeting a four-point star — same divider as signup/login.
+function StarDivider() {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 28,
+        gap: 14,
+      }}
+    >
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+    </View>
+  );
+}
+
+function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
+  return (
+    <View style={{ marginTop: 24 }}>
+      <Text style={eyebrowLabel}>{p.eyebrow}</Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 38,
+          lineHeight: 46,
+          fontWeight: "700",
+          color: CREAM,
+          letterSpacing: -0.5,
+          marginTop: 10,
+        }}
+      >
+        {p.title}
+      </Text>
+      <Text style={subhead}>{p.subtitle}</Text>
+      <StarDivider />
+    </View>
+  );
+}
+
+const eyebrowLabel = {
+  color: GOLD,
+  fontSize: 12,
+  fontWeight: "600" as const,
+  letterSpacing: 3,
+};
+const subhead = {
+  marginTop: 10,
+  fontSize: 17,
+  color: MUTED,
+  fontStyle: "italic" as const,
+  fontFamily: SERIF,
+  lineHeight: 24,
+};
+const fieldLabel = {
+  marginBottom: 8,
+  fontSize: 13,
+  fontWeight: "700" as const,
+  color: CREAM,
+  letterSpacing: 1.5,
+};
+const inputRow = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  backgroundColor: INPUT_BG,
+  borderColor: HAIRLINE,
+  borderWidth: 1,
+  borderRadius: 16,
+  paddingHorizontal: 16,
+  minHeight: 60,
+};
+const inputText = {
+  flex: 1,
+  fontSize: 16,
+  color: CREAM,
+  paddingVertical: 16,
+};
+const primaryBtn = {
+  marginTop: 4,
+  backgroundColor: GOLD,
+  borderRadius: 999,
+  height: 56,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+};
+const primaryBtnText = {
+  color: INK_ON_GOLD,
+  fontSize: 17,
+  fontWeight: "600" as const,
+};
+const errorText = {
+  color: ERROR,
+  fontSize: 14,
+  lineHeight: 20,
+};
