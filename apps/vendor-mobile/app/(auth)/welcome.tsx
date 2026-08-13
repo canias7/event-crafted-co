@@ -80,6 +80,15 @@ export default function WelcomeScreen() {
     <View style={{ flex: 1, backgroundColor: PAGE }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
+      {/* aspectRatio, NOT a computed height. On device the photo rendered
+          as a zoomed centre-crop: the width useWindowDimensions reports can
+          differ from the width this absolutely-positioned view actually
+          lays out at (Samsung screen-zoom / display-size settings skew it),
+          so height-from-reported-width gave the view a wider aspect than
+          the asset and resizeMode="cover" scaled-and-cropped to fill it.
+          With aspectRatio the layout engine derives the height from the
+          view's REAL width, the view's shape always equals the asset's
+          shape, and cover has nothing to crop. */}
       <Image
         source={require("../../assets/welcome-hero.jpg")}
         style={{
@@ -87,7 +96,7 @@ export default function WelcomeScreen() {
           top: 0,
           left: 0,
           right: 0,
-          height: photoHeight,
+          aspectRatio: 900 / 860,
         }}
         resizeMode="cover"
         accessibilityIgnoresInvertColors
