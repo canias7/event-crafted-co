@@ -59,3 +59,38 @@ export async function compressForUpload(
     return { uri: asset.uri, mime: asset.mimeType ?? "image/jpeg" };
   }
 }
+
+const LOGO_MAX_DIMENSION = 1024;
+
+/**
+ * Prepare a picked logo for upload: downscale so the longest edge is
+ * ≤ LOGO_MAX_DIMENSION and export as PNG **base64** — PNG so a logo
+ * with a transparent background keeps its transparency (JPEG would
+ * flatten it onto black), base64 so the bytes stay in JS all the way
+ * to the storage upload (no tmpfile, no fetch(file://), both of which
+ * proved unreliable on device).
+ *
+ * Unlike compressForUpload this THROWS on failure — the logo flow must
+ * surface errors, not quietly upload something else.
+ */
+export async function prepareLogoForUpload(
+  asset: PickedAsset,
+): Promise<{ base64: string; mime: string; ext: string }> {
+  const w = asset.width ?? 0;
+  const h = asset.height ?? 0;
+  const ctx = ImageManipulator.manipulate(asset.uri);
+  const longest = Math.max(w, h);
+  if (w > 0 && h > 0 && longest > LOGO_MAX_DIMENSION) {
+    const scale = LOGO_MAX_DIMENSION / longest;
+    ctx.resize({
+      width: Math.round(w * scale),
+      height: Math.round(h * scale),
+    });
+  }
+  const ref = await ctx.renderAsync();
+  const out = await ref.saveAsync({ format: SaveFormat.PNG, base64: true });
+  if (!out.base64) {
+    throw new Error("Image processing returned no data.");
+  }
+  return { base64: out.base64, mime: "image/png", ext: "png" };
+}

@@ -786,10 +786,12 @@ function Avatar({
       }}
     >
       {logoUrl ? (
+        // contain on white, NOT cover — logos upload at their native
+        // aspect and the promise is "nothing gets cropped".
         <Image
           source={{ uri: logoUrl }}
-          style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
+          style={{ width: "100%", height: "100%", backgroundColor: WHITE }}
+          resizeMode="contain"
           accessibilityIgnoresInvertColors
         />
       ) : (
