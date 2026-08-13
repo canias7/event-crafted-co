@@ -1,17 +1,24 @@
 // Vendor signup. Two-step flow mirroring the web /vendor-apply page:
 //
-//   1. Account — owner name, email, password (with show/hide toggle)
+//   1. Account — email, password (with show/hide toggle)
 //   2. Business — business name + category (grouped picker)
+//   (+ an email-code verification screen between submit and done)
 //
-// Submit calls supabase.auth.signUp with vendor_business_name +
+// Submit calls the vendor-signup edge function, which emails a 6-digit
+// code, then creates the account on verify with vendor_business_name +
 // vendor_category in user_metadata. handle_new_user picks those up
 // server-side and provisions:
 //   - profiles (role: 'host')
 //   - vendor_profiles (application_status: 'pending')
 //
-// We sign out immediately after — the user can't access the vendor
-// portal until admin approves. Lands on an inline "thanks for
-// applying" view instead of a separate route.
+// The user can't access the vendor portal until admin approves. Lands
+// on an inline "thanks for applying" view instead of a separate route.
+//
+// Styling notes, learned the hard way on the welcome screen:
+//   - No function-form style props anywhere. The styling interop drops
+//     them on device (pills rendered as bare text). Plain objects only;
+//     TouchableOpacity supplies press feedback.
+//   - Dark Vendora theme matching welcome.tsx — same PAGE / GOLD values.
 
 import { useState } from "react";
 import {
@@ -20,23 +27,30 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
-const INK = "#14161a";
-const INK_DIM = "#5e636e";
-const INK_BORDER = "rgba(20,22,26,0.08)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#dc2828";
-const ACCENT = "#1B3654";
+// Same palette as welcome.tsx — the two screens must read as one flow.
+const PAGE = "#0d0f13";
+const SHEET = "#13161c";
+const CREAM = "#f4efe6";
+const INK_ON_GOLD = "#14161a";
+const GOLD = "#d9bd82";
+const GOLD_DIM = "rgba(217,189,130,0.45)";
+const MUTED = "rgba(255,255,255,0.72)";
+const FAINT = "rgba(255,255,255,0.45)";
+const HAIRLINE = "rgba(255,255,255,0.14)";
+const INPUT_BG = "rgba(255,255,255,0.05)";
+const ERROR = "#f0938a";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -58,7 +72,7 @@ export default function VendorSignupScreen() {
   const [category, setCategory] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Step 3 (code)
+  // Code screen
   const [code, setCode] = useState("");
 
   const step1Valid = email.trim().length > 0 && password.length >= 8;
@@ -113,7 +127,7 @@ export default function VendorSignupScreen() {
     setStep("code");
   }
 
-  // Step 3 submit: verify the code, then signInWithPassword.
+  // Code screen submit: verify the code; account is created server-side.
   async function verifyCode() {
     if (!codeValid) return;
     setError(null);
@@ -173,7 +187,8 @@ export default function VendorSignupScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -209,7 +224,7 @@ export default function VendorSignupScreen() {
               hitSlop={12}
               style={{ alignSelf: "flex-start", paddingVertical: 8 }}
             >
-              <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+              <Text style={{ color: MUTED, fontSize: 16, fontWeight: "500" }}>
                 ← Back
               </Text>
             </Pressable>
@@ -280,6 +295,48 @@ export default function VendorSignupScreen() {
   );
 }
 
+// Gold hairlines meeting a four-point star — the section divider from the
+// reference design.
+function StarDivider() {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 28,
+        gap: 14,
+      }}
+    >
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+    </View>
+  );
+}
+
+function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
+  return (
+    <View style={{ marginTop: 24 }}>
+      <Text style={eyebrowLabel}>{p.eyebrow}</Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 38,
+          lineHeight: 46,
+          fontWeight: "700",
+          color: CREAM,
+          letterSpacing: -0.5,
+          marginTop: 10,
+        }}
+      >
+        {p.title}
+      </Text>
+      <Text style={subhead}>{p.subtitle}</Text>
+      <StarDivider />
+    </View>
+  );
+}
+
 interface AccountStepProps {
   email: string;
   setEmail: (v: string) => void;
@@ -295,26 +352,16 @@ interface AccountStepProps {
 function AccountStep(p: AccountStepProps) {
   return (
     <>
-      <View style={{ marginTop: 24 }}>
-        <Text style={accentLabel}>STEP 1 OF 2</Text>
-        <Text
-          style={{
-            fontFamily: SERIF,
-            fontSize: 36,
-            fontWeight: "700",
-            color: INK,
-            letterSpacing: -1,
-            marginTop: 6,
-          }}
-        >
-          Set up your account
-        </Text>
-        <Text style={subhead}>Used to sign in and receive inquiries.</Text>
-      </View>
+      <StepHeader
+        eyebrow="STEP 1 OF 2"
+        title="Set up your account"
+        subtitle="Used to sign in and receive inquiries."
+      />
 
-      <View style={{ marginTop: 32, gap: 16 }}>
+      <View style={{ marginTop: 28, gap: 20 }}>
         <Field
           label="Email"
+          icon="email-outline"
           placeholder="business@email.com"
           value={p.email}
           onChangeText={p.setEmail}
@@ -324,42 +371,46 @@ function AccountStep(p: AccountStepProps) {
         />
         <View>
           <Text style={fieldLabel}>PASSWORD</Text>
-          <View style={{ position: "relative" }}>
+          <View style={inputRow}>
+            <MaterialCommunityIcons
+              name="lock-outline"
+              size={20}
+              color={GOLD}
+              style={{ marginRight: 10 }}
+            />
             <TextInput
               secureTextEntry={!p.showPassword}
               value={p.password}
               onChangeText={p.setPassword}
               placeholder="At least 8 characters"
-              placeholderTextColor={INK_DIM}
-              style={[input, { paddingRight: 64 }]}
+              placeholderTextColor={FAINT}
+              selectionColor={GOLD}
+              keyboardAppearance="dark"
+              style={inputText}
             />
-            <Pressable
+            <TouchableOpacity
               onPress={() => p.setShowPassword(!p.showPassword)}
-              hitSlop={8}
-              style={{
-                position: "absolute",
-                right: 12,
-                top: 0,
-                bottom: 0,
-                justifyContent: "center",
-              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              style={{ paddingLeft: 10 }}
             >
-              <Text style={{ color: ACCENT, fontSize: 13, fontWeight: "600" }}>
+              <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
                 {p.showPassword ? "Hide" : "Show"}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
 
         {p.error ? <Text style={errorText}>{p.error}</Text> : null}
 
-        <Pressable
+        <TouchableOpacity
           onPress={p.onContinue}
           disabled={!p.valid}
+          activeOpacity={0.85}
           style={{ ...primaryBtn, opacity: !p.valid ? 0.5 : 1 }}
         >
           <Text style={primaryBtnText}>Continue</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     </>
   );
@@ -380,26 +431,16 @@ interface BusinessStepProps {
 function BusinessStep(p: BusinessStepProps) {
   return (
     <>
-      <View style={{ marginTop: 24 }}>
-        <Text style={accentLabel}>STEP 2 OF 2</Text>
-        <Text
-          style={{
-            fontFamily: SERIF,
-            fontSize: 36,
-            fontWeight: "700",
-            color: INK,
-            letterSpacing: -1,
-            marginTop: 6,
-          }}
-        >
-          Tell us about your business
-        </Text>
-        <Text style={subhead}>You can edit any of this later from your dashboard.</Text>
-      </View>
+      <StepHeader
+        eyebrow="STEP 2 OF 2"
+        title="Tell us about your business"
+        subtitle="You can edit any of this later from your dashboard."
+      />
 
-      <View style={{ marginTop: 32, gap: 16 }}>
+      <View style={{ marginTop: 28, gap: 20 }}>
         <Field
           label="Business name"
+          icon="storefront-outline"
           placeholder="Luminara Photography"
           value={p.businessName}
           onChangeText={p.setBusinessName}
@@ -407,35 +448,40 @@ function BusinessStep(p: BusinessStepProps) {
         />
         <View>
           <Text style={fieldLabel}>CATEGORY</Text>
-          <Pressable
+          <TouchableOpacity
             onPress={p.openPicker}
-            style={{
-              ...input,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+            activeOpacity={0.7}
+            style={inputRow}
           >
+            <MaterialCommunityIcons
+              name="shape-outline"
+              size={20}
+              color={GOLD}
+              style={{ marginRight: 10 }}
+            />
             <Text
               style={{
                 fontSize: 16,
-                color: p.category ? INK : INK_DIM,
+                color: p.category ? CREAM : FAINT,
                 flex: 1,
               }}
             >
               {p.category || "Choose a category"}
             </Text>
-            <Text style={{ color: INK_DIM, fontSize: 18, marginLeft: 8 }}>
-              ›
-            </Text>
-          </Pressable>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={22}
+              color={FAINT}
+            />
+          </TouchableOpacity>
         </View>
 
         {p.error ? <Text style={errorText}>{p.error}</Text> : null}
 
-        <Pressable
+        <TouchableOpacity
           onPress={p.onSubmit}
           disabled={p.submitting || !p.valid}
+          activeOpacity={0.85}
           style={{
             ...primaryBtn,
             opacity: p.submitting || !p.valid ? 0.5 : 1,
@@ -444,14 +490,14 @@ function BusinessStep(p: BusinessStepProps) {
           <Text style={primaryBtnText}>
             {p.submitting ? "Submitting…" : "Submit application"}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
         <Text
           style={{
-            marginTop: 8,
+            marginTop: 4,
             textAlign: "center",
             fontSize: 12,
-            color: INK_DIM,
+            color: FAINT,
             lineHeight: 18,
           }}
         >
@@ -476,123 +522,84 @@ interface CodeStepProps {
 
 function CodeStep(p: CodeStepProps) {
   return (
-    <View style={{ marginTop: 24 }}>
-      <Text
-        style={{
-          fontFamily: SERIF,
-          fontSize: 14,
-          color: ACCENT,
-          letterSpacing: 0.5,
-          textTransform: "uppercase",
-        }}
-      >
-        Step 3 of 3
-      </Text>
-      <Text
-        style={{
-          fontFamily: SERIF,
-          fontSize: 32,
-          lineHeight: 38,
-          fontWeight: "700",
-          color: INK,
-          marginTop: 8,
-        }}
-      >
-        Enter your code
-      </Text>
-      <Text
-        style={{
-          fontFamily: SERIF,
-          fontSize: 15,
-          color: INK_DIM,
-          fontStyle: "italic",
-          marginTop: 8,
-        }}
-      >
-        We sent a 6-digit code to {p.email}.
-      </Text>
+    <>
+      <StepHeader
+        eyebrow="VERIFY YOUR EMAIL"
+        title="Enter your code"
+        subtitle={`We sent a 6-digit code to ${p.email}.`}
+      />
 
-      <View style={{ marginTop: 32, gap: 16 }}>
+      <View style={{ marginTop: 28, gap: 20 }}>
         <View>
-          <Text
-            style={{
-              marginBottom: 6,
-              fontSize: 12,
-              fontWeight: "600",
-              color: INK_DIM,
-              letterSpacing: 0.5,
-            }}
-          >
-            6-DIGIT CODE
-          </Text>
-          <TextInput
-            value={p.code}
-            onChangeText={(v) => p.setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-            placeholder="123456"
-            placeholderTextColor={INK_DIM}
-            keyboardType="number-pad"
-            autoCapitalize="none"
-            style={{
-              backgroundColor: "#ffffff",
-              borderColor: INK_BORDER,
-              borderWidth: 1,
-              borderRadius: 14,
-              paddingHorizontal: 14,
-              paddingVertical: 14,
-              fontSize: 18,
-              color: INK,
-              letterSpacing: 4,
-            }}
-          />
+          <Text style={fieldLabel}>6-DIGIT CODE</Text>
+          <View style={inputRow}>
+            <MaterialCommunityIcons
+              name="email-check-outline"
+              size={20}
+              color={GOLD}
+              style={{ marginRight: 10 }}
+            />
+            <TextInput
+              value={p.code}
+              onChangeText={(v) =>
+                p.setCode(v.replace(/[^0-9]/g, "").slice(0, 6))
+              }
+              placeholder="123456"
+              placeholderTextColor={FAINT}
+              selectionColor={GOLD}
+              keyboardAppearance="dark"
+              keyboardType="number-pad"
+              autoCapitalize="none"
+              style={{ ...inputText, fontSize: 18, letterSpacing: 6 }}
+            />
+          </View>
         </View>
 
-        {p.error ? (
-          <Text style={{ color: "#dc2828", fontSize: 14 }}>{p.error}</Text>
-        ) : null}
+        {p.error ? <Text style={errorText}>{p.error}</Text> : null}
 
-        <Pressable
+        <TouchableOpacity
           onPress={p.onVerify}
           disabled={p.submitting || !p.valid}
+          activeOpacity={0.85}
           style={{
-            marginTop: 8,
-            backgroundColor: INK,
-            borderRadius: 999,
-            height: 54,
-            alignItems: "center",
-            justifyContent: "center",
+            ...primaryBtn,
             opacity: p.submitting || !p.valid ? 0.5 : 1,
           }}
         >
-          <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+          <Text style={primaryBtnText}>
             {p.submitting ? "Verifying…" : "Verify"}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
-        <Pressable
+        <TouchableOpacity
           onPress={p.onResend}
           disabled={p.submitting}
+          activeOpacity={0.7}
           style={{ alignItems: "center", paddingVertical: 8 }}
         >
-          <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "600" }}>
+          <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
             Resend code
           </Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
-    </View>
+    </>
   );
 }
 
 function ThanksView({ onClose }: { onClose: () => void }) {
   return (
     <View style={{ marginTop: 80, alignItems: "center" }}>
-      <Text style={accentLabel}>— APPLICATION RECEIVED</Text>
+      <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
+      <Text style={{ ...eyebrowLabel, marginTop: 14 }}>
+        APPLICATION RECEIVED
+      </Text>
       <Text
         style={{
           fontFamily: SERIF,
           fontSize: 36,
           fontWeight: "700",
-          color: INK,
-          letterSpacing: -1,
+          color: CREAM,
+          letterSpacing: -0.5,
           marginTop: 12,
           textAlign: "center",
         }}
@@ -603,7 +610,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
         style={{
           marginTop: 16,
           fontSize: 15,
-          color: INK_DIM,
+          color: MUTED,
           textAlign: "center",
           lineHeight: 22,
           maxWidth: 320,
@@ -614,8 +621,9 @@ function ThanksView({ onClose }: { onClose: () => void }) {
         finish setting up your listing.
       </Text>
 
-      <Pressable
+      <TouchableOpacity
         onPress={onClose}
+        activeOpacity={0.85}
         style={{
           ...primaryBtn,
           marginTop: 32,
@@ -624,13 +632,14 @@ function ThanksView({ onClose }: { onClose: () => void }) {
         }}
       >
         <Text style={primaryBtnText}>Back to start</Text>
-      </Pressable>
+      </TouchableOpacity>
     </View>
   );
 }
 
 interface FieldProps {
   label: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
   placeholder?: string;
   value: string;
   onChangeText: (v: string) => void;
@@ -641,6 +650,7 @@ interface FieldProps {
 
 function Field({
   label,
+  icon,
   placeholder,
   value,
   onChangeText,
@@ -651,16 +661,26 @@ function Field({
   return (
     <View>
       <Text style={fieldLabel}>{label.toUpperCase()}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={INK_DIM}
-        keyboardType={keyboardType}
-        autoComplete={autoComplete}
-        autoCapitalize={autoCapitalize}
-        style={input}
-      />
+      <View style={inputRow}>
+        <MaterialCommunityIcons
+          name={icon}
+          size={20}
+          color={GOLD}
+          style={{ marginRight: 10 }}
+        />
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={FAINT}
+          selectionColor={GOLD}
+          keyboardAppearance="dark"
+          keyboardType={keyboardType}
+          autoComplete={autoComplete}
+          autoCapitalize={autoCapitalize}
+          style={inputText}
+        />
+      </View>
     </View>
   );
 }
@@ -689,16 +709,18 @@ function CategoryPicker({
         onPress={onClose}
         style={{
           flex: 1,
-          backgroundColor: "rgba(20,22,26,0.45)",
+          backgroundColor: "rgba(0,0,0,0.6)",
           justifyContent: "flex-end",
         }}
       >
         <Pressable
           onPress={() => {}}
           style={{
-            backgroundColor: CREAM,
+            backgroundColor: SHEET,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
+            borderColor: HAIRLINE,
+            borderWidth: 1,
             maxHeight: "82%",
             paddingHorizontal: 0,
             paddingTop: 8,
@@ -711,7 +733,7 @@ function CategoryPicker({
               width: 40,
               height: 4,
               borderRadius: 2,
-              backgroundColor: INK_BORDER,
+              backgroundColor: HAIRLINE,
               marginBottom: 16,
             }}
           />
@@ -720,7 +742,7 @@ function CategoryPicker({
               fontFamily: SERIF,
               fontSize: 22,
               fontWeight: "700",
-              color: INK,
+              color: CREAM,
               letterSpacing: -0.5,
               paddingHorizontal: 20,
               marginBottom: 12,
@@ -737,8 +759,8 @@ function CategoryPicker({
                     paddingVertical: 8,
                     fontSize: 11,
                     fontWeight: "600",
-                    color: INK_DIM,
-                    letterSpacing: 1,
+                    color: GOLD,
+                    letterSpacing: 2,
                   }}
                 >
                   {group.name.toUpperCase()}
@@ -753,18 +775,20 @@ function CategoryPicker({
                         paddingHorizontal: 20,
                         paddingVertical: 14,
                         backgroundColor: isSelected
-                          ? CREAM_DEEP
+                          ? "rgba(255,255,255,0.06)"
                           : "transparent",
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
                       }}
                     >
-                      <Text style={{ color: INK, fontSize: 16 }}>{sub}</Text>
+                      <Text style={{ color: CREAM, fontSize: 16 }}>{sub}</Text>
                       {isSelected ? (
-                        <Text style={{ color: ACCENT, fontSize: 16, fontWeight: "600" }}>
-                          ✓
-                        </Text>
+                        <MaterialCommunityIcons
+                          name="check"
+                          size={18}
+                          color={GOLD}
+                        />
                       ) : null}
                     </Pressable>
                   );
@@ -778,49 +802,60 @@ function CategoryPicker({
   );
 }
 
-const accentLabel = {
-  color: ACCENT,
-  fontSize: 11,
-  fontWeight: "600" as const,
-  letterSpacing: 2,
-};
-const subhead = {
-  marginTop: 8,
-  fontSize: 15,
-  color: INK_DIM,
-  fontStyle: "italic" as const,
-  fontFamily: SERIF,
-};
-const fieldLabel = {
-  marginBottom: 6,
+const eyebrowLabel = {
+  color: GOLD,
   fontSize: 12,
   fontWeight: "600" as const,
-  color: INK_DIM,
-  letterSpacing: 0.5,
+  letterSpacing: 3,
 };
-const input = {
+const subhead = {
+  marginTop: 10,
+  fontSize: 17,
+  color: MUTED,
+  fontStyle: "italic" as const,
+  fontFamily: SERIF,
+  lineHeight: 24,
+};
+const fieldLabel = {
+  marginBottom: 8,
+  fontSize: 13,
+  fontWeight: "700" as const,
+  color: CREAM,
+  letterSpacing: 1.5,
+};
+// Input = outer row (border, bg, icon) + flex TextInput. Two pieces so the
+// icon sits inside the border like the reference design.
+const inputRow = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
   backgroundColor: INPUT_BG,
-  borderColor: INK_BORDER,
+  borderColor: HAIRLINE,
   borderWidth: 1,
-  borderRadius: 14,
-  paddingHorizontal: 14,
-  paddingVertical: 14,
+  borderRadius: 16,
+  paddingHorizontal: 16,
+  minHeight: 60,
+};
+const inputText = {
+  flex: 1,
   fontSize: 16,
-  color: INK,
+  color: CREAM,
+  paddingVertical: 16,
 };
 const primaryBtn = {
-  marginTop: 8,
-  backgroundColor: INK,
+  marginTop: 4,
+  backgroundColor: GOLD,
   borderRadius: 999,
-  paddingVertical: 16,
+  height: 56,
   alignItems: "center" as const,
+  justifyContent: "center" as const,
 };
 const primaryBtnText = {
-  color: CREAM,
-  fontSize: 16,
+  color: INK_ON_GOLD,
+  fontSize: 17,
   fontWeight: "600" as const,
 };
 const errorText = {
   color: ERROR,
   fontSize: 14,
+  lineHeight: 20,
 };
