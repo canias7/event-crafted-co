@@ -166,6 +166,9 @@ export default function VendorLayout() {
           tab of its own. */}
       <Tabs.Screen name="find-vendor" options={{ href: null }} />
       <Tabs.Screen name="edit-profile" options={{ href: null }} />
+      {/* Setup checklist — pushed from the Profile tab's "You're almost
+          live!" banner, not a tab of its own. */}
+      <Tabs.Screen name="setup" options={{ href: null }} />
     </Tabs>
   );
 }

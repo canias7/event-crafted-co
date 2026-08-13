@@ -20,24 +20,34 @@ import {
   Share,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
-import Svg, { Path, Defs, LinearGradient, Stop, Rect } from "react-native-svg";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import Svg, { Path } from "react-native-svg";
 import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 
-// Web palette (apps/web/src/index.css): white surfaces, deep-navy
-// accent, cool neutral grays. No warm cream/champagne.
+// Vendora light theme (the user's reference design): warm cream page,
+// gold accents, a dark identity card. The light-side sibling of the
+// dark auth flow.
 const WHITE = "#ffffff";
+const PAGE = "#f4f1ea";
+const CARD = "#fdfcf9";
 const SURFACE = "#f3f4f6";
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
-const BORDER = "#e5e7eb";
+const INK_DIM = "#6b6f78";
+const BORDER = "rgba(20,22,26,0.10)";
+const GOLD = "#c9a86a";
+const DARK_CARD = "#16181d";
+const DARK_HAIRLINE = "rgba(255,255,255,0.16)";
+const DARK_MUTED = "rgba(255,255,255,0.65)";
+const GOLD_ON_DARK = "#d9bd82";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 // Joined year for the header stat (matches web's "Joined" stat).
@@ -119,6 +129,9 @@ export default function ProfileScreen() {
   const [listingCap, setListingCap] = useState<number | null>(1);
   // Every vendor_profiles row this user owns = their listings.
   const [listings, setListings] = useState<VendorProfile[]>([]);
+  // Setup progress — drives the "You're almost live!" banner. null
+  // while loading (banner hidden until we know).
+  const [setup, setSetup] = useState<SetupState | null>(null);
   // Header rating — average of HOST reviews of this vendor (matches
   // web; averaging all reviews would fold in the vendor's outgoing
   // ratings of hosts and inflate the score).
@@ -185,6 +198,24 @@ export default function ProfileScreen() {
     useCallback(() => {
       loadProfile();
     }, [loadProfile]),
+  );
+
+  // Setup progress for the banner — recomputed on every focus so
+  // completing a step elsewhere updates "X of Y" (or hides the banner)
+  // the moment the vendor comes back.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      if (!user?.id) return;
+      loadSetupState(user.id)
+        .then((s) => {
+          if (!cancelled) setSetup(s);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [user?.id]),
   );
 
   // Header rating = average of HOST reviews across all listings. The
@@ -273,27 +304,120 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: WHITE }}>
-      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: WHITE }}>
+    <View style={{ flex: 1, backgroundColor: PAGE }}>
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: PAGE }}>
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Page header — mirrors web "My Profile". */}
-          <Text
+          {/* Page header — serif title, settings shortcut on the right. */}
+          <View
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontWeight: "700",
-              fontSize: 34,
-              color: INK,
+              flexDirection: "row",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
             }}
           >
-            My Profile
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontWeight: "700",
+                fontSize: 36,
+                color: INK,
+                letterSpacing: -0.5,
+              }}
+            >
+              My Profile
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(vendor)/more" as never)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.6}
+              style={{ paddingTop: 8 }}
+            >
+              <MaterialCommunityIcons name="cog-outline" size={24} color={INK} />
+            </TouchableOpacity>
+          </View>
+          <Text style={{ marginTop: 2, fontSize: 14, color: INK_DIM }}>
+            Manage how your business appears on Vendora.
           </Text>
-          <Text style={{ marginTop: 2, fontSize: 13, color: INK_DIM }}>
-            Your listings — manage your marketplace presence here.
-          </Text>
+
+          {/* "You're almost live!" — setup progress banner. Hidden once
+              every required checklist item is done. */}
+          {setup && !setup.complete ? (
+            <TouchableOpacity
+              onPress={() => router.push("/(vendor)/setup" as never)}
+              activeOpacity={0.8}
+              style={{
+                marginTop: 16,
+                backgroundColor: CARD,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: BORDER,
+                padding: 16,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <MaterialCommunityIcons
+                name="star-four-points"
+                size={30}
+                color={GOLD}
+                style={{ marginRight: 14 }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: SERIF,
+                    fontWeight: "700",
+                    fontSize: 20,
+                    color: INK,
+                  }}
+                >
+                  You&rsquo;re almost live!
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 3,
+                    fontSize: 13,
+                    lineHeight: 18,
+                    color: INK_DIM,
+                  }}
+                >
+                  Complete your profile to start getting discovered by
+                  customers.
+                </Text>
+                <View
+                  style={{
+                    marginTop: 10,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: GOLD,
+                      borderRadius: 999,
+                      paddingHorizontal: 16,
+                      paddingVertical: 9,
+                    }}
+                  >
+                    <Text style={{ color: INK, fontSize: 14, fontWeight: "600" }}>
+                      Continue setup
+                    </Text>
+                  </View>
+                  <Text style={{ marginLeft: 12, fontSize: 12, color: INK_DIM }}>
+                    {setup.requiredDone} of {setup.requiredTotal} done
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={24}
+                color={INK_DIM}
+              />
+            </TouchableOpacity>
+          ) : null}
 
           {/* Brand identity card — mirrors web BrandCardShell + HeaderCard:
               gradient + ripple shell, a Bio flip-chip, avatar / name /
@@ -329,11 +453,11 @@ export default function ProfileScreen() {
   );
 }
 
-// Brand identity card — the mobile mirror of web's BrandCardShell +
-// HeaderCard. A white→#f3f4f6 gradient shell with faint ripple lines, a
-// top-left Bio chip that flips the card to the vendor's bio, and a front
-// face holding the avatar, name, RATING/JOINED, Share profile + Edit
-// identity buttons.
+// Brand identity card — dark card per the reference design: avatar with
+// a gold pencil badge, serif name, gold shield Verified/Unverified row,
+// a gold hairline-and-star divider, RATING · JOINED stats, and Share
+// profile / Edit identity side by side. A top-left Bio chip still flips
+// the card to the vendor's bio.
 function BrandCard({
   logoUrl,
   businessName,
@@ -359,47 +483,48 @@ function BrandCard({
   return (
     <View
       style={{
-        borderRadius: 28,
-        borderWidth: 1,
-        borderColor: "#e4e4e7",
+        borderRadius: 24,
         overflow: "hidden",
-        backgroundColor: WHITE,
-        minHeight: 312,
+        backgroundColor: DARK_CARD,
+        minHeight: 280,
         shadowColor: "#000",
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.18,
         shadowRadius: 24,
         shadowOffset: { width: 0, height: 8 },
-        elevation: 3,
+        elevation: 4,
       }}
     >
-      <CardCanvas />
-
-      {/* Bio / Back flip chip — top-left, matches web. */}
+      {/* Bio / Back flip chip — top-right so it doesn't crowd the avatar. */}
       <Pressable
         onPress={() => setFlipped((f) => !f)}
+        hitSlop={8}
         style={{
           position: "absolute",
-          top: 12,
-          left: 12,
+          top: 14,
+          right: 14,
           zIndex: 5,
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "rgba(255,255,255,0.7)",
+          backgroundColor: "rgba(255,255,255,0.08)",
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: "rgba(0,0,0,0.28)",
+          borderColor: DARK_HAIRLINE,
           borderRadius: 999,
           paddingHorizontal: 10,
           paddingVertical: 5,
         }}
       >
-        <Feather name={flipped ? "rotate-ccw" : "info"} size={11} color={INK} />
+        <Feather
+          name={flipped ? "rotate-ccw" : "info"}
+          size={11}
+          color={DARK_MUTED}
+        />
         <Text
           style={{
             marginLeft: 5,
             fontSize: 10,
             fontWeight: "700",
             letterSpacing: 1.8,
-            color: INK,
+            color: DARK_MUTED,
           }}
         >
           {flipped ? "BACK" : "BIO"}
@@ -407,13 +532,13 @@ function BrandCard({
       </Pressable>
 
       {flipped ? (
-        <View style={{ padding: 22, paddingTop: 52 }}>
+        <View style={{ padding: 22, paddingTop: 54 }}>
           <Text
             style={{
               fontSize: 10,
               fontWeight: "700",
               letterSpacing: 2,
-              color: INK_DIM,
+              color: DARK_MUTED,
             }}
           >
             ABOUT {businessName.toUpperCase()}
@@ -425,78 +550,150 @@ function BrandCard({
               fontStyle: "italic",
               fontSize: 18,
               lineHeight: 27,
-              color: bio?.trim() ? "rgba(20,22,26,0.85)" : INK_DIM,
+              color: bio?.trim() ? "rgba(255,255,255,0.85)" : DARK_MUTED,
             }}
           >
             {bio?.trim() ? bio : `No bio yet for ${businessName}.`}
           </Text>
         </View>
       ) : (
-        <View style={{ padding: 22, paddingTop: 52, alignItems: "center" }}>
-          {/* Avatar with verified + studio badges. */}
-          <View style={{ alignSelf: "flex-start" }}>
-            <Avatar logoUrl={logoUrl} />
-            {verified ? (
-              <View
+        <View style={{ padding: 22, paddingTop: 24 }}>
+          {/* Avatar + name/verification, side by side. */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View>
+              <Avatar logoUrl={logoUrl} businessName={businessName} />
+              {/* Gold pencil badge — jumps straight to Edit identity. */}
+              <TouchableOpacity
+                onPress={onEditIdentity}
+                activeOpacity={0.7}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 style={{
                   position: "absolute",
                   bottom: -2,
                   right: -2,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: "#10b981",
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  backgroundColor: GOLD,
                   borderWidth: 3,
-                  borderColor: WHITE,
+                  borderColor: DARK_CARD,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Feather name="check" size={11} color={WHITE} />
+                <Feather name="edit-2" size={12} color={INK} />
+              </TouchableOpacity>
+              {studio ? (
+                <View style={{ position: "absolute", top: -6, right: -6 }}>
+                  <StudioBadge size={24} />
+                </View>
+              ) : null}
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 18 }}>
+              <Text
+                numberOfLines={2}
+                style={{
+                  fontFamily: SERIF,
+                  fontWeight: "700",
+                  fontSize: 26,
+                  lineHeight: 31,
+                  letterSpacing: -0.5,
+                  color: WHITE,
+                }}
+              >
+                {businessName}
+              </Text>
+              <View
+                style={{
+                  marginTop: 6,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={verified ? "shield-check" : "shield-outline"}
+                  size={16}
+                  color={GOLD_ON_DARK}
+                />
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 14,
+                    fontWeight: "500",
+                    color: GOLD_ON_DARK,
+                  }}
+                >
+                  {verified ? "Verified" : "Unverified"}
+                </Text>
               </View>
-            ) : null}
-            {studio ? (
-              <View style={{ position: "absolute", top: -6, right: -6 }}>
-                <StudioBadge size={24} />
-              </View>
-            ) : null}
+            </View>
           </View>
 
-          <Text
-            numberOfLines={2}
+          {/* Gold hairline meeting a four-point star — the divider the
+              whole app's design language hangs on. */}
+          <View
             style={{
-              marginTop: 16,
-              textAlign: "center",
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontWeight: "700",
-              fontSize: 30,
-              lineHeight: 34,
-              letterSpacing: -0.5,
-              color: INK,
+              marginTop: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
             }}
           >
-            {businessName}
-          </Text>
+            <View
+              style={{
+                flex: 1,
+                height: 1,
+                backgroundColor: "rgba(217,189,130,0.45)",
+              }}
+            />
+            <MaterialCommunityIcons
+              name="star-four-points"
+              size={14}
+              color={GOLD_ON_DARK}
+            />
+            <View
+              style={{
+                flex: 1,
+                height: 1,
+                backgroundColor: "rgba(217,189,130,0.45)",
+              }}
+            />
+          </View>
 
           <View
             style={{
-              marginTop: 16,
+              marginTop: 18,
               flexDirection: "row",
               justifyContent: "center",
-              gap: 48,
+              alignItems: "center",
             }}
           >
-            <CardStat
-              value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
-              label="RATING"
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <CardStat
+                value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+                label="RATING"
+              />
+            </View>
+            <View
+              style={{ width: 1, height: 34, backgroundColor: DARK_HAIRLINE }}
             />
-            <CardStat value={joined} label="JOINED" />
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <CardStat value={joined} label="JOINED" />
+            </View>
           </View>
 
-          <View style={{ marginTop: 20, gap: 10, alignSelf: "stretch", alignItems: "center" }}>
-            <OutlineBtn icon="share-2" label="Share profile" onPress={onShare} />
-            <OutlineBtn icon="edit-2" label="Edit identity" onPress={onEditIdentity} />
+          <View style={{ marginTop: 22, flexDirection: "row", gap: 12 }}>
+            <OutlineBtn
+              icon="share-variant-outline"
+              label="Share profile"
+              onPress={onShare}
+            />
+            <OutlineBtn
+              icon="pencil-outline"
+              label="Edit identity"
+              onPress={onEditIdentity}
+            />
           </View>
         </View>
       )}
@@ -504,47 +701,26 @@ function BrandCard({
   );
 }
 
-// Gradient + ripple-line backdrop behind the brand card content.
-function CardCanvas() {
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Svg style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="brandgrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#ffffff" />
-            <Stop offset="1" stopColor="#f3f4f6" />
-          </LinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#brandgrad)" />
-      </Svg>
-      {[0.32, 0.48, 0.62, 0.76].map((t, i) => (
-        <View
-          key={t}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: `${t * 100}%`,
-            height: 1.5,
-            backgroundColor: `rgba(0,0,0,${0.06 - i * 0.012})`,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
 function CardStat({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ alignItems: "center" }}>
-      <Text style={{ fontSize: 20, fontWeight: "700", color: INK }}>{value}</Text>
       <Text
         style={{
-          marginTop: 2,
+          fontFamily: SERIF,
+          fontSize: 22,
+          fontWeight: "700",
+          color: WHITE,
+        }}
+      >
+        {value}
+      </Text>
+      <Text
+        style={{
+          marginTop: 3,
           fontSize: 10,
           fontWeight: "600",
-          letterSpacing: 1.2,
-          color: INK_DIM,
+          letterSpacing: 1.5,
+          color: DARK_MUTED,
         }}
       >
         {label}
@@ -558,46 +734,53 @@ function OutlineBtn({
   label,
   onPress,
 }: {
-  icon: keyof typeof Feather.glyphMap;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
   label: string;
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
+      activeOpacity={0.7}
       style={{
+        flex: 1,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "stretch",
         borderWidth: 1,
-        borderColor: BORDER,
-        backgroundColor: "rgba(255,255,255,0.75)",
+        borderColor: DARK_HAIRLINE,
         borderRadius: 999,
-        paddingVertical: 11,
+        paddingVertical: 12,
       }}
     >
-      <Feather name={icon} size={14} color={INK} />
-      <Text style={{ marginLeft: 7, fontSize: 14, fontWeight: "600", color: INK }}>
+      <MaterialCommunityIcons name={icon} size={15} color={GOLD_ON_DARK} />
+      <Text
+        style={{ marginLeft: 7, fontSize: 14, fontWeight: "600", color: WHITE }}
+      >
         {label}
       </Text>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
-// Circular avatar — vendor logo when set, else web's neutral person
-// silhouette on a warm gray.
-function Avatar({ logoUrl }: { logoUrl: string | null }) {
+// Circular avatar — vendor logo when set, else the business initial in
+// serif on warm cream (per the reference design).
+function Avatar({
+  logoUrl,
+  businessName,
+}: {
+  logoUrl: string | null;
+  businessName: string;
+}) {
+  const initial = (businessName.trim()[0] ?? "V").toUpperCase();
   return (
     <View
       style={{
-        width: 96,
-        height: 96,
-        borderRadius: 48,
+        width: 88,
+        height: 88,
+        borderRadius: 44,
         overflow: "hidden",
-        backgroundColor: logoUrl ? WHITE : "#e5e1da",
-        borderWidth: 1,
-        borderColor: BORDER,
+        backgroundColor: logoUrl ? WHITE : "#e9e4da",
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -610,12 +793,22 @@ function Avatar({ logoUrl }: { logoUrl: string | null }) {
           accessibilityIgnoresInvertColors
         />
       ) : (
-        <Feather name="user" size={44} color="#9b948a" />
+        <Text
+          style={{
+            fontFamily: SERIF,
+            fontSize: 40,
+            color: "#3f4249",
+          }}
+        >
+          {initial}
+        </Text>
       )}
     </View>
   );
 }
 
+// Dashed-border empty state per the reference design: thin icon circle,
+// serif title, body copy, gold pill CTA.
 function EmptyState({
   icon,
   title,
@@ -630,19 +823,68 @@ function EmptyState({
   onCta?: () => void;
 }) {
   return (
-    <View className="items-center">
-      <View className="h-16 w-16 items-center justify-center rounded-full border border-border">
-        <Feather name={icon} size={24} color={INK_DIM} />
+    <View
+      style={{
+        alignItems: "center",
+        borderWidth: 1.5,
+        borderColor: "rgba(20,22,26,0.18)",
+        borderStyle: "dashed",
+        borderRadius: 20,
+        paddingVertical: 36,
+        paddingHorizontal: 24,
+      }}
+    >
+      <View
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          borderWidth: 1,
+          borderColor: "rgba(20,22,26,0.15)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name={icon} size={24} color={GOLD} />
       </View>
-      <Text className="mt-4 text-lg font-semibold text-foreground">{title}</Text>
-      <Text className="mt-1 text-center text-base text-muted-foreground">{body}</Text>
+      <Text
+        style={{
+          marginTop: 18,
+          fontFamily: SERIF,
+          fontWeight: "700",
+          fontSize: 26,
+          color: INK,
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          marginTop: 8,
+          textAlign: "center",
+          fontSize: 14,
+          lineHeight: 21,
+          color: INK_DIM,
+        }}
+      >
+        {body}
+      </Text>
       {ctaLabel && onCta ? (
-        <Pressable
+        <TouchableOpacity
           onPress={onCta}
-          className="mt-5 rounded-full bg-foreground px-6 py-2.5 active:opacity-80"
+          activeOpacity={0.85}
+          style={{
+            marginTop: 20,
+            backgroundColor: GOLD,
+            borderRadius: 12,
+            paddingHorizontal: 26,
+            paddingVertical: 13,
+          }}
         >
-          <Text className="text-sm font-semibold text-background">{ctaLabel}</Text>
-        </Pressable>
+          <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
+            {ctaLabel}
+          </Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );
@@ -677,15 +919,13 @@ function ListingTab({
   }
   if (listings.length === 0) {
     return (
-      <View className="items-center px-4 pt-10">
-        <EmptyState
-          icon="shopping-bag"
-          title="No listings yet"
-          body="Add your location and starting price to publish your listing to the marketplace."
-          ctaLabel="Create listing"
-          onCta={onCreateNew}
-        />
-      </View>
+      <EmptyState
+        icon="shopping-bag"
+        title="No listings yet"
+        body="Add your location and starting prices to publish your first listing."
+        ctaLabel="Create listing"
+        onCta={onCreateNew}
+      />
     );
   }
   const underCap = listingCap === null || listings.length < listingCap;
@@ -707,22 +947,21 @@ function ListingTab({
           {listingCap === 1 && listings.length === 1 ? "" : "s"}
         </Text>
         {underCap ? (
-          <Pressable
+          <TouchableOpacity
             onPress={onCreateNew}
-            hitSlop={8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.85}
             style={{
-              borderWidth: 1,
-              borderColor: "rgba(0,0,0,0.18)",
+              backgroundColor: GOLD,
               borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 7,
-              backgroundColor: "#fff",
+              paddingHorizontal: 16,
+              paddingVertical: 8,
             }}
           >
             <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
               New listing
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         ) : (
           <UpgradeLink />
         )}
