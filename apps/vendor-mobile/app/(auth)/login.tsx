@@ -1,26 +1,40 @@
 // Vendor login. Two-step 2FA: email+password → 6-digit code emailed via
-// Resend. Cream/ink themed to match the welcome screen.
+// Resend. Dark Vendora theme mirroring signup.tsx — same palette, gold
+// eyebrow + serif headline + star divider, dark bordered inputs with
+// gold leading icons.
+//
+// Styling rule carried over from the welcome-screen debugging: no
+// function-form style props (the styling interop drops them on device).
+// Plain objects only; TouchableOpacity supplies press feedback.
 
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
+  StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#14161a";
-const INK_DIM = "#5e636e";
-const INK_BORDER = "rgba(20,22,26,0.08)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#dc2828";
-const ACCENT = "#1B3654";
+// Same palette as welcome.tsx / signup.tsx.
+const PAGE = "#0d0f13";
+const CREAM = "#f4efe6";
+const INK_ON_GOLD = "#14161a";
+const GOLD = "#d9bd82";
+const GOLD_DIM = "rgba(217,189,130,0.45)";
+const MUTED = "rgba(255,255,255,0.72)";
+const FAINT = "rgba(255,255,255,0.45)";
+const HAIRLINE = "rgba(255,255,255,0.14)";
+const INPUT_BG = "rgba(255,255,255,0.05)";
+const ERROR = "#f0938a";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -172,316 +186,343 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}
+        style={{ flex: 1 }}
       >
-        <Pressable
-          onPress={() => (step === "credentials" ? router.back() : setStep("credentials"))}
-          hitSlop={12}
-          style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 48,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
-            ← Back
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={() => {
+              if (step === "code") {
+                setStep("credentials");
+              } else if (router.canGoBack()) {
+                router.back();
+              } else {
+                // Deep launch straight into login leaves nothing on the
+                // stack — back() would silently no-op (same dead-button
+                // bug signup had).
+                router.replace("/(auth)/welcome");
+              }
+            }}
+            hitSlop={12}
+            style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+          >
+            <Text style={{ color: MUTED, fontSize: 16, fontWeight: "500" }}>
+              ← Back
+            </Text>
+          </Pressable>
 
-        {step === "credentials" ? (
-          <>
-            <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  fontFamily: SERIF,
-                  fontSize: 36,
-                  fontWeight: "700",
-                  color: INK,
-                  letterSpacing: -1,
-                }}
-              >
-                Welcome back
-              </Text>
-              <Text
-                style={{
-                  marginTop: 8,
-                  fontSize: 15,
-                  color: INK_DIM,
-                  fontStyle: "italic",
-                  fontFamily: SERIF,
-                }}
-              >
-                Log in to plan your next event.
-              </Text>
-            </View>
-
-            <View style={{ marginTop: 32, gap: 16 }}>
-              <Field
-                label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoComplete="email"
-                autoCapitalize="none"
+          {step === "credentials" ? (
+            <>
+              <StepHeader
+                eyebrow="SIGN IN"
+                title="Welcome back"
+                subtitle="Log in to plan your next event."
               />
 
-              <View>
-                <Text
+              <View style={{ marginTop: 28, gap: 20 }}>
+                <View>
+                  <Text style={fieldLabel}>EMAIL</Text>
+                  <View style={inputRow}>
+                    <MaterialCommunityIcons
+                      name="email-outline"
+                      size={20}
+                      color={GOLD}
+                      style={{ marginRight: 10 }}
+                    />
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="you@example.com"
+                      placeholderTextColor={FAINT}
+                      selectionColor={GOLD}
+                      keyboardAppearance="dark"
+                      keyboardType="email-address"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      style={inputText}
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={fieldLabel}>PASSWORD</Text>
+                  <View style={inputRow}>
+                    <MaterialCommunityIcons
+                      name="lock-outline"
+                      size={20}
+                      color={GOLD}
+                      style={{ marginRight: 10 }}
+                    />
+                    <TextInput
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor={FAINT}
+                      selectionColor={GOLD}
+                      keyboardAppearance="dark"
+                      autoComplete="current-password"
+                      style={inputText}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                      style={{ paddingLeft: 10 }}
+                    >
+                      <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
+                        {showPassword ? "Hide" : "Show"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {error ? <Text style={errorText}>{error}</Text> : null}
+
+                <TouchableOpacity
+                  onPress={onSubmitCredentials}
+                  disabled={submitting || !email || !password}
+                  activeOpacity={0.85}
                   style={{
-                    marginBottom: 6,
-                    fontSize: 12,
-                    fontWeight: "600",
-                    color: INK_DIM,
-                    letterSpacing: 0.5,
+                    ...primaryBtn,
+                    opacity: submitting || !email || !password ? 0.5 : 1,
                   }}
                 >
-                  PASSWORD
+                  <Text style={primaryBtnText}>
+                    {submitting ? "Sending code…" : "Continue"}
+                  </Text>
+                </TouchableOpacity>
+                <Text
+                  style={{
+                    marginTop: 0,
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: FAINT,
+                  }}
+                >
+                  We'll email you a 6-digit code to confirm it's you.
                 </Text>
-                <View style={{ position: "relative" }}>
+
+                <TouchableOpacity
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                  activeOpacity={0.7}
+                  style={{ marginTop: 8, alignItems: "center" }}
+                >
+                  <Text style={{ color: GOLD, fontWeight: "600", fontSize: 14 }}>
+                    Forgot your password?
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.replace("/(auth)/signup")}
+                  activeOpacity={0.7}
+                  style={{ marginTop: 8, alignItems: "center" }}
+                >
+                  <Text style={{ color: MUTED, fontSize: 14 }}>
+                    New here?{" "}
+                    <Text style={{ color: GOLD, fontWeight: "600" }}>
+                      Create an account
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <StepHeader
+                eyebrow="ONE MORE STEP"
+                title="Check your email"
+                subtitle={`We sent a 6-digit code to ${email}. It expires in 10 minutes.`}
+              />
+
+              <View style={{ marginTop: 28, gap: 20 }}>
+                <View>
+                  <Text style={fieldLabel}>6-DIGIT CODE</Text>
                   <TextInput
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor={INK_DIM}
-                    autoComplete="current-password"
+                    inputMode="numeric"
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    value={code}
+                    onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+                    maxLength={6}
+                    placeholder="••••••"
+                    placeholderTextColor={FAINT}
+                    selectionColor={GOLD}
+                    keyboardAppearance="dark"
+                    autoFocus
                     style={{
                       backgroundColor: INPUT_BG,
-                      borderColor: INK_BORDER,
+                      borderColor: HAIRLINE,
                       borderWidth: 1,
-                      borderRadius: 14,
-                      paddingHorizontal: 14,
-                      paddingVertical: 14,
-                      paddingRight: 64,
-                      fontSize: 16,
-                      color: INK,
+                      borderRadius: 16,
+                      paddingVertical: 18,
+                      fontSize: 28,
+                      textAlign: "center",
+                      letterSpacing: 12,
+                      color: CREAM,
+                      fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
                     }}
                   />
-                  <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    hitSlop={8}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: 0,
-                      bottom: 0,
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text style={{ color: ACCENT, fontSize: 13, fontWeight: "600" }}>
-                      {showPassword ? "Hide" : "Show"}
-                    </Text>
-                  </Pressable>
                 </View>
-              </View>
 
-              {error ? <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text> : null}
+                {info && !error ? (
+                  <Text style={{ color: GOLD, fontSize: 14 }}>{info}</Text>
+                ) : null}
+                {error ? <Text style={errorText}>{error}</Text> : null}
 
-              <Pressable
-                onPress={onSubmitCredentials}
-                disabled={submitting || !email || !password}
-                style={{
-                  marginTop: 8,
-                  backgroundColor: INK,
-                  borderRadius: 999,
-                  height: 54,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: submitting || !email || !password ? 0.5 : 1,
-                }}
-              >
-                <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
-                  {submitting ? "Sending code…" : "Continue"}
-                </Text>
-              </Pressable>
-              <Text
-                style={{
-                  marginTop: 4,
-                  textAlign: "center",
-                  fontSize: 12,
-                  color: INK_DIM,
-                }}
-              >
-                We'll email you a 6-digit code to confirm it's you.
-              </Text>
-
-              <Pressable
-                onPress={() => router.push("/(auth)/forgot-password")}
-                style={{ marginTop: 12, alignItems: "center" }}
-              >
-                <Text style={{ color: INK, fontWeight: "600", fontSize: 14 }}>
-                  Forgot your password?
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.replace("/(auth)/signup")}
-                style={{ marginTop: 12, alignItems: "center" }}
-              >
-                <Text style={{ color: INK_DIM, fontSize: 14 }}>
-                  New here?{" "}
-                  <Text style={{ color: INK, fontWeight: "600" }}>Create an account</Text>
-                </Text>
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  fontFamily: SERIF,
-                  fontSize: 36,
-                  fontWeight: "700",
-                  color: INK,
-                  letterSpacing: -1,
-                }}
-              >
-                Check your email
-              </Text>
-              <Text
-                style={{
-                  marginTop: 8,
-                  fontSize: 15,
-                  color: INK_DIM,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
-                }}
-              >
-                We sent a 6-digit code to {email}. It expires in 10 minutes.
-              </Text>
-            </View>
-
-            <View style={{ marginTop: 32, gap: 16 }}>
-              <View>
-                <Text
+                <TouchableOpacity
+                  onPress={onSubmitCode}
+                  disabled={submitting || code.length !== 6}
+                  activeOpacity={0.85}
                   style={{
-                    marginBottom: 6,
-                    fontSize: 12,
-                    fontWeight: "600",
-                    color: INK_DIM,
-                    letterSpacing: 0.5,
+                    ...primaryBtn,
+                    opacity: submitting || code.length !== 6 ? 0.5 : 1,
                   }}
                 >
-                  6-DIGIT CODE
-                </Text>
-                <TextInput
-                  inputMode="numeric"
-                  keyboardType="number-pad"
-                  autoComplete="one-time-code"
-                  value={code}
-                  onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
-                  maxLength={6}
-                  placeholder="••••••"
-                  placeholderTextColor={INK_DIM}
-                  autoFocus
+                  <Text style={primaryBtnText}>
+                    {submitting ? "Verifying…" : "Sign in"}
+                  </Text>
+                </TouchableOpacity>
+
+                <View
                   style={{
-                    backgroundColor: INPUT_BG,
-                    borderColor: INK_BORDER,
-                    borderWidth: 1,
-                    borderRadius: 14,
-                    paddingVertical: 18,
-                    fontSize: 28,
-                    textAlign: "center",
-                    letterSpacing: 12,
-                    color: INK,
-                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+                    marginTop: 4,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
                   }}
-                />
+                >
+                  <TouchableOpacity
+                    disabled={submitting}
+                    onPress={() => setStep("credentials")}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: GOLD, fontSize: 14, fontWeight: "500" }}>
+                      ← Use a different account
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    disabled={submitting}
+                    onPress={onSubmitCredentials}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: GOLD, fontSize: 14, fontWeight: "500" }}>
+                      Resend code
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-
-              {info && !error ? <Text style={{ color: ACCENT, fontSize: 14 }}>{info}</Text> : null}
-              {error ? <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text> : null}
-
-              <Pressable
-                onPress={onSubmitCode}
-                disabled={submitting || code.length !== 6}
-                style={{
-                  marginTop: 8,
-                  backgroundColor: INK,
-                  borderRadius: 999,
-                  height: 54,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: submitting || code.length !== 6 ? 0.5 : 1,
-                }}
-              >
-                <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
-                  {submitting ? "Verifying…" : "Sign in"}
-                </Text>
-              </Pressable>
-
-              <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
-                <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
-                  <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "500" }}>
-                    ← Use a different account
-                  </Text>
-                </Pressable>
-                <Pressable disabled={submitting} onPress={onSubmitCredentials}>
-                  <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "500" }}>
-                    Resend code
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </>
-        )}
+            </>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-interface FieldProps {
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  keyboardType?: "default" | "email-address" | "number-pad" | "numeric";
-  autoComplete?: "email" | "off";
-  autoCapitalize?: "none" | "sentences";
-}
-
-function Field({
-  label,
-  placeholder,
-  value,
-  onChangeText,
-  keyboardType,
-  autoComplete,
-  autoCapitalize,
-}: FieldProps) {
+// Gold hairlines meeting a four-point star — same divider as signup.tsx.
+function StarDivider() {
   return (
-    <View>
-      <Text
-        style={{
-          marginBottom: 6,
-          fontSize: 12,
-          fontWeight: "600",
-          color: INK_DIM,
-          letterSpacing: 0.5,
-        }}
-      >
-        {label.toUpperCase()}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={INK_DIM}
-        keyboardType={keyboardType}
-        autoComplete={autoComplete}
-        autoCapitalize={autoCapitalize}
-        style={{
-          backgroundColor: INPUT_BG,
-          borderColor: INK_BORDER,
-          borderWidth: 1,
-          borderRadius: 14,
-          paddingHorizontal: 14,
-          paddingVertical: 14,
-          fontSize: 16,
-          color: INK,
-        }}
-      />
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 28,
+        gap: 14,
+      }}
+    >
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
     </View>
   );
 }
+
+function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
+  return (
+    <View style={{ marginTop: 24 }}>
+      <Text style={eyebrowLabel}>{p.eyebrow}</Text>
+      <Text
+        style={{
+          fontFamily: SERIF,
+          fontSize: 38,
+          lineHeight: 46,
+          fontWeight: "700",
+          color: CREAM,
+          letterSpacing: -0.5,
+          marginTop: 10,
+        }}
+      >
+        {p.title}
+      </Text>
+      <Text style={subhead}>{p.subtitle}</Text>
+      <StarDivider />
+    </View>
+  );
+}
+
+const eyebrowLabel = {
+  color: GOLD,
+  fontSize: 12,
+  fontWeight: "600" as const,
+  letterSpacing: 3,
+};
+const subhead = {
+  marginTop: 10,
+  fontSize: 17,
+  color: MUTED,
+  fontStyle: "italic" as const,
+  fontFamily: SERIF,
+  lineHeight: 24,
+};
+const fieldLabel = {
+  marginBottom: 8,
+  fontSize: 13,
+  fontWeight: "700" as const,
+  color: CREAM,
+  letterSpacing: 1.5,
+};
+const inputRow = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  backgroundColor: INPUT_BG,
+  borderColor: HAIRLINE,
+  borderWidth: 1,
+  borderRadius: 16,
+  paddingHorizontal: 16,
+  minHeight: 60,
+};
+const inputText = {
+  flex: 1,
+  fontSize: 16,
+  color: CREAM,
+  paddingVertical: 16,
+};
+const primaryBtn = {
+  marginTop: 4,
+  backgroundColor: GOLD,
+  borderRadius: 999,
+  height: 56,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+};
+const primaryBtnText = {
+  color: INK_ON_GOLD,
+  fontSize: 17,
+  fontWeight: "600" as const,
+};
+const errorText = {
+  color: ERROR,
+  fontSize: 14,
+  lineHeight: 20,
+};
