@@ -137,6 +137,13 @@ export default function VendorLayout() {
     <Tabs
       tabBar={(props) => <FloatingTabBar {...props} />}
       initialRouteName="inbox"
+      // Every screen here is a tab route (the editors are just hidden
+      // ones), so router.back() follows the TAB navigator's back rule.
+      // The default is "return to the first route" — which sent every
+      // Save / close in edit-profile and the listing builder to Inbox
+      // instead of the screen the vendor came from (profile, or the
+      // setup checklist). "history" makes back mean "where I just was".
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
