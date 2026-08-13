@@ -118,18 +118,25 @@ export default function EditProfileScreen() {
   }
 
   // Upload the cropper's output — already a 512×512 JPEG composed on a
-  // white background, so we just read bytes and upload (no resize, no
-  // format guessing).
+  // white background. The cropper hands us a base64 data URI (bytes stay
+  // in JS end to end — no tmpfile, no fetch(file://), both of which were
+  // failure points on device); a plain file URI still works as fallback.
   async function uploadLogo(croppedUri: string) {
     if (!user?.id) return;
     setLogoToCrop(null);
     setLogoUploading(true);
     try {
-      // ArrayBuffer (not fetch().blob()) — the blob path is unreliable
-      // on iOS for local file URIs (supabase-js gets size=0 and the
-      // server responds "No content provided").
-      const arrayBuffer = await (await fetch(croppedUri)).arrayBuffer();
-      if (arrayBuffer.byteLength === 0) {
+      let bytes: ArrayBuffer;
+      if (croppedUri.startsWith("data:")) {
+        const b64 = croppedUri.slice(croppedUri.indexOf(",") + 1);
+        bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer;
+      } else {
+        // ArrayBuffer (not fetch().blob()) — the blob path is unreliable
+        // on iOS for local file URIs (supabase-js gets size=0 and the
+        // server responds "No content provided").
+        bytes = await (await fetch(croppedUri)).arrayBuffer();
+      }
+      if (bytes.byteLength === 0) {
         Alert.alert(
           "Couldn't read photo",
           "The cropped image came back empty. Try again.",
@@ -139,7 +146,7 @@ export default function EditProfileScreen() {
       const path = `${user.id}/profile-logo-${Date.now()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("vendor-posts")
-        .upload(path, arrayBuffer, {
+        .upload(path, bytes, {
           contentType: "image/jpeg",
           upsert: false,
         });
@@ -147,7 +154,18 @@ export default function EditProfileScreen() {
       const { data: pub } = supabase.storage
         .from("vendor-posts")
         .getPublicUrl(path);
+      // Persist immediately — "Use logo" means use it. Requiring another
+      // tap on the header Save to actually keep the logo was a silent
+      // data-loss trap (close the screen and the upload is orphaned).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: saveErr } = await (supabase as any)
+        .from("profiles")
+        .update({ logo_url: pub.publicUrl })
+        .eq("id", user.id);
+      if (saveErr) throw saveErr;
       set("logo_url", pub.publicUrl);
+      // The logo is saved; only name/bio edits should mark the form dirty.
+      setInitial((prev) => ({ ...prev, logo_url: pub.publicUrl }));
     } catch (e) {
       Alert.alert(
         "Couldn't update logo",
