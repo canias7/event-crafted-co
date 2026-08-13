@@ -20,7 +20,7 @@
         "expo-channel-name": "production"
       },
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 30000
+      "fallbackToCacheTimeout": 0
     },
     "ios": {
       "bundleIdentifier": "co.eventcrafted.host",
