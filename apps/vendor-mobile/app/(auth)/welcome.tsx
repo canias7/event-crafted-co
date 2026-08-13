@@ -66,7 +66,10 @@ export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  // Photo height from the asset's own 900x860 aspect, so it's never stretched.
+  // Photo height from the asset's own 900:860 aspect (shipped at 2x,
+  // 1800x1720, so phone screens never upscale it), so it's never stretched.
+  // The photo itself occupies the top ~70% of the asset at its native 3:2
+  // aspect — zoomed out, nothing cropped — and the rest is baked fade.
   const photoHeight = width * (860 / 900);
   // The wordmark is one Text (not per-character any more), so RN can shrink it
   // itself — adjustsFontSizeToFit handles narrow screens without the measure-
