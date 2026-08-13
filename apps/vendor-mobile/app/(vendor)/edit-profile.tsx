@@ -31,6 +31,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { prepareLogoForUpload, type PickedAsset } from "@/lib/imageManipulation";
 import { LogoCropperModal } from "@/components/LogoCropperModal";
 
 const CREAM = "#ffffff";
@@ -59,8 +60,9 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
-  // Image picked but not yet cropped — drives the in-app cropper.
-  const [logoToCrop, setLogoToCrop] = useState<string | null>(null);
+  // Image picked but not yet confirmed — drives the preview modal.
+  // Full asset (not just uri): the manipulator needs width/height.
+  const [pickedLogo, setPickedLogo] = useState<PickedAsset | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -114,40 +116,42 @@ export default function EditProfileScreen() {
       quality: 1,
     });
     if (pick.canceled || !pick.assets?.[0]) return;
-    setLogoToCrop(pick.assets[0].uri);
+    const a = pick.assets[0];
+    setPickedLogo({
+      uri: a.uri,
+      width: a.width,
+      height: a.height,
+      mimeType: a.mimeType ?? undefined,
+    });
   }
 
-  // Upload the cropper's output — already a 512×512 JPEG composed on a
-  // white background. The cropper hands us a base64 data URI (bytes stay
-  // in JS end to end — no tmpfile, no fetch(file://), both of which were
-  // failure points on device); a plain file URI still works as fallback.
-  async function uploadLogo(croppedUri: string) {
-    if (!user?.id) return;
-    setLogoToCrop(null);
+  // Confirm → downscale with expo-image-manipulator (proven on this
+  // binary — listing photos use the same module; view-shot capture was
+  // the step that failed on device) → upload as PNG (preserves logo
+  // transparency) → persist to profiles immediately. Bytes travel as
+  // base64 in JS the whole way: no tmpfile, no fetch(file://).
+  async function uploadLogo() {
+    if (!user?.id || !pickedLogo) return;
+    const asset = pickedLogo;
+    setPickedLogo(null);
     setLogoUploading(true);
     try {
-      let bytes: ArrayBuffer;
-      if (croppedUri.startsWith("data:")) {
-        const b64 = croppedUri.slice(croppedUri.indexOf(",") + 1);
-        bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer;
-      } else {
-        // ArrayBuffer (not fetch().blob()) — the blob path is unreliable
-        // on iOS for local file URIs (supabase-js gets size=0 and the
-        // server responds "No content provided").
-        bytes = await (await fetch(croppedUri)).arrayBuffer();
-      }
+      const prepared = await prepareLogoForUpload(asset);
+      const bytes = Uint8Array.from(atob(prepared.base64), (c) =>
+        c.charCodeAt(0),
+      ).buffer;
       if (bytes.byteLength === 0) {
         Alert.alert(
           "Couldn't read photo",
-          "The cropped image came back empty. Try again.",
+          "The processed image came back empty. Try again.",
         );
         return;
       }
-      const path = `${user.id}/profile-logo-${Date.now()}.jpg`;
+      const path = `${user.id}/profile-logo-${Date.now()}.${prepared.ext}`;
       const { error: upErr } = await supabase.storage
         .from("vendor-posts")
         .upload(path, bytes, {
-          contentType: "image/jpeg",
+          contentType: prepared.mime,
           upsert: false,
         });
       if (upErr) throw upErr;
@@ -296,10 +300,17 @@ export default function EditProfileScreen() {
                     }}
                   >
                     {form.logo_url ? (
+                      // contain on white, NOT cover: logos upload at
+                      // their native aspect now, and the promise is
+                      // "nothing gets cropped".
                       <Image
                         source={{ uri: form.logo_url }}
-                        style={{ width: "100%", height: "100%" }}
-                        resizeMode="cover"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          backgroundColor: "#ffffff",
+                        }}
+                        resizeMode="contain"
                       />
                     ) : (
                       <Text
@@ -373,17 +384,17 @@ export default function EditProfileScreen() {
         </KeyboardAvoidingView>
       </SafeAreaView>
 
-      {/* In-app logo cropper — opens after a pick, replaces the OS crop. */}
+      {/* Logo preview/confirm — opens after a pick, replaces the OS crop. */}
       <Modal
-        visible={logoToCrop !== null}
+        visible={pickedLogo !== null}
         animationType="fade"
         transparent
-        onRequestClose={() => setLogoToCrop(null)}
+        onRequestClose={() => setPickedLogo(null)}
       >
-        {logoToCrop ? (
+        {pickedLogo ? (
           <LogoCropperModal
-            uri={logoToCrop}
-            onCancel={() => setLogoToCrop(null)}
+            uri={pickedLogo.uri}
+            onCancel={() => setPickedLogo(null)}
             onApply={uploadLogo}
           />
         ) : null}

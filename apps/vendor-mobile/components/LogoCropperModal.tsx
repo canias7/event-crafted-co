@@ -1,23 +1,22 @@
-// Logo "auto-fit on white" — the app-side counterpart to web's
-// logo handling. After the vendor picks an image we DON'T force an OS
-// square crop (which chops wide logos); instead we fit the WHOLE logo
-// onto a white 512×512 square and let them confirm. No manual pan/zoom
-// — just a clean centered logo with white padding.
+// Logo "auto-fit on white" confirmation — the app-side counterpart to
+// web's logo handling. After the vendor picks an image we DON'T force
+// an OS square crop (which chops wide logos); we preview the WHOLE
+// logo on a clean background and let them confirm.
 //
-// Why view-shot: the padding around a contained logo has to render on
-// a real background. expo-image-manipulator can crop/resize but can't
-// pad outside the image's pixels, so we capture the composed view
-// (image on white, resizeMode "contain") WYSIWYG to a 512×512 JPEG.
-// The circular guide is drawn OVER the captured layer (pointerEvents
-// none) so it never lands in the saved file — it just previews how the
-// logo reads as a round avatar.
+// This used to compose the padded square client-side with
+// react-native-view-shot's captureRef — which fails on the current
+// new-architecture binary (verified: every "Use logo" tap died at
+// capture; zero uploads reached storage). The composition step is gone
+// entirely: confirming hands the ORIGINAL image back to the caller,
+// which downscales it with expo-image-manipulator (proven on this
+// binary — listing photos use it) and uploads it as-is. The clean
+// background is the renderer's job now: every logo surface draws
+// white behind the image with resizeMode "contain", which is exactly
+// what this preview shows.
 
-import { useRef, useState } from "react";
-import { Alert, Dimensions, Image, Pressable, Text, View } from "react-native";
+import { Dimensions, Image, Pressable, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { captureRef } from "react-native-view-shot";
 
-const OUTPUT = 512; // final JPEG dimension
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 
@@ -28,41 +27,11 @@ export function LogoCropperModal({
 }: {
   uri: string;
   onCancel: () => void;
-  onApply: (croppedUri: string) => void;
+  onApply: () => void;
 }) {
   // Square preview, clamped so it never overflows a narrow phone.
   const viewport = Math.min(300, Math.max(220, Dimensions.get("window").width - 64));
   const radius = viewport / 2 - 8;
-
-  const shotRef = useRef<View>(null);
-  const [busy, setBusy] = useState(false);
-
-  // Capture straight to a base64 data URI — NOT a tmpfile. The tmpfile
-  // path required reading the file back with fetch(file://…), which is
-  // unreliable on Android; data-uri keeps the bytes in JS the whole way.
-  // And never fail silently: the empty catch here is why a vendor's
-  // "Use logo" tap could do nothing with no explanation (verified: no
-  // storage object was ever created for their attempt).
-  async function apply() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const out = await captureRef(shotRef, {
-        width: OUTPUT,
-        height: OUTPUT,
-        format: "jpg",
-        quality: 0.92,
-        result: "data-uri",
-      });
-      onApply(out);
-    } catch (e) {
-      setBusy(false);
-      Alert.alert(
-        "Couldn't process logo",
-        e instanceof Error ? e.message : "Something went wrong composing the image. Please try again.",
-      );
-    }
-  }
 
   return (
     <View
@@ -92,12 +61,10 @@ export function LogoCropperModal({
           We fit your whole logo on a clean background — nothing gets cropped.
         </Text>
 
-        {/* Viewport wrapper: captured layer (white + contained logo)
-            below, circular preview guide on top (not captured). */}
+        {/* Preview: whole logo contained on white, with a circular guide
+            showing how it reads as a round avatar. */}
         <View style={{ width: viewport, height: viewport, alignSelf: "center" }}>
           <View
-            ref={shotRef}
-            collapsable={false}
             style={{
               position: "absolute",
               top: 0,
@@ -142,7 +109,6 @@ export function LogoCropperModal({
         >
           <Pressable
             onPress={onCancel}
-            disabled={busy}
             style={{
               paddingHorizontal: 20,
               height: 46,
@@ -156,8 +122,7 @@ export function LogoCropperModal({
             <Text style={{ color: INK, fontWeight: "600" }}>Choose different</Text>
           </Pressable>
           <Pressable
-            onPress={apply}
-            disabled={busy}
+            onPress={onApply}
             style={{
               paddingHorizontal: 24,
               height: 46,
@@ -165,12 +130,9 @@ export function LogoCropperModal({
               backgroundColor: INK,
               alignItems: "center",
               justifyContent: "center",
-              opacity: busy ? 0.5 : 1,
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>
-              {busy ? "Saving…" : "Use logo"}
-            </Text>
+            <Text style={{ color: "#fff", fontWeight: "700" }}>Use logo</Text>
           </Pressable>
         </View>
       </View>
