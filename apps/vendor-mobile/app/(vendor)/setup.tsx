@@ -24,6 +24,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupItem, type SetupState } from "@/lib/setupChecklist";
+import { editorRouteFor } from "@/components/listing/WizardKit";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fdfcf9";
@@ -57,11 +58,15 @@ export default function SetupChecklistScreen() {
     }, [user?.id]),
   );
 
-  // Listing-builder rows need a listing to open. Real accounts have one
-  // from signup provisioning; if it's somehow gone, create a draft.
+  // Listing rows open the right editor for the listing's category
+  // directly (category wizard or the generic form — the wizards carry a
+  // category picker in Basics, so "change category" works everywhere).
+  // If no listing exists yet, create a draft and start generic.
   async function openListingBuilder() {
     if (state?.primaryListingId) {
-      router.push(`/(vendor)/listing?id=${state.primaryListingId}` as never);
+      router.push(
+        `/(vendor)/${editorRouteFor(state.primaryCategory)}?id=${state.primaryListingId}` as never,
+      );
       return;
     }
     if (!user?.id || creating) return;

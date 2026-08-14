@@ -38,6 +38,7 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
+import { wizardRouteFor } from "@/components/listing/WizardKit";
 
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
@@ -54,22 +55,9 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 // and the enforce_listing_min_photos DB trigger — a listing can't go to
 // review (or be approved) with fewer than this.
 const MIN_PHOTOS = 3;
-// Category groups with their own category-specific builder. Categories
-// in these groups leave this generic form for their wizard; remaining
-// groups follow one by one.
-const WIZARD_ROUTES: Record<string, string> = {
-  venues: "venue-listing",
-  "food-beverage": "food-listing",
-  entertainment: "entertainment-listing",
-};
-
-// The wizard route for a category (subcategory name), or null when the
-// category's group still uses this generic form.
-function wizardRouteFor(category: string | null | undefined): string | null {
-  if (!category) return null;
-  const group = CATEGORY_GROUPS.find((g) => g.subs.includes(category));
-  return group ? (WIZARD_ROUTES[group.slug] ?? null) : null;
-}
+// Categories in groups with their own wizard leave this generic form —
+// resolution lives in WizardKit (single source of truth shared with the
+// profile tab and setup checklist).
 
 // Per-listing photo cap matches web (ListingWizardModal MAX_PHOTOS).
 // Bumped from the original 5 once the public detail page learned how
@@ -194,9 +182,14 @@ export default function ListingScreen() {
     }
 
     const row = prof;
-    // Groups with their own wizard leave this generic form.
+    // Groups with their own wizard leave this generic form. Entry points
+    // route directly now, so this is a safety net (deep links, stale
+    // history). Clear the loading flag BEFORE leaving: tabs stay mounted,
+    // and a redirect that left loading=true stranded this screen on
+    // "Loading…" forever for anyone who navigated back into it.
     const wizard = wizardRouteFor(row?.category);
     if (row && wizard) {
+      setLoading(false);
       router.replace(`/(vendor)/${wizard}?id=${row.id}` as never);
       return;
     }

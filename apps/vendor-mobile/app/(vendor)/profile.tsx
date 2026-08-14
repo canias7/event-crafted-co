@@ -32,6 +32,7 @@ import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
+import { editorRouteFor } from "@/components/listing/WizardKit";
 
 // Vendora light theme (the user's reference design): warm cream page,
 // gold accents, a dark identity card. The light-side sibling of the
@@ -442,7 +443,15 @@ export default function ProfileScreen() {
               loading={loading}
               listings={listings}
               listingCap={listingCap}
-              onEdit={(id) => router.push(`/(vendor)/listing?id=${id}` as never)}
+              // Open the right editor for the listing's category directly —
+              // category wizards or the generic form. Routing through the
+              // generic form's redirect left a stuck tab in back history.
+              onEdit={(id) => {
+                const l = listings.find((x) => x.id === id);
+                router.push(
+                  `/(vendor)/${editorRouteFor(l?.category)}?id=${id}` as never,
+                );
+              }}
               onCreateNew={createNewListing}
               onChanged={loadProfile}
             />
