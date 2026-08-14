@@ -60,6 +60,7 @@ const MIN_PHOTOS = 3;
 const WIZARD_ROUTES: Record<string, string> = {
   venues: "venue-listing",
   "food-beverage": "food-listing",
+  entertainment: "entertainment-listing",
 };
 
 // The wizard route for a category (subcategory name), or null when the
