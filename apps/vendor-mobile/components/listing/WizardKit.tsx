@@ -11,17 +11,46 @@ import type { ComponentProps, ReactNode } from "react";
 import {
   Alert,
   Image,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
+
+// Category groups with their own listing wizard. THE single source of
+// truth for the handoff — the generic builder, the profile tab, and the
+// setup checklist all resolve destinations through wizardRouteFor so a
+// listing is always opened in the right form directly (a mid-flight
+// redirect hop left a stuck "Loading…" tab in back history).
+export const WIZARD_ROUTES: Record<string, string> = {
+  venues: "venue-listing",
+  "food-beverage": "food-listing",
+  entertainment: "entertainment-listing",
+};
+
+/** Wizard route for a category (sub name), or null → generic builder. */
+export function wizardRouteFor(
+  category: string | null | undefined,
+): string | null {
+  if (!category) return null;
+  const group = CATEGORY_GROUPS.find((g) => g.subs.includes(category));
+  return group ? (WIZARD_ROUTES[group.slug] ?? null) : null;
+}
+
+/** The editor route (wizard or generic) for a listing's category. */
+export function editorRouteFor(category: string | null | undefined): string {
+  return wizardRouteFor(category) ?? "listing";
+}
 
 export const CREAM = "#fdfcfa";
 export const INK = "#14161a";
@@ -414,6 +443,149 @@ export function TagList({
         placeholder={placeholder}
       />
     </View>
+  );
+}
+
+// Tappable category row for a wizard's Basics step — shows the current
+// marketplace category (subcategory) and opens the grouped picker.
+export function CategoryField({
+  value,
+  onPress,
+}: {
+  value: string | null;
+  onPress: () => void;
+}) {
+  return (
+    <Field label="Category" required>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        style={{
+          backgroundColor: "#ffffff",
+          borderWidth: 1,
+          borderColor: BORDER,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Text style={{ fontSize: 15, color: value ? INK : INK_DIM }}>
+          {value || "Choose a category"}
+        </Text>
+        <Feather name="chevron-down" size={18} color={INK_DIM} />
+      </TouchableOpacity>
+    </Field>
+  );
+}
+
+// Grouped category picker — the same picker the generic builder has, so
+// vendors can change category from inside any wizard. Selecting a
+// category in a different group is the caller's cue to hand the listing
+// to that group's editor.
+export function CategoryPickerModal({
+  visible,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  selected: string | null;
+  onSelect: (sub: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderColor: BORDER,
+          }}
+        >
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
+          </Pressable>
+          <Text
+            style={{
+              fontSize: 17,
+              fontWeight: "600",
+              color: INK,
+              fontFamily: SERIF,
+            }}
+          >
+            Category
+          </Text>
+          <View style={{ width: 60 }} />
+        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+          {CATEGORY_GROUPS.map((group) => (
+            <View key={group.slug} style={{ marginTop: 18 }}>
+              <Text
+                style={{
+                  paddingHorizontal: 24,
+                  paddingBottom: 8,
+                  fontSize: 12,
+                  fontWeight: "700",
+                  letterSpacing: 1.4,
+                  color: INK_DIM,
+                }}
+              >
+                {group.name.toUpperCase()}
+              </Text>
+              <View
+                style={{
+                  marginHorizontal: 16,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: BORDER,
+                  overflow: "hidden",
+                }}
+              >
+                {group.subs.map((sub, idx) => {
+                  const active = selected === sub;
+                  const isLast = idx === group.subs.length - 1;
+                  return (
+                    <Pressable key={sub} onPress={() => onSelect(sub)}>
+                      <View
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 14,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          borderBottomWidth: isLast ? 0 : 1,
+                          borderColor: BORDER,
+                          minHeight: 50,
+                        }}
+                      >
+                        <Text style={{ fontSize: 16, color: INK }}>{sub}</Text>
+                        {active ? (
+                          <Feather name="check" size={18} color={GOLD} />
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 

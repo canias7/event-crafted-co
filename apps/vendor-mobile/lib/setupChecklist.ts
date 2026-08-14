@@ -33,6 +33,8 @@ export interface SetupState {
   complete: boolean;
   /** Oldest vendor_profiles row id, for listing-builder deep links. */
   primaryListingId: string | null;
+  /** Its category — picks the right editor (wizard vs generic form). */
+  primaryCategory: string | null;
 }
 
 function filled(v: unknown): boolean {
@@ -176,5 +178,6 @@ export async function loadSetupState(userId: string): Promise<SetupState> {
     requiredTotal: required.length,
     complete: requiredDone === required.length,
     primaryListingId: primary?.id ?? null,
+    primaryCategory: primary?.category ?? null,
   };
 }

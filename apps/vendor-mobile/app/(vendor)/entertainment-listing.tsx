@@ -41,11 +41,18 @@ import {
   ChipSingle,
   ReviewChecklist,
   ListingPhotosGrid,
+  CategoryField,
+  CategoryPickerModal,
+  editorRouteFor,
   darkPill,
   darkPillText,
   lightPill,
   lightPillText,
 } from "@/components/listing/WizardKit";
+
+// This file's own route — category changes that resolve elsewhere hand
+// the listing over.
+const THIS_ROUTE = "entertainment-listing";
 
 const STEPS = ["Basics", "About", "Performance", "Pricing", "Review"] as const;
 
@@ -90,6 +97,7 @@ export default function EntertainmentListingScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
 
   // Basics
   const [actName, setActName] = useState("");
@@ -315,6 +323,28 @@ export default function EntertainmentListingScreen() {
     if (ok) Alert.alert("Saved");
   }
 
+  // Change the marketplace category from inside the wizard. Picking a
+  // category from another group hands the listing to that group's editor.
+  async function changeCategory(sub: string) {
+    setCategoryPickerOpen(false);
+    if (!profile?.id || sub === profile.category) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_profiles")
+      .update({ category: sub })
+      .eq("id", profile.id);
+    if (error) {
+      Alert.alert("Couldn't change category", error.message);
+      return;
+    }
+    const route = editorRouteFor(sub);
+    if (route !== THIS_ROUTE) {
+      router.replace(`/(vendor)/${route}?id=${profile.id}` as never);
+    } else {
+      setProfile((p) => (p ? { ...p, category: sub } : p));
+    }
+  }
+
   async function publish() {
     if (busy || !profile) return;
     const missing = missingForPublish();
@@ -457,6 +487,10 @@ export default function EntertainmentListingScreen() {
               <StepTitle
                 title="Basics"
                 sub="Tell clients the essentials about your act."
+              />
+              <CategoryField
+                value={profile.category}
+                onPress={() => setCategoryPickerOpen(true)}
               />
               <Field label="Act / business name" required>
                 <Input
@@ -901,6 +935,13 @@ export default function EntertainmentListingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <CategoryPickerModal
+        visible={categoryPickerOpen}
+        selected={profile.category}
+        onSelect={changeCategory}
+        onClose={() => setCategoryPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
