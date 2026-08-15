@@ -40,11 +40,21 @@ export const WIZARD_ROUTES: Record<string, string> = {
   "design-decor": "design-listing",
 };
 
+// Subcategory-level overrides, checked before the group route. Beauty
+// and Grooming Services live under Design & Decor for BROWSING (no web
+// taxonomy/SEO change), but they're people services — the decor form
+// doesn't fit them, so they get their own (user decision).
+const SUB_WIZARD_ROUTES: Record<string, string> = {
+  Beauty: "beauty-listing",
+  "Grooming Services": "beauty-listing",
+};
+
 /** Wizard route for a category (sub name), or null → generic builder. */
 export function wizardRouteFor(
   category: string | null | undefined,
 ): string | null {
   if (!category) return null;
+  if (SUB_WIZARD_ROUTES[category]) return SUB_WIZARD_ROUTES[category];
   const group = CATEGORY_GROUPS.find((g) => g.subs.includes(category));
   return group ? (WIZARD_ROUTES[group.slug] ?? null) : null;
 }
