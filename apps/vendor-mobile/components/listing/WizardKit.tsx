@@ -38,6 +38,7 @@ export const WIZARD_ROUTES: Record<string, string> = {
   entertainment: "entertainment-listing",
   media: "media-listing",
   "design-decor": "design-listing",
+  rentals: "rental-listing",
 };
 
 // Subcategory-level overrides, checked before the group route. Beauty
