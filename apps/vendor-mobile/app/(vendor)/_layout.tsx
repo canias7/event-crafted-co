@@ -37,6 +37,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
     focusedRoute === "venue-listing" ||
     focusedRoute === "food-listing" ||
     focusedRoute === "entertainment-listing" ||
+    focusedRoute === "media-listing" ||
     focusedRoute === "thread/[id]" ||
     focusedRoute === "partner-thread/[id]" ||
     focusedRoute === "edit-profile"
@@ -184,6 +185,7 @@ export default function VendorLayout() {
       <Tabs.Screen name="venue-listing" options={{ href: null }} />
       <Tabs.Screen name="food-listing" options={{ href: null }} />
       <Tabs.Screen name="entertainment-listing" options={{ href: null }} />
+      <Tabs.Screen name="media-listing" options={{ href: null }} />
     </Tabs>
   );
 }

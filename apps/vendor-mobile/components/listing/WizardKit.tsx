@@ -36,6 +36,7 @@ export const WIZARD_ROUTES: Record<string, string> = {
   venues: "venue-listing",
   "food-beverage": "food-listing",
   entertainment: "entertainment-listing",
+  media: "media-listing",
 };
 
 /** Wizard route for a category (sub name), or null → generic builder. */
