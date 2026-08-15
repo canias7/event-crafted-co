@@ -39,6 +39,7 @@ export const WIZARD_ROUTES: Record<string, string> = {
   media: "media-listing",
   "design-decor": "design-listing",
   rentals: "rental-listing",
+  experiences: "experience-listing",
 };
 
 // Subcategory-level overrides, checked before the group route. Beauty
@@ -457,6 +458,108 @@ export function TagList({
       />
     </View>
   );
+}
+
+// "Make it yours" — vendor-defined question + answer pairs, per the
+// spec sheets' Add Your Own panel (any custom field, activity, or
+// policy). Stored in category_details as [{label, value}].
+export type CustomField = { label: string; value: string };
+
+export function CustomFieldsEditor({
+  fields,
+  onChange,
+}: {
+  fields: CustomField[];
+  onChange: (next: CustomField[]) => void;
+}) {
+  function setAt(i: number, patch: Partial<CustomField>) {
+    onChange(fields.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+  return (
+    <View style={{ gap: 12 }}>
+      {fields.map((f, i) => (
+        <View
+          // Index keys are fine here — rows only append/remove and hold
+          // no internal state beyond the controlled inputs.
+          key={i}
+          style={{
+            backgroundColor: "#ffffff",
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 14,
+            padding: 12,
+            gap: 8,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Input
+                value={f.label}
+                onChangeText={(v) => setAt(i, { label: v.slice(0, 80) })}
+                placeholder="Field name — e.g., Languages spoken"
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => onChange(fields.filter((_, idx) => idx !== i))}
+              hitSlop={8}
+              activeOpacity={0.7}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: BORDER,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="trash-2" size={15} color={INK_DIM} />
+            </TouchableOpacity>
+          </View>
+          <Input
+            value={f.value}
+            onChangeText={(v) => setAt(i, { value: v.slice(0, 500) })}
+            placeholder="Your answer…"
+            multiline
+          />
+        </View>
+      ))}
+      <TouchableOpacity
+        onPress={() => onChange([...fields, { label: "", value: "" }])}
+        activeOpacity={0.7}
+        style={{
+          borderWidth: 1.5,
+          borderColor: GOLD,
+          borderStyle: "dashed",
+          borderRadius: 14,
+          paddingVertical: 14,
+          alignItems: "center",
+          flexDirection: "row",
+          justifyContent: "center",
+          gap: 8,
+          backgroundColor: GOLD_SOFT,
+        }}
+      >
+        <Feather name="plus" size={16} color={INK} />
+        <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+          Add your own field
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+/** Drop empty custom-field rows before saving. */
+export function cleanCustomFields(fields: CustomField[]): CustomField[] {
+  return fields
+    .map((f) => ({ label: f.label.trim(), value: f.value.trim() }))
+    .filter((f) => f.label || f.value);
 }
 
 // Tappable category row for a wizard's Basics step — shows the current
