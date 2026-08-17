@@ -84,7 +84,20 @@ export function UsersPage() {
       p_summary: `${next ? "Suspended" : "Unsuspended"} ${row.display_name ?? row.email ?? row.id}`,
       p_metadata: { role: row.role },
     });
-    toast.success(next ? "Suspended" : "Unsuspended");
+    // Suspension notice — email only, deliberately no push (a suspended
+    // user tapping a push into a dead session is a bad experience).
+    if (next) {
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: { kind: "account_suspended", userId: row.id },
+        })
+        .then(({ error: emailErr }) => {
+          if (emailErr) {
+            toast.error(`Suspended, but email failed: ${emailErr.message}`);
+          }
+        });
+    }
+    toast.success(next ? "Suspended — user emailed" : "Unsuspended");
     setRows((p) =>
       p.map((r) => (r.id === row.id ? { ...r, suspended_at: next } : r)),
     );

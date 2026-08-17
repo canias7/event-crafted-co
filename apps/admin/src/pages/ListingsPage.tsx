@@ -7,6 +7,7 @@ const PUBLIC_SITE = "https://eventvendora.com";
 
 type Listing = {
   id: string;
+  user_id: string;
   business_name: string;
   category: string | null;
   bio: string | null;
@@ -26,6 +27,7 @@ export function ListingsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Listing | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
@@ -33,7 +35,7 @@ export function ListingsPage() {
     const { data, error } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, bio, location, base_price_cents, application_status, verified_at, created_at",
+        "id, user_id, business_name, category, bio, location, base_price_cents, application_status, verified_at, created_at",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -98,6 +100,7 @@ export function ListingsPage() {
       toast.error(error.message);
       return;
     }
+    const reason = deleteReason.trim();
     void supabase.rpc("log_admin_action", {
       p_action: "listing_delete",
       p_target_type: "vendor_profile",
@@ -107,11 +110,30 @@ export function ListingsPage() {
         category: target.category,
         location: target.location,
         was_status: target.application_status,
+        reason: reason || null,
       },
     });
-    toast.success("Listing deleted");
+    // Notify the vendor: email + push (the function inserts the
+    // notifications row, which fans out to Expo push). The vendor
+    // account outlives the listing, so user_id is still valid.
+    supabase.functions
+      .invoke("send-transactional-email", {
+        body: {
+          kind: "listing_removed",
+          userId: target.user_id,
+          businessName: target.business_name,
+          reason: reason || null,
+        },
+      })
+      .then(({ error: emailErr }) => {
+        if (emailErr) {
+          toast.error(`Deleted, but vendor notification failed: ${emailErr.message}`);
+        }
+      });
+    toast.success("Listing deleted — vendor emailed + push sent");
     setRows((p) => p.filter((r) => r.id !== target.id));
     setPendingDelete(null);
+    setDeleteReason("");
   };
 
   const setStatus = async (
@@ -286,9 +308,22 @@ export function ListingsPage() {
               reviews. The vendor account itself stays.
             </p>
             <p className="mt-2 text-xs text-ink/60">This can't be undone.</p>
+            <label className="mt-4 block text-xs font-medium text-ink/70">
+              Reason (optional — included in the email to the vendor)
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                rows={2}
+                placeholder="e.g., Duplicate listing / violates content guidelines"
+                className="mt-1 w-full rounded border border-ink/15 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-gold"
+              />
+            </label>
             <div className="mt-6 flex justify-end gap-2">
               <button
-                onClick={() => setPendingDelete(null)}
+                onClick={() => {
+                  setPendingDelete(null);
+                  setDeleteReason("");
+                }}
                 disabled={deleting}
                 className="rounded border border-ink/15 px-3 py-1.5 text-sm hover:bg-ink/5 disabled:opacity-50"
               >
