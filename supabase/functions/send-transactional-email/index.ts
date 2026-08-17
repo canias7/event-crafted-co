@@ -116,6 +116,12 @@ serve(async (req) => {
     ) {
       const e = await vendorDecisionEmail(body as VendorDecisionPayload, kind as Decision);
       if (e) emails = [e];
+    } else if (kind === "listing_removed") {
+      const e = await listingRemovedEmail(body as ListingRemovedPayload);
+      if (e) emails = [e];
+    } else if (kind === "account_suspended") {
+      const e = await accountSuspendedEmail(body as AccountSuspendedPayload);
+      if (e) emails = [e];
     } else if (kind === "vendor_applied") {
       const e = await vendorAppliedEmail(body as VendorAppliedPayload);
       if (e) emails = [e];
@@ -347,6 +353,96 @@ async function vendorDecisionEmail(
     to: email,
     subject: `${row.business_name} — listing update needs changes`,
     html: shellHtml(`Listing update needs changes`, body),
+  };
+}
+
+interface ListingRemovedPayload {
+  // The listing row is already deleted when this runs, so the caller
+  // (admin ListingsPage) captures user_id + business_name up front.
+  userId: string;
+  businessName?: string | null;
+  reason?: string | null;
+}
+
+// Admin deleted a listing: notify the vendor by email AND push. The
+// push rides the existing pipeline — inserting into notifications fires
+// fanout_notification_to_push → send-push. The vendor account survives
+// the delete, so user_id is still valid.
+async function listingRemovedEmail(p: ListingRemovedPayload) {
+  if (!p.userId) throw new Error("userId is required");
+  const sb = adminClient();
+  const name = p.businessName?.trim() || "Your listing";
+
+  const { error: notifErr } = await sb.from("notifications").insert({
+    user_id: p.userId,
+    type: "listing_status",
+    title: `${name} was removed`,
+    body: p.reason
+      ? `Your listing was removed from Vendora. Reason: ${p.reason}`
+      : "Your listing was removed from Vendora. Check your email for details.",
+    link: "/vendor/listing-status",
+  });
+  if (notifErr) console.error("listing_removed notification insert:", notifErr);
+
+  const { data: emailData } = await sb.rpc("get_user_email", {
+    p_user_id: p.userId,
+  });
+  const email = emailData as string | null;
+  if (!email) return null;
+
+  const business = escape(name);
+  const reasonLine = p.reason
+    ? `<p style="margin:0 0 16px;color:#555;"><strong>Reason:</strong> ${escape(p.reason)}</p>`
+    : "";
+  const body = `
+    <p style="margin:0 0 16px;">Your listing <strong>${business}</strong> has been removed from Vendora by our team, along with its photos, packages, and FAQs.</p>
+    ${reasonLine}
+    <p style="margin:0 0 16px;">Your Vendora account is still active — you can create a new listing from the app at any time.</p>
+    <p style="margin:0;font-size:13px;color:#777;">Think this was a mistake, or have questions? Reply to this email and our team will get back to you.</p>`;
+  return {
+    to: email,
+    subject: `${name} was removed from Vendora`,
+    html: shellHtml("Listing removed", body),
+  };
+}
+
+interface AccountSuspendedPayload {
+  userId: string;
+  reason?: string | null;
+}
+
+// Admin suspended an account: email only, deliberately no push — a
+// suspended user tapping a push into a dead session is a bad experience.
+async function accountSuspendedEmail(p: AccountSuspendedPayload) {
+  if (!p.userId) throw new Error("userId is required");
+  const sb = adminClient();
+  const { data: emailData } = await sb.rpc("get_user_email", {
+    p_user_id: p.userId,
+  });
+  const email = emailData as string | null;
+  if (!email) return null;
+
+  const { data: profileRow } = await sb
+    .from("profiles")
+    .select("display_name")
+    .eq("id", p.userId)
+    .maybeSingle();
+  const displayName =
+    (profileRow as { display_name?: string | null } | null)?.display_name ?? null;
+
+  const greeting = displayName ? `Hi ${escape(displayName)},` : "Hi,";
+  const reasonLine = p.reason
+    ? `<p style="margin:0 0 16px;color:#555;"><strong>Reason:</strong> ${escape(p.reason)}</p>`
+    : "";
+  const body = `
+    <p style="margin:0 0 16px;">${greeting}</p>
+    <p style="margin:0 0 16px;">Your Vendora account has been suspended by our team. While suspended, your listings are not visible to hosts and you won't receive new inquiries.</p>
+    ${reasonLine}
+    <p style="margin:0;font-size:13px;color:#777;">If you believe this is a mistake or want to appeal, reply to this email and our team will review it.</p>`;
+  return {
+    to: email,
+    subject: "Your Vendora account has been suspended",
+    html: shellHtml("Account suspended", body),
   };
 }
 
