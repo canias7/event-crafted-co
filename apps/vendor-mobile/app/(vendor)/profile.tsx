@@ -32,7 +32,7 @@ import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
-import { editorRouteFor } from "@/components/listing/WizardKit";
+import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 
 // Vendora light theme (the user's reference design): warm cream page,
 // gold accents, a dark identity card. The light-side sibling of the
@@ -1016,6 +1016,7 @@ function ListingCard({
 }) {
   const [heroUrl, setHeroUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dialog = useBrandDialog();
 
   const status = listing.application_status ?? "draft";
   const isApproved = status === "approved";
@@ -1050,53 +1051,57 @@ function ListingCard({
   }, [listing.id]);
 
   async function unpublish() {
-    Alert.alert(
-      "Remove from marketplace?",
-      "Your listing leaves the marketplace but your photos, packages, and other data stay. You can re-publish anytime.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            setBusy(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase as any)
-              .from("vendor_profiles")
-              .update({ application_status: "draft" })
-              .eq("id", listing.id);
-            setBusy(false);
-            if (error) Alert.alert("Couldn't remove listing", error.message);
-            else onChanged();
-          },
-        },
-      ],
-    );
+    dialog.show({
+      icon: "eye-off",
+      title: "Remove from marketplace?",
+      message:
+        "Your listing leaves the marketplace but your photos, packages, and other data stay. You can re-publish anytime.",
+      confirmLabel: "Remove",
+      destructive: true,
+      onConfirm: async () => {
+        setBusy(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from("vendor_profiles")
+          .update({ application_status: "draft" })
+          .eq("id", listing.id);
+        setBusy(false);
+        if (error) {
+          dialog.show({
+            icon: "alert-circle",
+            title: "Couldn't remove listing",
+            message: error.message,
+          });
+        } else onChanged();
+      },
+    });
   }
 
   async function destroy() {
-    Alert.alert(
-      "Delete this listing?",
-      "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setBusy(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase as any).rpc(
-              "delete_my_vendor_profile",
-              { p_vendor_id: listing.id },
-            );
-            setBusy(false);
-            if (error) Alert.alert("Couldn't delete listing", error.message);
-            else onChanged();
-          },
-        },
-      ],
-    );
+    dialog.show({
+      icon: "trash-2",
+      title: "Delete this listing?",
+      message:
+        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
+      confirmLabel: "Delete listing",
+      destructive: true,
+      onConfirm: async () => {
+        setBusy(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).rpc(
+          "delete_my_vendor_profile",
+          { p_vendor_id: listing.id },
+        );
+        setBusy(false);
+        if (error) {
+          dialog.show({
+            icon: "alert-circle",
+            title: "Couldn't delete listing",
+            message: error.message,
+          });
+        } else onChanged();
+      },
+    });
   }
 
   // Every listing renders as the same directory-style card with a
@@ -1223,6 +1228,7 @@ function ListingCard({
           ) : null;
         })()}
       </View>
+      {dialog.element}
     </Pressable>
   );
 }
