@@ -594,6 +594,41 @@ export default function VenueListingScreen() {
     ]);
   }
 
+  // Vendor-side hard delete — same confirm + RPC as the profile card's
+  // trash action, surfaced here so it's discoverable while editing.
+  function confirmDeleteListing() {
+    if (!profile?.id || busy) return;
+    Alert.alert(
+      "Delete this listing?",
+      "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setBusy(true);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any).rpc(
+              "delete_my_vendor_profile",
+              { p_vendor_id: profile.id },
+            );
+            setBusy(false);
+            if (error) {
+              dialog.show({
+                icon: "alert-circle",
+                title: "Couldn't delete",
+                message: error.message,
+              });
+            } else {
+              router.back();
+            }
+          },
+        },
+      ],
+    );
+  }
+
   const status = profile?.application_status ?? "draft";
 
   if (loading) {
@@ -1125,6 +1160,18 @@ export default function VenueListingScreen() {
               >
                 <Text style={{ color: INK_DIM, fontSize: 14, fontWeight: "500" }}>
                   ← Back to {STEPS[step - 1]}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            {step === STEPS.length - 1 ? (
+              <TouchableOpacity
+                onPress={confirmDeleteListing}
+                disabled={busy}
+                activeOpacity={0.7}
+                style={{ alignItems: "center", paddingVertical: 10 }}
+              >
+                <Text style={{ color: "#dc2828", fontSize: 14, fontWeight: "600" }}>
+                  Delete listing
                 </Text>
               </TouchableOpacity>
             ) : null}
