@@ -43,6 +43,7 @@ import {
   CategoryField,
   CategoryPickerModal,
   editorRouteFor,
+  useBrandDialog,
 } from "@/components/listing/WizardKit";
 
 // This file's own route — category changes that resolve elsewhere hand
@@ -177,6 +178,7 @@ export default function VenueListingScreen() {
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const dialog = useBrandDialog();
 
   // Basics
   const [venueName, setVenueName] = useState("");
@@ -368,7 +370,7 @@ export default function VenueListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      Alert.alert("Save failed", error.message);
+      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
       return false;
     }
     if (status) {
@@ -403,7 +405,7 @@ export default function VenueListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) Alert.alert("Saved");
+    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -417,7 +419,11 @@ export default function VenueListingScreen() {
       .update({ category: sub })
       .eq("id", profile.id);
     if (error) {
-      Alert.alert("Couldn't change category", error.message);
+      dialog.show({
+        icon: "alert-circle",
+        title: "Couldn't change category",
+        message: error.message,
+      });
       return;
     }
     const route = editorRouteFor(sub);
@@ -432,10 +438,11 @@ export default function VenueListingScreen() {
     if (busy || !profile) return;
     const missing = missingForPublish();
     if (missing.length > 0) {
-      Alert.alert(
-        "Can't publish yet",
-        `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
-      );
+      dialog.show({
+        icon: "list",
+        title: "Can't publish yet",
+        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+      });
       return;
     }
     setBusy(true);
@@ -447,11 +454,13 @@ export default function VenueListingScreen() {
         body: { kind: "listing_submitted", vendorProfileId: profile.id },
       })
       .catch(() => {});
-    Alert.alert(
-      "Submitted for review",
-      "We'll review your listing within 2–3 business days.",
-      [{ text: "OK", onPress: () => router.back() }],
-    );
+    dialog.show({
+      icon: "send",
+      title: "Submitted for review",
+      message: "We'll review your listing within 2–3 business days.",
+      buttonLabel: "Done",
+      onClose: () => router.back(),
+    });
   }
 
   async function withdrawToDraft() {
@@ -460,11 +469,12 @@ export default function VenueListingScreen() {
     const ok = await persist("draft");
     setBusy(false);
     if (ok) {
-      Alert.alert(
-        "Saved as draft",
-        "Your listing is out of review until you publish it again.",
-        [{ text: "OK", onPress: () => router.back() }],
-      );
+      dialog.show({
+        icon: "file-text",
+        title: "Saved as draft",
+        message: "Your listing is out of review until you publish it again.",
+        onClose: () => router.back(),
+      });
     }
   }
 
@@ -474,9 +484,11 @@ export default function VenueListingScreen() {
     const ok = await persist();
     setBusy(false);
     if (ok) {
-      Alert.alert("Changes saved", undefined, [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      dialog.show({
+        title: "Changes saved",
+        message: "Your listing is up to date.",
+        onClose: () => router.back(),
+      });
     }
   }
 
@@ -1120,6 +1132,7 @@ export default function VenueListingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {dialog.element}
       <CategoryPickerModal
         visible={categoryPickerOpen}
         selected={profile.category}

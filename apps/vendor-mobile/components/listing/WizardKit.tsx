@@ -461,6 +461,145 @@ export function TagList({
   );
 }
 
+// Branded replacement for the stock Alert.alert dialog — cream card,
+// serif title, gold accents, dark pill button, per the user's "make it
+// look more Vendora" ask. One-button only; keep native Alert for
+// destructive two-button confirms.
+export type BrandDialogSpec = {
+  /** Feather icon in the gold badge. Defaults to "check". */
+  icon?: keyof typeof Feather.glyphMap;
+  title: string;
+  message?: string;
+  /** Button label. Defaults to "OK". */
+  buttonLabel?: string;
+  /** Runs after dismiss — e.g. router.back() on submit success. */
+  onClose?: () => void;
+};
+
+function BrandDialogView({
+  spec,
+  onDismiss,
+}: {
+  spec: BrandDialogSpec | null;
+  onDismiss: () => void;
+}) {
+  return (
+    <Modal
+      visible={!!spec}
+      transparent
+      animationType="fade"
+      onRequestClose={onDismiss}
+    >
+      <Pressable
+        onPress={onDismiss}
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(13,15,19,0.55)",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 28,
+        }}
+      >
+        {/* Card swallows taps so only the backdrop / button dismiss. */}
+        <Pressable
+          onPress={() => {}}
+          style={{
+            width: "100%",
+            maxWidth: 340,
+            backgroundColor: CREAM,
+            borderRadius: 24,
+            paddingHorizontal: 24,
+            paddingTop: 28,
+            paddingBottom: 22,
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: BORDER,
+          }}
+        >
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 999,
+              backgroundColor: GOLD_SOFT,
+              borderWidth: 1,
+              borderColor: GOLD,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 14,
+            }}
+          >
+            <Feather name={spec?.icon ?? "check"} size={24} color={INK} />
+          </View>
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontSize: 23,
+              fontWeight: "700",
+              color: INK,
+              textAlign: "center",
+            }}
+          >
+            {spec?.title}
+          </Text>
+          <Text style={{ color: GOLD, fontSize: 12, marginTop: 8 }}>✦</Text>
+          {spec?.message ? (
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 14.5,
+                lineHeight: 21,
+                color: INK_DIM,
+                textAlign: "center",
+              }}
+            >
+              {spec.message}
+            </Text>
+          ) : null}
+          <TouchableOpacity
+            onPress={onDismiss}
+            activeOpacity={0.85}
+            style={{
+              marginTop: 20,
+              alignSelf: "stretch",
+              backgroundColor: INK,
+              borderRadius: 999,
+              height: 48,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
+              {spec?.buttonLabel ?? "OK"}
+            </Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+/**
+ * Vendora-styled dialog. Usage:
+ *   const dialog = useBrandDialog();
+ *   dialog.show({ title: "Saved" });
+ *   … and render {dialog.element} near the end of the screen's JSX.
+ */
+export function useBrandDialog() {
+  const [spec, setSpec] = useState<BrandDialogSpec | null>(null);
+  const show = useCallback((s: BrandDialogSpec) => setSpec(s), []);
+  function dismiss() {
+    const cb = spec?.onClose;
+    setSpec(null);
+    cb?.();
+  }
+  return {
+    show,
+    element: <BrandDialogView spec={spec} onDismiss={dismiss} />,
+  };
+}
+
 // "Make it yours" — vendor-defined question + answer pairs, per the
 // spec sheets' Add Your Own panel (any custom field, activity, or
 // policy). Stored in category_details as [{label, value}].
