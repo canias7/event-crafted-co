@@ -12,7 +12,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -417,35 +416,32 @@ export default function RentalListingScreen() {
   // trash action, surfaced here so it's discoverable while editing.
   function confirmDeleteListing() {
     if (!profile?.id || busy) return;
-    Alert.alert(
-      "Delete this listing?",
-      "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setBusy(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase as any).rpc(
-              "delete_my_vendor_profile",
-              { p_vendor_id: profile.id },
-            );
-            setBusy(false);
-            if (error) {
-              dialog.show({
-                icon: "alert-circle",
-                title: "Couldn't delete",
-                message: error.message,
-              });
-            } else {
-              router.back();
-            }
-          },
-        },
-      ],
-    );
+    dialog.show({
+      icon: "trash-2",
+      title: "Delete this listing?",
+      message:
+        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
+      confirmLabel: "Delete listing",
+      destructive: true,
+      onConfirm: async () => {
+        setBusy(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).rpc(
+          "delete_my_vendor_profile",
+          { p_vendor_id: profile.id },
+        );
+        setBusy(false);
+        if (error) {
+          dialog.show({
+            icon: "alert-circle",
+            title: "Couldn't delete",
+            message: error.message,
+          });
+        } else {
+          router.back();
+        }
+      },
+    });
   }
 
   const status = profile?.application_status ?? "draft";

@@ -9,7 +9,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import {
-  Alert,
   Image,
   Modal,
   Platform,
@@ -463,26 +462,38 @@ export function TagList({
 
 // Branded replacement for the stock Alert.alert dialog — cream card,
 // serif title, gold accents, dark pill button, per the user's "make it
-// look more Vendora" ask. One-button only; keep native Alert for
-// destructive two-button confirms.
+// look more Vendora" ask. Supports a confirm mode (onConfirm) with a
+// red destructive pill + Cancel for delete-style actions.
 export type BrandDialogSpec = {
   /** Feather icon in the gold badge. Defaults to "check". */
   icon?: keyof typeof Feather.glyphMap;
   title: string;
   message?: string;
-  /** Button label. Defaults to "OK". */
+  /** Button label. Defaults to "OK" ("Confirm" in confirm mode). */
   buttonLabel?: string;
   /** Runs after dismiss — e.g. router.back() on submit success. */
   onClose?: () => void;
+  /**
+   * Confirm mode: when set, the dialog shows a primary action button
+   * (red when destructive) that runs this, plus a Cancel button that
+   * just closes. onClose is NOT called on cancel.
+   */
+  onConfirm?: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  destructive?: boolean;
 };
 
 function BrandDialogView({
   spec,
   onDismiss,
+  onConfirm,
 }: {
   spec: BrandDialogSpec | null;
   onDismiss: () => void;
+  onConfirm: () => void;
 }) {
+  const isConfirm = !!spec?.onConfirm;
   return (
     <Modal
       visible={!!spec}
@@ -558,12 +569,12 @@ function BrandDialogView({
             </Text>
           ) : null}
           <TouchableOpacity
-            onPress={onDismiss}
+            onPress={isConfirm ? onConfirm : onDismiss}
             activeOpacity={0.85}
             style={{
               marginTop: 20,
               alignSelf: "stretch",
-              backgroundColor: INK,
+              backgroundColor: isConfirm && spec?.destructive ? "#dc2828" : INK,
               borderRadius: 999,
               height: 48,
               alignItems: "center",
@@ -571,9 +582,32 @@ function BrandDialogView({
             }}
           >
             <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
-              {spec?.buttonLabel ?? "OK"}
+              {isConfirm
+                ? (spec?.confirmLabel ?? "Confirm")
+                : (spec?.buttonLabel ?? "OK")}
             </Text>
           </TouchableOpacity>
+          {isConfirm ? (
+            <TouchableOpacity
+              onPress={onDismiss}
+              activeOpacity={0.7}
+              style={{
+                marginTop: 10,
+                alignSelf: "stretch",
+                backgroundColor: "#ffffff",
+                borderWidth: 1,
+                borderColor: BORDER,
+                borderRadius: 999,
+                height: 48,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: INK, fontSize: 15, fontWeight: "600" }}>
+                {spec?.cancelLabel ?? "Cancel"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </Pressable>
       </Pressable>
     </Modal>
@@ -590,13 +624,21 @@ export function useBrandDialog() {
   const [spec, setSpec] = useState<BrandDialogSpec | null>(null);
   const show = useCallback((s: BrandDialogSpec) => setSpec(s), []);
   function dismiss() {
-    const cb = spec?.onClose;
+    // Cancel path in confirm mode: just close, no callbacks.
+    const cb = spec?.onConfirm ? undefined : spec?.onClose;
+    setSpec(null);
+    cb?.();
+  }
+  function confirm() {
+    const cb = spec?.onConfirm;
     setSpec(null);
     cb?.();
   }
   return {
     show,
-    element: <BrandDialogView spec={spec} onDismiss={dismiss} />,
+    element: (
+      <BrandDialogView spec={spec} onDismiss={dismiss} onConfirm={confirm} />
+    ),
   };
 }
 
@@ -910,6 +952,7 @@ export function ListingPhotosGrid({
   };
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
   const [uploading, setUploading] = useState(false);
+  const dialog = useBrandDialog();
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -934,15 +977,21 @@ export function ListingPhotosGrid({
   async function addPhotos() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
-        "Library access needed",
-        "Enable photo library access in Settings to upload listing photos.",
-      );
+      dialog.show({
+        icon: "image",
+        title: "Library access needed",
+        message:
+          "Enable photo library access in Settings to upload listing photos.",
+      });
       return;
     }
     const remaining = MAX_PHOTOS - photos.length;
     if (remaining <= 0) {
-      Alert.alert("Photo limit reached", `Listings cap at ${MAX_PHOTOS} photos.`);
+      dialog.show({
+        icon: "image",
+        title: "Photo limit reached",
+        message: `Listings cap at ${MAX_PHOTOS} photos.`,
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -963,10 +1012,12 @@ export function ListingPhotosGrid({
       );
     });
     if (assets.length < result.assets.length) {
-      Alert.alert(
-        "Some photos were skipped",
-        "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
-      );
+      dialog.show({
+        icon: "alert-circle",
+        title: "Some photos were skipped",
+        message:
+          "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
+      });
     }
     if (assets.length === 0) return;
     setUploading(true);
@@ -1004,35 +1055,36 @@ export function ListingPhotosGrid({
     }
     setUploading(false);
     if (rows.length < assets.length) {
-      Alert.alert(
-        "Some photos didn't upload",
-        `${assets.length - rows.length} photo(s) failed. Try them again.`,
-      );
+      dialog.show({
+        icon: "alert-circle",
+        title: "Some photos didn't upload",
+        message: `${assets.length - rows.length} photo(s) failed. Try them again.`,
+      });
     }
     await load();
   }
 
   function deletePhoto(p: PhotoRow) {
-    Alert.alert("Delete this photo?", undefined, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
-            .from("vendor_portfolio_images")
-            .delete()
-            .eq("id", p.id);
-          setPhotos((prev) => {
-            const next = prev.filter((x) => x.id !== p.id);
-            onCount?.(next.length);
-            return next;
-          });
-        },
+    dialog.show({
+      icon: "trash-2",
+      title: "Delete this photo?",
+      message: "It's removed from this listing right away.",
+      confirmLabel: "Delete",
+      destructive: true,
+      onConfirm: async () => {
+        await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("vendor_portfolio_images")
+          .delete()
+          .eq("id", p.id);
+        setPhotos((prev) => {
+          const next = prev.filter((x) => x.id !== p.id);
+          onCount?.(next.length);
+          return next;
+        });
       },
-    ]);
+    });
   }
 
   return (
@@ -1093,6 +1145,7 @@ export function ListingPhotosGrid({
       <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
         Long-press a photo to delete it. Your first photo is the cover.
       </Text>
+      {dialog.element}
     </View>
   );
 }

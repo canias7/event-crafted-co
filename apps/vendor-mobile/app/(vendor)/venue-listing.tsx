@@ -20,7 +20,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -497,15 +496,21 @@ export default function VenueListingScreen() {
     if (!profile?.id) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
-        "Library access needed",
-        "Enable photo library access in Settings to upload listing photos.",
-      );
+      dialog.show({
+        icon: "image",
+        title: "Library access needed",
+        message:
+          "Enable photo library access in Settings to upload listing photos.",
+      });
       return;
     }
     const remaining = MAX_PHOTOS - photos.length;
     if (remaining <= 0) {
-      Alert.alert("Photo limit reached", `Listings cap at ${MAX_PHOTOS} photos.`);
+      dialog.show({
+        icon: "image",
+        title: "Photo limit reached",
+        message: `Listings cap at ${MAX_PHOTOS} photos.`,
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -526,10 +531,12 @@ export default function VenueListingScreen() {
       );
     });
     if (assets.length < result.assets.length) {
-      Alert.alert(
-        "Some photos were skipped",
-        "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
-      );
+      dialog.show({
+        icon: "alert-circle",
+        title: "Some photos were skipped",
+        message:
+          "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
+      });
     }
     if (assets.length === 0) return;
     setPhotoUploading(true);
@@ -567,66 +574,64 @@ export default function VenueListingScreen() {
     }
     setPhotoUploading(false);
     if (rows.length < assets.length) {
-      Alert.alert(
-        "Some photos didn't upload",
-        `${assets.length - rows.length} photo(s) failed. Try them again.`,
-      );
+      dialog.show({
+        icon: "alert-circle",
+        title: "Some photos didn't upload",
+        message: `${assets.length - rows.length} photo(s) failed. Try them again.`,
+      });
     }
     await load();
   }
 
   async function deletePhoto(p: PhotoRow) {
-    Alert.alert("Delete this photo?", undefined, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
-            .from("vendor_portfolio_images")
-            .delete()
-            .eq("id", p.id);
-          setPhotos((prev) => prev.filter((x) => x.id !== p.id));
-        },
+    dialog.show({
+      icon: "trash-2",
+      title: "Delete this photo?",
+      message: "It's removed from this listing right away.",
+      confirmLabel: "Delete",
+      destructive: true,
+      onConfirm: async () => {
+        await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("vendor_portfolio_images")
+          .delete()
+          .eq("id", p.id);
+        setPhotos((prev) => prev.filter((x) => x.id !== p.id));
       },
-    ]);
+    });
   }
 
   // Vendor-side hard delete — same confirm + RPC as the profile card's
   // trash action, surfaced here so it's discoverable while editing.
   function confirmDeleteListing() {
     if (!profile?.id || busy) return;
-    Alert.alert(
-      "Delete this listing?",
-      "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setBusy(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase as any).rpc(
-              "delete_my_vendor_profile",
-              { p_vendor_id: profile.id },
-            );
-            setBusy(false);
-            if (error) {
-              dialog.show({
-                icon: "alert-circle",
-                title: "Couldn't delete",
-                message: error.message,
-              });
-            } else {
-              router.back();
-            }
-          },
-        },
-      ],
-    );
+    dialog.show({
+      icon: "trash-2",
+      title: "Delete this listing?",
+      message:
+        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
+      confirmLabel: "Delete listing",
+      destructive: true,
+      onConfirm: async () => {
+        setBusy(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).rpc(
+          "delete_my_vendor_profile",
+          { p_vendor_id: profile.id },
+        );
+        setBusy(false);
+        if (error) {
+          dialog.show({
+            icon: "alert-circle",
+            title: "Couldn't delete",
+            message: error.message,
+          });
+        } else {
+          router.back();
+        }
+      },
+    });
   }
 
   const status = profile?.application_status ?? "draft";
