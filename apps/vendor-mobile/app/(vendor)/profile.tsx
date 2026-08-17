@@ -1170,23 +1170,25 @@ function ListingCard({
               Under review
             </Text>
           </View>
-        ) : (
-          <View
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              flexDirection: "row",
-              gap: 8,
-            }}
-          >
-            <CardAction icon="edit-2" onPress={onEdit} disabled={busy} />
-            {isApproved ? (
-              <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
-            ) : null}
-            <CardAction icon="trash-2" color="#dc2828" onPress={destroy} disabled={busy} />
-          </View>
-        )}
+        ) : null}
+        {/* Actions stay visible on pending cards too (rendered after
+            the overlay so they sit on top) — a vendor must be able to
+            edit or delete a listing that's mid-review. */}
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            flexDirection: "row",
+            gap: 8,
+          }}
+        >
+          <CardAction icon="edit-2" onPress={onEdit} disabled={busy} />
+          {isApproved ? (
+            <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
+          ) : null}
+          <CardAction icon="trash-2" color="#dc2828" onPress={destroy} disabled={busy} />
+        </View>
       </View>
       <View className="mt-3 px-1">
         <Text
