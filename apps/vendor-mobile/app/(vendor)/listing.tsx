@@ -38,7 +38,7 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
-import { wizardRouteFor } from "@/components/listing/WizardKit";
+import { wizardRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
@@ -107,6 +107,7 @@ export default function ListingScreen() {
   const [photos, setPhotos] = useState<PortfolioRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const dialog = useBrandDialog();
   const [photoUploading, setPhotoUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{
     done: number;
@@ -532,10 +533,11 @@ export default function ListingScreen() {
       )
         missing.push("A minimum price (or turn on Custom pricing)");
       if (missing.length > 0) {
-        Alert.alert(
-          "Can't publish yet",
-          `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
-        );
+        dialog.show({
+          icon: "list",
+          title: "Can't publish yet",
+          message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+        });
         return;
       }
     }
@@ -555,7 +557,7 @@ export default function ListingScreen() {
       .eq("id", profile.id);
     if (error) {
       setBusy(false);
-      Alert.alert("Save failed", error.message);
+      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
       return;
     }
     if (publish) {
@@ -593,22 +595,30 @@ export default function ListingScreen() {
     // the vendor isn't stranded on the listing page. Draft saves stay
     // put so the vendor can keep editing.
     if (navigateAfter) {
-      Alert.alert(
-        publish
+      dialog.show({
+        icon: publish ? "send" : toDraft ? "file-text" : "check",
+        title: publish
           ? "Submitted for review"
           : toDraft
             ? "Saved as draft"
             : "Changes saved",
-        publish
+        message: publish
           ? "We'll review your listing within 2–3 business days."
           : toDraft
             ? "Your listing is out of review until you publish it again."
-            : undefined,
-        [{ text: "OK", onPress: () => router.back() }],
-      );
+            : "Your listing is up to date.",
+        buttonLabel: publish ? "Done" : "OK",
+        onClose: () => router.back(),
+      });
       return;
     }
-    Alert.alert(publish ? "Submitted for review" : "Saved");
+    dialog.show({
+      icon: publish ? "send" : "check",
+      title: publish ? "Submitted for review" : "Saved",
+      message: publish
+        ? "We'll review your listing within 2–3 business days."
+        : "Your progress is safe.",
+    });
   }
 
   const status = profile?.application_status;
@@ -1195,6 +1205,7 @@ export default function ListingScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      {dialog.element}
     </View>
   );
 }

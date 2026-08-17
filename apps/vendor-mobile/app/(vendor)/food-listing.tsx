@@ -13,7 +13,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -42,6 +41,7 @@ import {
   ChipMulti,
   ChipSingle,
   ReviewChecklist,
+  useBrandDialog,
   ListingPhotosGrid,
   CategoryField,
   CategoryPickerModal,
@@ -126,6 +126,7 @@ export default function FoodListingScreen() {
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const dialog = useBrandDialog();
 
   // Basics
   const [businessName, setBusinessName] = useState("");
@@ -311,7 +312,7 @@ export default function FoodListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      Alert.alert("Save failed", error.message);
+      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
       return false;
     }
     if (status) {
@@ -343,7 +344,7 @@ export default function FoodListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) Alert.alert("Saved");
+    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -357,7 +358,11 @@ export default function FoodListingScreen() {
       .update({ category: sub })
       .eq("id", profile.id);
     if (error) {
-      Alert.alert("Couldn't change category", error.message);
+      dialog.show({
+        icon: "alert-circle",
+        title: "Couldn't change category",
+        message: error.message,
+      });
       return;
     }
     const route = editorRouteFor(sub);
@@ -372,10 +377,11 @@ export default function FoodListingScreen() {
     if (busy || !profile) return;
     const missing = missingForPublish();
     if (missing.length > 0) {
-      Alert.alert(
-        "Can't publish yet",
-        `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
-      );
+      dialog.show({
+        icon: "list",
+        title: "Can't publish yet",
+        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+      });
       return;
     }
     setBusy(true);
@@ -387,11 +393,13 @@ export default function FoodListingScreen() {
         body: { kind: "listing_submitted", vendorProfileId: profile.id },
       })
       .catch(() => {});
-    Alert.alert(
-      "Submitted for review",
-      "We'll review your listing within 2–3 business days.",
-      [{ text: "OK", onPress: () => router.back() }],
-    );
+    dialog.show({
+      icon: "send",
+      title: "Submitted for review",
+      message: "We'll review your listing within 2–3 business days.",
+      buttonLabel: "Done",
+      onClose: () => router.back(),
+    });
   }
 
   async function withdrawToDraft() {
@@ -400,11 +408,12 @@ export default function FoodListingScreen() {
     const ok = await persist("draft");
     setBusy(false);
     if (ok) {
-      Alert.alert(
-        "Saved as draft",
-        "Your listing is out of review until you publish it again.",
-        [{ text: "OK", onPress: () => router.back() }],
-      );
+      dialog.show({
+        icon: "file-text",
+        title: "Saved as draft",
+        message: "Your listing is out of review until you publish it again.",
+        onClose: () => router.back(),
+      });
     }
   }
 
@@ -414,9 +423,11 @@ export default function FoodListingScreen() {
     const ok = await persist();
     setBusy(false);
     if (ok) {
-      Alert.alert("Changes saved", undefined, [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      dialog.show({
+        title: "Changes saved",
+        message: "Your listing is up to date.",
+        onClose: () => router.back(),
+      });
     }
   }
 
@@ -905,6 +916,7 @@ export default function FoodListingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {dialog.element}
       <CategoryPickerModal
         visible={categoryPickerOpen}
         selected={profile.category}
