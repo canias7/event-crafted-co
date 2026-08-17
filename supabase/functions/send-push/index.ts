@@ -106,13 +106,22 @@ async function deliverMobile(sb: any, payload: Payload) {
   // Expo accepts batches of up to 100 messages per request.
   // priority "high" tells APNs/FCM to deliver immediately even when the
   // device is in Low Power Mode / Doze.
+  //
+  // channelId targets the "vendora-alerts" Android channel, created at
+  // MAX importance by the apps — that's what makes the notification
+  // pop over the screen (heads-up) instead of landing silently in the
+  // tray. The old "default" channel may be frozen at a lower importance
+  // on devices that created it before the MAX setting existed (Android
+  // never upgrades a channel after creation). Devices that haven't
+  // created the new channel yet fall back to expo-notifications'
+  // fallback channel, so nothing is dropped.
   const messages = tokens.map((t: any) => ({
     to: t.token,
     sound: "default",
     priority: "high",
     title: payload.title,
     body: payload.body ?? "",
-    channelId: "default",
+    channelId: "vendora-alerts",
     data: {
       link: payload.link ?? null,
       tag: payload.tag ?? null,

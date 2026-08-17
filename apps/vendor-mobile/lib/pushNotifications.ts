@@ -39,8 +39,23 @@ export async function tryRegisterPushToken(
   try {
     if (!Device.isDevice) return; // Push tokens don't work in simulators.
 
-    // Android: ensure the default notification channel exists.
+    // Android: channel settings are FROZEN at first creation — if the
+    // "default" channel was ever created at a lower importance, later
+    // upgrades are ignored and pushes land silently in the tray instead
+    // of popping up. So heads-up delivery lives on a fresh channel id
+    // that has always been MAX; send-push targets it via channelId.
     if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("vendora-alerts", {
+        name: "Vendora alerts",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: "default",
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
+      // Keep the legacy channel for anything still sent without a
+      // channelId (falls back to "default").
       await Notifications.setNotificationChannelAsync("default", {
         name: "Default",
         importance: Notifications.AndroidImportance.MAX,
