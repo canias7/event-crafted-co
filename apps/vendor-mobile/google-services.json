@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "942427167961",
+    "project_id": "vendora-for-vendors",
+    "storage_bucket": "vendora-for-vendors.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:942427167961:android:c059f86842e8f3702db2c8",
+        "android_client_info": {
+          "package_name": "com.eventvendora.forVendors"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmhUjYGwJaIeLhUZu4-P5q7vLfGhIE3aM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
