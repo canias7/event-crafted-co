@@ -22,7 +22,7 @@ export const SHIPPED: { date: string; title: string; body: string }[] = [
   {
     date: "August 2026",
     title: "Get verified — for real this time",
-    body: "Every vendor can now apply for the verified badge from More → Verification: confirm your identity, add your business info and documents, and our team reviews within 1–3 business days. Approved vendors get the badge on their public profile — plus an Insured marker when a certificate is on file.",
+    body: "Pro and Premium vendors can now apply for the verified badge from More → Verification: confirm your identity, add your business info and documents, and our team reviews within 1–3 business days. Approved vendors get the badge on their public profile — plus an Insured marker when a certificate is on file.",
   },
   {
     date: "August 2026",
