@@ -126,6 +126,16 @@ export default function MoreScreen() {
 
         <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
+            icon={<Feather name="zap" size={19} color={INK} />}
+            label="Smart Scheduling"
+            body="Working hours, services, and automations"
+            badge="New"
+            onPress={() => router.push("/(vendor)/scheduling" as never)}
+          />
+        </View>
+
+        <View style={[cardStyle, { marginTop: 14 }]}>
+          <MenuRow
             icon={<Feather name="settings" size={19} color={INK} />}
             label="Settings"
             body="Account, password, notifications, privacy"

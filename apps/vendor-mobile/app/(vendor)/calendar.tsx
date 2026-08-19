@@ -858,6 +858,28 @@ export default function CalendarScreen() {
 
   // ---- add personal entry (vendor-side appointment) ----
   const [addOpen, setAddOpen] = useState(false);
+  // Appointment types configured in Smart Scheduling — one tap fills
+  // both the entry title and its duration.
+  const [myTypes, setMyTypes] = useState<
+    { id: string; name: string; duration_minutes: number }[]
+  >([]);
+  useEffect(() => {
+    if (!user?.id) return;
+    let alive = true;
+    (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("vendor_appointment_types")
+        .select("id, name, duration_minutes")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .order("display_order", { ascending: true });
+      if (alive) setMyTypes(data ?? []);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
   const [addSaving, setAddSaving] = useState(false);
   const [aTitle, setATitle] = useState("");
   const [aTime, setATime] = useState("09:00");
@@ -1033,23 +1055,45 @@ export default function CalendarScreen() {
                 Manage your bookings & availability
               </Text>
             </View>
-            <Pressable onPress={jumpToToday} hitSlop={6}>
-              {({ pressed }) => (
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 999,
-                    backgroundColor: CREAM_DEEP,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: pressed ? 0.85 : 1,
-                  }}
-                >
-                  <Feather name="calendar" size={18} color={INK} />
-                </View>
-              )}
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                onPress={() => router.push("/(vendor)/scheduling" as never)}
+                hitSlop={6}
+              >
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 999,
+                      backgroundColor: CREAM_DEEP,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: pressed ? 0.85 : 1,
+                    }}
+                  >
+                    <Feather name="zap" size={18} color={INK} />
+                  </View>
+                )}
+              </Pressable>
+              <Pressable onPress={jumpToToday} hitSlop={6}>
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 999,
+                      backgroundColor: CREAM_DEEP,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: pressed ? 0.85 : 1,
+                    }}
+                  >
+                    <Feather name="calendar" size={18} color={INK} />
+                  </View>
+                )}
+              </Pressable>
+            </View>
           </View>
 
           {/* Month nav + view toggle */}
@@ -1510,6 +1554,52 @@ export default function CalendarScreen() {
                     onPress={() => setAListingId(l.id)}
                   />
                 ))}
+              </ScrollView>
+            </>
+          ) : null}
+
+          {myTypes.length > 0 ? (
+            <>
+              <FieldLabel text="Your services" />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 6, paddingVertical: 2, paddingBottom: 8 }}
+              >
+                {myTypes.map((t) => {
+                  const active =
+                    aTitle === t.name && aDuration === t.duration_minutes;
+                  return (
+                    <Pressable
+                      key={t.id}
+                      onPress={() => {
+                        setATitle(t.name);
+                        setADuration(t.duration_minutes);
+                      }}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 5,
+                        paddingHorizontal: 12,
+                        height: 32,
+                        borderRadius: 999,
+                        backgroundColor: active ? INK : "#eadfc6",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: active ? CREAM : INK,
+                          fontSize: 12,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {t.name} · {t.duration_minutes >= 60
+                          ? `${t.duration_minutes / 60}h`
+                          : `${t.duration_minutes}m`}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </ScrollView>
             </>
           ) : null}

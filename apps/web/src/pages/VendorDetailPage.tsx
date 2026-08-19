@@ -33,6 +33,7 @@ import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VendorOtherListings } from "@/components/vendor/VendorOtherListings";
 import { VendorTeamPublic } from "@/components/vendor/VendorTeamPublic";
+import { VendorOpenDatesPublic } from "@/components/vendor/VendorOpenDatesPublic";
 import { VendorBrandCard } from "@/components/vendor/VendorBrandCard";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
@@ -774,6 +775,16 @@ export default function VendorDetailPage() {
               {vendor.isReal && listingOwnerUserId && (
                 <SilentErrorBoundary label="VendorTeamPublic">
                   <VendorTeamPublic userId={listingOwnerUserId} />
+                </SilentErrorBoundary>
+              )}
+
+              {/* Last-minute availability — vendor-approved open-date
+                  promos from Fill Your Calendar (Smart Scheduling).
+                  RLS only exposes approved rows; renders nothing
+                  otherwise. */}
+              {vendor.isReal && (
+                <SilentErrorBoundary label="VendorOpenDatesPublic">
+                  <VendorOpenDatesPublic vendorId={vendor.id} />
                 </SilentErrorBoundary>
               )}
 
