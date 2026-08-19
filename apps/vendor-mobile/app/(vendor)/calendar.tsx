@@ -50,9 +50,10 @@ import Svg, { Line } from "react-native-svg";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { Wordmark } from "@/components/Wordmark";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e5e7eb";
@@ -1005,8 +1006,10 @@ export default function CalendarScreen() {
           ) : null}
 
           {/* Header */}
+          <Wordmark />
           <View
             style={{
+              marginTop: 14,
               flexDirection: "row",
               alignItems: "flex-start",
               justifyContent: "space-between",
@@ -1017,9 +1020,9 @@ export default function CalendarScreen() {
                 style={{
                   color: INK,
                   fontFamily: SERIF,
-                  fontStyle: "italic",
-                  fontSize: 34,
-                  fontWeight: "500",
+                  fontSize: 38,
+                  fontWeight: "700",
+                  letterSpacing: -0.5,
                 }}
               >
                 Calendar

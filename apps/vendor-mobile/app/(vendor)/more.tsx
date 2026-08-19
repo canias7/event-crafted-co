@@ -4,16 +4,22 @@
 // Profile tab's ☰ button.
 
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useAuth } from "@/lib/auth";
 import { SettingsSheet } from "@/components/SettingsSheet";
+import { Wordmark } from "@/components/Wordmark";
 
+const PAGE = "#f4f1ea";
+const CARD = "#fbf9f4";
+const SURFACE = "#ece7db";
+const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
+const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 export default function MoreScreen() {
   const router = useRouter();
@@ -23,20 +29,28 @@ export default function MoreScreen() {
   const version = Constants.expoConfig?.version ?? "";
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="px-5 pb-32 pt-6">
-        <Text className="text-4xl font-bold text-foreground">More</Text>
-        <Text className="mt-2 mb-7 text-base text-muted-foreground">
-          Everything else, one tap away
-        </Text>
-
-        <View
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+      >
+        <Wordmark />
+        <Text
           style={{
-            backgroundColor: "#f3f4f6",
-            borderRadius: 20,
-            overflow: "hidden",
+            marginTop: 14,
+            fontFamily: SERIF,
+            fontSize: 38,
+            fontWeight: "700",
+            letterSpacing: -0.5,
+            color: INK,
           }}
         >
+          More
+        </Text>
+        <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 14.5, color: INK_DIM }}>
+          Everything else, one tap away.
+        </Text>
+
+        <View style={cardStyle}>
           <MenuRow
             icon="edit-3"
             label="Edit brand profile"
@@ -45,14 +59,7 @@ export default function MoreScreen() {
           />
         </View>
 
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: "#f3f4f6",
-            borderRadius: 20,
-            overflow: "hidden",
-          }}
-        >
+        <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
             icon="zap"
             label="Subscription"
@@ -61,14 +68,7 @@ export default function MoreScreen() {
           />
         </View>
 
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: "#f3f4f6",
-            borderRadius: 20,
-            overflow: "hidden",
-          }}
-        >
+        <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
             icon="settings"
             label="Settings"
@@ -101,6 +101,14 @@ export default function MoreScreen() {
   );
 }
 
+const cardStyle = {
+  backgroundColor: CARD,
+  borderWidth: 1,
+  borderColor: BORDER,
+  borderRadius: 20,
+  overflow: "hidden" as const,
+};
+
 function MenuRow({
   icon,
   label,
@@ -124,10 +132,10 @@ function MenuRow({
     >
       <View
         style={{
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           borderRadius: 13,
-          backgroundColor: "#e5e7eb",
+          backgroundColor: SURFACE,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -135,7 +143,7 @@ function MenuRow({
         <Feather name={icon} size={18} color={INK} />
       </View>
       <View style={{ flex: 1, marginLeft: 13 }}>
-        <Text style={{ color: INK, fontSize: 16, fontWeight: "700" }}>
+        <Text style={{ fontFamily: SERIF, color: INK, fontSize: 17, fontWeight: "700" }}>
           {label}
         </Text>
         <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
