@@ -8,8 +8,9 @@
 //
 // Documents land in the PRIVATE vendor-verifications bucket under the
 // user's folder — only the owner and admins can read them (RLS).
-// Open to EVERY plan — the badge is earned through manual admin
-// review, not bought.
+// Applying is a Pro/Premium perk (Free sees the upgrade pitch; the
+// insert policy also enforces Pro+ server-side) — but approval is
+// always a manual admin decision, never bought.
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -88,6 +89,7 @@ export default function VerificationScreen() {
   const dialog = useBrandDialog();
 
   const [loading, setLoading] = useState(true);
+  const [eligible, setEligible] = useState(false);
   const [request, setRequest] = useState<RequestRow | null>(null);
   const [editing, setEditing] = useState(false); // needs_info resubmission
   const [step, setStep] = useState<Step>("intro");
@@ -111,7 +113,12 @@ export default function VerificationScreen() {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [{ data: req }, { data: listing }] = await Promise.all([
+    const [{ data: prof }, { data: req }, { data: listing }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("subscription_tier, unlimited_listings")
+        .eq("id", user.id)
+        .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from("vendor_verification_requests")
@@ -127,6 +134,9 @@ export default function VerificationScreen() {
         .limit(1)
         .maybeSingle(),
     ]);
+    const p = prof as { subscription_tier?: string; unlimited_listings?: boolean } | null;
+    const tier = p?.subscription_tier ?? "free";
+    setEligible(tier === "pro" || tier === "studio" || !!p?.unlimited_listings);
     const r = req as RequestRow | null;
     setRequest(r);
     if (r) {
@@ -280,6 +290,58 @@ export default function VerificationScreen() {
         </Text>
         <View style={{ width: 26 }} />
       </View>
+    );
+  }
+
+  // ---- not eligible (Free plan) ----
+  if (!eligible && !request) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Header title="Verification" onBack={() => router.back()} />
+          <View style={{ alignItems: "center", marginTop: 26 }}>
+            <MaterialCommunityIcons name="shield-check-outline" size={70} color="#d9c9a6" />
+          </View>
+          <Text
+            style={{
+              marginTop: 14,
+              textAlign: "center",
+              fontFamily: SERIF,
+              fontSize: 27,
+              fontWeight: "700",
+              color: INK,
+            }}
+          >
+            Get verified. Build trust.
+          </Text>
+          <Text
+            style={{ marginTop: 8, textAlign: "center", fontSize: 14.5, lineHeight: 21, color: INK_DIM }}
+          >
+            The verified badge tells hosts a real person and a real business
+            are behind your profile. Applying is included with Pro and
+            Premium plans — approval is always reviewed by our team.
+          </Text>
+          <Pressable
+            onPress={() => router.push("/(vendor)/subscription" as never)}
+            style={{
+              marginTop: 26,
+              backgroundColor: INK,
+              borderRadius: 999,
+              height: 54,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 15.5, fontWeight: "600" }}>
+              <Text style={{ color: GOLD }}>✦</Text> Upgrade to apply
+            </Text>
+          </Pressable>
+        </ScrollView>
+        {dialog.element}
+      </SafeAreaView>
     );
   }
 
