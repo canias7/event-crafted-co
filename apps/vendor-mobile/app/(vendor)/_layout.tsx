@@ -185,6 +185,8 @@ export default function VendorLayout() {
       {/* Setup checklist — pushed from the Profile tab's "You're almost
           live!" banner, not a tab of its own. */}
       <Tabs.Screen name="setup" options={{ href: null }} />
+      {/* What's-new changelog — pushed from More, not a tab of its own. */}
+      <Tabs.Screen name="updates" options={{ href: null }} />
       {/* Category-specific listing wizards — listing.tsx redirects each
           group's categories to its own builder. */}
       <Tabs.Screen name="venue-listing" options={{ href: null }} />
