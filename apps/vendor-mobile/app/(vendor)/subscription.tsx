@@ -589,8 +589,15 @@ export default function SubscriptionScreen() {
             tier.billingInterval === "year"
               ? tier.priceMonthly / 12
               : tier.priceMonthly;
+          // The DB highlights row also carries a plain "Smart Scheduling"
+          // bullet (web parity) — swap it for the gold "New" version here.
           const bullets = isPremiumTier
-            ? [...tier.highlights, "✦ Smart Scheduling & Automations — New"]
+            ? [
+                ...tier.highlights.filter(
+                  (h) => !/smart scheduling/i.test(h),
+                ),
+                "✦ Smart Scheduling & Automations — New",
+              ]
             : tier.highlights;
           return (
             <View
