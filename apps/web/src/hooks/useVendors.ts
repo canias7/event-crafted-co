@@ -38,6 +38,8 @@ export interface Vendor {
    *  "verified" check on the vendor's card + profile. Distinct from
    *  verifiedKinds (KYC document verification). */
   studioVerified?: boolean;
+  /** Insurance certificate on file, granted with verification approval. */
+  insured?: boolean;
   /** Public socials — without leading @. */
   instagramHandle?: string | null;
   tiktokHandle?: string | null;
@@ -111,6 +113,7 @@ interface VendorProfileRow {
   service_radius_miles: number | null;
   portfolio_summary: string | null;
   verified_at: string | null;
+  insured_at: string | null;
   responder_tier: "fast" | "standard" | null;
   intro_video_url: string | null;
   slug: string | null;
@@ -162,9 +165,11 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     tiktokHandle: row.tiktok_handle ?? null,
     ownerUserId: row.user_id,
     isReal: true,
-    studioVerified:
-      row.brand?.subscription_tier === "pro" ||
-      row.brand?.subscription_tier === "studio",
+    // Earned, not automatic: the badge comes from an approved
+    // verification request (admin stamps verified_at) — Pro/Premium
+    // buys ELIGIBILITY to apply, not the badge itself.
+    studioVerified: !!row.verified_at,
+    insured: !!row.insured_at,
   };
 }
 
@@ -198,7 +203,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, user_id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, service_radius_miles, portfolio_summary, verified_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
+          "id, user_id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, service_radius_miles, portfolio_summary, verified_at, insured_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });

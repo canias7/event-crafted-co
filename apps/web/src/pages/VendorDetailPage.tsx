@@ -587,6 +587,43 @@ export default function VendorDetailPage() {
                   </div>
                 )}
 
+              {/* Trust rows — earned via the verification flow (admin
+                  stamps verified_at / insured_at on approval). */}
+              {vendor.isReal && vendor.studioVerified && (
+                <div className="card-soft divide-y divide-border">
+                  <div className="flex items-start gap-3 p-4">
+                    <span className="mt-0.5 text-accent" aria-hidden>
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold">Verified vendor</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Identity &amp; business info verified by Vendora
+                      </p>
+                    </div>
+                  </div>
+                  {vendor.insured && (
+                    <div className="flex items-start gap-3 p-4">
+                      <span className="mt-0.5 text-accent" aria-hidden>
+                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="7" width="18" height="13" rx="2" />
+                          <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold">Insured</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Certificate on file
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Intro video — optional, only when vendor sets one */}
               {vendor.introVideoUrl && (
                 <div>
