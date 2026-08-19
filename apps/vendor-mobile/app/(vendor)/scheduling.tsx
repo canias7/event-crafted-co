@@ -4,12 +4,14 @@
 // FREE: the basic calendar stays on the Calendar tab, and this screen
 // lets free vendors manage their ONE basic appointment type; everything
 // else shows the upsell.
-// PREMIUM ('studio' tier): super-easy setup — working hours per weekday
-// (9–5 style) + appointment types with lengths, booking rules (buffer,
-// minimum notice, per-day limit), automated messages (auto-reply,
-// confirmations, reminders, follow-ups, review requests, alt-date
-// suggestions), and Fill Your Calendar (open-date alerts where NOTHING
-// is promoted without explicit approval).
+// PRO: booking flexibility — up to 5 appointment types, working hours
+// per weekday (9–5 style), and booking rules (buffer, minimum notice,
+// per-day limit). No automations.
+// PREMIUM ('studio' tier): everything in Pro plus unlimited types and
+// the automated messages (auto-reply, confirmations, reminders,
+// follow-ups, review requests, alt-date suggestions) and Fill Your
+// Calendar (open-date alerts where NOTHING is promoted without
+// explicit approval).
 //
 // Data: vendor_scheduling_settings (one row per account),
 // vendor_appointment_types, vendor_promo_suggestions. The sending side
@@ -127,6 +129,9 @@ export default function SchedulingScreen() {
 
   const [loading, setLoading] = useState(true);
   const [premium, setPremium] = useState(false);
+  // Pro OR Premium — unlocks the manual scheduling controls (working
+  // hours, booking rules, multiple appointment types).
+  const [pro, setPro] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // working hours + rules
@@ -190,7 +195,9 @@ export default function SchedulingScreen() {
           .limit(3),
       ]);
     const tier = (prof as { subscription_tier?: string } | null)?.subscription_tier ?? "free";
-    setPremium(tier === "studio" || tier === "premium");
+    const isPremium = tier === "studio" || tier === "premium";
+    setPremium(isPremium);
+    setPro(isPremium || tier === "pro");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const s = settings as any;
     if (s) {
@@ -281,7 +288,9 @@ export default function SchedulingScreen() {
     }
   }
 
-  const canAddType = premium || types.length < 1;
+  // Type caps by plan: Free 1 · Pro 5 · Premium unlimited.
+  const PRO_TYPE_CAP = 5;
+  const canAddType = premium || (pro ? types.length < PRO_TYPE_CAP : types.length < 1);
 
   if (loading) {
     return (
@@ -366,9 +375,10 @@ export default function SchedulingScreen() {
                 dialog.show({
                   icon: "zap",
                   title: "More appointment types",
-                  message:
-                    "The Free plan includes one appointment type. Upgrade to Premium to create as many as you need.",
-                  confirmLabel: "See Premium",
+                  message: pro
+                    ? "The Pro plan includes up to 5 appointment types. Upgrade to Premium to create as many as you need."
+                    : "The Free plan includes one appointment type. Pro unlocks up to 5, and Premium has no limit.",
+                  confirmLabel: "See plans",
                   onConfirm: () => router.push("/(vendor)/subscription" as never),
                 });
                 return;
@@ -394,14 +404,14 @@ export default function SchedulingScreen() {
               Add appointment type
               {!premium ? (
                 <Text style={{ fontSize: 12, color: INK_DIM }}>
-                  {"  "}({types.length}/1 on Free)
+                  {"  "}({types.length}/{pro ? PRO_TYPE_CAP : 1} on {pro ? "Pro" : "Free"})
                 </Text>
               ) : null}
             </Text>
           </Pressable>
         </View>
 
-        {premium ? (
+        {pro ? (
           <>
             {/* Working hours — the "9 to 5" setup */}
             <SectionTitle
@@ -489,6 +499,8 @@ export default function SchedulingScreen() {
               onSelect={(i) => setMaxPerDay(MAX_PER_DAY[i].v)}
             />
 
+            {premium ? (
+              <>
             {/* Automated messages */}
             <SectionTitle
               title="Automated messages"
@@ -641,6 +653,10 @@ export default function SchedulingScreen() {
                 </View>
               </View>
             ))}
+              </>
+            ) : (
+              <PremiumTeaser onUpgrade={() => router.push("/(vendor)/subscription" as never)} />
+            )}
 
             {/* Save */}
             <Pressable
@@ -1145,27 +1161,84 @@ function TypeForm({
   );
 }
 
-// Non-premium pitch, per the mock's "Work less. Book more." screen.
+// Shown to Pro vendors below their scheduling controls: the automation
+// half of Smart Scheduling is the Premium step up.
+function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
+  const rows: { icon: keyof typeof Feather.glyphMap; text: string }[] = [
+    { icon: "message-circle", text: "Instant inquiry replies, in your words" },
+    { icon: "bell", text: "Confirmations, reminders & follow-ups on autopilot" },
+    { icon: "star", text: "Review requests after every event" },
+    { icon: "zap", text: "Fill Your Calendar open-date alerts" },
+  ];
+  return (
+    <View
+      style={{
+        marginTop: 26,
+        backgroundColor: "#f3ecdd",
+        borderWidth: 1,
+        borderColor: GOLD,
+        borderRadius: 18,
+        padding: 18,
+      }}
+    >
+      <Text style={{ fontFamily: SERIF, fontSize: 19, fontWeight: "700", color: INK }}>
+        Put it on autopilot <Text style={{ color: GOLD, fontSize: 14 }}>✦</Text>
+      </Text>
+      <Text style={{ marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
+        Your hours and rules are set — Premium makes Vendora work them for
+        you, automatically.
+      </Text>
+      <View style={{ marginTop: 14, gap: 10 }}>
+        {rows.map((r) => (
+          <View key={r.icon} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Feather name={r.icon} size={15} color="#8a6f3e" />
+            <Text style={{ flex: 1, fontSize: 13.5, color: INK }}>{r.text}</Text>
+          </View>
+        ))}
+      </View>
+      <Pressable
+        onPress={onUpgrade}
+        style={{
+          marginTop: 16,
+          backgroundColor: INK,
+          borderRadius: 999,
+          height: 48,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+        }}
+      >
+        <MaterialCommunityIcons name="star-four-points" size={15} color={GOLD} />
+        <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
+          Upgrade to Premium
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// Free-plan pitch, per the mock's "Work less. Book more." screen.
 function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
   const rows: { icon: keyof typeof Feather.glyphMap; title: string; sub: string }[] = [
     {
       icon: "calendar",
-      title: "Smart availability",
-      sub: "Set your schedule, buffers, and booking rules in minutes.",
+      title: "Smart availability — Pro",
+      sub: "Working hours, buffers, booking rules, and up to 5 appointment types.",
     },
     {
       icon: "message-circle",
-      title: "Automated messages",
+      title: "Automated messages — Premium",
       sub: "Send confirmations, reminders, and follow-ups automatically.",
     },
     {
       icon: "send",
-      title: "Unavailable date suggestions",
+      title: "Unavailable date suggestions — Premium",
       sub: "Instantly suggest alternate dates when you're booked.",
     },
     {
       icon: "bell",
-      title: "Fill your calendar",
+      title: "Fill your calendar — Premium",
       sub: "Get notified about open dates and attract last-minute bookings.",
     },
   ];
@@ -1240,11 +1313,11 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
       >
         <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
         <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "600" }}>
-          Upgrade to Premium
+          See plans
         </Text>
       </Pressable>
       <Text style={{ marginTop: 10, textAlign: "center", fontSize: 12.5, color: INK_DIM }}>
-        Available on the Premium plan
+        Scheduling controls come with Pro · automations with Premium
       </Text>
     </View>
   );
