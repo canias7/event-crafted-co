@@ -27,7 +27,7 @@ export const SHIPPED: { date: string; title: string; body: string }[] = [
   {
     date: "August 2026",
     title: "Smart Scheduling & Automations",
-    body: "Set your working hours and appointment types in minutes. Premium unlocks automated inquiry replies, booking confirmations, reminders, follow-ups, review requests, and Fill Your Calendar alerts for open dates — promos only go out with your approval.",
+    body: "Set your working hours and appointment types in minutes. Pro unlocks the scheduling controls — hours, buffers, minimum notice, daily limits, and up to 5 appointment types. Premium adds the automations: instant inquiry replies, confirmations, reminders, follow-ups, review requests, and Fill Your Calendar alerts — promos only go out with your approval.",
   },
   {
     date: "August 2026",

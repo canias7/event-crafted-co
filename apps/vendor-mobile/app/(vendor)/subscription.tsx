@@ -48,12 +48,13 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 const COMPARISON: { label: string; free: boolean; pro: boolean; premium: boolean }[] = [
   { label: "Calendar & availability", free: true, pro: true, premium: true },
   { label: "Block unavailable dates", free: true, pro: true, premium: true },
-  { label: "1 basic appointment type", free: true, pro: true, premium: true },
-  { label: "Multiple appointment types", free: false, pro: false, premium: true },
-  { label: "Working hours & custom availability", free: false, pro: false, premium: true },
-  { label: "Booking buffers & minimum notice", free: false, pro: false, premium: true },
+  { label: "Appointment types (1 / 5 / unlimited)", free: true, pro: true, premium: true },
+  { label: "Working hours & custom availability", free: false, pro: true, premium: true },
+  { label: "Buffers, notice & daily limits", free: false, pro: true, premium: true },
+  { label: "Vendora CRM & V2V messaging", free: false, pro: true, premium: true },
   { label: "Automated replies & reminders", free: false, pro: false, premium: true },
   { label: "Follow-ups & review requests", free: false, pro: false, premium: true },
+  { label: "AI employee (HILUX)", free: false, pro: false, premium: true },
   { label: "Fill Your Calendar alerts", free: false, pro: false, premium: true },
 ];
 
