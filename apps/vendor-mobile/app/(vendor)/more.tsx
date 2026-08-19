@@ -136,6 +136,16 @@ export default function MoreScreen() {
 
         <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
+            icon={<Feather name="users" size={19} color={INK} />}
+            label="Vendora CRM"
+            body="Your clients, notes, and follow-ups"
+            badge="Pro"
+            onPress={() => router.push("/(vendor)/crm" as never)}
+          />
+        </View>
+
+        <View style={[cardStyle, { marginTop: 14 }]}>
+          <MenuRow
             icon={<Feather name="settings" size={19} color={INK} />}
             label="Settings"
             body="Account, password, notifications, privacy"
