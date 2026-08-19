@@ -83,9 +83,9 @@ export default function SettingsPage() {
                 subtitle="Email on file for this account"
                 right={
                   <a
-                    href="mailto:hello@vendora.events"
+                    href="mailto:hello@eventvendora.com"
                     className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors truncate"
-                    title="Contact hello@vendora.events to change your email"
+                    title="Contact hello@eventvendora.com to change your email"
                   >
                     {user?.email ?? ""}
                   </a>

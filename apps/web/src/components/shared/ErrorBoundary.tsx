@@ -149,10 +149,10 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="text-[11px] text-muted-foreground mt-6">
             If you think this is a bug, please email{" "}
             <a
-              href="mailto:hello@vendora.events"
+              href="mailto:hello@eventvendora.com"
               className="text-accent hover:underline"
             >
-              hello@vendora.events
+              hello@eventvendora.com
             </a>{" "}
             with the steps you took.
           </p>

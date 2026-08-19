@@ -62,10 +62,10 @@ export default function AccountDeletionPage() {
             <p>
               If you can't sign in, email{" "}
               <a
-                href="mailto:privacy@vendora.events?subject=Delete%20my%20account"
+                href="mailto:hello@eventvendora.com?subject=Delete%20my%20account"
                 className="text-accent font-medium"
               >
-                privacy@vendora.events
+                hello@eventvendora.com
               </a>{" "}
               from the email address on your account, with the subject{" "}
               <strong>"Delete my account."</strong> We verify ownership and
@@ -112,10 +112,10 @@ export default function AccountDeletionPage() {
             <p>
               Email{" "}
               <a
-                href="mailto:privacy@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="text-accent font-medium"
               >
-                privacy@vendora.events
+                hello@eventvendora.com
               </a>{" "}
               and we'll help. See our{" "}
               <a href="/privacy" className="text-accent font-medium">

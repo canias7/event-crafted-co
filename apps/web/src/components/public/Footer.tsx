@@ -42,10 +42,10 @@ export function Footer() {
                 {t("footer.terms")}
               </Link>
               <a
-                href="mailto:hello@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="block text-sm opacity-70 hover:opacity-100 transition-opacity"
               >
-                hello@vendora.events
+                hello@eventvendora.com
               </a>
             </div>
           </div>
