@@ -463,7 +463,7 @@ export default function ProfileScreen() {
 }
 
 // Brand identity card — dark card per the reference design: avatar with
-// a gold pencil badge, serif name, gold shield Verified/Unverified row,
+// a gold pencil badge, serif name, gold shield Verified row (verified only),
 // a gold hairline-and-star divider, RATING · JOINED stats, and Share
 // profile / Edit identity side by side. A top-left Bio chip still flips
 // the card to the vendor's bio.
@@ -613,29 +613,34 @@ function BrandCard({
               >
                 {businessName}
               </Text>
-              <View
-                style={{
-                  marginTop: 6,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
-                <MaterialCommunityIcons
-                  name={verified ? "shield-check" : "shield-outline"}
-                  size={16}
-                  color={GOLD_ON_DARK}
-                />
-                <Text
+              {/* Verified is a badge of honor granted by the team — show
+                  it when earned, show nothing otherwise ("Unverified"
+                  reads like a defect the vendor can't fix). */}
+              {verified ? (
+                <View
                   style={{
-                    marginLeft: 6,
-                    fontSize: 14,
-                    fontWeight: "500",
-                    color: GOLD_ON_DARK,
+                    marginTop: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
                   }}
                 >
-                  {verified ? "Verified" : "Unverified"}
-                </Text>
-              </View>
+                  <MaterialCommunityIcons
+                    name="shield-check"
+                    size={16}
+                    color={GOLD_ON_DARK}
+                  />
+                  <Text
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 14,
+                      fontWeight: "500",
+                      color: GOLD_ON_DARK,
+                    }}
+                  >
+                    Verified
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
