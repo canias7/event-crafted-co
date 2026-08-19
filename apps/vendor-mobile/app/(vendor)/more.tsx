@@ -3,13 +3,14 @@
 // "New" badge, Help & support, About, and the "Love Vendora?" rate-us
 // banner. Settings opens the same account sheet as before.
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { SettingsSheet } from "@/components/SettingsSheet";
 import { Wordmark } from "@/components/Wordmark";
 import { useBrandDialog } from "@/components/listing/WizardKit";
@@ -35,6 +36,27 @@ export default function MoreScreen() {
   const { user, signOut } = useAuth();
   const dialog = useBrandDialog();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Pro+ vendors are eligible to apply for the verified badge.
+  const [verifyEligible, setVerifyEligible] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_tier, unlimited_listings")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!alive) return;
+      const p = data as { subscription_tier?: string; unlimited_listings?: boolean } | null;
+      const tier = p?.subscription_tier ?? "free";
+      setVerifyEligible(tier === "pro" || tier === "studio" || !!p?.unlimited_listings);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
 
   const version = Constants.expoConfig?.version ?? "";
 
@@ -121,6 +143,22 @@ export default function MoreScreen() {
             label="Subscription"
             body="Plan, billing, and usage"
             onPress={() => router.push("/(vendor)/subscription" as never)}
+          />
+        </View>
+
+        <View
+          style={[
+            cardStyle,
+            { marginTop: 14 },
+            verifyEligible ? { backgroundColor: "#f3ecdd", borderColor: GOLD_SOFT } : null,
+          ]}
+        >
+          <MenuRow
+            icon={<MaterialCommunityIcons name="shield-check-outline" size={20} color={INK} />}
+            label="Verification"
+            body="Get your verified badge"
+            badge={verifyEligible ? "Eligible" : "Pro"}
+            onPress={() => router.push("/(vendor)/verification" as never)}
           />
         </View>
 

@@ -131,6 +131,8 @@ function routeFromLink(link: string | null | undefined): string | null {
   if (/listing-status/i.test(link)) return "/(vendor)/profile";
   // CRM follow-up reminders (run_crm_reminders) link to /vendor/crm.
   if (/\/crm/i.test(link)) return "/(vendor)/crm";
+  // Verification decisions link to /vendor/verification.
+  if (/\/verification/i.test(link)) return "/(vendor)/verification";
   // Fill Your Calendar suggestions link to /vendor/calendar.
   if (/\/calendar/i.test(link)) return "/(vendor)/calendar";
   return "/(vendor)/inbox";

@@ -195,6 +195,8 @@ export default function VendorLayout() {
       <Tabs.Screen name="scheduling" options={{ href: null }} />
       {/* Vendora CRM (Clients) — Pro+ perk, pushed from More. */}
       <Tabs.Screen name="crm" options={{ href: null }} />
+      {/* Verification — Pro+ verified-badge application, pushed from More. */}
+      <Tabs.Screen name="verification" options={{ href: null }} />
       {/* Category-specific listing wizards — listing.tsx redirects each
           group's categories to its own builder. */}
       <Tabs.Screen name="venue-listing" options={{ href: null }} />
