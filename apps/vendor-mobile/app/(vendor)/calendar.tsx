@@ -45,7 +45,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Line } from "react-native-svg";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
@@ -57,16 +57,17 @@ const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e5e7eb";
-const PENDING_BG = "#fef3c7";
-const PENDING_FG = "#92400e";
+const GOLD = "#c9a86a";
+const PENDING_BG = "#f2e7cb";
+const PENDING_FG = "#8a6f3e";
 const HATCH = "#d1d5db";
 const HATCH_BG = "#f3f4f6";
 const GREEN = "#16a34a";
 const AMBER = "#d97706";
 // Status dots for the multi-listing account view (match web STATUS_DOT).
-const DOT_BOOKED = "#059669";
-const DOT_PENDING = "#d97706";
-const DOT_BLOCKED = "#a1a1aa";
+const DOT_BOOKED = "#14161a";
+const DOT_PENDING = "#c9a86a";
+const DOT_BLOCKED = "#b3aed6";
 // Stable per-listing palette (mirrors apps/web/src/lib/listingColors).
 const LISTING_PALETTE = [
   "#1b3654",
@@ -953,6 +954,7 @@ export default function CalendarScreen() {
     setSelectedYmd(ymdKey(today));
   }
 
+  const [calView, setCalView] = useState<"month" | "list">("month");
   const monthLabel = viewMonth.toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
@@ -1025,7 +1027,7 @@ export default function CalendarScreen() {
                   letterSpacing: -0.5,
                 }}
               >
-                Calendar
+                Calendar <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
               </Text>
               <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                 Manage your bookings & availability
@@ -1050,7 +1052,7 @@ export default function CalendarScreen() {
             </Pressable>
           </View>
 
-          {/* Month nav */}
+          {/* Month nav + view toggle */}
           <View
             style={{
               marginTop: 22,
@@ -1059,23 +1061,62 @@ export default function CalendarScreen() {
               justifyContent: "space-between",
             }}
           >
-            <Text
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
+              <ChevButton dir="left" onPress={() => shiftMonth(-1)} />
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: INK,
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontSize: 23,
+                  fontWeight: "500",
+                  flexShrink: 1,
+                }}
+              >
+                {monthLabel}
+              </Text>
+              <ChevButton dir="right" onPress={() => shiftMonth(1)} />
+            </View>
+            <View
               style={{
-                color: INK,
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontSize: 22,
-                fontWeight: "500",
+                flexDirection: "row",
+                backgroundColor: "#ffffff",
+                borderRadius: 999,
+                padding: 3,
               }}
             >
-              {monthLabel}
-            </Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <ChevButton dir="left" onPress={() => shiftMonth(-1)} />
-              <ChevButton dir="right" onPress={() => shiftMonth(1)} />
+              <Pressable
+                onPress={() => setCalView("month")}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  backgroundColor: calView === "month" ? CREAM_DEEP : "transparent",
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "700", color: INK }}>Month</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setCalView("list")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  backgroundColor: calView === "list" ? CREAM_DEEP : "transparent",
+                }}
+              >
+                <Feather name="list" size={14} color={INK} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: INK }}>List</Text>
+              </Pressable>
             </View>
           </View>
 
+          {calView === "month" ? (
+          <>
           {/* Calendar card */}
           <View
             style={{
@@ -1173,19 +1214,22 @@ export default function CalendarScreen() {
                 justifyContent: "space-between",
               }}
             >
-              <Text
-                style={{
-                  color: INK,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
-                  fontSize: 20,
-                  fontWeight: "500",
-                  flex: 1,
-                }}
-                numberOfLines={1}
-              >
-                {prettyDay(selectedYmd)}
-              </Text>
+              <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: INK,
+                    fontFamily: SERIF,
+                    fontStyle: "italic",
+                    fontSize: 20,
+                    fontWeight: "500",
+                    flexShrink: 1,
+                  }}
+                  numberOfLines={1}
+                >
+                  {prettyDay(selectedYmd)}
+                </Text>
+                <Text style={{ color: GOLD, fontSize: 13, marginLeft: 6 }}>✦</Text>
+              </View>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <Pressable
                   onPress={() => {
@@ -1207,7 +1251,9 @@ export default function CalendarScreen() {
                       }}
                     >
                       <Feather name="plus" size={14} color={INK} style={{ marginRight: 4 }} />
-                      <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>Add</Text>
+                      <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>
+                        Add booking
+                      </Text>
                     </View>
                   )}
                 </Pressable>
@@ -1238,13 +1284,13 @@ export default function CalendarScreen() {
                       }}
                     >
                       <Feather
-                        name={isSelectedBlocked ? "x" : "plus"}
+                        name={isSelectedBlocked ? "x" : "calendar"}
                         size={14}
-                        color={CREAM}
+                        color="#ffffff"
                         style={{ marginRight: 4 }}
                       />
-                      <Text style={{ color: CREAM, fontSize: 13, fontWeight: "700" }}>
-                        {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
+                      <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "700" }}>
+                        {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block time"}
                       </Text>
                     </View>
                   )}
@@ -1301,13 +1347,29 @@ export default function CalendarScreen() {
                 <View
                   style={{
                     backgroundColor: "#ffffff",
-                    borderRadius: 18,
-                    paddingVertical: 24,
+                    borderRadius: 20,
+                    paddingVertical: 34,
+                    paddingHorizontal: 20,
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: INK_DIM, fontSize: 13 }}>
+                  <MaterialCommunityIcons
+                    name="calendar-check-outline"
+                    size={48}
+                    color="#d9c9a6"
+                  />
+                  <Text
+                    style={{
+                      marginTop: 12,
+                      color: INK,
+                      fontSize: 14.5,
+                      fontWeight: "600",
+                    }}
+                  >
                     Nothing on the books for this day.
+                  </Text>
+                  <Text style={{ marginTop: 3, color: INK_DIM, fontSize: 13 }}>
+                    Add a booking or block off time.
                   </Text>
                 </View>
               ) : (
@@ -1343,6 +1405,9 @@ export default function CalendarScreen() {
               savingDow={savingRecurring}
               onToggle={toggleRecurring}
             />
+          ) : null}
+
+          </>
           ) : null}
 
           {/* Appointments list */}
@@ -1785,15 +1850,18 @@ function DayCell({
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 999,
             alignItems: "center",
             justifyContent: "center",
-            borderWidth: selected ? 2 : 0,
-            borderColor: INK,
+            backgroundColor: selected ? INK : "transparent",
           }}
         >
           <Text
-            style={{ color: inMonth ? INK : "#d1d5db", fontSize: 14, fontWeight: "600" }}
+            style={{
+              color: selected ? "#ffffff" : inMonth ? INK : "#d1d5db",
+              fontSize: 14,
+              fontWeight: "600",
+            }}
           >
             {day}
           </Text>
@@ -1823,14 +1891,18 @@ function DayCell({
         ? PENDING_BG
         : state === "blocked"
           ? HATCH_BG
-          : "transparent";
+          : selected
+            ? INK
+            : "transparent";
   const digitColor = !inMonth
     ? "#d1d5db"
     : state === "booked"
       ? CREAM
       : state === "pending"
         ? PENDING_FG
-        : INK;
+        : selected
+          ? "#ffffff"
+          : INK;
 
   return (
     <View style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}>
@@ -1839,12 +1911,12 @@ function DayCell({
         style={{
           width: 38,
           height: 38,
-          borderRadius: 12,
+          borderRadius: selected && state === "available" ? 999 : 12,
           backgroundColor: baseBg,
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
-          borderWidth: selected ? 2 : 0,
+          borderWidth: selected && state !== "available" ? 2 : 0,
           borderColor: INK,
         }}
       >
