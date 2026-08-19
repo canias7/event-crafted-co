@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -41,7 +42,7 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#6b6f78";
 const GOLD = "#c9a86a";
-const SERIF_FONT = "serif";
+const SERIF_FONT = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 interface PartnerThread {
   id: string;
@@ -291,8 +292,8 @@ export default function InboxScreen() {
           <Text
             style={{
               fontFamily: SERIF_FONT,
-              fontSize: 44,
-              lineHeight: 50,
+              fontSize: 38,
+              lineHeight: 44,
               fontWeight: "700",
               letterSpacing: -0.5,
               color: INK,

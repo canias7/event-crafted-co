@@ -530,7 +530,7 @@ export default function GalleryScreen() {
             <Text
               style={{
                 fontFamily: SERIF,
-                fontSize: 40,
+                fontSize: 38,
                 lineHeight: 46,
                 fontWeight: "700",
                 letterSpacing: -0.5,
