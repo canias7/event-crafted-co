@@ -39,18 +39,23 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
+import { useBrandDialog } from "@/components/listing/WizardKit";
 
+// Cream editorial palette — matches the Inbox restyle / reference mock.
 const WHITE = "#ffffff";
-const SURFACE = "#f3f4f6";
+const PAGE = "#f4f1ea";
+const CARD = "#fbf9f4";
+const SURFACE = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const ACCENT = "#1b3654";
-const BORDER = "#e5e7eb";
+const BORDER = "#e6e1d5";
+const GOLD = "#c9a86a";
 const ERROR = "#dc2828";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -125,6 +130,7 @@ function extFromUrl(url: string): string {
 export default function GalleryScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const dialog = useBrandDialog();
 
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -502,22 +508,57 @@ export default function GalleryScreen() {
     id ? albums.find((a) => a.id === id)?.name ?? "Album" : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: WHITE }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 140 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 140 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={INK} />}
       >
-        {/* Title */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Text style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 34, fontWeight: "700", color: INK }}>
-            Gallery
+        {/* Wordmark */}
+        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+          <Text
+            style={{
+              fontFamily: SERIF,
+              fontSize: 22,
+              fontWeight: "700",
+              letterSpacing: 3,
+              color: INK,
+            }}
+          >
+            VENDORA
           </Text>
+          <Text style={{ color: GOLD, fontSize: 12, marginLeft: 2, marginTop: -2 }}>✦</Text>
+        </View>
+
+        {/* Title + actions */}
+        <View
+          style={{
+            marginTop: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
+            <Text
+              style={{
+                fontFamily: SERIF,
+                fontSize: 40,
+                lineHeight: 46,
+                fontWeight: "700",
+                letterSpacing: -0.5,
+                color: INK,
+              }}
+            >
+              Gallery
+            </Text>
+            <Text style={{ color: GOLD, fontSize: 17, marginLeft: 6 }}>✦</Text>
+          </View>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Pressable
               onPress={() => (selectMode ? exitSelect() : setSelectMode(true))}
               style={pillStyle(selectMode)}
             >
-              <Text style={{ color: selectMode ? WHITE : INK, fontWeight: "600", fontSize: 13 }}>
+              <Text style={{ color: selectMode ? WHITE : INK, fontWeight: "600", fontSize: 14 }}>
                 {selectMode ? "Done" : "Select"}
               </Text>
             </Pressable>
@@ -525,22 +566,22 @@ export default function GalleryScreen() {
               {uploading ? (
                 <ActivityIndicator size="small" color={WHITE} />
               ) : (
-                <Feather name="plus" size={15} color={WHITE} />
+                <Feather name="plus" size={15} color={GOLD} />
               )}
-              <Text style={{ color: WHITE, fontWeight: "700", fontSize: 13, marginLeft: 5 }}>
+              <Text style={{ color: WHITE, fontWeight: "700", fontSize: 14, marginLeft: 6 }}>
                 {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Upload"}
               </Text>
             </Pressable>
           </View>
         </View>
-        <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
+        <Text style={{ marginTop: 6, fontSize: 14.5, color: INK_DIM }}>
           Your media library — upload once, reuse across listings.
         </Text>
 
         {/* Album chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }} contentContainerStyle={{ gap: 8 }}>
           <Chip label="All" active={activeAlbum === ALL} onPress={() => setActiveAlbum(ALL)} icon="grid" />
-          <Chip label="Uncategorized" active={activeAlbum === NONE} onPress={() => setActiveAlbum(NONE)} />
+          <Chip label="Uncategorized" active={activeAlbum === NONE} onPress={() => setActiveAlbum(NONE)} icon="folder" />
           {albums.map((a) => (
             <Chip key={a.id} label={a.name} active={activeAlbum === a.id} onPress={() => setActiveAlbum(a.id)} />
           ))}
@@ -566,43 +607,53 @@ export default function GalleryScreen() {
         </ScrollView>
 
         {/* Search + sort + view */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14 }}>
           <View
             style={{
               flex: 1,
               flexDirection: "row",
               alignItems: "center",
               backgroundColor: SURFACE,
-              borderRadius: 12,
-              paddingHorizontal: 12,
-              height: 40,
+              borderRadius: 18,
+              paddingHorizontal: 16,
+              height: 62,
             }}
           >
-            <Feather name="search" size={15} color={INK_DIM} />
+            <Feather name="search" size={17} color={INK_DIM} />
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Search caption or filename"
-              placeholderTextColor={INK_DIM}
-              style={{ flex: 1, marginLeft: 8, color: INK, fontSize: 14 }}
+              placeholderTextColor="#a49f93"
+              style={{ flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
             />
             {search ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <Feather name="x" size={15} color={INK_DIM} />
+                <Feather name="x" size={16} color={INK_DIM} />
               </Pressable>
             ) : null}
           </View>
-          <Pressable onPress={cycleSort(sort, setSort)} style={iconBtn}>
-            <Feather name="sliders" size={16} color={INK} />
-          </Pressable>
-          <Pressable onPress={() => (listView ? setListView(false) : setDense((d) => !d))} style={iconBtn}>
-            <Feather name={listView ? "list" : dense ? "grid" : "square"} size={16} color={INK} />
-          </Pressable>
-          <Pressable onPress={() => setListView((v) => !v)} style={iconBtn}>
-            <Feather name={listView ? "grid" : "list"} size={16} color={INK} />
-          </Pressable>
+          <SquareBtn icon="sliders" label="Sort" onPress={cycleSort(sort, setSort)} />
+          <SquareBtn
+            icon={dense ? "grid" : "square"}
+            label="View"
+            onPress={() => (listView ? setListView(false) : setDense((d) => !d))}
+          />
+          <SquareBtn
+            icon="list"
+            label="List"
+            active={listView}
+            onPress={() => setListView((v) => !v)}
+          />
         </View>
-        <Text style={{ marginTop: 6, fontSize: 11, color: INK_DIM }}>{sortLabel(sort)}</Text>
+        <Pressable
+          onPress={cycleSort(sort, setSort)}
+          hitSlop={6}
+          style={{ marginTop: 10, flexDirection: "row", alignItems: "center", gap: 4 }}
+        >
+          <Text style={{ fontSize: 13.5, fontWeight: "500", color: INK }}>{sortLabel(sort)}</Text>
+          <Feather name="chevron-down" size={14} color={INK} />
+        </Pressable>
 
         {/* Grid / list */}
         {loading ? (
@@ -610,20 +661,74 @@ export default function GalleryScreen() {
             <ActivityIndicator />
           </View>
         ) : visible.length === 0 ? (
-          <Pressable
-            onPress={activeAlbum === TRASH ? undefined : uploadImages}
-            style={{ marginTop: 24, backgroundColor: SURFACE, borderRadius: 18, padding: 28, alignItems: "center" }}
+          <View
+            style={{
+              marginTop: 20,
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
+              borderRadius: 22,
+              paddingVertical: 44,
+              paddingHorizontal: 24,
+              alignItems: "center",
+            }}
           >
-            <Feather name={activeAlbum === TRASH ? "trash-2" : "image"} size={28} color={INK_DIM} />
-            <Text style={{ marginTop: 10, fontSize: 15, fontWeight: "700", color: INK }}>
-              {activeAlbum === TRASH ? "Trash is empty" : search || smart ? "No matches" : "No photos yet"}
+            <View style={{ alignItems: "center" }}>
+              <Text style={{ color: GOLD, fontSize: 14, marginBottom: 2 }}>✦</Text>
+              <MaterialCommunityIcons
+                name={
+                  activeAlbum === TRASH
+                    ? "delete-empty-outline"
+                    : "folder-multiple-image"
+                }
+                size={64}
+                color="#d9c9a6"
+              />
+            </View>
+            <Text
+              style={{
+                marginTop: 18,
+                fontFamily: SERIF,
+                fontSize: 23,
+                fontWeight: "700",
+                color: INK,
+                textAlign: "center",
+              }}
+            >
+              {activeAlbum === TRASH
+                ? "Trash is empty"
+                : search || smart
+                  ? "No matches"
+                  : "Your gallery is empty"}
+            </Text>
+            <Text style={{ marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
+              {activeAlbum === TRASH
+                ? "Deleted photos land here for 30 days."
+                : search || smart
+                  ? "Try a different search or filter."
+                  : "Upload photos to use across your listings."}
             </Text>
             {activeAlbum !== TRASH && !search && !smart ? (
-              <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM, textAlign: "center" }}>
-                Tap to upload. JPG, PNG, WebP — up to 20 MB each.
-              </Text>
+              <Pressable
+                onPress={uploadImages}
+                style={{
+                  marginTop: 22,
+                  backgroundColor: INK,
+                  borderRadius: 999,
+                  paddingHorizontal: 24,
+                  height: 50,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Feather name="upload" size={15} color={WHITE} />
+                <Text style={{ color: WHITE, fontSize: 15, fontWeight: "600" }}>
+                  Upload your first photo
+                </Text>
+              </Pressable>
             ) : null}
-          </Pressable>
+          </View>
         ) : (
           <View
             style={{
@@ -706,7 +811,70 @@ export default function GalleryScreen() {
             })}
           </View>
         )}
+
+        {/* Tips banner */}
+        <View
+          style={{
+            marginTop: 18,
+            backgroundColor: "#efe9dc",
+            borderRadius: 20,
+            padding: 16,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 999,
+              backgroundColor: "#f7f3e9",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
+              Organize. Showcase. Get booked.
+            </Text>
+            <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
+              High-quality media helps you stand out and build trust.
+            </Text>
+          </View>
+          <Pressable
+            onPress={() =>
+              dialog.show({
+                icon: "camera",
+                title: "Better photos, more bookings",
+                message:
+                  "• Shoot in daylight — natural light beats any filter.\n\n• Show real events: guests, details, and the room at its best.\n\n• Lead with your strongest shot — the first photo is your cover everywhere.\n\n• Add captions so photos are easy to find and reuse.",
+                buttonLabel: "Got it",
+              })
+            }
+            style={{
+              marginLeft: 10,
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: GOLD,
+              borderRadius: 999,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Text style={{ fontSize: 12.5, fontWeight: "600", color: INK }}>
+              Tips for better photos
+            </Text>
+            <Feather name="chevron-right" size={13} color={INK} />
+          </Pressable>
+        </View>
       </ScrollView>
+
+      {dialog.element}
 
       {/* Bulk action bar */}
       {selectMode && selected.size > 0 ? (
@@ -845,21 +1013,49 @@ function pillStyle(filled: boolean) {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    height: 36,
-    paddingHorizontal: 14,
+    height: 44,
+    paddingHorizontal: 18,
     borderRadius: 999,
-    backgroundColor: filled ? INK : SURFACE,
+    backgroundColor: filled ? INK : CARD,
+    borderWidth: filled ? 0 : 1,
+    borderColor: BORDER,
   };
 }
 
-const iconBtn = {
-  width: 40,
-  height: 40,
-  borderRadius: 12,
-  backgroundColor: SURFACE,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
+// Labeled square action button (Sort / View / List) per the mock.
+function SquareBtn({
+  icon,
+  label,
+  onPress,
+  active,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: 62,
+        height: 62,
+        borderRadius: 16,
+        backgroundColor: active ? INK : CARD,
+        borderWidth: 1,
+        borderColor: active ? INK : BORDER,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 3,
+      }}
+    >
+      <Feather name={icon} size={17} color={active ? WHITE : INK} />
+      <Text style={{ fontSize: 11, fontWeight: "500", color: active ? WHITE : INK }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 function Chip({
   label,
@@ -882,16 +1078,38 @@ function Chip({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        height: small ? 30 : 34,
-        paddingHorizontal: 12,
+        height: small ? 38 : 46,
+        paddingHorizontal: small ? 14 : 16,
         borderRadius: 999,
-        backgroundColor: active ? INK : outline ? WHITE : SURFACE,
-        borderWidth: outline ? 1 : 0,
-        borderColor: BORDER,
+        backgroundColor: active
+          ? small
+            ? "#eadfc6"
+            : INK
+          : small
+            ? SURFACE
+            : CARD,
+        borderWidth: small ? 0 : 1,
+        borderColor: active && !small ? INK : BORDER,
       }}
     >
-      {icon ? <Feather name={icon} size={13} color={active ? WHITE : INK_DIM} style={{ marginRight: 5 }} /> : null}
-      <Text style={{ color: active ? WHITE : INK, fontSize: small ? 12 : 13, fontWeight: "600" }}>{label}</Text>
+      {icon ? (
+        <Feather
+          name={icon}
+          size={14}
+          color={active && !small ? WHITE : INK}
+          style={{ marginRight: 6 }}
+        />
+      ) : null}
+      <Text
+        style={{
+          color: active && !small ? WHITE : INK,
+          fontSize: small ? 13.5 : 15,
+          fontWeight: "600",
+          ...(small ? {} : { fontFamily: SERIF }),
+        }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
