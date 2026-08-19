@@ -32,12 +32,30 @@ import { Feather } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { Wordmark } from "@/components/Wordmark";
 
-const SURFACE = "#f3f4f6";
+const PAGE = "#f4f1ea";
+const SURFACE = "#fbf9f4";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
-const BORDER = "#e5e7eb";
+const BORDER = "#e6e1d5";
+const GOLD = "#c9a86a";
+const GOLD_SOFT = "#eadfc6";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+
+// Feature comparison per the reference mock — static marketing copy,
+// independent of the Stripe catalog (prices stay DB-driven).
+const COMPARISON: { label: string; free: boolean; pro: boolean; premium: boolean }[] = [
+  { label: "Calendar & availability", free: true, pro: true, premium: true },
+  { label: "Block unavailable dates", free: true, pro: true, premium: true },
+  { label: "1 basic appointment type", free: true, pro: true, premium: true },
+  { label: "Multiple appointment types", free: false, pro: false, premium: true },
+  { label: "Working hours & custom availability", free: false, pro: false, premium: true },
+  { label: "Booking buffers & minimum notice", free: false, pro: false, premium: true },
+  { label: "Automated replies & reminders", free: false, pro: false, premium: true },
+  { label: "Follow-ups & review requests", free: false, pro: false, premium: true },
+  { label: "Fill Your Calendar alerts", free: false, pro: false, premium: true },
+];
 
 // Where the web /mobile/checkout-return page bounces us back to.
 // Matches the `scheme` in app.json; openAuthSessionAsync dismisses
@@ -408,17 +426,34 @@ export default function SubscriptionScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: PAGE, alignItems: "center", justifyContent: "center" }}
+      >
         <ActivityIndicator />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="px-5 pb-32 pt-6">
-        <Text className="text-4xl font-bold text-foreground">Subscription</Text>
-        <Text className="mt-2 mb-6 text-base text-muted-foreground">
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Wordmark />
+        <Text
+          style={{
+            marginTop: 14,
+            fontFamily: SERIF,
+            fontSize: 38,
+            fontWeight: "700",
+            letterSpacing: -0.5,
+            color: INK,
+          }}
+        >
+          Subscription <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+        </Text>
+        <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 14.5, color: INK_DIM }}>
           Plans and billing
         </Text>
 
@@ -486,12 +521,14 @@ export default function SubscriptionScreen() {
           <View
             style={{
               backgroundColor: SURFACE,
+              borderWidth: 1,
+              borderColor: BORDER,
               borderRadius: 20,
               padding: 18,
               marginTop: 28,
             }}
           >
-            <Text style={{ color: INK, fontSize: 18, fontWeight: "700" }}>
+            <Text style={{ color: INK, fontFamily: SERIF, fontSize: 18, fontWeight: "700" }}>
               Your plan
             </Text>
             <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
@@ -513,7 +550,7 @@ export default function SubscriptionScreen() {
             <View
               style={{
                 flexDirection: "row",
-                backgroundColor: SURFACE,
+                backgroundColor: "#ece7db",
                 borderRadius: 999,
                 padding: 3,
               }}
@@ -547,30 +584,47 @@ export default function SubscriptionScreen() {
         {visibleTiers.map((tier) => {
           const isCurrent = currentTier === tier.id;
           const isActing = acting === `tier_${tier.id}`;
+          const isPremiumTier = tier.id === "studio";
           const monthlyShown =
             tier.billingInterval === "year"
               ? tier.priceMonthly / 12
               : tier.priceMonthly;
+          const bullets = isPremiumTier
+            ? [...tier.highlights, "✦ Smart Scheduling & Automations — New"]
+            : tier.highlights;
           return (
             <View
               key={`${tier.id}_${tier.billingInterval}`}
               style={{
-                backgroundColor: isCurrent ? "#eef0f3" : SURFACE,
+                backgroundColor: SURFACE,
                 borderRadius: 20,
                 padding: 18,
                 marginBottom: 12,
-                borderWidth: isCurrent ? 1.5 : 0,
-                borderColor: INK,
+                borderWidth: isCurrent || isPremiumTier ? 1.5 : 1,
+                borderColor: isCurrent ? INK : isPremiumTier ? GOLD : BORDER,
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ color: INK, fontSize: 17, fontWeight: "700" }}>
+                <Text style={{ color: INK, fontFamily: SERIF, fontSize: 19, fontWeight: "700" }}>
                   {tier.name}
                 </Text>
                 {isCurrent ? (
                   <Text style={{ color: INK, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 }}>
                     Current
                   </Text>
+                ) : isPremiumTier ? (
+                  <View
+                    style={{
+                      backgroundColor: GOLD_SOFT,
+                      borderRadius: 999,
+                      paddingHorizontal: 11,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#8a6f3e" }}>
+                      Most popular
+                    </Text>
+                  </View>
                 ) : null}
               </View>
               <Text style={{ marginTop: 4 }}>
@@ -588,11 +642,24 @@ export default function SubscriptionScreen() {
                   live in highlights now and credits are hidden from
                   marketing copy (still visible on the plan summary). */}
               <View style={{ marginTop: 12, gap: 6 }}>
-                {tier.highlights.map((h) => (
+                {bullets.map((h) => (
                   <View key={h} style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                    <Feather name="check" size={13} color={INK} style={{ marginTop: 2 }} />
-                    <Text style={{ color: INK, fontSize: 13, marginLeft: 7, flex: 1 }}>
-                      {h}
+                    <Feather
+                      name="check"
+                      size={13}
+                      color={h.startsWith("✦") ? GOLD : INK}
+                      style={{ marginTop: 2 }}
+                    />
+                    <Text
+                      style={{
+                        color: h.startsWith("✦") ? "#8a6f3e" : INK,
+                        fontSize: 13,
+                        marginLeft: 7,
+                        flex: 1,
+                        fontWeight: h.startsWith("✦") ? "700" : "400",
+                      }}
+                    >
+                      {h.startsWith("✦") ? h.slice(1).trim() : h}
                     </Text>
                   </View>
                 ))}
@@ -651,6 +718,8 @@ export default function SubscriptionScreen() {
                   key={pack.id}
                   style={{
                     backgroundColor: SURFACE,
+                    borderWidth: 1,
+                    borderColor: BORDER,
                     borderRadius: 20,
                     padding: 16,
                     marginBottom: 10,
@@ -693,6 +762,83 @@ export default function SubscriptionScreen() {
             })}
           </>
         ) : null}
+
+        {/* Feature comparison */}
+        <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF, marginTop: 24 }}>
+          Compare plans
+        </Text>
+        <View
+          style={{
+            marginTop: 12,
+            backgroundColor: SURFACE,
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 20,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              backgroundColor: "#f3ecdd",
+            }}
+          >
+            <Text style={{ flex: 1, color: INK_DIM, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8 }}>
+              Feature
+            </Text>
+            {["Free", "Pro", "Premium"].map((h) => (
+              <Text
+                key={h}
+                style={{ width: 58, textAlign: "center", color: INK_DIM, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}
+              >
+                {h}
+              </Text>
+            ))}
+          </View>
+          {COMPARISON.map((row, i) => (
+            <View
+              key={row.label}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                paddingVertical: 11,
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopColor: BORDER,
+              }}
+            >
+              <Text style={{ flex: 1, color: INK, fontSize: 13, paddingRight: 8 }}>
+                {row.label}
+              </Text>
+              {[row.free, row.pro, row.premium].map((on, j) => (
+                <View key={j} style={{ width: 58, alignItems: "center" }}>
+                  {on ? (
+                    <Feather name="check" size={15} color={j === 2 ? GOLD : INK} />
+                  ) : (
+                    <Text style={{ color: "#c9c4b6", fontSize: 13 }}>—</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            marginTop: 12,
+            paddingHorizontal: 4,
+          }}
+        >
+          <Text style={{ color: GOLD, fontSize: 13, marginRight: 7 }}>✦</Text>
+          <Text style={{ color: INK_DIM, fontSize: 12, flex: 1, lineHeight: 17 }}>
+            All plans include secure payments, support from a real person, and
+            continuous updates.
+          </Text>
+        </View>
           </>
         ) : null}
 

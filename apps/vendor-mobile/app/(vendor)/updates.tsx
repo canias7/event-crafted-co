@@ -21,6 +21,11 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 export const SHIPPED: { date: string; title: string; body: string }[] = [
   {
     date: "August 2026",
+    title: "Smart Scheduling & Automations",
+    body: "Set your working hours and appointment types in minutes. Premium unlocks automated inquiry replies, booking confirmations, reminders, follow-ups, review requests, and Fill Your Calendar alerts for open dates — promos only go out with your approval.",
+  },
+  {
+    date: "August 2026",
     title: "A listing form made for your category",
     body: "Venues, catering, entertainment, media, design, beauty, rentals, experiences, corporate services — every category now gets its own tailored Create Listing flow, with custom fields you can add yourself.",
   },
