@@ -21,6 +21,11 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 export const SHIPPED: { date: string; title: string; body: string }[] = [
   {
     date: "August 2026",
+    title: "Vendora CRM — your client book",
+    body: "Pro and Premium vendors get a Clients section under More: every host who's inquired, their events, private notes, and follow-up reminders that ping your phone.",
+  },
+  {
+    date: "August 2026",
     title: "Smart Scheduling & Automations",
     body: "Set your working hours and appointment types in minutes. Premium unlocks automated inquiry replies, booking confirmations, reminders, follow-ups, review requests, and Fill Your Calendar alerts for open dates — promos only go out with your approval.",
   },

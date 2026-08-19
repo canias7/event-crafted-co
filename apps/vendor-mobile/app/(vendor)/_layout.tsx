@@ -193,6 +193,8 @@ export default function VendorLayout() {
       {/* Smart Scheduling & Automations — pushed from More / Calendar.
           Owns the bottom (Save pill), so the floating bar hides. */}
       <Tabs.Screen name="scheduling" options={{ href: null }} />
+      {/* Vendora CRM (Clients) — Pro+ perk, pushed from More. */}
+      <Tabs.Screen name="crm" options={{ href: null }} />
       {/* Category-specific listing wizards — listing.tsx redirects each
           group's categories to its own builder. */}
       <Tabs.Screen name="venue-listing" options={{ href: null }} />
