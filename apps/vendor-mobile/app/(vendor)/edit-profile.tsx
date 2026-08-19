@@ -34,10 +34,10 @@ import { supabase } from "@/lib/supabase";
 import { prepareLogoForUpload, type PickedAsset } from "@/lib/imageManipulation";
 import { LogoCropperModal } from "@/components/LogoCropperModal";
 
-const CREAM = "#ffffff";
+const CREAM = "#f4f1ea";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
-const BORDER = "#e5e7eb";
+const BORDER = "#e6e1d5";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 interface ProfileForm {
@@ -308,7 +308,7 @@ export default function EditProfileScreen() {
                         style={{
                           width: "100%",
                           height: "100%",
-                          backgroundColor: "#ffffff",
+                          backgroundColor: "#fbf9f4",
                         }}
                         resizeMode="contain"
                       />
@@ -436,7 +436,7 @@ function Field({
         multiline={multiline}
         style={{
           marginTop: 6,
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 14,
           borderWidth: 1,
           borderColor: BORDER,

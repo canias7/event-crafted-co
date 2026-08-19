@@ -68,8 +68,8 @@ function isAudioAttachment(a: AttachmentRef): boolean {
 
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const ACTIVE_GREEN = "#22c55e";
@@ -613,7 +613,7 @@ function EmojiPickerModal({
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#f4f1ea",
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 12,
@@ -626,7 +626,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#e5e7eb",
+              backgroundColor: "#e6e1d5",
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -696,7 +696,7 @@ function Header({
         paddingHorizontal: 16,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#e5e7eb",
+        borderBottomColor: "#e6e1d5",
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -1088,7 +1088,7 @@ function Composer({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 999,
           paddingLeft: 14,
           paddingRight: 6,
@@ -1127,7 +1127,7 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#e5e7eb",
+            backgroundColor: enabled ? INK : "#e6e1d5",
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,

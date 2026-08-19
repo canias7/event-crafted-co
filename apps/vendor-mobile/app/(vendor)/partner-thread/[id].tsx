@@ -27,8 +27,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
@@ -378,7 +378,7 @@ export default function PartnerThreadScreen() {
               style={{
                 flexDirection: "row",
                 alignItems: "flex-end",
-                backgroundColor: "#ffffff",
+                backgroundColor: "#fbf9f4",
                 borderRadius: 22,
                 paddingHorizontal: 14,
                 paddingVertical: 6,
