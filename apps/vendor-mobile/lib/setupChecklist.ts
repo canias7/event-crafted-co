@@ -99,7 +99,6 @@ export async function loadSetupState(userId: string): Promise<SetupState> {
       l.application_status === "pending" ||
       l.application_status === "submitted",
   );
-  const verified = listings.some((l) => l.verified_at != null);
 
   const items: SetupItem[] = [
     {
@@ -160,14 +159,9 @@ export async function loadSetupState(userId: string): Promise<SetupState> {
       done: availabilityDone,
       route: "calendar",
     },
-    {
-      key: "verification",
-      title: "Verification",
-      subtitle: "We review and verify select vendors — nothing needed from you.",
-      done: verified,
-      optional: true,
-      route: null,
-    },
+    // No "Verification" item: verification is granted by the Vendora
+    // team from the admin panel — vendors can't apply for it, so a
+    // checklist step they can't act on is just noise (user decision).
   ];
 
   const required = items.filter((i) => !i.optional);
