@@ -45,6 +45,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { useBrandDialog } from "@/components/listing/WizardKit";
+import { Wordmark } from "@/components/Wordmark";
 
 // Cream editorial palette — matches the Inbox restyle / reference mock.
 const WHITE = "#ffffff";
@@ -514,20 +515,7 @@ export default function GalleryScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={INK} />}
       >
         {/* Wordmark */}
-        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-          <Text
-            style={{
-              fontFamily: SERIF,
-              fontSize: 22,
-              fontWeight: "700",
-              letterSpacing: 3,
-              color: INK,
-            }}
-          >
-            VENDORA
-          </Text>
-          <Text style={{ color: GOLD, fontSize: 12, marginLeft: 2, marginTop: -2 }}>✦</Text>
-        </View>
+        <Wordmark />
 
         {/* Title + actions */}
         <View

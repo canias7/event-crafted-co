@@ -33,6 +33,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
+import { Wordmark } from "@/components/Wordmark";
 
 // Vendora light theme (the user's reference design): warm cream page,
 // gold accents, a dark identity card. The light-side sibling of the
@@ -311,25 +312,31 @@ export default function ProfileScreen() {
           contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Page header — serif title, settings shortcut on the right. */}
+          {/* Brand wordmark, then the serif page header with a settings
+              shortcut on the right. */}
+          <Wordmark />
           <View
             style={{
+              marginTop: 14,
               flexDirection: "row",
               alignItems: "flex-start",
               justifyContent: "space-between",
             }}
           >
-            <Text
-              style={{
-                fontFamily: SERIF,
-                fontWeight: "700",
-                fontSize: 36,
-                color: INK,
-                letterSpacing: -0.5,
-              }}
-            >
-              My Profile
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
+              <Text
+                style={{
+                  fontFamily: SERIF,
+                  fontWeight: "700",
+                  fontSize: 38,
+                  color: INK,
+                  letterSpacing: -0.5,
+                }}
+              >
+                My Profile
+              </Text>
+              <Text style={{ color: GOLD, fontSize: 16, marginLeft: 6 }}>✦</Text>
+            </View>
             <TouchableOpacity
               onPress={() => router.push("/(vendor)/more" as never)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -339,7 +346,7 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="cog-outline" size={24} color={INK} />
             </TouchableOpacity>
           </View>
-          <Text style={{ marginTop: 2, fontSize: 14, color: INK_DIM }}>
+          <Text style={{ marginTop: 4, fontSize: 14.5, color: INK_DIM }}>
             Manage how your business appears on Vendora.
           </Text>
 

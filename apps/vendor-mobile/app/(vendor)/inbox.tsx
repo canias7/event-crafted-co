@@ -28,6 +28,7 @@ import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useBrandDialog } from "@/components/listing/WizardKit";
+import { Wordmark } from "@/components/Wordmark";
 
 type Tab = "inquiries" | "partners";
 
@@ -255,22 +256,7 @@ export default function InboxScreen() {
             justifyContent: "space-between",
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-            <Text
-              style={{
-                fontFamily: SERIF_FONT,
-                fontSize: 24,
-                fontWeight: "700",
-                letterSpacing: 3,
-                color: INK,
-              }}
-            >
-              VENDORA
-            </Text>
-            <Text style={{ color: GOLD, fontSize: 13, marginLeft: 2, marginTop: -2 }}>
-              ✦
-            </Text>
-          </View>
+          <Wordmark />
           <View style={{ flexDirection: "row", gap: 10 }}>
             <HeaderRound
               icon="search"
