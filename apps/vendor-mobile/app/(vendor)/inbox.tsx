@@ -2,11 +2,14 @@
 //   Inquiries: leads from hosts (inquiries table)
 //   Partners:  vendor-to-vendor threads (vendor_partner_threads)
 //
-// Layout matches the design mock: floating-card list, colored avatar
-// circles, NEW pills on unread inquiry rows, online dot on active
-// partner rows. Filter chips switch between subsets.
+// Restyled to the cream Vendora mock: wordmark header with search /
+// filter rounds, serif Inbox title, dark segmented toggle with icons,
+// white rounded search, icon chips with count badges, framed empty
+// state with a Tips action, and the "Stand out" improve-profile banner.
+//
+// No function-form style props anywhere (device interop drops them).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,16 +18,29 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useBrandDialog } from "@/components/listing/WizardKit";
 
 type Tab = "inquiries" | "partners";
+
+// Cream editorial palette — matches the reference mock (warmer than the
+// wizards' near-white CREAM).
+const PAGE = "#f4f1ea";
+const CARD = "#fbf9f4";
+const TRACK = "#ebe6db";
+const BORDER = "#e6e1d5";
+const INK = "#14161a";
+const INK_DIM = "#6b6f78";
+const GOLD = "#c9a86a";
+const SERIF_FONT = "serif";
 
 interface PartnerThread {
   id: string;
@@ -76,10 +92,13 @@ function relativeTime(iso: string | null): string {
 export default function InboxScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const dialog = useBrandDialog();
+  const searchRef = useRef<TextInput>(null);
   const [tab, setTab] = useState<Tab>("inquiries");
   const [search, setSearch] = useState("");
   const [inquiryFilter, setInquiryFilter] = useState<"all" | "new" | "replied" | "booked">("all");
   const [partnerFilter, setPartnerFilter] = useState<"all" | "unread" | "active">("all");
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [partners, setPartners] = useState<PartnerThread[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,47 +219,148 @@ export default function InboxScreen() {
     booked: inquiries.filter((r) => r.status === "won").length,
   };
 
+  const filterActive =
+    tab === "inquiries" ? inquiryFilter !== "all" : partnerFilter !== "all";
+
+  function showTips() {
+    dialog.show({
+      icon: "zap",
+      title: "Get more inquiries",
+      message:
+        "• Add photos — listings with 5+ photos get far more inquiries.\n\n• Fill in your description and a starting price so hosts can reach out with confidence.\n\n• Reply fast — hosts book vendors who answer within a day.",
+      buttonLabel: "Got it",
+    });
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <ScrollView
-        contentContainerClassName="pb-32"
+        contentContainerStyle={{ paddingBottom: 130 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#14161a"
+            tintColor={INK}
           />
         }
       >
-        {/* Header */}
-        <View className="px-5 pt-2 pb-4">
-          <Text className="text-3xl font-semibold text-foreground">Inbox</Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
-            Inquiries and partner threads — all in one place
+        {/* Wordmark header + search / filter rounds */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 10,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+            <Text
+              style={{
+                fontFamily: SERIF_FONT,
+                fontSize: 24,
+                fontWeight: "700",
+                letterSpacing: 3,
+                color: INK,
+              }}
+            >
+              VENDORA
+            </Text>
+            <Text style={{ color: GOLD, fontSize: 13, marginLeft: 2, marginTop: -2 }}>
+              ✦
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <HeaderRound
+              icon="search"
+              label="Search"
+              onPress={() => searchRef.current?.focus()}
+            />
+            <View>
+              <HeaderRound
+                icon="sliders"
+                label="Toggle filters"
+                onPress={() => setFiltersOpen((v) => !v)}
+              />
+              {filterActive ? (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    right: 2,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 999,
+                    backgroundColor: INK,
+                  }}
+                />
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        {/* Title */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 18 }}>
+          <Text
+            style={{
+              fontFamily: SERIF_FONT,
+              fontSize: 44,
+              lineHeight: 50,
+              fontWeight: "700",
+              letterSpacing: -0.5,
+              color: INK,
+            }}
+          >
+            Inbox
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: 15.5, color: INK_DIM }}>
+            Inquiries and partner threads — all in one place.
           </Text>
         </View>
 
-        {/* Tab pills */}
-        <View className="flex-row items-center px-5 mb-4">
-          <TabPill
+        {/* Segmented toggle */}
+        <View
+          style={{
+            marginHorizontal: 20,
+            marginBottom: 16,
+            flexDirection: "row",
+            backgroundColor: TRACK,
+            borderRadius: 18,
+            padding: 4,
+          }}
+        >
+          <Segment
             active={tab === "inquiries"}
+            icon="message-circle"
             label="Inquiries"
             onPress={() => setTab("inquiries")}
           />
-          <View style={{ width: 8 }} />
-          <TabPill
+          <Segment
             active={tab === "partners"}
+            icon="users"
             label="Partners"
             onPress={() => setTab("partners")}
           />
         </View>
 
         {/* Search */}
-        <View className="px-5 mb-3">
-          <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-            <Feather name="search" size={16} color="#737373" />
+        <View style={{ paddingHorizontal: 20, marginBottom: 14 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
+              borderRadius: 999,
+              paddingHorizontal: 18,
+              height: 54,
+            }}
+          >
+            <Feather name="search" size={17} color={INK_DIM} />
             <TextInput
+              ref={searchRef}
               value={search}
               onChangeText={setSearch}
               placeholder={
@@ -248,86 +368,125 @@ export default function InboxScreen() {
                   ? "Search by name, event, or message"
                   : "Search vendors or messages"
               }
-              placeholderTextColor="#a3a3a3"
-              className="ml-2 flex-1 text-base text-foreground"
+              placeholderTextColor="#a49f93"
+              style={{ marginLeft: 10, flex: 1, fontSize: 15.5, color: INK }}
             />
           </View>
         </View>
 
         {/* Filter chips */}
-        {tab === "inquiries" ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="gap-2 px-5 pb-2"
-          >
-            <Chip
-              active={inquiryFilter === "all"}
-              label="All"
-              count={counts.all}
-              onPress={() => setInquiryFilter("all")}
-            />
-            <Chip
-              active={inquiryFilter === "new"}
-              label="New"
-              count={counts.new}
-              onPress={() => setInquiryFilter("new")}
-            />
-            <Chip
-              active={inquiryFilter === "replied"}
-              label="Replied"
-              count={counts.replied}
-              onPress={() => setInquiryFilter("replied")}
-            />
-            <Chip
-              active={inquiryFilter === "booked"}
-              label="Booked"
-              count={counts.booked}
-              onPress={() => setInquiryFilter("booked")}
-            />
-          </ScrollView>
-        ) : (
-          <View className="flex-row items-center px-5 pb-2">
-            <View className="flex-row items-center gap-2 flex-1">
-              <Chip
-                active={partnerFilter === "all"}
-                label="All"
-                onPress={() => setPartnerFilter("all")}
-              />
-              <Chip
-                active={partnerFilter === "unread"}
-                label="Unread"
-                onPress={() => setPartnerFilter("unread")}
-              />
-              <Chip
-                active={partnerFilter === "active"}
-                label="Active"
-                onPress={() => setPartnerFilter("active")}
-              />
-            </View>
-            {/* Discovery entry point. The search field above only filters
-                threads you already have; this is how you reach vendors you
-                haven't messaged yet. */}
-            <Pressable
-              onPress={() => router.push("/(vendor)/find-vendor")}
-              hitSlop={8}
-              className="ml-2 h-9 w-9 rounded-full bg-foreground items-center justify-center active:opacity-70"
-              accessibilityRole="button"
-              accessibilityLabel="Find a vendor to message"
+        {filtersOpen ? (
+          tab === "inquiries" ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 8 }}
             >
-              <Feather name="plus" size={18} color="#ffffff" />
-            </Pressable>
-          </View>
-        )}
+              <Chip
+                active={inquiryFilter === "all"}
+                icon="inbox"
+                label="All"
+                count={counts.all}
+                onPress={() => setInquiryFilter("all")}
+              />
+              <Chip
+                active={inquiryFilter === "new"}
+                iconNode={
+                  <MaterialCommunityIcons
+                    name="star-four-points-outline"
+                    size={15}
+                    color={inquiryFilter === "new" ? "#ffffff" : INK}
+                  />
+                }
+                label="New"
+                count={counts.new}
+                onPress={() => setInquiryFilter("new")}
+              />
+              <Chip
+                active={inquiryFilter === "replied"}
+                icon="corner-up-left"
+                label="Replied"
+                count={counts.replied}
+                onPress={() => setInquiryFilter("replied")}
+              />
+              <Chip
+                active={inquiryFilter === "booked"}
+                icon="calendar"
+                label="Booked"
+                count={counts.booked}
+                onPress={() => setInquiryFilter("booked")}
+              />
+            </ScrollView>
+          ) : (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 20,
+                paddingBottom: 8,
+              }}
+            >
+              <View style={{ flexDirection: "row", gap: 10, flex: 1 }}>
+                <Chip
+                  active={partnerFilter === "all"}
+                  icon="inbox"
+                  label="All"
+                  onPress={() => setPartnerFilter("all")}
+                />
+                <Chip
+                  active={partnerFilter === "unread"}
+                  icon="mail"
+                  label="Unread"
+                  onPress={() => setPartnerFilter("unread")}
+                />
+                <Chip
+                  active={partnerFilter === "active"}
+                  icon="zap"
+                  label="Active"
+                  onPress={() => setPartnerFilter("active")}
+                />
+              </View>
+              {/* Discovery entry point. The search field above only filters
+                  threads you already have; this is how you reach vendors you
+                  haven't messaged yet. */}
+              <TouchableOpacity
+                onPress={() => router.push("/(vendor)/find-vendor")}
+                hitSlop={8}
+                activeOpacity={0.7}
+                style={{
+                  marginLeft: 10,
+                  height: 38,
+                  width: 38,
+                  borderRadius: 999,
+                  backgroundColor: INK,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Find a vendor to message"
+              >
+                <Feather name="plus" size={18} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          )
+        ) : null}
 
         {error ? (
-          <View className="mx-5 mb-3 rounded-xl bg-red-50 px-4 py-3 border border-red-200">
-            <Text className="text-sm text-red-700">{error}</Text>
-            <Pressable
-              onPress={() => load(false)}
-              className="mt-2 active:opacity-70"
-            >
-              <Text className="text-sm font-semibold text-red-700">
+          <View
+            style={{
+              marginHorizontal: 20,
+              marginBottom: 12,
+              borderRadius: 14,
+              backgroundColor: "#fdf0ee",
+              borderWidth: 1,
+              borderColor: "#f3cdc6",
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+            }}
+          >
+            <Text style={{ fontSize: 14, color: "#b3352b" }}>{error}</Text>
+            <Pressable onPress={() => load(false)} hitSlop={6}>
+              <Text style={{ marginTop: 8, fontSize: 14, fontWeight: "600", color: "#b3352b" }}>
                 Try again
               </Text>
             </Pressable>
@@ -335,33 +494,28 @@ export default function InboxScreen() {
         ) : null}
 
         {/* List */}
-        <View className="mt-2">
+        <View style={{ marginTop: 6 }}>
           {loading ? (
-            <View className="px-5 py-12 items-center">
-              <ActivityIndicator color="#14161a" />
+            <View style={{ paddingHorizontal: 20, paddingVertical: 48, alignItems: "center" }}>
+              <ActivityIndicator color={INK} />
             </View>
           ) : tab === "inquiries" ? (
             filteredInquiries.length === 0 ? (
-              <Empty
-                msg={
-                  search || inquiryFilter !== "all"
-                    ? "Nothing matches that filter."
-                    : "No inquiries yet. New leads land here."
-                }
+              <EmptyState
+                filtered={!!search || inquiryFilter !== "all"}
+                onTips={showTips}
               />
             ) : (
-              <View className="px-5 gap-3">
+              <View style={{ paddingHorizontal: 20, gap: 12 }}>
                 {filteredInquiries.map((r) => (
                   <InquiryCard key={r.id} row={r} />
                 ))}
               </View>
             )
           ) : filteredPartners.length === 0 ? (
-            /* Name the actual reason the list is empty. The old copy just
-               said "No threads match." which read as "you have none" even
-               when a stale search term was hiding everything. */
-            <View className="px-5 py-12 items-center">
-              <Text className="text-center text-sm text-muted-foreground">
+            /* Name the actual reason the list is empty. */
+            <View style={{ paddingHorizontal: 20, paddingVertical: 40, alignItems: "center" }}>
+              <Text style={{ textAlign: "center", fontSize: 14, color: INK_DIM }}>
                 {search
                   ? `No conversations match “${search}”. This searches your existing threads only.`
                   : partnerFilter !== "all"
@@ -369,111 +523,337 @@ export default function InboxScreen() {
                     : "No partner conversations yet. Find another vendor to start one."}
               </Text>
               {search ? (
-                <Pressable
+                <TouchableOpacity
                   onPress={() => setSearch("")}
-                  className="mt-3 rounded-full bg-muted px-4 py-2 active:opacity-70"
+                  activeOpacity={0.7}
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 999,
+                    backgroundColor: TRACK,
+                    paddingHorizontal: 18,
+                    paddingVertical: 9,
+                  }}
                 >
-                  <Text className="text-sm font-semibold text-foreground">
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
                     Clear search
                   </Text>
-                </Pressable>
+                </TouchableOpacity>
               ) : null}
-              <Pressable
+              <TouchableOpacity
                 onPress={() => router.push("/(vendor)/find-vendor")}
-                className="mt-3 rounded-full bg-foreground px-5 py-2.5 active:opacity-70"
+                activeOpacity={0.8}
+                style={{
+                  marginTop: 12,
+                  borderRadius: 999,
+                  backgroundColor: INK,
+                  paddingHorizontal: 22,
+                  paddingVertical: 11,
+                }}
               >
-                <Text className="text-sm font-semibold text-background">
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#ffffff" }}>
                   Find a vendor
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           ) : (
-            <View className="px-5">
+            <View style={{ paddingHorizontal: 20 }}>
               {filteredPartners.map((p, i) => (
                 <PartnerRow key={p.id} thread={p} divider={i > 0} />
               ))}
             </View>
           )}
         </View>
+
+        {/* Stand out banner */}
+        <TouchableOpacity
+          onPress={() => router.push("/(vendor)/setup")}
+          activeOpacity={0.85}
+          style={{
+            marginHorizontal: 20,
+            marginTop: 18,
+            backgroundColor: "#efe9dc",
+            borderRadius: 20,
+            padding: 16,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 999,
+              backgroundColor: "#f7f3e9",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons name="bullhorn-outline" size={24} color={GOLD} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text
+              style={{
+                fontFamily: SERIF_FONT,
+                fontSize: 16.5,
+                fontWeight: "700",
+                color: INK,
+              }}
+            >
+              Stand out. Get more booked.
+            </Text>
+            <Text style={{ marginTop: 2, fontSize: 13, color: INK_DIM }}>
+              Complete your profile and get discovered.
+            </Text>
+          </View>
+          <View
+            style={{
+              marginLeft: 10,
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
+              borderRadius: 999,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
+              Improve profile
+            </Text>
+            <Feather name="arrow-right" size={13} color={INK} />
+          </View>
+        </TouchableOpacity>
       </ScrollView>
+
+      {dialog.element}
     </SafeAreaView>
   );
-}function TabPill({
-  active,
+}
+
+function HeaderRound({
+  icon,
   label,
   onPress,
 }: {
-  active: boolean;
+  icon: keyof typeof Feather.glyphMap;
   label: string;
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
-      className={`px-5 py-2 rounded-full ${active ? "bg-foreground" : ""}`}
+      activeOpacity={0.7}
+      hitSlop={6}
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 999,
+        backgroundColor: CARD,
+        borderWidth: 1,
+        borderColor: BORDER,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
+      <Feather name={icon} size={17} color={INK} />
+    </TouchableOpacity>
+  );
+}
+
+function Segment({
+  active,
+  icon,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={{
+        flex: 1,
+        height: 52,
+        borderRadius: 15,
+        backgroundColor: active ? INK : "transparent",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+      }}
+    >
+      <Feather name={icon} size={17} color={active ? "#ffffff" : INK} />
       <Text
-        className={`text-base font-semibold ${
-          active ? "text-background" : "text-foreground"
-        }`}
+        style={{
+          fontFamily: SERIF_FONT,
+          fontSize: 17,
+          fontWeight: "600",
+          color: active ? "#ffffff" : INK,
+        }}
       >
         {label}
       </Text>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
 function Chip({
   active,
+  icon,
+  iconNode,
   label,
   count,
   onPress,
 }: {
   active: boolean;
+  icon?: keyof typeof Feather.glyphMap;
+  iconNode?: React.ReactNode;
   label: string;
   count?: number;
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
-      className={`flex-row items-center px-4 py-2 rounded-full ${
-        active ? "bg-foreground" : "bg-muted"
-      }`}
+      activeOpacity={0.7}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+        paddingHorizontal: 15,
+        height: 42,
+        borderRadius: 999,
+        backgroundColor: active ? INK : CARD,
+        borderWidth: 1,
+        borderColor: active ? INK : BORDER,
+      }}
     >
+      {iconNode ??
+        (icon ? (
+          <Feather name={icon} size={15} color={active ? "#ffffff" : INK} />
+        ) : null)}
       <Text
-        className={`text-sm font-medium ${
-          active ? "text-background" : "text-foreground"
-        }`}
+        style={{
+          fontFamily: SERIF_FONT,
+          fontSize: 15,
+          fontWeight: "600",
+          color: active ? "#ffffff" : INK,
+        }}
       >
         {label}
       </Text>
       {count !== undefined ? (
         <View
-          className={`ml-2 min-w-[20px] px-1.5 rounded-full items-center ${
-            active ? "bg-background/20" : "bg-foreground/10"
-          }`}
+          style={{
+            minWidth: 22,
+            height: 22,
+            borderRadius: 999,
+            paddingHorizontal: 5,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: active ? "#f4f1ea" : TRACK,
+          }}
         >
-          <Text
-            className={`text-xs font-semibold ${
-              active ? "text-background" : "text-foreground"
-            }`}
-          >
+          <Text style={{ fontSize: 12, fontWeight: "700", color: INK }}>
             {count}
           </Text>
         </View>
       ) : null}
-    </Pressable>
+    </TouchableOpacity>
+  );
+}
+
+function EmptyState({
+  filtered,
+  onTips,
+}: {
+  filtered: boolean;
+  onTips: () => void;
+}) {
+  return (
+    <View
+      style={{
+        marginHorizontal: 20,
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: BORDER,
+        backgroundColor: CARD,
+        paddingVertical: 44,
+        paddingHorizontal: 24,
+        alignItems: "center",
+      }}
+    >
+      <View style={{ alignItems: "center" }}>
+        <Text style={{ color: GOLD, fontSize: 14, marginBottom: 2 }}>✦</Text>
+        <MaterialCommunityIcons
+          name="email-open-outline"
+          size={64}
+          color="#d9c9a6"
+        />
+      </View>
+      <Text
+        style={{
+          marginTop: 18,
+          fontFamily: SERIF_FONT,
+          fontSize: 23,
+          fontWeight: "700",
+          color: INK,
+          textAlign: "center",
+        }}
+      >
+        {filtered ? "Nothing here." : "No inquiries yet."}
+      </Text>
+      <Text style={{ marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
+        {filtered ? "Nothing matches that filter." : "New leads land here."}
+      </Text>
+      {!filtered ? (
+        <TouchableOpacity
+          onPress={onTips}
+          activeOpacity={0.85}
+          style={{
+            marginTop: 22,
+            backgroundColor: INK,
+            borderRadius: 999,
+            paddingHorizontal: 22,
+            height: 50,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <MaterialCommunityIcons name="star-four-points" size={15} color={GOLD} />
+          <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
+            Tips to get more inquiries
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 }
 
 function Avatar({ seed, label }: { seed: string; label: string }) {
   return (
     <View
-      className="h-12 w-12 rounded-full items-center justify-center"
-      style={{ backgroundColor: avatarColor(seed) }}
+      style={{
+        height: 48,
+        width: 48,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: avatarColor(seed),
+      }}
     >
-      <Text className="text-sm font-semibold text-white">{label}</Text>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: "#ffffff" }}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -502,49 +882,97 @@ function InquiryCard({ row }: { row: InquiryRow }) {
   }
 
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={open}
-      className="rounded-2xl border border-border bg-background px-4 py-4 active:opacity-70"
+      activeOpacity={0.75}
+      style={{
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: BORDER,
+        backgroundColor: CARD,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+      }}
     >
-      <View className="flex-row gap-3">
+      <View style={{ flexDirection: "row", gap: 12 }}>
         <Avatar seed={seed} label={initials(row.event_type ?? "Inquiry")} />
-        <View className="flex-1">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center flex-shrink">
-              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+        <View style={{ flex: 1 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: SERIF_FONT,
+                  fontSize: 17,
+                  fontWeight: "700",
+                  color: INK,
+                }}
+              >
                 {row.event_type ?? "Inquiry"}
               </Text>
               {isUnread ? (
-                <View className="ml-2 h-2 w-2 rounded-full bg-red-500" />
+                <View
+                  style={{
+                    marginLeft: 8,
+                    height: 8,
+                    width: 8,
+                    borderRadius: 999,
+                    backgroundColor: GOLD,
+                  }}
+                />
               ) : null}
             </View>
-            <Text className="text-xs text-muted-foreground">
+            <Text style={{ fontSize: 12, color: INK_DIM }}>
               {relativeTime(row.created_at)}
             </Text>
           </View>
-          <Text className="mt-0.5 text-xs text-muted-foreground" numberOfLines={1}>
+          <Text numberOfLines={1} style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
             {row.event_date ?? "Date TBD"}
             {row.guest_count ? ` · ${row.guest_count} guests` : ""}
             {previewBudget}
           </Text>
           {row.special_requests ? (
             <Text
-              className="mt-1.5 text-sm text-foreground/80"
               numberOfLines={2}
+              style={{ marginTop: 6, fontSize: 14, color: "#3c3f45" }}
             >
               {row.special_requests}
             </Text>
           ) : null}
           {isUnread ? (
-            <View className="mt-2 self-start rounded-full bg-red-100 px-2 py-0.5">
-              <Text className="text-[10px] font-semibold uppercase tracking-wide text-red-600">
-                New
+            <View
+              style={{
+                marginTop: 8,
+                alignSelf: "flex-start",
+                borderRadius: 999,
+                backgroundColor: "rgba(201,168,106,0.18)",
+                borderWidth: 1,
+                borderColor: GOLD,
+                paddingHorizontal: 9,
+                paddingVertical: 2,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: "700",
+                  letterSpacing: 1,
+                  color: "#8a6f3e",
+                }}
+              >
+                NEW
               </Text>
             </View>
           ) : null}
         </View>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
@@ -556,54 +984,60 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
   }
 
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={open}
-      className={`flex-row items-center py-3 ${
-        divider ? "border-t border-border" : ""
-      } active:opacity-70`}
+      activeOpacity={0.75}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 12,
+        borderTopWidth: divider ? 1 : 0,
+        borderTopColor: BORDER,
+      }}
     >
-      <View className="relative">
-        <Avatar
-          seed={thread.other_business_name}
-          label={initials(thread.other_business_name)}
-        />
-      </View>
-      <View className="ml-3 flex-1">
-        <View className="flex-row items-center">
+      <Avatar
+        seed={thread.other_business_name}
+        label={initials(thread.other_business_name)}
+      />
+      <View style={{ marginLeft: 12, flex: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text
-            className="text-base font-semibold text-foreground"
             numberOfLines={1}
+            style={{
+              fontFamily: SERIF_FONT,
+              fontSize: 16.5,
+              fontWeight: "700",
+              color: INK,
+              flexShrink: 1,
+            }}
           >
             {thread.other_business_name}
           </Text>
           {thread.other_category ? (
-            <View className="ml-2 rounded-full bg-muted px-2 py-0.5">
-              <Text className="text-[11px] text-muted-foreground">
+            <View
+              style={{
+                marginLeft: 8,
+                borderRadius: 999,
+                backgroundColor: TRACK,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+              }}
+            >
+              <Text style={{ fontSize: 11, color: INK_DIM }}>
                 {thread.other_category}
               </Text>
             </View>
           ) : null}
         </View>
         {thread.last_preview ? (
-          <Text
-            className="mt-0.5 text-sm text-muted-foreground"
-            numberOfLines={1}
-          >
+          <Text numberOfLines={1} style={{ marginTop: 2, fontSize: 14, color: INK_DIM }}>
             {thread.last_preview}
           </Text>
         ) : null}
       </View>
-      <Text className="ml-2 text-xs text-muted-foreground">
+      <Text style={{ marginLeft: 8, fontSize: 12, color: INK_DIM }}>
         {relativeTime(thread.last_message_at)}
       </Text>
-    </Pressable>
-  );
-}
-
-function Empty({ msg }: { msg: string }) {
-  return (
-    <View className="px-5 py-16 items-center">
-      <Text className="text-sm text-muted-foreground text-center">{msg}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
