@@ -187,6 +187,8 @@ export default function VendorLayout() {
       <Tabs.Screen name="setup" options={{ href: null }} />
       {/* What's-new changelog — pushed from More, not a tab of its own. */}
       <Tabs.Screen name="updates" options={{ href: null }} />
+      {/* Meet the Team editor — pushed from More. */}
+      <Tabs.Screen name="team" options={{ href: null }} />
       {/* Category-specific listing wizards — listing.tsx redirects each
           group's categories to its own builder. */}
       <Tabs.Screen name="venue-listing" options={{ href: null }} />

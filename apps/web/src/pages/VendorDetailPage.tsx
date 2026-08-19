@@ -32,6 +32,7 @@ import { Lightbox } from "@/components/shared/Lightbox";
 import { VideoEmbed } from "@/components/vendor/VideoEmbed";
 import { ShowcaseStrip } from "@/components/vendor/ShowcaseStrip";
 import { VendorOtherListings } from "@/components/vendor/VendorOtherListings";
+import { VendorTeamPublic } from "@/components/vendor/VendorTeamPublic";
 import { VendorBrandCard } from "@/components/vendor/VendorBrandCard";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
 import { CoBookedRail } from "@/components/vendor/CoBookedRail";
@@ -766,9 +767,15 @@ export default function VendorDetailPage() {
                 </SilentErrorBoundary>
               )}
 
-              {/* Team section dropped from the listing — the wizard no
-                  longer collects team bios. Re-enable along with the
-                  wizard step when product wants it back. */}
+              {/* Meet the Team — brand-level team profiles managed in
+                  the vendor app (More → Meet the Team). Optional: RLS
+                  hides everything when the vendor's show_team toggle is
+                  off, and the component renders nothing when empty. */}
+              {vendor.isReal && listingOwnerUserId && (
+                <SilentErrorBoundary label="VendorTeamPublic">
+                  <VendorTeamPublic userId={listingOwnerUserId} />
+                </SilentErrorBoundary>
+              )}
 
               {/* Availability — Turo/Airbnb-style calendar with
                   blocked dates struck through. */}
