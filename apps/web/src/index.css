@@ -6,61 +6,61 @@
 
 @layer base {
   :root {
-    /* Vendora — pure white surfaces, deep navy as the brand accent.
-       Replaces the whisper-cream + champagne-gold palette. Modern,
-       editorial, high-contrast. The navy (~#1B3654) is the
-       wordmark color from the new brand sheet. */
-    --background: 0 0% 100%;
+    /* Vendora — the ivory / charcoal / champagne-gold system the
+       mobile apps ship with, brought back to the web so both surfaces
+       read as one brand. Ivory canvas, warm cream cards, bronze-gold
+       accent (deep enough to stay legible as text on cream). */
+    --background: 42 31% 94%;
     --foreground: 220 14% 9%;
 
-    --card: 0 0% 100%;
+    --card: 43 47% 97%;
     --card-foreground: 220 14% 9%;
 
-    --popover: 0 0% 100%;
+    --popover: 43 47% 97%;
     --popover-foreground: 220 14% 9%;
 
     --primary: 220 14% 9%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
+    --secondary: 42 31% 91%;
     --secondary-foreground: 220 14% 9%;
 
-    --muted: 220 14% 94%;
+    --muted: 42 31% 89%;
     --muted-foreground: 220 8% 40%;
 
-    /* Accent = deep navy from the new brand wordmark. Used for
-       links, focus rings, badges, the brand mark itself. */
-    --accent: 215 55% 22%;
+    /* Accent = champagne bronze (the app's gold text tone #8a6f3e).
+       Used for links, focus rings, badges, labels, the ✦ accents. */
+    --accent: 39 38% 39%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 9% / 0.08;
-    --input: 220 14% 94%;
-    --ring: 215 55% 22% / 0.6;
+    --border: 35 25% 25% / 0.12;
+    --input: 42 31% 91%;
+    --ring: 39 38% 39% / 0.6;
 
     --radius: 0.5rem;
 
     --shadow-sm: 220 14% 9% / 0.03;
     --shadow-md: 220 14% 9% / 0.06;
 
-    --sidebar-background: 0 0% 100%;
+    --sidebar-background: 43 47% 97%;
     --sidebar-foreground: 220 14% 9%;
     --sidebar-primary: 220 14% 9%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent: 42 31% 91%;
     --sidebar-accent-foreground: 220 14% 9%;
-    --sidebar-border: 220 14% 9% / 0.08;
-    --sidebar-ring: 215 55% 22% / 0.6;
+    --sidebar-border: 35 25% 25% / 0.12;
+    --sidebar-ring: 39 38% 39% / 0.6;
 
     /* Custom tokens */
     --font-size-hero: clamp(2.75rem, 9vw, 6rem);
     --font-size-h2: clamp(1.875rem, 5vw, 3rem);
     --font-size-body: 1rem;
 
-    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(215 55% 22% / 0.10), transparent 70%);
-    --gradient-glow: radial-gradient(circle at 50% 50%, hsl(215 55% 22% / 0.12), transparent 60%);
+    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(39 47% 60% / 0.14), transparent 70%);
+    --gradient-glow: radial-gradient(circle at 50% 50%, hsl(39 47% 60% / 0.16), transparent 60%);
   }
 
   /* Dark palette dropped — the app ships a single light palette for
@@ -78,15 +78,15 @@
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Clean near-white base with two soft on-brand navy washes pinned in
-       opposite corners. The drifting orbs (AmbientBackground, fixed at
+    /* Warm ivory base with soft champagne washes pinned in opposite
+       corners. The drifting orbs (AmbientBackground, fixed at
        z-index:-1) animate above this static base; page content paints
        above both. */
     background:
-      radial-gradient(ellipse 1000px 720px at 20% 10%, rgba(27, 54, 84, 0.16) 0%, rgba(27, 54, 84, 0) 55%),
-      radial-gradient(ellipse 920px 700px at 84% 90%, rgba(33, 64, 120, 0.14) 0%, rgba(33, 64, 120, 0) 55%),
-      radial-gradient(ellipse 1100px 800px at 55% 45%, rgba(40, 72, 116, 0.08) 0%, rgba(40, 72, 116, 0) 62%),
-      linear-gradient(180deg, #f6f8fb 0%, #eceff4 100%);
+      radial-gradient(ellipse 1000px 720px at 20% 10%, rgba(201, 168, 106, 0.18) 0%, rgba(201, 168, 106, 0) 55%),
+      radial-gradient(ellipse 920px 700px at 84% 90%, rgba(190, 155, 92, 0.15) 0%, rgba(190, 155, 92, 0) 55%),
+      radial-gradient(ellipse 1100px 800px at 55% 45%, rgba(201, 168, 106, 0.08) 0%, rgba(201, 168, 106, 0) 62%),
+      linear-gradient(180deg, #f7f4ed 0%, #efeadf 100%);
     background-attachment: fixed;
   }
 
@@ -310,7 +310,7 @@
     border-color: rgba(255, 255, 255, 0.8);
     box-shadow:
       0 2px 6px -2px hsl(220 14% 9% / 0.08),
-      0 28px 60px -22px hsl(215 50% 22% / 0.34),
+      0 28px 60px -22px hsl(35 35% 28% / 0.30),
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
@@ -340,7 +340,7 @@
     transform: translateY(-3px);
     box-shadow:
       0 2px 6px -2px hsl(220 14% 9% / 0.08),
-      0 28px 60px -22px hsl(215 50% 22% / 0.34),
+      0 28px 60px -22px hsl(35 35% 28% / 0.30),
       inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   }
 
@@ -411,7 +411,7 @@
     background: transparent;
   }
 
-  /* Ambient backdrop layer — two soft navy washes drifting slowly,
+  /* Ambient backdrop layer — soft champagne washes drifting slowly,
      pinned behind all content (see AmbientBackground.tsx). Fixed +
      z-index:-1 sits above the body's static wash, below page content. */
   .ambient-bg {
@@ -430,7 +430,7 @@
   .ambient-orb--1 {
     width: 520px;
     height: 520px;
-    background: rgba(27, 54, 84, 0.34);
+    background: rgba(201, 168, 106, 0.36);
     top: -140px;
     left: -90px;
     animation: ambient-drift-1 22s ease-in-out infinite;
@@ -438,7 +438,7 @@
   .ambient-orb--2 {
     width: 460px;
     height: 460px;
-    background: rgba(40, 72, 116, 0.30);
+    background: rgba(190, 155, 92, 0.30);
     bottom: -160px;
     right: -80px;
     animation: ambient-drift-2 26s ease-in-out infinite;
@@ -446,7 +446,7 @@
   .ambient-orb--3 {
     width: 420px;
     height: 420px;
-    background: rgba(33, 64, 120, 0.24);
+    background: rgba(211, 181, 126, 0.26);
     top: 42%;
     left: 44%;
     animation: ambient-drift-3 30s ease-in-out infinite;
