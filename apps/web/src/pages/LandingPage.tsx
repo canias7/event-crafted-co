@@ -354,10 +354,10 @@ export default function LandingPage() {
               </li>
               <li>
                 <a
-                  href="mailto:hello@vendora.events"
+                  href="mailto:hello@eventvendora.com"
                   className="hover:opacity-70 transition-opacity"
                 >
-                  hello@vendora.events
+                  hello@eventvendora.com
                 </a>
               </li>
             </ul>

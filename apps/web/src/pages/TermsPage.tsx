@@ -44,10 +44,10 @@ export default function TermsPage() {
               You're responsible for keeping your password safe and for any
               activity under your account. Tell us immediately at{" "}
               <a
-                href="mailto:security@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="text-accent font-medium"
               >
-                security@vendora.events
+                hello@eventvendora.com
               </a>{" "}
               if you suspect unauthorized access.
             </p>
@@ -152,10 +152,10 @@ export default function TermsPage() {
             <p>
               Questions about these terms:{" "}
               <a
-                href="mailto:legal@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="text-accent font-medium"
               >
-                legal@vendora.events
+                hello@eventvendora.com
               </a>
               .
             </p>

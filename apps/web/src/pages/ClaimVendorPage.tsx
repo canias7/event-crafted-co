@@ -105,7 +105,7 @@ export default function ClaimVendorPage() {
           <h1 className="font-editorial text-4xl mb-3">Link not found</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-6">
             This claim link is invalid or has been used. If you think this is
-            a mistake, reach out to support@vendora.events with the URL.
+            a mistake, reach out to hello@eventvendora.com with the URL.
           </p>
           <Link to="/">
             <Button variant="outline" className="rounded-full">
@@ -205,10 +205,10 @@ export default function ClaimVendorPage() {
         <p className="text-xs text-muted-foreground text-center mt-6 leading-relaxed">
           Not your business? Email{" "}
           <a
-            href="mailto:hello@vendora.events"
+            href="mailto:hello@eventvendora.com"
             className="text-accent underline"
           >
-            hello@vendora.events
+            hello@eventvendora.com
           </a>{" "}
           and we'll remove the listing.
         </p>

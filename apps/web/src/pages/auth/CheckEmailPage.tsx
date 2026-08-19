@@ -102,11 +102,11 @@ export default function CheckEmailPage() {
             <>
               Questions? Email{" "}
               <a
-                href="mailto:hello@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="font-medium pb-px"
                 style={{ borderBottom: "0.5px solid currentColor" }}
               >
-                hello@vendora.events
+                hello@eventvendora.com
               </a>
               .
             </>
@@ -115,11 +115,11 @@ export default function CheckEmailPage() {
               Didn't get it? Check your spam folder. If it still doesn't arrive,
               email{" "}
               <a
-                href="mailto:hello@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="font-medium pb-px"
                 style={{ borderBottom: "0.5px solid currentColor" }}
               >
-                hello@vendora.events
+                hello@eventvendora.com
               </a>
               .
             </>

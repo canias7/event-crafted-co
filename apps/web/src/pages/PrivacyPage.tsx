@@ -107,10 +107,10 @@ export default function PrivacyPage() {
               time. Most of this is available directly in your account settings;
               for a full export or deletion request, email{" "}
               <a
-                href="mailto:privacy@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="text-accent font-medium"
               >
-                privacy@vendora.events
+                hello@eventvendora.com
               </a>
               . We respond within 30 days.
             </p>
@@ -133,10 +133,10 @@ export default function PrivacyPage() {
             <p>
               Questions about this policy or your data: email{" "}
               <a
-                href="mailto:privacy@vendora.events"
+                href="mailto:hello@eventvendora.com"
                 className="text-accent font-medium"
               >
-                privacy@vendora.events
+                hello@eventvendora.com
               </a>
               .
             </p>
