@@ -54,7 +54,8 @@ export const SHIPPED: { date: string; title: string; body: string }[] = [
 export const COMING: string[] = [
   "Pop-up notifications on Android",
   "More ways to stand out in search",
-  "Booking management upgrades",
+  "Host app launch",
+  "Design updates on the website",
 ];
 
 // The More row shows a "New" badge while the latest entry is fresh.
