@@ -157,6 +157,16 @@ export default function MoreScreen() {
 
         <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
+            icon={<Feather name="users" size={19} color={INK} />}
+            label="Meet the Team"
+            body="Introduce the people behind your business"
+            badge="Optional"
+            onPress={() => router.push("/(vendor)/team" as never)}
+          />
+        </View>
+
+        <View style={[cardStyle, { marginTop: 14 }]}>
+          <MenuRow
             icon={<Feather name="help-circle" size={19} color={INK} />}
             label="Help & support"
             body="FAQs, guides, and contact us"
