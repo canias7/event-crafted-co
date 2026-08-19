@@ -353,7 +353,7 @@ export default function VendorDetailScreen() {
         {/* White content card — overlaps the bottom of the gallery. */}
         <View
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             marginTop: -22,
@@ -528,9 +528,9 @@ export default function VendorDetailScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderTopWidth: 1,
-          borderTopColor: "#e5e7eb",
+          borderTopColor: "#e6e1d5",
         }}
       >
         <View className="flex-row items-center justify-between px-5 py-3">
@@ -672,7 +672,7 @@ function StatCell({
 }
 
 function Divider() {
-  return <View style={{ width: 1, backgroundColor: "#e5e7eb" }} />;
+  return <View style={{ width: 1, backgroundColor: "#e6e1d5" }} />;
 }
 
 function Section({

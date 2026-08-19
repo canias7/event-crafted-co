@@ -56,12 +56,12 @@ const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
-const BORDER = "#e5e7eb";
+const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const PENDING_BG = "#f2e7cb";
 const PENDING_FG = "#8a6f3e";
-const HATCH = "#d1d5db";
-const HATCH_BG = "#f3f4f6";
+const HATCH = "#d6d1c6";
+const HATCH_BG = "#ece7db";
 const GREEN = "#16a34a";
 const AMBER = "#d97706";
 // Status dots for the multi-listing account view (match web STATUS_DOT).
@@ -1948,7 +1948,7 @@ function DayCell({
         >
           <Text
             style={{
-              color: selected ? "#ffffff" : inMonth ? INK : "#d1d5db",
+              color: selected ? "#ffffff" : inMonth ? INK : "#c9c4b6",
               fontSize: 14,
               fontWeight: "600",
             }}
@@ -1985,7 +1985,7 @@ function DayCell({
             ? INK
             : "transparent";
   const digitColor = !inMonth
-    ? "#d1d5db"
+    ? "#c9c4b6"
     : state === "booked"
       ? CREAM
       : state === "pending"

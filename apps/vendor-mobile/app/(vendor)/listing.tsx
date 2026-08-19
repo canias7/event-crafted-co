@@ -43,11 +43,11 @@ import { wizardRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
 // different app section.
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
-const BORDER = "#e5e7eb";
+const BORDER = "#e6e1d5";
 const ACCENT = "#1B3654";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -1136,7 +1136,7 @@ export default function ListingScreen() {
                 <View
                   style={{
                     marginHorizontal: 16,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "#fbf9f4",
                     borderRadius: 14,
                     borderWidth: 1,
                     borderColor: BORDER,
@@ -1227,7 +1227,7 @@ function CircleButton({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fbf9f4",
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.7 : 1,
@@ -1621,7 +1621,7 @@ function fieldBox(multiline = false) {
   return {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fbf9f4",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: BORDER,
@@ -1649,7 +1649,7 @@ const savePillStyle = {
   borderRadius: 999,
   borderWidth: 1,
   borderColor: BORDER,
-  backgroundColor: "#ffffff",
+  backgroundColor: "#fbf9f4",
   paddingVertical: 14,
   alignItems: "center" as const,
 };

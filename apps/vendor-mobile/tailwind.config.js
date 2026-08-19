@@ -14,22 +14,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // web --background (0 0% 100%) — main canvas / cards
-        background: "#ffffff",
-        // web --foreground (220 14% 9%) — navy-tinted ink, NOT pure black
+        // Cream Vendora palette — the ivory/charcoal/champagne-gold
+        // system used across every tab screen. Keep in sync with the
+        // per-file constants (PAGE / CARD / SURFACE / BORDER / INK /
+        // GOLD).
+        // Ivory page canvas
+        background: "#f4f1ea",
+        // Charcoal ink — navy-tinted, NOT pure black
         foreground: "#14161a",
-        // web --secondary (220 14% 96%) — the cool surface used for chips,
-        // received message bubbles, inactive filters, "muted" backgrounds
-        muted: "#f3f4f6",
-        secondary: "#f3f4f6",
-        // web --muted-foreground (220 8% 40%)
+        // Deep-cream surface used for chips, received message bubbles,
+        // inactive filters, "muted" backgrounds
+        muted: "#ece7db",
+        secondary: "#ece7db",
         "muted-foreground": "#5e636e",
-        // web --border (foreground @ 8%) — solid approximation
-        border: "#e5e7eb",
-        // web --accent (215 55% 22%) — deep brand navy (#1b3654). Used for
-        // links, focus rings, badges, the wordmark.
-        accent: "#1b3654",
-        "accent-foreground": "#ffffff",
+        // Warm hairline border
+        border: "#e6e1d5",
+        // Champagne gold — links, focus rings, badges, the ✦ accents
+        accent: "#c9a86a",
+        "accent-foreground": "#14161a",
       },
     },
   },

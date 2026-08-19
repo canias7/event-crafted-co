@@ -41,7 +41,7 @@ import { Wordmark } from "@/components/Wordmark";
 const WHITE = "#ffffff";
 const PAGE = "#f4f1ea";
 const CARD = "#fdfcf9";
-const SURFACE = "#f3f4f6";
+const SURFACE = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#6b6f78";
 const BORDER = "rgba(20,22,26,0.10)";

@@ -6,7 +6,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   AppState,
   Modal,
   Platform,
@@ -20,12 +19,16 @@ import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { tryRegisterPushToken } from "@/lib/pushNotifications";
 import { supabase } from "@/lib/supabase";
+import { useBrandDialog } from "@/components/listing/WizardKit";
 
-// Editorial palette — keep in sync with profile.tsx.
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f3f4f6";
+// Cream Vendora palette — same tokens as the tab screens.
+const PAGE = "#f4f1ea";
+const CARD = "#fbf9f4";
+const SURFACE = "#ece7db";
+const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
+const GOLD_SOFT = "#eadfc6";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 export function SettingsSheet({
@@ -40,6 +43,7 @@ export function SettingsSheet({
   onSignOut: () => Promise<void>;
 }) {
   const { user } = useAuth();
+  const dialog = useBrandDialog();
 
   // "Account" view vs inline "Change password" form. The sheet swaps
   // its body when the password row is tapped so the design stays
@@ -94,24 +98,40 @@ export function SettingsSheet({
 
   async function changePassword() {
     if (newPwd.length < 8) {
-      Alert.alert("Password too short", "Must be at least 8 characters.");
+      dialog.show({
+        icon: "lock",
+        title: "Password too short",
+        message: "Must be at least 8 characters.",
+      });
       return;
     }
     if (newPwd !== confirmPwd) {
-      Alert.alert("Passwords don't match", "Please re-type the new password.");
+      dialog.show({
+        icon: "lock",
+        title: "Passwords don't match",
+        message: "Please re-type the new password.",
+      });
       return;
     }
     setPwdSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPwd });
     setPwdSubmitting(false);
     if (error) {
-      Alert.alert("Couldn't change password", error.message);
+      dialog.show({
+        icon: "alert-circle",
+        title: "Couldn't change password",
+        message: error.message,
+      });
       return;
     }
     setNewPwd("");
     setConfirmPwd("");
     setView("main");
-    Alert.alert("Password updated", "Your new password is active.");
+    dialog.show({
+      icon: "check-circle",
+      title: "Password updated",
+      message: "Your new password is active.",
+    });
   }
 
   // OFF deletes the device_push_tokens rows; ON re-runs the
@@ -140,10 +160,12 @@ export function SettingsSheet({
           .eq("user_id", user.id);
         if ((count ?? 0) === 0) {
           setPushOn(false);
-          Alert.alert(
-            "Push permission needed",
-            "Enable notifications for Vendora in your device Settings to receive pushes.",
-          );
+          dialog.show({
+            icon: "bell",
+            title: "Push permission needed",
+            message:
+              "Enable notifications for Vendora in your device Settings to receive pushes.",
+          });
         }
       } catch {
         setPushOn(false);
@@ -153,57 +175,66 @@ export function SettingsSheet({
   }
 
   function onTwoStep() {
-    Alert.alert(
-      "Two-step verification",
-      "Stronger sign-in is on the roadmap. Today every login already uses an email-code check; the toggle will switch to authenticator-app 2FA when it ships.",
-    );
+    dialog.show({
+      icon: "shield",
+      title: "Two-step verification",
+      message:
+        "Stronger sign-in is on the roadmap. Today every login already uses an email-code check; the toggle will switch to authenticator-app 2FA when it ships.",
+    });
   }
 
   function onLanguage() {
-    Alert.alert(
-      "Language",
-      "More languages are on the way. The app currently runs in English (US).",
-    );
+    dialog.show({
+      icon: "globe",
+      title: "Language",
+      message:
+        "More languages are on the way. The app currently runs in English (US).",
+    });
   }
 
   function onSignOutPress() {
-    Alert.alert("Sign out", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          onClose();
-          onSignOut();
-        },
+    dialog.show({
+      icon: "log-out",
+      title: "Sign out",
+      message: "Are you sure?",
+      confirmLabel: "Sign out",
+      cancelLabel: "Cancel",
+      destructive: true,
+      onConfirm: () => {
+        onClose();
+        onSignOut();
       },
-    ]);
+    });
   }
 
   function onDeleteAccount() {
-    Alert.alert(
-      "Delete your account?",
-      "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete account",
-          style: "destructive",
-          onPress: async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase as any).rpc(
-              "request_account_deletion",
-            );
-            if (error) {
-              Alert.alert("Couldn't delete account", error.message);
-              return;
-            }
-            onClose();
-            onSignOut();
-          },
-        },
-      ],
-    );
+    dialog.show({
+      icon: "trash-2",
+      title: "Delete your account?",
+      message:
+        "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
+      confirmLabel: "Delete account",
+      cancelLabel: "Cancel",
+      destructive: true,
+      onConfirm: () => {
+        void (async () => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase as any).rpc(
+            "request_account_deletion",
+          );
+          if (error) {
+            dialog.show({
+              icon: "alert-circle",
+              title: "Couldn't delete account",
+              message: error.message,
+            });
+            return;
+          }
+          onClose();
+          onSignOut();
+        })();
+      },
+    });
   }
 
   return (
@@ -224,7 +255,7 @@ export function SettingsSheet({
         <Pressable
           onPress={() => {}}
           style={{
-            backgroundColor: CREAM,
+            backgroundColor: PAGE,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             paddingTop: 10,
@@ -275,7 +306,7 @@ export function SettingsSheet({
                     width: 32,
                     height: 32,
                     borderRadius: 999,
-                    backgroundColor: CREAM_DEEP,
+                    backgroundColor: SURFACE,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -310,7 +341,9 @@ export function SettingsSheet({
               </Text>
               <View
                 style={{
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: CARD,
+                  borderWidth: 1,
+                  borderColor: BORDER,
                   borderRadius: 18,
                   overflow: "hidden",
                 }}
@@ -325,7 +358,7 @@ export function SettingsSheet({
                         style={{
                           paddingHorizontal: 10,
                           paddingVertical: 5,
-                          backgroundColor: "#dcfce7",
+                          backgroundColor: GOLD_SOFT,
                           borderRadius: 999,
                           flexDirection: "row",
                           alignItems: "center",
@@ -336,13 +369,13 @@ export function SettingsSheet({
                             width: 6,
                             height: 6,
                             borderRadius: 999,
-                            backgroundColor: "#15803d",
+                            backgroundColor: "#8a6f3e",
                             marginRight: 5,
                           }}
                         />
                         <Text
                           style={{
-                            color: "#15803d",
+                            color: "#8a6f3e",
                             fontSize: 12,
                             fontWeight: "700",
                           }}
@@ -385,7 +418,9 @@ export function SettingsSheet({
               </Text>
               <View
                 style={{
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: CARD,
+                  borderWidth: 1,
+                  borderColor: BORDER,
                   borderRadius: 18,
                   overflow: "hidden",
                 }}
@@ -411,7 +446,9 @@ export function SettingsSheet({
                 onPress={onSignOutPress}
                 style={{
                   marginTop: 24,
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: CARD,
+                  borderWidth: 1,
+                  borderColor: BORDER,
                   borderRadius: 18,
                   paddingVertical: 16,
                   flexDirection: "row",
@@ -436,10 +473,10 @@ export function SettingsSheet({
                 onPress={onDeleteAccount}
                 style={{
                   marginTop: 10,
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: CARD,
                   borderRadius: 18,
                   borderWidth: 1,
-                  borderColor: "#fecaca",
+                  borderColor: "#e8c8bf",
                   paddingVertical: 16,
                   flexDirection: "row",
                   alignItems: "center",
@@ -501,7 +538,7 @@ export function SettingsSheet({
                     width: 32,
                     height: 32,
                     borderRadius: 999,
-                    backgroundColor: CREAM_DEEP,
+                    backgroundColor: SURFACE,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -552,10 +589,10 @@ export function SettingsSheet({
                 placeholderTextColor={INK_DIM}
                 style={{
                   marginTop: 6,
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: CARD,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: "#e5e7eb",
+                  borderColor: BORDER,
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   color: INK,
@@ -582,10 +619,10 @@ export function SettingsSheet({
                 placeholderTextColor={INK_DIM}
                 style={{
                   marginTop: 6,
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: CARD,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: "#e5e7eb",
+                  borderColor: BORDER,
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   color: INK,
@@ -610,13 +647,14 @@ export function SettingsSheet({
                 }}
               >
                 <Text
-                  style={{ color: CREAM, fontSize: 15, fontWeight: "700" }}
+                  style={{ color: "#ffffff", fontSize: 15, fontWeight: "700" }}
                 >
                   {pwdSubmitting ? "Saving…" : "Save password"}
                 </Text>
               </Pressable>
             </ScrollView>
           )}
+          {dialog.element}
         </Pressable>
       </Pressable>
     </Modal>
@@ -650,7 +688,7 @@ function SettingsRow({
           width: 38,
           height: 38,
           borderRadius: 12,
-          backgroundColor: "#e5e7eb",
+          backgroundColor: SURFACE,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -708,7 +746,7 @@ function RowDivider() {
     <View
       style={{
         height: 1,
-        backgroundColor: "#e5e7eb",
+        backgroundColor: BORDER,
         marginLeft: 64,
       }}
     />
@@ -733,7 +771,7 @@ function Toggle({
         width: 48,
         height: 28,
         borderRadius: 999,
-        backgroundColor: value ? "#16a34a" : "#d1d5db",
+        backgroundColor: value ? INK : "#d6d1c6",
         padding: 3,
         opacity: disabled ? 0.6 : 1,
       }}
