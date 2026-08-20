@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
+import { VendoraLogo } from "@/components/shared/VendoraLogo";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { Picture } from "@/components/shared/Picture";
 // vite-imagetools `?as=picture` (see vite.config.ts) → AVIF + WebP + JPG
@@ -179,16 +180,8 @@ export default function LandingPage() {
 
         {/* NAV (overlaid) */}
         <header className="relative z-20 flex items-center justify-between px-6 py-5 md:px-12 md:py-7">
-          <Link to="/" aria-label="Vendora" className="flex items-baseline gap-1">
-            <span
-              className="font-editorial text-[26px] leading-none"
-              style={{ color: CREAM }}
-            >
-              Vendora
-            </span>
-            <span className="text-[13px]" style={{ color: GOLD }}>
-              ✦
-            </span>
+          <Link to="/" aria-label="Vendora">
+            <VendoraLogo size="md" color={CREAM} withTagline />
           </Link>
           <nav
             className="hidden md:flex items-center gap-8 text-[13px]"
@@ -740,14 +733,7 @@ export default function LandingPage() {
       >
         <div className="mx-auto mb-12 grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-editorial text-[24px]" style={{ color: CREAM }}>
-                Vendora
-              </span>
-              <span className="text-[13px]" style={{ color: GOLD }}>
-                ✦
-              </span>
-            </div>
+            <VendoraLogo size="md" color={CREAM} withTagline />
             <div className="mt-2.5 text-[13px] leading-relaxed" style={{ color: "rgba(244,241,234,0.55)" }}>
               Every detail, perfectly composed.
             </div>
