@@ -180,6 +180,18 @@ export const VendorGalleryPage = lazyWithReload(importVendorGallery);
 const importVendorTemplates = () => import("@/pages/vendor/VendorTemplatesPage");
 export const VendorTemplatesPage = lazyWithReload(importVendorTemplates);
 
+const importVendorCrm = () => import("@/pages/vendor/VendorCrmPage");
+export const VendorCrmPage = lazyWithReload(importVendorCrm);
+
+const importVendorScheduling = () => import("@/pages/vendor/VendorSchedulingPage");
+export const VendorSchedulingPage = lazyWithReload(importVendorScheduling);
+
+const importVendorVerification = () => import("@/pages/vendor/VendorVerificationPage");
+export const VendorVerificationPage = lazyWithReload(importVendorVerification);
+
+const importVendorTeam = () => import("@/pages/vendor/VendorTeamPage");
+export const VendorTeamPage = lazyWithReload(importVendorTeam);
+
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
 export const InquiryDetailPage = lazyWithReload(importInquiryDetail);
 

@@ -190,7 +190,14 @@
       "my_space": "My Space",
       "gallery": "Gallery",
       "subscription": "Subscription",
-      "usage": "Usage"
+      "usage": "Usage",
+      "more": "More",
+      "edit_profile": "Edit brand profile",
+      "verification": "Verification",
+      "scheduling": "Smart Scheduling",
+      "crm": "Vendora CRM",
+      "team": "Meet the Team",
+      "web_studio": "Web studio"
     },
     "bottom": {
       "payments": "Payments",
