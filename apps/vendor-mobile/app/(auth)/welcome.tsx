@@ -115,11 +115,16 @@ export default function WelcomeScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <MaterialCommunityIcons
-          name="star-four-points"
-          size={26}
-          color={WHITE}
-          style={{ alignSelf: "center", marginBottom: 6 }}
+        <Image
+          source={require("../../assets/v-mark.png")}
+          style={{
+            alignSelf: "center",
+            width: 46,
+            height: 46,
+            marginBottom: 8,
+            tintColor: "#d9bd82",
+            resizeMode: "contain",
+          }}
         />
 
         <Text

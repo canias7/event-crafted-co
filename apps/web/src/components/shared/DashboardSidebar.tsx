@@ -259,7 +259,7 @@ export function DashboardSidebar({
             title="Vendora — Events, simplified"
             aria-label="Vendora"
           >
-            <VendoraMark size={28} color="currentColor" />
+            <VendoraMark size={28} variant="gold" />
           </Link>
           <button
             type="button"
