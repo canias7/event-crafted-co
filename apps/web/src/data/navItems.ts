@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   Briefcase,
   CalendarDays,
   Compass,
@@ -7,8 +8,13 @@ import {
   Images,
   Inbox,
   LayoutDashboard,
+  MoreHorizontal,
+  Pencil,
   Settings,
+  Sparkles,
   User,
+  Users,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,31 +66,40 @@ export const customerNavItems: NavItem[] = [
   { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
 ];
 
+// Vendor portal nav — STRICT mirror of the vendor app's tab bar
+// (apps/vendor-mobile/app/(vendor)/_layout.tsx): Inbox · Gallery ·
+// My Profile · Calendar · More. A vendor moving between phone and web
+// finds the identical map — same names, same grouping, same order.
+// The "More" section carries the same rows as the app's More tab;
+// web-only power surfaces live under "Web studio" so the web still
+// feels like the elevated sibling, not a different product.
 export const vendorNavItems: NavItem[] = [
-  // Inbox hub — sub-tabs: Inquiries (default), Hosts (DMs), Partners.
   { labelKey: "sidebar.vendor.inbox", path: "/vendor/inbox", icon: Inbox },
-  // My Vendora is now two separate pages/routes: Overview (KPIs) at
-  // /vendor/overview, and Workspace (calendar, payments, files,
-  // contacts, settings — stacked) at /vendor/workspace.
-  { labelKey: "sidebar.vendor.overview", path: "/vendor/overview", icon: LayoutDashboard },
-  { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
-  // Calendar — restored as its own dedicated tab. The standalone
-  // VendorAppointmentsPage shows the month grid + availability blocking
-  // + the full upcoming-appointments list. (A compact copy of the
-  // calendar still lives in the Workspace cockpit's left rail.)
-  { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
-  // ---- Identity + creative tools ----
-  { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
-  // My Space is no longer a standalone tab — it's docked as the assistant
-  // rail in the cockpit (MyVendoraPage). The full page still resolves at
-  // /vendor/ai-superagents for direct links.
   { labelKey: "sidebar.vendor.gallery", path: "/vendor/gallery", icon: Images },
-  // ---- Billing for the Vendora subscription itself ----
-  { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
-  { labelKey: "sidebar.vendor.usage", path: "/vendor/usage", icon: Gauge },
-  // Settings — pulled out of the separate bottom group so the rail
-  // reads as one continuous list. Log out lives on /settings now.
-  { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
+  { labelKey: "sidebar.vendor.my_profile", path: "/vendor/me", icon: User },
+  { labelKey: "sidebar.vendor.calendar", path: "/vendor/appointments", icon: CalendarDays },
+  {
+    labelKey: "sidebar.vendor.more",
+    icon: MoreHorizontal,
+    children: [
+      { labelKey: "sidebar.vendor.edit_profile", path: "/vendor/edit-profile", icon: Pencil },
+      { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
+      { labelKey: "sidebar.vendor.verification", path: "/vendor/verification", icon: BadgeCheck },
+      { labelKey: "sidebar.vendor.scheduling", path: "/vendor/scheduling", icon: Zap },
+      { labelKey: "sidebar.vendor.crm", path: "/vendor/crm", icon: Users },
+      { labelKey: "sidebar.vendor.team", path: "/vendor/team", icon: Sparkles },
+      { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
+    ],
+  },
+  {
+    labelKey: "sidebar.vendor.web_studio",
+    icon: LayoutDashboard,
+    children: [
+      { labelKey: "sidebar.vendor.overview", path: "/vendor/overview", icon: LayoutDashboard },
+      { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
+      { labelKey: "sidebar.vendor.usage", path: "/vendor/usage", icon: Gauge },
+    ],
+  },
 ];
 
 // Cross-cutting pages like /settings and /support don't know which

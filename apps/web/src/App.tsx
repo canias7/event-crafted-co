@@ -91,6 +91,10 @@ import {
   VendorUsagePage,
   VendorGalleryPage,
   VendorTemplatesPage,
+  VendorCrmPage,
+  VendorSchedulingPage,
+  VendorVerificationPage,
+  VendorTeamPage,
   InquiryDetailPage,
   ClaimVendorPage,
   PublicReviewPage,
@@ -278,6 +282,11 @@ const App = () => (
               <Route path="/vendor/usage" element={<RequireRole role="vendor"><VendorUsagePage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
               <Route path="/vendor/templates" element={<RequireRole role="vendor"><VendorTemplatesPage /></RequireRole>} />
+              {/* App-parity pages — same rows as the app's More tab. */}
+              <Route path="/vendor/crm" element={<RequireRole role="vendor"><VendorCrmPage /></RequireRole>} />
+              <Route path="/vendor/scheduling" element={<RequireRole role="vendor"><VendorSchedulingPage /></RequireRole>} />
+              <Route path="/vendor/verification" element={<RequireRole role="vendor"><VendorVerificationPage /></RequireRole>} />
+              <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
               {/* /vendor/studio retired — the three tools that lived under
                   it (AI Superagents, Vendora Pay, Gallery) now have their
                   own sidebar entries + routes above. */}

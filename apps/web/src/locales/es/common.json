@@ -190,7 +190,14 @@
       "my_space": "Mi espacio",
       "gallery": "Galería",
       "subscription": "Suscripción",
-      "usage": "Uso"
+      "usage": "Uso",
+      "more": "Más",
+      "edit_profile": "Editar perfil de marca",
+      "verification": "Verificación",
+      "scheduling": "Smart Scheduling",
+      "crm": "Vendora CRM",
+      "team": "Conoce al equipo",
+      "web_studio": "Estudio web"
     },
     "bottom": {
       "payments": "Pagos",
