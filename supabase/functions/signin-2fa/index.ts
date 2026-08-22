@@ -31,7 +31,11 @@ const CODE_TTL_MIN = 10;
 // The password is still verified server-side via verify_user_password, so
 // this does NOT weaken security — without the real password, the fixed
 // code is useless. Remove the account (or this constant) after review.
-const REVIEW_BYPASS_EMAIL = "playreview@eventvendora.com";
+const REVIEW_BYPASS_EMAILS = new Set([
+  "playreview@eventvendora.com",
+  // Screenshot / QA account — same deal: no inbox to read the code from.
+  "vendora.review.demo@gmail.com",
+]);
 const REVIEW_BYPASS_CODE = "000000";
 const MAX_ATTEMPTS = 5;
 
@@ -207,7 +211,7 @@ serve(async (req) => {
 
     // App-review account uses a fixed code and gets no email (reviewers
     // can't read an inbox). The password was already verified above.
-    const isReview = email === REVIEW_BYPASS_EMAIL;
+    const isReview = REVIEW_BYPASS_EMAILS.has(email);
     const code = isReview ? REVIEW_BYPASS_CODE : randomCode();
     const code_hash = await sha256(code);
     const expires_at = new Date(Date.now() + CODE_TTL_MIN * 60_000).toISOString();
