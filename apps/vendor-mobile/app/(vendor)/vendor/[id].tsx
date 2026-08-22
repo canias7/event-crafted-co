@@ -1,7 +1,7 @@
 // Public listing detail screen — Airbnb-style read-only view of a
 // vendor's marketplace listing. Reached from Home → Listings card
 // tap. Mirrors the web /vendors/<id-or-slug> page with the bits
-// hosts actually look at (photos, headline, bio, price, packages,
+// hosts actually look at (photos, headline, bio, price,
 // FAQs, policies). Inquiries / appointments are still web-only
 // for now.
 //
@@ -47,31 +47,10 @@ type VendorRow = {
 
 type PortfolioRow = { storage_path: string };
 
-type PackageRow = {
-  id: string;
-  name: string;
-  description: string | null;
-  price_cents: number;
-  includes: string[];
-};
-
 type FaqRow = {
   id: string;
   question: string;
   answer: string;
-};
-
-type PolicyRow = {
-  deposit_pct: number | null;
-  cancellation_policy: string | null;
-  reschedule_window_days: number | null;
-  policy_notes: string | null;
-};
-
-const CANCELLATION_LABEL: Record<string, string> = {
-  flexible: "Flexible — full refund up to 7 days before",
-  moderate: "Moderate — 50% up to 30 days before",
-  strict: "Strict — non-refundable",
 };
 
 export default function VendorDetailScreen() {
@@ -80,9 +59,7 @@ export default function VendorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [vendor, setVendor] = useState<VendorRow | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
-  const [packages, setPackages] = useState<PackageRow[]>([]);
   const [faqs, setFaqs] = useState<FaqRow[]>([]);
-  const [policy, setPolicy] = useState<PolicyRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [saved, setSaved] = useState(false);
@@ -99,7 +76,7 @@ export default function VendorDetailScreen() {
       const baseQuery = supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, application_status, slug, verified_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes",
+          "id, business_name, category, bio, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, application_status, slug, verified_at",
         );
       const { data: vp } = isUuid
         ? await baseQuery.eq("id", id).maybeSingle()
@@ -126,27 +103,13 @@ export default function VendorDetailScreen() {
         slug: row.slug,
         verified_at: row.verified_at,
       });
-      setPolicy({
-        deposit_pct: row.deposit_pct,
-        cancellation_policy: row.cancellation_policy,
-        reschedule_window_days: row.reschedule_window_days,
-        policy_notes: row.policy_notes,
-      });
-
-      const [imgsRes, packRes, faqRes] = await Promise.all([
+      const [imgsRes, faqRes] = await Promise.all([
         supabase
           .from("vendor_portfolio_images")
           .select("storage_path")
           .eq("vendor_id", row.id)
           .order("display_order", { ascending: true })
           .order("created_at", { ascending: true }),
-        supabase
-          .from("vendor_packages")
-          .select("id, name, description, price_cents, includes")
-          .eq("vendor_id", row.id)
-          .eq("is_active", true)
-          .order("display_order", { ascending: true })
-          .order("price_cents", { ascending: true }),
         supabase
           .from("vendor_faqs")
           .select("id, question, answer")
@@ -161,7 +124,6 @@ export default function VendorDetailScreen() {
             .data.publicUrl,
       );
       setPhotos(urls);
-      setPackages((packRes.data ?? []) as unknown as PackageRow[]);
       setFaqs((faqRes.data ?? []) as unknown as FaqRow[]);
       // Seed the heart from saved_vendors. saved_vendors.host_id points
       // at the profiles row (any role), so a vendor can save another
@@ -388,22 +350,6 @@ export default function VendorDetailScreen() {
               <Divider />
               <StatCell
                 top={
-                  <View className="flex-row items-center gap-1">
-                    <Feather
-                      name="package"
-                      size={14}
-                      color="#14161a"
-                    />
-                    <Text className="text-base font-bold text-foreground">
-                      {packages.length || "—"}
-                    </Text>
-                  </View>
-                }
-                bottom={packages.length === 1 ? "Package" : "Packages"}
-              />
-              <Divider />
-              <StatCell
-                top={
                   <Text className="text-base font-bold text-foreground">
                     {faqs.length}
                   </Text>
@@ -424,99 +370,6 @@ export default function VendorDetailScreen() {
             </View>
           ) : null}
 
-          {/* Packages */}
-          {packages.length > 0 ? (
-            <Section title="Packages">
-              {packages.map((p) => (
-                <View
-                  key={p.id}
-                  className="rounded-xl border border-border bg-background p-4 mb-3"
-                >
-                  <View className="flex-row items-start justify-between">
-                    <Text className="flex-1 pr-3 text-base font-semibold text-foreground">
-                      {p.name}
-                    </Text>
-                    <Text className="text-base font-semibold text-foreground">
-                      ${(p.price_cents / 100).toLocaleString()}
-                    </Text>
-                  </View>
-                  {p.description ? (
-                    <Text className="mt-1 text-sm text-foreground/80">
-                      {p.description}
-                    </Text>
-                  ) : null}
-                  {p.includes && p.includes.length > 0 ? (
-                    <View className="mt-2 gap-1">
-                      {p.includes.map((line, idx) => (
-                        <Text
-                          key={idx}
-                          className="text-xs text-muted-foreground"
-                        >
-                          • {line}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                </View>
-              ))}
-            </Section>
-          ) : null}
-
-          {/* Team section removed — vendor_team_bios retired. */}
-
-          {/* FAQ */}
-          {faqs.length > 0 ? (
-            <Section title="FAQ">
-              {faqs.map((f) => (
-                <View key={f.id} className="mb-4">
-                  <Text className="text-base font-semibold text-foreground">
-                    {f.question}
-                  </Text>
-                  <Text className="mt-1 text-sm text-foreground/80">
-                    {f.answer}
-                  </Text>
-                </View>
-              ))}
-            </Section>
-          ) : null}
-
-          {/* Policies */}
-          {policy &&
-          (policy.deposit_pct != null ||
-            policy.cancellation_policy ||
-            policy.reschedule_window_days != null ||
-            policy.policy_notes) ? (
-            <Section title="Policies">
-              {policy.deposit_pct != null ? (
-                <PolicyRowItem
-                  label="Deposit"
-                  value={`${policy.deposit_pct}%`}
-                />
-              ) : null}
-              {policy.cancellation_policy ? (
-                <PolicyRowItem
-                  label="Cancellation"
-                  value={
-                    CANCELLATION_LABEL[policy.cancellation_policy] ??
-                    policy.cancellation_policy
-                  }
-                />
-              ) : null}
-              {policy.reschedule_window_days != null ? (
-                <PolicyRowItem
-                  label="Reschedule window"
-                  value={`${policy.reschedule_window_days} days`}
-                />
-              ) : null}
-              {policy.policy_notes ? (
-                <View className="pt-3">
-                  <Text className="text-sm text-foreground/90 leading-relaxed">
-                    {policy.policy_notes}
-                  </Text>
-                </View>
-              ) : null}
-            </Section>
-          ) : null}
         </View>
       </ScrollView>
 
@@ -688,15 +541,6 @@ function Section({
         {title}
       </Text>
       {children}
-    </View>
-  );
-}
-
-function PolicyRowItem({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-start py-2 border-b border-border">
-      <Text className="w-32 text-sm text-muted-foreground">{label}</Text>
-      <Text className="flex-1 text-sm text-foreground">{value}</Text>
     </View>
   );
 }
