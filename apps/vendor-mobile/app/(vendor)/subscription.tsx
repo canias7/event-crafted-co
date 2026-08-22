@@ -516,8 +516,11 @@ export default function SubscriptionScreen() {
 
         {/* iOS: no purchase surface at all (Apple 3.1.1). Apple rejected both
             the in-app Stripe checkout AND a button linking out to the web, so
-            the iOS build shows the current plan read-only with no purchase
-            link, button, price, or call to action of any kind. */}
+            the iOS build carries no purchase link, button, price, or call to
+            action of any kind. It DOES show what every plan includes — feature
+            lists and the comparison table are information, not a purchase
+            surface — so vendors can see what they'd get without leaving the
+            app. Everything below is rendered read-only on iOS. */}
         {isIOS ? (
           <View
             style={{
@@ -534,20 +537,19 @@ export default function SubscriptionScreen() {
             </Text>
             <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
               Your current plan is shown above and stays in sync automatically.
-              Plan changes made on your account are reflected here the next time
-              you open this screen.
+              What every plan includes is listed below — plan changes are made
+              on your account and show up here next time you open this screen.
             </Text>
           </View>
         ) : null}
 
-        {/* Plan picker (web + Android only) */}
-        {!isIOS ? (
-          <>
+        {/* Plan list. Purchase controls are web + Android only; iOS renders
+            the same cards without price or button. */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
           <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF }}>
-            Choose a plan
+            {isIOS ? "What each plan includes" : "Choose a plan"}
           </Text>
-          {hasYearly ? (
+          {hasYearly && !isIOS ? (
             <View
               style={{
                 flexDirection: "row",
@@ -635,16 +637,22 @@ export default function SubscriptionScreen() {
                   </View>
                 ) : null}
               </View>
-              <Text style={{ marginTop: 4 }}>
-                <Text style={{ color: INK, fontSize: 26, fontWeight: "700" }}>
-                  ${monthlyShown.toFixed(2)}
-                </Text>
-                <Text style={{ color: INK_DIM, fontSize: 13 }}> / mo</Text>
-              </Text>
-              {tier.billingInterval === "year" && tier.priceMonthly > 0 ? (
-                <Text style={{ color: INK_DIM, fontSize: 11, marginTop: 2 }}>
-                  ${tier.priceMonthly.toFixed(2)} billed annually
-                </Text>
+              {/* Price is a purchase signal, so iOS omits it entirely
+                  (Apple 3.1.1) — the feature list below still renders. */}
+              {!isIOS ? (
+                <>
+                  <Text style={{ marginTop: 4 }}>
+                    <Text style={{ color: INK, fontSize: 26, fontWeight: "700" }}>
+                      ${monthlyShown.toFixed(2)}
+                    </Text>
+                    <Text style={{ color: INK_DIM, fontSize: 13 }}> / mo</Text>
+                  </Text>
+                  {tier.billingInterval === "year" && tier.priceMonthly > 0 ? (
+                    <Text style={{ color: INK_DIM, fontSize: 11, marginTop: 2 }}>
+                      ${tier.priceMonthly.toFixed(2)} billed annually
+                    </Text>
+                  ) : null}
+                </>
               ) : null}
               {/* Cards show only the confirmed plan bullets — listings
                   live in highlights now and credits are hidden from
@@ -673,45 +681,48 @@ export default function SubscriptionScreen() {
                 ))}
               </View>
 
-              <Pressable
-                onPress={() => upgradeTo(tier)}
-                disabled={acting !== null || isCurrent || !tier.priceId}
-                style={{
-                  marginTop: 16,
-                  borderRadius: 999,
-                  paddingVertical: 12,
-                  alignItems: "center",
-                  backgroundColor:
-                    isCurrent || !tier.priceId ? BORDER : INK,
-                  opacity: acting !== null && !isActing ? 0.5 : 1,
-                }}
-              >
-                {isActing ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "700",
-                      color: isCurrent || !tier.priceId ? INK_DIM : "#ffffff",
-                    }}
-                  >
-                    {isCurrent
-                      ? "Current plan"
-                      : !tier.priceId
-                        ? "Free — default"
-                        : currentTier !== "free"
-                          ? `Switch to ${tier.name}`
-                          : `Choose ${tier.name}`}
-                  </Text>
-                )}
-              </Pressable>
+              {/* No purchase CTA on iOS (Apple 3.1.1). */}
+              {!isIOS ? (
+                <Pressable
+                  onPress={() => upgradeTo(tier)}
+                  disabled={acting !== null || isCurrent || !tier.priceId}
+                  style={{
+                    marginTop: 16,
+                    borderRadius: 999,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    backgroundColor:
+                      isCurrent || !tier.priceId ? BORDER : INK,
+                    opacity: acting !== null && !isActing ? 0.5 : 1,
+                  }}
+                >
+                  {isActing ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: isCurrent || !tier.priceId ? INK_DIM : "#ffffff",
+                      }}
+                    >
+                      {isCurrent
+                        ? "Current plan"
+                        : !tier.priceId
+                          ? "Free — default"
+                          : currentTier !== "free"
+                            ? `Switch to ${tier.name}`
+                            : `Choose ${tier.name}`}
+                    </Text>
+                  )}
+                </Pressable>
+              ) : null}
             </View>
           );
         })}
 
-        {/* Top-up packs */}
-        {topups.length > 0 ? (
+        {/* Top-up packs — a purchase surface, so web + Android only. */}
+        {!isIOS && topups.length > 0 ? (
           <>
             <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF, marginTop: 20 }}>
               Top up credits
@@ -847,8 +858,6 @@ export default function SubscriptionScreen() {
             continuous updates.
           </Text>
         </View>
-          </>
-        ) : null}
 
         <Text style={{ color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
           {isIOS
