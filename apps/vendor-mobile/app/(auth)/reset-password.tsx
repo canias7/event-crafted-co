@@ -35,16 +35,17 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
 // Same palette as welcome / signup / login.
-const PAGE = "#0d0f13";
-const CREAM = "#f4efe6";
+const PAGE = "#f4f1ea";
+const INK = "#14161a";
 const INK_ON_GOLD = "#14161a";
-const GOLD = "#d9bd82";
-const GOLD_DIM = "rgba(217,189,130,0.45)";
-const MUTED = "rgba(255,255,255,0.72)";
-const FAINT = "rgba(255,255,255,0.45)";
-const HAIRLINE = "rgba(255,255,255,0.14)";
-const INPUT_BG = "rgba(255,255,255,0.05)";
-const ERROR = "#f0938a";
+const GOLD = "#c9a86a";
+const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
+const INK_DIM = "#5e636e";
+const SUBTLE = "#8b8f99";
+const BORDER = "#e6e1d5";
+const FIELD_BG = "#fbf9f4";
+const FIELD_BORDER = "#d9d1bf";
+const ERROR = "#b23a34";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 type State = "loading" | "ready" | "submitting" | "done" | "error";
@@ -126,7 +127,7 @@ export default function ResetPasswordScreen() {
           justifyContent: "center",
         }}
       >
-        <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+        <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
         <ActivityIndicator color={GOLD} />
       </View>
     );
@@ -135,14 +136,14 @@ export default function ResetPasswordScreen() {
   if (state === "error") {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
-        <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+        <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
         <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
           <Pressable
             onPress={() => router.replace("/(auth)/login")}
             hitSlop={12}
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
-            <Text style={{ color: MUTED, fontSize: 16, fontWeight: "500" }}>
+            <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
               ← Back
             </Text>
           </Pressable>
@@ -167,7 +168,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
-      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+      <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -208,7 +209,7 @@ export default function ResetPasswordScreen() {
                     secureTextEntry={!showPassword}
                     autoComplete="password-new"
                     placeholder="••••••••"
-                    placeholderTextColor={FAINT}
+                    placeholderTextColor={SUBTLE}
                     selectionColor={GOLD}
                     keyboardAppearance="dark"
                     style={inputText}
@@ -261,9 +262,9 @@ function StarDivider() {
         gap: 14,
       }}
     >
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
       <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
     </View>
   );
 }
@@ -278,7 +279,7 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
           fontSize: 38,
           lineHeight: 46,
           fontWeight: "700",
-          color: CREAM,
+          color: INK,
           letterSpacing: -0.5,
           marginTop: 10,
         }}
@@ -300,7 +301,7 @@ const eyebrowLabel = {
 const subhead = {
   marginTop: 10,
   fontSize: 17,
-  color: MUTED,
+  color: INK_DIM,
   fontStyle: "italic" as const,
   fontFamily: SERIF,
   lineHeight: 24,
@@ -309,14 +310,14 @@ const fieldLabel = {
   marginBottom: 8,
   fontSize: 13,
   fontWeight: "700" as const,
-  color: CREAM,
+  color: INK,
   letterSpacing: 1.5,
 };
 const inputRow = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
-  backgroundColor: INPUT_BG,
-  borderColor: HAIRLINE,
+  backgroundColor: FIELD_BG,
+  borderColor: FIELD_BORDER,
   borderWidth: 1,
   borderRadius: 16,
   paddingHorizontal: 16,
@@ -325,7 +326,7 @@ const inputRow = {
 const inputText = {
   flex: 1,
   fontSize: 16,
-  color: CREAM,
+  color: INK,
   paddingVertical: 16,
 };
 const primaryBtn = {

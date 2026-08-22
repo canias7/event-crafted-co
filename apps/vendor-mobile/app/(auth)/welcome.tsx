@@ -6,8 +6,14 @@
 // the only thing a vendor actually came here to do. The sequence is gone —
 // the screen is what it used to spend fifteen seconds arriving at.
 //
-// Layout: crisp event photography across the top, dissolving into the page
-// colour, then wordmark, tagline, three value pillars, and the auth pills.
+// Light theme. This screen used to be near-black (#0d0f13) with a dark hero
+// whose baked gradient dissolved into the page colour. The whole auth flow now
+// matches the cream design system the rest of the app uses, so the hero is a
+// bright, warm photo in a rounded band with a hard bottom edge — no baked
+// fade to line up with, and no seam to get wrong.
+//
+// Layout: hero band, logo badge straddling its lower edge, wordmark, tagline,
+// botanical divider, three value cards, and the auth pills.
 
 import {
   Image,
@@ -26,15 +32,15 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-// Page colour. Must match the colour the hero asset's baked gradient resolves
-// to at its lower edge (rgba(13,15,19,1)) exactly — a near-miss shows up as a
-// visible seam where the photo dissolves.
-const PAGE = "#0d0f13";
-const INK_ON_GOLD = "#14161a";
-const WHITE = "#ffffff";
-const MUTED = "rgba(255,255,255,0.72)";
-const GOLD = "#d9bd82";
-const HAIRLINE = "rgba(255,255,255,0.14)";
+// Cream design-system tokens — same values as the signed-in app.
+const PAGE = "#f4f1ea";
+const CARD = "#fbf9f4";
+const SURFACE = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const BORDER = "#e6e1d5";
+const GOLD = "#c9a86a";
+const BRONZE = "#8a6f3e";
 
 const TAGLINE_LINES = ["for those who plan,", "and those who shine."];
 
@@ -61,219 +67,266 @@ const PILLARS = [
   },
 ] as const;
 
+const BADGE = 86;
+
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  // Photo height from the asset's own 900:860 aspect (shipped at 2x,
-  // 1800x1720, so phone screens never upscale it), so it's never stretched.
-  // The photo itself occupies the top ~70% of the asset at its native 3:2
-  // aspect — zoomed out, nothing cropped — and the rest is baked fade.
-  const photoHeight = width * (860 / 900);
-  // The wordmark is one Text (not per-character any more), so RN can shrink it
-  // itself — adjustsFontSizeToFit handles narrow screens without the measure-
-  // and-scale dance the animated version needed.
-  const wordmarkSize = Math.min(64, width * 0.155);
+  // Hero height from the asset's own 1800:1057 aspect so it's never
+  // stretched. Shipped at 1800px wide, so no phone upscales it.
+  const heroHeight = Math.round(width * (1057 / 1800));
+  // One Text (not per-character any more), so RN can shrink it itself —
+  // adjustsFontSizeToFit handles narrow screens.
+  const wordmarkSize = Math.min(60, width * 0.148);
 
   return (
     <View style={{ flex: 1, backgroundColor: PAGE }}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      {/* Explicit numeric width AND height — nothing else. This style has
-          now failed twice on device in fancier forms: with left+right:0 the
-          width constraint was dropped and the image laid out at its
-          intrinsic ~1800dp (screen showed a corner of a giant photo), and
-          aspectRatio fared no better. The styling interop on this screen
-          demonstrably mishandles derived constraints (it also ate the
-          Pressable function styles), so the image box is pinned to plain
-          numbers measured from the device. Numeric width/height are the
-          one thing every RN style path applies faithfully; with the box
-          matching the asset's 900:860 aspect, cover has nothing to crop. */}
-      <Image
-        source={require("../../assets/welcome-hero.jpg")}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: width,
-          height: photoHeight,
-        }}
-        resizeMode="cover"
-        accessibilityIgnoresInvertColors
-      />
-
-      {/* Scrollable so the content can't be clipped on short screens — the
-          pillars plus two pills plus legal text is a tall stack. */}
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          justifyContent: "flex-end",
-          paddingTop: photoHeight * 0.62,
           paddingBottom: Math.max(insets.bottom + 20, 32),
-          paddingHorizontal: 26,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Image
-          source={require("../../assets/v-mark.png")}
+        {/* Hero band. Explicit numeric width AND height — nothing else. This
+            style has failed on device in fancier forms: with left+right:0 the
+            width constraint was dropped and the image laid out at its
+            intrinsic size, and aspectRatio fared no better. The styling
+            interop on this screen demonstrably mishandles derived
+            constraints, so the image box stays plain numbers. */}
+        <View
           style={{
-            alignSelf: "center",
-            width: 46,
-            height: 46,
-            marginBottom: 8,
-            tintColor: "#d9bd82",
-            resizeMode: "contain",
-          }}
-        />
-
-        <Text
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          style={{
-            fontFamily: SERIF,
-            fontSize: wordmarkSize,
-            lineHeight: wordmarkSize * 1.12,
-            color: WHITE,
-            textAlign: "center",
-            letterSpacing: -0.5,
+            width: width,
+            height: heroHeight,
+            borderBottomLeftRadius: 34,
+            borderBottomRightRadius: 34,
+            overflow: "hidden",
+            backgroundColor: SURFACE,
           }}
         >
-          Vendora
-        </Text>
-
-        <View style={{ marginTop: 10 }}>
-          {TAGLINE_LINES.map((line) => (
-            <Text
-              key={line}
-              style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontSize: 19,
-                lineHeight: 27,
-                color: GOLD,
-                textAlign: "center",
-              }}
-            >
-              {line}
-            </Text>
-          ))}
+          <Image
+            source={require("../../assets/welcome-hero-light.jpg")}
+            style={{ width: width, height: heroHeight }}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
         </View>
 
-        {/* Three value pillars, split by hairlines. */}
-        <View style={{ flexDirection: "row", marginTop: 30 }}>
-          {PILLARS.map((p, i) => (
+        <View style={{ paddingHorizontal: 26 }}>
+          {/* Logo badge straddling the hero's lower edge. */}
+          <View
+            style={{
+              alignSelf: "center",
+              marginTop: -(BADGE / 2),
+              width: BADGE,
+              height: BADGE,
+              borderRadius: BADGE / 2,
+              backgroundColor: CARD,
+              borderWidth: 1.5,
+              borderColor: GOLD,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Image
+              source={require("../../assets/v-mark.png")}
+              style={{
+                width: 42,
+                height: 42,
+                tintColor: GOLD,
+                resizeMode: "contain",
+              }}
+            />
+          </View>
+
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={{
+              marginTop: 14,
+              fontFamily: SERIF,
+              fontSize: wordmarkSize,
+              lineHeight: wordmarkSize * 1.12,
+              color: INK,
+              textAlign: "center",
+              letterSpacing: -0.5,
+            }}
+          >
+            Vendora
+          </Text>
+
+          <View style={{ marginTop: 8 }}>
+            {TAGLINE_LINES.map((line) => (
+              <Text
+                key={line}
+                style={{
+                  fontFamily: SERIF,
+                  fontStyle: "italic",
+                  fontSize: 19,
+                  lineHeight: 27,
+                  color: BRONZE,
+                  textAlign: "center",
+                }}
+              >
+                {line}
+              </Text>
+            ))}
+          </View>
+
+          {/* Botanical divider — separates the brand from the features. */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: 20,
+              marginBottom: 22,
+            }}
+          >
+            <View style={{ width: 62, height: 1, backgroundColor: BORDER }} />
+            <MaterialCommunityIcons
+              name="leaf"
+              size={17}
+              color={GOLD}
+              style={{ marginHorizontal: 12 }}
+            />
+            <View style={{ width: 62, height: 1, backgroundColor: BORDER }} />
+          </View>
+
+          {/* Three value cards. No chevrons: these are informational, and a
+              chevron that navigates nowhere is the non-functional UI Apple
+              rejects (same reason there's no social-auth row below). */}
+          {PILLARS.map((p) => (
             <View
               key={p.title}
               style={{
-                flex: 1,
+                flexDirection: "row",
                 alignItems: "center",
-                paddingHorizontal: 8,
-                borderLeftWidth: i === 0 ? 0 : 1,
-                borderLeftColor: HAIRLINE,
+                backgroundColor: CARD,
+                borderWidth: 1,
+                borderColor: BORDER,
+                borderRadius: 18,
+                padding: 14,
+                marginBottom: 10,
               }}
             >
-              <MaterialCommunityIcons name={p.icon} size={26} color={GOLD} />
-              <Text
+              <View
                 style={{
-                  color: GOLD,
-                  fontSize: 13,
-                  fontWeight: "600",
-                  textAlign: "center",
-                  marginTop: 10,
+                  width: 50,
+                  height: 50,
+                  borderRadius: 15,
+                  backgroundColor: SURFACE,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                {p.title}
-              </Text>
-              <Text
-                style={{
-                  color: MUTED,
-                  fontSize: 12,
-                  lineHeight: 17,
-                  textAlign: "center",
-                  marginTop: 6,
-                }}
-              >
-                {p.body}
-              </Text>
+                <MaterialCommunityIcons name={p.icon} size={24} color={BRONZE} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 14 }}>
+                <Text
+                  style={{
+                    color: INK,
+                    fontSize: 16,
+                    fontWeight: "700",
+                  }}
+                >
+                  {p.title}
+                </Text>
+                <Text
+                  style={{
+                    color: INK_DIM,
+                    fontSize: 13.5,
+                    lineHeight: 19,
+                    marginTop: 2,
+                  }}
+                >
+                  {p.body}
+                </Text>
+              </View>
             </View>
           ))}
+
+          {/* Plain style objects only — NOT the function form. NativeWind's
+              global component interop silently discarded function-form style
+              props on device: the pills rendered as bare unstyled text while
+              every statically-styled sibling was fine. TouchableOpacity gives
+              the press feedback the function form existed for. */}
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/signup")}
+            accessibilityRole="button"
+            activeOpacity={0.85}
+            style={{
+              marginTop: 22,
+              height: 56,
+              borderRadius: 999,
+              backgroundColor: GOLD,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: INK, fontSize: 17, fontWeight: "700" }}>
+              Sign up
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/login")}
+            accessibilityRole="button"
+            activeOpacity={0.7}
+            style={{
+              marginTop: 12,
+              height: 56,
+              borderRadius: 999,
+              borderWidth: 1.5,
+              borderColor: GOLD,
+              backgroundColor: CARD,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: INK, fontSize: 17, fontWeight: "700" }}>
+              Sign in
+            </Text>
+          </TouchableOpacity>
+
+          {/* No social-auth row: Google / Apple / Facebook sign-in isn't
+              implemented anywhere in this project (mobile or web), and
+              rendering buttons that do nothing is worse than omitting them —
+              Apple also rejects non-functional UI. Adding it is real work:
+              OAuth clients per provider, redirect handling, and Apple requires
+              Sign in with Apple once any other third-party option is
+              offered. */}
+
+          <Text
+            style={{
+              color: INK_DIM,
+              fontSize: 12,
+              lineHeight: 18,
+              textAlign: "center",
+              marginTop: 20,
+            }}
+          >
+            By continuing, you agree to our{" "}
+            <Text
+              style={{ color: BRONZE, fontWeight: "600" }}
+              onPress={() => void Linking.openURL(TERMS_URL)}
+            >
+              Terms of Service
+            </Text>{" "}
+            and{" "}
+            <Text
+              style={{ color: BRONZE, fontWeight: "600" }}
+              onPress={() => void Linking.openURL(PRIVACY_URL)}
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
-
-        {/* Plain style objects only — NOT the function form. NativeWind's
-            global component interop silently discarded function-form style
-            props on device: the pills rendered as bare unstyled text while
-            every statically-styled sibling was fine. TouchableOpacity gives
-            the press feedback the function form existed for. */}
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/signup")}
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          style={{
-            marginTop: 34,
-            height: 56,
-            borderRadius: 999,
-            backgroundColor: GOLD,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text style={{ color: INK_ON_GOLD, fontSize: 17, fontWeight: "600" }}>
-            Sign up
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/login")}
-          accessibilityRole="button"
-          activeOpacity={0.7}
-          style={{
-            marginTop: 12,
-            height: 56,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.35)",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text style={{ color: WHITE, fontSize: 17, fontWeight: "600" }}>
-            Sign in
-          </Text>
-        </TouchableOpacity>
-
-        {/* No social-auth row: Google / Apple / Facebook sign-in isn't
-            implemented anywhere in this project (mobile or web), and rendering
-            buttons that do nothing is worse than omitting them — Apple also
-            rejects non-functional UI. Adding it is real work: OAuth clients per
-            provider, redirect handling, and Apple requires Sign in with Apple
-            once any other third-party option is offered. */}
-
-        <Text
-          style={{
-            color: MUTED,
-            fontSize: 12,
-            lineHeight: 18,
-            textAlign: "center",
-            marginTop: 22,
-          }}
-        >
-          By continuing, you agree to our{" "}
-          <Text
-            style={{ color: GOLD }}
-            onPress={() => void Linking.openURL(TERMS_URL)}
-          >
-            Terms of Service
-          </Text>{" "}
-          and{" "}
-          <Text
-            style={{ color: GOLD }}
-            onPress={() => void Linking.openURL(PRIVACY_URL)}
-          >
-            Privacy Policy
-          </Text>
-          .
-        </Text>
       </ScrollView>
     </View>
   );
