@@ -40,17 +40,19 @@ import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
 // Same palette as welcome.tsx — the two screens must read as one flow.
-const PAGE = "#0d0f13";
-const SHEET = "#13161c";
-const CREAM = "#f4efe6";
+const PAGE = "#f4f1ea";
+const SHEET = "#fbf9f4";
+const SURFACE = "#ece7db";
+const INK = "#14161a";
 const INK_ON_GOLD = "#14161a";
-const GOLD = "#d9bd82";
-const GOLD_DIM = "rgba(217,189,130,0.45)";
-const MUTED = "rgba(255,255,255,0.72)";
-const FAINT = "rgba(255,255,255,0.45)";
-const HAIRLINE = "rgba(255,255,255,0.14)";
-const INPUT_BG = "rgba(255,255,255,0.05)";
-const ERROR = "#f0938a";
+const GOLD = "#c9a86a";
+const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
+const INK_DIM = "#5e636e";
+const SUBTLE = "#8b8f99";
+const BORDER = "#e6e1d5";
+const FIELD_BG = "#fbf9f4";
+const FIELD_BORDER = "#d9d1bf";
+const ERROR = "#b23a34";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -188,7 +190,7 @@ export default function VendorSignupScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
-      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+      <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -224,7 +226,7 @@ export default function VendorSignupScreen() {
               hitSlop={12}
               style={{ alignSelf: "flex-start", paddingVertical: 8 }}
             >
-              <Text style={{ color: MUTED, fontSize: 16, fontWeight: "500" }}>
+              <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
                 ← Back
               </Text>
             </Pressable>
@@ -307,9 +309,9 @@ function StarDivider() {
         gap: 14,
       }}
     >
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
       <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_DIM }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
     </View>
   );
 }
@@ -324,7 +326,7 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
           fontSize: 38,
           lineHeight: 46,
           fontWeight: "700",
-          color: CREAM,
+          color: INK,
           letterSpacing: -0.5,
           marginTop: 10,
         }}
@@ -383,7 +385,7 @@ function AccountStep(p: AccountStepProps) {
               value={p.password}
               onChangeText={p.setPassword}
               placeholder="At least 8 characters"
-              placeholderTextColor={FAINT}
+              placeholderTextColor={SUBTLE}
               selectionColor={GOLD}
               keyboardAppearance="dark"
               style={inputText}
@@ -462,7 +464,7 @@ function BusinessStep(p: BusinessStepProps) {
             <Text
               style={{
                 fontSize: 16,
-                color: p.category ? CREAM : FAINT,
+                color: p.category ? INK : SUBTLE,
                 flex: 1,
               }}
             >
@@ -471,7 +473,7 @@ function BusinessStep(p: BusinessStepProps) {
             <MaterialCommunityIcons
               name="chevron-right"
               size={22}
-              color={FAINT}
+              color={SUBTLE}
             />
           </TouchableOpacity>
         </View>
@@ -497,7 +499,7 @@ function BusinessStep(p: BusinessStepProps) {
             marginTop: 4,
             textAlign: "center",
             fontSize: 12,
-            color: FAINT,
+            color: SUBTLE,
             lineHeight: 18,
           }}
         >
@@ -545,7 +547,7 @@ function CodeStep(p: CodeStepProps) {
                 p.setCode(v.replace(/[^0-9]/g, "").slice(0, 6))
               }
               placeholder="123456"
-              placeholderTextColor={FAINT}
+              placeholderTextColor={SUBTLE}
               selectionColor={GOLD}
               keyboardAppearance="dark"
               keyboardType="number-pad"
@@ -598,7 +600,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
           fontFamily: SERIF,
           fontSize: 36,
           fontWeight: "700",
-          color: CREAM,
+          color: INK,
           letterSpacing: -0.5,
           marginTop: 12,
           textAlign: "center",
@@ -610,7 +612,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
         style={{
           marginTop: 16,
           fontSize: 15,
-          color: MUTED,
+          color: INK_DIM,
           textAlign: "center",
           lineHeight: 22,
           maxWidth: 320,
@@ -672,7 +674,7 @@ function Field({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={FAINT}
+          placeholderTextColor={SUBTLE}
           selectionColor={GOLD}
           keyboardAppearance="dark"
           keyboardType={keyboardType}
@@ -709,7 +711,7 @@ function CategoryPicker({
         onPress={onClose}
         style={{
           flex: 1,
-          backgroundColor: "rgba(0,0,0,0.6)",
+          backgroundColor: "rgba(20,22,26,0.45)",
           justifyContent: "flex-end",
         }}
       >
@@ -719,7 +721,7 @@ function CategoryPicker({
             backgroundColor: SHEET,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
-            borderColor: HAIRLINE,
+            borderColor: BORDER,
             borderWidth: 1,
             maxHeight: "82%",
             paddingHorizontal: 0,
@@ -733,7 +735,7 @@ function CategoryPicker({
               width: 40,
               height: 4,
               borderRadius: 2,
-              backgroundColor: HAIRLINE,
+              backgroundColor: BORDER,
               marginBottom: 16,
             }}
           />
@@ -742,7 +744,7 @@ function CategoryPicker({
               fontFamily: SERIF,
               fontSize: 22,
               fontWeight: "700",
-              color: CREAM,
+              color: INK,
               letterSpacing: -0.5,
               paddingHorizontal: 20,
               marginBottom: 12,
@@ -774,15 +776,13 @@ function CategoryPicker({
                       style={{
                         paddingHorizontal: 20,
                         paddingVertical: 14,
-                        backgroundColor: isSelected
-                          ? "rgba(255,255,255,0.06)"
-                          : "transparent",
+                        backgroundColor: isSelected ? SURFACE : "transparent",
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
                       }}
                     >
-                      <Text style={{ color: CREAM, fontSize: 16 }}>{sub}</Text>
+                      <Text style={{ color: INK, fontSize: 16 }}>{sub}</Text>
                       {isSelected ? (
                         <MaterialCommunityIcons
                           name="check"
@@ -811,7 +811,7 @@ const eyebrowLabel = {
 const subhead = {
   marginTop: 10,
   fontSize: 17,
-  color: MUTED,
+  color: INK_DIM,
   fontStyle: "italic" as const,
   fontFamily: SERIF,
   lineHeight: 24,
@@ -820,7 +820,7 @@ const fieldLabel = {
   marginBottom: 8,
   fontSize: 13,
   fontWeight: "700" as const,
-  color: CREAM,
+  color: INK,
   letterSpacing: 1.5,
 };
 // Input = outer row (border, bg, icon) + flex TextInput. Two pieces so the
@@ -828,8 +828,8 @@ const fieldLabel = {
 const inputRow = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
-  backgroundColor: INPUT_BG,
-  borderColor: HAIRLINE,
+  backgroundColor: FIELD_BG,
+  borderColor: FIELD_BORDER,
   borderWidth: 1,
   borderRadius: 16,
   paddingHorizontal: 16,
@@ -838,7 +838,7 @@ const inputRow = {
 const inputText = {
   flex: 1,
   fontSize: 16,
-  color: CREAM,
+  color: INK,
   paddingVertical: 16,
 };
 const primaryBtn = {
