@@ -539,7 +539,7 @@ export default function GalleryScreen() {
             >
               Gallery
             </Text>
-            <Text style={{ color: GOLD, fontSize: 17, marginLeft: 6 }}>✦</Text>
+            <Text style={{ color: GOLD, fontSize: 13, marginLeft: 6 }}>✦</Text>
           </View>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Pressable

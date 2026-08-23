@@ -177,7 +177,7 @@ export default function WelcomeScreen() {
             ))}
           </View>
 
-          {/* Botanical divider — separates the brand from the features. */}
+          {/* Divider — the same gold ✦ every other auth screen uses. */}
           <View
             style={{
               flexDirection: "row",
@@ -189,8 +189,8 @@ export default function WelcomeScreen() {
           >
             <View style={{ width: 62, height: 1, backgroundColor: BORDER }} />
             <MaterialCommunityIcons
-              name="leaf"
-              size={17}
+              name="star-four-points"
+              size={16}
               color={GOLD}
               style={{ marginHorizontal: 12 }}
             />

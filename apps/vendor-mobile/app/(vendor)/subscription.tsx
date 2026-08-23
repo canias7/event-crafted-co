@@ -452,7 +452,7 @@ export default function SubscriptionScreen() {
             color: INK,
           }}
         >
-          Subscription <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+          Subscription <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
         </Text>
         <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Plans and billing
