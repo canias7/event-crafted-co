@@ -51,8 +51,8 @@ const THIS_ROUTE = "venue-listing";
 
 const CREAM = "#fdfcfa";
 const INK = "#14161a";
-const INK_DIM = "#6b6f78";
-const BORDER = "#e5e2dc";
+const INK_DIM = "#5e636e";
+const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "rgba(201,168,106,0.16)";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
