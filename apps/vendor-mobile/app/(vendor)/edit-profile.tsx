@@ -38,7 +38,9 @@ const CREAM = "#f4f1ea";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e6e1d5";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface ProfileForm {
   business_name: string;
@@ -235,8 +237,7 @@ export default function EditProfileScreen() {
           <Text
             style={{
               color: INK,
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_BOLD,
               fontSize: 20,
               fontWeight: "700",
             }}
@@ -316,8 +317,7 @@ export default function EditProfileScreen() {
                       <Text
                         style={{
                           color: CREAM,
-                          fontFamily: SERIF,
-                          fontStyle: "italic",
+                          fontFamily: SERIF_BOLD,
                           fontWeight: "700",
                           fontSize: 66,
                           lineHeight: 74,

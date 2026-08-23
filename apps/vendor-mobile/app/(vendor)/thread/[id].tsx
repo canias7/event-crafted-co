@@ -73,7 +73,9 @@ const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const ACTIVE_GREEN = "#22c55e";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
@@ -634,8 +636,7 @@ function EmojiPickerModal({
           <Text
             style={{
               color: INK,
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_ITALIC,
               fontSize: 18,
               fontWeight: "500",
               marginBottom: 12,
@@ -716,7 +717,7 @@ function Header({
           <Text
             style={{
               color: CREAM,
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontWeight: "600",
               fontSize: 18,
             }}
@@ -745,8 +746,7 @@ function Header({
           numberOfLines={1}
           style={{
             color: INK,
-            fontFamily: SERIF,
-            fontStyle: "italic",
+            fontFamily: SERIF_BOLD,
             fontWeight: "700",
             fontSize: 18,
           }}
@@ -849,7 +849,7 @@ function MessageRow({
                 <Text
                   style={{
                     color: CREAM,
-                    fontFamily: SERIF,
+                    fontFamily: SERIF_BOLD,
                     fontWeight: "600",
                     fontSize: 13,
                   }}
@@ -1037,8 +1037,7 @@ function DateSeparator({ label }: { label: string }) {
       <Text
         style={{
           color: INK_DIM,
-          fontFamily: SERIF,
-          fontStyle: "italic",
+          fontFamily: SERIF_ITALIC,
           fontSize: 13,
         }}
       >

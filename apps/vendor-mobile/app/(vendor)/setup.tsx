@@ -11,7 +11,6 @@
 import { useCallback, useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -33,7 +32,9 @@ const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "rgba(201,168,106,0.35)";
 const BORDER = "rgba(20,22,26,0.10)";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function SetupChecklistScreen() {
   const router = useRouter();
@@ -136,7 +137,7 @@ export default function SetupChecklistScreen() {
           <Text
             style={{
               marginTop: 8,
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 36,
               lineHeight: 42,
               fontWeight: "700",

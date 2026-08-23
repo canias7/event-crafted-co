@@ -38,7 +38,9 @@ const BORDER = "#e6e1d5";
 const FIELD_BG = "#fbf9f4";
 const FIELD_BORDER = "#d9d1bf";
 const ERROR = "#b23a34";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -202,7 +204,7 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
       <Text style={eyebrowLabel}>{p.eyebrow}</Text>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 38,
           lineHeight: 46,
           fontWeight: "700",

@@ -55,7 +55,9 @@ const INK_DIM = "#5e636e";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "rgba(201,168,106,0.16)";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 100;
@@ -679,8 +681,7 @@ export default function VenueListingScreen() {
           </Pressable>
           <Text
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_BOLD,
               fontSize: 24,
               fontWeight: "700",
               color: INK,
@@ -1290,7 +1291,7 @@ function StepTitle({
     <View style={{ marginTop: topGap ? 30 : 6, marginBottom: 6 }}>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 26,
           fontWeight: "700",
           color: INK,

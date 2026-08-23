@@ -15,7 +15,9 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Newest first. `date` is display-only.
 export const SHIPPED: { date: string; title: string; body: string }[] = [
@@ -97,7 +99,7 @@ export default function UpdatesScreen() {
         <Text
           style={{
             marginTop: 14,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 38,
             fontWeight: "700",
             letterSpacing: -0.5,
@@ -136,7 +138,7 @@ export default function UpdatesScreen() {
               <Text
                 style={{
                   marginTop: 5,
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 18,
                   fontWeight: "700",
                   color: INK,
@@ -154,7 +156,7 @@ export default function UpdatesScreen() {
         <Text
           style={{
             marginTop: 28,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 22,
             fontWeight: "700",
             color: INK,

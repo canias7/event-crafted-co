@@ -14,6 +14,7 @@ import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import * as Updates from "expo-updates";
+import { useFonts } from "expo-font";
 import { AuthProvider } from "@/lib/auth";
 
 // Apply OTA updates on the launch that finds them, instead of expo-updates'
@@ -179,6 +180,22 @@ function FatalCatcher({ children }: { children: ReactNode }) {
 
 export default function RootLayout() {
   useApplyUpdatesOnLaunch();
+  // Libre Baskerville — the same serif the website uses, so the brand
+  // reads identically in both places. Android will not synthesise a bold
+  // or an oblique for a custom family, so each face is registered under
+  // its own name (SERIF / SERIF_BOLD / SERIF_ITALIC). There is no
+  // bold-italic face in this family; those few styles use bold.
+  const [fontsLoaded] = useFonts({
+    LibreBaskerville: require("../assets/fonts/LibreBaskerville-Regular.ttf"),
+    "LibreBaskerville-Bold": require("../assets/fonts/LibreBaskerville-Bold.ttf"),
+    "LibreBaskerville-Italic": require("../assets/fonts/LibreBaskerville-Italic.ttf"),
+  });
+
+  // Hold the tree until the faces are in — otherwise the first frame
+  // paints in the system serif and visibly reflows.
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: "#f4f1ea" }} />;
+  }
 
   return (
     <SafeAreaProvider>

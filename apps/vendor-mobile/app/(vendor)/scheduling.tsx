@@ -21,7 +21,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Switch,
@@ -43,7 +42,9 @@ const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "rgba(201,168,106,0.16)";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DURATIONS = [15, 30, 45, 60, 90, 120];
@@ -314,7 +315,7 @@ export default function SchedulingScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
-          <Text style={{ fontFamily: SERIF, fontSize: 19, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700", color: INK }}>
             Smart Scheduling & Automations <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
           </Text>
           <View style={{ width: 26 }} />
@@ -358,7 +359,7 @@ export default function SchedulingScreen() {
                 <Feather name="clock" size={16} color={INK} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, fontWeight: "700", color: INK }}>
                   {t.name}
                   {!t.active ? <Text style={{ fontSize: 12, color: INK_DIM }}>  · off</Text> : null}
                 </Text>
@@ -601,7 +602,7 @@ export default function SchedulingScreen() {
                   padding: 16,
                 }}
               >
-                <Text style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}>
                   {sug.open_dates.length} open date{sug.open_dates.length === 1 ? "" : "s"} coming up
                 </Text>
                 <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
@@ -715,7 +716,7 @@ export default function SchedulingScreen() {
             <Text
               style={{
                 textAlign: "center",
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 19,
                 fontWeight: "700",
                 color: INK,
@@ -781,7 +782,7 @@ export default function SchedulingScreen() {
 function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <View style={{ marginTop: 26, marginBottom: 12 }}>
-      <Text style={{ fontFamily: SERIF, fontSize: 21, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 21, fontWeight: "700", color: INK }}>
         {title}
       </Text>
       {sub ? (
@@ -889,7 +890,7 @@ function ToggleCard({
         <Feather name={icon} size={17} color={INK} />
       </View>
       <View style={{ flex: 1, marginHorizontal: 12 }}>
-        <Text style={{ fontFamily: SERIF, fontSize: 15.5, fontWeight: "700", color: INK }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, fontWeight: "700", color: INK }}>
           {title}
         </Text>
         <Text style={{ marginTop: 2, fontSize: 12.5, lineHeight: 17, color: INK_DIM }}>{sub}</Text>
@@ -953,7 +954,7 @@ function AutoRow({
           <Feather name={icon} size={17} color={INK} />
         </View>
         <View style={{ flex: 1, marginHorizontal: 12 }}>
-          <Text style={{ fontFamily: SERIF, fontSize: 15.5, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, fontWeight: "700", color: INK }}>
             {title}
           </Text>
           <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>{sub}</Text>
@@ -1076,7 +1077,7 @@ function TypeForm({
           <Pressable onPress={onClose} hitSlop={10}>
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
-          <Text style={{ fontFamily: SERIF, fontSize: 20, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, fontWeight: "700", color: INK }}>
             {type ? "Edit appointment type" : "New appointment type"}
           </Text>
           <View style={{ width: 26 }} />
@@ -1181,7 +1182,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
         padding: 18,
       }}
     >
-      <Text style={{ fontFamily: SERIF, fontSize: 19, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700", color: INK }}>
         Put it on autopilot <Text style={{ color: GOLD, fontSize: 14 }}>✦</Text>
       </Text>
       <Text style={{ marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
@@ -1252,7 +1253,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
         style={{
           marginTop: 14,
           textAlign: "center",
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 27,
           fontWeight: "700",
           color: INK,
@@ -1288,7 +1289,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
               <Feather name={r.icon} size={19} color={INK} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}>
                 {r.title}
               </Text>
               <Text style={{ marginTop: 2, fontSize: 13, lineHeight: 18, color: INK_DIM }}>

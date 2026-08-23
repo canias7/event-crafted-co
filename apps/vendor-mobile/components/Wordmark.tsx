@@ -10,7 +10,9 @@ import { Image, Platform, Text, View } from "react-native";
 
 const INK = "#14161a";
 const GOLD = "#c9a86a";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export function Wordmark({ color = INK }: { color?: string }) {
   return (
@@ -30,7 +32,7 @@ export function Wordmark({ color = INK }: { color?: string }) {
       />
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 23,
           fontWeight: "600",
           letterSpacing: 0.5,

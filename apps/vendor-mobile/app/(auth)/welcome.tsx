@@ -24,7 +24,6 @@
 import {
   Image,
   Linking,
-  Platform,
   ScrollView,
   StatusBar,
   Text,
@@ -36,7 +35,9 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Cream design-system tokens — same values as the signed-in app.
 const PAGE = "#f4f1ea";
@@ -234,7 +235,7 @@ export default function WelcomeScreen() {
               <View style={{ flex: 1, marginLeft: 14 }}>
                 <Text
                   style={{
-                    fontFamily: SERIF,
+                    fontFamily: SERIF_BOLD,
                     color: INK,
                     fontSize: 18,
                     fontWeight: "700",

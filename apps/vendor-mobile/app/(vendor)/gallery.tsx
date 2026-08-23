@@ -58,7 +58,9 @@ const ACCENT = "#1b3654";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const ERROR = "#dc2828";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB, matches web
 const UPLOAD_CONCURRENCY = 4;
@@ -529,7 +531,7 @@ export default function GalleryScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
             <Text
               style={{
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 38,
                 lineHeight: 46,
                 fontWeight: "700",
@@ -676,7 +678,7 @@ export default function GalleryScreen() {
             <Text
               style={{
                 marginTop: 18,
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 23,
                 fontWeight: "700",
                 color: INK,
@@ -824,7 +826,7 @@ export default function GalleryScreen() {
             <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, fontWeight: "700", color: INK }}>
               Organize. Showcase. Get booked.
             </Text>
             <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>

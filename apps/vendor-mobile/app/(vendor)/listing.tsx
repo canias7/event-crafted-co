@@ -17,7 +17,6 @@ import {
   Alert,
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -49,7 +48,9 @@ const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e6e1d5";
 const ACCENT = "#1B3654";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Minimum photos required to publish a listing. Mirrors the web wizard
 // and the enforce_listing_min_photos DB trigger — a listing can't go to
@@ -679,7 +680,7 @@ export default function ListingScreen() {
           <CircleButton onPress={() => router.back()} icon="x" />
           <Text
             style={{
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 18,
               fontWeight: "600",
               color: INK,
@@ -704,9 +705,8 @@ export default function ListingScreen() {
           <CircleButton onPress={() => router.back()} icon="chevron-left" />
           <Text
             style={{
-              fontFamily: SERIF,
+              fontFamily: SERIF_ITALIC,
               fontSize: 24,
-              fontStyle: "italic",
               fontWeight: "500",
               color: INK,
             }}
@@ -1265,7 +1265,7 @@ function StepHeader({
       </Text>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 30,
           fontWeight: "600",
           color: INK,
@@ -1304,7 +1304,7 @@ function SectionBlock({
     <View style={{ paddingHorizontal: 22, paddingTop: 22 }}>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 22,
           fontWeight: "600",
           color: INK,
@@ -1458,9 +1458,8 @@ function PhotoGrid({
             <Feather name="camera" size={28} color={INK_DIM} />
             <Text
               style={{
-                fontFamily: SERIF,
+                fontFamily: SERIF_ITALIC,
                 fontSize: 14,
-                fontStyle: "italic",
                 color: INK_DIM,
                 marginTop: 8,
               }}

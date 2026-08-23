@@ -41,7 +41,9 @@ const INK_DIM = "#5e636e";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "#eadfc6";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Feature comparison per the reference mock — static marketing copy,
 // independent of the Stripe catalog (prices stay DB-driven).
@@ -445,7 +447,7 @@ export default function SubscriptionScreen() {
         <Text
           style={{
             marginTop: 14,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 38,
             fontWeight: "700",
             letterSpacing: -0.5,
@@ -469,7 +471,7 @@ export default function SubscriptionScreen() {
           <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: "600" }}>
             Current plan
           </Text>
-          <Text style={{ color: "#ffffff", fontSize: 30, fontFamily: SERIF, marginTop: 6 }}>
+          <Text style={{ color: "#ffffff", fontSize: 30, fontFamily: SERIF_BOLD, marginTop: 6 }}>
             {TIER_LABELS[currentTier] ?? currentTier}
           </Text>
           {plan?.status === "past_due" ? (
@@ -532,7 +534,7 @@ export default function SubscriptionScreen() {
               marginTop: 28,
             }}
           >
-            <Text style={{ color: INK, fontFamily: SERIF, fontSize: 18, fontWeight: "700" }}>
+            <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18, fontWeight: "700" }}>
               Your plan
             </Text>
             <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
@@ -615,7 +617,7 @@ export default function SubscriptionScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ color: INK, fontFamily: SERIF, fontSize: 19, fontWeight: "700" }}>
+                <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700" }}>
                   {tier.name}
                 </Text>
                 {isCurrent ? (

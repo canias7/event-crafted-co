@@ -16,7 +16,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -39,7 +38,9 @@ const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "#eadfc6";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 type Step = "intro" | "identity" | "business" | "review";
 
@@ -285,7 +286,7 @@ export default function VerificationScreen() {
         <Pressable onPress={onBack} hitSlop={10}>
           <Feather name="chevron-left" size={26} color={INK} />
         </Pressable>
-        <Text style={{ fontFamily: SERIF, fontSize: 20, fontWeight: "700", color: INK }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, fontWeight: "700", color: INK }}>
           {title}
         </Text>
         <View style={{ width: 26 }} />
@@ -309,7 +310,7 @@ export default function VerificationScreen() {
             style={{
               marginTop: 14,
               textAlign: "center",
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 27,
               fontWeight: "700",
               color: INK,
@@ -391,7 +392,7 @@ export default function VerificationScreen() {
             <Text
               style={{
                 marginTop: 12,
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 24,
                 fontWeight: "700",
                 color: INK,
@@ -476,7 +477,7 @@ export default function VerificationScreen() {
               style={{
                 marginTop: 14,
                 textAlign: "center",
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 27,
                 fontWeight: "700",
                 color: INK,
@@ -510,7 +511,7 @@ export default function VerificationScreen() {
                     <Feather name={r.icon as never} size={18} color={INK} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 13 }}>
-                    <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, fontWeight: "700", color: INK }}>
                       {r.t}
                     </Text>
                     <Text style={{ marginTop: 1, fontSize: 12.5, color: INK_DIM }}>{r.s}</Text>
@@ -917,7 +918,7 @@ function SummaryCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}>
           {title}
         </Text>
         <Pressable onPress={onEdit} hitSlop={8}>

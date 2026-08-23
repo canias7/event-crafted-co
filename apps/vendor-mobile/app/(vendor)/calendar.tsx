@@ -79,7 +79,9 @@ const LISTING_PALETTE = [
   "#a21caf",
   "#4338ca",
 ];
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 const DAY_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1043,7 +1045,7 @@ export default function CalendarScreen() {
               <Text
                 style={{
                   color: INK,
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 38,
                   fontWeight: "700",
                   letterSpacing: -0.5,
@@ -1111,8 +1113,7 @@ export default function CalendarScreen() {
                 numberOfLines={1}
                 style={{
                   color: INK,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
+                  fontFamily: SERIF_ITALIC,
                   fontSize: 23,
                   fontWeight: "500",
                   flexShrink: 1,
@@ -1262,8 +1263,7 @@ export default function CalendarScreen() {
                 <Text
                   style={{
                     color: INK,
-                    fontFamily: SERIF,
-                    fontStyle: "italic",
+                    fontFamily: SERIF_ITALIC,
                     fontSize: 20,
                     fontWeight: "500",
                     flexShrink: 1,
