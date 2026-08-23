@@ -40,7 +40,7 @@ const CARD = "#fbf9f4";
 const TRACK = "#ebe6db";
 const BORDER = "#e6e1d5";
 const INK = "#14161a";
-const INK_DIM = "#6b6f78";
+const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const SERIF_FONT = Platform.OS === "ios" ? "Times New Roman" : "serif";
 

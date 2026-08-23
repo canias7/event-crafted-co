@@ -40,10 +40,10 @@ import { Wordmark } from "@/components/Wordmark";
 // dark auth flow.
 const WHITE = "#ffffff";
 const PAGE = "#f4f1ea";
-const CARD = "#fdfcf9";
+const CARD = "#fbf9f4";
 const SURFACE = "#ece7db";
 const INK = "#14161a";
-const INK_DIM = "#6b6f78";
+const INK_DIM = "#5e636e";
 const BORDER = "rgba(20,22,26,0.10)";
 const GOLD = "#c9a86a";
 const DARK_CARD = "#16181d";
@@ -404,13 +404,13 @@ export default function ProfileScreen() {
                 >
                   <View
                     style={{
-                      backgroundColor: GOLD,
+                      backgroundColor: INK,
                       borderRadius: 999,
                       paddingHorizontal: 16,
                       paddingVertical: 9,
                     }}
                   >
-                    <Text style={{ color: INK, fontSize: 14, fontWeight: "600" }}>
+                    <Text style={{ color: WHITE, fontSize: 14, fontWeight: "600" }}>
                       Continue setup
                     </Text>
                   </View>
@@ -898,13 +898,13 @@ function EmptyState({
           activeOpacity={0.85}
           style={{
             marginTop: 20,
-            backgroundColor: GOLD,
-            borderRadius: 12,
+            backgroundColor: INK,
+            borderRadius: 999,
             paddingHorizontal: 26,
             paddingVertical: 13,
           }}
         >
-          <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
+          <Text style={{ fontSize: 15, fontWeight: "600", color: WHITE }}>
             {ctaLabel}
           </Text>
         </TouchableOpacity>
@@ -975,13 +975,13 @@ function ListingTab({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.85}
             style={{
-              backgroundColor: GOLD,
+              backgroundColor: INK,
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 8,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
+            <Text style={{ fontSize: 13, fontWeight: "600", color: WHITE }}>
               New listing
             </Text>
           </TouchableOpacity>

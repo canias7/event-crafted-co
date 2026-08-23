@@ -27,9 +27,9 @@ import { loadSetupState, type SetupItem, type SetupState } from "@/lib/setupChec
 import { editorRouteFor } from "@/components/listing/WizardKit";
 
 const PAGE = "#f4f1ea";
-const CARD = "#fdfcf9";
+const CARD = "#fbf9f4";
 const INK = "#14161a";
-const INK_DIM = "#6b6f78";
+const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "rgba(201,168,106,0.35)";
 const BORDER = "rgba(20,22,26,0.10)";
@@ -307,14 +307,14 @@ export default function SetupChecklistScreen() {
             activeOpacity={0.85}
             style={{
               marginTop: 24,
-              backgroundColor: GOLD,
+              backgroundColor: INK,
               borderRadius: 999,
               height: 56,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: INK, fontSize: 17, fontWeight: "600" }}>
+            <Text style={{ color: "#ffffff", fontSize: 17, fontWeight: "600" }}>
               Back to my profile
             </Text>
           </TouchableOpacity>

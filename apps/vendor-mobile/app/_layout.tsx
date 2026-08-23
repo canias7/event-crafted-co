@@ -72,25 +72,25 @@ function JsFatalScreen({
   onReload: () => void;
 }) {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0d0f13" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f1ea" }}>
       <ScrollView contentContainerStyle={{ padding: 24 }}>
         <Text
           style={{
-            color: "#f0938a",
+            color: "#b23a34",
             fontSize: 18,
             fontWeight: "700",
           }}
         >
           Something went wrong
         </Text>
-        <Text style={{ color: "rgba(255,255,255,0.72)", marginTop: 8, fontSize: 13 }}>
+        <Text style={{ color: "#5e636e", marginTop: 8, fontSize: 13 }}>
           Screenshot this screen and send it to support — it shows exactly
           what broke.
         </Text>
         <View
           style={{
             marginTop: 16,
-            backgroundColor: "rgba(255,255,255,0.06)",
+            backgroundColor: "#fbf9f4",
             borderRadius: 12,
             padding: 14,
           }}
@@ -98,7 +98,7 @@ function JsFatalScreen({
           <Text
             selectable
             style={{
-              color: "#f4efe6",
+              color: "#14161a",
               fontSize: 12,
               lineHeight: 18,
               fontFamily: "monospace",
@@ -111,14 +111,14 @@ function JsFatalScreen({
           onPress={onReload}
           style={{
             marginTop: 20,
-            backgroundColor: "#d9bd82",
+            backgroundColor: "#14161a",
             borderRadius: 999,
             height: 52,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#14161a", fontSize: 16, fontWeight: "600" }}>
+          <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "600" }}>
             Reload app
           </Text>
         </Pressable>
