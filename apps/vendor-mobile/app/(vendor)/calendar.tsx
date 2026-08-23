@@ -1049,7 +1049,7 @@ export default function CalendarScreen() {
                   letterSpacing: -0.5,
                 }}
               >
-                Calendar <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+                Calendar <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
               </Text>
               <Text style={{ marginTop: 2, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
                 Manage your bookings & availability

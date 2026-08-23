@@ -171,7 +171,7 @@ export default function CrmScreen() {
               color: INK,
             }}
           >
-            Know every client. <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+            Know every client. <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
           </Text>
           <Text style={{ marginTop: 8, fontSize: 15, color: INK_DIM, lineHeight: 22 }}>
             Vendora CRM turns your inquiries into a client book — every host
@@ -276,7 +276,7 @@ export default function CrmScreen() {
             color: INK,
           }}
         >
-          Clients <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+          Clients <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
         </Text>
         <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Your client book, built from every inquiry.
