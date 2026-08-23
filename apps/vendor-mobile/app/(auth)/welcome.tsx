@@ -13,7 +13,13 @@
 // fade to line up with, and no seam to get wrong.
 //
 // Layout: hero band, logo badge straddling its lower edge, wordmark, tagline,
-// botanical divider, three value cards, and the auth pills.
+// gold divider, three value cards, and the auth pills.
+//
+// Typography: the whole screen is serif. Hierarchy comes from size and
+// weight rather than from switching typeface, so the brand voice carries
+// all the way down the page instead of stopping at the tagline. Only
+// works because this is a marketing page with very little text — the
+// signed-in app stays sans, where serif at 13-14pt would cost legibility.
 
 import {
   Image,
@@ -165,9 +171,8 @@ export default function WelcomeScreen() {
                 key={line}
                 style={{
                   fontFamily: SERIF,
-                  fontStyle: "italic",
-                  fontSize: 19,
-                  lineHeight: 27,
+                  fontSize: 18,
+                  lineHeight: 26,
                   color: BRONZE,
                   textAlign: "center",
                 }}
@@ -229,8 +234,9 @@ export default function WelcomeScreen() {
               <View style={{ flex: 1, marginLeft: 14 }}>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     color: INK,
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: "700",
                   }}
                 >
@@ -238,9 +244,10 @@ export default function WelcomeScreen() {
                 </Text>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     color: INK_DIM,
-                    fontSize: 13.5,
-                    lineHeight: 19,
+                    fontSize: 14,
+                    lineHeight: 20,
                     marginTop: 2,
                   }}
                 >
