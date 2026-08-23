@@ -14,13 +14,13 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#0a0a0a";
+const CREAM = "#f4f1ea";
+const INK = "#14161a";
 const INK_DIM = "rgba(26,20,16,0.6)";
 const INK_BORDER = "rgba(26,20,16,0.18)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#b42318";
-const ACCENT = "#1B3654";
+const INPUT_BG = "#fbf9f4";
+const ERROR = "#dc2828";
+const ACCENT = "#8a6f3e";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 

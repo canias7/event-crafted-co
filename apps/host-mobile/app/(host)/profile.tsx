@@ -22,13 +22,17 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const BORDER = "#e5e7eb";
-const GOLD = "#d99e2b";
-const GREEN = "#22c55e";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const BORDER = "#e6e1d5";
+const GOLD = "#c9a86a";
+// Bronze — the gold that stays legible as text or a meaningful icon on
+// a cream surface (4.51:1, vs champagne's 2.15:1). Champagne stays for
+// ornament and for gold used as a fill. See packages/core/src/tokens.js.
+const GOLD_INK = "#8a6f3e";
+const GREEN = "#2e7d4f";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 interface Stats {
@@ -280,7 +284,9 @@ export default function ProfileScreen() {
           ) : state?.verifStatus === "pending" ? (
             <ActionCard
               iconBgColor={GOLD}
-              iconColor={CREAM}
+              // Champagne is a light fill — it takes an ink glyph, not a
+              // cream one (8.01:1 vs 2.00:1). Same rule as a gold button.
+              iconColor={INK}
               icon="clock"
               title="Verification pending"
               subtitle="We'll reach out within 48 hours."
@@ -357,7 +363,7 @@ function HeroCard({
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fbf9f4",
         borderRadius: 28,
         paddingTop: 28,
         paddingBottom: 22,
@@ -401,7 +407,7 @@ function HeroCard({
             width: 30,
             height: 30,
             borderRadius: 999,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             alignItems: "center",
             justifyContent: "center",
             borderWidth: 2,
@@ -448,7 +454,7 @@ function HeroCard({
           label="Vendors"
           value={String(stats.vendors)}
           trailingIcon={
-            <Feather name="star" size={16} color={GOLD} style={{ marginLeft: 4 }} />
+            <Feather name="star" size={16} color={GOLD_INK} style={{ marginLeft: 4 }} />
           }
         />
       </View>
@@ -512,7 +518,7 @@ function ShortcutTile({
       {({ pressed }) => (
         <View
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderRadius: 22,
             padding: 16,
             opacity: pressed ? 0.85 : 1,
@@ -599,7 +605,7 @@ function ActionCard({
         <View
           style={{
             marginTop: 12,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderRadius: 20,
             paddingVertical: 16,
             paddingHorizontal: 16,

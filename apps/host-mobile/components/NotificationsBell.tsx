@@ -25,13 +25,13 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const CREAM = "#ffffff";
-const RED = "#dc2626";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const CREAM = "#f4f1ea";
+const RED = "#dc2828";
 
 const CARD_SHADOW = {
-  shadowColor: "#0a0a0a",
+  shadowColor: "#14161a",
   shadowOpacity: 0.10,
   shadowRadius: 20,
   shadowOffset: { width: 0, height: 6 },
@@ -106,7 +106,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
   if (isBooking) {
     return (
       <View style={{ ...box, backgroundColor: "#d4ead8" }}>
-        <Feather name="check" size={22} color="#2f7a40" />
+        <Feather name="check" size={22} color="#2e7d4f" />
       </View>
     );
   }
@@ -292,7 +292,7 @@ function Section({
       </Text>
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 18,
           overflow: "hidden",
           ...CARD_SHADOW,
@@ -318,7 +318,7 @@ function Section({
 }
 
 export function NotificationsBell({
-  iconColor = "#0a0a0a",
+  iconColor = "#14161a",
 }: { iconColor?: string }) {
   const { user } = useAuth();
   const router = useRouter();

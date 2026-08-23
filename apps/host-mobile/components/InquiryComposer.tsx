@@ -126,7 +126,7 @@ export function InquiryComposer({
         >
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
             <Pressable onPress={onClose} hitSlop={8}>
-              <Feather name="x" size={22} color="#0a0a0a" />
+              <Feather name="x" size={22} color="#14161a" />
             </Pressable>
             <Text className="text-base font-semibold text-foreground">
               Inquire
@@ -134,7 +134,7 @@ export function InquiryComposer({
             <Pressable onPress={submit} hitSlop={8} disabled={!canSubmit}>
               <Text
                 className="text-sm font-semibold"
-                style={{ color: canSubmit ? "#0a0a0a" : "#a1a1aa" }}
+                style={{ color: canSubmit ? "#14161a" : "#5e636e" }}
               >
                 {submitting ? "Sending…" : "Send"}
               </Text>

@@ -147,7 +147,7 @@ export default function InboxScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#0a0a0a"
+            tintColor="#14161a"
           />
         }
       >
@@ -160,7 +160,7 @@ export default function InboxScreen() {
 
         <View className="px-5 mb-3">
           <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-            <Feather name="search" size={16} color="#6b7280" />
+            <Feather name="search" size={16} color="#5e636e" />
             <TextInput
               value={search}
               onChangeText={setSearch}
@@ -219,7 +219,7 @@ export default function InboxScreen() {
         <View className="mt-2">
           {loading ? (
             <View className="items-center pt-16">
-              <ActivityIndicator color="#0a0a0a" />
+              <ActivityIndicator color="#14161a" />
             </View>
           ) : filteredRows.length === 0 ? (
             <Empty

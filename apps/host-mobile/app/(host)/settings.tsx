@@ -26,12 +26,12 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const BORDER = "#e5e7eb";
-const DANGER = "#b42318";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const BORDER = "#e6e1d5";
+const DANGER = "#dc2828";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 export default function SettingsScreen() {
@@ -216,7 +216,7 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "#fbf9f4",
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                         borderRadius: 18,
@@ -248,7 +248,7 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "#fbf9f4",
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                         borderRadius: 18,
@@ -310,7 +310,7 @@ function SectionLabel({
 
 const field = {
   marginTop: 12,
-  backgroundColor: "#ffffff",
+  backgroundColor: "#fbf9f4",
   borderRadius: 18,
   paddingHorizontal: 16,
   paddingTop: 12,

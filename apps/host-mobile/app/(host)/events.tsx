@@ -24,13 +24,13 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const BORDER = "#e5e7eb";
-const GREEN = "#22c55e";
-const AMBER = "#d99e2b";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#5e636e";
+const BORDER = "#e6e1d5";
+const GREEN = "#2e7d4f";
+const AMBER = "#d97706";
 const GREEN_BG = "#e3f5e8";
 const AMBER_BG = "#fbeed1";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
@@ -633,7 +633,7 @@ function VendorBubbles({
         >
           <Text
             style={{
-              color: "#ffffff",
+              color: "#f4f1ea",
               fontSize: small ? 9 : 10,
               fontWeight: "700",
             }}
@@ -858,7 +858,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
       {({ pressed }) => (
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 20,
           flexDirection: "row",
           alignItems: "center",

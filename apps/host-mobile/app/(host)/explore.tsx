@@ -319,10 +319,10 @@ function ViewTab({
       onPress={onPress}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        backgroundColor: active ? "#ffffff" : "transparent",
+        backgroundColor: active ? "#fbf9f4" : "transparent",
         borderRadius: active ? 14 : 0,
         borderWidth: active ? 1 : 0,
-        borderColor: "#e5e5e5",
+        borderColor: "#e6e1d5",
         marginHorizontal: active ? 4 : 0,
         marginVertical: active ? 4 : 0,
         ...(active
@@ -336,7 +336,7 @@ function ViewTab({
           : null),
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
+      <Feather name={iconName} size={22} color={active ? "#14161a" : "#5e636e"} />
     </Pressable>
   );
 }
@@ -383,7 +383,7 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             style={{
               borderRadius: 16,
               overflow: "hidden",
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               shadowColor: "#000",
               shadowOpacity: 0.10,
               shadowRadius: 8,
@@ -423,7 +423,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             style={{
               borderRadius: 16,
               overflow: "hidden",
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               shadowColor: "#000",
               shadowOpacity: 0.12,
               shadowRadius: 8,
@@ -438,7 +438,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
               style={{
                 aspectRatio: 4 / 5,
                 width: "100%",
-                backgroundColor: "#1a1a1a",
+                backgroundColor: "#14161a",
               }}
             >
               {r.thumbnail_url ? (
@@ -647,7 +647,7 @@ function ListingCard({
         style={{
           borderRadius: 18,
           overflow: "hidden",
-          backgroundColor: "#1a1a1a",
+          backgroundColor: "#14161a",
           aspectRatio: 1,
           width: "100%",
         }}
@@ -661,9 +661,9 @@ function ListingCard({
         ) : (
           <View
             className="flex-1 items-center justify-center px-6"
-            style={{ backgroundColor: "#f4f4f5" }}
+            style={{ backgroundColor: "#ece7db" }}
           >
-            <Feather name="image" size={28} color="#a1a1aa" />
+            <Feather name="image" size={28} color="#5e636e" />
             <Text className="mt-2 text-center text-xs text-muted-foreground">
               No listing photos yet
             </Text>
@@ -690,7 +690,7 @@ function ListingCard({
           <Feather
             name="heart"
             size={22}
-            color={saved ? "#dc2626" : "#fff"}
+            color={saved ? "#dc2828" : "#fff"}
           />
         </Pressable>
       </View>

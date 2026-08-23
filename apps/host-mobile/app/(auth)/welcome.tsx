@@ -19,9 +19,9 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
 const INK_DIM = "rgba(26,20,16,0.6)";
 const INK_BORDER = "rgba(26,20,16,0.18)";
 
@@ -234,7 +234,7 @@ function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
     ? "#ffffff"
     : isOutline
       ? "transparent"
-      : "#262626";
+      : "#14161a";
   const fg = isLight ? "#000000" : "#ffffff";
   return (
     <Pressable onPress={onPress}>
