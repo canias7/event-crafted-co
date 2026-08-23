@@ -162,6 +162,9 @@ export function EditListingModal({
   // status back to pending for admin re-review.
   const originalCategoryRef = useRef<string>("");
   const originalStatusRef = useRef<string | null>(null);
+  // Refs don't re-render, and the footer's Publish button depends on
+  // this — so the loaded status is mirrored into state too.
+  const [isDraft, setIsDraft] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -218,6 +221,7 @@ export function EditListingModal({
       setAttrs(vp.category_attributes ?? {});
       originalCategoryRef.current = vp.category ?? "";
       originalStatusRef.current = vp.application_status ?? null;
+      setIsDraft((vp.application_status ?? null) === "draft");
 
       const faqRows = (faqRes.data ?? []) as Array<{
         id: string;
@@ -309,7 +313,7 @@ export function EditListingModal({
     if (skip) toast.warning(skip);
   }
 
-  async function handleSave() {
+  async function handleSave({ publish = false }: { publish?: boolean } = {}) {
     if (!canSave) return;
     // Critical-edit re-review gate. If the vendor is changing the
     // category on an APPROVED listing, the listing has effectively
@@ -320,8 +324,12 @@ export function EditListingModal({
     const categoryChanged =
       category !== originalCategoryRef.current && originalCategoryRef.current !== "";
     const wasApproved = originalStatusRef.current === "approved";
-    const triggerReview = categoryChanged && wasApproved;
-    if (triggerReview) {
+    // A draft the vendor is choosing to publish enters review the same
+    // way the create wizard sends one: status flips to 'pending' and
+    // admin gets the listing_submitted email.
+    const publishingDraft = publish && originalStatusRef.current === "draft";
+    const triggerReview = (categoryChanged && wasApproved) || publishingDraft;
+    if (triggerReview && !publishingDraft) {
       const ok = window.confirm(
         "Changing the category on an approved listing sends it back to admin review. Your listing will be temporarily hidden from hosts until re-approved. Continue?",
       );
@@ -491,10 +499,22 @@ export function EditListingModal({
         .invoke("geocode-vendor", { body: { vendorId } })
         .catch(() => undefined);
 
+      if (publishingDraft) {
+        // Same notification the create wizard sends — fire-and-forget,
+        // the listing is in the queue either way.
+        void supabase.functions
+          .invoke("send-transactional-email", {
+            body: { kind: "listing_submitted", vendorProfileId: vendorId },
+          })
+          .catch(() => undefined);
+      }
+
       toast.success(
-        triggerReview
-          ? "Listing updated — sent back to admin review (category change)."
-          : "Listing updated.",
+        publishingDraft
+          ? "Listing submitted for review."
+          : triggerReview
+            ? "Listing updated — sent back to admin review (category change)."
+            : "Listing updated.",
       );
       onSaved();
     } catch (err) {
@@ -824,11 +844,24 @@ export function EditListingModal({
               <span>Loading…</span>
             ) : validation.length > 0 ? (
               <span>{validation[0]}</span>
+            ) : isDraft ? (
+              <span>
+                Saving keeps this a draft — Publish sends it to review.
+              </span>
             ) : (
               <span>Changes go live as soon as you save.</span>
             )}
           </div>
-          <Button onClick={handleSave} disabled={!canSave}>
+          {isDraft ? (
+            <Button
+              variant="outline"
+              onClick={() => void handleSave({ publish: true })}
+              disabled={!canSave}
+            >
+              Publish
+            </Button>
+          ) : null}
+          <Button onClick={() => void handleSave()} disabled={!canSave}>
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -837,7 +870,7 @@ export function EditListingModal({
                   : "Saving…"}
               </>
             ) : (
-              "Save changes"
+              isDraft ? "Save draft" : "Save changes"
             )}
           </Button>
         </div>

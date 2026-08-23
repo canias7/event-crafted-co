@@ -159,23 +159,29 @@ export function ListingWizardModal({
     }
   }, []);
 
+  // Anything worth keeping? Drives both the localStorage autosave and
+  // whether "Save draft" is offered. Photos count for the draft row
+  // (they upload against it) but not for localStorage, which can't
+  // serialize File objects.
+  const hasTypedContent =
+    !!category ||
+    !!location.trim() ||
+    pricingModels.length > 0 ||
+    !!priceMin.trim() ||
+    !!priceMax.trim() ||
+    customPricing ||
+    Object.keys(attrs).length > 0 ||
+    faqs.length > 0;
+  const hasDraftContent = hasTypedContent || photos.length > 0;
+
   // Auto-save the draft on every text-field change. Photos still
   // live in component memory only. Clearing the draft happens in
   // handleSubmit after a successful insert (so re-opening the
   // wizard after a finished submission starts fresh).
   useEffect(() => {
     if (!userId) return;
-    const hasContent =
-      !!category ||
-      !!location.trim() ||
-      pricingModels.length > 0 ||
-      !!priceMin.trim() ||
-      !!priceMax.trim() ||
-      customPricing ||
-      Object.keys(attrs).length > 0 ||
-      faqs.length > 0;
     const key = draftKey(userId);
-    if (!hasContent) {
+    if (!hasTypedContent) {
       localStorage.removeItem(key);
       return;
     }
@@ -195,7 +201,7 @@ export function ListingWizardModal({
     } catch {
       // localStorage full / private mode — silently skip.
     }
-  }, [userId, category, location, pricingModels, priceMin, priceMax, customPricing, attrs, faqs]);
+  }, [userId, hasTypedContent, category, location, pricingModels, priceMin, priceMax, customPricing, attrs, faqs]);
 
   function attemptClose() {
     if (submitting) {
@@ -279,6 +285,20 @@ export function ListingWizardModal({
 
   async function handleSubmit() {
     if (!canSubmit) return;
+    await persist({ publish: true });
+  }
+
+  // Save what's here as a real draft row and close. Deliberately not
+  // gated on `validation` — an incomplete listing is exactly what a
+  // draft is for. Everything downstream already handles this: My
+  // Profile ranks drafts last and badges them "Draft", and opening one
+  // goes to EditListingModal, which can publish it.
+  async function handleSaveDraft() {
+    if (submitting || !hasDraftContent) return;
+    await persist({ publish: false });
+  }
+
+  async function persist({ publish }: { publish: boolean }) {
     setSubmitting(true);
     // Track resources allocated mid-flight so we can roll back if a
     // later step fails. Without this, a network blip after the listing
@@ -323,6 +343,10 @@ export function ListingWizardModal({
           base_price_cents: minCents,
           category_attributes: attrs,
           application_status: "draft",
+          // Marks a draft the vendor meant to keep. The hourly orphan
+          // sweep deletes photo-less drafts on the assumption they're
+          // abandoned mid-submit rows; a stamped one is exempt.
+          ...(publish ? {} : { draft_saved_at: new Date().toISOString() }),
         })
         .select("id")
         .single();
@@ -365,6 +389,19 @@ export function ListingWizardModal({
           })),
         );
         if (error) throw error;
+      }
+
+      // A draft stops here: the row, its photos and its FAQs are
+      // committed and the vendor can finish from My Profile later.
+      if (!publish) {
+        try {
+          localStorage.removeItem(draftKey(userId));
+        } catch {
+          // ignore localStorage failures
+        }
+        toast.success("Draft saved. Finish it any time from My Vendora.");
+        onPublished();
+        return;
       }
 
       // 4. Flip status from 'draft' → 'pending' now that photos +
@@ -441,7 +478,9 @@ export function ListingWizardModal({
       if (cancelled) {
         toast("Upload cancelled — nothing saved.");
       } else {
-        toast.error(`Submit failed: ${msg}`);
+        toast.error(
+          publish ? `Submit failed: ${msg}` : `Couldn't save draft: ${msg}`,
+        );
       }
       setSubmitting(false);
       setUploadProgress(null);
@@ -760,7 +799,10 @@ export function ListingWizardModal({
         <div className="mx-auto max-w-2xl flex items-center justify-between gap-3 px-5 py-4">
           <div className="flex-1 text-xs text-muted-foreground">
             {validation.length > 0 ? (
-              <span>{validation[0]}</span>
+              <span>
+                {validation[0]}
+                {hasDraftContent ? " — or save a draft and finish later." : ""}
+              </span>
             ) : (
               <span>
                 Submitting sends this to review. Once approved, it goes
@@ -768,6 +810,13 @@ export function ListingWizardModal({
               </span>
             )}
           </div>
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={submitting || !hasDraftContent}
+          >
+            Save draft
+          </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
             {submitting ? (
               <>

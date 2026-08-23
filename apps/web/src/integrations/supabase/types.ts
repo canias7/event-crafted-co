@@ -5150,6 +5150,7 @@ export type Database = {
           price_min_cents: number | null
           price_max_cents: number | null
           custom_pricing: boolean
+          draft_saved_at: string | null
           bio: string | null
           business_name: string | null
           cancellation_policy: string | null
@@ -5200,6 +5201,7 @@ export type Database = {
           price_min_cents?: number | null
           price_max_cents?: number | null
           custom_pricing?: boolean
+          draft_saved_at?: string | null
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
@@ -5250,6 +5252,7 @@ export type Database = {
           price_min_cents?: number | null
           price_max_cents?: number | null
           custom_pricing?: boolean
+          draft_saved_at?: string | null
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
