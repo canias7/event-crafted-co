@@ -15,6 +15,12 @@
 // Layout: hero band, logo badge straddling its lower edge, wordmark, tagline,
 // gold divider, three value cards, and the auth pills.
 //
+// Fits one screen, no scrolling. Everything below the hero is fixed
+// height by design, so the hero absorbs whatever is left over — on a
+// tall phone it gets its natural aspect, on a short one it shrinks
+// rather than pushing the buttons off the bottom. The ScrollView stays
+// as a safety net for very small devices and large accessibility text.
+//
 // Typography: the whole screen is serif. Hierarchy comes from size and
 // weight rather than from switching typeface, so the brand voice carries
 // all the way down the page instead of stopping at the tagline. Only
@@ -74,19 +80,32 @@ const PILLARS = [
   },
 ] as const;
 
-const BADGE = 86;
+const BADGE = 72;
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
-  // Hero height from the asset's own 1800:1057 aspect so it's never
-  // stretched. Shipped at 1800px wide, so no phone upscales it.
-  const heroHeight = Math.round(width * (1057 / 1800));
+  // Height of everything under the hero, measured from the rendered
+  // screen. The hero takes the remainder so the page never scrolls.
+  const available = height - insets.top - insets.bottom;
+  // Short phones (iPhone SE and friends) cannot fit the roomy layout no
+  // matter how small the hero gets, so everything below it steps down a
+  // size rather than the page starting to scroll.
+  const compact = available < 720;
+  // Measured from the rendered screen, not estimated.
+  const BELOW_HERO = compact ? 560 : 566;
+  // Natural aspect (asset is 1800x1057) is the ceiling — never upscale
+  // or stretch it; 132 is the floor before the band stops reading as a
+  // photo.
+  const heroHeight = Math.max(
+    compact ? 104 : 132,
+    Math.min(Math.round(width * (1057 / 1800)), available - BELOW_HERO),
+  );
   // One Text (not per-character any more), so RN can shrink it itself —
   // adjustsFontSizeToFit handles narrow screens.
-  const wordmarkSize = Math.min(60, width * 0.148);
+  const wordmarkSize = Math.min(compact ? 40 : 46, width * (compact ? 0.108 : 0.118));
 
   return (
     <View style={{ flex: 1, backgroundColor: PAGE }}>
@@ -95,7 +114,7 @@ export default function WelcomeScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: Math.max(insets.bottom + 20, 32),
+          paddingBottom: Math.max(insets.bottom + 8, 16),
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -142,8 +161,8 @@ export default function WelcomeScreen() {
             <Image
               source={require("../../assets/v-mark.png")}
               style={{
-                width: 42,
-                height: 42,
+                width: 36,
+                height: 36,
                 tintColor: GOLD,
                 resizeMode: "contain",
               }}
@@ -154,10 +173,10 @@ export default function WelcomeScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
             style={{
-              marginTop: 14,
+              marginTop: 10,
               fontFamily: SERIF,
               fontSize: wordmarkSize,
-              lineHeight: wordmarkSize * 1.12,
+              lineHeight: wordmarkSize * 1.1,
               color: INK,
               textAlign: "center",
               letterSpacing: -0.5,
@@ -166,14 +185,14 @@ export default function WelcomeScreen() {
             Vendora
           </Text>
 
-          <View style={{ marginTop: 8 }}>
+          <View style={{ marginTop: 6 }}>
             {TAGLINE_LINES.map((line) => (
               <Text
                 key={line}
                 style={{
                   fontFamily: SERIF,
-                  fontSize: 18,
-                  lineHeight: 26,
+                  fontSize: compact ? 13.5 : 15,
+                  lineHeight: compact ? 19 : 21,
                   color: BRONZE,
                   textAlign: "center",
                 }}
@@ -189,18 +208,18 @@ export default function WelcomeScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              marginTop: 20,
-              marginBottom: 22,
+              marginTop: compact ? 9 : 13,
+              marginBottom: compact ? 11 : 15,
             }}
           >
-            <View style={{ width: 62, height: 1, backgroundColor: BORDER }} />
+            <View style={{ width: 54, height: 1, backgroundColor: BORDER }} />
             <MaterialCommunityIcons
               name="star-four-points"
               size={16}
               color={GOLD}
               style={{ marginHorizontal: 12 }}
             />
-            <View style={{ width: 62, height: 1, backgroundColor: BORDER }} />
+            <View style={{ width: 54, height: 1, backgroundColor: BORDER }} />
           </View>
 
           {/* Three value cards. No chevrons: these are informational, and a
@@ -215,24 +234,24 @@ export default function WelcomeScreen() {
                 backgroundColor: CARD,
                 borderWidth: 1,
                 borderColor: BORDER,
-                borderRadius: 18,
-                padding: 14,
-                marginBottom: 10,
+                borderRadius: 16,
+                padding: compact ? 9 : 11,
+                marginBottom: compact ? 6 : 8,
               }}
             >
               <View
                 style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 15,
+                  width: compact ? 36 : 42,
+                  height: compact ? 36 : 42,
+                  borderRadius: compact ? 11 : 13,
                   backgroundColor: SURFACE,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <MaterialCommunityIcons name={p.icon} size={24} color={BRONZE} />
+                <MaterialCommunityIcons name={p.icon} size={compact ? 18 : 21} color={BRONZE} />
               </View>
-              <View style={{ flex: 1, marginLeft: 14 }}>
+              <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
@@ -247,9 +266,9 @@ export default function WelcomeScreen() {
                   style={{
                     fontFamily: SERIF,
                     color: INK_DIM,
-                    fontSize: 14,
-                    lineHeight: 20,
-                    marginTop: 2,
+                    fontSize: compact ? 11.5 : 12.5,
+                    lineHeight: compact ? 15 : 17,
+                    marginTop: 1,
                   }}
                 >
                   {p.body}
@@ -268,15 +287,15 @@ export default function WelcomeScreen() {
             accessibilityRole="button"
             activeOpacity={0.85}
             style={{
-              marginTop: 22,
-              height: 56,
+              marginTop: compact ? 12 : 16,
+              height: compact ? 46 : 52,
               borderRadius: 999,
               backgroundColor: GOLD,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: INK, fontSize: 17, fontWeight: "700" }}>
+            <Text style={{ color: INK, fontSize: 16, fontWeight: "700" }}>
               Sign up
             </Text>
           </TouchableOpacity>
@@ -286,8 +305,8 @@ export default function WelcomeScreen() {
             accessibilityRole="button"
             activeOpacity={0.7}
             style={{
-              marginTop: 12,
-              height: 56,
+              marginTop: compact ? 8 : 10,
+              height: compact ? 46 : 52,
               borderRadius: 999,
               borderWidth: 1.5,
               borderColor: GOLD,
@@ -296,7 +315,7 @@ export default function WelcomeScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: INK, fontSize: 17, fontWeight: "700" }}>
+            <Text style={{ color: INK, fontSize: 16, fontWeight: "700" }}>
               Sign in
             </Text>
           </TouchableOpacity>
@@ -312,10 +331,10 @@ export default function WelcomeScreen() {
           <Text
             style={{
               color: INK_DIM,
-              fontSize: 12,
-              lineHeight: 18,
+              fontSize: compact ? 10.5 : 11.5,
+              lineHeight: compact ? 14 : 16,
               textAlign: "center",
-              marginTop: 20,
+              marginTop: compact ? 9 : 12,
             }}
           >
             By continuing, you agree to our{" "}
