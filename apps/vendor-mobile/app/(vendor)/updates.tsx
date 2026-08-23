@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Wordmark } from "@/components/Wordmark";
+import { COMING, SHIPPED } from "@vendora/core";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -21,55 +22,10 @@ const GOLD = "#c9a86a";
 const GOLD_INK = "#8a6f3e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
-// Newest first. `date` is display-only.
-export const SHIPPED: { date: string; title: string; body: string }[] = [
-  {
-    date: "August 2026",
-    title: "Get verified — for real this time",
-    body: "Pro and Premium vendors can now apply for the verified badge from More → Verification: confirm your identity, add your business info and documents, and our team reviews within 1–3 business days. Approved vendors get the badge on their public profile — plus an Insured marker when a certificate is on file.",
-  },
-  {
-    date: "August 2026",
-    title: "Vendora CRM — your client book",
-    body: "Pro and Premium vendors get a Clients section under More: every host who's inquired, their events, private notes, and follow-up reminders that ping your phone.",
-  },
-  {
-    date: "August 2026",
-    title: "Smart Scheduling & Automations",
-    body: "Set your working hours and appointment types in minutes. Pro unlocks the scheduling controls — hours, buffers, minimum notice, daily limits, and up to 5 appointment types. Premium adds the automations: instant inquiry replies, confirmations, reminders, follow-ups, review requests, and Fill Your Calendar alerts — promos only go out with your approval.",
-  },
-  {
-    date: "August 2026",
-    title: "A listing form made for your category",
-    body: "Venues, catering, entertainment, media, design, beauty, rentals, experiences, corporate services — every category now gets its own tailored Create Listing flow, with custom fields you can add yourself.",
-  },
-  {
-    date: "August 2026",
-    title: "A fresh Vendora look",
-    body: "Inbox, Gallery, Profile, Calendar, and More all moved to the warm cream design — serif titles, gold accents, and matching dialogs everywhere.",
-  },
-  {
-    date: "August 2026",
-    title: "Better control over your listings",
-    body: "Delete a listing from anywhere (even while it's under review), save drafts, and get notified by email — and push — when a decision is made.",
-  },
-];
-
-export const COMING: string[] = [
-  "Pop-up notifications on Android",
-  "More ways to stand out in search",
-  "Host app launch",
-  "Design updates on the website",
-];
-
-// The More row shows a "New" badge while the latest entry is fresh.
-// Bump this date when adding a SHIPPED entry.
-export const LATEST_UPDATE_AT = "2026-08-19";
-
-export function hasFreshUpdate(): boolean {
-  const ms = Date.now() - new Date(LATEST_UPDATE_AT).getTime();
-  return ms < 21 * 24 * 3600_000;
-}
+// Content lives in @vendora/core so the app and the website can never
+// show a different release history. Re-exported here because more.tsx
+// imports hasFreshUpdate from this screen.
+export { COMING, LATEST_UPDATE_AT, SHIPPED, hasFreshUpdate } from "@vendora/core";
 
 export default function UpdatesScreen() {
   const router = useRouter();

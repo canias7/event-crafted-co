@@ -192,6 +192,12 @@ export const VendorVerificationPage = lazyWithReload(importVendorVerification);
 const importVendorTeam = () => import("@/pages/vendor/VendorTeamPage");
 export const VendorTeamPage = lazyWithReload(importVendorTeam);
 
+const importVendorSetup = () => import("@/pages/vendor/VendorSetupPage");
+export const VendorSetupPage = lazyWithReload(importVendorSetup);
+
+const importVendorUpdates = () => import("@/pages/vendor/VendorUpdatesPage");
+export const VendorUpdatesPage = lazyWithReload(importVendorUpdates);
+
 const importInquiryDetail = () => import("@/pages/vendor/InquiryDetailPage");
 export const InquiryDetailPage = lazyWithReload(importInquiryDetail);
 
@@ -254,6 +260,8 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/workspace", importer: importMyVendora },
   { pattern: "/vendor/subscription", importer: importVendorSubscription },
   { pattern: "/vendor/usage", importer: importVendorUsage },
+  { pattern: "/vendor/setup", importer: importVendorSetup },
+  { pattern: "/vendor/updates", importer: importVendorUpdates },
   { pattern: "/vendor/gallery", importer: importVendorGallery },
   { pattern: "/vendor/templates", importer: importVendorTemplates },
   { pattern: "/vendor/inbox/:inquiryId", importer: importInquiryDetail },

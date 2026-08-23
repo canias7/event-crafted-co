@@ -95,6 +95,8 @@ import {
   VendorSchedulingPage,
   VendorVerificationPage,
   VendorTeamPage,
+  VendorSetupPage,
+  VendorUpdatesPage,
   InquiryDetailPage,
   ClaimVendorPage,
   PublicReviewPage,
@@ -287,6 +289,11 @@ const App = () => (
               <Route path="/vendor/scheduling" element={<RequireRole role="vendor"><VendorSchedulingPage /></RequireRole>} />
               <Route path="/vendor/verification" element={<RequireRole role="vendor"><VendorVerificationPage /></RequireRole>} />
               <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
+              {/* Setup checklist + changelog — the app's More rows that
+                  had no web equivalent. Both read shared logic/content
+                  from @vendora/core so the two surfaces stay in step. */}
+              <Route path="/vendor/setup" element={<RequireRole role="vendor"><VendorSetupPage /></RequireRole>} />
+              <Route path="/vendor/updates" element={<RequireRole role="vendor"><VendorUpdatesPage /></RequireRole>} />
               {/* /vendor/studio retired — the three tools that lived under
                   it (AI Superagents, Vendora Pay, Gallery) now have their
                   own sidebar entries + routes above. */}

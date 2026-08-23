@@ -13,3 +13,5 @@ export * from "./types";
 export * from "./lib/format";
 export * from "./lib/categoryTaxonomy";
 export * from "./lib/categoryAttributes";
+export * from "./lib/setupChecklist";
+export * from "./lib/vendorUpdates";
