@@ -54,7 +54,9 @@ const FIELD_BG = "#fbf9f4";
 const FIELD_BORDER = "#d9d1bf";
 const ERROR = "#b23a34";
 
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 type Step = "account" | "business" | "code" | "done";
 
@@ -322,7 +324,7 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
       <Text style={eyebrowLabel}>{p.eyebrow}</Text>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 38,
           lineHeight: 46,
           fontWeight: "700",
@@ -597,7 +599,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
       </Text>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 36,
           fontWeight: "700",
           color: INK,
@@ -741,7 +743,7 @@ function CategoryPicker({
           />
           <Text
             style={{
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 22,
               fontWeight: "700",
               color: INK,

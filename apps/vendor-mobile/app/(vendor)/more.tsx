@@ -24,7 +24,9 @@ const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "#eadfc6";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const SUPPORT_EMAIL = "hello@eventvendora.com";
 const PLAY_URL =
@@ -115,7 +117,7 @@ export default function MoreScreen() {
         <Text
           style={{
             marginTop: 14,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 38,
             fontWeight: "700",
             letterSpacing: -0.5,
@@ -256,7 +258,7 @@ export default function MoreScreen() {
         >
           <MaterialCommunityIcons name="star-four-points-outline" size={26} color={GOLD} />
           <View style={{ flex: 1, marginLeft: 13 }}>
-            <Text style={{ fontFamily: SERIF, color: INK, fontSize: 17, fontWeight: "700" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17, fontWeight: "700" }}>
               Love Vendora?
             </Text>
             <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
@@ -278,7 +280,7 @@ export default function MoreScreen() {
             }}
           >
             <Feather name="star" size={13} color={INK} />
-            <Text style={{ fontFamily: SERIF, fontSize: 14, fontWeight: "700", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, fontWeight: "700", color: INK }}>
               Rate us
             </Text>
           </Pressable>
@@ -353,7 +355,7 @@ function MenuRow({
         {icon}
       </View>
       <View style={{ flex: 1, marginLeft: 13 }}>
-        <Text style={{ fontFamily: SERIF, color: INK, fontSize: 17, fontWeight: "700" }}>
+        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17, fontWeight: "700" }}>
           {label}
         </Text>
         <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>

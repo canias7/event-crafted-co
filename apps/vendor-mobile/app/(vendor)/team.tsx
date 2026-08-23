@@ -37,7 +37,9 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface TeamMember {
   id: string;
@@ -153,7 +155,7 @@ export default function TeamScreen() {
           </Pressable>
           <Text
             style={{
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 22,
               fontWeight: "700",
               color: INK,
@@ -225,7 +227,7 @@ export default function TeamScreen() {
                 >
                   <Text
                     numberOfLines={1}
-                    style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}
+                    style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}
                   >
                     {m.full_name}
                     {!m.visible ? (
@@ -326,7 +328,7 @@ function MemberAvatar({ member, size }: { member: TeamMember; size: number }) {
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontFamily: SERIF, fontSize: size * 0.34, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: size * 0.34, fontWeight: "700", color: INK }}>
         {initials(member.full_name)}
       </Text>
     </View>
@@ -497,7 +499,7 @@ function MemberForm({
             <Pressable onPress={onClose} hitSlop={10}>
               <Feather name="chevron-left" size={26} color={INK} />
             </Pressable>
-            <Text style={{ fontFamily: SERIF, fontSize: 20, fontWeight: "700", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, fontWeight: "700", color: INK }}>
               {member ? "Edit team member" : "Add team member"}
             </Text>
             <View style={{ width: 26 }} />

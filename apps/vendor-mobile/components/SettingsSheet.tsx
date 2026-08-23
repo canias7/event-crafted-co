@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AppState,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -29,7 +28,9 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD_SOFT = "#eadfc6";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export function SettingsSheet({
   open,
@@ -291,7 +292,7 @@ export function SettingsSheet({
                 <Text
                   style={{
                     color: INK,
-                    fontFamily: SERIF,
+                    fontFamily: SERIF_BOLD,
                     fontWeight: "700",
                     fontSize: 30,
                     letterSpacing: -0.5,
@@ -545,8 +546,7 @@ export function SettingsSheet({
                 <Text
                   style={{
                     color: INK,
-                    fontFamily: SERIF,
-                    fontStyle: "italic",
+                    fontFamily: SERIF_BOLD,
                     fontWeight: "700",
                     fontSize: 20,
                   }}

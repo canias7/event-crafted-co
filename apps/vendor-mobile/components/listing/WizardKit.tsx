@@ -11,7 +11,6 @@ import type { ComponentProps, ReactNode } from "react";
 import {
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -72,7 +71,9 @@ export const INK_DIM = "#6b6f78";
 export const BORDER = "#e5e2dc";
 export const GOLD = "#c9a86a";
 export const GOLD_SOFT = "rgba(201,168,106,0.16)";
-export const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+export const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export const MIN_PHOTOS = 3;
 export const MAX_PHOTOS = 100;
@@ -199,7 +200,7 @@ export function StepTitle({
     <View style={{ marginTop: topGap ? 30 : 6, marginBottom: 6 }}>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 26,
           fontWeight: "700",
           color: INK,
@@ -544,8 +545,7 @@ function BrandDialogView({
           </View>
           <Text
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_BOLD,
               fontSize: 23,
               fontWeight: "700",
               color: INK,
@@ -821,7 +821,7 @@ export function CategoryPickerModal({
               fontSize: 17,
               fontWeight: "600",
               color: INK,
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
             }}
           >
             Category

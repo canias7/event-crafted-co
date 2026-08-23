@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -36,7 +35,9 @@ const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "#eadfc6";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface ClientRow {
   host_id: string;
@@ -164,7 +165,7 @@ export default function CrmScreen() {
           <Text
             style={{
               marginTop: 26,
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 36,
               fontWeight: "700",
               letterSpacing: -0.5,
@@ -269,7 +270,7 @@ export default function CrmScreen() {
         <Text
           style={{
             marginTop: 14,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 38,
             fontWeight: "700",
             letterSpacing: -0.5,
@@ -327,7 +328,7 @@ export default function CrmScreen() {
             <Text
               style={{
                 marginTop: 12,
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 20,
                 fontWeight: "700",
                 color: INK,
@@ -377,13 +378,13 @@ export default function CrmScreen() {
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ fontFamily: SERIF, fontSize: 17, fontWeight: "700", color: INK }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, fontWeight: "700", color: INK }}>
                         {initials(c.host_name)}
                       </Text>
                     </View>
                   )}
                   <View style={{ flex: 1, marginLeft: 13 }}>
-                    <Text style={{ fontFamily: SERIF, fontSize: 17, fontWeight: "700", color: INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, fontWeight: "700", color: INK }}>
                       {c.host_name}
                     </Text>
                     <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
@@ -606,13 +607,13 @@ function ClientSheet({
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF, fontSize: 19, fontWeight: "700", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700", color: INK }}>
                   {initials(client.host_name)}
                 </Text>
               </View>
             )}
             <View style={{ flex: 1, marginLeft: 13 }}>
-              <Text style={{ fontFamily: SERIF, fontSize: 23, fontWeight: "700", color: INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 23, fontWeight: "700", color: INK }}>
                 {client.host_name}
               </Text>
               <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
@@ -802,7 +803,7 @@ function ClientSheet({
                     <Text
                       style={{
                         flex: 1,
-                        fontFamily: SERIF,
+                        fontFamily: SERIF_BOLD,
                         fontSize: 16,
                         fontWeight: "700",
                         color: INK,
@@ -852,7 +853,7 @@ function ClientSheet({
 const sectionTitleStyle = {
   marginTop: 26,
   marginBottom: 10,
-  fontFamily: SERIF,
+  fontFamily: SERIF_BOLD,
   fontSize: 20,
   fontWeight: "700" as const,
   color: INK,

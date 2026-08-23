@@ -14,7 +14,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -50,7 +49,9 @@ const DARK_CARD = "#16181d";
 const DARK_HAIRLINE = "rgba(255,255,255,0.16)";
 const DARK_MUTED = "rgba(255,255,255,0.65)";
 const GOLD_ON_DARK = "#d9bd82";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Joined year for the header stat (matches web's "Joined" stat).
 function joinedYear(createdAt: string | null): string {
@@ -326,7 +327,7 @@ export default function ProfileScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
               <Text
                 style={{
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_BOLD,
                   fontWeight: "700",
                   fontSize: 38,
                   color: INK,
@@ -376,7 +377,7 @@ export default function ProfileScreen() {
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
-                    fontFamily: SERIF,
+                    fontFamily: SERIF_BOLD,
                     fontWeight: "700",
                     fontSize: 20,
                     color: INK,
@@ -562,8 +563,7 @@ function BrandCard({
           <Text
             style={{
               marginTop: 12,
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_ITALIC,
               fontSize: 18,
               lineHeight: 27,
               color: bio?.trim() ? "rgba(255,255,255,0.85)" : DARK_MUTED,
@@ -610,7 +610,7 @@ function BrandCard({
               <Text
                 numberOfLines={2}
                 style={{
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_BOLD,
                   fontWeight: "700",
                   fontSize: 26,
                   lineHeight: 31,
@@ -727,7 +727,7 @@ function CardStat({ value, label }: { value: string; label: string }) {
     <View style={{ alignItems: "center" }}>
       <Text
         style={{
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 22,
           fontWeight: "700",
           color: WHITE,
@@ -873,7 +873,7 @@ function EmptyState({
       <Text
         style={{
           marginTop: 18,
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontWeight: "700",
           fontSize: 26,
           color: INK,

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -91,7 +91,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     text-wrap: balance;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -231,17 +231,17 @@
   }
 
   .font-display {
-    font-family: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.1;
   }
 
-  /* Editorial italic serif — Bodoni Moda. Carries the Vendora
+  /* Editorial italic serif. Carries the Vendora
      wordmark and the editorial headlines across the host portal.
      Falls back to Times New Roman until the web font loads. */
   .font-editorial {
-    font-family: 'Bodoni Moda', 'Times New Roman', 'Times', Georgia, ui-serif, serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-style: italic;
     font-weight: 500;
     letter-spacing: -0.01em;
@@ -475,7 +475,7 @@
    * shared `.vendor-canvas` warm-orange radial; cards become
    * translucent frosted glass over that backdrop instead of opaque
    * paper cards. Borders are warm-orange hairlines, shadows are
-   * orange-tinted. The serif (Cormorant Garamond) still carries
+   * orange-tinted. The serif still carries
    * the KPI display + chart titles for editorial feel.
    *
    * Token palette:
@@ -556,7 +556,7 @@
     color: #71717a;
   }
   .my-vendora-cockpit .cockpit-stat-value {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     font-size: 32px;
     font-weight: 500;
@@ -685,7 +685,7 @@
     color: #1a1a1a;
   }
   /* Hero KPI figure — same crisp sans as .cockpit-money, just larger
-     and bolder. (Previously Cormorant Garamond, but its old-style
+     and bolder. (Previously a display serif, but its old-style
      numerals — a descending 9, lowercase-looking 1s — read poorly at
      this size, so the display numbers now match the tabular money in
      the rows below them.) */
@@ -696,11 +696,11 @@
   }
   .my-vendora-cockpit .cockpit-money--negative { color: #71717a; }
 
-  /* Headings inside the cockpit — Cormorant Garamond display. */
+  /* Headings inside the cockpit — display serif. */
   .my-vendora-cockpit h1,
   .my-vendora-cockpit h2,
   .my-vendora-cockpit h3 {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     color: #1a1a1a;
     letter-spacing: -0.3px;
     font-weight: 500;
@@ -742,10 +742,10 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Existing `.font-editorial` (Bodoni italic) inside the cockpit
-     bows to Cormorant so the surface speaks one display voice. */
+  /* Existing `.font-editorial` inside the cockpit uses the same
+     display serif so the surface speaks one voice. */
   .my-vendora-cockpit .font-editorial {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif !important;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif !important;
     font-style: normal;
     font-feature-settings: "tnum" 1, "lnum" 1;
     letter-spacing: -0.3px;
@@ -763,7 +763,7 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
   }
   .my-vendora-cockpit .cockpit-chart-title {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-size: 20px;
     font-weight: 600;
     color: #1a1a1a;
@@ -872,7 +872,7 @@
     color: rgba(0, 0, 0, 0.4);
   }
   .my-vendora-cockpit .cockpit-page-title {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-size: 32px;
     font-weight: 500;
     color: #1a1a1a;
@@ -924,7 +924,7 @@
     margin-bottom: 4px;
   }
   .my-vendora-cockpit .cockpit-kpi-value {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     font-size: 30px;
     font-weight: 500;
@@ -1016,7 +1016,7 @@
     background: transparent;
   }
   .my-vendora-cockpit .cockpit-data-card-header h3 {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-size: 22px;
     font-weight: 600;
     letter-spacing: -0.2px;
