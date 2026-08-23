@@ -1,38 +1,41 @@
-// Vendor app color palette — single source of truth, kept in lockstep
-// with the web app's design tokens (apps/web/src/index.css :root).
+// Vendor app color palette.
 //
-// Web ships ONE light palette: pure-white surfaces, a deep-navy brand
-// accent, and cool neutral grays. The old warm cream/champagne/gold
-// palette was retired on web; these values are the canonical
-// replacements for its remaining mobile remnants.
+// This file used to carry its own hand-copied hex values and claimed to
+// be "kept in lockstep with the web app's design tokens". It wasn't —
+// it described a white/navy palette that had been retired two redesigns
+// earlier, while instructing new screens to import from it. Anything
+// that followed that instruction would have come out white-and-navy in
+// a cream app.
 //
-//   Web token           HSL (index.css)      → hex / rgba
-//   --background        0 0% 100%              #ffffff
-//   --foreground        220 14% 9%             #14161a
-//   --muted-foreground  220 8% 40%             #5e636e
-//   --border            220 14% 9% / 0.08      rgba(20,22,26,0.08)
-//   --secondary         220 14% 96%            #f3f4f6
-//   --destructive       0 72% 51%              #dc2828
-//   brand navy (accent) rgba(27,54,84)         #1b3654
-//
-// Existing screens still inline these hex values directly; new screens
-// should import from here so the palette can't drift again.
+// It is now a thin re-export of the real source of truth. Add tokens
+// there, not here.
+import { gold, ink, semantic, surface } from "@vendora/core/tokens";
 
 export const colors = {
-  /** Page / card surfaces — web --background, --card */
-  background: "#ffffff",
-  /** Primary text + "ink" buttons — web --foreground / --primary */
-  foreground: "#14161a",
-  /** Secondary / dimmed text — web --muted-foreground */
-  mutedForeground: "#5e636e",
-  /** Hairline borders + dividers — web --border (foreground @ 8%) */
-  border: "rgba(20,22,26,0.08)",
-  /** Subtle filled surfaces (chips, inputs) — web --secondary */
-  surfaceMuted: "#f3f4f6",
-  /** Deep-navy brand accent — links, focus, brand mark (web body navy) */
-  accent: "#1b3654",
-  /** Errors / destructive actions — web --destructive */
-  destructive: "#dc2828",
+  /** Ivory page canvas. */
+  background: surface.page,
+  /** Warm cream card, one step up from the page. */
+  card: surface.card,
+  /** Primary text + "ink" buttons. */
+  foreground: ink.DEFAULT,
+  /** Secondary / dimmed text. */
+  mutedForeground: ink.dim,
+  /** Warm hairline borders + dividers. */
+  border: surface.border,
+  /** Subtle filled surfaces (chips, inputs). */
+  surfaceMuted: surface.muted,
+  /**
+   * Champagne — the brand gold. Ornament on light surfaces (the V mark,
+   * sparkles, hairlines, tints) and text on dark ones. NOT legible as
+   * text on cream: use `goldInk` there.
+   */
+  gold: gold.DEFAULT,
+  /** Bronze — the gold that stays readable as text/icons on cream. */
+  goldInk: gold.ink,
+  /** Pale gold — text on the near-black auth and profile-card grounds. */
+  goldOnDark: gold.onDark,
+  /** Errors / destructive actions. */
+  destructive: semantic.destructive,
 } as const;
 
 export type AppColors = typeof colors;

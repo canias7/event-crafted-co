@@ -46,6 +46,10 @@ const INK = "#14161a";
 const INK_DIM = "#6b6f78";
 const BORDER = "rgba(20,22,26,0.10)";
 const GOLD = "#c9a86a";
+// Bronze — the gold that stays legible as text or a meaningful icon
+// on a cream surface (4.51:1, vs champagne's 2.15:1). Ornamental
+// gold stays GOLD. See packages/core/src/tokens.js.
+const GOLD_INK = "#8a6f3e";
 const DARK_CARD = "#16181d";
 const DARK_HAIRLINE = "rgba(255,255,255,0.16)";
 const DARK_MUTED = "rgba(255,255,255,0.65)";
@@ -868,7 +872,7 @@ function EmptyState({
           justifyContent: "center",
         }}
       >
-        <Feather name={icon} size={24} color={GOLD} />
+        <Feather name={icon} size={24} color={GOLD_INK} />
       </View>
       <Text
         style={{

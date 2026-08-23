@@ -15,6 +15,10 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
+// Bronze — the gold that stays legible as text or a meaningful icon
+// on a cream surface (4.51:1, vs champagne's 2.15:1). Ornamental
+// gold stays GOLD. See packages/core/src/tokens.js.
+const GOLD_INK = "#8a6f3e";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 // Newest first. `date` is display-only.
@@ -127,7 +131,7 @@ export default function UpdatesScreen() {
                   fontSize: 11,
                   fontWeight: "700",
                   letterSpacing: 1,
-                  color: GOLD,
+                  color: GOLD_INK,
                   textTransform: "uppercase",
                 }}
               >

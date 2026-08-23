@@ -1,38 +1,27 @@
 // NativeWind / Tailwind config for vendor-mobile.
 //
-// Palette mirrors the web app's design tokens (apps/web/src/index.css)
-// so bg-background / text-foreground / bg-muted / text-muted-foreground /
-// text-accent render the SAME colors as the web. Web tokens are HSL in
-// index.css; the hex equivalents are inlined here.
+// Colors come from @vendora/core/tokens — the same module the web and
+// host configs read — so `bg-background` / `text-foreground` /
+// `text-muted-foreground` / `text-accent` render identical values on
+// every surface. Don't add hex literals here; add a token instead.
+// Colors come from the shared token module — the same file the web and
+// host configs read — so `bg-background` / `text-foreground` /
+// `text-muted-foreground` / `text-accent` render identical values on
+// every surface. Don't add hex literals here; add a token instead.
+//
+// Required by relative path rather than "@vendora/core/tokens": this
+// file is loaded by the Tailwind CLI before the workspace is
+// necessarily linked, so a path that can't miss is worth more here than
+// a tidy specifier. App source should use the package specifier.
+const { tailwindColors } = require("../../packages/core/src/tokens.js");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      colors: {
-        // Cream Vendora palette — the ivory/charcoal/champagne-gold
-        // system used across every tab screen. Keep in sync with the
-        // per-file constants (PAGE / CARD / SURFACE / BORDER / INK /
-        // GOLD).
-        // Ivory page canvas
-        background: "#f4f1ea",
-        // Charcoal ink — navy-tinted, NOT pure black
-        foreground: "#14161a",
-        // Deep-cream surface used for chips, received message bubbles,
-        // inactive filters, "muted" backgrounds
-        muted: "#ece7db",
-        secondary: "#ece7db",
-        "muted-foreground": "#5e636e",
-        // Warm hairline border
-        border: "#e6e1d5",
-        // Champagne gold — links, focus rings, badges, the ✦ accents
-        accent: "#c9a86a",
-        "accent-foreground": "#14161a",
-      },
+      colors: tailwindColors,
     },
   },
   plugins: [],

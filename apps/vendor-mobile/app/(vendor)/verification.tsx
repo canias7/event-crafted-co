@@ -38,6 +38,10 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
+// Bronze — the gold that stays legible as text or a meaningful icon
+// on a cream surface (4.51:1, vs champagne's 2.15:1). Ornamental
+// gold stays GOLD. See packages/core/src/tokens.js.
+const GOLD_INK = "#8a6f3e";
 const GOLD_SOFT = "#eadfc6";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -537,7 +541,7 @@ export default function VerificationScreen() {
                 "Build trust with more clients",
               ].map((t) => (
                 <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
-                  <Feather name="check" size={13} color={GOLD} />
+                  <Feather name="check" size={13} color={GOLD_INK} />
                   <Text style={{ fontSize: 13.5, color: INK }}>{t}</Text>
                 </View>
               ))}

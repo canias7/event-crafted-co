@@ -54,6 +54,10 @@ const INK = "#14161a";
 const INK_DIM = "#6b6f78";
 const BORDER = "#e5e2dc";
 const GOLD = "#c9a86a";
+// Bronze — the gold that stays legible as text or a meaningful icon
+// on a cream surface (4.51:1, vs champagne's 2.15:1). Ornamental
+// gold stays GOLD. See packages/core/src/tokens.js.
+const GOLD_INK = "#8a6f3e";
 const GOLD_SOFT = "rgba(201,168,106,0.16)";
 const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
@@ -1685,7 +1689,7 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
           padding: 14,
         }}
       >
-        <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
+        <MaterialCommunityIcons name="check-circle" size={20} color={GOLD_INK} />
         <Text style={{ flex: 1, fontSize: 14, color: INK }}>
           Everything required is filled in. Publish when you&rsquo;re ready.
         </Text>

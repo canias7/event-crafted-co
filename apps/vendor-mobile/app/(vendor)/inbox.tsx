@@ -42,6 +42,10 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#6b6f78";
 const GOLD = "#c9a86a";
+// Bronze — the gold that stays legible as text or a meaningful icon
+// on a cream surface (4.51:1, vs champagne's 2.15:1). Ornamental
+// gold stays GOLD. See packages/core/src/tokens.js.
+const GOLD_INK = "#8a6f3e";
 const SERIF_FONT = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 interface PartnerThread {
@@ -575,7 +579,7 @@ export default function InboxScreen() {
               justifyContent: "center",
             }}
           >
-            <MaterialCommunityIcons name="bullhorn-outline" size={24} color={GOLD} />
+            <MaterialCommunityIcons name="bullhorn-outline" size={24} color={GOLD_INK} />
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text
