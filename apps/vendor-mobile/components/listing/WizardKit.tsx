@@ -208,7 +208,7 @@ export function StepTitle({
       >
         {title}
       </Text>
-      <Text style={{ marginTop: 3, fontSize: 13, color: INK_DIM }}>{sub}</Text>
+      <Text style={{ marginTop: 3, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
     </View>
   );
 }

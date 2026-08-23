@@ -124,7 +124,7 @@ export default function MoreScreen() {
         >
           More <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
         </Text>
-        <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 14.5, color: INK_DIM }}>
+        <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Everything else, one tap away.
         </Text>
 

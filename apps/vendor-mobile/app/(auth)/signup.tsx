@@ -810,11 +810,9 @@ const eyebrowLabel = {
 };
 const subhead = {
   marginTop: 10,
-  fontSize: 17,
+  fontSize: 13.5,
   color: INK_DIM,
-  fontStyle: "italic" as const,
-  fontFamily: SERIF,
-  lineHeight: 24,
+  lineHeight: 19,
 };
 const fieldLabel = {
   marginBottom: 8,

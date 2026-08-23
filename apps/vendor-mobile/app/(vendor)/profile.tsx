@@ -346,7 +346,7 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="cog-outline" size={24} color={INK} />
             </TouchableOpacity>
           </View>
-          <Text style={{ marginTop: 4, fontSize: 14.5, color: INK_DIM }}>
+          <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
             Manage how your business appears on Vendora.
           </Text>
 

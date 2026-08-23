@@ -485,7 +485,7 @@ export default function VerificationScreen() {
               Get verified. Build trust.
             </Text>
             <Text
-              style={{ marginTop: 6, textAlign: "center", fontSize: 14.5, lineHeight: 21, color: INK_DIM }}
+              style={{ marginTop: 6, textAlign: "center", fontSize: 13.5, lineHeight: 19, color: INK_DIM }}
             >
               Verified vendors stand out and give clients confidence in your
               business.

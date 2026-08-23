@@ -163,7 +163,7 @@ export default function TeamScreen() {
           </Text>
           <View style={{ width: 26 }} />
         </View>
-        <Text style={{ marginTop: 10, fontSize: 14.5, color: INK_DIM }}>
+        <Text style={{ marginTop: 10, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Introduce the people behind your business. This will appear on your
           public profile — it&rsquo;s completely optional.
         </Text>

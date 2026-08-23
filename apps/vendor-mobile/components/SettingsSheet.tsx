@@ -318,9 +318,8 @@ export function SettingsSheet({
                 style={{
                   marginTop: 8,
                   color: INK_DIM,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
-                  fontSize: 15,
+                  fontSize: 13.5,
+                  lineHeight: 19,
                 }}
               >
                 Sign-in details and how Vendora reaches you.
@@ -501,10 +500,8 @@ export function SettingsSheet({
                   marginTop: 16,
                   textAlign: "center",
                   color: INK_DIM,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
-                  fontSize: 13,
-                  lineHeight: 18,
+                  fontSize: 13.5,
+                  lineHeight: 19,
                   paddingHorizontal: 12,
                 }}
               >
