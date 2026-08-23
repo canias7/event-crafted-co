@@ -171,7 +171,7 @@ export default function FindVendorScreen() {
           Find a vendor
         </Text>
       </View>
-      <Text className="px-5 pb-4 text-sm text-muted-foreground">{subtitle}</Text>
+      <Text className="px-5 pb-4 text-[13.5px] leading-[19px] text-muted-foreground">{subtitle}</Text>
 
       {/* Search */}
       <View className="px-5 mb-3">

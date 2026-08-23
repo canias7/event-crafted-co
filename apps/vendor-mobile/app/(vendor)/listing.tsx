@@ -933,9 +933,8 @@ export default function ListingScreen() {
                 <FieldLabel>Custom pricing</FieldLabel>
                 <Text
                   style={{
-                    fontFamily: SERIF,
-                    fontSize: 13,
-                    fontStyle: "italic",
+                    fontSize: 13.5,
+                    lineHeight: 19,
                     color: INK_DIM,
                     marginTop: 2,
                   }}
@@ -1278,12 +1277,10 @@ function StepHeader({
       </Text>
       <Text
         style={{
-          fontFamily: SERIF,
-          fontSize: 16,
-          fontStyle: "italic",
+          fontSize: 13.5,
           color: INK_DIM,
           marginTop: 10,
-          lineHeight: 22,
+          lineHeight: 19,
         }}
       >
         {body}
@@ -1318,9 +1315,8 @@ function SectionBlock({
       {subtitle ? (
         <Text
           style={{
-            fontFamily: SERIF,
-            fontSize: 14,
-            fontStyle: "italic",
+            fontSize: 13.5,
+            lineHeight: 19,
             color: INK_DIM,
             marginTop: 4,
           }}
@@ -1332,9 +1328,8 @@ function SectionBlock({
       {footnote ? (
         <Text
           style={{
-            fontFamily: SERIF,
-            fontSize: 13,
-            fontStyle: "italic",
+            fontSize: 13.5,
+            lineHeight: 19,
             color: INK_DIM,
             marginTop: 10,
           }}
@@ -1569,14 +1564,12 @@ function BannerCard({
         padding: 14,
       }}
     >
-      <Text style={{ fontSize: 15, fontWeight: "700", color: INK }}>{title}</Text>
+      <Text style={{ fontSize: 13.5, fontWeight: "700", color: INK }}>{title}</Text>
       <Text
         style={{
           marginTop: 4,
-          fontSize: 13,
+          fontSize: 13.5,
           color: INK_DIM,
-          fontFamily: SERIF,
-          fontStyle: "italic",
           lineHeight: 19,
         }}
       >
@@ -1603,9 +1596,8 @@ function EmptyCard({ body }: { body: string }) {
       >
         <Text
           style={{
-            fontFamily: SERIF,
-            fontSize: 14,
-            fontStyle: "italic",
+            fontSize: 13.5,
+            lineHeight: 19,
             color: INK_DIM,
             textAlign: "center",
           }}

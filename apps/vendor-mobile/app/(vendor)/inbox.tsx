@@ -301,7 +301,7 @@ export default function InboxScreen() {
           >
             Inbox
           </Text>
-          <Text style={{ marginTop: 6, fontSize: 15.5, color: INK_DIM }}>
+          <Text style={{ marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
             Inquiries and partner threads — all in one place.
           </Text>
         </View>

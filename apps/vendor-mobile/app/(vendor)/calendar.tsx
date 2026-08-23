@@ -1051,7 +1051,7 @@ export default function CalendarScreen() {
               >
                 Calendar <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
               </Text>
-              <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+              <Text style={{ marginTop: 2, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
                 Manage your bookings & availability
               </Text>
             </View>

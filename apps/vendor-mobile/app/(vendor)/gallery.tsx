@@ -562,7 +562,7 @@ export default function GalleryScreen() {
             </Pressable>
           </View>
         </View>
-        <Text style={{ marginTop: 6, fontSize: 14.5, color: INK_DIM }}>
+        <Text style={{ marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Your media library — upload once, reuse across listings.
         </Text>
 
