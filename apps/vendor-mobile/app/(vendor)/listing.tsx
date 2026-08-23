@@ -542,6 +542,13 @@ export default function ListingScreen() {
       }
     }
     setBusy(true);
+    // Saving a listing that is (or is becoming) a draft stamps
+    // draft_saved_at. The hourly orphan sweep deletes photo-less drafts
+    // on the assumption they're rows abandoned mid-submit — without the
+    // stamp, a draft a vendor saved and meant to finish tomorrow was
+    // collected within the hour.
+    const staysDraft =
+      !publish && (toDraft || profile.application_status === "draft");
     const payload = {
       ...buildPayload(),
       ...(publish
@@ -549,6 +556,7 @@ export default function ListingScreen() {
         : toDraft
           ? { application_status: "draft" as const }
           : {}),
+      ...(staysDraft ? { draft_saved_at: new Date().toISOString() } : {}),
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
