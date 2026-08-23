@@ -35,7 +35,7 @@ import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
 
 const PAGE = "#f4f1ea";
-const SURFACE = "#fbf9f4";
+const CARD = "#fbf9f4";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const BORDER = "#e6e1d5";
@@ -524,7 +524,7 @@ export default function SubscriptionScreen() {
         {isIOS ? (
           <View
             style={{
-              backgroundColor: SURFACE,
+              backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
               borderRadius: 20,
@@ -606,7 +606,7 @@ export default function SubscriptionScreen() {
             <View
               key={`${tier.id}_${tier.billingInterval}`}
               style={{
-                backgroundColor: SURFACE,
+                backgroundColor: CARD,
                 borderRadius: 20,
                 padding: 18,
                 marginBottom: 12,
@@ -736,7 +736,7 @@ export default function SubscriptionScreen() {
                 <View
                   key={pack.id}
                   style={{
-                    backgroundColor: SURFACE,
+                    backgroundColor: CARD,
                     borderWidth: 1,
                     borderColor: BORDER,
                     borderRadius: 20,
@@ -789,7 +789,7 @@ export default function SubscriptionScreen() {
         <View
           style={{
             marginTop: 12,
-            backgroundColor: SURFACE,
+            backgroundColor: CARD,
             borderWidth: 1,
             borderColor: BORDER,
             borderRadius: 20,
