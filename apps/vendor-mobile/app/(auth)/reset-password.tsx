@@ -23,7 +23,7 @@
 // Cream Vendora theme mirroring signup/login. No function-form style
 // props (device interop drops them); TouchableOpacity for feedback.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -106,9 +106,27 @@ export default function ResetPasswordScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  // This effect legitimately re-runs — useURL() is null on the first
+  // render and fills in once the event lands, and waitedForUrl flips a
+  // beat later. Redeeming a recovery token SPENDS it, so without this
+  // guard the second pass re-submits an already-used token, GoTrue
+  // rejects it, and the screen flips from the form to "expired" a
+  // second after opening. Latch as soon as we commit to an outcome, and
+  // set it BEFORE awaiting so an overlapping re-run can't slip through.
+  const settled = useRef(false);
+  // Effect re-runs are not unmounts, so the usual per-run `cancelled`
+  // flag would strand a redemption in flight; track real unmount only.
+  const mounted = useRef(true);
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (settled.current) return;
+    void (async () => {
       const fromUrl = url ? parseParams(url) : null;
 
       // GoTrue reports a dead or already-used token this way rather than
@@ -119,6 +137,7 @@ export default function ResetPasswordScreen() {
         fromUrl?.get("error") ??
         null;
       if (linkError) {
+        settled.current = true;
         setError(decodeURIComponent(linkError.replace(/\+/g, " ")));
         setState("error");
         return;
@@ -127,11 +146,12 @@ export default function ResetPasswordScreen() {
       // The current path: redeem the single-use hash for a session.
       const tokenHash = routeTokenHash ?? fromUrl?.get("token_hash") ?? null;
       if (tokenHash) {
+        settled.current = true;
         const { error: e } = await supabase.auth.verifyOtp({
           type: "recovery",
           token_hash: tokenHash,
         });
-        if (cancelled) return;
+        if (!mounted.current) return;
         if (e) {
           setError("This reset link has expired. Request a new one.");
           setState("error");
@@ -146,11 +166,12 @@ export default function ResetPasswordScreen() {
       const rt = fromUrl?.get("refresh_token") ?? null;
       const type = routeType ?? fromUrl?.get("type") ?? null;
       if (at && rt && type === "recovery") {
+        settled.current = true;
         const { error: e } = await supabase.auth.setSession({
           access_token: at,
           refresh_token: rt,
         });
-        if (cancelled) return;
+        if (!mounted.current) return;
         if (e) {
           setError("This reset link has expired. Request a new one.");
           setState("error");
@@ -163,23 +184,21 @@ export default function ResetPasswordScreen() {
       // Maybe the session was already seeded by Supabase's built-in URL
       // listener before we mounted.
       const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
+      if (!mounted.current || settled.current) return;
       if (data.session) {
+        settled.current = true;
         setState("ready");
         return;
       }
 
-      // Nothing usable yet. useURL() is null on the first render and
-      // fills in once the event lands, so wait a beat rather than
-      // flashing an error we are about to contradict — but do not spin
-      // forever if no link is coming at all.
+      // Nothing usable yet — the URL may still be on its way, so wait a
+      // beat rather than flashing an error we are about to contradict.
+      // Do not spin forever if no link is coming at all.
       if (!waitedForUrl) return;
+      settled.current = true;
       setError("We couldn't read that reset link. Request a new one.");
       setState("error");
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
 
   async function onSubmit() {
