@@ -554,7 +554,6 @@ function BrandDialogView({
           >
             {spec?.title}
           </Text>
-          <Text style={{ color: GOLD, fontSize: 12, marginTop: 8 }}>✦</Text>
           {spec?.message ? (
             <Text
               style={{

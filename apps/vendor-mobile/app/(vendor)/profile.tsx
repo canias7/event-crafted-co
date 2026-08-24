@@ -336,7 +336,6 @@ export default function ProfileScreen() {
               >
                 My Profile
               </Text>
-              <Text style={{ color: GOLD, fontSize: 13, marginLeft: 6 }}>✦</Text>
             </View>
             <TouchableOpacity
               onPress={() => router.push("/(vendor)/more" as never)}
@@ -369,7 +368,7 @@ export default function ProfileScreen() {
               }}
             >
               <MaterialCommunityIcons
-                name="star-four-points"
+                name="rocket-launch-outline"
                 size={30}
                 color={GOLD}
                 style={{ marginRight: 14 }}

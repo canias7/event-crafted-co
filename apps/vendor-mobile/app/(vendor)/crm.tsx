@@ -172,7 +172,7 @@ export default function CrmScreen() {
               color: INK,
             }}
           >
-            Know every client. <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+            Know every client.
           </Text>
           <Text style={{ marginTop: 8, fontSize: 15, color: INK_DIM, lineHeight: 22 }}>
             Vendora CRM turns your inquiries into a client book — every host
@@ -228,7 +228,7 @@ export default function CrmScreen() {
             }}
           >
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
-              <Text style={{ color: GOLD }}>✦</Text> Upgrade to Pro
+              Upgrade to Pro
             </Text>
           </Pressable>
           <Text style={{ marginTop: 10, textAlign: "center", color: INK_DIM, fontSize: 12 }}>
@@ -277,7 +277,7 @@ export default function CrmScreen() {
             color: INK,
           }}
         >
-          Clients <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+          Clients
         </Text>
         <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Your client book, built from every inquiry.
@@ -657,7 +657,7 @@ function ClientSheet({
 
           {/* Follow-up reminder */}
           <Text style={sectionTitleStyle}>
-            Follow-up reminder <Text style={{ color: GOLD }}>✦</Text>
+            Follow-up reminder
           </Text>
           {followUpAt ? (
             <View
@@ -702,7 +702,7 @@ function ClientSheet({
 
           {/* Notes */}
           <Text style={sectionTitleStyle}>
-            Notes <Text style={{ color: GOLD }}>✦</Text>
+            Notes
           </Text>
           <View
             style={{
@@ -779,7 +779,7 @@ function ClientSheet({
 
           {/* Events */}
           <Text style={sectionTitleStyle}>
-            Events <Text style={{ color: GOLD }}>✦</Text>
+            Events
           </Text>
           {events.length === 0 ? (
             <Text style={{ color: INK_DIM, fontSize: 13.5 }}>No inquiries on record yet.</Text>

@@ -62,6 +62,12 @@ const PENDING_BG = "#f2e7cb";
 const PENDING_FG = "#8a6f3e";
 const HATCH = "#d6d1c6";
 const HATCH_BG = "#ece7db";
+// Champagne bronze — gold deep enough to stay legible as small text.
+const BRONZE = "#8a6f3e";
+// Soft champagne fill for the days between the two ends of a pending
+// multi-day range — reads as "included" without competing with the
+// solid ink ends or the booked/blocked states.
+const RANGE_FILL = "#eadfc6";
 const GREEN = "#16a34a";
 const AMBER = "#d97706";
 // Status dots for the multi-listing account view (match web STATUS_DOT).
@@ -169,6 +175,41 @@ function parseYmd(s: string | null): Date | null {
   const [y, m, d] = s.split("T")[0].split("-").map(Number);
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d);
+}
+
+// A vendor blocking a season shouldn't be able to write an unbounded
+// number of rows from two taps, so ranges cap at a year.
+const MAX_RANGE_DAYS = 366;
+
+// Inclusive list of YYYY-MM-DD keys between two days, in either order.
+function datesBetween(a: string, b: string): string[] {
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  const cursor = parseYmd(lo);
+  const end = parseYmd(hi);
+  const out: string[] = [];
+  if (!cursor || !end) return out;
+  while (cursor <= end && out.length < MAX_RANGE_DAYS) {
+    out.push(ymdKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return out;
+}
+
+// "Jun 3 – Jun 10" / "Jun 3 – Jul 2, 2027" for the range header.
+function prettyRange(a: string, b: string): string {
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  const d1 = parseYmd(lo);
+  const d2 = parseYmd(hi);
+  if (!d1 || !d2) return "";
+  const sameYear = d1.getFullYear() === d2.getFullYear();
+  const left = d1.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const right = d2.toLocaleDateString(
+    undefined,
+    sameYear
+      ? { month: "short", day: "numeric" }
+      : { month: "short", day: "numeric", year: "numeric" },
+  );
+  return `${left} – ${right}`;
 }
 
 function fmtMoneyShort(cents: number): string {
@@ -702,14 +743,70 @@ export default function CalendarScreen() {
   const [blockTitleInput, setBlockTitleInput] = useState("");
   const [editingBlockDate, setEditingBlockDate] = useState<string | null>(null);
 
+  // ---- multi-day range ----
+  // Opt-in: single-day tapping is untouched until the vendor turns this
+  // on, because blocking one day is still the common case. In range
+  // mode the first tap sets one end and the second sets the other (any
+  // order); a third tap starts over.
+  const [rangeMode, setRangeMode] = useState(false);
+  const [rangeStart, setRangeStart] = useState<string | null>(null);
+  const [rangeEnd, setRangeEnd] = useState<string | null>(null);
+
+  const exitRangeMode = useCallback(() => {
+    setRangeMode(false);
+    setRangeStart(null);
+    setRangeEnd(null);
+  }, []);
+
+  const rangeDates = useMemo(() => {
+    if (rangeStart && rangeEnd) return datesBetween(rangeStart, rangeEnd);
+    return rangeStart ? [rangeStart] : [];
+  }, [rangeStart, rangeEnd]);
+
+  const rangeKeys = useMemo(() => new Set(rangeDates), [rangeDates]);
+
+  // Booked and pending days are already unavailable to hosts and the
+  // single-day path refuses to block them, so they drop out of the
+  // write set rather than making the whole range un-blockable.
+  const rangeWritable = useMemo(
+    () =>
+      rangeDates.filter((d) => {
+        const s = dayState.get(d);
+        return s !== "booked" && s !== "pending";
+      }),
+    [rangeDates, dayState],
+  );
+
+  const rangeAllBlocked =
+    rangeWritable.length > 0 && rangeWritable.every((d) => manualBlocks.has(d));
+
   const commitBlock = useCallback(async () => {
     const targetDate = editingBlockDate ?? selectedYmd;
-    if (!targetDate || blocking) return;
+    const rangeWrite = rangeMode && !editingBlockDate && rangeWritable.length > 0;
+    if ((!targetDate && !rangeWrite) || blocking) return;
     setBlocking(true);
     const trimmed = blockTitleInput.trim();
     const reason = trimmed.length > 0 ? trimmed : "Blocked manually";
     let err: { message?: string } | null = null;
-    if (editingBlockDate) {
+    if (rangeWrite) {
+      const targetIds = writeTargetIds();
+      if (targetIds.length === 0) {
+        setBlocking(false);
+        return;
+      }
+      const rows = targetIds.flatMap((vid) =>
+        rangeWritable.map((date) => ({ vendor_id: vid, date, reason })),
+      );
+      // A year-long range across several listings is a few thousand
+      // rows; chunk so one oversized request can't fail the whole write.
+      for (let i = 0; i < rows.length && !err; i += 400) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const res = await (supabase as any)
+          .from("vendor_unavailable_dates")
+          .upsert(rows.slice(i, i + 400), { onConflict: "vendor_id,date" });
+        err = res.error;
+      }
+    } else if (editingBlockDate) {
       // Edit: UPDATE reason on whichever listings actually have this date.
       const blockedOn = blockListingIds.get(editingBlockDate);
       const targetIds =
@@ -749,6 +846,18 @@ export default function CalendarScreen() {
       );
       return;
     }
+    if (rangeWrite) {
+      const skipped = rangeDates.length - rangeWritable.length;
+      exitRangeMode();
+      if (skipped > 0) {
+        Alert.alert(
+          "Days blocked",
+          `${rangeWritable.length} day${rangeWritable.length === 1 ? "" : "s"} marked unavailable. ${skipped} day${
+            skipped === 1 ? " was" : "s were"
+          } skipped — already booked, so already unavailable to hosts.`,
+        );
+      }
+    }
     load(false);
   }, [
     selectedYmd,
@@ -758,8 +867,32 @@ export default function CalendarScreen() {
     blockListingIds,
     vendorIds,
     writeTargetIds,
+    rangeMode,
+    rangeDates,
+    rangeWritable,
+    exitRangeMode,
     load,
   ]);
+
+  // Unblock every day in the range in one delete.
+  const commitUnblockRange = useCallback(async () => {
+    if (blocking || rangeWritable.length === 0) return;
+    const targetIds = writeTargetIds();
+    if (targetIds.length === 0) return;
+    setBlocking(true);
+    const { error: err } = await supabase
+      .from("vendor_unavailable_dates")
+      .delete()
+      .in("vendor_id", targetIds)
+      .in("date", rangeWritable);
+    setBlocking(false);
+    if (err) {
+      Alert.alert("Couldn't unblock", err.message);
+      return;
+    }
+    exitRangeMode();
+    load(false);
+  }, [blocking, rangeWritable, writeTargetIds, exitRangeMode, load]);
 
   function openEditBlock(date: string) {
     const current = manualBlocks.get(date) ?? "";
@@ -786,8 +919,30 @@ export default function CalendarScreen() {
     load(false);
   }, [selectedYmd, blocking, writeTargetIds, load]);
 
+  // A brand-new vendor has no listing to mark unavailable. Greying the
+  // button out just left them staring at a dead control with no reason
+  // given, so it stays tappable and explains itself instead.
+  const needsListing = writeTargetIds().length === 0;
+  const explainNeedsListing = useCallback(() => {
+    Alert.alert(
+      "Publish a listing first",
+      "Blocking days marks your listing unavailable to hosts. Once you have a listing, this unlocks.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Finish setup",
+          onPress: () => router.push("/(vendor)/setup" as never),
+        },
+      ],
+    );
+  }, [router]);
+
   const toggleSelectedDayBlock = useCallback(() => {
-    if (!selectedYmd || blocking || writeTargetIds().length === 0) return;
+    if (!selectedYmd || blocking) return;
+    if (writeTargetIds().length === 0) {
+      explainNeedsListing();
+      return;
+    }
     if (isSelectedBlocked) {
       Alert.alert(
         "Re-open this day?",
@@ -809,6 +964,7 @@ export default function CalendarScreen() {
       setBlockModalOpen(true);
     }
   }, [
+    explainNeedsListing,
     selectedYmd,
     blocking,
     writeTargetIds,
@@ -1051,7 +1207,7 @@ export default function CalendarScreen() {
                   letterSpacing: -0.5,
                 }}
               >
-                Calendar <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+                Calendar
               </Text>
               <Text style={{ marginTop: 2, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
                 Manage your bookings & availability
@@ -1188,8 +1344,30 @@ export default function CalendarScreen() {
                 dayState={dayState}
                 dayStatusDots={dayStatusDots}
                 showListingColors={showListingColors}
-                selectedYmd={selectedYmd}
-                onSelect={(k) => setSelectedYmd(k)}
+                selectedYmd={rangeMode ? null : selectedYmd}
+                rangeKeys={rangeMode ? rangeKeys : null}
+                rangeEdges={
+                  rangeMode
+                    ? [rangeStart, rangeEnd].filter(Boolean) as string[]
+                    : []
+                }
+                onSelect={(k) => {
+                  if (!rangeMode) {
+                    setSelectedYmd(k);
+                    return;
+                  }
+                  // Third tap starts a new range rather than extending
+                  // a finished one — less surprising than growing it.
+                  if (!rangeStart || rangeEnd) {
+                    setRangeStart(k);
+                    setRangeEnd(null);
+                  } else if (k < rangeStart) {
+                    setRangeEnd(rangeStart);
+                    setRangeStart(k);
+                  } else {
+                    setRangeEnd(k);
+                  }
+                }}
               />
             )}
 
@@ -1250,7 +1428,105 @@ export default function CalendarScreen() {
           </View>
 
           {/* Selected-day header + actions */}
-          {selectedYmd ? (
+          {rangeMode ? (
+            <View style={{ marginTop: 18 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+              >
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text
+                    style={{
+                      color: INK,
+                      fontFamily: SERIF_ITALIC,
+                      fontSize: 20,
+                      fontWeight: "500",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {rangeStart && rangeEnd
+                      ? prettyRange(rangeStart, rangeEnd)
+                      : rangeStart
+                        ? prettyDay(rangeStart)
+                        : "Pick a range"}
+                  </Text>
+                  <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+                    {!rangeStart
+                      ? "Tap the first day"
+                      : !rangeEnd
+                        ? "Now tap the last day"
+                        : `${rangeDates.length} day${rangeDates.length === 1 ? "" : "s"}${
+                            rangeWritable.length !== rangeDates.length
+                              ? ` · ${rangeDates.length - rangeWritable.length} already booked`
+                              : ""
+                          }`}
+                  </Text>
+                </View>
+                <Pressable onPress={exitRangeMode} hitSlop={10}>
+                  <Text style={{ color: INK_DIM, fontSize: 13.5, fontWeight: "600" }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable
+                onPress={() => {
+                  if (needsListing) {
+                    explainNeedsListing();
+                    return;
+                  }
+                  if (rangeAllBlocked) {
+                    Alert.alert(
+                      "Re-open these days?",
+                      `${rangeWritable.length} day${
+                        rangeWritable.length === 1 ? "" : "s"
+                      } become bookable again.`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Unblock", style: "destructive", onPress: commitUnblockRange },
+                      ],
+                    );
+                    return;
+                  }
+                  setBlockTitleInput("");
+                  setEditingBlockDate(null);
+                  setBlockModalOpen(true);
+                }}
+                disabled={blocking || rangeWritable.length === 0}
+              >
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      marginTop: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: INK,
+                      paddingVertical: 13,
+                      borderRadius: 999,
+                      opacity:
+                        pressed || blocking || rangeWritable.length === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    <Feather
+                      name={rangeAllBlocked ? "x" : "calendar"}
+                      size={15}
+                      color="#ffffff"
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={{ color: "#ffffff", fontSize: 14.5, fontWeight: "700" }}>
+                      {blocking
+                        ? "Saving…"
+                        : rangeWritable.length === 0
+                          ? "Pick a range"
+                          : `${rangeAllBlocked ? "Unblock" : "Block"} ${rangeWritable.length} day${
+                              rangeWritable.length === 1 ? "" : "s"
+                            }`}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
+          ) : selectedYmd ? (
             <View
               style={{
                 marginTop: 18,
@@ -1272,7 +1548,6 @@ export default function CalendarScreen() {
                 >
                   {prettyDay(selectedYmd)}
                 </Text>
-                <Text style={{ color: GOLD, fontSize: 13, marginLeft: 6 }}>✦</Text>
               </View>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <Pressable
@@ -1303,11 +1578,7 @@ export default function CalendarScreen() {
                 </Pressable>
                 <Pressable
                   onPress={toggleSelectedDayBlock}
-                  disabled={
-                    blocking ||
-                    writeTargetIds().length === 0 ||
-                    (isSelectedBooked && !isSelectedBlocked)
-                  }
+                  disabled={blocking || (isSelectedBooked && !isSelectedBlocked)}
                 >
                   {({ pressed }) => (
                     <View
@@ -1319,10 +1590,7 @@ export default function CalendarScreen() {
                         paddingVertical: 9,
                         borderRadius: 999,
                         opacity:
-                          pressed ||
-                          blocking ||
-                          writeTargetIds().length === 0 ||
-                          (isSelectedBooked && !isSelectedBlocked)
+                          pressed || blocking || (isSelectedBooked && !isSelectedBlocked)
                             ? 0.5
                             : 1,
                       }}
@@ -1343,8 +1611,26 @@ export default function CalendarScreen() {
             </View>
           ) : null}
 
+          {/* Opt in to multi-day. Kept as a low-weight text link rather
+              than a third button so the action row doesn't crowd. */}
+          {!rangeMode ? (
+            <Pressable
+              onPress={() => {
+                setRangeMode(true);
+                setRangeStart(null);
+                setRangeEnd(null);
+              }}
+              hitSlop={8}
+              style={{ alignSelf: "flex-start", marginTop: 12, paddingVertical: 4 }}
+            >
+              <Text style={{ color: BRONZE, fontSize: 13, fontWeight: "600" }}>
+                Block several days at once
+              </Text>
+            </Pressable>
+          ) : null}
+
           {/* Per-listing block target (account view, >1 listing) */}
-          {selectedYmd && showListingColors ? (
+          {(selectedYmd || rangeMode) && showListingColors ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -1378,14 +1664,16 @@ export default function CalendarScreen() {
             </ScrollView>
           ) : null}
 
-          {isSelectedBooked && !isSelectedBlocked ? (
+          {isSelectedBooked && !isSelectedBlocked && !rangeMode ? (
             <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
               Already booked — this day is automatically unavailable to hosts.
             </Text>
           ) : null}
 
-          {/* Day panel */}
-          {selectedYmd ? (
+          {/* Day panel. Hidden while picking a range — it describes one
+              day, so leaving it up next to a ten-day selection reads as
+              stale. */}
+          {selectedYmd && !rangeMode ? (
             <View style={{ marginTop: 12 }}>
               {selectedItems.length === 0 ? (
                 <View
@@ -1480,13 +1768,19 @@ export default function CalendarScreen() {
         title={
           editingBlockDate
             ? `Edit title — ${prettyDay(editingBlockDate)}`
-            : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`
+            : rangeMode && rangeStart && rangeEnd
+              ? `Block ${prettyRange(rangeStart, rangeEnd)}?`
+              : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`
         }
       >
         <Text style={{ fontSize: 13, color: INK_DIM, lineHeight: 18, marginTop: 6 }}>
           {editingBlockDate
             ? "Change the title for this blocked day. Leave blank to clear it."
-            : "Add an optional title so you remember why (“Christian’s birthday”). Only you see it — hosts just see the day as unavailable."}
+            : rangeMode
+              ? `${rangeWritable.length} day${
+                  rangeWritable.length === 1 ? "" : "s"
+                } will be marked unavailable. Add an optional title so you remember why (“Vacation”). Only you see it — hosts just see the days as unavailable.`
+              : "Add an optional title so you remember why (“Christian’s birthday”). Only you see it — hosts just see the day as unavailable."}
         </Text>
         <TextInput
           value={blockTitleInput}
@@ -1846,6 +2140,8 @@ function MonthGrid({
   dayStatusDots,
   showListingColors,
   selectedYmd,
+  rangeKeys,
+  rangeEdges,
   onSelect,
 }: {
   month: Date;
@@ -1853,6 +2149,10 @@ function MonthGrid({
   dayStatusDots: Map<string, EventState[]>;
   showListingColors: boolean;
   selectedYmd: string | null;
+  /** Every day in the pending range, or null when not in range mode. */
+  rangeKeys: Set<string> | null;
+  /** The one or two days the vendor actually tapped. */
+  rangeEdges: string[];
   onSelect: (k: string) => void;
 }) {
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -1885,7 +2185,10 @@ function MonthGrid({
             const inMonth = d.getMonth() === month.getMonth();
             const key = ymdKey(d);
             const state = dayState.get(key) ?? "available";
-            const selected = selectedYmd === key;
+            // The tapped ends of a range get the same solid treatment
+            // as a normal selection; the days between get a soft fill.
+            const isEdge = rangeEdges.includes(key);
+            const selected = selectedYmd === key || isEdge;
             return (
               <DayCell
                 key={key}
@@ -1895,6 +2198,7 @@ function MonthGrid({
                 dots={showListingColors ? dayStatusDots.get(key) ?? [] : []}
                 showDots={showListingColors}
                 selected={selected}
+                inRange={!!rangeKeys?.has(key) && !isEdge}
                 onPress={() => onSelect(key)}
               />
             );
@@ -1918,6 +2222,7 @@ function DayCell({
   dots,
   showDots,
   selected,
+  inRange,
   onPress,
 }: {
   day: number;
@@ -1926,6 +2231,8 @@ function DayCell({
   dots: EventState[];
   showDots: boolean;
   selected: boolean;
+  /** Between the two tapped ends of a pending range. */
+  inRange: boolean;
   onPress: () => void;
 }) {
   // Account view: number + one status dot per event (cap 4 + "+N").
@@ -1943,7 +2250,7 @@ function DayCell({
             borderRadius: 999,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: selected ? INK : "transparent",
+            backgroundColor: selected ? INK : inRange ? RANGE_FILL : "transparent",
           }}
         >
           <Text
@@ -1983,7 +2290,9 @@ function DayCell({
           ? HATCH_BG
           : selected
             ? INK
-            : "transparent";
+            : inRange
+              ? RANGE_FILL
+              : "transparent";
   const digitColor = !inMonth
     ? "#c9c4b6"
     : state === "booked"

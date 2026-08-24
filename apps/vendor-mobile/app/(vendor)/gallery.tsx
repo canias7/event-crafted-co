@@ -541,7 +541,6 @@ export default function GalleryScreen() {
             >
               Gallery
             </Text>
-            <Text style={{ color: GOLD, fontSize: 13, marginLeft: 6 }}>✦</Text>
           </View>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Pressable
@@ -664,7 +663,6 @@ export default function GalleryScreen() {
             }}
           >
             <View style={{ alignItems: "center" }}>
-              <Text style={{ color: GOLD, fontSize: 14, marginBottom: 2 }}>✦</Text>
               <MaterialCommunityIcons
                 name={
                   activeAlbum === TRASH
@@ -823,7 +821,7 @@ export default function GalleryScreen() {
               justifyContent: "center",
             }}
           >
-            <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
+            <MaterialCommunityIcons name="image-multiple-outline" size={22} color={GOLD} />
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, fontWeight: "700", color: INK }}>

@@ -325,7 +325,10 @@ export default function VendorDetailScreen() {
         >
           {/* Title */}
           <View className="px-5">
-            <Text className="text-3xl font-bold text-foreground leading-9">
+            <Text
+              className="text-3xl text-foreground leading-9"
+              style={{ fontFamily: "LibreBaskerville-Bold", fontWeight: "700" }}
+            >
               {vendor.business_name ?? "Vendor"}
             </Text>
             <Text className="mt-2 text-base text-muted-foreground">
