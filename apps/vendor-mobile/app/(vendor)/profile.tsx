@@ -339,7 +339,6 @@ export default function ProfileScreen() {
               >
                 My Profile
               </Text>
-              <Text style={{ color: GOLD, fontSize: 16, marginLeft: 6 }}>✦</Text>
             </View>
             <TouchableOpacity
               onPress={() => router.push("/(vendor)/more" as never)}

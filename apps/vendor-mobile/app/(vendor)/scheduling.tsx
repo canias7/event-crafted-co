@@ -315,7 +315,7 @@ export default function SchedulingScreen() {
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
           <Text style={{ fontFamily: SERIF, fontSize: 19, fontWeight: "700", color: INK }}>
-            Smart Scheduling & Automations <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+            Smart Scheduling & Automations
           </Text>
           <View style={{ width: 26 }} />
         </View>
@@ -1182,7 +1182,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
       }}
     >
       <Text style={{ fontFamily: SERIF, fontSize: 19, fontWeight: "700", color: INK }}>
-        Put it on autopilot <Text style={{ color: GOLD, fontSize: 14 }}>✦</Text>
+        Put it on autopilot
       </Text>
       <Text style={{ marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
         Your hours and rules are set — Premium makes Vendora work them for

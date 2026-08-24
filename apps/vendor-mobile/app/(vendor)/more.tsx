@@ -3,7 +3,7 @@
 // "New" badge, Help & support, About, and the "Love Vendora?" rate-us
 // banner. Settings opens the same account sheet as before.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { Children, useEffect, useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -101,16 +101,6 @@ export default function MoreScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Wordmark />
-        {/* Decorative sparkles, echoing the mock's top-right corner. */}
-        <View pointerEvents="none" style={{ position: "absolute", top: 44, right: 26 }}>
-          <Text style={{ color: GOLD, fontSize: 26, opacity: 0.85 }}>✦</Text>
-        </View>
-        <View pointerEvents="none" style={{ position: "absolute", top: 24, right: 64 }}>
-          <Text style={{ color: GOLD, fontSize: 13, opacity: 0.6 }}>✦</Text>
-        </View>
-        <View pointerEvents="none" style={{ position: "absolute", top: 92, right: 46 }}>
-          <Text style={{ color: GOLD, fontSize: 11, opacity: 0.5 }}>✦</Text>
-        </View>
 
         <Text
           style={{
@@ -122,82 +112,59 @@ export default function MoreScreen() {
             color: INK,
           }}
         >
-          More <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+          More
         </Text>
         <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 14.5, color: INK_DIM }}>
           Everything else, one tap away.
         </Text>
 
-        <View style={cardStyle}>
+        <Section title="Your business">
           <MenuRow
             icon={<Feather name="edit-3" size={19} color={INK} />}
             label="Edit brand profile"
-            body="Name, logo, bio, and more"
             onPress={() => router.push("/(vendor)/edit-profile" as never)}
           />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<MaterialCommunityIcons name="crown-outline" size={21} color={INK} />}
-            label="Subscription"
-            body="Plan, billing, and usage"
-            onPress={() => router.push("/(vendor)/subscription" as never)}
-          />
-        </View>
-
-        <View
-          style={[
-            cardStyle,
-            { marginTop: 14 },
-            verifyEligible ? { backgroundColor: "#f3ecdd", borderColor: GOLD_SOFT } : null,
-          ]}
-        >
           <MenuRow
             icon={<MaterialCommunityIcons name="shield-check-outline" size={20} color={INK} />}
             label="Verification"
             body="Get your verified badge"
-            badge={verifyEligible ? "Eligible" : "Pro"}
+            badge={verifyEligible ? "Eligible" : undefined}
             onPress={() => router.push("/(vendor)/verification" as never)}
           />
-        </View>
+          <MenuRow
+            icon={<Feather name="users" size={19} color={INK} />}
+            label="Meet the Team"
+            onPress={() => router.push("/(vendor)/team" as never)}
+          />
+        </Section>
 
-        <View style={[cardStyle, { marginTop: 14 }]}>
+        <Section title="Tools">
           <MenuRow
             icon={<Feather name="zap" size={19} color={INK} />}
             label="Smart Scheduling"
-            body="Working hours, services, and automations"
+            body="Hours, services, and automations"
             badge="New"
             onPress={() => router.push("/(vendor)/scheduling" as never)}
           />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
             icon={<Feather name="users" size={19} color={INK} />}
             label="Vendora CRM"
-            body="Your clients, notes, and follow-ups"
-            badge="Pro"
+            body="Clients, notes, and follow-ups"
             onPress={() => router.push("/(vendor)/crm" as never)}
           />
-        </View>
+          <MenuRow
+            icon={<MaterialCommunityIcons name="crown-outline" size={21} color={INK} />}
+            label="Subscription"
+            onPress={() => router.push("/(vendor)/subscription" as never)}
+          />
+        </Section>
 
-        <View style={[cardStyle, { marginTop: 14 }]}>
+        <Section title="App">
           <MenuRow
             icon={<Feather name="settings" size={19} color={INK} />}
             label="Settings"
-            body="Account, password, notifications, privacy"
             onPress={() => setSettingsOpen(true)}
           />
-        </View>
-
-        <View
-          style={[
-            cardStyle,
-            { marginTop: 14 },
-            hasFreshUpdate() ? { backgroundColor: "#f3ecdd", borderColor: GOLD_SOFT } : null,
-          ]}
-        >
           <MenuRow
             icon={
               <MaterialCommunityIcons
@@ -207,39 +174,20 @@ export default function MoreScreen() {
               />
             }
             label="Upcoming updates"
-            body="See what's new and what's coming next"
             badge={hasFreshUpdate() ? "New" : undefined}
             onPress={() => router.push("/(vendor)/updates" as never)}
           />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="users" size={19} color={INK} />}
-            label="Meet the Team"
-            body="Introduce the people behind your business"
-            badge="Optional"
-            onPress={() => router.push("/(vendor)/team" as never)}
-          />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
             icon={<Feather name="help-circle" size={19} color={INK} />}
             label="Help & support"
-            body="FAQs, guides, and contact us"
             onPress={openSupport}
           />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
           <MenuRow
             icon={<Feather name="info" size={19} color={INK} />}
             label="About Vendora"
-            body="App info, terms, and policies"
             onPress={openAbout}
           />
-        </View>
+        </Section>
 
         {/* Love Vendora? */}
         <View
@@ -309,6 +257,41 @@ export default function MoreScreen() {
   );
 }
 
+// A labelled group of rows sharing one card. Ten separate bordered
+// cards made the screen read as ten competing things; three labelled
+// groups give the eye somewhere to land, and the label is what lets a
+// vendor skip two thirds of the screen looking for Settings.
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  const rows = Children.toArray(children);
+  return (
+    <View style={{ marginTop: 22 }}>
+      <Text
+        style={{
+          marginBottom: 8,
+          marginLeft: 2,
+          fontSize: 12,
+          fontWeight: "700",
+          letterSpacing: 1.4,
+          textTransform: "uppercase",
+          color: "#8a6f3e",
+        }}
+      >
+        {title}
+      </Text>
+      <View style={cardStyle}>
+        {rows.map((row, i) => (
+          <View
+            key={i}
+            style={i === 0 ? null : { borderTopWidth: 1, borderColor: BORDER }}
+          >
+            {row}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const cardStyle = {
   backgroundColor: CARD,
   borderWidth: 1,
@@ -326,7 +309,7 @@ function MenuRow({
 }: {
   icon: ReactNode;
   label: string;
-  body: string;
+  body?: string;
   badge?: string;
   onPress: () => void;
 }) {
@@ -356,9 +339,11 @@ function MenuRow({
         <Text style={{ color: INK, fontSize: 17, fontWeight: "700" }}>
           {label}
         </Text>
-        <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-          {body}
-        </Text>
+        {body ? (
+          <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+            {body}
+          </Text>
+        ) : null}
       </View>
       {badge ? (
         <View

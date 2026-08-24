@@ -175,7 +175,7 @@ export default function CrmScreen() {
               color: INK,
             }}
           >
-            Know every client. <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+            Know every client.
           </Text>
           <Text style={{ marginTop: 8, fontSize: 15, color: INK_DIM, lineHeight: 22 }}>
             Vendora CRM turns your inquiries into a client book — every host
@@ -280,7 +280,7 @@ export default function CrmScreen() {
             color: INK,
           }}
         >
-          Clients <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+          Clients
         </Text>
         <Text style={{ marginTop: 4, fontSize: 14.5, color: INK_DIM }}>
           Your client book, built from every inquiry.
@@ -660,7 +660,7 @@ function ClientSheet({
 
           {/* Follow-up reminder */}
           <Text style={sectionTitleStyle}>
-            Follow-up reminder <Text style={{ color: GOLD }}>✦</Text>
+            Follow-up reminder
           </Text>
           {followUpAt ? (
             <View
@@ -705,7 +705,7 @@ function ClientSheet({
 
           {/* Notes */}
           <Text style={sectionTitleStyle}>
-            Notes <Text style={{ color: GOLD }}>✦</Text>
+            Notes
           </Text>
           <View
             style={{
@@ -782,7 +782,7 @@ function ClientSheet({
 
           {/* Events */}
           <Text style={sectionTitleStyle}>
-            Events <Text style={{ color: GOLD }}>✦</Text>
+            Events
           </Text>
           {events.length === 0 ? (
             <Text style={{ color: INK_DIM, fontSize: 13.5 }}>No inquiries on record yet.</Text>

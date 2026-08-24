@@ -1049,7 +1049,7 @@ export default function CalendarScreen() {
                   letterSpacing: -0.5,
                 }}
               >
-                Calendar <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+                Calendar
               </Text>
               <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                 Manage your bookings & availability
@@ -1272,7 +1272,6 @@ export default function CalendarScreen() {
                 >
                   {prettyDay(selectedYmd)}
                 </Text>
-                <Text style={{ color: GOLD, fontSize: 13, marginLeft: 6 }}>✦</Text>
               </View>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <Pressable

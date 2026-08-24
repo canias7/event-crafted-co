@@ -64,7 +64,7 @@ export default function UpdatesScreen() {
             color: INK,
           }}
         >
-          What&rsquo;s new <Text style={{ color: GOLD, fontSize: 20 }}>✦</Text>
+          What&rsquo;s new
         </Text>
         <Text style={{ marginTop: 4, fontSize: 14.5, color: INK_DIM }}>
           The latest improvements to Vendora for Vendors.
