@@ -298,7 +298,6 @@ export default function InboxScreen() {
               fontFamily: SERIF_BOLD,
               fontSize: 38,
               lineHeight: 44,
-              fontWeight: "700",
               letterSpacing: -0.5,
               color: INK,
             }}
@@ -587,7 +586,6 @@ export default function InboxScreen() {
               style={{
                 fontFamily: SERIF_BOLD,
                 fontSize: 16.5,
-                fontWeight: "700",
                 color: INK,
               }}
             >
@@ -689,7 +687,6 @@ function Segment({
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 17,
-          fontWeight: "600",
           color: active ? "#ffffff" : INK,
         }}
       >
@@ -738,7 +735,6 @@ function Chip({
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 15,
-          fontWeight: "600",
           color: active ? "#ffffff" : INK,
         }}
       >
@@ -797,7 +793,6 @@ function EmptyState({
           marginTop: 18,
           fontFamily: SERIF_BOLD,
           fontSize: 23,
-          fontWeight: "700",
           color: INK,
           textAlign: "center",
         }}
@@ -903,7 +898,6 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                 style={{
                   fontFamily: SERIF_BOLD,
                   fontSize: 17,
-                  fontWeight: "700",
                   color: INK,
                 }}
               >
@@ -999,7 +993,6 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 16.5,
-              fontWeight: "700",
               color: INK,
               flexShrink: 1,
             }}

@@ -449,7 +449,6 @@ export default function SubscriptionScreen() {
             marginTop: 14,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
-            fontWeight: "700",
             letterSpacing: -0.5,
             color: INK,
           }}
@@ -534,7 +533,7 @@ export default function SubscriptionScreen() {
               marginTop: 28,
             }}
           >
-            <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18, fontWeight: "700" }}>
+            <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18 }}>
               Your plan
             </Text>
             <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
@@ -617,7 +616,7 @@ export default function SubscriptionScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700" }}>
+                <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 19 }}>
                   {tier.name}
                 </Text>
                 {isCurrent ? (

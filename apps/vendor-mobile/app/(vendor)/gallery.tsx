@@ -534,7 +534,6 @@ export default function GalleryScreen() {
                 fontFamily: SERIF_BOLD,
                 fontSize: 38,
                 lineHeight: 46,
-                fontWeight: "700",
                 letterSpacing: -0.5,
                 color: INK,
               }}
@@ -678,7 +677,6 @@ export default function GalleryScreen() {
                 marginTop: 18,
                 fontFamily: SERIF_BOLD,
                 fontSize: 23,
-                fontWeight: "700",
                 color: INK,
                 textAlign: "center",
               }}
@@ -824,7 +822,7 @@ export default function GalleryScreen() {
             <MaterialCommunityIcons name="image-multiple-outline" size={22} color={GOLD} />
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, fontWeight: "700", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
               Organize. Showcase. Get booked.
             </Text>
             <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>

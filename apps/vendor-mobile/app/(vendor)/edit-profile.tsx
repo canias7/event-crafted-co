@@ -239,7 +239,6 @@ export default function EditProfileScreen() {
               color: INK,
               fontFamily: SERIF_BOLD,
               fontSize: 20,
-              fontWeight: "700",
             }}
           >
             Edit profile
@@ -318,7 +317,6 @@ export default function EditProfileScreen() {
                         style={{
                           color: CREAM,
                           fontFamily: SERIF_BOLD,
-                          fontWeight: "700",
                           fontSize: 66,
                           lineHeight: 74,
                         }}

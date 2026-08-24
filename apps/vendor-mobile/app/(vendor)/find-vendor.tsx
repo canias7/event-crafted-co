@@ -169,7 +169,7 @@ export default function FindVendorScreen() {
         </Pressable>
         <Text
           className="text-3xl text-foreground"
-          style={{ fontFamily: "LibreBaskerville-Bold", fontWeight: "700" }}
+          style={{ fontFamily: "LibreBaskerville-Bold" }}
         >
           Find a vendor
         </Text>

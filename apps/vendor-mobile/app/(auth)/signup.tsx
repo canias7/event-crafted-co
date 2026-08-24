@@ -327,7 +327,6 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
           fontFamily: SERIF_BOLD,
           fontSize: 38,
           lineHeight: 46,
-          fontWeight: "700",
           color: INK,
           letterSpacing: -0.5,
           marginTop: 10,
@@ -601,7 +600,6 @@ function ThanksView({ onClose }: { onClose: () => void }) {
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 36,
-          fontWeight: "700",
           color: INK,
           letterSpacing: -0.5,
           marginTop: 12,
@@ -745,7 +743,6 @@ function CategoryPicker({
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 22,
-              fontWeight: "700",
               color: INK,
               letterSpacing: -0.5,
               paddingHorizontal: 20,

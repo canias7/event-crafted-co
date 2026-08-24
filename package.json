@@ -36,5 +36,10 @@
   },
   "devDependencies": {
     "wrangler": "^4.112.0"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~55.0.12",
+    "react-dom": "19.2.0",
+    "react-native-web": "^0.21.0"
   }
 }

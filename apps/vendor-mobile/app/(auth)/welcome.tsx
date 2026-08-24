@@ -257,7 +257,6 @@ export default function WelcomeScreen() {
                     fontFamily: SERIF_BOLD,
                     color: INK,
                     fontSize: 18,
-                    fontWeight: "700",
                   }}
                 >
                   {p.title}

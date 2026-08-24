@@ -262,7 +262,6 @@ export default function PartnerThreadScreen() {
               style={{
                 color: CREAM,
                 fontFamily: SERIF_BOLD,
-                fontWeight: "600",
                 fontSize: 16,
               }}
             >
