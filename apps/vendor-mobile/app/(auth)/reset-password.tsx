@@ -1,24 +1,26 @@
 // Vendor password reset — completion step. Reached via the deep link
-// vendora-vendor://reset-password#access_token=...&refresh_token=...&type=recovery
-// that Supabase puts in the recovery email. We parse the tokens, seed
-// the session, and let the user set a new password via
-// supabase.auth.updateUser({ password }).
+// vendora-vendor://reset-password?token_hash=...&type=recovery that the
+// emailed landing page hands off to us. We redeem the token with
+// verifyOtp, which mints the recovery session, then let the user set a
+// new password via supabase.auth.updateUser({ password }).
+//
+// Why token_hash and not the #access_token fragment GoTrue used to
+// send: that fragment never survived the browser -> custom-scheme
+// handoff. The app opened on this screen with no URL reaching it at
+// all, so every reset read as "expired". Query params do survive, and
+// expo-router parses them straight into route params — which is why
+// useLocalSearchParams is the primary source here and Linking.useURL()
+// is only a backstop for links minted before this change.
 //
 // Flow:
-//   1. Cold OR warm start with the recovery URL. This matters: the
-//      normal path is requesting the link from inside the app, then
-//      switching to Mail and tapping it — which leaves the app RUNNING,
-//      so it is a warm deep link. getInitialURL() only ever returns the
-//      URL that launched the process, so on that path it returns null
-//      (or a stale link) and the screen wrongly reported the link as
-//      expired every time. Linking.useURL() covers both cases: it seeds
-//      from getInitialURL and then updates on each incoming url event.
-//   2. Parse the fragment → call setSession.
-//   3. Once we have a session, render the new-password form.
+//   1. Read token_hash from the route (or, for old links, access_token
+//      /refresh_token from the URL fragment).
+//   2. verifyOtp (or setSession) → recovery session.
+//   3. Render the new-password form.
 //   4. updateUser → success → route to /(vendor) and let the auth gate
 //      pick up the now-authenticated session.
 //
-// Dark Vendora theme mirroring signup/login. No function-form style
+// Cream Vendora theme mirroring signup/login. No function-form style
 // props (device interop drops them); TouchableOpacity for feedback.
 
 import { useEffect, useState } from "react";
@@ -34,7 +36,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -58,8 +60,8 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 type State = "loading" | "ready" | "submitting" | "done" | "error";
 
-// GoTrue puts the tokens in the fragment, but returns failures as query
-// params (?error=...&error_description=...), so read both.
+// Backstop for links minted before the token_hash change: GoTrue put the
+// tokens in the fragment and failures in the query string, so read both.
 function parseParams(url: string): URLSearchParams {
   const merged = new URLSearchParams();
   const [beforeHash, hash] = url.split("#");
@@ -71,6 +73,13 @@ function parseParams(url: string): URLSearchParams {
   return merged;
 }
 
+// Route params come back as string | string[] depending on how many
+// times the key appeared; we only ever want the first.
+function one(v: unknown): string | null {
+  if (Array.isArray(v)) return typeof v[0] === "string" ? v[0] : null;
+  return typeof v === "string" ? v : null;
+}
+
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const [state, setState] = useState<State>("loading");
@@ -78,16 +87,20 @@ export default function ResetPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Seeds from getInitialURL (cold start) and then updates on every
-  // incoming url event (warm start) — see the flow note at the top.
+  // Primary source — expo-router already parsed the deep link's query
+  // string by the time this screen mounts. Pulled apart into primitives
+  // so the effect below has stable dependencies.
+  const params = useLocalSearchParams();
+  const routeTokenHash = one(params.token_hash);
+  const routeType = one(params.type);
+  const routeError = one(params.error_description) ?? one(params.error);
+
+  // Backstop: seeds from getInitialURL (cold start) and updates on every
+  // incoming url event (warm start). Only old fragment links need it.
   const url = Linking.useURL();
   // Flips once the url event has had time to arrive, so a genuinely
   // link-less visit resolves to an error instead of an endless spinner.
   const [waitedForUrl, setWaitedForUrl] = useState(false);
-  // TEMPORARY diagnostic. Recovery links carry real credentials, so this
-  // records only the shape of the URL — scheme/path and which parameter
-  // NAMES arrived — never any value. Safe to screenshot.
-  const [shape, setShape] = useState<string | null>(null);
   useEffect(() => {
     const t = setTimeout(() => setWaitedForUrl(true), 1500);
     return () => clearTimeout(t);
@@ -96,31 +109,42 @@ export default function ResetPasswordScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const params = url ? parseParams(url) : null;
-      if (url) {
-        const [beforeHash, hash] = url.split("#");
-        const q = beforeHash.split("?")[1];
-        const names = (p?: string) =>
-          p ? [...new URLSearchParams(p).keys()].join(", ") || "(empty)" : "(none)";
-        setShape(
-          `path: ${beforeHash.split("?")[0]}\nquery: ${names(q)}\nfragment: ${names(hash)}`,
-        );
-      } else {
-        setShape("no URL reached the app");
-      }
+      const fromUrl = url ? parseParams(url) : null;
 
       // GoTrue reports a dead or already-used token this way rather than
       // by redirecting with tokens that then fail.
-      const linkError = params?.get("error_description") ?? params?.get("error");
+      const linkError =
+        routeError ??
+        fromUrl?.get("error_description") ??
+        fromUrl?.get("error") ??
+        null;
       if (linkError) {
         setError(decodeURIComponent(linkError.replace(/\+/g, " ")));
         setState("error");
         return;
       }
 
-      const at = params?.get("access_token") ?? null;
-      const rt = params?.get("refresh_token") ?? null;
-      const type = params?.get("type") ?? null;
+      // The current path: redeem the single-use hash for a session.
+      const tokenHash = routeTokenHash ?? fromUrl?.get("token_hash") ?? null;
+      if (tokenHash) {
+        const { error: e } = await supabase.auth.verifyOtp({
+          type: "recovery",
+          token_hash: tokenHash,
+        });
+        if (cancelled) return;
+        if (e) {
+          setError("This reset link has expired. Request a new one.");
+          setState("error");
+          return;
+        }
+        setState("ready");
+        return;
+      }
+
+      // Legacy path: fragment tokens from a link sent before the change.
+      const at = fromUrl?.get("access_token") ?? null;
+      const rt = fromUrl?.get("refresh_token") ?? null;
+      const type = routeType ?? fromUrl?.get("type") ?? null;
       if (at && rt && type === "recovery") {
         const { error: e } = await supabase.auth.setSession({
           access_token: at,
@@ -145,26 +169,18 @@ export default function ResetPasswordScreen() {
         return;
       }
 
-      // useURL() is null on the first render and fills in once the event
-      // lands, so a missing URL here is usually just "not yet". Wait a
-      // beat rather than flashing an error we are about to contradict —
-      // but do not spin forever if no link is coming at all (someone
-      // reached this screen without one).
-      if (!url) {
-        if (waitedForUrl) {
-          setError("We couldn't read that reset link. Request a new one.");
-          setState("error");
-        }
-        return;
-      }
-
+      // Nothing usable yet. useURL() is null on the first render and
+      // fills in once the event lands, so wait a beat rather than
+      // flashing an error we are about to contradict — but do not spin
+      // forever if no link is coming at all.
+      if (!waitedForUrl) return;
       setError("We couldn't read that reset link. Request a new one.");
       setState("error");
     })();
     return () => {
       cancelled = true;
     };
-  }, [url, waitedForUrl]);
+  }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
 
   async function onSubmit() {
     setError(null);
@@ -231,35 +247,6 @@ export default function ResetPasswordScreen() {
           >
             <Text style={primaryBtnText}>Request a new link</Text>
           </TouchableOpacity>
-
-          {/* TEMPORARY diagnostic — remove once the deep link is fixed. */}
-          {shape ? (
-            <View
-              style={{
-                marginTop: 24,
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: FIELD_BG,
-                borderWidth: 1,
-                borderColor: FIELD_BORDER,
-              }}
-            >
-              <Text style={{ fontSize: 10, letterSpacing: 1, color: SUBTLE, marginBottom: 6 }}>
-                DIAGNOSTIC — NO VALUES, SAFE TO SHARE
-              </Text>
-              <Text
-                selectable
-                style={{
-                  fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-                  fontSize: 11,
-                  lineHeight: 16,
-                  color: INK_DIM,
-                }}
-              >
-                {shape}
-              </Text>
-            </View>
-          ) : null}
         </View>
       </SafeAreaView>
     );

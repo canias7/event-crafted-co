@@ -1,14 +1,22 @@
 // Host password reset — completion step. Reached via the deep link
-// vendora-host://reset-password#access_token=...&refresh_token=...&type=recovery
-// that Supabase puts in the recovery email. We parse the tokens, seed
-// the session, and let the user set a new password via
+// vendora-host://reset-password?token_hash=...&type=recovery that the
+// emailed landing page hands off to us. We redeem the token with
+// verifyOtp and let the user set a new password via
 // supabase.auth.updateUser({ password }).
 //
+// Why token_hash and not the #access_token fragment GoTrue used to
+// send: that fragment did not survive the browser -> custom-scheme
+// handoff, so the app landed here with no URL at all and every reset
+// read as "expired". Query params do survive, and expo-router parses
+// them straight into route params — hence useLocalSearchParams as the
+// primary source, with Linking.useURL() only as a backstop for links
+// minted before this change.
+//
 // Flow:
-//   1. Cold/warm start with the recovery URL → expo-linking gives us
-//      the full URL (including fragment).
-//   2. Parse the fragment → call setSession.
-//   3. Once we have a session, render the new-password form.
+//   1. Read token_hash from the route (or, for old links, access_token
+//      /refresh_token from the URL fragment).
+//   2. verifyOtp (or setSession) → recovery session.
+//   3. Render the new-password form.
 //   4. updateUser → success → route to /(host) and let the auth gate
 //      pick up the now-authenticated session.
 
@@ -22,7 +30,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
@@ -38,9 +46,24 @@ const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 type State = "loading" | "ready" | "submitting" | "done" | "error";
 
-function parseFragment(url: string): URLSearchParams {
-  const hash = url.split("#")[1] ?? "";
-  return new URLSearchParams(hash);
+// Backstop for links minted before the token_hash change: GoTrue put the
+// tokens in the fragment and failures in the query string, so read both.
+function parseParams(url: string): URLSearchParams {
+  const merged = new URLSearchParams();
+  const [beforeHash, hash] = url.split("#");
+  const query = beforeHash.split("?")[1];
+  for (const part of [query, hash]) {
+    if (!part) continue;
+    new URLSearchParams(part).forEach((v, k) => merged.set(k, v));
+  }
+  return merged;
+}
+
+// Route params come back as string | string[] depending on how many
+// times the key appeared; we only ever want the first.
+function one(v: unknown): string | null {
+  if (Array.isArray(v)) return typeof v[0] === "string" ? v[0] : null;
+  return typeof v === "string" ? v : null;
 }
 
 export default function ResetPasswordScreen() {
@@ -50,15 +73,62 @@ export default function ResetPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Primary source — expo-router already parsed the deep link's query
+  // string by the time this screen mounts. Pulled apart into primitives
+  // so the effect below has stable dependencies.
+  const params = useLocalSearchParams();
+  const routeTokenHash = one(params.token_hash);
+  const routeType = one(params.type);
+  const routeError = one(params.error_description) ?? one(params.error);
+
+  // Backstop: seeds from getInitialURL (cold start) and updates on every
+  // incoming url event (warm start). Only old fragment links need it.
+  const url = Linking.useURL();
+  // Flips once the url event has had time to arrive, so a genuinely
+  // link-less visit resolves to an error instead of an endless spinner.
+  const [waitedForUrl, setWaitedForUrl] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWaitedForUrl(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // The initial URL may have the recovery tokens in the fragment.
-      const initialUrl = await Linking.getInitialURL();
-      const fragment = initialUrl ? parseFragment(initialUrl) : null;
-      const at = fragment?.get("access_token") ?? null;
-      const rt = fragment?.get("refresh_token") ?? null;
-      const type = fragment?.get("type") ?? null;
+      const fromUrl = url ? parseParams(url) : null;
+
+      const linkError =
+        routeError ??
+        fromUrl?.get("error_description") ??
+        fromUrl?.get("error") ??
+        null;
+      if (linkError) {
+        setError(decodeURIComponent(linkError.replace(/\+/g, " ")));
+        setState("error");
+        return;
+      }
+
+      // The current path: redeem the single-use hash for a session.
+      const tokenHash = routeTokenHash ?? fromUrl?.get("token_hash") ?? null;
+      if (tokenHash) {
+        const { error: e } = await supabase.auth.verifyOtp({
+          type: "recovery",
+          token_hash: tokenHash,
+        });
+        if (cancelled) return;
+        if (e) {
+          setError("This reset link has expired. Request a new one.");
+          setState("error");
+          return;
+        }
+        setState("ready");
+        return;
+      }
+
+      // Legacy path: fragment tokens from a link sent before the change.
+      const at = fromUrl?.get("access_token") ?? null;
+      const rt = fromUrl?.get("refresh_token") ?? null;
+      const type = routeType ?? fromUrl?.get("type") ?? null;
       if (at && rt && type === "recovery") {
         const { error: e } = await supabase.auth.setSession({
           access_token: at,
@@ -73,20 +143,25 @@ export default function ResetPasswordScreen() {
         setState("ready");
         return;
       }
+
       // Fallback: maybe the session was already seeded by Supabase's
       // built-in URL listener before we mounted.
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (data.session) setState("ready");
-      else {
-        setError("This reset link is invalid. Request a new one.");
-        setState("error");
+      if (data.session) {
+        setState("ready");
+        return;
       }
+
+      // Nothing usable yet — wait for the url event before giving up.
+      if (!waitedForUrl) return;
+      setError("This reset link is invalid. Request a new one.");
+      setState("error");
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
 
   async function onSubmit() {
     setError(null);

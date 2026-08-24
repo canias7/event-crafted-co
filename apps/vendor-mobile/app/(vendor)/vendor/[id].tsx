@@ -443,7 +443,8 @@ export default function VendorDetailScreen() {
             }}
             className="rounded-full active:opacity-80"
             style={{
-              backgroundColor: "#1a1a1a",
+              // INK — the app-wide primary button fill.
+              backgroundColor: "#14161a",
               paddingHorizontal: 22,
               paddingVertical: 14,
               flexDirection: "row",

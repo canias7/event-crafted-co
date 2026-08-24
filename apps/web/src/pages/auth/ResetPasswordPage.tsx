@@ -1,22 +1,68 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// Reset-password landing page, reached two ways:
+//
+//   1. ?token_hash=…&type=recovery&app=vendor|host — the link the
+//      password-reset edge function emails to mobile users. The token is
+//      still unspent at this point, so the page's job is to hand it to
+//      the app untouched (query params survive the custom-scheme handoff
+//      where a fragment does not). "Reset in this browser" redeems it
+//      here instead, which is the path when the app isn't installed.
+//   2. #access_token=… — the classic fragment link from the web-side
+//      forgot-password flow, which supabase-js consumes on its own.
+//
+// Whichever arrives, we end up holding a recovery session and show the
+// same new-password form.
+
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
+const APP_SCHEMES: Record<string, string> = {
+  vendor: "vendora-vendor",
+  host: "vendora-host",
+};
+
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Supabase parses the recovery token from the URL fragment automatically;
-  // an authed session means the link was valid.
+  const tokenHash = searchParams.get("token_hash");
+  const scheme = APP_SCHEMES[searchParams.get("app") ?? ""] ?? null;
+  const appLink =
+    tokenHash && scheme
+      ? `${scheme}://reset-password?token_hash=${
+          encodeURIComponent(tokenHash)
+        }&type=recovery`
+      : null;
+
+  // Offer the app first when the link came from one, but let the user
+  // opt out — tapping "reset in this browser" drops to the form below.
+  const [handOffToApp, setHandOffToApp] = useState(!!appLink);
+
+  // Redeeming token_hash spends it, so this must happen exactly once and
+  // never while we're still offering the app the chance to take it.
+  const redeemed = useRef(false);
   useEffect(() => {
+    if (!tokenHash || handOffToApp || redeemed.current) return;
+    redeemed.current = true;
+    supabase.auth
+      .verifyOtp({ type: "recovery", token_hash: tokenHash })
+      .then(({ data, error }) => setHasSession(!error && !!data.session))
+      .catch(() => setHasSession(false));
+  }, [tokenHash, handOffToApp]);
+
+  // Fragment links: supabase parses the recovery token from the URL on
+  // its own, so an authed session means the link was valid.
+  useEffect(() => {
+    if (tokenHash) return;
     let cancelled = false;
     const sub = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
@@ -30,7 +76,7 @@ export default function ResetPasswordPage() {
       cancelled = true;
       sub.data.subscription.unsubscribe();
     };
-  }, []);
+  }, [tokenHash]);
 
   const passwordTooShort = password.length > 0 && password.length < 8;
   const passwordMismatch =
@@ -52,21 +98,67 @@ export default function ResetPasswordPage() {
     navigate("/", { replace: true });
   }
 
+  const backToSignIn = (
+    <Link
+      to="/login"
+      className="pb-px font-medium"
+      style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+    >
+      Back to sign in
+    </Link>
+  );
+
+  if (appLink && handOffToApp) {
+    return (
+      <GlassyAuthShell
+        title="Open the"
+        titleAccent="app."
+        subtitle="Your reset link is ready. Open Vendora to choose a new password — the link stays valid either way."
+        pillLabel="RESET PASSWORD"
+        topRight={backToSignIn}
+      >
+        <div className="flex flex-col gap-4">
+          <a href={appLink} className="block">
+            <button type="button" className="auth-submit">
+              Open the Vendora app
+            </button>
+          </a>
+          <button
+            type="button"
+            onClick={() => setHandOffToApp(false)}
+            className="self-center pb-px font-medium"
+            style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+          >
+            Reset in this browser instead
+          </button>
+        </div>
+      </GlassyAuthShell>
+    );
+  }
+
+  if (tokenHash && hasSession === null) {
+    return (
+      <GlassyAuthShell
+        title="One"
+        titleAccent="moment."
+        subtitle="Checking your reset link."
+        pillLabel="RESET PASSWORD"
+        topRight={backToSignIn}
+      >
+        <div className="flex justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
+      </GlassyAuthShell>
+    );
+  }
+
   return (
     <GlassyAuthShell
       title="Pick something"
       titleAccent="memorable."
       subtitle="Choose a new password for your Vendora account."
       pillLabel="NEW PASSWORD"
-      topRight={
-        <Link
-          to="/login"
-          className="pb-px font-medium"
-          style={{ borderBottom: "0.5px solid #000", color: "#000" }}
-        >
-          Back to sign in
-        </Link>
-      }
+      topRight={backToSignIn}
     >
       {hasSession === false ? (
         <div className="flex flex-col gap-4">
