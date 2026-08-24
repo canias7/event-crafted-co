@@ -638,7 +638,6 @@ function EmojiPickerModal({
               color: INK,
               fontFamily: SERIF_ITALIC,
               fontSize: 18,
-              fontWeight: "500",
               marginBottom: 12,
               paddingHorizontal: 4,
             }}
@@ -718,7 +717,6 @@ function Header({
             style={{
               color: CREAM,
               fontFamily: SERIF_BOLD,
-              fontWeight: "600",
               fontSize: 18,
             }}
           >
@@ -747,7 +745,6 @@ function Header({
           style={{
             color: INK,
             fontFamily: SERIF_BOLD,
-            fontWeight: "700",
             fontSize: 18,
           }}
         >
@@ -850,7 +847,6 @@ function MessageRow({
                   style={{
                     color: CREAM,
                     fontFamily: SERIF_BOLD,
-                    fontWeight: "600",
                     fontSize: 13,
                   }}
                 >

@@ -34,7 +34,6 @@ export function Wordmark({ color = INK }: { color?: string }) {
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 23,
-          fontWeight: "600",
           letterSpacing: 0.5,
           color,
         }}

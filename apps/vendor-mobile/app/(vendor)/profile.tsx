@@ -328,7 +328,6 @@ export default function ProfileScreen() {
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  fontWeight: "700",
                   fontSize: 38,
                   color: INK,
                   letterSpacing: -0.5,
@@ -377,7 +376,6 @@ export default function ProfileScreen() {
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    fontWeight: "700",
                     fontSize: 20,
                     color: INK,
                   }}
@@ -610,7 +608,6 @@ function BrandCard({
                 numberOfLines={2}
                 style={{
                   fontFamily: SERIF_BOLD,
-                  fontWeight: "700",
                   fontSize: 26,
                   lineHeight: 31,
                   letterSpacing: -0.5,
@@ -728,7 +725,6 @@ function CardStat({ value, label }: { value: string; label: string }) {
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 22,
-          fontWeight: "700",
           color: WHITE,
         }}
       >
@@ -873,7 +869,6 @@ function EmptyState({
         style={{
           marginTop: 18,
           fontFamily: SERIF_BOLD,
-          fontWeight: "700",
           fontSize: 26,
           color: INK,
         }}

@@ -683,7 +683,6 @@ export default function VenueListingScreen() {
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 24,
-              fontWeight: "700",
               color: INK,
             }}
           >
@@ -1293,7 +1292,6 @@ function StepTitle({
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 26,
-          fontWeight: "700",
           color: INK,
           letterSpacing: -0.3,
         }}

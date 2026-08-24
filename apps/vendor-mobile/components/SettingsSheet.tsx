@@ -293,7 +293,6 @@ export function SettingsSheet({
                   style={{
                     color: INK,
                     fontFamily: SERIF_BOLD,
-                    fontWeight: "700",
                     fontSize: 30,
                     letterSpacing: -0.5,
                   }}
@@ -547,7 +546,6 @@ export function SettingsSheet({
                   style={{
                     color: INK,
                     fontFamily: SERIF_BOLD,
-                    fontWeight: "700",
                     fontSize: 20,
                   }}
                 >

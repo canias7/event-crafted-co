@@ -157,7 +157,6 @@ export default function TeamScreen() {
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 22,
-              fontWeight: "700",
               color: INK,
             }}
           >
@@ -227,7 +226,7 @@ export default function TeamScreen() {
                 >
                   <Text
                     numberOfLines={1}
-                    style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}
+                    style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}
                   >
                     {m.full_name}
                     {!m.visible ? (
@@ -328,7 +327,7 @@ function MemberAvatar({ member, size }: { member: TeamMember; size: number }) {
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, fontSize: size * 0.34, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: size * 0.34, color: INK }}>
         {initials(member.full_name)}
       </Text>
     </View>
@@ -499,7 +498,7 @@ function MemberForm({
             <Pressable onPress={onClose} hitSlop={10}>
               <Feather name="chevron-left" size={26} color={INK} />
             </Pressable>
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, fontWeight: "700", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
               {member ? "Edit team member" : "Add team member"}
             </Text>
             <View style={{ width: 26 }} />

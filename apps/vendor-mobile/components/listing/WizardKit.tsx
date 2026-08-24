@@ -202,7 +202,6 @@ export function StepTitle({
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 26,
-          fontWeight: "700",
           color: INK,
           letterSpacing: -0.3,
         }}
@@ -547,7 +546,6 @@ function BrandDialogView({
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 23,
-              fontWeight: "700",
               color: INK,
               textAlign: "center",
             }}
@@ -818,7 +816,6 @@ export function CategoryPickerModal({
           <Text
             style={{
               fontSize: 17,
-              fontWeight: "600",
               color: INK,
               fontFamily: SERIF_BOLD,
             }}

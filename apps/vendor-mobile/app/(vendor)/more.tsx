@@ -108,7 +108,6 @@ export default function MoreScreen() {
             marginTop: 14,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
-            fontWeight: "700",
             letterSpacing: -0.5,
             color: INK,
           }}
@@ -247,7 +246,7 @@ export default function MoreScreen() {
         >
           <MaterialCommunityIcons name="heart-outline" size={26} color={GOLD} />
           <View style={{ flex: 1, marginLeft: 13 }}>
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17, fontWeight: "700" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17 }}>
               Love Vendora?
             </Text>
             <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
@@ -269,7 +268,7 @@ export default function MoreScreen() {
             }}
           >
             <Feather name="star" size={13} color={INK} />
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, fontWeight: "700", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
               Rate us
             </Text>
           </Pressable>
@@ -344,7 +343,7 @@ function MenuRow({
         {icon}
       </View>
       <View style={{ flex: 1, marginLeft: 13 }}>
-        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17, fontWeight: "700" }}>
+        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17 }}>
           {label}
         </Text>
         <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>

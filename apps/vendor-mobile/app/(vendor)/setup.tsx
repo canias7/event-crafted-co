@@ -140,7 +140,6 @@ export default function SetupChecklistScreen() {
               fontFamily: SERIF_BOLD,
               fontSize: 36,
               lineHeight: 42,
-              fontWeight: "700",
               color: INK,
               letterSpacing: -0.5,
             }}

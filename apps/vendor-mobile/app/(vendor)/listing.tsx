@@ -682,7 +682,6 @@ export default function ListingScreen() {
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 18,
-              fontWeight: "600",
               color: INK,
             }}
           >
@@ -707,7 +706,6 @@ export default function ListingScreen() {
             style={{
               fontFamily: SERIF_ITALIC,
               fontSize: 24,
-              fontWeight: "500",
               color: INK,
             }}
           >
@@ -1111,7 +1109,7 @@ export default function ListingScreen() {
               <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
             </Pressable>
             <Text
-              style={{ fontSize: 17, fontWeight: "600", color: INK, fontFamily: SERIF }}
+              style={{ fontSize: 17, color: INK, fontFamily: SERIF_BOLD }}
             >
               Category
             </Text>
@@ -1267,7 +1265,6 @@ function StepHeader({
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 30,
-          fontWeight: "600",
           color: INK,
           marginTop: 8,
           lineHeight: 36,
@@ -1306,7 +1303,6 @@ function SectionBlock({
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 22,
-          fontWeight: "600",
           color: INK,
         }}
       >

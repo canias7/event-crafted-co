@@ -101,7 +101,6 @@ export default function UpdatesScreen() {
             marginTop: 14,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
-            fontWeight: "700",
             letterSpacing: -0.5,
             color: INK,
           }}
@@ -140,7 +139,6 @@ export default function UpdatesScreen() {
                   marginTop: 5,
                   fontFamily: SERIF_BOLD,
                   fontSize: 18,
-                  fontWeight: "700",
                   color: INK,
                 }}
               >
@@ -158,7 +156,6 @@ export default function UpdatesScreen() {
             marginTop: 28,
             fontFamily: SERIF_BOLD,
             fontSize: 22,
-            fontWeight: "700",
             color: INK,
           }}
         >

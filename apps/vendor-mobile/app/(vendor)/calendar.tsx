@@ -1203,7 +1203,6 @@ export default function CalendarScreen() {
                   color: INK,
                   fontFamily: SERIF_BOLD,
                   fontSize: 38,
-                  fontWeight: "700",
                   letterSpacing: -0.5,
                 }}
               >
@@ -1271,7 +1270,6 @@ export default function CalendarScreen() {
                   color: INK,
                   fontFamily: SERIF_ITALIC,
                   fontSize: 23,
-                  fontWeight: "500",
                   flexShrink: 1,
                 }}
               >
@@ -1439,7 +1437,6 @@ export default function CalendarScreen() {
                       color: INK,
                       fontFamily: SERIF_ITALIC,
                       fontSize: 20,
-                      fontWeight: "500",
                     }}
                     numberOfLines={1}
                   >
@@ -1541,7 +1538,6 @@ export default function CalendarScreen() {
                     color: INK,
                     fontFamily: SERIF_ITALIC,
                     fontSize: 20,
-                    fontWeight: "500",
                     flexShrink: 1,
                   }}
                   numberOfLines={1}
@@ -2328,8 +2324,18 @@ function DayCell({
           style={{
             color: digitColor,
             fontSize: 14,
-            fontWeight: state === "booked" ? "700" : "600",
-            fontFamily: state === "booked" || state === "pending" ? SERIF : undefined,
+            // Same Android trap as everywhere else: naming a custom
+            // family AND a fontWeight makes it hunt for a bold cut of
+            // that family, miss, and fall back to the system sans. Pick
+            // the face; only the plain-sans digits carry a weight.
+            fontFamily:
+              state === "booked"
+                ? SERIF_BOLD
+                : state === "pending"
+                  ? SERIF
+                  : undefined,
+            fontWeight:
+              state === "booked" || state === "pending" ? undefined : "600",
           }}
         >
           {day}
@@ -2426,7 +2432,7 @@ function BookingRow({
           <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accentColor }} />
           {item.timeLabel && item.timeLabel !== "All day" ? (
             <View style={{ paddingHorizontal: 12, paddingVertical: 14, alignItems: "center", width: 70 }}>
-              <Text style={{ color: INK, fontSize: 14, fontWeight: "700", fontFamily: SERIF }} numberOfLines={1}>
+              <Text style={{ color: INK, fontSize: 14, fontFamily: SERIF_BOLD }} numberOfLines={1}>
                 {item.timeLabel}
               </Text>
             </View>
@@ -2443,7 +2449,7 @@ function BookingRow({
           </View>
           {item.amountCents != null ? (
             <Text
-              style={{ color: INK, fontSize: 15, fontWeight: "700", marginRight: 14, fontFamily: SERIF }}
+              style={{ color: INK, fontSize: 15, marginRight: 14, fontFamily: SERIF_BOLD }}
             >
               {fmtMoneyShort(item.amountCents)}
             </Text>

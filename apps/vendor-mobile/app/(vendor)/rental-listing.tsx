@@ -489,10 +489,8 @@ export default function RentalListingScreen() {
           </Pressable>
           <Text
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: "LibreBaskerville-Italic",
               fontSize: 24,
-              fontWeight: "700",
               color: INK,
             }}
           >

@@ -315,7 +315,7 @@ export default function SchedulingScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, color: INK }}>
             Smart Scheduling & Automations
           </Text>
           <View style={{ width: 26 }} />
@@ -359,7 +359,7 @@ export default function SchedulingScreen() {
                 <Feather name="clock" size={16} color={INK} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, fontWeight: "700", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                   {t.name}
                   {!t.active ? <Text style={{ fontSize: 12, color: INK_DIM }}>  · off</Text> : null}
                 </Text>
@@ -602,7 +602,7 @@ export default function SchedulingScreen() {
                   padding: 16,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}>
                   {sug.open_dates.length} open date{sug.open_dates.length === 1 ? "" : "s"} coming up
                 </Text>
                 <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
@@ -718,7 +718,6 @@ export default function SchedulingScreen() {
                 textAlign: "center",
                 fontFamily: SERIF_BOLD,
                 fontSize: 19,
-                fontWeight: "700",
                 color: INK,
               }}
             >
@@ -782,7 +781,7 @@ export default function SchedulingScreen() {
 function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <View style={{ marginTop: 26, marginBottom: 12 }}>
-      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 21, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 21, color: INK }}>
         {title}
       </Text>
       {sub ? (
@@ -890,7 +889,7 @@ function ToggleCard({
         <Feather name={icon} size={17} color={INK} />
       </View>
       <View style={{ flex: 1, marginHorizontal: 12 }}>
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, fontWeight: "700", color: INK }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, color: INK }}>
           {title}
         </Text>
         <Text style={{ marginTop: 2, fontSize: 12.5, lineHeight: 17, color: INK_DIM }}>{sub}</Text>
@@ -954,7 +953,7 @@ function AutoRow({
           <Feather name={icon} size={17} color={INK} />
         </View>
         <View style={{ flex: 1, marginHorizontal: 12 }}>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, color: INK }}>
             {title}
           </Text>
           <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>{sub}</Text>
@@ -1077,7 +1076,7 @@ function TypeForm({
           <Pressable onPress={onClose} hitSlop={10}>
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
             {type ? "Edit appointment type" : "New appointment type"}
           </Text>
           <View style={{ width: 26 }} />
@@ -1182,7 +1181,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
         padding: 18,
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, color: INK }}>
         Put it on autopilot
       </Text>
       <Text style={{ marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
@@ -1254,7 +1253,6 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
           textAlign: "center",
           fontFamily: SERIF_BOLD,
           fontSize: 27,
-          fontWeight: "700",
           color: INK,
         }}
       >
@@ -1288,7 +1286,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
               <Feather name={r.icon} size={19} color={INK} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, fontWeight: "700", color: INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}>
                 {r.title}
               </Text>
               <Text style={{ marginTop: 2, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
