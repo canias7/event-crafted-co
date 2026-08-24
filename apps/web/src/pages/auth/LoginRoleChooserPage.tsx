@@ -74,7 +74,7 @@ export default function LoginRoleChooserPage() {
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -82,27 +82,8 @@ export default function LoginRoleChooserPage() {
         />
       </div>
 
-      {/* Floating particles */}
-      {PARTICLES.map((p, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className={p.variant === "a" ? "login-float-a" : "login-float-b"}
-          style={{
-            position: "absolute",
-            top: p.top,
-            left: p.left,
-            right: p.right,
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            boxShadow: `0 0 ${p.glow}px ${p.color}`,
-            borderRadius: "50%",
-            zIndex: 1,
-            animationDelay: p.delay,
-          }}
-        />
-      ))}
+      {/* No floating particles: scattered glowing dots read as
+          snowflakes rather than as brand. */}
 
       {/* Top-left wordmark */}
       <Link
@@ -213,20 +194,6 @@ export default function LoginRoleChooserPage() {
         .login-grid-scroll {
           animation: loginGridScroll 5s linear infinite;
         }
-        @keyframes loginFloatA {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          50% { transform: translateY(-30px); opacity: 1; }
-        }
-        .login-float-a {
-          animation: loginFloatA 6s ease-in-out infinite;
-        }
-        @keyframes loginFloatB {
-          0%, 100% { transform: translateY(0); opacity: 0.5; }
-          50% { transform: translateY(-24px); opacity: 1; }
-        }
-        .login-float-b {
-          animation: loginFloatB 7s ease-in-out infinite;
-        }
         @keyframes loginPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
@@ -311,23 +278,3 @@ function RoleCard({
   );
 }
 
-type Particle = {
-  variant: "a" | "b";
-  top?: string;
-  left?: string;
-  right?: string;
-  size: number;
-  color: string;
-  glow: number;
-  delay: string;
-};
-
-const PARTICLES: Particle[] = [
-  { variant: "a", top: "20%", left: "10%", size: 3, color: "#18181b", glow: 10, delay: "0s" },
-  { variant: "b", top: "35%", left: "28%", size: 2, color: "#71717a", glow: 6, delay: "1s" },
-  { variant: "a", top: "60%", left: "18%", size: 2, color: "#18181b", glow: 6, delay: "2s" },
-  { variant: "b", top: "25%", right: "30%", size: 3, color: "#71717a", glow: 8, delay: "0.5s" },
-  { variant: "a", top: "50%", left: "8%", size: 2, color: "#18181b", glow: 6, delay: "1.5s" },
-  { variant: "b", top: "75%", right: "20%", size: 2, color: "#71717a", glow: 6, delay: "2.5s" },
-  { variant: "a", top: "15%", right: "12%", size: 3, color: "#18181b", glow: 10, delay: "1s" },
-];

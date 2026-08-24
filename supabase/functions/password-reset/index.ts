@@ -87,19 +87,19 @@ function json(body: unknown, status = 200) {
 async function sendResetEmail(email: string, link: string): Promise<boolean> {
   if (!RESEND_API_KEY) return false;
   const html = `<!doctype html>
-<html><body style="margin:0;background:#f7f5f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;">
+<html><body style="margin:0;background:#f4f1ea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#14161a;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px;"><tr><td align="center">
-    <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;padding:40px 32px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fbf9f4;border:1px solid #e6e1d5;border-radius:14px;padding:40px 32px;">
       <tr><td style="padding-bottom:24px;"><img src="https://eventvendora.com/pwa-192.png" alt="Vendora" width="44" height="44" style="display:block;border:0;border-radius:8px;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" /></td></tr>
       <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">Reset your password</td></tr>
-      <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">
+      <tr><td style="font-size:15px;line-height:1.6;color:#5e636e;">
         <p style="margin:0 0 16px;">Tap the button below on this device to choose a new Vendora password. You can finish in the app or right in your browser.</p>
         <p style="margin:0 0 24px;text-align:center;">
-          <a href="${link}" style="display:inline-block;background:#1a1410;color:#faf5ec;text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;padding:14px 28px;">Set a new password</a>
+          <a href="${link}" style="display:inline-block;background:#14161a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;border-radius:999px;padding:15px 30px;">Set a new password</a>
         </p>
-        <p style="margin:0 0 16px;font-size:13px;color:#555;">This link expires in 1 hour and can be used once. If you didn't request a reset, you can safely ignore this email — your password won't change.</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#5e636e;">This link expires in 1 hour and can be used once. If you didn't request a reset, you can safely ignore this email — your password won't change.</p>
       </td></tr>
-      <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">Vendora · Premium event planning &amp; vendor marketplace</td></tr>
+      <tr><td style="padding-top:40px;border-top:1px solid #e6e1d5;font-size:12px;color:#8b8f99;">Vendora · Premium event planning &amp; vendor marketplace</td></tr>
     </table>
   </td></tr></table>
 </body></html>`;
