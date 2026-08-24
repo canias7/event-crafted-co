@@ -31,7 +31,6 @@ const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
 
 interface PartnerMessage {
   id: string;
@@ -259,7 +258,6 @@ export default function PartnerThreadScreen() {
             <Text
               style={{
                 color: CREAM,
-                fontFamily: SERIF,
                 fontWeight: "600",
                 fontSize: 16,
               }}

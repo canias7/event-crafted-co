@@ -849,7 +849,6 @@ function MessageRow({
                 <Text
                   style={{
                     color: CREAM,
-                    fontFamily: SERIF,
                     fontWeight: "600",
                     fontSize: 13,
                   }}
@@ -1037,7 +1036,6 @@ function DateSeparator({ label }: { label: string }) {
       <Text
         style={{
           color: INK_DIM,
-          fontFamily: SERIF,
           fontStyle: "italic",
           fontSize: 13,
         }}

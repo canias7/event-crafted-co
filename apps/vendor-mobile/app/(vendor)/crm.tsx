@@ -381,13 +381,13 @@ export default function CrmScreen() {
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ fontFamily: SERIF, fontSize: 17, fontWeight: "700", color: INK }}>
+                      <Text style={{ fontSize: 17, fontWeight: "700", color: INK }}>
                         {initials(c.host_name)}
                       </Text>
                     </View>
                   )}
                   <View style={{ flex: 1, marginLeft: 13 }}>
-                    <Text style={{ fontFamily: SERIF, fontSize: 17, fontWeight: "700", color: INK }}>
+                    <Text style={{ fontSize: 17, fontWeight: "700", color: INK }}>
                       {c.host_name}
                     </Text>
                     <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
@@ -806,7 +806,6 @@ function ClientSheet({
                     <Text
                       style={{
                         flex: 1,
-                        fontFamily: SERIF,
                         fontSize: 16,
                         fontWeight: "700",
                         color: INK,

@@ -225,7 +225,7 @@ export default function TeamScreen() {
                 >
                   <Text
                     numberOfLines={1}
-                    style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}
+                    style={{ fontSize: 16.5, fontWeight: "700", color: INK }}
                   >
                     {m.full_name}
                     {!m.visible ? (

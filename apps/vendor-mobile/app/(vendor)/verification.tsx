@@ -514,7 +514,7 @@ export default function VerificationScreen() {
                     <Feather name={r.icon as never} size={18} color={INK} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 13 }}>
-                    <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: INK }}>
                       {r.t}
                     </Text>
                     <Text style={{ marginTop: 1, fontSize: 12.5, color: INK_DIM }}>{r.s}</Text>
@@ -921,7 +921,7 @@ function SummaryCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}>
+        <Text style={{ fontSize: 16.5, fontWeight: "700", color: INK }}>
           {title}
         </Text>
         <Pressable onPress={onEdit} hitSlop={8}>

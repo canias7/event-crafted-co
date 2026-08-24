@@ -302,7 +302,6 @@ const subhead = {
   fontSize: 17,
   color: MUTED,
   fontStyle: "italic" as const,
-  fontFamily: SERIF,
   lineHeight: 24,
 };
 const fieldLabel = {

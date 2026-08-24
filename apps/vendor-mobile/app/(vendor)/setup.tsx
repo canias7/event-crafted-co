@@ -153,7 +153,6 @@ export default function SetupChecklistScreen() {
           <Text
             style={{
               marginTop: 8,
-              fontFamily: SERIF,
               fontStyle: "italic",
               fontSize: 16,
               lineHeight: 23,

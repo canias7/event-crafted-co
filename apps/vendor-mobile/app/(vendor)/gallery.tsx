@@ -800,36 +800,42 @@ export default function GalleryScreen() {
           </View>
         )}
 
-        {/* Tips banner */}
+        {/* Tips banner.
+            Icon + copy on one row, the action on its own row beneath.
+            All three used to sit in a single row: the 52px icon and a
+            pill whose label doesn't wrap left the copy column ~90dp on a
+            standard phone, so the heading broke mid-word ("Showca/se").
+            Stacking gives the copy the card's full width at any size. */}
         <View
           style={{
             marginTop: 18,
             backgroundColor: "#efe9dc",
             borderRadius: 20,
             padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
+            gap: 14,
           }}
         >
-          <View
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 999,
-              backgroundColor: "#f7f3e9",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
-              Organize. Showcase. Get booked.
-            </Text>
-            <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
-              High-quality media helps you stand out and build trust.
-            </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 999,
+                backgroundColor: "#f7f3e9",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: INK }}>
+                Organize. Showcase. Get booked.
+              </Text>
+              <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
+                High-quality media helps you stand out and build trust.
+              </Text>
+            </View>
           </View>
           <Pressable
             onPress={() =>
@@ -842,7 +848,7 @@ export default function GalleryScreen() {
               })
             }
             style={{
-              marginLeft: 10,
+              alignSelf: "flex-start",
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: GOLD,

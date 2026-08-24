@@ -776,7 +776,6 @@ export default function ListingScreen() {
               <View style={{ marginTop: 12 }}>
                 <Text
                   style={{
-                    fontFamily: SERIF,
                     fontSize: 13,
                     color: INK_DIM,
                     marginBottom: 8,
@@ -941,7 +940,6 @@ export default function ListingScreen() {
                 <FieldLabel>Custom pricing</FieldLabel>
                 <Text
                   style={{
-                    fontFamily: SERIF,
                     fontSize: 13,
                     fontStyle: "italic",
                     color: INK_DIM,
@@ -1120,7 +1118,7 @@ export default function ListingScreen() {
               <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
             </Pressable>
             <Text
-              style={{ fontSize: 17, fontWeight: "600", color: INK, fontFamily: SERIF }}
+              style={{ fontSize: 17, fontWeight: "600", color: INK, }}
             >
               Category
             </Text>
@@ -1286,7 +1284,6 @@ function StepHeader({
       </Text>
       <Text
         style={{
-          fontFamily: SERIF,
           fontSize: 16,
           fontStyle: "italic",
           color: INK_DIM,
@@ -1326,7 +1323,6 @@ function SectionBlock({
       {subtitle ? (
         <Text
           style={{
-            fontFamily: SERIF,
             fontSize: 14,
             fontStyle: "italic",
             color: INK_DIM,
@@ -1340,7 +1336,6 @@ function SectionBlock({
       {footnote ? (
         <Text
           style={{
-            fontFamily: SERIF,
             fontSize: 13,
             fontStyle: "italic",
             color: INK_DIM,
@@ -1471,7 +1466,6 @@ function PhotoGrid({
             <Feather name="camera" size={28} color={INK_DIM} />
             <Text
               style={{
-                fontFamily: SERIF,
                 fontSize: 14,
                 fontStyle: "italic",
                 color: INK_DIM,
@@ -1583,7 +1577,6 @@ function BannerCard({
           marginTop: 4,
           fontSize: 13,
           color: INK_DIM,
-          fontFamily: SERIF,
           fontStyle: "italic",
           lineHeight: 19,
         }}
@@ -1611,7 +1604,6 @@ function EmptyCard({ body }: { body: string }) {
       >
         <Text
           style={{
-            fontFamily: SERIF,
             fontSize: 14,
             fontStyle: "italic",
             color: INK_DIM,

@@ -318,7 +318,6 @@ export function SettingsSheet({
                 style={{
                   marginTop: 8,
                   color: INK_DIM,
-                  fontFamily: SERIF,
                   fontStyle: "italic",
                   fontSize: 15,
                 }}
@@ -501,7 +500,6 @@ export function SettingsSheet({
                   marginTop: 16,
                   textAlign: "center",
                   color: INK_DIM,
-                  fontFamily: SERIF,
                   fontStyle: "italic",
                   fontSize: 13,
                   lineHeight: 18,

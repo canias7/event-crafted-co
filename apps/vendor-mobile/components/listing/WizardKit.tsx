@@ -821,7 +821,6 @@ export function CategoryPickerModal({
               fontSize: 17,
               fontWeight: "600",
               color: INK,
-              fontFamily: SERIF,
             }}
           >
             Category

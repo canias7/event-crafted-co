@@ -358,7 +358,7 @@ export default function SchedulingScreen() {
                 <Feather name="clock" size={16} color={INK} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontFamily: SERIF, fontSize: 16, fontWeight: "700", color: INK }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: INK }}>
                   {t.name}
                   {!t.active ? <Text style={{ fontSize: 12, color: INK_DIM }}>  · off</Text> : null}
                 </Text>
@@ -601,7 +601,7 @@ export default function SchedulingScreen() {
                   padding: 16,
                 }}
               >
-                <Text style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}>
+                <Text style={{ fontSize: 16.5, fontWeight: "700", color: INK }}>
                   {sug.open_dates.length} open date{sug.open_dates.length === 1 ? "" : "s"} coming up
                 </Text>
                 <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
@@ -889,7 +889,7 @@ function ToggleCard({
         <Feather name={icon} size={17} color={INK} />
       </View>
       <View style={{ flex: 1, marginHorizontal: 12 }}>
-        <Text style={{ fontFamily: SERIF, fontSize: 15.5, fontWeight: "700", color: INK }}>
+        <Text style={{ fontSize: 15.5, fontWeight: "700", color: INK }}>
           {title}
         </Text>
         <Text style={{ marginTop: 2, fontSize: 12.5, lineHeight: 17, color: INK_DIM }}>{sub}</Text>
@@ -953,7 +953,7 @@ function AutoRow({
           <Feather name={icon} size={17} color={INK} />
         </View>
         <View style={{ flex: 1, marginHorizontal: 12 }}>
-          <Text style={{ fontFamily: SERIF, fontSize: 15.5, fontWeight: "700", color: INK }}>
+          <Text style={{ fontSize: 15.5, fontWeight: "700", color: INK }}>
             {title}
           </Text>
           <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>{sub}</Text>
@@ -1288,7 +1288,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
               <Feather name={r.icon} size={19} color={INK} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: "700", color: INK }}>
+              <Text style={{ fontSize: 16.5, fontWeight: "700", color: INK }}>
                 {r.title}
               </Text>
               <Text style={{ marginTop: 2, fontSize: 13, lineHeight: 18, color: INK_DIM }}>

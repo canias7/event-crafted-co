@@ -75,6 +75,33 @@ const gold = {
   inkOnGold: "#14161a",
 };
 
+/**
+ * Type roles. The web sets this in CSS — `h1..h6` get the editorial
+ * serif, everything else gets the sans — but the mobile apps style
+ * each Text inline, so the rule has to be written down or it drifts.
+ * It did: serif had leaked onto 44 body-size labels across 20 screens,
+ * so a conversation row was serif on Inbox and sans on Gallery.
+ *
+ * The rule: serif is for display and headings, sans for everything a
+ * person reads in bulk. `serifMinSize` is the boundary — at or above
+ * it, a Text may carry the serif face; below it, never.
+ */
+const type = {
+  /** Page titles and section headings may use the serif face at or above this. */
+  serifMinSize: 18,
+  /** Reference sizes, matching what the screens already use. */
+  size: {
+    display: 38,
+    title: 26,
+    heading: 23,
+    subheading: 20,
+    cardTitle: 18,
+    body: 15,
+    label: 13,
+    caption: 11,
+  },
+};
+
 /** Status colors. Deliberately outside the gold ramp so state never reads as brand. */
 const semantic = {
   destructive: "#dc2828",
@@ -109,4 +136,4 @@ const tailwindColors = {
   warning: semantic.warning,
 };
 
-module.exports = { surface, ink, gold, semantic, tailwindColors };
+module.exports = { surface, ink, gold, semantic, type, tailwindColors };

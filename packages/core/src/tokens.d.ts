@@ -27,6 +27,20 @@ export declare const gold: {
   readonly inkOnGold: "#14161a";
 };
 
+export declare const type: {
+  readonly serifMinSize: 18;
+  readonly size: {
+    readonly display: 38;
+    readonly title: 26;
+    readonly heading: 23;
+    readonly subheading: 20;
+    readonly cardTitle: 18;
+    readonly body: 15;
+    readonly label: 13;
+    readonly caption: 11;
+  };
+};
+
 export declare const semantic: {
   readonly destructive: "#dc2828";
   readonly success: "#2e7d4f";

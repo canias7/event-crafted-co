@@ -2117,7 +2117,7 @@ function BookingRow({
           <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accentColor }} />
           {item.timeLabel && item.timeLabel !== "All day" ? (
             <View style={{ paddingHorizontal: 12, paddingVertical: 14, alignItems: "center", width: 70 }}>
-              <Text style={{ color: INK, fontSize: 14, fontWeight: "700", fontFamily: SERIF }} numberOfLines={1}>
+              <Text style={{ color: INK, fontSize: 14, fontWeight: "700", }} numberOfLines={1}>
                 {item.timeLabel}
               </Text>
             </View>
@@ -2134,7 +2134,7 @@ function BookingRow({
           </View>
           {item.amountCents != null ? (
             <Text
-              style={{ color: INK, fontSize: 15, fontWeight: "700", marginRight: 14, fontFamily: SERIF }}
+              style={{ color: INK, fontSize: 15, fontWeight: "700", marginRight: 14, }}
             >
               {fmtMoneyShort(item.amountCents)}
             </Text>

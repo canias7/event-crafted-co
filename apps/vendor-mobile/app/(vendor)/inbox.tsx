@@ -584,7 +584,6 @@ export default function InboxScreen() {
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text
               style={{
-                fontFamily: SERIF_FONT,
                 fontSize: 16.5,
                 fontWeight: "700",
                 color: INK,
@@ -684,7 +683,6 @@ function Segment({
       <Feather name={icon} size={17} color={active ? "#ffffff" : INK} />
       <Text
         style={{
-          fontFamily: SERIF_FONT,
           fontSize: 17,
           fontWeight: "600",
           color: active ? "#ffffff" : INK,
@@ -733,7 +731,6 @@ function Chip({
         ) : null)}
       <Text
         style={{
-          fontFamily: SERIF_FONT,
           fontSize: 15,
           fontWeight: "600",
           color: active ? "#ffffff" : INK,
@@ -899,7 +896,6 @@ function InquiryCard({ row }: { row: InquiryRow }) {
               <Text
                 numberOfLines={1}
                 style={{
-                  fontFamily: SERIF_FONT,
                   fontSize: 17,
                   fontWeight: "700",
                   color: INK,
@@ -995,7 +991,6 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
           <Text
             numberOfLines={1}
             style={{
-              fontFamily: SERIF_FONT,
               fontSize: 16.5,
               fontWeight: "700",
               color: INK,
