@@ -20,7 +20,7 @@
 //   4. updateUser → success → route to /(host) and let the auth gate
 //      pick up the now-authenticated session.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -92,9 +92,27 @@ export default function ResetPasswordScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  // This effect legitimately re-runs — useURL() is null on the first
+  // render and fills in once the event lands, and waitedForUrl flips a
+  // beat later. Redeeming a recovery token SPENDS it, so without this
+  // guard the second pass re-submits an already-used token, GoTrue
+  // rejects it, and the screen flips from the form to "expired" a
+  // second after opening. Latch as soon as we commit to an outcome, and
+  // set it BEFORE awaiting so an overlapping re-run can't slip through.
+  const settled = useRef(false);
+  // Effect re-runs are not unmounts, so the usual per-run `cancelled`
+  // flag would strand a redemption in flight; track real unmount only.
+  const mounted = useRef(true);
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (settled.current) return;
+    void (async () => {
       const fromUrl = url ? parseParams(url) : null;
 
       const linkError =
@@ -103,6 +121,7 @@ export default function ResetPasswordScreen() {
         fromUrl?.get("error") ??
         null;
       if (linkError) {
+        settled.current = true;
         setError(decodeURIComponent(linkError.replace(/\+/g, " ")));
         setState("error");
         return;
@@ -111,11 +130,12 @@ export default function ResetPasswordScreen() {
       // The current path: redeem the single-use hash for a session.
       const tokenHash = routeTokenHash ?? fromUrl?.get("token_hash") ?? null;
       if (tokenHash) {
+        settled.current = true;
         const { error: e } = await supabase.auth.verifyOtp({
           type: "recovery",
           token_hash: tokenHash,
         });
-        if (cancelled) return;
+        if (!mounted.current) return;
         if (e) {
           setError("This reset link has expired. Request a new one.");
           setState("error");
@@ -130,11 +150,12 @@ export default function ResetPasswordScreen() {
       const rt = fromUrl?.get("refresh_token") ?? null;
       const type = routeType ?? fromUrl?.get("type") ?? null;
       if (at && rt && type === "recovery") {
+        settled.current = true;
         const { error: e } = await supabase.auth.setSession({
           access_token: at,
           refresh_token: rt,
         });
-        if (cancelled) return;
+        if (!mounted.current) return;
         if (e) {
           setError("This reset link has expired. Request a new one.");
           setState("error");
@@ -147,20 +168,19 @@ export default function ResetPasswordScreen() {
       // Fallback: maybe the session was already seeded by Supabase's
       // built-in URL listener before we mounted.
       const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
+      if (!mounted.current || settled.current) return;
       if (data.session) {
+        settled.current = true;
         setState("ready");
         return;
       }
 
       // Nothing usable yet — wait for the url event before giving up.
       if (!waitedForUrl) return;
+      settled.current = true;
       setError("This reset link is invalid. Request a new one.");
       setState("error");
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
 
   async function onSubmit() {
