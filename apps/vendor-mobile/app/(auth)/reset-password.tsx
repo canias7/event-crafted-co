@@ -84,6 +84,10 @@ export default function ResetPasswordScreen() {
   // Flips once the url event has had time to arrive, so a genuinely
   // link-less visit resolves to an error instead of an endless spinner.
   const [waitedForUrl, setWaitedForUrl] = useState(false);
+  // TEMPORARY diagnostic. Recovery links carry real credentials, so this
+  // records only the shape of the URL — scheme/path and which parameter
+  // NAMES arrived — never any value. Safe to screenshot.
+  const [shape, setShape] = useState<string | null>(null);
   useEffect(() => {
     const t = setTimeout(() => setWaitedForUrl(true), 1500);
     return () => clearTimeout(t);
@@ -93,6 +97,17 @@ export default function ResetPasswordScreen() {
     let cancelled = false;
     (async () => {
       const params = url ? parseParams(url) : null;
+      if (url) {
+        const [beforeHash, hash] = url.split("#");
+        const q = beforeHash.split("?")[1];
+        const names = (p?: string) =>
+          p ? [...new URLSearchParams(p).keys()].join(", ") || "(empty)" : "(none)";
+        setShape(
+          `path: ${beforeHash.split("?")[0]}\nquery: ${names(q)}\nfragment: ${names(hash)}`,
+        );
+      } else {
+        setShape("no URL reached the app");
+      }
 
       // GoTrue reports a dead or already-used token this way rather than
       // by redirecting with tokens that then fail.
@@ -216,6 +231,35 @@ export default function ResetPasswordScreen() {
           >
             <Text style={primaryBtnText}>Request a new link</Text>
           </TouchableOpacity>
+
+          {/* TEMPORARY diagnostic — remove once the deep link is fixed. */}
+          {shape ? (
+            <View
+              style={{
+                marginTop: 24,
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: FIELD_BG,
+                borderWidth: 1,
+                borderColor: FIELD_BORDER,
+              }}
+            >
+              <Text style={{ fontSize: 10, letterSpacing: 1, color: SUBTLE, marginBottom: 6 }}>
+                DIAGNOSTIC — NO VALUES, SAFE TO SHARE
+              </Text>
+              <Text
+                selectable
+                style={{
+                  fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+                  fontSize: 11,
+                  lineHeight: 16,
+                  color: INK_DIM,
+                }}
+              >
+                {shape}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
     );
