@@ -64,9 +64,13 @@ jobs:
         with:
           bun-version: latest
 
+      # eas-cli 22.4.0 pulls @oclif/plugin-autocomplete, which declares
+      # engines.node >=22 — on Node 20 the install fails outright with
+      # "Found incompatible module" before eas ever runs. GitHub is
+      # retiring Node 20 on runners anyway.
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - uses: expo/expo-github-action@v8
         with:
