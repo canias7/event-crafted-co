@@ -1,9 +1,14 @@
-// Shared glassy amber-glow shell for the auth form pages
-// (/login/host, /login/vendor, /signup/host, /signup/vendor).
-// Renders the canvas (glows, grid, particles, ring, stars, top bar,
-// centered headline + subtitle, glassy form card, below-card link
-// slot, footer trust row). Page-specific content (form fields,
+// Shared glassy shell for the auth form pages (/login/host,
+// /login/vendor, /signup/host, /signup/vendor, /forgot-password,
+// /reset-password). Renders the canvas (soft glows, perspective grid,
+// orbital ring, top bar, centered headline + subtitle, glassy form
+// card, below-card link slot). Page-specific content (form fields,
 // copy, role-specific labels) goes through props.
+//
+// Deliberately undecorated: this used to scatter four-point stars and
+// eight glowing drifting dots across the canvas, which read as
+// snowflakes rather than as brand. Depth comes from the glows, grid
+// and ring alone — keep it that way.
 
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -51,7 +56,7 @@ export function GlassyAuthShell({
           width: "1100px",
           height: "850px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.025) 32%, rgba(0,0,0,0.012) 58%, transparent 78%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.007) 32%, rgba(0,0,0,0.004) 58%, transparent 78%)",
         }}
       />
       <div
@@ -63,7 +68,7 @@ export function GlassyAuthShell({
           width: "680px",
           height: "580px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.025) 42%, transparent 72%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.007) 42%, transparent 72%)",
         }}
       />
       <div
@@ -75,7 +80,7 @@ export function GlassyAuthShell({
           width: "480px",
           height: "480px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.035) 0%, transparent 65%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.01) 0%, transparent 65%)",
         }}
       />
 
@@ -85,7 +90,7 @@ export function GlassyAuthShell({
         className="pointer-events-none absolute z-0 inset-x-0"
         style={{
           bottom: 0,
-          height: "500px",
+          height: "380px",
           perspective: "800px",
           overflow: "hidden",
           WebkitMaskImage:
@@ -103,7 +108,7 @@ export function GlassyAuthShell({
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -120,36 +125,15 @@ export function GlassyAuthShell({
           left: "50%",
           width: "640px",
           height: "640px",
-          border: "0.5px dashed rgba(0,0,0,0.08)",
+          border: "0.5px dashed rgba(0,0,0,0.045)",
           borderRadius: "50%",
         }}
       />
 
-      {/* STAR DECORATIONS */}
-      <Star top="120px" left="80px" size={20} opacity={0.35} />
-      <Star bottom="100px" right="90px" size={16} opacity={0.3} />
-
-      {/* PARTICLES */}
-      {PARTICLES.map((p, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className={p.variant === "a" ? "auth-float-a" : "auth-float-b"}
-          style={{
-            position: "absolute",
-            top: p.top,
-            left: p.left,
-            right: p.right,
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            boxShadow: `0 0 ${p.glow}px ${p.color}`,
-            borderRadius: "50%",
-            zIndex: 1,
-            animationDelay: p.delay,
-          }}
-        />
-      ))}
+      {/* No star or drifting-particle decorations: scattered glowing
+          dots plus four-point stars read as snowflakes, which is the
+          wrong season and the wrong brand. The glows, grid and ring
+          carry the depth on their own. */}
 
       {/* TOP BAR */}
       <div
@@ -296,20 +280,6 @@ export function GlassyAuthShell({
         .auth-ring {
           animation: authRotSlow 80s linear infinite;
         }
-        @keyframes authFloatA {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          50% { transform: translateY(-30px); opacity: 1; }
-        }
-        .auth-float-a {
-          animation: authFloatA 6s ease-in-out infinite;
-        }
-        @keyframes authFloatB {
-          0%, 100% { transform: translateY(0); opacity: 0.5; }
-          50% { transform: translateY(-24px); opacity: 1; }
-        }
-        .auth-float-b {
-          animation: authFloatB 7s ease-in-out infinite;
-        }
         @keyframes authPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
@@ -383,55 +353,3 @@ export function GlassyAuthShell({
   );
 }
 
-function Star({
-  top,
-  left,
-  right,
-  bottom,
-  size,
-  opacity,
-}: {
-  top?: string;
-  left?: string;
-  right?: string;
-  bottom?: string;
-  size: number;
-  opacity: number;
-}) {
-  return (
-    <div
-      aria-hidden
-      className="absolute z-[1]"
-      style={{ top, left, right, bottom, opacity }}
-    >
-      <svg width={size} height={size} viewBox="0 0 24 24">
-        <path
-          d="M12 2 L13 11 L22 12 L13 13 L12 22 L11 13 L2 12 L11 11 Z"
-          fill="#18181b"
-        />
-      </svg>
-    </div>
-  );
-}
-
-type Particle = {
-  variant: "a" | "b";
-  top?: string;
-  left?: string;
-  right?: string;
-  size: number;
-  color: string;
-  glow: number;
-  delay: string;
-};
-
-const PARTICLES: Particle[] = [
-  { variant: "a", top: "20%", left: "12%", size: 3, color: "#18181b", glow: 10, delay: "0s" },
-  { variant: "b", top: "38%", left: "26%", size: 2, color: "#71717a", glow: 6, delay: "1s" },
-  { variant: "a", top: "62%", left: "16%", size: 2, color: "#18181b", glow: 6, delay: "2s" },
-  { variant: "b", top: "30%", right: "22%", size: 3, color: "#71717a", glow: 8, delay: "0.5s" },
-  { variant: "a", top: "52%", left: "8%", size: 2, color: "#18181b", glow: 6, delay: "1.5s" },
-  { variant: "b", top: "72%", right: "16%", size: 2, color: "#71717a", glow: 6, delay: "2.5s" },
-  { variant: "a", top: "14%", right: "30%", size: 3, color: "#18181b", glow: 10, delay: "1s" },
-  { variant: "b", top: "78%", left: "32%", size: 2, color: "#71717a", glow: 6, delay: "3s" },
-];
