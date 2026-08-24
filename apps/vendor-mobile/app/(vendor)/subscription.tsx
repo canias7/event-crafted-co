@@ -454,7 +454,7 @@ export default function SubscriptionScreen() {
             color: INK,
           }}
         >
-          Subscription <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+          Subscription
         </Text>
         <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Plans and billing
@@ -854,7 +854,6 @@ export default function SubscriptionScreen() {
             paddingHorizontal: 4,
           }}
         >
-          <Text style={{ color: GOLD, fontSize: 13, marginRight: 7 }}>✦</Text>
           <Text style={{ color: INK_DIM, fontSize: 12, flex: 1, lineHeight: 17 }}>
             All plans include secure payments, support from a real person, and
             continuous updates.

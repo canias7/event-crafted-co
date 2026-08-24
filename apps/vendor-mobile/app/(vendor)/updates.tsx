@@ -106,7 +106,7 @@ export default function UpdatesScreen() {
             color: INK,
           }}
         >
-          What&rsquo;s new <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+          What&rsquo;s new
         </Text>
         <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           The latest improvements to Vendora for Vendors.
@@ -186,7 +186,18 @@ export default function UpdatesScreen() {
                 borderTopColor: BORDER,
               }}
             >
-              <MaterialCommunityIcons name="star-four-points-outline" size={16} color={GOLD} />
+              {/* Plain gold dot rather than a star: this repeats once
+                  per change line, and a column of sparkles reads as
+                  decoration instead of as a list. */}
+              <View
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: 999,
+                  backgroundColor: GOLD,
+                  marginLeft: 5,
+                }}
+              />
               <Text style={{ marginLeft: 10, fontSize: 14.5, color: INK }}>{c}</Text>
             </View>
           ))}

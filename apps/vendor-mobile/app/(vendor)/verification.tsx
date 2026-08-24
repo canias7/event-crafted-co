@@ -337,7 +337,7 @@ export default function VerificationScreen() {
             }}
           >
             <Text style={{ color: "#fff", fontSize: 15.5, fontWeight: "600" }}>
-              <Text style={{ color: GOLD }}>✦</Text> Upgrade to apply
+              Upgrade to apply
             </Text>
           </Pressable>
         </ScrollView>
@@ -470,7 +470,6 @@ export default function VerificationScreen() {
           <>
             <Header title="Verification" onBack={() => router.back()} />
             <View style={{ alignItems: "center", marginTop: 20 }}>
-              <Text style={{ color: GOLD, fontSize: 15 }}>✦</Text>
               <MaterialCommunityIcons name="shield-check" size={76} color="#d9c9a6" />
             </View>
             <Text

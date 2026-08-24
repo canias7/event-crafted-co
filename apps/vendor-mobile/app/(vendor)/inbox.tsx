@@ -13,7 +13,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -42,7 +41,12 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
-const SERIF_FONT = Platform.OS === "ios" ? "Times New Roman" : "serif";
+// Libre Baskerville, like every other screen. This used to fall back to
+// the platform system serif (Times on iOS), which is why the inbox read
+// as a different typeface from the rest of the app. Android won't
+// synthesise a bold weight for a custom family, so bold text has to
+// name the bold face explicitly — every serif run here is 600/700.
+const SERIF_BOLD = "LibreBaskerville-Bold";
 
 interface PartnerThread {
   id: string;
@@ -291,7 +295,7 @@ export default function InboxScreen() {
         <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 18 }}>
           <Text
             style={{
-              fontFamily: SERIF_FONT,
+              fontFamily: SERIF_BOLD,
               fontSize: 38,
               lineHeight: 44,
               fontWeight: "700",
@@ -380,7 +384,7 @@ export default function InboxScreen() {
                 active={inquiryFilter === "new"}
                 iconNode={
                   <MaterialCommunityIcons
-                    name="star-four-points-outline"
+                    name="email-outline"
                     size={15}
                     color={inquiryFilter === "new" ? "#ffffff" : INK}
                   />
@@ -561,14 +565,15 @@ export default function InboxScreen() {
             backgroundColor: "#efe9dc",
             borderRadius: 20,
             padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
           }}
         >
+          {/* Icon + copy on one row, CTA on its own line below. All
+              three side by side squeezed the title onto three lines. */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View
             style={{
-              width: 52,
-              height: 52,
+              width: 46,
+              height: 46,
               borderRadius: 999,
               backgroundColor: "#f7f3e9",
               alignItems: "center",
@@ -580,7 +585,7 @@ export default function InboxScreen() {
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text
               style={{
-                fontFamily: SERIF_FONT,
+                fontFamily: SERIF_BOLD,
                 fontSize: 16.5,
                 fontWeight: "700",
                 color: INK,
@@ -592,9 +597,11 @@ export default function InboxScreen() {
               Complete your profile and get discovered.
             </Text>
           </View>
+          </View>
           <View
             style={{
-              marginLeft: 10,
+              alignSelf: "flex-start",
+              marginTop: 12,
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
@@ -680,7 +687,7 @@ function Segment({
       <Feather name={icon} size={17} color={active ? "#ffffff" : INK} />
       <Text
         style={{
-          fontFamily: SERIF_FONT,
+          fontFamily: SERIF_BOLD,
           fontSize: 17,
           fontWeight: "600",
           color: active ? "#ffffff" : INK,
@@ -729,7 +736,7 @@ function Chip({
         ) : null)}
       <Text
         style={{
-          fontFamily: SERIF_FONT,
+          fontFamily: SERIF_BOLD,
           fontSize: 15,
           fontWeight: "600",
           color: active ? "#ffffff" : INK,
@@ -779,7 +786,6 @@ function EmptyState({
       }}
     >
       <View style={{ alignItems: "center" }}>
-        <Text style={{ color: GOLD, fontSize: 14, marginBottom: 2 }}>✦</Text>
         <MaterialCommunityIcons
           name="email-open-outline"
           size={64}
@@ -789,7 +795,7 @@ function EmptyState({
       <Text
         style={{
           marginTop: 18,
-          fontFamily: SERIF_FONT,
+          fontFamily: SERIF_BOLD,
           fontSize: 23,
           fontWeight: "700",
           color: INK,
@@ -816,7 +822,7 @@ function EmptyState({
             gap: 8,
           }}
         >
-          <MaterialCommunityIcons name="star-four-points" size={15} color={GOLD} />
+          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={GOLD} />
           <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
             Tips to get more inquiries
           </Text>
@@ -895,7 +901,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
               <Text
                 numberOfLines={1}
                 style={{
-                  fontFamily: SERIF_FONT,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 17,
                   fontWeight: "700",
                   color: INK,
@@ -991,7 +997,7 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
           <Text
             numberOfLines={1}
             style={{
-              fontFamily: SERIF_FONT,
+              fontFamily: SERIF_BOLD,
               fontSize: 16.5,
               fontWeight: "700",
               color: INK,

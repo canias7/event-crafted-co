@@ -167,7 +167,10 @@ export default function FindVendorScreen() {
         >
           <Feather name="chevron-left" size={26} color="#14161a" />
         </Pressable>
-        <Text className="text-3xl font-semibold text-foreground">
+        <Text
+          className="text-3xl text-foreground"
+          style={{ fontFamily: "LibreBaskerville-Bold", fontWeight: "700" }}
+        >
           Find a vendor
         </Text>
       </View>

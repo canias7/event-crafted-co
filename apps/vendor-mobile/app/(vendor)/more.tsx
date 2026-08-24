@@ -103,17 +103,6 @@ export default function MoreScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Wordmark />
-        {/* Decorative sparkles, echoing the mock's top-right corner. */}
-        <View pointerEvents="none" style={{ position: "absolute", top: 44, right: 26 }}>
-          <Text style={{ color: GOLD, fontSize: 26, opacity: 0.85 }}>✦</Text>
-        </View>
-        <View pointerEvents="none" style={{ position: "absolute", top: 24, right: 64 }}>
-          <Text style={{ color: GOLD, fontSize: 13, opacity: 0.6 }}>✦</Text>
-        </View>
-        <View pointerEvents="none" style={{ position: "absolute", top: 92, right: 46 }}>
-          <Text style={{ color: GOLD, fontSize: 11, opacity: 0.5 }}>✦</Text>
-        </View>
-
         <Text
           style={{
             marginTop: 14,
@@ -124,7 +113,7 @@ export default function MoreScreen() {
             color: INK,
           }}
         >
-          More <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+          More
         </Text>
         <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Everything else, one tap away.
@@ -256,7 +245,7 @@ export default function MoreScreen() {
             },
           ]}
         >
-          <MaterialCommunityIcons name="star-four-points-outline" size={26} color={GOLD} />
+          <MaterialCommunityIcons name="heart-outline" size={26} color={GOLD} />
           <View style={{ flex: 1, marginLeft: 13 }}>
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17, fontWeight: "700" }}>
               Love Vendora?

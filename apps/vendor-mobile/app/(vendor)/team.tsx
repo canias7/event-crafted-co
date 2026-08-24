@@ -161,7 +161,7 @@ export default function TeamScreen() {
               color: INK,
             }}
           >
-            Meet the Team <Text style={{ color: GOLD, fontSize: 13 }}>✦</Text>
+            Meet the Team
           </Text>
           <View style={{ width: 26 }} />
         </View>
