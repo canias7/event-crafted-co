@@ -6,15 +6,31 @@
 //
 //   POST {action: "request"?, email, redirectTo}
 //     - Two-tier per-email rate limit (60s floor + 5/hour).
-//     - generateLink({type:'recovery', options:{redirectTo}}) -> the
-//       SAME /verify action link GoTrue's own recovery email would use,
-//       so the existing reset-password screen (which parses the
-//       #access_token&type=recovery fragment) consumes it unchanged.
+//     - generateLink({type:'recovery'}) to mint the token.
 //     - Anti-enumeration: unknown/unconfirmed email returns ok:true
 //       WITHOUT sending, identical shape to a real send.
 //
-// redirectTo must be one of our app schemes; this stops the endpoint
-// being used to mint recovery links pointing at arbitrary targets.
+// We email properties.hashed_token on our OWN https landing page rather
+// than GoTrue's /verify action_link. The action link failed two ways:
+//
+//   1. It is a one-time GET that burns the token. Mail scanners and
+//      link previewers fetch every URL in an email, so by the time the
+//      recipient tapped it GoTrue had already spent it and answered
+//      "otp_expired" — "expired every single time", seconds after
+//      delivery.
+//   2. On success it 303s to <scheme>://reset-password#access_token=…,
+//      and that fragment does not survive the browser -> custom-scheme
+//      handoff. The app opened on the right screen with no URL at all.
+//
+// A token_hash sitting in a query string is inert until something POSTs
+// it to /verify, so scanners can't burn it, and query params survive the
+// handoff (expo-router parses them straight into route params). The app
+// — or the landing page, if the app isn't installed — redeems it with
+// supabase.auth.verifyOtp({type:'recovery', token_hash}).
+//
+// redirectTo must be one of our app schemes; it selects which app the
+// landing page hands off to, and stops the endpoint being used to mint
+// recovery links pointing at arbitrary targets.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -26,10 +42,24 @@ const FROM_ADDRESS =
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+const WEB_ORIGIN =
+  Deno.env.get("PUBLIC_WEB_ORIGIN") ?? "https://eventvendora.com";
+
 const REQUEST_MIN_INTERVAL_MS = 60_000;
 const REQUEST_WINDOW_MS = 3_600_000;
 const MAX_REQUESTS_PER_WINDOW = 5;
-const ALLOWED_REDIRECT_PREFIXES = ["vendora-vendor://", "vendora-host://"];
+// Prefix -> the ?app= slug the landing page uses to pick a scheme.
+const ALLOWED_REDIRECTS: Record<string, string> = {
+  "vendora-vendor://": "vendor",
+  "vendora-host://": "host",
+};
+
+function appSlugFor(redirectTo: string): string | null {
+  for (const [prefix, slug] of Object.entries(ALLOWED_REDIRECTS)) {
+    if (redirectTo.startsWith(prefix)) return slug;
+  }
+  return null;
+}
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -63,7 +93,7 @@ async function sendResetEmail(email: string, link: string): Promise<boolean> {
       <tr><td style="padding-bottom:24px;"><img src="https://eventvendora.com/pwa-192.png" alt="Vendora" width="44" height="44" style="display:block;border:0;border-radius:8px;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" /></td></tr>
       <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">Reset your password</td></tr>
       <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">
-        <p style="margin:0 0 16px;">Tap the button below on this device to choose a new Vendora password. The link opens the app.</p>
+        <p style="margin:0 0 16px;">Tap the button below on this device to choose a new Vendora password. You can finish in the app or right in your browser.</p>
         <p style="margin:0 0 24px;text-align:center;">
           <a href="${link}" style="display:inline-block;background:#1a1410;color:#faf5ec;text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;padding:14px 28px;">Set a new password</a>
         </p>
@@ -118,9 +148,8 @@ serve(async (req) => {
   const email = String(body.email ?? "").trim().toLowerCase();
   const redirectTo = String(body.redirectTo ?? "").trim();
   if (!email) return json({ error: "email required" }, 400);
-  if (!redirectTo || !ALLOWED_REDIRECT_PREFIXES.some((p) => redirectTo.startsWith(p))) {
-    return json({ error: "invalid redirectTo" }, 400);
-  }
+  const appSlug = redirectTo ? appSlugFor(redirectTo) : null;
+  if (!appSlug) return json({ error: "invalid redirectTo" }, 400);
 
   const sb = admin();
   const now = Date.now();
@@ -179,13 +208,24 @@ serve(async (req) => {
     email,
     options: { redirectTo },
   });
-  const actionLink =
-    (linkData as { properties?: { action_link?: string } } | null)
-      ?.properties?.action_link ?? null;
-  if (linkErr || !actionLink) {
+  const props =
+    (linkData as {
+      properties?: { action_link?: string; hashed_token?: string };
+    } | null)?.properties ?? null;
+
+  // Preferred: our landing page carrying the raw token_hash (see the
+  // note at the top). action_link is only a fallback for the case where
+  // a future GoTrue stops returning hashed_token — it still works, it
+  // is just the scanner-vulnerable path.
+  const link = props?.hashed_token
+    ? `${WEB_ORIGIN}/reset-password?token_hash=${
+      encodeURIComponent(props.hashed_token)
+    }&type=recovery&app=${appSlug}`
+    : props?.action_link ?? null;
+  if (linkErr || !link) {
     return json({ ok: true });
   }
 
-  await sendResetEmail(email, actionLink);
+  await sendResetEmail(email, link);
   return json({ ok: true });
 });
