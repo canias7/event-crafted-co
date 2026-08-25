@@ -26,7 +26,7 @@ module.exports = {
         // inactive filters, "muted" backgrounds
         muted: "#ece7db",
         secondary: "#ece7db",
-        "muted-foreground": "#5e636e",
+        "muted-foreground": "#14161a",
         // Warm hairline border
         border: "#e6e1d5",
         // Champagne gold — links, focus rings, badges, the ✦ accents

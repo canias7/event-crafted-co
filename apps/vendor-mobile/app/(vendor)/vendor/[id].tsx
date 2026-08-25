@@ -367,7 +367,7 @@ export default function VendorDetailScreen() {
           {/* Bio */}
           {vendor.bio ? (
             <View className="px-5 pt-6">
-              <Text className="text-base text-foreground/90 leading-relaxed" style={{ fontFamily: "LibreBaskerville" }}>
+              <Text className="text-base text-foreground leading-relaxed" style={{ fontFamily: "LibreBaskerville" }}>
                 {vendor.bio}
               </Text>
             </View>

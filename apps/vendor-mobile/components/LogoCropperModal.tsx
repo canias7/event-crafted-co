@@ -18,7 +18,10 @@ import { Dimensions, Image, Pressable, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
+// Secondary text is the same black as headings; hierarchy comes from
+// size, weight and family instead. The old value was a cool blue-grey
+// (#5e636e, hue 220) which read as washed-out on the warm cream page.
+const INK_DIM = "#14161a";
 
 export function LogoCropperModal({
   uri,

@@ -84,7 +84,7 @@ function JsFatalScreen({
         >
           Something went wrong
         </Text>
-        <Text style={{ fontFamily: "LibreBaskerville", color: "#5e636e", marginTop: 8, fontSize: 13 }}>
+        <Text style={{ fontFamily: "LibreBaskerville", color: "#14161a", marginTop: 8, fontSize: 13 }}>
           Screenshot this screen and send it to support — it shows exactly
           what broke.
         </Text>
