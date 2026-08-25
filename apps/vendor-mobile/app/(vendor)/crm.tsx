@@ -169,7 +169,7 @@ export default function CrmScreen() {
             style={{
               marginTop: 26,
               fontFamily: SERIF_BOLD,
-              fontSize: 36,
+              fontSize: 38,
               letterSpacing: -0.5,
               color: INK,
             }}
@@ -280,7 +280,7 @@ export default function CrmScreen() {
         >
           Clients
         </Text>
-        <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           Your client book, built from every inquiry.
         </Text>
 
@@ -303,7 +303,7 @@ export default function CrmScreen() {
             onChangeText={setQuery}
             placeholder="Search clients"
             placeholderTextColor={INK_DIM}
-            style={{ flex: 1, marginLeft: 9, paddingVertical: 12, fontSize: 15, color: INK }}
+            style={{ fontFamily: SERIF, flex: 1, marginLeft: 9, paddingVertical: 12, fontSize: 15, color: INK }}
           />
           {query ? (
             <Pressable onPress={() => setQuery("")} hitSlop={8}>
@@ -337,7 +337,7 @@ export default function CrmScreen() {
             >
               {query ? "No clients match" : "No clients yet"}
             </Text>
-            <Text style={{ fontFamily: SERIF, marginTop: 6, color: INK_DIM, fontSize: 13.5, textAlign: "center", lineHeight: 19 }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 6, color: INK_DIM, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
               {query
                 ? "Try a different name."
                 : "As soon as a host sends you an inquiry, they'll appear here with their events, your notes, and follow-ups."}
@@ -378,16 +378,16 @@ export default function CrmScreen() {
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                         {initials(c.host_name)}
                       </Text>
                     </View>
                   )}
                   <View style={{ flex: 1, marginLeft: 13 }}>
-                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                       {c.host_name}
                     </Text>
-                    <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+                    <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                       {c.inquiries_count} {c.inquiries_count === 1 ? "inquiry" : "inquiries"}
                       {c.booked_count > 0 ? ` · ${c.booked_count} booked` : ""}
                       {c.notes_count > 0 ? ` · ${c.notes_count} ${c.notes_count === 1 ? "note" : "notes"}` : ""}
@@ -607,16 +607,16 @@ function ClientSheet({
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 18, color: INK }}>
                   {initials(client.host_name)}
                 </Text>
               </View>
             )}
             <View style={{ flex: 1, marginLeft: 13 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 23, color: INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 24, color: INK }}>
                 {client.host_name}
               </Text>
-              <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                 Client since {fmtDate(client.first_inquiry_at)}
               </Text>
             </View>
@@ -652,7 +652,7 @@ function ClientSheet({
             }}
           >
             <Feather name="message-circle" size={15} color="#fff" />
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14.5}}>Message</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14}}>Message</Text>
           </Pressable>
 
           {/* Follow-up reminder */}
@@ -672,11 +672,11 @@ function ClientSheet({
               }}
             >
               <Feather name="bell" size={16} color="#8a6f3e" />
-              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: "#8a6f3e", fontSize: 13.5}}>
+              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: "#8a6f3e", fontSize: 13}}>
                 We'll ping you on {fmtDate(followUpAt)}.
               </Text>
               <Pressable onPress={() => void setFollowUp(null)} hitSlop={8} disabled={savingFollow}>
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 12.5}}>Clear</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13}}>Clear</Text>
               </Pressable>
             </View>
           ) : (
@@ -694,7 +694,7 @@ function ClientSheet({
                     opacity: savingFollow ? 0.6 : 1,
                   }}
                 >
-                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12.5, color: INK }}>{f.label}</Text>
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{f.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -719,7 +719,7 @@ function ClientSheet({
               placeholder="Add a private note — pricing, preferences, kids' names…"
               placeholderTextColor={INK_DIM}
               multiline
-              style={{ minHeight: 60, fontSize: 14, color: INK, textAlignVertical: "top" }}
+              style={{ fontFamily: SERIF, minHeight: 60, fontSize: 14, color: INK, textAlignVertical: "top" }}
             />
             <Pressable
               onPress={() => void addNote()}
@@ -769,7 +769,7 @@ function ClientSheet({
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11.5 }}>{fmtDate(n.created_at)}</Text>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}>{fmtDate(n.created_at)}</Text>
                 <Pressable onPress={() => removeNote(n)} hitSlop={8}>
                   <Feather name="trash-2" size={14} color={INK_DIM} />
                 </Pressable>
@@ -782,7 +782,7 @@ function ClientSheet({
             Events
           </Text>
           {events.length === 0 ? (
-            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13.5 }}>No inquiries on record yet.</Text>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}>No inquiries on record yet.</Text>
           ) : (
             events.map((e) => {
               const booked =
@@ -829,7 +829,7 @@ function ClientSheet({
                       </Text>
                     </View>
                   </View>
-                  <Text style={{ fontFamily: SERIF, marginTop: 4, color: INK_DIM, fontSize: 12.5 }}>
+                  <Text style={{ fontFamily: SERIF, marginTop: 4, color: INK_DIM, fontSize: 13 }}>
                     {[
                       e.event_date ? fmtDate(e.event_date) : null,
                       e.guest_count ? `${e.guest_count} guests` : null,

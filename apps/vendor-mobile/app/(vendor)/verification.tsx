@@ -314,14 +314,14 @@ export default function VerificationScreen() {
               marginTop: 14,
               textAlign: "center",
               fontFamily: SERIF_BOLD,
-              fontSize: 27,
+              fontSize: 24,
               color: INK,
             }}
           >
             Get verified. Build trust.
           </Text>
           <Text
-            style={{ fontFamily: SERIF, marginTop: 8, textAlign: "center", fontSize: 14.5, lineHeight: 21, color: INK_DIM }}
+            style={{ fontFamily: SERIF, marginTop: 8, textAlign: "center", fontSize: 14, lineHeight: 21, color: INK_DIM }}
           >
             The verified badge tells hosts a real person and a real business
             are behind your profile. Applying is included with Pro and
@@ -338,7 +338,7 @@ export default function VerificationScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
               Upgrade to apply
             </Text>
           </Pressable>
@@ -479,14 +479,14 @@ export default function VerificationScreen() {
                 marginTop: 14,
                 textAlign: "center",
                 fontFamily: SERIF_BOLD,
-                fontSize: 27,
+                fontSize: 24,
                 color: INK,
               }}
             >
               Get verified. Build trust.
             </Text>
             <Text
-              style={{ fontFamily: SERIF, marginTop: 6, textAlign: "center", fontSize: 13.5, lineHeight: 19, color: INK_DIM }}
+              style={{ fontFamily: SERIF, marginTop: 6, textAlign: "center", fontSize: 13, lineHeight: 19, color: INK_DIM }}
             >
               Verified vendors stand out and give clients confidence in your
               business.
@@ -514,7 +514,7 @@ export default function VerificationScreen() {
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                       {r.t}
                     </Text>
-                    <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 12.5, color: INK_DIM }}>{r.s}</Text>
+                    <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 13, color: INK_DIM }}>{r.s}</Text>
                   </View>
                 </View>
               ))}
@@ -529,7 +529,7 @@ export default function VerificationScreen() {
                 padding: 16,
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginBottom: 8 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginBottom: 8 }}>
                 What you'll get
               </Text>
               {[
@@ -539,7 +539,7 @@ export default function VerificationScreen() {
               ].map((t) => (
                 <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
                   <Feather name="check" size={13} color={GOLD} />
-                  <Text style={{ fontFamily: SERIF, fontSize: 13.5, color: INK }}>{t}</Text>
+                  <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{t}</Text>
                 </View>
               ))}
             </View>
@@ -554,7 +554,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
                 Start verification
               </Text>
             </Pressable>
@@ -585,7 +585,7 @@ export default function VerificationScreen() {
                 keyboardType="numbers-and-punctuation"
               />
             </Field>
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginTop: 8, marginBottom: 8 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginTop: 8, marginBottom: 8 }}>
               Government-issued ID
             </Text>
             <DocTile
@@ -674,10 +674,10 @@ export default function VerificationScreen() {
                 autoCapitalize="none"
               />
             </Field>
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginTop: 8 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginTop: 8 }}>
               Proof of business
             </Text>
-            <Text style={{ fontFamily: SERIF, fontSize: 12.5, color: INK_DIM, marginTop: 2, marginBottom: 8 }}>
+            <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK_DIM, marginTop: 2, marginBottom: 8 }}>
               Add a photo of at least one document — insurance certificate,
               business license, or registration.
             </Text>
@@ -717,7 +717,7 @@ export default function VerificationScreen() {
                 }}
               >
                 <Feather name="plus" size={15} color={INK} />
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
                   Add {docs.length === 0 ? "a document" : "another document"}
                 </Text>
               </Pressable>
@@ -790,7 +790,7 @@ export default function VerificationScreen() {
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                 <Feather name="check-circle" size={14} color="#8a6f3e" />
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
                   What happens next?
                 </Text>
               </View>
@@ -815,13 +815,13 @@ export default function VerificationScreen() {
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
                   Submit for review
                 </Text>
               )}
             </Pressable>
             <Text
-              style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", fontSize: 11.5, color: INK_DIM, lineHeight: 16 }}
+              style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", fontSize: 12, color: INK_DIM, lineHeight: 16 }}
             >
               By submitting, you agree to Vendora's Terms of Service and
               Privacy Policy.
@@ -918,7 +918,7 @@ function SummaryCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
           {title}
         </Text>
         <Pressable onPress={onEdit} hitSlop={8}>
@@ -926,7 +926,7 @@ function SummaryCard({
         </Pressable>
       </View>
       {lines.map((l) => (
-        <Text key={l} style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, color: INK_DIM }}>
+        <Text key={l} style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, color: INK_DIM }}>
           {l}
         </Text>
       ))}

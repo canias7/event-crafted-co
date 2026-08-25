@@ -898,7 +898,7 @@ export default function ListingScreen() {
                     placeholder="0"
                     placeholderTextColor={INK_DIM}
                     keyboardType="decimal-pad"
-                    style={{ flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
+                    style={{ fontFamily: SERIF, flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
                   />
                 </View>
               </View>
@@ -916,7 +916,7 @@ export default function ListingScreen() {
                     placeholder="—"
                     placeholderTextColor={INK_DIM}
                     keyboardType="decimal-pad"
-                    style={{ flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
+                    style={{ fontFamily: SERIF, flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
                   />
                 </View>
               </View>
@@ -936,7 +936,7 @@ export default function ListingScreen() {
                 <Text
                   style={{
                     fontFamily: SERIF,
-                    fontSize: 13.5,
+                    fontSize: 13,
                     lineHeight: 19,
                     color: INK_DIM,
                     marginTop: 2,
@@ -1114,7 +1114,7 @@ export default function ListingScreen() {
               <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Cancel</Text>
             </Pressable>
             <Text
-              style={{ fontSize: 17, color: INK, fontFamily: SERIF_BOLD }}
+              style={{ fontSize: 16, color: INK, fontFamily: SERIF_BOLD }}
             >
               Category
             </Text>
@@ -1280,7 +1280,7 @@ function StepHeader({
       <Text
         style={{
           fontFamily: SERIF,
-          fontSize: 13.5,
+          fontSize: 13,
           color: INK_DIM,
           marginTop: 10,
           lineHeight: 19,
@@ -1308,7 +1308,7 @@ function SectionBlock({
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 22,
+          fontSize: 20,
           color: INK,
         }}
       >
@@ -1318,7 +1318,7 @@ function SectionBlock({
         <Text
           style={{
             fontFamily: SERIF,
-            fontSize: 13.5,
+            fontSize: 13,
             lineHeight: 19,
             color: INK_DIM,
             marginTop: 4,
@@ -1332,7 +1332,7 @@ function SectionBlock({
         <Text
           style={{
             fontFamily: SERIF,
-            fontSize: 13.5,
+            fontSize: 13,
             lineHeight: 19,
             color: INK_DIM,
             marginTop: 10,
@@ -1388,7 +1388,7 @@ function TextField({
         placeholderTextColor={INK_DIM}
         multiline={multiline}
         keyboardType={keyboardType}
-        style={{
+        style={{ fontFamily: SERIF,
           flex: 1,
           fontSize: 16,
           color: INK,
@@ -1567,12 +1567,12 @@ function BannerCard({
         padding: 14,
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>{title}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{title}</Text>
       <Text
         style={{
           fontFamily: SERIF,
           marginTop: 4,
-          fontSize: 13.5,
+          fontSize: 13,
           color: INK_DIM,
           lineHeight: 19,
         }}
@@ -1601,7 +1601,7 @@ function EmptyCard({ body }: { body: string }) {
         <Text
           style={{
             fontFamily: SERIF,
-            fontSize: 13.5,
+            fontSize: 13,
             lineHeight: 19,
             color: INK_DIM,
             textAlign: "center",

@@ -33,7 +33,7 @@ export function Wordmark({ color = INK }: { color?: string }) {
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 23,
+          fontSize: 24,
           letterSpacing: 0.5,
           color,
         }}

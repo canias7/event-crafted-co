@@ -435,7 +435,7 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={INK_DIM}
         multiline={multiline}
-        style={{
+        style={{ fontFamily: SERIF,
           marginTop: 6,
           backgroundColor: "#fbf9f4",
           borderRadius: 14,

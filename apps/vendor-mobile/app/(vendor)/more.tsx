@@ -117,7 +117,7 @@ export default function MoreScreen() {
         >
           More
         </Text>
-        <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           Everything else, one tap away.
         </Text>
 
@@ -249,7 +249,7 @@ export default function MoreScreen() {
         >
           <MaterialCommunityIcons name="heart-outline" size={26} color={GOLD} />
           <View style={{ flex: 1, marginLeft: 13 }}>
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>
               Love Vendora?
             </Text>
             <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
@@ -347,7 +347,7 @@ function MenuRow({
         {icon}
       </View>
       <View style={{ flex: 1, marginLeft: 13 }}>
-        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17 }}>
+        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>
           {label}
         </Text>
         <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>

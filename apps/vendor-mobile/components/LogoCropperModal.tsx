@@ -56,7 +56,7 @@ export function LogoCropperModal({
         }}
       >
         <Text
-          style={{ fontFamily: "LibreBaskerville-Italic", fontSize: 22, color: INK}}
+          style={{ fontFamily: "LibreBaskerville-Italic", fontSize: 20, color: INK}}
         >
           Your logo
         </Text>

@@ -221,14 +221,14 @@ export function StepTitle({
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 26,
+          fontSize: 24,
           color: INK,
           letterSpacing: -0.3,
         }}
       >
         {title}
       </Text>
-      <Text style={{ fontFamily: SERIF, marginTop: 3, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
+      <Text style={{ fontFamily: SERIF, marginTop: 3, fontSize: 13, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
     </View>
   );
 }
@@ -259,7 +259,7 @@ export function Input(props: ComponentProps<typeof TextInput>) {
     <TextInput
       placeholderTextColor={INK_DIM}
       {...props}
-      style={{
+      style={{ fontFamily: SERIF,
         backgroundColor: "#ffffff",
         borderWidth: 1,
         borderColor: BORDER,
@@ -342,7 +342,7 @@ export function ChipMulti({
             autoFocus
             placeholder="Type and press return"
             placeholderTextColor={INK_DIM}
-            style={{
+            style={{ fontFamily: SERIF,
               borderRadius: 999,
               paddingHorizontal: 14,
               paddingVertical: 9,
@@ -565,7 +565,7 @@ function BrandDialogView({
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              fontSize: 23,
+              fontSize: 24,
               color: INK,
               textAlign: "center",
             }}
@@ -577,7 +577,7 @@ function BrandDialogView({
               style={{
                 fontFamily: SERIF,
                 marginTop: 8,
-                fontSize: 14.5,
+                fontSize: 14,
                 lineHeight: 21,
                 color: INK_DIM,
                 textAlign: "center",
@@ -836,7 +836,7 @@ export function CategoryPickerModal({
           </Pressable>
           <Text
             style={{
-              fontSize: 17,
+              fontSize: 16,
               color: INK,
               fontFamily: SERIF_BOLD,
             }}
