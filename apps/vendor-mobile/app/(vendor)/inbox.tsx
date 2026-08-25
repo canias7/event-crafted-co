@@ -39,7 +39,10 @@ const CARD = "#fbf9f4";
 const TRACK = "#ebe6db";
 const BORDER = "#e6e1d5";
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
+// Secondary text is the same black as headings; hierarchy comes from
+// size, weight and family instead. The old value was a cool blue-grey
+// (#5e636e, hue 220) which read as washed-out on the warm cream page.
+const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
 // Libre Baskerville, like every other screen. This used to fall back to
 // the platform system serif (Times on iOS), which is why the inbox read

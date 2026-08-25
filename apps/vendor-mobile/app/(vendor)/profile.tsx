@@ -42,7 +42,10 @@ const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
 const SURFACE = "#ece7db";
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
+// Secondary text is the same black as headings; hierarchy comes from
+// size, weight and family instead. The old value was a cool blue-grey
+// (#5e636e, hue 220) which read as washed-out on the warm cream page.
+const INK_DIM = "#14161a";
 const BORDER = "rgba(20,22,26,0.10)";
 const GOLD = "#c9a86a";
 const DARK_CARD = "#16181d";
@@ -1207,7 +1210,7 @@ function ListingCard({
         <Text
           numberOfLines={1}
           className={
-            isPending ? "text-base text-foreground/70" : "text-base text-foreground"
+            isPending ? "text-base text-foreground" : "text-base text-foreground"
           }
           style={{ fontFamily: "LibreBaskerville-Bold" }}
         >
@@ -1218,7 +1221,7 @@ function ListingCard({
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
         {formatListingPrice(listing.price_min_cents, listing.price_max_cents) ? (
-          <Text className="mt-1 text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             {formatListingPrice(listing.price_min_cents, listing.price_max_cents)}
           </Text>
         ) : null}

@@ -135,7 +135,7 @@ export function DetailsSection({
       </View>
       {applicableSections.map((section) => (
         <View key={section.name} className="gap-4">
-          <Text className="text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+          <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
             {section.name}
           </Text>
           {section.fields.map((field) => (
@@ -483,7 +483,7 @@ function SelectField({
               >
                 <Text
                   className={`text-base ${
-                    value === opt ? "text-foreground" : "text-foreground/80"
+                    value === opt ? "text-foreground" : "text-foreground"
                   }`}
                   style={{
                     fontFamily:

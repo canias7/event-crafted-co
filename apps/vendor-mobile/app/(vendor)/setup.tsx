@@ -28,7 +28,10 @@ import { editorRouteFor } from "@/components/listing/WizardKit";
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
+// Secondary text is the same black as headings; hierarchy comes from
+// size, weight and family instead. The old value was a cool blue-grey
+// (#5e636e, hue 220) which read as washed-out on the warm cream page.
+const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches

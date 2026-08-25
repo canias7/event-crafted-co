@@ -281,7 +281,7 @@ export function NotificationsBell({
                       </Text>
                       {r.body ? (
                         <Text
-                          className="mt-0.5 text-sm text-foreground/80"
+                          className="mt-0.5 text-sm text-foreground"
                           numberOfLines={2}
                           style={{ fontFamily: "LibreBaskerville" }}
                         >

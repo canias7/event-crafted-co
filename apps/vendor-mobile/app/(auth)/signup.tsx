@@ -51,8 +51,11 @@ const GOLD = "#c9a86a";
 // 2:1, so every gold *label* uses this instead.
 const BRONZE = "#8a6f3e";
 const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
-const INK_DIM = "#5e636e";
-const SUBTLE = "#8b8f99";
+// Secondary text is the same black as headings; hierarchy comes from
+// size, weight and family instead. The old value was a cool blue-grey
+// (#5e636e, hue 220) which read as washed-out on the warm cream page.
+const INK_DIM = "#14161a";
+const SUBTLE = "#a89678";
 const BORDER = "#e6e1d5";
 const FIELD_BG = "#fbf9f4";
 const FIELD_BORDER = "#d9d1bf";

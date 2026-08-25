@@ -215,7 +215,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                   {p.is_active ? "" : " · inactive"}
                 </Text>
                 {p.description ? (
-                  <Text className="mt-1 text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville" }}>
+                  <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                     {p.description}
                   </Text>
                 ) : null}
@@ -516,7 +516,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                 <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   {f.question}
                 </Text>
-                <Text className="mt-1 text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville" }}>
+                <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                   {f.answer}
                 </Text>
               </View>
@@ -797,7 +797,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
                   className={`text-base ${
                     cancellation === o.value
                       ? "text-foreground"
-                      : "text-foreground/80"
+                      : "text-foreground"
                   }`}
                   style={{
                     fontFamily:

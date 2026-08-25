@@ -45,7 +45,10 @@ import { wizardRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
-const INK_DIM = "#5e636e";
+// Secondary text is the same black as headings; hierarchy comes from
+// size, weight and family instead. The old value was a cool blue-grey
+// (#5e636e, hue 220) which read as washed-out on the warm cream page.
+const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const ACCENT = "#1B3654";
 const SERIF = "LibreBaskerville";
