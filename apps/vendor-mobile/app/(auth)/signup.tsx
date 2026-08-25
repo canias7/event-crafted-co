@@ -842,7 +842,7 @@ const inputText = {
 };
 const primaryBtn = {
   marginTop: 4,
-  backgroundColor: GOLD,
+  backgroundColor: INK,
   borderRadius: 999,
   // 52 / 16 and no shadow — the same pill the welcome screen uses for
   // Sign up and Sign in, so every gold primary in the flow matches.
@@ -852,7 +852,7 @@ const primaryBtn = {
 };
 const primaryBtnText = {
   fontFamily: SERIF_BOLD,
-  color: INK_ON_GOLD,
+  color: "#ffffff",
   fontSize: 16,
 };
 
@@ -860,13 +860,14 @@ const primaryBtnText = {
 // On gold over cream that fades BOTH fill and label toward the page, so
 // it read as broken rather than as "nothing typed yet". Give the state
 // its own solid colours instead, and keep the lift for the live one.
-const GOLD_MUTED = "#e0d2b0";
+// Disabled is a solid muted ink, never a fade — same as the in-app
+// buttons, so a dimmed pill still reads as a pill.
+const INK_MUTED = "#7b7973";
 function primaryBtnFor(disabled: boolean) {
-  return disabled ? { ...primaryBtn, backgroundColor: GOLD_MUTED } : primaryBtn;
+  return disabled ? { ...primaryBtn, backgroundColor: INK_MUTED } : primaryBtn;
 }
-// The label stays ink in both states. A bronze label only reaches 3.7:1
-// on the muted fill, and bronze-on-gold would be worse still — the fill
-// alone is a clear enough cue, and both states stay readable.
+// The label is white in both states — the fill carries the disabled
+// cue, and white on either ink stays fully legible.
 function primaryBtnTextFor(_disabled: boolean) {
   return primaryBtnText;
 }
