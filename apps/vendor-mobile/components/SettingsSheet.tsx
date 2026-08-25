@@ -633,15 +633,14 @@ export function SettingsSheet({
                 disabled={pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd}
                 style={{
                   marginTop: 22,
-                  backgroundColor: INK,
+                  backgroundColor:
+                    pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd
+                      ? "#7b7973"
+                      : INK,
                   borderRadius: 999,
                   height: 52,
                   alignItems: "center",
                   justifyContent: "center",
-                  opacity:
-                    pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd
-                      ? 0.5
-                      : 1,
                 }}
               >
                 <Text

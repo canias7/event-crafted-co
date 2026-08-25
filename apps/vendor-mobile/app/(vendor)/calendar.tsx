@@ -64,6 +64,8 @@ const HATCH = "#d6d1c6";
 const HATCH_BG = "#ece7db";
 // Champagne bronze — gold deep enough to stay legible as small text.
 const BRONZE = "#8a6f3e";
+// Solid stand-in for INK on a disabled control.
+const INK_MUTED = "#7b7973";
 // Soft champagne fill for the days between the two ends of a pending
 // multi-day range — reads as "included" without competing with the
 // solid ink ends or the booked/blocked states.
@@ -1505,11 +1507,13 @@ export default function CalendarScreen() {
                       flexDirection: "row",
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: INK,
+                      backgroundColor:
+                        blocking || rangeWritable.length === 0 ? INK_MUTED : INK,
                       paddingVertical: 13,
                       borderRadius: 999,
-                      opacity:
-                        pressed || blocking || rangeWritable.length === 0 ? 0.5 : 1,
+                      // Press feedback only — the disabled look is carried
+                      // by the fill above, not by fading the whole pill.
+                      opacity: pressed ? 0.7 : 1,
                     }}
                   >
                     <Feather
@@ -1589,14 +1593,14 @@ export default function CalendarScreen() {
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        backgroundColor: INK,
+                        backgroundColor:
+                          blocking || (isSelectedBooked && !isSelectedBlocked)
+                            ? INK_MUTED
+                            : INK,
                         paddingHorizontal: 14,
                         paddingVertical: 9,
                         borderRadius: 999,
-                        opacity:
-                          pressed || blocking || (isSelectedBooked && !isSelectedBlocked)
-                            ? 0.5
-                            : 1,
+                        opacity: pressed ? 0.7 : 1,
                       }}
                     >
                       <Feather
@@ -2518,8 +2522,14 @@ function RecurringBlocksSection({
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isOff ? INK : CREAM_DEEP,
-                opacity: savingDow !== null && !saving ? 0.5 : 1,
+                backgroundColor:
+                  savingDow !== null && !saving
+                    ? isOff
+                      ? INK_MUTED
+                      : "#f0ede4"
+                    : isOff
+                      ? INK
+                      : CREAM_DEEP,
               }}
               accessibilityLabel={`${DAY_FULL[dow]} ${isOff ? "off" : "on"}`}
             >
@@ -2860,7 +2870,17 @@ function ActionBtn({
   disabled?: boolean;
   onPress: () => void;
 }) {
-  const fg = primary ? CREAM : muted ? INK_DIM : INK;
+  // Disabled gets solid colours rather than a blanket 50% opacity, which
+  // fades fill and label together and reads as broken.
+  const fg = disabled
+    ? primary
+      ? "#e4e2dd"
+      : "#9a968c"
+    : primary
+      ? CREAM
+      : muted
+        ? INK_DIM
+        : INK;
   return (
     <Pressable
       onPress={onPress}
@@ -2871,10 +2891,15 @@ function ActionBtn({
         height: 32,
         paddingHorizontal: 12,
         borderRadius: 999,
-        backgroundColor: primary ? INK : muted ? "transparent" : CREAM_DEEP,
+        backgroundColor: primary
+          ? disabled
+            ? INK_MUTED
+            : INK
+          : muted
+            ? "transparent"
+            : CREAM_DEEP,
         borderWidth: muted ? 1 : 0,
         borderColor: BORDER,
-        opacity: disabled ? 0.5 : 1,
       }}
     >
       <Feather name={icon} size={13} color={fg} style={{ marginRight: 4 }} />
@@ -2902,15 +2927,21 @@ function SmallBtn({
         paddingHorizontal: 18,
         height: 42,
         borderRadius: 999,
-        backgroundColor: primary ? INK : CREAM,
+        backgroundColor: primary ? (disabled ? INK_MUTED : INK) : CREAM,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
         justifyContent: "center",
-        opacity: disabled ? 0.5 : 1,
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, color: primary ? CREAM : INK}}>{label}</Text>
+      <Text
+        style={{
+          fontFamily: SERIF_BOLD,
+          color: primary ? CREAM : disabled ? "#9a968c" : INK,
+        }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }

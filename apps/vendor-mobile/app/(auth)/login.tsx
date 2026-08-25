@@ -508,14 +508,16 @@ const primaryBtn = {
   marginTop: 4,
   backgroundColor: GOLD,
   borderRadius: 999,
-  height: 56,
+  // 52 / 16 and no shadow — the same pill the welcome screen uses for
+  // Sign up and Sign in, so every gold primary in the flow matches.
+  height: 52,
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
 const primaryBtnText = {
   fontFamily: SERIF_BOLD,
   color: INK_ON_GOLD,
-  fontSize: 17,
+  fontSize: 16,
 };
 
 // A disabled primary button used to be the enabled one at 50% opacity.
@@ -525,16 +527,7 @@ const primaryBtnText = {
 const GOLD_MUTED = "#e0d2b0";
 const INK_ON_GOLD_MUTED = "#7d6636";
 function primaryBtnFor(disabled: boolean) {
-  return disabled
-    ? { ...primaryBtn, backgroundColor: GOLD_MUTED }
-    : {
-        ...primaryBtn,
-        shadowColor: "#8a6f3e",
-        shadowOpacity: 0.28,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 5 },
-        elevation: 4,
-      };
+  return disabled ? { ...primaryBtn, backgroundColor: GOLD_MUTED } : primaryBtn;
 }
 function primaryBtnTextFor(disabled: boolean) {
   return disabled ? { ...primaryBtnText, color: INK_ON_GOLD_MUTED } : primaryBtnText;

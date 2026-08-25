@@ -694,12 +694,12 @@ export default function VenueListingScreen() {
             activeOpacity={0.7}
             style={{
               borderWidth: 1,
-              borderColor: BORDER,
               borderRadius: 999,
               paddingHorizontal: 14,
               paddingVertical: 8,
-              backgroundColor: "#ffffff",
-              opacity: busy ? 0.5 : 1,
+              // Solid disabled colours rather than a blanket fade.
+              backgroundColor: busy ? "#f3f1ec" : "#ffffff",
+              borderColor: busy ? "#ece9e1" : BORDER,
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
@@ -1109,7 +1109,7 @@ export default function VenueListingScreen() {
                   onPress={saveChanges}
                   disabled={busy}
                   activeOpacity={0.85}
-                  style={{ ...darkPill, opacity: busy ? 0.5 : 1 }}
+                  style={darkPillFor(busy)}
                 >
                   <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
                 </TouchableOpacity>
@@ -1117,7 +1117,7 @@ export default function VenueListingScreen() {
                   onPress={withdrawToDraft}
                   disabled={busy}
                   activeOpacity={0.7}
-                  style={{ ...lightPill, opacity: busy ? 0.5 : 1 }}
+                  style={lightPillFor(busy)}
                 >
                   <Text style={lightPillText}>Withdraw to draft</Text>
                 </TouchableOpacity>
@@ -1127,7 +1127,7 @@ export default function VenueListingScreen() {
                 onPress={saveChanges}
                 disabled={busy}
                 activeOpacity={0.85}
-                style={{ ...darkPill, opacity: busy ? 0.5 : 1 }}
+                style={darkPillFor(busy)}
               >
                 <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
               </TouchableOpacity>
@@ -1137,7 +1137,7 @@ export default function VenueListingScreen() {
                   onPress={publish}
                   disabled={busy}
                   activeOpacity={0.85}
-                  style={{ ...darkPill, opacity: busy ? 0.5 : 1 }}
+                  style={darkPillFor(busy)}
                 >
                   <Text style={darkPillText}>
                     {busy
@@ -1151,7 +1151,7 @@ export default function VenueListingScreen() {
                   onPress={saveDraftHeader}
                   disabled={busy}
                   activeOpacity={0.7}
-                  style={{ ...lightPill, opacity: busy ? 0.5 : 1 }}
+                  style={lightPillFor(busy)}
                 >
                   <Text style={lightPillText}>Save draft</Text>
                 </TouchableOpacity>
@@ -1738,6 +1738,17 @@ const lightPill = {
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
+
+// Local copies of the shared wizard pills, so they get the same solid
+// disabled treatment rather than a washed-out 50% opacity.
+function darkPillFor(disabled: boolean) {
+  return disabled ? { ...darkPill, backgroundColor: "#7b7973" } : darkPill;
+}
+function lightPillFor(disabled: boolean) {
+  return disabled
+    ? { ...lightPill, backgroundColor: "#f3f1ec", borderColor: "#ece9e1" }
+    : lightPill;
+}
 const lightPillText = {
   fontFamily: SERIF_BOLD,
   color: INK,

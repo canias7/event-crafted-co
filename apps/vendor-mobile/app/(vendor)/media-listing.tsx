@@ -45,8 +45,10 @@ import {
   CategoryPickerModal,
   editorRouteFor,
   darkPill,
+  darkPillFor,
   darkPillText,
   lightPill,
+  lightPillFor,
   lightPillText,
 } from "@/components/listing/WizardKit";
 
@@ -495,12 +497,12 @@ export default function MediaListingScreen() {
             activeOpacity={0.7}
             style={{
               borderWidth: 1,
-              borderColor: BORDER,
               borderRadius: 999,
               paddingHorizontal: 14,
               paddingVertical: 8,
-              backgroundColor: "#ffffff",
-              opacity: busy ? 0.5 : 1,
+              // Solid disabled colours rather than a blanket fade.
+              backgroundColor: busy ? "#f3f1ec" : "#ffffff",
+              borderColor: busy ? "#ece9e1" : BORDER,
             }}
           >
             <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>
@@ -866,7 +868,7 @@ export default function MediaListingScreen() {
                   onPress={saveChanges}
                   disabled={busy}
                   activeOpacity={0.85}
-                  style={{ ...darkPill, opacity: busy ? 0.5 : 1 }}
+                  style={darkPillFor(busy)}
                 >
                   <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
                 </TouchableOpacity>
@@ -874,7 +876,7 @@ export default function MediaListingScreen() {
                   onPress={withdrawToDraft}
                   disabled={busy}
                   activeOpacity={0.7}
-                  style={{ ...lightPill, opacity: busy ? 0.5 : 1 }}
+                  style={lightPillFor(busy)}
                 >
                   <Text style={lightPillText}>Withdraw to draft</Text>
                 </TouchableOpacity>
@@ -884,7 +886,7 @@ export default function MediaListingScreen() {
                 onPress={saveChanges}
                 disabled={busy}
                 activeOpacity={0.85}
-                style={{ ...darkPill, opacity: busy ? 0.5 : 1 }}
+                style={darkPillFor(busy)}
               >
                 <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
               </TouchableOpacity>
@@ -894,7 +896,7 @@ export default function MediaListingScreen() {
                   onPress={publish}
                   disabled={busy}
                   activeOpacity={0.85}
-                  style={{ ...darkPill, opacity: busy ? 0.5 : 1 }}
+                  style={darkPillFor(busy)}
                 >
                   <Text style={darkPillText}>
                     {busy
@@ -908,7 +910,7 @@ export default function MediaListingScreen() {
                   onPress={saveDraftHeader}
                   disabled={busy}
                   activeOpacity={0.7}
-                  style={{ ...lightPill, opacity: busy ? 0.5 : 1 }}
+                  style={lightPillFor(busy)}
                 >
                   <Text style={lightPillText}>Save draft</Text>
                 </TouchableOpacity>
