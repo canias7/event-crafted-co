@@ -15,6 +15,10 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
+// Champagne bronze — the landing page's text accent. #c9a86a is
+// reserved for fills and glyphs; as words on cream it only reaches
+// 2:1, so every gold *label* uses this instead.
+const BRONZE = "#8a6f3e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -128,7 +132,7 @@ export default function UpdatesScreen() {
                   fontFamily: SERIF_BOLD,
                   fontSize: 11,
                   letterSpacing: 1,
-                  color: GOLD,
+                  color: BRONZE,
                   textTransform: "uppercase",
                 }}
               >
