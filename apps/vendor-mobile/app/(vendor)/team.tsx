@@ -164,7 +164,7 @@ export default function TeamScreen() {
           </Text>
           <View style={{ width: 26 }} />
         </View>
-        <Text style={{ marginTop: 10, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Introduce the people behind your business. This will appear on your
           public profile — it&rsquo;s completely optional.
         </Text>
@@ -183,7 +183,7 @@ export default function TeamScreen() {
             alignItems: "center",
           }}
         >
-          <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, flex: 1, fontSize: 15, color: INK }}>
             Show &ldquo;Meet the Team&rdquo; on my profile
           </Text>
           <Switch
@@ -230,10 +230,10 @@ export default function TeamScreen() {
                   >
                     {m.full_name}
                     {!m.visible ? (
-                      <Text style={{ fontSize: 12, color: INK_DIM }}>  · hidden</Text>
+                      <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>  · hidden</Text>
                     ) : null}
                   </Text>
-                  <Text numberOfLines={1} style={{ marginTop: 1, fontSize: 13, color: INK_DIM }}>
+                  <Text numberOfLines={1} style={{ fontFamily: SERIF, marginTop: 1, fontSize: 13, color: INK_DIM }}>
                     {m.role_title}
                   </Text>
                 </Pressable>
@@ -273,7 +273,7 @@ export default function TeamScreen() {
               }}
             >
               <Feather name="plus" size={17} color={INK} />
-              <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
                 Add team member
               </Text>
             </Pressable>
@@ -281,7 +281,7 @@ export default function TeamScreen() {
             {members.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 24 }}>
                 <MaterialCommunityIcons name="account-group-outline" size={52} color="#d9c9a6" />
-                <Text style={{ marginTop: 10, fontSize: 14, color: INK_DIM, textAlign: "center" }}>
+                <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 14, color: INK_DIM, textAlign: "center" }}>
                   The people behind the details — add your first team member.
                 </Text>
               </View>
@@ -543,10 +543,10 @@ function MemberForm({
               >
                 <Feather name="plus" size={16} color={INK} />
               </View>
-              <Text style={{ marginTop: 8, fontSize: 14, fontWeight: "600", color: INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: INK }}>
                 {previewUri ? "Change photo" : "Add photo"}
               </Text>
-              <Text style={{ marginTop: 2, fontSize: 12, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12, color: INK_DIM }}>
                 JPG or PNG. Square works best.
               </Text>
             </Pressable>
@@ -569,7 +569,7 @@ function MemberForm({
                   placeholder="Tell clients about this team member…"
                   multiline
                 />
-                <Text style={{ marginTop: 4, alignSelf: "flex-end", fontSize: 11, color: INK_DIM }}>
+                <Text style={{ fontFamily: SERIF, marginTop: 4, alignSelf: "flex-end", fontSize: 11, color: INK_DIM }}>
                   {bio.length}/300
                 </Text>
               </Field>
@@ -609,7 +609,7 @@ function MemberForm({
                   paddingVertical: 8,
                 }}
               >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
                   Show on public profile
                 </Text>
                 <Switch
@@ -636,7 +636,7 @@ function MemberForm({
                 {saving ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "600" }}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
                     Save team member
                   </Text>
                 )}

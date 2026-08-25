@@ -86,9 +86,9 @@ export const darkPill = {
   justifyContent: "center" as const,
 };
 export const darkPillText = {
+  fontFamily: SERIF_BOLD,
   color: "#ffffff",
   fontSize: 16,
-  fontWeight: "600" as const,
 };
 export const lightPill = {
   borderWidth: 1,
@@ -100,9 +100,9 @@ export const lightPill = {
   justifyContent: "center" as const,
 };
 export const lightPillText = {
+  fontFamily: SERIF_BOLD,
   color: INK,
   fontSize: 16,
-  fontWeight: "600" as const,
 };
 
 export function StepRail({
@@ -160,8 +160,8 @@ export function StepRail({
                 ) : (
                   <Text
                     style={{
+                      fontFamily: SERIF_BOLD,
                       fontSize: 13,
-                      fontWeight: "700",
                       color: current ? "#fff" : INK_DIM,
                     }}
                   >
@@ -171,9 +171,9 @@ export function StepRail({
               </View>
               <Text
                 style={{
+                  fontFamily: current ? SERIF_BOLD : SERIF,
                   marginTop: 4,
                   fontSize: 10,
-                  fontWeight: current ? "700" : "500",
                   color: current ? INK : INK_DIM,
                 }}
               >
@@ -208,7 +208,7 @@ export function StepTitle({
       >
         {title}
       </Text>
-      <Text style={{ marginTop: 3, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
+      <Text style={{ fontFamily: SERIF, marginTop: 3, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
     </View>
   );
 }
@@ -224,9 +224,9 @@ export function Field({
 }) {
   return (
     <View style={{ marginTop: 16 }}>
-      <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         {label}
-        {required ? <Text style={{ color: "#c0392b" }}> *</Text> : null}
+        {required ? <Text style={{ fontFamily: SERIF, color: "#c0392b" }}> *</Text> : null}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -302,8 +302,8 @@ export function ChipMulti({
           >
             <Text
               style={{
+                fontFamily: SERIF_BOLD,
                 fontSize: 13,
-                fontWeight: "600",
                 color: on ? "#ffffff" : INK,
               }}
             >
@@ -351,7 +351,7 @@ export function ChipMulti({
             }}
           >
             <Feather name="plus" size={12} color={INK_DIM} />
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK_DIM }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK_DIM }}>
               Add other
             </Text>
           </TouchableOpacity>
@@ -389,7 +389,7 @@ export function ChipSingle({
             }}
           >
             <Text
-              style={{ fontSize: 13, fontWeight: "600", color: on ? "#fff" : INK }}
+              style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#fff" : INK }}
             >
               {opt}
             </Text>
@@ -444,7 +444,7 @@ export function TagList({
               gap: 6,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>{it}</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{it}</Text>
             <Feather name="x" size={12} color={INK_DIM} />
           </TouchableOpacity>
         ))}
@@ -555,6 +555,7 @@ function BrandDialogView({
           {spec?.message ? (
             <Text
               style={{
+                fontFamily: SERIF,
                 marginTop: 8,
                 fontSize: 14.5,
                 lineHeight: 21,
@@ -578,7 +579,7 @@ function BrandDialogView({
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
               {isConfirm
                 ? (spec?.confirmLabel ?? "Confirm")
                 : (spec?.buttonLabel ?? "OK")}
@@ -600,7 +601,7 @@ function BrandDialogView({
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: INK, fontSize: 15, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                 {spec?.cancelLabel ?? "Cancel"}
               </Text>
             </TouchableOpacity>
@@ -726,7 +727,7 @@ export function CustomFieldsEditor({
         }}
       >
         <Feather name="plus" size={16} color={INK} />
-        <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
           Add your own field
         </Text>
       </TouchableOpacity>
@@ -767,7 +768,7 @@ export function CategoryField({
           justifyContent: "space-between",
         }}
       >
-        <Text style={{ fontSize: 15, color: value ? INK : INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, fontSize: 15, color: value ? INK : INK_DIM }}>
           {value || "Choose a category"}
         </Text>
         <Feather name="chevron-down" size={18} color={INK_DIM} />
@@ -811,7 +812,7 @@ export function CategoryPickerModal({
           }}
         >
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
+            <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Cancel</Text>
           </Pressable>
           <Text
             style={{
@@ -829,10 +830,10 @@ export function CategoryPickerModal({
             <View key={group.slug} style={{ marginTop: 18 }}>
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   paddingHorizontal: 24,
                   paddingBottom: 8,
                   fontSize: 12,
-                  fontWeight: "700",
                   letterSpacing: 1.4,
                   color: INK_DIM,
                 }}
@@ -866,7 +867,7 @@ export function CategoryPickerModal({
                           minHeight: 50,
                         }}
                       >
-                        <Text style={{ fontSize: 16, color: INK }}>{sub}</Text>
+                        <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK }}>{sub}</Text>
                         {active ? (
                           <Feather name="check" size={18} color={GOLD} />
                         ) : null}
@@ -897,7 +898,7 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
         }}
       >
         <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
-        <Text style={{ flex: 1, fontSize: 14, color: INK }}>
+        <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 14, color: INK }}>
           Everything required is filled in. Publish when you&rsquo;re ready.
         </Text>
       </View>
@@ -913,7 +914,7 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
         padding: 14,
       }}
     >
-      <Text style={{ fontSize: 14, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         Still needed to publish:
       </Text>
       {missing.map((m) => (
@@ -922,7 +923,7 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
           style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}
         >
           <Feather name="circle" size={12} color={INK_DIM} />
-          <Text style={{ fontSize: 14, color: INK_DIM }}>{m}</Text>
+          <Text style={{ fontFamily: SERIF, fontSize: 14, color: INK_DIM }}>{m}</Text>
         </View>
       ))}
     </View>
@@ -1109,7 +1110,7 @@ export function ListingPhotosGrid({
                   paddingVertical: 2,
                 }}
               >
-                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 10}}>
                   COVER
                 </Text>
               </View>
@@ -1132,13 +1133,13 @@ export function ListingPhotosGrid({
           }}
         >
           {uploading ? (
-            <Text style={{ fontSize: 11, color: INK_DIM }}>Uploading…</Text>
+            <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM }}>Uploading…</Text>
           ) : (
             <Feather name="plus" size={22} color={INK_DIM} />
           )}
         </TouchableOpacity>
       </View>
-      <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
+      <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 12, color: INK_DIM }}>
         Long-press a photo to delete it. Your first photo is the cover.
       </Text>
       {dialog.element}

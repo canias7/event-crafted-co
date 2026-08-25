@@ -173,7 +173,7 @@ export default function CrmScreen() {
           >
             Know every client.
           </Text>
-          <Text style={{ marginTop: 8, fontSize: 15, color: INK_DIM, lineHeight: 22 }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 15, color: INK_DIM, lineHeight: 22 }}>
             Vendora CRM turns your inquiries into a client book — every host
             you've worked with, their events, your notes, and follow-up
             reminders so no lead goes cold.
@@ -210,7 +210,7 @@ export default function CrmScreen() {
                 >
                   <Feather name={row.icon as never} size={17} color={INK} />
                 </View>
-                <Text style={{ flex: 1, marginLeft: 12, color: INK, fontSize: 14, lineHeight: 19 }}>
+                <Text style={{ fontFamily: SERIF, flex: 1, marginLeft: 12, color: INK, fontSize: 14, lineHeight: 19 }}>
                   {row.text}
                 </Text>
               </View>
@@ -226,11 +226,11 @@ export default function CrmScreen() {
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>
               Upgrade to Pro
             </Text>
           </Pressable>
-          <Text style={{ marginTop: 10, textAlign: "center", color: INK_DIM, fontSize: 12 }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", color: INK_DIM, fontSize: 12 }}>
             Included with Pro and Premium plans.
           </Text>
         </ScrollView>
@@ -277,7 +277,7 @@ export default function CrmScreen() {
         >
           Clients
         </Text>
-        <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Your client book, built from every inquiry.
         </Text>
 
@@ -334,7 +334,7 @@ export default function CrmScreen() {
             >
               {query ? "No clients match" : "No clients yet"}
             </Text>
-            <Text style={{ marginTop: 6, color: INK_DIM, fontSize: 13.5, textAlign: "center", lineHeight: 19 }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 6, color: INK_DIM, fontSize: 13.5, textAlign: "center", lineHeight: 19 }}>
               {query
                 ? "Try a different name."
                 : "As soon as a host sends you an inquiry, they'll appear here with their events, your notes, and follow-ups."}
@@ -384,13 +384,13 @@ export default function CrmScreen() {
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>
                       {c.host_name}
                     </Text>
-                    <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+                    <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
                       {c.inquiries_count} {c.inquiries_count === 1 ? "inquiry" : "inquiries"}
                       {c.booked_count > 0 ? ` · ${c.booked_count} booked` : ""}
                       {c.notes_count > 0 ? ` · ${c.notes_count} ${c.notes_count === 1 ? "note" : "notes"}` : ""}
                     </Text>
                     {c.next_event_date ? (
-                      <Text style={{ marginTop: 3, color: "#8a6f3e", fontSize: 12, fontWeight: "600" }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, marginTop: 3, color: "#8a6f3e", fontSize: 12}}>
                         Next event {fmtShort(c.next_event_date)}
                       </Text>
                     ) : null}
@@ -409,7 +409,7 @@ export default function CrmScreen() {
                       }}
                     >
                       <Feather name="bell" size={11} color="#8a6f3e" />
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#8a6f3e" }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: "#8a6f3e" }}>
                         {fmtShort(c.follow_up_at)}
                       </Text>
                     </View>
@@ -613,7 +613,7 @@ function ClientSheet({
               <Text style={{ fontFamily: SERIF_BOLD, fontSize: 23, color: INK }}>
                 {client.host_name}
               </Text>
-              <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
                 Client since {fmtDate(client.first_inquiry_at)}
               </Text>
             </View>
@@ -649,7 +649,7 @@ function ClientSheet({
             }}
           >
             <Feather name="message-circle" size={15} color="#fff" />
-            <Text style={{ color: "#fff", fontSize: 14.5, fontWeight: "700" }}>Message</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 14.5}}>Message</Text>
           </Pressable>
 
           {/* Follow-up reminder */}
@@ -669,11 +669,11 @@ function ClientSheet({
               }}
             >
               <Feather name="bell" size={16} color="#8a6f3e" />
-              <Text style={{ flex: 1, marginLeft: 10, color: "#8a6f3e", fontSize: 13.5, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: "#8a6f3e", fontSize: 13.5}}>
                 We'll ping you on {fmtDate(followUpAt)}.
               </Text>
               <Pressable onPress={() => void setFollowUp(null)} hitSlop={8} disabled={savingFollow}>
-                <Text style={{ color: INK_DIM, fontSize: 12.5, fontWeight: "700" }}>Clear</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 12.5}}>Clear</Text>
               </Pressable>
             </View>
           ) : (
@@ -691,7 +691,7 @@ function ClientSheet({
                     opacity: savingFollow ? 0.6 : 1,
                   }}
                 >
-                  <Text style={{ fontSize: 12.5, fontWeight: "600", color: INK }}>{f.label}</Text>
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12.5, color: INK }}>{f.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -735,8 +735,8 @@ function ClientSheet({
               ) : (
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     fontSize: 13,
-                    fontWeight: "700",
                     color: noteText.trim() ? "#fff" : INK_DIM,
                   }}
                 >
@@ -757,7 +757,7 @@ function ClientSheet({
                 padding: 14,
               }}
             >
-              <Text style={{ color: INK, fontSize: 14, lineHeight: 20 }}>{n.body}</Text>
+              <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14, lineHeight: 20 }}>{n.body}</Text>
               <View
                 style={{
                   marginTop: 8,
@@ -766,7 +766,7 @@ function ClientSheet({
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ color: INK_DIM, fontSize: 11.5 }}>{fmtDate(n.created_at)}</Text>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11.5 }}>{fmtDate(n.created_at)}</Text>
                 <Pressable onPress={() => removeNote(n)} hitSlop={8}>
                   <Feather name="trash-2" size={14} color={INK_DIM} />
                 </Pressable>
@@ -779,7 +779,7 @@ function ClientSheet({
             Events
           </Text>
           {events.length === 0 ? (
-            <Text style={{ color: INK_DIM, fontSize: 13.5 }}>No inquiries on record yet.</Text>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13.5 }}>No inquiries on record yet.</Text>
           ) : (
             events.map((e) => {
               const booked =
@@ -817,8 +817,8 @@ function ClientSheet({
                     >
                       <Text
                         style={{
+                          fontFamily: SERIF_BOLD,
                           fontSize: 11,
-                          fontWeight: "700",
                           color: booked ? "#fff" : INK_DIM,
                         }}
                       >
@@ -826,7 +826,7 @@ function ClientSheet({
                       </Text>
                     </View>
                   </View>
-                  <Text style={{ marginTop: 4, color: INK_DIM, fontSize: 12.5 }}>
+                  <Text style={{ fontFamily: SERIF, marginTop: 4, color: INK_DIM, fontSize: 12.5 }}>
                     {[
                       e.event_date ? fmtDate(e.event_date) : null,
                       e.guest_count ? `${e.guest_count} guests` : null,

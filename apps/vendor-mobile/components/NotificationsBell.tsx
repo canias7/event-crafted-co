@@ -165,7 +165,7 @@ export function NotificationsBell({
               }}
             >
               <Text
-                style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}
+                style={{ fontFamily: "LibreBaskerville-Bold", color: "#fff", fontSize: 10}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -186,9 +186,9 @@ export function NotificationsBell({
         >
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground">Close</Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Close</Text>
             </Pressable>
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               Notifications
             </Text>
             <Pressable
@@ -197,8 +197,8 @@ export function NotificationsBell({
               disabled={unread === 0}
             >
               <Text
-                className="text-sm font-semibold"
-                style={{ color: unread > 0 ? "#14161a" : "#a89b8a" }}
+                className="text-sm"
+                style={{ fontFamily: "LibreBaskerville", color: unread > 0 ? "#14161a" : "#a89b8a" }}
               >
                 Mark read
               </Text>
@@ -208,12 +208,12 @@ export function NotificationsBell({
           <ScrollView contentContainerClassName="pb-12">
             {loading ? (
               <View className="items-center pt-16">
-                <Text className="text-sm text-muted-foreground">Loading…</Text>
+                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
                 <Feather name="bell-off" size={28} color="#5e636e" />
-                <Text className="mt-3 text-sm text-muted-foreground text-center">
+                <Text className="mt-3 text-sm text-muted-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
                   No notifications yet.
                 </Text>
               </View>
@@ -266,9 +266,9 @@ export function NotificationsBell({
                       >
                         <Text
                           style={{
+                            fontFamily: "LibreBaskerville-Bold",
                             color: "#ffffff",
                             fontSize: 16,
-                            fontWeight: "700",
                           }}
                         >
                           {(r.title?.trim()[0] ?? "?").toUpperCase()}
@@ -276,18 +276,19 @@ export function NotificationsBell({
                       </View>
                     )}
                     <View className="flex-1">
-                      <Text className="text-base font-semibold text-foreground">
+                      <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                         {r.title}
                       </Text>
                       {r.body ? (
                         <Text
                           className="mt-0.5 text-sm text-foreground/80"
                           numberOfLines={2}
+                          style={{ fontFamily: "LibreBaskerville" }}
                         >
                           {r.body}
                         </Text>
                       ) : null}
-                      <Text className="mt-1 text-xs text-muted-foreground">
+                      <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                         {new Date(r.created_at).toLocaleString()}
                       </Text>
                     </View>

@@ -174,7 +174,7 @@ export default function FindVendorScreen() {
           Find a vendor
         </Text>
       </View>
-      <Text className="px-5 pb-4 text-[13.5px] leading-[19px] text-muted-foreground">{subtitle}</Text>
+      <Text className="px-5 pb-4 text-[13.5px] leading-[19px] text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{subtitle}</Text>
 
       {/* Search */}
       <View className="px-5 mb-3">
@@ -214,15 +214,15 @@ export default function FindVendorScreen() {
             <ActivityIndicator color="#14161a" />
           </View>
         ) : showHint ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground">
+          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             Keep typing — enter at least {MIN_QUERY} characters.
           </Text>
         ) : showEmpty ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground">
+          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             No approved vendors match “{trimmed}”.
           </Text>
         ) : results.length === 0 ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground">
+          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             Start typing a business name to find other vendors.
           </Text>
         ) : (
@@ -247,14 +247,15 @@ export default function FindVendorScreen() {
                     className="h-12 w-12 rounded-full items-center justify-center"
                     style={{ backgroundColor: avatarColor(r.id) }}
                   >
-                    <Text className="text-sm font-semibold text-white">
+                    <Text className="text-sm text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                       {initials(name)}
                     </Text>
                   </View>
                   <View className="ml-3 flex-1">
                     <Text
-                      className="text-base font-semibold text-foreground"
+                      className="text-base text-foreground"
                       numberOfLines={1}
+                      style={{ fontFamily: "LibreBaskerville-Bold" }}
                     >
                       {name}
                     </Text>
@@ -262,6 +263,7 @@ export default function FindVendorScreen() {
                       <Text
                         className="mt-0.5 text-sm text-muted-foreground"
                         numberOfLines={1}
+                        style={{ fontFamily: "LibreBaskerville" }}
                       >
                         {meta}
                       </Text>

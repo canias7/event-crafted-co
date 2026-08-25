@@ -642,7 +642,7 @@ export default function VenueListingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
         </View>
       </SafeAreaView>
     );
@@ -652,7 +652,7 @@ export default function VenueListingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <Text style={{ color: INK_DIM, textAlign: "center" }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
             Couldn&rsquo;t load this listing.
           </Text>
         </View>
@@ -702,7 +702,7 @@ export default function VenueListingScreen() {
               opacity: busy ? 0.5 : 1,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
               {status === "draft" ? "Save draft" : "Save"}
             </Text>
           </TouchableOpacity>
@@ -753,7 +753,7 @@ export default function VenueListingScreen() {
                       keyboardType="number-pad"
                     />
                   </View>
-                  <Text style={{ color: INK_DIM }}>–</Text>
+                  <Text style={{ fontFamily: SERIF, color: INK_DIM }}>–</Text>
                   <View style={{ flex: 1 }}>
                     <Input
                       value={capacityMax}
@@ -862,7 +862,7 @@ export default function VenueListingScreen() {
                 }}
               >
                 <Feather name="plus" size={16} color={INK} />
-                <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
                   Add {spaces.length === 0 ? "event space" : "another space"}
                 </Text>
               </TouchableOpacity>
@@ -1033,7 +1033,7 @@ export default function VenueListingScreen() {
                           paddingVertical: 2,
                         }}
                       >
-                        <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
+                        <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 10}}>
                           COVER
                         </Text>
                       </View>
@@ -1056,13 +1056,13 @@ export default function VenueListingScreen() {
                   }}
                 >
                   {photoUploading ? (
-                    <Text style={{ fontSize: 11, color: INK_DIM }}>Uploading…</Text>
+                    <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM }}>Uploading…</Text>
                   ) : (
                     <Feather name="plus" size={22} color={INK_DIM} />
                   )}
                 </TouchableOpacity>
               </View>
-              <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 12, color: INK_DIM }}>
                 Long-press a photo to delete it. Reordering and cover changes
                 live in the classic editor for now.
               </Text>
@@ -1163,7 +1163,7 @@ export default function VenueListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
-                <Text style={{ color: INK_DIM, fontSize: 14, fontWeight: "500" }}>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
                   ← Back to {STEPS[step - 1]}
                 </Text>
               </TouchableOpacity>
@@ -1175,7 +1175,7 @@ export default function VenueListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ color: "#dc2828", fontSize: 14, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#dc2828", fontSize: 14}}>
                   Delete listing
                 </Text>
               </TouchableOpacity>
@@ -1250,8 +1250,8 @@ function StepRail({
                 ) : (
                   <Text
                     style={{
+                      fontFamily: SERIF_BOLD,
                       fontSize: 13,
-                      fontWeight: "700",
                       color: current ? "#fff" : INK_DIM,
                     }}
                   >
@@ -1261,9 +1261,9 @@ function StepRail({
               </View>
               <Text
                 style={{
+                  fontFamily: current ? SERIF_BOLD : SERIF,
                   marginTop: 4,
                   fontSize: 10,
-                  fontWeight: current ? "700" : "500",
                   color: current ? INK : INK_DIM,
                 }}
               >
@@ -1298,7 +1298,7 @@ function StepTitle({
       >
         {title}
       </Text>
-      <Text style={{ marginTop: 3, fontSize: 13, color: INK_DIM }}>{sub}</Text>
+      <Text style={{ fontFamily: SERIF, marginTop: 3, fontSize: 13, color: INK_DIM }}>{sub}</Text>
     </View>
   );
 }
@@ -1314,9 +1314,9 @@ function Field({
 }) {
   return (
     <View style={{ marginTop: 16 }}>
-      <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         {label}
-        {required ? <Text style={{ color: "#c0392b" }}> *</Text> : null}
+        {required ? <Text style={{ fontFamily: SERIF, color: "#c0392b" }}> *</Text> : null}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -1393,8 +1393,8 @@ function ChipMulti({
           >
             <Text
               style={{
+                fontFamily: SERIF_BOLD,
                 fontSize: 13,
-                fontWeight: "600",
                 color: on ? "#ffffff" : INK,
               }}
             >
@@ -1442,7 +1442,7 @@ function ChipMulti({
             }}
           >
             <Feather name="plus" size={12} color={INK_DIM} />
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK_DIM }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK_DIM }}>
               Add other
             </Text>
           </TouchableOpacity>
@@ -1480,7 +1480,7 @@ function ChipSingle({
             }}
           >
             <Text
-              style={{ fontSize: 13, fontWeight: "600", color: on ? "#fff" : INK }}
+              style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#fff" : INK }}
             >
               {opt}
             </Text>
@@ -1528,7 +1528,7 @@ function TagList({
               gap: 6,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>{it}</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{it}</Text>
             <Feather name="x" size={12} color={INK_DIM} />
           </TouchableOpacity>
         ))}
@@ -1576,13 +1576,13 @@ function SpaceCard({
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Text
-              style={{ flex: 1, fontSize: 16, fontWeight: "700", color: INK }}
+              style={{ fontFamily: SERIF_BOLD, flex: 1, fontSize: 16, color: INK }}
               numberOfLines={1}
             >
               {space.name.trim() || "New space"}
             </Text>
             {space.sqft ? (
-              <Text style={{ fontSize: 12, color: INK_DIM, marginLeft: 8 }}>
+              <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginLeft: 8 }}>
                 {space.sqft} sq ft
               </Text>
             ) : null}
@@ -1599,7 +1599,7 @@ function SpaceCard({
                     paddingVertical: 3,
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: "600", color: INK }}>
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: INK }}>
                     {c}
                   </Text>
                 </View>
@@ -1651,7 +1651,7 @@ function SpaceCard({
               ] as const
             ).map(([k, label]) => (
               <View key={k} style={{ flexBasis: "47%", flexGrow: 1 }}>
-                <Text style={{ fontSize: 11, color: INK_DIM, marginBottom: 4 }}>
+                <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM, marginBottom: 4 }}>
                   {label}
                 </Text>
                 <Input
@@ -1685,7 +1685,7 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
         }}
       >
         <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
-        <Text style={{ flex: 1, fontSize: 14, color: INK }}>
+        <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 14, color: INK }}>
           Everything required is filled in. Publish when you&rsquo;re ready.
         </Text>
       </View>
@@ -1701,7 +1701,7 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
         padding: 14,
       }}
     >
-      <Text style={{ fontSize: 14, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         Still needed to publish:
       </Text>
       {missing.map((m) => (
@@ -1710,7 +1710,7 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
           style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}
         >
           <Feather name="circle" size={12} color={INK_DIM} />
-          <Text style={{ fontSize: 14, color: INK_DIM }}>{m}</Text>
+          <Text style={{ fontFamily: SERIF, fontSize: 14, color: INK_DIM }}>{m}</Text>
         </View>
       ))}
     </View>
@@ -1725,9 +1725,9 @@ const darkPill = {
   justifyContent: "center" as const,
 };
 const darkPillText = {
+  fontFamily: SERIF_BOLD,
   color: "#ffffff",
   fontSize: 16,
-  fontWeight: "600" as const,
 };
 const lightPill = {
   borderWidth: 1,
@@ -1739,7 +1739,7 @@ const lightPill = {
   justifyContent: "center" as const,
 };
 const lightPillText = {
+  fontFamily: SERIF_BOLD,
   color: INK,
   fontSize: 16,
-  fontWeight: "600" as const,
 };

@@ -455,7 +455,7 @@ export default function SubscriptionScreen() {
         >
           Subscription
         </Text>
-        <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Plans and billing
         </Text>
 
@@ -467,22 +467,22 @@ export default function SubscriptionScreen() {
             padding: 20,
           }}
         >
-          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: "600" }}>
+          <Text style={{ fontFamily: SERIF_BOLD, color: "rgba(255,255,255,0.6)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2}}>
             Current plan
           </Text>
           <Text style={{ color: "#ffffff", fontSize: 30, fontFamily: SERIF_BOLD, marginTop: 6 }}>
             {TIER_LABELS[currentTier] ?? currentTier}
           </Text>
           {plan?.status === "past_due" ? (
-            <Text style={{ color: "#fca5a5", fontSize: 13, marginTop: 4 }}>
+            <Text style={{ fontFamily: SERIF, color: "#fca5a5", fontSize: 13, marginTop: 4 }}>
               Payment past due — update your card in Manage billing.
             </Text>
           ) : plan?.cancelAtPeriodEnd && renewalLabel ? (
-            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
+            <Text style={{ fontFamily: SERIF, color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
               Cancels on {renewalLabel}
             </Text>
           ) : currentTier !== "free" && renewalLabel ? (
-            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
+            <Text style={{ fontFamily: SERIF, color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
               Renews {renewalLabel}
             </Text>
           ) : null}
@@ -508,7 +508,7 @@ export default function SubscriptionScreen() {
               ) : (
                 <Feather name="credit-card" size={14} color="#ffffff" />
               )}
-              <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "600", marginLeft: 8 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13, marginLeft: 8 }}>
                 Manage billing
               </Text>
             </Pressable>
@@ -536,7 +536,7 @@ export default function SubscriptionScreen() {
             <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18 }}>
               Your plan
             </Text>
-            <Text style={{ color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
               Your current plan is shown above and stays in sync automatically.
               What every plan includes is listed below — plan changes are made
               on your account and show up here next time you open this screen.
@@ -572,8 +572,8 @@ export default function SubscriptionScreen() {
                 >
                   <Text
                     style={{
+                      fontFamily: SERIF_BOLD,
                       fontSize: 12,
-                      fontWeight: "600",
                       color: billingInterval === iv ? "#ffffff" : INK_DIM,
                     }}
                   >
@@ -620,7 +620,7 @@ export default function SubscriptionScreen() {
                   {tier.name}
                 </Text>
                 {isCurrent ? (
-                  <Text style={{ color: INK, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 }}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>
                     Current
                   </Text>
                 ) : isPremiumTier ? (
@@ -632,7 +632,7 @@ export default function SubscriptionScreen() {
                       paddingVertical: 4,
                     }}
                   >
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#8a6f3e" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: "#8a6f3e" }}>
                       Most popular
                     </Text>
                   </View>
@@ -642,14 +642,14 @@ export default function SubscriptionScreen() {
                   (Apple 3.1.1) — the feature list below still renders. */}
               {!isIOS ? (
                 <>
-                  <Text style={{ marginTop: 4 }}>
-                    <Text style={{ color: INK, fontSize: 26, fontWeight: "700" }}>
+                  <Text style={{ fontFamily: SERIF, marginTop: 4 }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 26}}>
                       ${monthlyShown.toFixed(2)}
                     </Text>
-                    <Text style={{ color: INK_DIM, fontSize: 13 }}> / mo</Text>
+                    <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}> / mo</Text>
                   </Text>
                   {tier.billingInterval === "year" && tier.priceMonthly > 0 ? (
-                    <Text style={{ color: INK_DIM, fontSize: 11, marginTop: 2 }}>
+                    <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11, marginTop: 2 }}>
                       ${tier.priceMonthly.toFixed(2)} billed annually
                     </Text>
                   ) : null}
@@ -669,11 +669,11 @@ export default function SubscriptionScreen() {
                     />
                     <Text
                       style={{
+                        fontFamily: h.startsWith("✦") ? SERIF_BOLD : SERIF,
                         color: h.startsWith("✦") ? "#8a6f3e" : INK,
                         fontSize: 13,
                         marginLeft: 7,
                         flex: 1,
-                        fontWeight: h.startsWith("✦") ? "700" : "400",
                       }}
                     >
                       {h.startsWith("✦") ? h.slice(1).trim() : h}
@@ -702,8 +702,8 @@ export default function SubscriptionScreen() {
                   ) : (
                     <Text
                       style={{
+                        fontFamily: SERIF_BOLD,
                         fontSize: 14,
-                        fontWeight: "700",
                         color: isCurrent || !tier.priceId ? INK_DIM : "#ffffff",
                       }}
                     >
@@ -728,7 +728,7 @@ export default function SubscriptionScreen() {
             <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF, marginTop: 20 }}>
               Top up credits
             </Text>
-            <Text style={{ color: INK_DIM, fontSize: 13, marginTop: 4, marginBottom: 12 }}>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, marginTop: 4, marginBottom: 12 }}>
               One-time purchase. Credits never expire.
             </Text>
             {topups.map((pack) => {
@@ -748,10 +748,10 @@ export default function SubscriptionScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: INK, fontSize: 15, fontWeight: "700" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                       {pack.name}
                     </Text>
-                    <Text style={{ color: INK_DIM, fontSize: 12, marginTop: 2 }}>
+                    <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginTop: 2 }}>
                       {pack.credits.toLocaleString()} credits · $
                       {pack.price}
                     </Text>
@@ -772,7 +772,7 @@ export default function SubscriptionScreen() {
                     {isActing ? (
                       <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
-                      <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "700" }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13}}>
                         Buy
                       </Text>
                     )}
@@ -806,13 +806,13 @@ export default function SubscriptionScreen() {
               backgroundColor: "#f3ecdd",
             }}
           >
-            <Text style={{ flex: 1, color: INK_DIM, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, flex: 1, color: INK_DIM, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 }}>
               Feature
             </Text>
             {["Free", "Pro", "Premium"].map((h) => (
               <Text
                 key={h}
-                style={{ width: 58, textAlign: "center", color: INK_DIM, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}
+                style={{ fontFamily: SERIF_BOLD, width: 58, textAlign: "center", color: INK_DIM, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}
               >
                 {h}
               </Text>
@@ -830,7 +830,7 @@ export default function SubscriptionScreen() {
                 borderTopColor: BORDER,
               }}
             >
-              <Text style={{ flex: 1, color: INK, fontSize: 13, paddingRight: 8 }}>
+              <Text style={{ fontFamily: SERIF, flex: 1, color: INK, fontSize: 13, paddingRight: 8 }}>
                 {row.label}
               </Text>
               {[row.free, row.pro, row.premium].map((on, j) => (
@@ -838,7 +838,7 @@ export default function SubscriptionScreen() {
                   {on ? (
                     <Feather name="check" size={15} color={j === 2 ? GOLD : INK} />
                   ) : (
-                    <Text style={{ color: "#c9c4b6", fontSize: 13 }}>—</Text>
+                    <Text style={{ fontFamily: SERIF, color: "#c9c4b6", fontSize: 13 }}>—</Text>
                   )}
                 </View>
               ))}
@@ -853,13 +853,13 @@ export default function SubscriptionScreen() {
             paddingHorizontal: 4,
           }}
         >
-          <Text style={{ color: INK_DIM, fontSize: 12, flex: 1, lineHeight: 17 }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, flex: 1, lineHeight: 17 }}>
             All plans include secure payments, support from a real person, and
             continuous updates.
           </Text>
         </View>
 
-        <Text style={{ color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
+        <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
           {isIOS
             ? "Subscriptions and credits are managed on eventvendora.com. Your current plan is shown above and stays in sync with the app."
             : "Billing is handled securely by Stripe on eventvendora.com. You'll get an email receipt for each charge."}

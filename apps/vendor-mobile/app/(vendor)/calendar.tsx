@@ -1135,10 +1135,15 @@ export default function CalendarScreen() {
   }
 
   const [calView, setCalView] = useState<"month" | "list">("month");
-  const monthLabel = viewMonth.toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
+  // Serif is wider than the sans this used to be, and "September 2026"
+  // was ellipsising against the Month / List toggle. The year is only
+  // informative once you leave the current one, so drop it otherwise.
+  const monthLabel = viewMonth.toLocaleDateString(
+    undefined,
+    viewMonth.getFullYear() === new Date().getFullYear()
+      ? { month: "long" }
+      : { month: "long", year: "numeric" },
+  );
 
   const listingColorById = useMemo(() => {
     const m = new Map<string, string>();
@@ -1178,9 +1183,9 @@ export default function CalendarScreen() {
                 paddingVertical: 12,
               }}
             >
-              <Text style={{ color: "#dc2828", fontSize: 13 }}>{error}</Text>
+              <Text style={{ fontFamily: SERIF, color: "#dc2828", fontSize: 13 }}>{error}</Text>
               <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
-                <Text style={{ color: "#dc2828", fontSize: 13, fontWeight: "700" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#dc2828", fontSize: 13}}>
                   Try again
                 </Text>
               </Pressable>
@@ -1208,7 +1213,7 @@ export default function CalendarScreen() {
               >
                 Calendar
               </Text>
-              <Text style={{ marginTop: 2, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
                 Manage your bookings & availability
               </Text>
             </View>
@@ -1269,7 +1274,10 @@ export default function CalendarScreen() {
                 style={{
                   color: INK,
                   fontFamily: SERIF_ITALIC,
-                  fontSize: 23,
+                  // Serif runs wider than the sans this used to be, and
+                  // "September 2026" was ellipsising against the Month /
+                  // List toggle. 20 fits the longest month.
+                  fontSize: 20,
                   flexShrink: 1,
                 }}
               >
@@ -1288,13 +1296,13 @@ export default function CalendarScreen() {
               <Pressable
                 onPress={() => setCalView("month")}
                 style={{
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 12,
                   paddingVertical: 8,
                   borderRadius: 999,
                   backgroundColor: calView === "month" ? CREAM_DEEP : "transparent",
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: INK }}>Month</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>Month</Text>
               </Pressable>
               <Pressable
                 onPress={() => setCalView("list")}
@@ -1302,14 +1310,14 @@ export default function CalendarScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 5,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 12,
                   paddingVertical: 8,
                   borderRadius: 999,
                   backgroundColor: calView === "list" ? CREAM_DEEP : "transparent",
                 }}
               >
                 <Feather name="list" size={14} color={INK} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: INK }}>List</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>List</Text>
               </Pressable>
             </View>
           </View>
@@ -1446,7 +1454,7 @@ export default function CalendarScreen() {
                         ? prettyDay(rangeStart)
                         : "Pick a range"}
                   </Text>
-                  <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+                  <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
                     {!rangeStart
                       ? "Tap the first day"
                       : !rangeEnd
@@ -1459,7 +1467,7 @@ export default function CalendarScreen() {
                   </Text>
                 </View>
                 <Pressable onPress={exitRangeMode} hitSlop={10}>
-                  <Text style={{ color: INK_DIM, fontSize: 13.5, fontWeight: "600" }}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13.5}}>
                     Cancel
                   </Text>
                 </Pressable>
@@ -1510,7 +1518,7 @@ export default function CalendarScreen() {
                       color="#ffffff"
                       style={{ marginRight: 6 }}
                     />
-                    <Text style={{ color: "#ffffff", fontSize: 14.5, fontWeight: "700" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14.5}}>
                       {blocking
                         ? "Saving…"
                         : rangeWritable.length === 0
@@ -1566,7 +1574,7 @@ export default function CalendarScreen() {
                       }}
                     >
                       <Feather name="plus" size={14} color={INK} style={{ marginRight: 4 }} />
-                      <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
                         Add booking
                       </Text>
                     </View>
@@ -1597,7 +1605,7 @@ export default function CalendarScreen() {
                         color="#ffffff"
                         style={{ marginRight: 4 }}
                       />
-                      <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "700" }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13}}>
                         {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block time"}
                       </Text>
                     </View>
@@ -1619,7 +1627,7 @@ export default function CalendarScreen() {
               hitSlop={8}
               style={{ alignSelf: "flex-start", marginTop: 12, paddingVertical: 4 }}
             >
-              <Text style={{ color: BRONZE, fontSize: 13, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13}}>
                 Block several days at once
               </Text>
             </Pressable>
@@ -1635,8 +1643,8 @@ export default function CalendarScreen() {
             >
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   fontSize: 10,
-                  fontWeight: "800",
                   letterSpacing: 1,
                   color: INK_DIM,
                 }}
@@ -1661,7 +1669,7 @@ export default function CalendarScreen() {
           ) : null}
 
           {isSelectedBooked && !isSelectedBlocked && !rangeMode ? (
-            <Text style={{ marginTop: 8, fontSize: 12, color: INK_DIM }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 12, color: INK_DIM }}>
               Already booked — this day is automatically unavailable to hosts.
             </Text>
           ) : null}
@@ -1688,15 +1696,15 @@ export default function CalendarScreen() {
                   />
                   <Text
                     style={{
+                      fontFamily: SERIF_BOLD,
                       marginTop: 12,
                       color: INK,
                       fontSize: 14.5,
-                      fontWeight: "600",
                     }}
                   >
                     Nothing on the books for this day.
                   </Text>
-                  <Text style={{ marginTop: 3, color: INK_DIM, fontSize: 13 }}>
+                  <Text style={{ fontFamily: SERIF, marginTop: 3, color: INK_DIM, fontSize: 13 }}>
                     Add a booking or block off time.
                   </Text>
                 </View>
@@ -1769,7 +1777,7 @@ export default function CalendarScreen() {
               : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`
         }
       >
-        <Text style={{ fontSize: 13, color: INK_DIM, lineHeight: 18, marginTop: 6 }}>
+        <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK_DIM, lineHeight: 18, marginTop: 6 }}>
           {editingBlockDate
             ? "Change the title for this blocked day. Leave blank to clear it."
             : rangeMode
@@ -1821,7 +1829,7 @@ export default function CalendarScreen() {
         onClose={() => setAddOpen(false)}
         title="Add personal entry"
       >
-        <Text style={{ fontSize: 13, color: INK_DIM, marginTop: 6, lineHeight: 18 }}>
+        <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK_DIM, marginTop: 6, lineHeight: 18 }}>
           {selectedYmd ? prettyDay(selectedYmd) : ""} · block off-platform time —
           vacation, an external booking, a personal appointment. Private to you.
         </Text>
@@ -1878,9 +1886,9 @@ export default function CalendarScreen() {
                     >
                       <Text
                         style={{
+                          fontFamily: SERIF_BOLD,
                           color: active ? CREAM : INK,
                           fontSize: 12,
-                          fontWeight: "600",
                         }}
                       >
                         {t.name} · {t.duration_minutes >= 60
@@ -1920,7 +1928,7 @@ export default function CalendarScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: aTitle === t ? CREAM : INK, fontSize: 12, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: aTitle === t ? CREAM : INK, fontSize: 12}}>
                   {t}
                 </Text>
               </Pressable>
@@ -1955,7 +1963,7 @@ export default function CalendarScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: aTime === t ? CREAM : INK, fontSize: 12, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: aTime === t ? CREAM : INK, fontSize: 12}}>
                   {t}
                 </Text>
               </Pressable>
@@ -1983,9 +1991,9 @@ export default function CalendarScreen() {
               >
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     color: aDuration === d.value ? CREAM : INK,
                     fontSize: 12,
-                    fontWeight: "600",
                   }}
                 >
                   {d.label}
@@ -1995,7 +2003,7 @@ export default function CalendarScreen() {
           </ScrollView>
 
           {addIsPast ? (
-            <Text style={{ color: "#dc2828", fontSize: 12, marginTop: 8 }}>
+            <Text style={{ fontFamily: SERIF, color: "#dc2828", fontSize: 12, marginTop: 8 }}>
               That date & time is in the past. Pick today or later.
             </Text>
           ) : null}
@@ -2063,7 +2071,7 @@ function LegendDot({ swatch, label }: { swatch: React.ReactNode; label: string }
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       {swatch}
-      <Text style={{ marginLeft: 6, color: INK, fontSize: 12, fontWeight: "700" }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, marginLeft: 6, color: INK, fontSize: 12}}>{label}</Text>
     </View>
   );
 }
@@ -2102,7 +2110,7 @@ function TargetChip({
           }}
         />
       ) : null}
-      <Text style={{ color: active ? CREAM : INK, fontSize: 12, fontWeight: "600" }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: active ? CREAM : INK, fontSize: 12}}>{label}</Text>
     </Pressable>
   );
 }
@@ -2168,7 +2176,7 @@ function MonthGrid({
         {DAY_HEADERS.map((d, i) => (
           <View key={i} style={{ flex: 1, alignItems: "center" }}>
             <Text
-              style={{ color: INK_DIM, fontSize: 11, fontWeight: "600", letterSpacing: 0.5 }}
+              style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 11, letterSpacing: 0.5 }}
             >
               {d}
             </Text>
@@ -2251,9 +2259,9 @@ function DayCell({
         >
           <Text
             style={{
+              fontFamily: SERIF_BOLD,
               color: selected ? "#ffffff" : inMonth ? INK : "#c9c4b6",
               fontSize: 14,
-              fontWeight: "600",
             }}
           >
             {day}
@@ -2267,7 +2275,7 @@ function DayCell({
                 />
               ))}
               {extra > 0 ? (
-                <Text style={{ fontSize: 7, color: INK_DIM }}>+{extra}</Text>
+                <Text style={{ fontFamily: SERIF, fontSize: 7, color: INK_DIM }}>+{extra}</Text>
               ) : null}
             </View>
           ) : null}
@@ -2380,14 +2388,14 @@ function BlockedDayCard({ title, onPress }: { title: string; onPress: () => void
           <View style={{ width: 4, height: 36, borderRadius: 999, backgroundColor: DOT_BLOCKED }} />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={{ color: INK, fontSize: 15, fontWeight: "700" }} numberOfLines={1}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}} numberOfLines={1}>
                 {title}
               </Text>
               <Feather name="edit-2" size={11} color={INK_DIM} style={{ marginLeft: 6 }} />
             </View>
-            <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}>Marked unavailable</Text>
+            <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12 }}>Marked unavailable</Text>
           </View>
-          <Text style={{ color: INK_DIM, fontSize: 12 }}>All day</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}>All day</Text>
         </View>
       )}
     </Pressable>
@@ -2440,10 +2448,10 @@ function BookingRow({
             <View style={{ width: 12 }} />
           )}
           <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
-            <Text style={{ color: INK, fontSize: 15, fontWeight: "700" }} numberOfLines={1}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}} numberOfLines={1}>
               {item.title}
             </Text>
-            <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }} numberOfLines={1}>
+            <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12 }} numberOfLines={1}>
               {item.subtitle}
             </Text>
           </View>
@@ -2454,7 +2462,7 @@ function BookingRow({
               {fmtMoneyShort(item.amountCents)}
             </Text>
           ) : item.timeLabel === "All day" ? (
-            <Text style={{ color: INK_DIM, fontSize: 12, marginRight: 14 }}>All day</Text>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginRight: 14 }}>All day</Text>
           ) : null}
         </View>
       )}
@@ -2486,12 +2494,12 @@ function RecurringBlocksSection({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
-        <Text style={{ fontSize: 17, fontWeight: "700", color: INK }}>Recurring blocks</Text>
-        <Text style={{ fontSize: 12, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>Recurring blocks</Text>
+        <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
           {recurringOff.size > 0 ? `${recurringOff.size}× weekly` : "Repeat every week"}
         </Text>
       </View>
-      <Text style={{ marginTop: 4, fontSize: 12, color: INK_DIM, lineHeight: 17 }}>
+      <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 12, color: INK_DIM, lineHeight: 17 }}>
         Tap a day to mark it permanently unavailable every future week. Hosts won't see you as
         bookable on that weekday.
       </Text>
@@ -2518,7 +2526,7 @@ function RecurringBlocksSection({
               {saving ? (
                 <ActivityIndicator size="small" color={isOff ? CREAM : INK} />
               ) : (
-                <Text style={{ color: isOff ? CREAM : INK_DIM, fontSize: 13, fontWeight: "700" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: isOff ? CREAM : INK_DIM, fontSize: 13}}>
                   {short}
                 </Text>
               )}
@@ -2595,7 +2603,7 @@ function AppointmentsSection({
           marginBottom: 10,
         }}
       >
-        <Text style={{ fontSize: 17, fontWeight: "700", color: INK }}>Appointments</Text>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>Appointments</Text>
         <Pressable onPress={onAdd}>
           {({ pressed }) => (
             <View
@@ -2610,7 +2618,7 @@ function AppointmentsSection({
               }}
             >
               <Feather name="plus" size={13} color={CREAM} style={{ marginRight: 4 }} />
-              <Text style={{ color: CREAM, fontSize: 12, fontWeight: "700" }}>Add appointment</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 12}}>Add appointment</Text>
             </View>
           )}
         </Pressable>
@@ -2626,7 +2634,7 @@ function AppointmentsSection({
             alignItems: "center",
           }}
         >
-          <Text style={{ color: INK_DIM, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
             No appointments yet. Calls, consultations, and tastings you schedule show up here.
           </Text>
         </View>
@@ -2652,15 +2660,16 @@ function AppointmentsSection({
               >
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     color: filter === opt.value ? CREAM : INK_DIM,
                     fontSize: 12,
-                    fontWeight: "600",
                   }}
                 >
                   {opt.label}
                 </Text>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     marginLeft: 6,
                     color: filter === opt.value ? "rgba(255,255,255,0.7)" : INK_DIM,
                     fontSize: 12,
@@ -2673,7 +2682,7 @@ function AppointmentsSection({
           </ScrollView>
 
           {visible.length === 0 ? (
-            <Text style={{ color: INK_DIM, fontSize: 13, textAlign: "center", paddingVertical: 20 }}>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, textAlign: "center", paddingVertical: 20 }}>
               Nothing matches that filter.
             </Text>
           ) : (
@@ -2746,13 +2755,13 @@ function AppointmentCard({
     >
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 15, fontWeight: "700", color: INK }} numberOfLines={1}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }} numberOfLines={1}>
             {heading}
             {appt.host?.display_name ? (
-              <Text style={{ color: INK_DIM, fontWeight: "400" }}> with {appt.host.display_name}</Text>
+              <Text style={{ fontFamily: SERIF, color: INK_DIM}}> with {appt.host.display_name}</Text>
             ) : null}
           </Text>
-          <Text style={{ marginTop: 2, fontSize: 12, color: INK_DIM }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12, color: INK_DIM }}>
             {isPersonal
               ? "Off-platform · personal"
               : appt.proposed_by === "vendor"
@@ -2768,7 +2777,7 @@ function AppointmentCard({
             backgroundColor: CREAM_DEEP,
           }}
         >
-          <Text style={{ fontSize: 11, fontWeight: "700", color: INK_DIM }}>{statusText}</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: INK_DIM }}>{statusText}</Text>
         </View>
       </View>
 
@@ -2781,6 +2790,7 @@ function AppointmentCard({
       {appt.notes ? (
         <Text
           style={{
+            fontFamily: SERIF,
             marginTop: 10,
             fontSize: 13,
             color: "rgba(20,22,26,0.8)",
@@ -2814,7 +2824,7 @@ function AppointmentCard({
               style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center" }}
               hitSlop={6}
             >
-              <Text style={{ color: INK, fontSize: 12, fontWeight: "700" }}>Open inquiry</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>Open inquiry</Text>
               <Feather name="chevron-right" size={14} color={INK} />
             </Pressable>
           ) : null}
@@ -2828,7 +2838,7 @@ function Meta({ icon, text }: { icon: keyof typeof Feather.glyphMap; text: strin
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       <Feather name={icon} size={13} color={INK_DIM} style={{ marginRight: 5 }} />
-      <Text style={{ fontSize: 12, color: INK_DIM }} numberOfLines={1}>
+      <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }} numberOfLines={1}>
         {text}
       </Text>
     </View>
@@ -2868,7 +2878,7 @@ function ActionBtn({
       }}
     >
       <Feather name={icon} size={13} color={fg} style={{ marginRight: 4 }} />
-      <Text style={{ color: fg, fontSize: 12, fontWeight: "700" }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: fg, fontSize: 12}}>{label}</Text>
     </Pressable>
   );
 }
@@ -2900,14 +2910,14 @@ function SmallBtn({
         opacity: disabled ? 0.5 : 1,
       }}
     >
-      <Text style={{ color: primary ? CREAM : INK, fontWeight: "700" }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: primary ? CREAM : INK}}>{label}</Text>
     </Pressable>
   );
 }
 
 function FieldLabel({ text }: { text: string }) {
   return (
-    <Text style={{ marginTop: 12, marginBottom: 6, fontSize: 12, fontWeight: "600", color: INK_DIM }}>
+    <Text style={{ fontFamily: SERIF_BOLD, marginTop: 12, marginBottom: 6, fontSize: 12, color: INK_DIM }}>
       {text}
     </Text>
   );

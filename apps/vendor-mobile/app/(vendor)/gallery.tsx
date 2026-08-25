@@ -546,7 +546,7 @@ export default function GalleryScreen() {
               onPress={() => (selectMode ? exitSelect() : setSelectMode(true))}
               style={pillStyle(selectMode)}
             >
-              <Text style={{ color: selectMode ? WHITE : INK, fontWeight: "600", fontSize: 14 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: selectMode ? WHITE : INK, fontSize: 14 }}>
                 {selectMode ? "Done" : "Select"}
               </Text>
             </Pressable>
@@ -556,13 +556,13 @@ export default function GalleryScreen() {
               ) : (
                 <Feather name="plus" size={15} color={GOLD} />
               )}
-              <Text style={{ color: WHITE, fontWeight: "700", fontSize: 14, marginLeft: 6 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: WHITE, fontSize: 14, marginLeft: 6 }}>
                 {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Upload"}
               </Text>
             </Pressable>
           </View>
         </View>
-        <Text style={{ marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Your media library — upload once, reuse across listings.
         </Text>
 
@@ -584,7 +584,7 @@ export default function GalleryScreen() {
 
         {/* Smart collections */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 8 }}>
-          <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1, color: INK_DIM, alignSelf: "center" }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, alignSelf: "center" }}>
             SMART
           </Text>
           <Chip label="Last 7 days" small active={smart === "recent7"} onPress={() => setSmart(smart === "recent7" ? null : "recent7")} />
@@ -639,7 +639,7 @@ export default function GalleryScreen() {
           hitSlop={6}
           style={{ marginTop: 10, flexDirection: "row", alignItems: "center", gap: 4 }}
         >
-          <Text style={{ fontSize: 13.5, fontWeight: "500", color: INK }}>{sortLabel(sort)}</Text>
+          <Text style={{ fontFamily: SERIF, fontSize: 13.5, color: INK }}>{sortLabel(sort)}</Text>
           <Feather name="chevron-down" size={14} color={INK} />
         </Pressable>
 
@@ -687,7 +687,7 @@ export default function GalleryScreen() {
                   ? "No matches"
                   : "Your gallery is empty"}
             </Text>
-            <Text style={{ marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
               {activeAlbum === TRASH
                 ? "Deleted photos land here for 30 days."
                 : search || smart
@@ -709,7 +709,7 @@ export default function GalleryScreen() {
                 }}
               >
                 <Feather name="upload" size={15} color={WHITE} />
-                <Text style={{ color: WHITE, fontSize: 15, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: WHITE, fontSize: 15}}>
                   Upload your first photo
                 </Text>
               </Pressable>
@@ -760,10 +760,10 @@ export default function GalleryScreen() {
                   </View>
                   {listView ? (
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text numberOfLines={1} style={{ color: INK, fontSize: 14, fontWeight: "600" }}>
+                      <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
                         {img.caption || fileNameFromUrl(img.image_url) || "Untitled"}
                       </Text>
-                      <Text style={{ color: INK_DIM, fontSize: 12, marginTop: 2 }}>
+                      <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginTop: 2 }}>
                         {albumName(img.album_id) ? `${albumName(img.album_id)} · ` : ""}
                         {new Date(img.created_at).toLocaleDateString()}
                       </Text>
@@ -825,7 +825,7 @@ export default function GalleryScreen() {
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
               Organize. Showcase. Get booked.
             </Text>
-            <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
               High-quality media helps you stand out and build trust.
             </Text>
           </View>
@@ -852,7 +852,7 @@ export default function GalleryScreen() {
               gap: 4,
             }}
           >
-            <Text style={{ fontSize: 12.5, fontWeight: "600", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12.5, color: INK }}>
               Tips for better photos
             </Text>
             <Feather name="chevron-right" size={13} color={INK} />
@@ -879,7 +879,7 @@ export default function GalleryScreen() {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ color: WHITE, fontWeight: "700" }}>{selected.size} selected</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, color: WHITE}}>{selected.size} selected</Text>
           <View style={{ flexDirection: "row", gap: 18 }}>
             {activeAlbum === TRASH ? (
               <BarAction icon="rotate-ccw" label="Restore" onPress={async () => { await restore([...selected]); exitSelect(); }} />
@@ -917,12 +917,12 @@ export default function GalleryScreen() {
                         style={{ flex: 1, color: WHITE, fontSize: 15, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingVertical: 6 }}
                       />
                       <Pressable onPress={() => saveCaption(lightbox)} hitSlop={8}>
-                        <Text style={{ color: "#7fb0ff", fontWeight: "700" }}>Save</Text>
+                        <Text style={{ fontFamily: SERIF_BOLD, color: "#7fb0ff"}}>Save</Text>
                       </Pressable>
                     </View>
                   ) : (
                     <Pressable onPress={() => { setCaptionDraft(lightbox.caption ?? ""); setEditingCaption(true); }}>
-                      <Text style={{ color: lightbox.caption ? WHITE : "rgba(255,255,255,0.5)", fontSize: 15 }}>
+                      <Text style={{ fontFamily: SERIF, color: lightbox.caption ? WHITE : "rgba(255,255,255,0.5)", fontSize: 15 }}>
                         {lightbox.caption || "Add a caption…"}
                       </Text>
                     </Pressable>
@@ -1036,7 +1036,7 @@ function SquareBtn({
       }}
     >
       <Feather name={icon} size={17} color={active ? WHITE : INK} />
-      <Text style={{ fontSize: 11, fontWeight: "500", color: active ? WHITE : INK }}>
+      <Text style={{ fontFamily: SERIF, fontSize: 11, color: active ? WHITE : INK }}>
         {label}
       </Text>
     </Pressable>
@@ -1104,7 +1104,7 @@ function BarAction({ icon, label, onPress, danger }: { icon: keyof typeof Feathe
   return (
     <Pressable onPress={onPress} style={{ alignItems: "center" }} hitSlop={8}>
       <Feather name={icon} size={18} color={danger ? "#ff8a80" : WHITE} />
-      <Text style={{ color: danger ? "#ff8a80" : WHITE, fontSize: 11, marginTop: 2 }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF, color: danger ? "#ff8a80" : WHITE, fontSize: 11, marginTop: 2 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -1113,7 +1113,7 @@ function LbAction({ icon, label, onPress, danger }: { icon: keyof typeof Feather
   return (
     <Pressable onPress={onPress} style={{ alignItems: "center" }} hitSlop={8}>
       <Feather name={icon} size={22} color={danger ? "#ff8a80" : WHITE} />
-      <Text style={{ color: danger ? "#ff8a80" : "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF, color: danger ? "#ff8a80" : "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -1126,7 +1126,7 @@ function CenterModal({ visible, onClose, title, children }: { visible: boolean; 
         style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", paddingHorizontal: 24 }}
       >
         <View style={{ backgroundColor: WHITE, borderRadius: 20, padding: 20, maxHeight: "70%" }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: INK }}>{title}</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 18, color: INK }}>{title}</Text>
           {children}
         </View>
       </KeyboardAvoidingView>
@@ -1149,7 +1149,7 @@ function SmallBtn({ label, onPress, primary }: { label: string; onPress: () => v
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: primary ? WHITE : INK, fontWeight: "700" }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: primary ? WHITE : INK}}>{label}</Text>
     </Pressable>
   );
 }
@@ -1158,7 +1158,7 @@ function MoveRow({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderColor: BORDER }}>
       <Feather name="folder" size={16} color={INK_DIM} />
-      <Text style={{ marginLeft: 10, fontSize: 15, color: INK }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF, marginLeft: 10, fontSize: 15, color: INK }}>{label}</Text>
     </Pressable>
   );
 }

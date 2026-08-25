@@ -628,7 +628,7 @@ export default function ListingScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-base text-muted-foreground">Loading…</Text>
+          <Text className="text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
         </View>
       </SafeAreaView>
     );
@@ -638,7 +638,7 @@ export default function ListingScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6 gap-4">
-          <Text className="text-base text-foreground text-center">
+          <Text className="text-base text-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
             {setupError
               ? setupError
               : "Couldn't open the listing editor."}
@@ -647,7 +647,7 @@ export default function ListingScreen() {
             onPress={loadAll}
             className="rounded-full bg-foreground px-6 py-3 active:opacity-80"
           >
-            <Text className="text-sm font-semibold text-background">
+            <Text className="text-sm text-background" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               Try again
             </Text>
           </Pressable>
@@ -809,6 +809,7 @@ export default function ListingScreen() {
               <View style={fieldBox()}>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     color: category ? INK : INK_DIM,
                     fontSize: 16,
                     flex: 1,
@@ -831,7 +832,7 @@ export default function ListingScreen() {
 
             <View style={{ height: 16 }} />
             <FieldLabel required>Pricing model</FieldLabel>
-            <Text style={{ fontSize: 12, color: INK_DIM, marginTop: 2 }}>
+            <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 2 }}>
               Pick all that apply.
             </Text>
             <View
@@ -865,8 +866,8 @@ export default function ListingScreen() {
                   >
                     <Text
                       style={{
+                        fontFamily: SERIF_BOLD,
                         fontSize: 13,
-                        fontWeight: "700",
                         color: active ? CREAM : INK,
                       }}
                     >
@@ -881,11 +882,11 @@ export default function ListingScreen() {
             <FieldLabel>Typical price range</FieldLabel>
             <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
+                <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
                   Minimum
                 </Text>
                 <View style={fieldBox()}>
-                  <Text style={{ color: INK_DIM, fontSize: 16, marginRight: 6 }}>
+                  <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16, marginRight: 6 }}>
                     $
                   </Text>
                   <TextInput
@@ -899,11 +900,11 @@ export default function ListingScreen() {
                 </View>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
+                <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
                   Maximum (optional)
                 </Text>
                 <View style={fieldBox()}>
-                  <Text style={{ color: INK_DIM, fontSize: 16, marginRight: 6 }}>
+                  <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16, marginRight: 6 }}>
                     $
                   </Text>
                   <TextInput
@@ -931,6 +932,7 @@ export default function ListingScreen() {
                 <FieldLabel>Custom pricing</FieldLabel>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     fontSize: 13.5,
                     lineHeight: 19,
                     color: INK_DIM,
@@ -1106,7 +1108,7 @@ export default function ListingScreen() {
             }}
           >
             <Pressable onPress={() => setCategoryPickerOpen(false)} hitSlop={8}>
-              <Text style={{ fontSize: 16, color: INK_DIM }}>Cancel</Text>
+              <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Cancel</Text>
             </Pressable>
             <Text
               style={{ fontSize: 17, color: INK, fontFamily: SERIF_BOLD }}
@@ -1120,10 +1122,10 @@ export default function ListingScreen() {
               <View key={group.slug} style={{ marginTop: 18 }}>
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     paddingHorizontal: 24,
                     paddingBottom: 8,
                     fontSize: 12,
-                    fontWeight: "700",
                     letterSpacing: 1.4,
                     color: INK_DIM,
                   }}
@@ -1180,9 +1182,9 @@ export default function ListingScreen() {
                         >
                           <Text
                             style={{
+                              fontFamily: active ? SERIF_BOLD : SERIF,
                               fontSize: 16,
                               color: INK,
-                              fontWeight: active ? "600" : "400",
                               flex: 1,
                             }}
                             numberOfLines={1}
@@ -1253,8 +1255,8 @@ function StepHeader({
     <View style={{ paddingHorizontal: 22, paddingTop: 28, paddingBottom: 4 }}>
       <Text
         style={{
+          fontFamily: SERIF_BOLD,
           fontSize: 11,
-          fontWeight: "700",
           letterSpacing: 1.6,
           color: INK_DIM,
         }}
@@ -1274,6 +1276,7 @@ function StepHeader({
       </Text>
       <Text
         style={{
+          fontFamily: SERIF,
           fontSize: 13.5,
           color: INK_DIM,
           marginTop: 10,
@@ -1311,6 +1314,7 @@ function SectionBlock({
       {subtitle ? (
         <Text
           style={{
+            fontFamily: SERIF,
             fontSize: 13.5,
             lineHeight: 19,
             color: INK_DIM,
@@ -1324,6 +1328,7 @@ function SectionBlock({
       {footnote ? (
         <Text
           style={{
+            fontFamily: SERIF,
             fontSize: 13.5,
             lineHeight: 19,
             color: INK_DIM,
@@ -1346,7 +1351,7 @@ function FieldLabel({
 }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <Text style={{ fontSize: 15, fontWeight: "700", color: INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
         {children}
       </Text>
       {required ? (
@@ -1439,9 +1444,9 @@ function PhotoGrid({
             >
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   color: CREAM,
                   fontSize: 11,
-                  fontWeight: "700",
                   letterSpacing: 1.2,
                 }}
               >
@@ -1559,9 +1564,10 @@ function BannerCard({
         padding: 14,
       }}
     >
-      <Text style={{ fontSize: 13.5, fontWeight: "700", color: INK }}>{title}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>{title}</Text>
       <Text
         style={{
+          fontFamily: SERIF,
           marginTop: 4,
           fontSize: 13.5,
           color: INK_DIM,
@@ -1591,6 +1597,7 @@ function EmptyCard({ body }: { body: string }) {
       >
         <Text
           style={{
+            fontFamily: SERIF,
             fontSize: 13.5,
             lineHeight: 19,
             color: INK_DIM,
@@ -1642,8 +1649,8 @@ const savePillStyle = {
 };
 
 const savePillText = {
+  fontFamily: SERIF_BOLD,
   fontSize: 15,
-  fontWeight: "700" as const,
   color: INK,
 };
 
@@ -1655,8 +1662,8 @@ const publishPillStyle = {
 };
 
 const publishPillText = {
+  fontFamily: SERIF_BOLD,
   fontSize: 15,
-  fontWeight: "700" as const,
   color: CREAM,
 };
 

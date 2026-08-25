@@ -33,9 +33,9 @@ function SectionHeader({
   return (
     <View className="flex-row items-end justify-between">
       <View className="flex-1 pr-3">
-        <Text className="text-lg font-semibold text-foreground">{title}</Text>
+        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{title}</Text>
         {subtitle ? (
-          <Text className="mt-0.5 text-xs text-muted-foreground">
+          <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             {subtitle}
           </Text>
         ) : null}
@@ -46,7 +46,7 @@ function SectionHeader({
           hitSlop={6}
           className="rounded-full border border-border px-3 py-1.5 active:opacity-70"
         >
-          <Text className="text-xs font-semibold text-foreground">+ Add</Text>
+          <Text className="text-xs text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>+ Add</Text>
         </Pressable>
       ) : null}
     </View>
@@ -194,9 +194,9 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
         onAdd={() => setEditing({ ...EMPTY_PACK })}
       />
       {loading ? (
-        <Text className="text-xs text-muted-foreground">Loading…</Text>
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
       ) : items.length === 0 ? (
-        <Text className="text-xs text-muted-foreground">
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
           No packages yet. Add a pricing tier to give hosts a clear option.
         </Text>
       ) : (
@@ -207,15 +207,15 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
           >
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-base font-semibold text-foreground">
+                <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   {p.name}
                 </Text>
-                <Text className="text-sm text-muted-foreground">
+                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                   ${(p.price_cents / 100).toLocaleString()}
                   {p.is_active ? "" : " · inactive"}
                 </Text>
                 {p.description ? (
-                  <Text className="mt-1 text-sm text-foreground/80">
+                  <Text className="mt-1 text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville" }}>
                     {p.description}
                   </Text>
                 ) : null}
@@ -225,12 +225,13 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                       <Text
                         key={idx}
                         className="text-xs text-muted-foreground"
+                        style={{ fontFamily: "LibreBaskerville" }}
                       >
                         • {line}
                       </Text>
                     ))}
                     {p.includes.length > 4 ? (
-                      <Text className="text-xs text-muted-foreground">
+                      <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                         +{p.includes.length - 4} more
                       </Text>
                     ) : null}
@@ -301,13 +302,13 @@ function PackEditorModal({
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground">Cancel</Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
             </Pressable>
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               {draft.id ? "Edit package" : "New package"}
             </Text>
             <Pressable onPress={onSave} hitSlop={8} disabled={busy}>
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 {busy ? "Saving…" : "Save"}
               </Text>
             </Pressable>
@@ -317,7 +318,7 @@ function PackEditorModal({
             contentContainerClassName="px-4 py-4 gap-4 pb-24"
           >
             <View>
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Name
               </Text>
               <TextInput
@@ -328,7 +329,7 @@ function PackEditorModal({
               />
             </View>
             <View>
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Description
               </Text>
               <TextInput
@@ -342,7 +343,7 @@ function PackEditorModal({
               />
             </View>
             <View>
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Price ($)
               </Text>
               <TextInput
@@ -354,10 +355,10 @@ function PackEditorModal({
               />
             </View>
             <View>
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 What's included
               </Text>
-              <Text className="mt-1 text-xs text-muted-foreground">
+              <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                 One item per line.
               </Text>
               <TextInput
@@ -371,7 +372,7 @@ function PackEditorModal({
               />
             </View>
             <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Active
               </Text>
               <Switch
@@ -499,9 +500,9 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
         onAdd={() => setEditing({ ...EMPTY_FAQ })}
       />
       {loading ? (
-        <Text className="text-xs text-muted-foreground">Loading…</Text>
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
       ) : items.length === 0 ? (
-        <Text className="text-xs text-muted-foreground">
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
           No FAQs yet. Adding 3-5 saves you time on first-touch replies.
         </Text>
       ) : (
@@ -512,10 +513,10 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
           >
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-base font-semibold text-foreground">
+                <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   {f.question}
                 </Text>
-                <Text className="mt-1 text-sm text-foreground/80">
+                <Text className="mt-1 text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville" }}>
                   {f.answer}
                 </Text>
               </View>
@@ -558,13 +559,13 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
           >
             <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
               <Pressable onPress={() => setEditing(null)} hitSlop={8}>
-                <Text className="text-sm text-muted-foreground">Cancel</Text>
+                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
               </Pressable>
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 {editing.id ? "Edit FAQ" : "New FAQ"}
               </Text>
               <Pressable onPress={save} hitSlop={8} disabled={busy}>
-                <Text className="text-sm font-semibold text-foreground">
+                <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   {busy ? "Saving…" : "Save"}
                 </Text>
               </Pressable>
@@ -574,7 +575,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
               contentContainerClassName="px-4 py-4 gap-4 pb-24"
             >
               <View>
-                <Text className="text-sm font-semibold text-foreground">
+                <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   Question
                 </Text>
                 <TextInput
@@ -587,7 +588,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                 />
               </View>
               <View>
-                <Text className="text-sm font-semibold text-foreground">
+                <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   Answer
                 </Text>
                 <TextInput
@@ -691,7 +692,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
     return (
       <View className="gap-3">
         <SectionHeader title="Policies" />
-        <Text className="text-xs text-muted-foreground">Loading…</Text>
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
       </View>
     );
   }
@@ -707,7 +708,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         subtitle="Cancellation, deposits, payment terms"
       />
       <View>
-        <Text className="text-sm font-semibold text-foreground">
+        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           Deposit (%)
         </Text>
         <TextInput
@@ -719,21 +720,21 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         />
       </View>
       <View>
-        <Text className="text-sm font-semibold text-foreground">
+        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           Cancellation policy
         </Text>
         <Pressable
           onPress={() => setPickerOpen(true)}
           className="mt-2 rounded-lg border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
         >
-          <Text className="text-base text-foreground">
+          <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             {cancellationLabel}
           </Text>
           <Feather name="chevron-down" size={18} color="#737373" />
         </Pressable>
       </View>
       <View>
-        <Text className="text-sm font-semibold text-foreground">
+        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           Reschedule window (days)
         </Text>
         <TextInput
@@ -745,7 +746,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         />
       </View>
       <View>
-        <Text className="text-sm font-semibold text-foreground">Notes</Text>
+        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Notes</Text>
         <TextInput
           value={notes}
           onChangeText={setNotes}
@@ -761,7 +762,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         disabled={busy}
         className="rounded-full border border-border bg-background py-3 items-center active:opacity-80"
       >
-        <Text className="text-sm font-semibold text-foreground">
+        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           {busy ? "Saving…" : "Save policies"}
         </Text>
       </Pressable>
@@ -775,9 +776,9 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground">Cancel</Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
             </Pressable>
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               Cancellation policy
             </Text>
             <View style={{ width: 60 }} />
@@ -795,9 +796,15 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
                 <Text
                   className={`text-base ${
                     cancellation === o.value
-                      ? "font-semibold text-foreground"
+                      ? "text-foreground"
                       : "text-foreground/80"
                   }`}
+                  style={{
+                    fontFamily:
+                      cancellation === o.value
+                        ? "LibreBaskerville-Bold"
+                        : "LibreBaskerville",
+                  }}
                 >
                   {o.label}
                 </Text>

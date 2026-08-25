@@ -77,14 +77,14 @@ function JsFatalScreen({
       <ScrollView contentContainerStyle={{ padding: 24 }}>
         <Text
           style={{
+            fontFamily: "LibreBaskerville-Bold",
             color: "#b23a34",
             fontSize: 18,
-            fontWeight: "700",
           }}
         >
           Something went wrong
         </Text>
-        <Text style={{ color: "#5e636e", marginTop: 8, fontSize: 13 }}>
+        <Text style={{ fontFamily: "LibreBaskerville", color: "#5e636e", marginTop: 8, fontSize: 13 }}>
           Screenshot this screen and send it to support — it shows exactly
           what broke.
         </Text>
@@ -119,7 +119,7 @@ function JsFatalScreen({
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "600" }}>
+          <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff", fontSize: 16}}>
             Reload app
           </Text>
         </Pressable>

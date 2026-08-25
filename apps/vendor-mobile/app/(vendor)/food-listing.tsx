@@ -469,7 +469,7 @@ export default function FoodListingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
         </View>
       </SafeAreaView>
     );
@@ -478,7 +478,7 @@ export default function FoodListingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <Text style={{ color: INK_DIM, textAlign: "center" }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
             Couldn&rsquo;t load this listing.
           </Text>
         </View>
@@ -529,7 +529,7 @@ export default function FoodListingScreen() {
               opacity: busy ? 0.5 : 1,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>
               {status === "draft" ? "Save draft" : "Save"}
             </Text>
           </TouchableOpacity>
@@ -937,7 +937,7 @@ export default function FoodListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
-                <Text style={{ color: INK_DIM, fontSize: 14, fontWeight: "500" }}>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
                   ← Back to {STEPS[step - 1]}
                 </Text>
               </TouchableOpacity>
@@ -949,7 +949,7 @@ export default function FoodListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ color: "#dc2828", fontSize: 14, fontWeight: "600" }}>
+                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#dc2828", fontSize: 14}}>
                   Delete listing
                 </Text>
               </TouchableOpacity>

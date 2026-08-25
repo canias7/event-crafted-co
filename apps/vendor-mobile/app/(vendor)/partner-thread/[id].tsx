@@ -270,14 +270,14 @@ export default function PartnerThreadScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text
-              style={{ color: INK, fontSize: 16, fontWeight: "700" }}
+              style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}
               numberOfLines={1}
             >
               {header?.partnerName ?? "Partner"}
             </Text>
             {header?.partnerCategory ? (
               <Text
-                style={{ color: INK_DIM, fontSize: 12 }}
+                style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}
                 numberOfLines={1}
               >
                 {header.partnerCategory}
@@ -303,7 +303,7 @@ export default function PartnerThreadScreen() {
               </View>
             ) : enriched.length === 0 ? (
               <View style={{ alignItems: "center", paddingTop: 80 }}>
-                <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
                   Say hi to start the conversation.
                 </Text>
               </View>
@@ -315,11 +315,11 @@ export default function PartnerThreadScreen() {
                     {m.dateBreak ? (
                       <Text
                         style={{
+                          fontFamily: SERIF_BOLD,
                           alignSelf: "center",
                           marginVertical: 12,
                           color: INK_DIM,
                           fontSize: 11,
-                          fontWeight: "700",
                           letterSpacing: 0.8,
                         }}
                       >
@@ -349,6 +349,7 @@ export default function PartnerThreadScreen() {
                       >
                         <Text
                           style={{
+                            fontFamily: SERIF,
                             color: isMine ? CREAM : INK,
                             fontSize: 16,
                             lineHeight: 22,
