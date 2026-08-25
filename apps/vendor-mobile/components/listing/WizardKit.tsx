@@ -105,6 +105,23 @@ export const lightPillText = {
   fontSize: 16,
 };
 
+// Busy/disabled used to be the live pill at 50% opacity. That fades fill
+// and label together toward the page, so a solid ink pill turns into a
+// washed grey slab that reads as broken. Same rule as the auth buttons:
+// give the state its own solid colours and keep full opacity.
+export const darkPillDisabled = { ...darkPill, backgroundColor: "#7b7973" };
+export const lightPillDisabled = {
+  ...lightPill,
+  backgroundColor: "#f3f1ec",
+  borderColor: "#ece9e1",
+};
+export function darkPillFor(disabled: boolean) {
+  return disabled ? darkPillDisabled : darkPill;
+}
+export function lightPillFor(disabled: boolean) {
+  return disabled ? lightPillDisabled : lightPill;
+}
+
 export function StepRail({
   steps,
   step,

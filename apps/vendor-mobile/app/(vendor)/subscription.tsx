@@ -496,11 +496,13 @@ export default function SubscriptionScreen() {
                 alignSelf: "flex-start",
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: "rgba(255,255,255,0.12)",
+                backgroundColor:
+                  acting !== null
+                    ? "rgba(255,255,255,0.06)"
+                    : "rgba(255,255,255,0.12)",
                 borderRadius: 999,
                 paddingHorizontal: 16,
                 paddingVertical: 9,
-                opacity: acting !== null ? 0.5 : 1,
               }}
             >
               {acting === "portal" ? (
@@ -693,8 +695,11 @@ export default function SubscriptionScreen() {
                     paddingVertical: 12,
                     alignItems: "center",
                     backgroundColor:
-                      isCurrent || !tier.priceId ? BORDER : INK,
-                    opacity: acting !== null && !isActing ? 0.5 : 1,
+                      isCurrent || !tier.priceId
+                        ? BORDER
+                        : acting !== null && !isActing
+                          ? "#7b7973"
+                          : INK,
                   }}
                 >
                   {isActing ? (
@@ -763,8 +768,8 @@ export default function SubscriptionScreen() {
                       borderRadius: 999,
                       paddingHorizontal: 16,
                       paddingVertical: 9,
-                      backgroundColor: INK,
-                      opacity: acting !== null && !isActing ? 0.5 : 1,
+                      backgroundColor:
+                        acting !== null && !isActing ? "#7b7973" : INK,
                       minWidth: 64,
                       alignItems: "center",
                     }}
