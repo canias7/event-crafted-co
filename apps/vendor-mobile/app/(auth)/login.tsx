@@ -297,12 +297,9 @@ export default function LoginScreen() {
                   onPress={onSubmitCredentials}
                   disabled={submitting || !email || !password}
                   activeOpacity={0.85}
-                  style={{
-                    ...primaryBtn,
-                    opacity: submitting || !email || !password ? 0.5 : 1,
-                  }}
+                  style={primaryBtnFor(submitting || !email || !password)}
                 >
-                  <Text style={primaryBtnText}>
+                  <Text style={primaryBtnTextFor(submitting || !email || !password)}>
                     {submitting ? "Sending code…" : "Continue"}
                   </Text>
                 </TouchableOpacity>
@@ -389,12 +386,9 @@ export default function LoginScreen() {
                   onPress={onSubmitCode}
                   disabled={submitting || code.length !== 6}
                   activeOpacity={0.85}
-                  style={{
-                    ...primaryBtn,
-                    opacity: submitting || code.length !== 6 ? 0.5 : 1,
-                  }}
+                  style={primaryBtnFor(submitting || code.length !== 6)}
                 >
-                  <Text style={primaryBtnText}>
+                  <Text style={primaryBtnTextFor(submitting || code.length !== 6)}>
                     {submitting ? "Verifying…" : "Sign in"}
                   </Text>
                 </TouchableOpacity>
@@ -523,6 +517,28 @@ const primaryBtnText = {
   color: INK_ON_GOLD,
   fontSize: 17,
 };
+
+// A disabled primary button used to be the enabled one at 50% opacity.
+// On gold over cream that fades BOTH fill and label toward the page, so
+// it read as broken rather than as "nothing typed yet". Give the state
+// its own solid colours instead, and keep the lift for the live one.
+const GOLD_MUTED = "#e0d2b0";
+const INK_ON_GOLD_MUTED = "#7d6636";
+function primaryBtnFor(disabled: boolean) {
+  return disabled
+    ? { ...primaryBtn, backgroundColor: GOLD_MUTED }
+    : {
+        ...primaryBtn,
+        shadowColor: "#8a6f3e",
+        shadowOpacity: 0.28,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 5 },
+        elevation: 4,
+      };
+}
+function primaryBtnTextFor(disabled: boolean) {
+  return disabled ? { ...primaryBtnText, color: INK_ON_GOLD_MUTED } : primaryBtnText;
+}
 const errorText = {
   fontFamily: SERIF,
   color: ERROR,

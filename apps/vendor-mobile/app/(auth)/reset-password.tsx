@@ -338,13 +338,9 @@ export default function ResetPasswordScreen() {
                 onPress={onSubmit}
                 disabled={state === "submitting" || password.length < 8}
                 activeOpacity={0.85}
-                style={{
-                  ...primaryBtn,
-                  opacity:
-                    state === "submitting" || password.length < 8 ? 0.5 : 1,
-                }}
+                style={primaryBtnFor(state === "submitting" || password.length < 8)}
               >
-                <Text style={primaryBtnText}>
+                <Text style={primaryBtnTextFor(state === "submitting" || password.length < 8)}>
                   {state === "submitting" ? "Saving…" : "Save password"}
                 </Text>
               </TouchableOpacity>
@@ -445,6 +441,28 @@ const primaryBtnText = {
   color: INK_ON_GOLD,
   fontSize: 17,
 };
+
+// A disabled primary button used to be the enabled one at 50% opacity.
+// On gold over cream that fades BOTH fill and label toward the page, so
+// it read as broken rather than as "nothing typed yet". Give the state
+// its own solid colours instead, and keep the lift for the live one.
+const GOLD_MUTED = "#e0d2b0";
+const INK_ON_GOLD_MUTED = "#7d6636";
+function primaryBtnFor(disabled: boolean) {
+  return disabled
+    ? { ...primaryBtn, backgroundColor: GOLD_MUTED }
+    : {
+        ...primaryBtn,
+        shadowColor: "#8a6f3e",
+        shadowOpacity: 0.28,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 5 },
+        elevation: 4,
+      };
+}
+function primaryBtnTextFor(disabled: boolean) {
+  return disabled ? { ...primaryBtnText, color: INK_ON_GOLD_MUTED } : primaryBtnText;
+}
 const errorText = {
   fontFamily: SERIF,
   color: ERROR,
