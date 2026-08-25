@@ -458,7 +458,7 @@ export default function SubscriptionScreen() {
         >
           Subscription
         </Text>
-        <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           Plans and billing
         </Text>
 
@@ -552,7 +552,7 @@ export default function SubscriptionScreen() {
         {/* Plan list. Purchase controls are web + Android only; iOS renders
             the same cards without price or button. */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
-          <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF }}>
+          <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF }}>
             {isIOS ? "What each plan includes" : "Choose a plan"}
           </Text>
           {hasYearly && !isIOS ? (
@@ -621,7 +621,7 @@ export default function SubscriptionScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 19 }}>
+                <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18 }}>
                   {tier.name}
                 </Text>
                 {isCurrent ? (
@@ -648,7 +648,7 @@ export default function SubscriptionScreen() {
               {!isIOS ? (
                 <>
                   <Text style={{ fontFamily: SERIF, marginTop: 4 }}>
-                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 26}}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 24}}>
                       ${monthlyShown.toFixed(2)}
                     </Text>
                     <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}> / mo</Text>
@@ -733,7 +733,7 @@ export default function SubscriptionScreen() {
         {/* Top-up packs — a purchase surface, so web + Android only. */}
         {!isIOS && topups.length > 0 ? (
           <>
-            <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF, marginTop: 20 }}>
+            <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF, marginTop: 20 }}>
               Top up credits
             </Text>
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, marginTop: 4, marginBottom: 12 }}>
@@ -792,7 +792,7 @@ export default function SubscriptionScreen() {
         ) : null}
 
         {/* Feature comparison */}
-        <Text style={{ color: INK, fontSize: 22, fontFamily: SERIF, marginTop: 24 }}>
+        <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF, marginTop: 24 }}>
           Compare plans
         </Text>
         <View

@@ -322,7 +322,7 @@ export function SettingsSheet({
                   fontFamily: SERIF,
                   marginTop: 8,
                   color: INK_DIM,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   lineHeight: 19,
                 }}
               >
@@ -505,7 +505,7 @@ export function SettingsSheet({
                   marginTop: 16,
                   textAlign: "center",
                   color: INK_DIM,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   lineHeight: 19,
                   paddingHorizontal: 12,
                 }}
@@ -588,7 +588,7 @@ export function SettingsSheet({
                 onChangeText={setNewPwd}
                 placeholder="••••••••"
                 placeholderTextColor={INK_DIM}
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: CARD,
                   borderRadius: 14,
@@ -618,7 +618,7 @@ export function SettingsSheet({
                 onChangeText={setConfirmPwd}
                 placeholder="••••••••"
                 placeholderTextColor={INK_DIM}
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: CARD,
                   borderRadius: 14,

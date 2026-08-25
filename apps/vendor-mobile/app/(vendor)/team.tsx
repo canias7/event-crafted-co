@@ -159,7 +159,7 @@ export default function TeamScreen() {
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              fontSize: 22,
+              fontSize: 20,
               color: INK,
             }}
           >
@@ -167,7 +167,7 @@ export default function TeamScreen() {
           </Text>
           <View style={{ width: 26 }} />
         </View>
-        <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           Introduce the people behind your business. This will appear on your
           public profile — it&rsquo;s completely optional.
         </Text>
@@ -229,7 +229,7 @@ export default function TeamScreen() {
                 >
                   <Text
                     numberOfLines={1}
-                    style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}
+                    style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}
                   >
                     {m.full_name}
                     {!m.visible ? (

@@ -565,7 +565,7 @@ export default function GalleryScreen() {
             </Pressable>
           </View>
         </View>
-        <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           Your media library — upload once, reuse across listings.
         </Text>
 
@@ -616,7 +616,7 @@ export default function GalleryScreen() {
               onChangeText={setSearch}
               placeholder="Search caption or filename"
               placeholderTextColor="#a49f93"
-              style={{ flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
+              style={{ fontFamily: SERIF, flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
             />
             {search ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
@@ -642,7 +642,7 @@ export default function GalleryScreen() {
           hitSlop={6}
           style={{ marginTop: 10, flexDirection: "row", alignItems: "center", gap: 4 }}
         >
-          <Text style={{ fontFamily: SERIF, fontSize: 13.5, color: INK }}>{sortLabel(sort)}</Text>
+          <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{sortLabel(sort)}</Text>
           <Feather name="chevron-down" size={14} color={INK} />
         </Pressable>
 
@@ -679,7 +679,7 @@ export default function GalleryScreen() {
               style={{
                 marginTop: 18,
                 fontFamily: SERIF_BOLD,
-                fontSize: 23,
+                fontSize: 24,
                 color: INK,
                 textAlign: "center",
               }}
@@ -828,7 +828,7 @@ export default function GalleryScreen() {
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
               Organize. Showcase. Get booked.
             </Text>
-            <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, color: INK_DIM }}>
               High-quality media helps you stand out and build trust.
             </Text>
           </View>
@@ -855,7 +855,7 @@ export default function GalleryScreen() {
               gap: 4,
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12.5, color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
               Tips for better photos
             </Text>
             <Feather name="chevron-right" size={13} color={INK} />
@@ -917,7 +917,7 @@ export default function GalleryScreen() {
                         placeholder="Add a caption…"
                         placeholderTextColor="rgba(255,255,255,0.5)"
                         autoFocus
-                        style={{ flex: 1, color: WHITE, fontSize: 15, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingVertical: 6 }}
+                        style={{ fontFamily: SERIF, flex: 1, color: WHITE, fontSize: 15, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingVertical: 6 }}
                       />
                       <Pressable onPress={() => saveCaption(lightbox)} hitSlop={8}>
                         <Text style={{ fontFamily: SERIF_BOLD, color: "#d9bd82"}}>Save</Text>
@@ -975,7 +975,7 @@ export default function GalleryScreen() {
           placeholder="Album name"
           placeholderTextColor={INK_DIM}
           autoFocus
-          style={{ marginTop: 14, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
+          style={{ fontFamily: SERIF, marginTop: 14, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
         />
         <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
           <SmallBtn label="Cancel" onPress={() => setNewAlbumOpen(false)} />

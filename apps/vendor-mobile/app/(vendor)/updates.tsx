@@ -114,7 +114,7 @@ export default function UpdatesScreen() {
         >
           What&rsquo;s new
         </Text>
-        <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           The latest improvements to Vendora for Vendors.
         </Text>
 
@@ -162,7 +162,7 @@ export default function UpdatesScreen() {
           style={{
             marginTop: 28,
             fontFamily: SERIF_BOLD,
-            fontSize: 22,
+            fontSize: 20,
             color: INK,
           }}
         >
@@ -202,7 +202,7 @@ export default function UpdatesScreen() {
                   marginLeft: 5,
                 }}
               />
-              <Text style={{ fontFamily: SERIF, marginLeft: 10, fontSize: 14.5, color: INK }}>{c}</Text>
+              <Text style={{ fontFamily: SERIF, marginLeft: 10, fontSize: 14, color: INK }}>{c}</Text>
             </View>
           ))}
         </View>

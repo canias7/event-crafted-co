@@ -1218,7 +1218,7 @@ export default function CalendarScreen() {
               >
                 Calendar
               </Text>
-              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
                 Manage your bookings & availability
               </Text>
             </View>
@@ -1459,7 +1459,7 @@ export default function CalendarScreen() {
                         ? prettyDay(rangeStart)
                         : "Pick a range"}
                   </Text>
-                  <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12.5 }}>
+                  <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                     {!rangeStart
                       ? "Tap the first day"
                       : !rangeEnd
@@ -1472,7 +1472,7 @@ export default function CalendarScreen() {
                   </Text>
                 </View>
                 <Pressable onPress={exitRangeMode} hitSlop={10}>
-                  <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13.5}}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13}}>
                     Cancel
                   </Text>
                 </Pressable>
@@ -1525,7 +1525,7 @@ export default function CalendarScreen() {
                       color="#ffffff"
                       style={{ marginRight: 6 }}
                     />
-                    <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14.5}}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14}}>
                       {blocking
                         ? "Saving…"
                         : rangeWritable.length === 0
@@ -1706,7 +1706,7 @@ export default function CalendarScreen() {
                       fontFamily: SERIF_BOLD,
                       marginTop: 12,
                       color: INK,
-                      fontSize: 14.5,
+                      fontSize: 14,
                     }}
                   >
                     Nothing on the books for this day.
@@ -1802,7 +1802,7 @@ export default function CalendarScreen() {
           maxLength={80}
           returnKeyType="done"
           onSubmitEditing={commitBlock}
-          style={{
+          style={{ fontFamily: SERIF,
             marginTop: 14,
             borderWidth: 1,
             borderColor: BORDER,
@@ -2501,7 +2501,7 @@ function RecurringBlocksSection({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>Recurring blocks</Text>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>Recurring blocks</Text>
         <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
           {recurringOff.size > 0 ? `${recurringOff.size}× weekly` : "Repeat every week"}
         </Text>
@@ -2616,7 +2616,7 @@ function AppointmentsSection({
           marginBottom: 10,
         }}
       >
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 17, color: INK }}>Appointments</Text>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>Appointments</Text>
         <Pressable onPress={onAdd}>
           {({ pressed }) => (
             <View
@@ -2958,6 +2958,7 @@ function FieldLabel({ text }: { text: string }) {
 }
 
 const inputStyle = {
+  fontFamily: SERIF,
   borderWidth: 1,
   borderColor: BORDER,
   borderRadius: 12,
@@ -2989,7 +2990,7 @@ function CenterModal({
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }}
         />
         <View style={{ backgroundColor: CREAM, borderRadius: 20, padding: 20, maxHeight: "82%" }}>
-          <Text style={{ fontFamily: SERIF, fontSize: 22, color: INK }}>{title}</Text>
+          <Text style={{ fontFamily: SERIF, fontSize: 20, color: INK }}>{title}</Text>
           {children}
         </View>
       </KeyboardAvoidingView>

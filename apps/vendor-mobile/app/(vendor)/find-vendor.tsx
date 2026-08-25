@@ -180,7 +180,7 @@ export default function FindVendorScreen() {
       <View className="px-5 mb-3">
         <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
           <Feather name="search" size={16} color="#737373" />
-          <TextInput
+          <TextInput style={{ fontFamily: "LibreBaskerville" }}
             value={query}
             onChangeText={setQuery}
             placeholder="Search vendors by business name"

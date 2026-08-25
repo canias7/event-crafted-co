@@ -348,7 +348,7 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="cog-outline" size={24} color={INK} />
             </TouchableOpacity>
           </View>
-          <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
             Manage how your business appears on Vendora.
           </Text>
 
@@ -612,7 +612,7 @@ function BrandCard({
                 numberOfLines={2}
                 style={{
                   fontFamily: SERIF_BOLD,
-                  fontSize: 26,
+                  fontSize: 24,
                   lineHeight: 31,
                   letterSpacing: -0.5,
                   color: WHITE,
@@ -728,7 +728,7 @@ function CardStat({ value, label }: { value: string; label: string }) {
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 22,
+          fontSize: 20,
           color: WHITE,
         }}
       >
@@ -818,7 +818,7 @@ function Avatar({
         <Text
           style={{
             fontFamily: SERIF,
-            fontSize: 40,
+            fontSize: 38,
             color: "#14161a",
           }}
         >
@@ -873,7 +873,7 @@ function EmptyState({
         style={{
           marginTop: 18,
           fontFamily: SERIF_BOLD,
-          fontSize: 26,
+          fontSize: 24,
           color: INK,
         }}
       >

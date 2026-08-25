@@ -321,7 +321,7 @@ function PackEditorModal({
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Name
               </Text>
-              <TextInput
+              <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.name}
                 onChangeText={(v) => onChange({ ...draft, name: v })}
                 placeholder="Standard package"
@@ -332,7 +332,7 @@ function PackEditorModal({
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Description
               </Text>
-              <TextInput
+              <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.description}
                 onChangeText={(v) => onChange({ ...draft, description: v })}
                 placeholder="One or two sentences."
@@ -346,7 +346,7 @@ function PackEditorModal({
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 Price ($)
               </Text>
-              <TextInput
+              <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.price}
                 onChangeText={(v) => onChange({ ...draft, price: v })}
                 placeholder="0"
@@ -361,7 +361,7 @@ function PackEditorModal({
               <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                 One item per line.
               </Text>
-              <TextInput
+              <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.includes}
                 onChangeText={(v) => onChange({ ...draft, includes: v })}
                 placeholder={"4 hours of coverage\nEdited photo gallery\nLocation scouting"}
@@ -578,7 +578,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                 <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   Question
                 </Text>
-                <TextInput
+                <TextInput style={{ fontFamily: "LibreBaskerville" }}
                   value={editing.question}
                   onChangeText={(v) =>
                     setEditing({ ...editing, question: v })
@@ -591,7 +591,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                 <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   Answer
                 </Text>
-                <TextInput
+                <TextInput style={{ fontFamily: "LibreBaskerville" }}
                   value={editing.answer}
                   onChangeText={(v) => setEditing({ ...editing, answer: v })}
                   placeholder="Yes, we cover anywhere within 100 miles…"
@@ -711,7 +711,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           Deposit (%)
         </Text>
-        <TextInput
+        <TextInput style={{ fontFamily: "LibreBaskerville" }}
           value={depositPct}
           onChangeText={setDepositPct}
           placeholder="25"
@@ -737,7 +737,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           Reschedule window (days)
         </Text>
-        <TextInput
+        <TextInput style={{ fontFamily: "LibreBaskerville" }}
           value={reschedule}
           onChangeText={setReschedule}
           placeholder="14"
@@ -747,7 +747,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
       </View>
       <View>
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Notes</Text>
-        <TextInput
+        <TextInput style={{ fontFamily: "LibreBaskerville" }}
           value={notes}
           onChangeText={setNotes}
           placeholder="Any additional terms hosts should know."

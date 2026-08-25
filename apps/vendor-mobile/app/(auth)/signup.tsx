@@ -602,7 +602,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 36,
+          fontSize: 38,
           color: INK,
           letterSpacing: -0.5,
           marginTop: 12,
@@ -746,7 +746,7 @@ function CategoryPicker({
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              fontSize: 22,
+              fontSize: 20,
               color: INK,
               letterSpacing: -0.5,
               paddingHorizontal: 20,
@@ -814,7 +814,7 @@ const eyebrowLabel = {
 const subhead = {
   fontFamily: SERIF,
   marginTop: 10,
-  fontSize: 13.5,
+  fontSize: 13,
   color: INK_DIM,
   lineHeight: 19,
 };
@@ -838,6 +838,7 @@ const inputRow = {
   minHeight: 60,
 };
 const inputText = {
+  fontFamily: SERIF,
   flex: 1,
   fontSize: 16,
   color: INK,

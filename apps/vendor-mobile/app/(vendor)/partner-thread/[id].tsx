@@ -395,7 +395,7 @@ export default function PartnerThreadScreen() {
                 placeholder="Message your partner…"
                 placeholderTextColor={INK_DIM}
                 multiline
-                style={{
+                style={{ fontFamily: SERIF,
                   flex: 1,
                   color: INK,
                   fontSize: 16,

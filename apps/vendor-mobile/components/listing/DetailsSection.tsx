@@ -191,7 +191,7 @@ function FieldEditor({
           {field.type === "currency" ? (
             <Text className="text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>$</Text>
           ) : null}
-          <TextInput
+          <TextInput style={{ fontFamily: "LibreBaskerville" }}
             value={str}
             onChangeText={(v) => {
               const cleaned = v.replace(/[^0-9.]/g, "");
@@ -343,7 +343,7 @@ function TagsField({
               onBlur={() => {
                 if (!draft.trim()) setAdding(false);
               }}
-              style={{
+              style={{ fontFamily: "LibreBaskerville",
                 fontSize: 13,
                 minWidth: 96,
                 paddingVertical: 6,

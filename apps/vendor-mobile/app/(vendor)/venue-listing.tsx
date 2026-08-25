@@ -1294,7 +1294,7 @@ function StepTitle({
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 26,
+          fontSize: 24,
           color: INK,
           letterSpacing: -0.3,
         }}
@@ -1332,7 +1332,7 @@ function Input(props: ComponentProps<typeof TextInput>) {
     <TextInput
       placeholderTextColor={INK_DIM}
       {...props}
-      style={{
+      style={{ fontFamily: SERIF,
         backgroundColor: "#ffffff",
         borderWidth: 1,
         borderColor: BORDER,
@@ -1416,7 +1416,7 @@ function ChipMulti({
             autoFocus
             placeholder="Type and press return"
             placeholderTextColor={INK_DIM}
-            style={{
+            style={{ fontFamily: SERIF,
               borderRadius: 999,
               paddingHorizontal: 14,
               paddingVertical: 9,

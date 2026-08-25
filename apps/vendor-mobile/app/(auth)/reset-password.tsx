@@ -408,7 +408,7 @@ const eyebrowLabel = {
 const subhead = {
   fontFamily: SERIF,
   marginTop: 10,
-  fontSize: 13.5,
+  fontSize: 13,
   color: INK_DIM,
   lineHeight: 19,
 };
@@ -430,6 +430,7 @@ const inputRow = {
   minHeight: 60,
 };
 const inputText = {
+  fontFamily: SERIF,
   flex: 1,
   fontSize: 16,
   color: INK,

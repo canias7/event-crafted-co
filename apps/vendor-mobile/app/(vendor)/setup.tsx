@@ -145,8 +145,8 @@ export default function SetupChecklistScreen() {
             style={{
               marginTop: 8,
               fontFamily: SERIF_BOLD,
-              fontSize: 36,
-              lineHeight: 42,
+              fontSize: 38,
+              lineHeight: 46,
               color: INK,
               letterSpacing: -0.5,
             }}
@@ -157,7 +157,7 @@ export default function SetupChecklistScreen() {
             style={{
               fontFamily: SERIF,
               marginTop: 8,
-              fontSize: 13.5,
+              fontSize: 13,
               lineHeight: 19,
               color: INK_DIM,
             }}
@@ -321,7 +321,7 @@ export default function SetupChecklistScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 17}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
               Back to my profile
             </Text>
           </TouchableOpacity>

@@ -662,7 +662,7 @@ function EmojiPickerModal({
                       opacity: pressed ? 0.6 : 1,
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF, fontSize: 28 }}>{e}</Text>
+                    <Text style={{ fontFamily: SERIF, fontSize: 30 }}>{e}</Text>
                   </View>
                 )}
               </Pressable>
@@ -1111,7 +1111,7 @@ function Composer({
           placeholder="Write a message…"
           placeholderTextColor="#a89b8a"
           multiline
-          style={{
+          style={{ fontFamily: SERIF,
             flex: 1,
             color: INK,
             fontSize: 15,

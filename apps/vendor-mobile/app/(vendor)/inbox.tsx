@@ -307,7 +307,7 @@ export default function InboxScreen() {
           >
             Inbox
           </Text>
-          <Text style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+          <Text style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
             Inquiries and partner threads — all in one place.
           </Text>
         </View>
@@ -362,7 +362,7 @@ export default function InboxScreen() {
                   : "Search vendors or messages"
               }
               placeholderTextColor="#a49f93"
-              style={{ marginLeft: 10, flex: 1, fontSize: 15.5, color: INK }}
+              style={{ fontFamily: "LibreBaskerville", marginLeft: 10, flex: 1, fontSize: 15, color: INK }}
             />
           </View>
         </View>
@@ -588,7 +588,7 @@ export default function InboxScreen() {
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
-                fontSize: 16.5,
+                fontSize: 16,
                 color: INK,
               }}
             >
@@ -689,7 +689,7 @@ function Segment({
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 17,
+          fontSize: 16,
           color: active ? "#ffffff" : INK,
         }}
       >
@@ -795,7 +795,7 @@ function EmptyState({
         style={{
           marginTop: 18,
           fontFamily: SERIF_BOLD,
-          fontSize: 23,
+          fontSize: 24,
           color: INK,
           textAlign: "center",
         }}
@@ -900,7 +900,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                 numberOfLines={1}
                 style={{
                   fontFamily: SERIF_BOLD,
-                  fontSize: 17,
+                  fontSize: 16,
                   color: INK,
                 }}
               >
@@ -922,7 +922,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
               {relativeTime(row.created_at)}
             </Text>
           </View>
-          <Text numberOfLines={1} style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
+          <Text numberOfLines={1} style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 13, color: INK_DIM }}>
             {row.event_date ?? "Date TBD"}
             {row.guest_count ? ` · ${row.guest_count} guests` : ""}
             {previewBudget}
@@ -995,7 +995,7 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
             numberOfLines={1}
             style={{
               fontFamily: SERIF_BOLD,
-              fontSize: 16.5,
+              fontSize: 16,
               color: INK,
               flexShrink: 1,
             }}
