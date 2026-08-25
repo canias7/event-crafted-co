@@ -1152,7 +1152,7 @@ function TypeForm({
           </Pressable>
           {type ? (
             <Pressable onPress={remove} style={{ alignItems: "center", paddingVertical: 16 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#c0392b", fontSize: 14}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 14}}>
                 Delete appointment type
               </Text>
             </Pressable>

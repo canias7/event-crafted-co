@@ -338,7 +338,7 @@ export default function VerificationScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15.5}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
               Upgrade to apply
             </Text>
           </Pressable>
@@ -449,7 +449,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
                 Update & resubmit
               </Text>
             </Pressable>
@@ -554,7 +554,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15.5}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
                 Start verification
               </Text>
             </Pressable>
@@ -629,7 +629,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>Continue</Text>
             </Pressable>
           </>
         ) : null}
@@ -743,7 +743,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>Continue</Text>
             </Pressable>
           </>
         ) : null}
@@ -815,7 +815,7 @@ export default function VerificationScreen() {
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15.5}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
                   Submit for review
                 </Text>
               )}

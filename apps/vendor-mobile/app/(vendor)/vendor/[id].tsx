@@ -282,7 +282,7 @@ export default function VendorDetailScreen() {
               <RoundButton
                 onPress={toggleSaved}
                 icon="heart"
-                iconColor={saved ? "#dc2828" : "#14161a"}
+                iconColor={saved ? "#b23a34" : "#14161a"}
                 fillHeart={saved}
               />
             </View>
@@ -505,7 +505,7 @@ function RoundButton({
             width: 10,
             height: 10,
             borderRadius: 999,
-            backgroundColor: iconColor ?? "#dc2828",
+            backgroundColor: iconColor ?? "#b23a34",
           }}
         />
       ) : null}

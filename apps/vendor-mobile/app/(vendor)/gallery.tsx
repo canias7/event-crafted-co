@@ -60,7 +60,7 @@ const INK_DIM = "#14161a";
 const ACCENT = "#1b3654";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
-const ERROR = "#dc2828";
+const ERROR = "#b23a34";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -920,7 +920,7 @@ export default function GalleryScreen() {
                         style={{ flex: 1, color: WHITE, fontSize: 15, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingVertical: 6 }}
                       />
                       <Pressable onPress={() => saveCaption(lightbox)} hitSlop={8}>
-                        <Text style={{ fontFamily: SERIF_BOLD, color: "#7fb0ff"}}>Save</Text>
+                        <Text style={{ fontFamily: SERIF_BOLD, color: "#d9bd82"}}>Save</Text>
                       </Pressable>
                     </View>
                   ) : (

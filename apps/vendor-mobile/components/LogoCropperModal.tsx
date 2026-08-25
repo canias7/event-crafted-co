@@ -135,7 +135,7 @@ export function LogoCropperModal({
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#fff"}}>Use logo</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff"}}>Use logo</Text>
           </Pressable>
         </View>
       </View>

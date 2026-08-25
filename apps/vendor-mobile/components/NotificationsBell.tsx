@@ -158,14 +158,14 @@ export function NotificationsBell({
                 minWidth: 16,
                 height: 16,
                 borderRadius: 999,
-                backgroundColor: "#dc2828",
+                backgroundColor: "#b23a34",
                 paddingHorizontal: 4,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <Text
-                style={{ fontFamily: "LibreBaskerville-Bold", color: "#fff", fontSize: 10}}
+                style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff", fontSize: 10}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -212,7 +212,7 @@ export function NotificationsBell({
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
-                <Feather name="bell-off" size={28} color="#5e636e" />
+                <Feather name="bell-off" size={28} color="#6f6a60" />
                 <Text className="mt-3 text-sm text-muted-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
                   No notifications yet.
                 </Text>
@@ -233,7 +233,7 @@ export function NotificationsBell({
                           width: 8,
                           height: 8,
                           borderRadius: 999,
-                          backgroundColor: "#dc2828",
+                          backgroundColor: "#b23a34",
                           marginTop: 7,
                         }}
                       />

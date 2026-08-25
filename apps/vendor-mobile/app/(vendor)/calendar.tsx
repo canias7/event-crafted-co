@@ -1188,9 +1188,9 @@ export default function CalendarScreen() {
                 paddingVertical: 12,
               }}
             >
-              <Text style={{ fontFamily: SERIF, color: "#dc2828", fontSize: 13 }}>{error}</Text>
+              <Text style={{ fontFamily: SERIF, color: "#b23a34", fontSize: 13 }}>{error}</Text>
               <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#dc2828", fontSize: 13}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 13}}>
                   Try again
                 </Text>
               </Pressable>
@@ -2010,7 +2010,7 @@ export default function CalendarScreen() {
           </ScrollView>
 
           {addIsPast ? (
-            <Text style={{ fontFamily: SERIF, color: "#dc2828", fontSize: 12, marginTop: 8 }}>
+            <Text style={{ fontFamily: SERIF, color: "#b23a34", fontSize: 12, marginTop: 8 }}>
               That date & time is in the past. Pick today or later.
             </Text>
           ) : null}

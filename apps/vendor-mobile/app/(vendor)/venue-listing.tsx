@@ -1036,7 +1036,7 @@ export default function VenueListingScreen() {
                           paddingVertical: 2,
                         }}
                       >
-                        <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 10}}>
+                        <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 10}}>
                           COVER
                         </Text>
                       </View>
@@ -1178,7 +1178,7 @@ export default function VenueListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#dc2828", fontSize: 14}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 14}}>
                   Delete listing
                 </Text>
               </TouchableOpacity>
@@ -1319,7 +1319,7 @@ function Field({
     <View style={{ marginTop: 16 }}>
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         {label}
-        {required ? <Text style={{ fontFamily: SERIF, color: "#c0392b" }}> *</Text> : null}
+        {required ? <Text style={{ fontFamily: SERIF, color: "#b23a34" }}> *</Text> : null}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -1611,7 +1611,7 @@ function SpaceCard({
           ) : null}
         </View>
         <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-          <Feather name="trash-2" size={16} color="#c0392b" />
+          <Feather name="trash-2" size={16} color="#b23a34" />
         </TouchableOpacity>
         <Feather
           name={open ? "chevron-up" : "chevron-down"}
