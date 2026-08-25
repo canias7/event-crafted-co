@@ -25,6 +25,8 @@ What Claude does NOT have direct shell access to:
 
 - **Always merge to `main`** when finishing a feature branch. Don't suggest changing Vercel/CI production branches as a substitute — merge instead so `main` stays the source of truth and production deploys flow through it. Use `mcp__github__create_pull_request` + `mcp__github__merge_pull_request`.
 
+- **`bunx expo install` writes to the ROOT `package.json`**, not the app's, even when run from inside `apps/<app>-mobile`. If you add packages to render an app headlessly (react-native-web, react-dom, @expo/metro-runtime), reverting `apps/<app>-mobile/package.json` does NOT undo it — check `git status` at the repo root before committing. Leaving them in desyncs `bun.lock`, and every OTA then dies on `bun install --frozen-lockfile` with "lockfile had changes, but lockfile is frozen".
+
 ## Mobile apps (host-mobile + vendor-mobile)
 
 **Cross-platform by default**: any mobile change applies to BOTH iOS and Android unless explicitly stated otherwise. JS code (components, styles, business logic) runs identically on both via React Native, so the same edit covers both platforms. For full rebuilds, run iOS *and* Android.
