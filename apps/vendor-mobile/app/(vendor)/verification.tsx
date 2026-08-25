@@ -318,7 +318,7 @@ export default function VerificationScreen() {
             Get verified. Build trust.
           </Text>
           <Text
-            style={{ marginTop: 8, textAlign: "center", fontSize: 14.5, lineHeight: 21, color: INK_DIM }}
+            style={{ fontFamily: SERIF, marginTop: 8, textAlign: "center", fontSize: 14.5, lineHeight: 21, color: INK_DIM }}
           >
             The verified badge tells hosts a real person and a real business
             are behind your profile. Applying is included with Pro and
@@ -335,7 +335,7 @@ export default function VerificationScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 15.5, fontWeight: "600" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15.5}}>
               Upgrade to apply
             </Text>
           </Pressable>
@@ -401,6 +401,7 @@ export default function VerificationScreen() {
             </Text>
             <Text
               style={{
+                fontFamily: SERIF,
                 marginTop: 8,
                 fontSize: 14,
                 lineHeight: 20,
@@ -424,7 +425,7 @@ export default function VerificationScreen() {
                 }}
               >
                 <MaterialCommunityIcons name="shield-check" size={16} color="#8a6f3e" />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#8a6f3e" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>
                   Verified vendor
                 </Text>
               </View>
@@ -445,7 +446,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>
                 Update & resubmit
               </Text>
             </Pressable>
@@ -482,7 +483,7 @@ export default function VerificationScreen() {
               Get verified. Build trust.
             </Text>
             <Text
-              style={{ marginTop: 6, textAlign: "center", fontSize: 13.5, lineHeight: 19, color: INK_DIM }}
+              style={{ fontFamily: SERIF, marginTop: 6, textAlign: "center", fontSize: 13.5, lineHeight: 19, color: INK_DIM }}
             >
               Verified vendors stand out and give clients confidence in your
               business.
@@ -510,7 +511,7 @@ export default function VerificationScreen() {
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                       {r.t}
                     </Text>
-                    <Text style={{ marginTop: 1, fontSize: 12.5, color: INK_DIM }}>{r.s}</Text>
+                    <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 12.5, color: INK_DIM }}>{r.s}</Text>
                   </View>
                 </View>
               ))}
@@ -525,7 +526,7 @@ export default function VerificationScreen() {
                 padding: 16,
               }}
             >
-              <Text style={{ fontSize: 13.5, fontWeight: "700", color: INK, marginBottom: 8 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginBottom: 8 }}>
                 What you'll get
               </Text>
               {[
@@ -535,7 +536,7 @@ export default function VerificationScreen() {
               ].map((t) => (
                 <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
                   <Feather name="check" size={13} color={GOLD} />
-                  <Text style={{ fontSize: 13.5, color: INK }}>{t}</Text>
+                  <Text style={{ fontFamily: SERIF, fontSize: 13.5, color: INK }}>{t}</Text>
                 </View>
               ))}
             </View>
@@ -550,7 +551,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 15.5, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15.5}}>
                 Start verification
               </Text>
             </Pressable>
@@ -563,7 +564,7 @@ export default function VerificationScreen() {
               title="Identity verification"
               onBack={() => (editing && request ? setEditing(false) : setStep("intro"))}
             />
-            <Text style={{ textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
+            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
               Your legal details stay private — they're only used to verify
               your identity.
             </Text>
@@ -581,7 +582,7 @@ export default function VerificationScreen() {
                 keyboardType="numbers-and-punctuation"
               />
             </Field>
-            <Text style={{ fontSize: 13.5, fontWeight: "700", color: INK, marginTop: 8, marginBottom: 8 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginTop: 8, marginBottom: 8 }}>
               Government-issued ID
             </Text>
             <DocTile
@@ -625,7 +626,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>Continue</Text>
             </Pressable>
           </>
         ) : null}
@@ -633,7 +634,7 @@ export default function VerificationScreen() {
         {step === "business" ? (
           <>
             <Header title="Business verification" onBack={() => setStep("identity")} />
-            <Text style={{ textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
+            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
               Tell us about your business.
             </Text>
             <Field label="Business / Display name" required>
@@ -670,10 +671,10 @@ export default function VerificationScreen() {
                 autoCapitalize="none"
               />
             </Field>
-            <Text style={{ fontSize: 13.5, fontWeight: "700", color: INK, marginTop: 8 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginTop: 8 }}>
               Proof of business
             </Text>
-            <Text style={{ fontSize: 12.5, color: INK_DIM, marginTop: 2, marginBottom: 8 }}>
+            <Text style={{ fontFamily: SERIF, fontSize: 12.5, color: INK_DIM, marginTop: 2, marginBottom: 8 }}>
               Add a photo of at least one document — insurance certificate,
               business license, or registration.
             </Text>
@@ -713,7 +714,7 @@ export default function VerificationScreen() {
                 }}
               >
                 <Feather name="plus" size={15} color={INK} />
-                <Text style={{ fontSize: 13.5, fontWeight: "600", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>
                   Add {docs.length === 0 ? "a document" : "another document"}
                 </Text>
               </Pressable>
@@ -739,7 +740,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>Continue</Text>
             </Pressable>
           </>
         ) : null}
@@ -747,7 +748,7 @@ export default function VerificationScreen() {
         {step === "review" ? (
           <>
             <Header title="Review & submit" onBack={() => setStep("business")} />
-            <Text style={{ textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
+            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
               Please review your information before submitting.
             </Text>
             <SummaryCard
@@ -786,11 +787,11 @@ export default function VerificationScreen() {
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                 <Feather name="check-circle" size={14} color="#8a6f3e" />
-                <Text style={{ fontSize: 13.5, fontWeight: "700", color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>
                   What happens next?
                 </Text>
               </View>
-              <Text style={{ marginTop: 6, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
                 We'll review your information within 1–3 business days. You'll
                 be notified in the app once a decision has been made.
               </Text>
@@ -811,13 +812,13 @@ export default function VerificationScreen() {
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={{ color: "#fff", fontSize: 15.5, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15.5}}>
                   Submit for review
                 </Text>
               )}
             </Pressable>
             <Text
-              style={{ marginTop: 10, textAlign: "center", fontSize: 11.5, color: INK_DIM, lineHeight: 16 }}
+              style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", fontSize: 11.5, color: INK_DIM, lineHeight: 16 }}
             >
               By submitting, you agree to Vendora's Terms of Service and
               Privacy Policy.
@@ -877,8 +878,8 @@ function DocTile({
         </View>
       )}
       <View style={{ flex: 1, marginLeft: 11 }}>
-        <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>{label}</Text>
-        <Text style={{ marginTop: 1, fontSize: 12, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>{label}</Text>
+        <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 12, color: INK_DIM }}>
           {has ? (doc?.path && !doc?.uri ? "On file from your last submission" : "Ready to upload") : "JPG or PNG photo"}
         </Text>
       </View>
@@ -918,11 +919,11 @@ function SummaryCard({
           {title}
         </Text>
         <Pressable onPress={onEdit} hitSlop={8}>
-          <Text style={{ fontSize: 13, fontWeight: "700", color: "#8a6f3e" }}>Edit</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>Edit</Text>
         </Pressable>
       </View>
       {lines.map((l) => (
-        <Text key={l} style={{ marginTop: 4, fontSize: 13.5, color: INK_DIM }}>
+        <Text key={l} style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, color: INK_DIM }}>
           {l}
         </Text>
       ))}

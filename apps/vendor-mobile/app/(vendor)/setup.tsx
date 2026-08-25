@@ -118,7 +118,7 @@ export default function SetupChecklistScreen() {
           hitSlop={12}
           style={{ alignSelf: "flex-start", paddingVertical: 8 }}
         >
-          <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
             ← Back
           </Text>
         </Pressable>
@@ -126,9 +126,9 @@ export default function SetupChecklistScreen() {
         <View style={{ marginTop: 12 }}>
           <Text
             style={{
+              fontFamily: SERIF_BOLD,
               color: GOLD,
               fontSize: 12,
-              fontWeight: "700",
               letterSpacing: 3,
             }}
           >
@@ -148,6 +148,7 @@ export default function SetupChecklistScreen() {
           </Text>
           <Text
             style={{
+              fontFamily: SERIF,
               marginTop: 8,
               fontSize: 13.5,
               lineHeight: 19,
@@ -179,7 +180,7 @@ export default function SetupChecklistScreen() {
               }}
             />
           </View>
-          <Text style={{ marginTop: 8, fontSize: 13, color: INK_DIM }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 13, color: INK_DIM }}>
             {state ? `${done} of ${total} complete` : "Checking your progress…"}
           </Text>
         </View>
@@ -231,8 +232,8 @@ export default function SetupChecklistScreen() {
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <Text
                       style={{
+                        fontFamily: SERIF_BOLD,
                         fontSize: 16,
-                        fontWeight: "600",
                         color: INK,
                       }}
                     >
@@ -250,8 +251,8 @@ export default function SetupChecklistScreen() {
                       >
                         <Text
                           style={{
+                            fontFamily: SERIF_BOLD,
                             fontSize: 10,
-                            fontWeight: "700",
                             letterSpacing: 1,
                             color: INK_DIM,
                           }}
@@ -263,6 +264,7 @@ export default function SetupChecklistScreen() {
                   </View>
                   <Text
                     style={{
+                      fontFamily: SERIF,
                       marginTop: 2,
                       fontSize: 13,
                       lineHeight: 18,
@@ -312,7 +314,7 @@ export default function SetupChecklistScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#ffffff", fontSize: 17, fontWeight: "600" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 17}}>
               Back to my profile
             </Text>
           </TouchableOpacity>

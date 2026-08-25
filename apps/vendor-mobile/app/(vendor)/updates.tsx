@@ -107,7 +107,7 @@ export default function UpdatesScreen() {
         >
           What&rsquo;s new
         </Text>
-        <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           The latest improvements to Vendora for Vendors.
         </Text>
 
@@ -125,8 +125,8 @@ export default function UpdatesScreen() {
             >
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   fontSize: 11,
-                  fontWeight: "700",
                   letterSpacing: 1,
                   color: GOLD,
                   textTransform: "uppercase",
@@ -144,7 +144,7 @@ export default function UpdatesScreen() {
               >
                 {u.title}
               </Text>
-              <Text style={{ marginTop: 5, fontSize: 14, lineHeight: 20, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 5, fontSize: 14, lineHeight: 20, color: INK_DIM }}>
                 {u.body}
               </Text>
             </View>
@@ -195,11 +195,11 @@ export default function UpdatesScreen() {
                   marginLeft: 5,
                 }}
               />
-              <Text style={{ marginLeft: 10, fontSize: 14.5, color: INK }}>{c}</Text>
+              <Text style={{ fontFamily: SERIF, marginLeft: 10, fontSize: 14.5, color: INK }}>{c}</Text>
             </View>
           ))}
         </View>
-        <Text style={{ marginTop: 10, fontSize: 12, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 12, color: INK_DIM }}>
           Timelines shift — we ship when it&rsquo;s right.
         </Text>
       </ScrollView>

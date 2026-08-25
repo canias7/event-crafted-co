@@ -53,11 +53,11 @@ export function LogoCropperModal({
         }}
       >
         <Text
-          style={{ fontSize: 22, fontWeight: "700", color: INK, fontStyle: "italic" }}
+          style={{ fontFamily: "LibreBaskerville-Italic", fontSize: 22, color: INK}}
         >
           Your logo
         </Text>
-        <Text style={{ marginTop: 4, marginBottom: 18, fontSize: 13, color: INK_DIM }}>
+        <Text style={{ fontFamily: "LibreBaskerville", marginTop: 4, marginBottom: 18, fontSize: 13, color: INK_DIM }}>
           We fit your whole logo on a clean background — nothing gets cropped.
         </Text>
 
@@ -119,7 +119,7 @@ export function LogoCropperModal({
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: INK, fontWeight: "600" }}>Choose different</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: INK}}>Choose different</Text>
           </Pressable>
           <Pressable
             onPress={onApply}
@@ -132,7 +132,7 @@ export function LogoCropperModal({
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Use logo</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#fff"}}>Use logo</Text>
           </Pressable>
         </View>
       </View>

@@ -659,7 +659,7 @@ function EmojiPickerModal({
                       opacity: pressed ? 0.6 : 1,
                     }}
                   >
-                    <Text style={{ fontSize: 28 }}>{e}</Text>
+                    <Text style={{ fontFamily: SERIF, fontSize: 28 }}>{e}</Text>
                   </View>
                 )}
               </Pressable>
@@ -753,9 +753,9 @@ function Header({
         {isActive ? (
           <Text
             style={{
+              fontFamily: SERIF_BOLD,
               color: ACTIVE_GREEN,
               fontSize: 12,
-              fontWeight: "600",
               marginTop: 1,
             }}
           >
@@ -785,9 +785,9 @@ function Header({
           />
           <Text
             style={{
+              fontFamily: SERIF_BOLD,
               color: hiluxPaused ? "rgba(0,0,0,0.55)" : "#c4541e",
               fontSize: 10,
-              fontWeight: "700",
               textTransform: "uppercase",
               letterSpacing: 0.5,
             }}
@@ -905,7 +905,7 @@ function MessageRow({
                       size={16}
                       color={INK}
                     />
-                    <Text style={{ color: INK, fontSize: 14 }}>
+                    <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14 }}>
                       {audio
                         ? "Voice message"
                         : a.filename ?? "Attachment"}
@@ -960,9 +960,9 @@ function MessageRow({
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={{
+                        fontFamily: SERIF_BOLD,
                         color: isMine ? CREAM : INK,
                         fontSize: 11,
-                        fontWeight: "700",
                         marginBottom: 1,
                       }}
                       numberOfLines={1}
@@ -971,6 +971,7 @@ function MessageRow({
                     </Text>
                     <Text
                       style={{
+                        fontFamily: SERIF,
                         color: isMine ? CREAM : INK,
                         fontSize: 12,
                         opacity: 0.75,
@@ -986,10 +987,10 @@ function MessageRow({
               ) : null}
               <Text
                 style={{
+                  fontFamily: m.deleted_at ? SERIF_ITALIC : SERIF,
                   color: m.deleted_at ? INK_DIM : isMine ? CREAM : INK,
                   fontSize: 16,
                   lineHeight: 22,
-                  fontStyle: m.deleted_at ? "italic" : "normal",
                 }}
               >
                 {m.deleted_at ? "Message deleted" : m.body}
@@ -997,6 +998,7 @@ function MessageRow({
               {m.edited_at && !m.deleted_at ? (
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     color: isMine ? CREAM : INK_DIM,
                     fontSize: 10,
                     marginTop: 3,
@@ -1013,6 +1015,7 @@ function MessageRow({
       {isMine && showDelivered && m.isLastInGroup ? (
         <Text
           style={{
+            fontFamily: SERIF,
             alignSelf: "flex-end",
             color: INK_DIM,
             fontSize: 11,
@@ -1049,6 +1052,7 @@ function EmptyState() {
       <Feather name="message-square" size={28} color={INK_DIM} />
       <Text
         style={{
+          fontFamily: SERIF,
           color: INK_DIM,
           marginTop: 12,
           textAlign: "center",

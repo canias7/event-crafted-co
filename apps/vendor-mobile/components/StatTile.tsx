@@ -24,12 +24,12 @@ export function StatTile({ label, value, hint }: StatTileProps) {
         elevation: 2,
       }}
     >
-      <Text className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+      <Text className="text-[11px] uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
         {label}
       </Text>
-      <Text className="mt-2 text-2xl font-semibold text-foreground">{value}</Text>
+      <Text className="mt-2 text-2xl text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{value}</Text>
       {hint ? (
-        <Text className="mt-1 text-xs text-muted-foreground">{hint}</Text>
+        <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{hint}</Text>
       ) : null}
     </View>
   );

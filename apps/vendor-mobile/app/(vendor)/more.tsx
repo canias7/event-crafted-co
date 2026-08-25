@@ -114,7 +114,7 @@ export default function MoreScreen() {
         >
           More
         </Text>
-        <Text style={{ marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
           Everything else, one tap away.
         </Text>
 
@@ -156,7 +156,7 @@ export default function MoreScreen() {
           <MenuRow
             icon={<Feather name="zap" size={19} color={INK} />}
             label="Smart Scheduling"
-            body="Working hours, services, and automations"
+            body="Hours, services, and automations"
             badge="New"
             onPress={() => router.push("/(vendor)/scheduling" as never)}
           />
@@ -166,7 +166,7 @@ export default function MoreScreen() {
           <MenuRow
             icon={<Feather name="users" size={19} color={INK} />}
             label="Vendora CRM"
-            body="Your clients, notes, and follow-ups"
+            body="Clients, notes, and follow-ups"
             badge="Pro"
             onPress={() => router.push("/(vendor)/crm" as never)}
           />
@@ -176,7 +176,7 @@ export default function MoreScreen() {
           <MenuRow
             icon={<Feather name="settings" size={19} color={INK} />}
             label="Settings"
-            body="Account, password, notifications, privacy"
+            body="Account, password, and privacy"
             onPress={() => setSettingsOpen(true)}
           />
         </View>
@@ -197,7 +197,7 @@ export default function MoreScreen() {
               />
             }
             label="Upcoming updates"
-            body="See what's new and what's coming next"
+            body="What's new and what's next"
             badge={hasFreshUpdate() ? "New" : undefined}
             onPress={() => router.push("/(vendor)/updates" as never)}
           />
@@ -249,7 +249,7 @@ export default function MoreScreen() {
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17 }}>
               Love Vendora?
             </Text>
-            <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+            <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
               Leave us a review and help other vendors.
             </Text>
           </View>
@@ -277,6 +277,7 @@ export default function MoreScreen() {
         {version ? (
           <Text
             style={{
+              fontFamily: SERIF,
               marginTop: 22,
               textAlign: "center",
               color: INK_DIM,
@@ -346,7 +347,7 @@ function MenuRow({
         <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 17 }}>
           {label}
         </Text>
-        <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+        <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
           {body}
         </Text>
       </View>
@@ -360,7 +361,7 @@ function MenuRow({
             paddingVertical: 4,
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: "700", color: "#8a6f3e" }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: "#8a6f3e" }}>
             {badge}
           </Text>
         </View>

@@ -316,6 +316,7 @@ export function SettingsSheet({
               </View>
               <Text
                 style={{
+                  fontFamily: SERIF,
                   marginTop: 8,
                   color: INK_DIM,
                   fontSize: 13.5,
@@ -328,11 +329,11 @@ export function SettingsSheet({
               {/* SIGN IN */}
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   marginTop: 26,
                   marginBottom: 10,
                   color: INK_DIM,
                   fontSize: 11,
-                  fontWeight: "800",
                   letterSpacing: 1.2,
                 }}
               >
@@ -374,9 +375,9 @@ export function SettingsSheet({
                         />
                         <Text
                           style={{
+                            fontFamily: SERIF_BOLD,
                             color: "#8a6f3e",
                             fontSize: 12,
-                            fontWeight: "700",
                           }}
                         >
                           Verified
@@ -405,11 +406,11 @@ export function SettingsSheet({
               {/* PREFERENCES */}
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   marginTop: 26,
                   marginBottom: 10,
                   color: INK_DIM,
                   fontSize: 11,
-                  fontWeight: "800",
                   letterSpacing: 1.2,
                 }}
               >
@@ -458,9 +459,9 @@ export function SettingsSheet({
                 <Feather name="log-out" size={18} color={INK} />
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     color: INK,
                     fontSize: 16,
-                    fontWeight: "700",
                     marginLeft: 8,
                   }}
                 >
@@ -485,9 +486,9 @@ export function SettingsSheet({
                 <Feather name="trash-2" size={16} color="#dc2828" />
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     color: "#dc2828",
                     fontSize: 16,
-                    fontWeight: "700",
                     marginLeft: 8,
                   }}
                 >
@@ -497,6 +498,7 @@ export function SettingsSheet({
 
               <Text
                 style={{
+                  fontFamily: SERIF,
                   marginTop: 16,
                   textAlign: "center",
                   color: INK_DIM,
@@ -555,6 +557,7 @@ export function SettingsSheet({
               </View>
               <Text
                 style={{
+                  fontFamily: SERIF,
                   marginTop: 14,
                   color: INK_DIM,
                   fontSize: 14,
@@ -567,10 +570,10 @@ export function SettingsSheet({
 
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   marginTop: 24,
                   color: INK_DIM,
                   fontSize: 11,
-                  fontWeight: "800",
                   letterSpacing: 1,
                 }}
               >
@@ -597,10 +600,10 @@ export function SettingsSheet({
 
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   marginTop: 18,
                   color: INK_DIM,
                   fontSize: 11,
-                  fontWeight: "800",
                   letterSpacing: 1,
                 }}
               >
@@ -642,7 +645,7 @@ export function SettingsSheet({
                 }}
               >
                 <Text
-                  style={{ color: "#ffffff", fontSize: 15, fontWeight: "700" }}
+                  style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}
                 >
                   {pwdSubmitting ? "Saving…" : "Save password"}
                 </Text>
@@ -693,9 +696,9 @@ function SettingsRow({
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text
           style={{
+            fontFamily: SERIF_BOLD,
             color: INK_DIM,
             fontSize: 11,
-            fontWeight: "800",
             letterSpacing: 0.8,
           }}
         >
@@ -703,9 +706,9 @@ function SettingsRow({
         </Text>
         <Text
           style={{
+            fontFamily: SERIF_BOLD,
             color: INK,
             fontSize: 16,
-            fontWeight: "700",
             marginTop: label.toUpperCase() === label ? 2 : 0,
           }}
           numberOfLines={1}
@@ -715,6 +718,7 @@ function SettingsRow({
         {label.toUpperCase() === label ? null : (
           <Text
             style={{
+              fontFamily: SERIF,
               marginTop: 2,
               color: INK_DIM,
               fontSize: 13,

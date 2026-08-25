@@ -345,7 +345,7 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="cog-outline" size={24} color={INK} />
             </TouchableOpacity>
           </View>
-          <Text style={{ marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
             Manage how your business appears on Vendora.
           </Text>
 
@@ -384,6 +384,7 @@ export default function ProfileScreen() {
                 </Text>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     marginTop: 3,
                     fontSize: 13,
                     lineHeight: 18,
@@ -408,11 +409,11 @@ export default function ProfileScreen() {
                       paddingVertical: 9,
                     }}
                   >
-                    <Text style={{ color: WHITE, fontSize: 14, fontWeight: "600" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: WHITE, fontSize: 14}}>
                       Continue setup
                     </Text>
                   </View>
-                  <Text style={{ marginLeft: 12, fontSize: 12, color: INK_DIM }}>
+                  <Text style={{ fontFamily: SERIF, marginLeft: 12, fontSize: 12, color: INK_DIM }}>
                     {setup.requiredDone} of {setup.requiredTotal} done
                   </Text>
                 </View>
@@ -534,9 +535,9 @@ function BrandCard({
         />
         <Text
           style={{
+            fontFamily: SERIF_BOLD,
             marginLeft: 5,
             fontSize: 10,
-            fontWeight: "700",
             letterSpacing: 1.8,
             color: DARK_MUTED,
           }}
@@ -549,8 +550,8 @@ function BrandCard({
         <View style={{ padding: 22, paddingTop: 54 }}>
           <Text
             style={{
+              fontFamily: SERIF_BOLD,
               fontSize: 10,
-              fontWeight: "700",
               letterSpacing: 2,
               color: DARK_MUTED,
             }}
@@ -634,9 +635,9 @@ function BrandCard({
                   />
                   <Text
                     style={{
+                      fontFamily: SERIF,
                       marginLeft: 6,
                       fontSize: 14,
-                      fontWeight: "500",
                       color: GOLD_ON_DARK,
                     }}
                   >
@@ -732,9 +733,9 @@ function CardStat({ value, label }: { value: string; label: string }) {
       </Text>
       <Text
         style={{
+          fontFamily: SERIF_BOLD,
           marginTop: 3,
           fontSize: 10,
-          fontWeight: "600",
           letterSpacing: 1.5,
           color: DARK_MUTED,
         }}
@@ -771,7 +772,7 @@ function OutlineBtn({
     >
       <MaterialCommunityIcons name={icon} size={15} color={GOLD_ON_DARK} />
       <Text
-        style={{ marginLeft: 7, fontSize: 14, fontWeight: "600", color: WHITE }}
+        style={{ fontFamily: SERIF_BOLD, marginLeft: 7, fontSize: 14, color: WHITE }}
       >
         {label}
       </Text>
@@ -877,6 +878,7 @@ function EmptyState({
       </Text>
       <Text
         style={{
+          fontFamily: SERIF,
           marginTop: 8,
           textAlign: "center",
           fontSize: 14,
@@ -898,7 +900,7 @@ function EmptyState({
             paddingVertical: 13,
           }}
         >
-          <Text style={{ fontSize: 15, fontWeight: "600", color: WHITE }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: WHITE }}>
             {ctaLabel}
           </Text>
         </TouchableOpacity>
@@ -930,7 +932,7 @@ function ListingTab({
   if (loading) {
     return (
       <View className="items-center px-4 pt-10">
-        <Text className="text-sm text-muted-foreground">Loading…</Text>
+        <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
       </View>
     );
   }
@@ -958,7 +960,7 @@ function ListingTab({
           justifyContent: "space-between",
         }}
       >
-        <Text style={{ fontSize: 12, color: INK_DIM }}>
+        <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
           {listings.length}
           {listingCap !== null ? ` of ${listingCap}` : ""} listing
           {listingCap === 1 && listings.length === 1 ? "" : "s"}
@@ -975,7 +977,7 @@ function ListingTab({
               paddingVertical: 8,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: WHITE }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: WHITE }}>
               New listing
             </Text>
           </TouchableOpacity>
@@ -1004,7 +1006,7 @@ function UpgradeLink() {
       onPress={() => router.push("/(vendor)/subscription" as never)}
       hitSlop={8}
     >
-      <Text style={{ fontSize: 12, fontWeight: "600", color: INK, textDecorationLine: "underline" }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: INK, textDecorationLine: "underline" }}>
         Upgrade for more listings
       </Text>
     </Pressable>
@@ -1139,7 +1141,7 @@ function ListingCard({
             style={{ backgroundColor: SURFACE }}
           >
             <Feather name="image" size={28} color="#a1a1aa" />
-            <Text className="mt-2 text-center text-xs text-muted-foreground">
+            <Text className="mt-2 text-center text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
               No listing photos yet
             </Text>
           </View>
@@ -1157,7 +1159,7 @@ function ListingCard({
             paddingVertical: 4,
           }}
         >
-          <Text style={{ fontSize: 11, fontWeight: "700", color: meta.fg }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: meta.fg }}>
             {meta.label}
           </Text>
         </View>
@@ -1177,7 +1179,7 @@ function ListingCard({
             }}
           >
             <Feather name="clock" size={28} color="#fff" />
-            <Text className="mt-2 text-center text-xs font-semibold text-white">
+            <Text className="mt-2 text-center text-xs text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               Under review
             </Text>
           </View>
@@ -1205,19 +1207,18 @@ function ListingCard({
         <Text
           numberOfLines={1}
           className={
-            isPending
-              ? "text-base font-semibold text-foreground/70"
-              : "text-base font-semibold text-foreground"
+            isPending ? "text-base text-foreground/70" : "text-base text-foreground"
           }
+          style={{ fontFamily: "LibreBaskerville-Bold" }}
         >
           {listing.business_name?.trim() || listing.category || "Your listing"}
         </Text>
-        <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground">
+        <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
           {listing.category ?? "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
         {formatListingPrice(listing.price_min_cents, listing.price_max_cents) ? (
-          <Text className="mt-1 text-sm text-foreground/80">
+          <Text className="mt-1 text-sm text-foreground/80" style={{ fontFamily: "LibreBaskerville" }}>
             {formatListingPrice(listing.price_min_cents, listing.price_max_cents)}
           </Text>
         ) : null}
@@ -1226,7 +1227,7 @@ function ListingCard({
           const models = pricingModelsLabel((listing as any).pricing_models);
           return models ? (
             <Text
-              style={{ fontSize: 12, color: INK_DIM, marginTop: 2 }}
+              style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 2 }}
               numberOfLines={1}
             >
               {models}

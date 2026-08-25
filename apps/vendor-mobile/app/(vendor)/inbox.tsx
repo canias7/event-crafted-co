@@ -304,7 +304,7 @@ export default function InboxScreen() {
           >
             Inbox
           </Text>
-          <Text style={{ marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
+          <Text style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>
             Inquiries and partner threads — all in one place.
           </Text>
         </View>
@@ -474,9 +474,9 @@ export default function InboxScreen() {
               paddingVertical: 12,
             }}
           >
-            <Text style={{ fontSize: 14, color: "#b3352b" }}>{error}</Text>
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: "#b3352b" }}>{error}</Text>
             <Pressable onPress={() => load(false)} hitSlop={6}>
-              <Text style={{ marginTop: 8, fontSize: 14, fontWeight: "600", color: "#b3352b" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: "#b3352b" }}>
                 Try again
               </Text>
             </Pressable>
@@ -505,7 +505,7 @@ export default function InboxScreen() {
           ) : filteredPartners.length === 0 ? (
             /* Name the actual reason the list is empty. */
             <View style={{ paddingHorizontal: 20, paddingVertical: 40, alignItems: "center" }}>
-              <Text style={{ textAlign: "center", fontSize: 14, color: INK_DIM }}>
+              <Text style={{ fontFamily: "LibreBaskerville", textAlign: "center", fontSize: 14, color: INK_DIM }}>
                 {search
                   ? `No conversations match “${search}”. This searches your existing threads only.`
                   : partnerFilter !== "all"
@@ -524,7 +524,7 @@ export default function InboxScreen() {
                     paddingVertical: 9,
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
                     Clear search
                   </Text>
                 </TouchableOpacity>
@@ -540,7 +540,7 @@ export default function InboxScreen() {
                   paddingVertical: 11,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#ffffff" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: "#ffffff" }}>
                   Find a vendor
                 </Text>
               </TouchableOpacity>
@@ -591,7 +591,7 @@ export default function InboxScreen() {
             >
               Stand out. Get more booked.
             </Text>
-            <Text style={{ marginTop: 2, fontSize: 13, color: INK_DIM }}>
+            <Text style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 13, color: INK_DIM }}>
               Complete your profile and get discovered.
             </Text>
           </View>
@@ -611,7 +611,7 @@ export default function InboxScreen() {
               gap: 5,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "600", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
               Improve profile
             </Text>
             <Feather name="arrow-right" size={13} color={INK} />
@@ -752,7 +752,7 @@ function Chip({
             backgroundColor: active ? "#f4f1ea" : TRACK,
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: "700", color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: INK }}>
             {count}
           </Text>
         </View>
@@ -799,7 +799,7 @@ function EmptyState({
       >
         {filtered ? "Nothing here." : "No inquiries yet."}
       </Text>
-      <Text style={{ marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
+      <Text style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
         {filtered ? "Nothing matches that filter." : "New leads land here."}
       </Text>
       {!filtered ? (
@@ -818,7 +818,7 @@ function EmptyState({
           }}
         >
           <MaterialCommunityIcons name="lightbulb-outline" size={15} color={GOLD} />
-          <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
+          <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
             Tips to get more inquiries
           </Text>
         </TouchableOpacity>
@@ -839,7 +839,7 @@ function Avatar({ seed, label }: { seed: string; label: string }) {
         backgroundColor: avatarColor(seed),
       }}
     >
-      <Text style={{ fontSize: 14, fontWeight: "600", color: "#ffffff" }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: "#ffffff" }}>
         {label}
       </Text>
     </View>
@@ -915,11 +915,11 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                 />
               ) : null}
             </View>
-            <Text style={{ fontSize: 12, color: INK_DIM }}>
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 12, color: INK_DIM }}>
               {relativeTime(row.created_at)}
             </Text>
           </View>
-          <Text numberOfLines={1} style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
+          <Text numberOfLines={1} style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 12.5, color: INK_DIM }}>
             {row.event_date ?? "Date TBD"}
             {row.guest_count ? ` · ${row.guest_count} guests` : ""}
             {previewBudget}
@@ -927,7 +927,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           {row.special_requests ? (
             <Text
               numberOfLines={2}
-              style={{ marginTop: 6, fontSize: 14, color: "#3c3f45" }}
+              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: "#3c3f45" }}
             >
               {row.special_requests}
             </Text>
@@ -947,8 +947,8 @@ function InquiryCard({ row }: { row: InquiryRow }) {
             >
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   fontSize: 10,
-                  fontWeight: "700",
                   letterSpacing: 1,
                   color: "#8a6f3e",
                 }}
@@ -1009,19 +1009,19 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
                 paddingVertical: 2,
               }}
             >
-              <Text style={{ fontSize: 11, color: INK_DIM }}>
+              <Text style={{ fontFamily: "LibreBaskerville", fontSize: 11, color: INK_DIM }}>
                 {thread.other_category}
               </Text>
             </View>
           ) : null}
         </View>
         {thread.last_preview ? (
-          <Text numberOfLines={1} style={{ marginTop: 2, fontSize: 14, color: INK_DIM }}>
+          <Text numberOfLines={1} style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 14, color: INK_DIM }}>
             {thread.last_preview}
           </Text>
         ) : null}
       </View>
-      <Text style={{ marginLeft: 8, fontSize: 12, color: INK_DIM }}>
+      <Text style={{ fontFamily: "LibreBaskerville", marginLeft: 8, fontSize: 12, color: INK_DIM }}>
         {relativeTime(thread.last_message_at)}
       </Text>
     </TouchableOpacity>

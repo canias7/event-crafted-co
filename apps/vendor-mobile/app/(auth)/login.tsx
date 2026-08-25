@@ -220,7 +220,7 @@ export default function LoginScreen() {
             hitSlop={12}
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
-            <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
               ← Back
             </Text>
           </Pressable>
@@ -284,7 +284,7 @@ export default function LoginScreen() {
                       activeOpacity={0.7}
                       style={{ paddingLeft: 10 }}
                     >
-                      <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: GOLD, fontSize: 14}}>
                         {showPassword ? "Hide" : "Show"}
                       </Text>
                     </TouchableOpacity>
@@ -308,6 +308,7 @@ export default function LoginScreen() {
                 </TouchableOpacity>
                 <Text
                   style={{
+                    fontFamily: SERIF,
                     marginTop: 0,
                     textAlign: "center",
                     fontSize: 12,
@@ -322,7 +323,7 @@ export default function LoginScreen() {
                   activeOpacity={0.7}
                   style={{ marginTop: 8, alignItems: "center" }}
                 >
-                  <Text style={{ color: GOLD, fontWeight: "600", fontSize: 14 }}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: GOLD, fontSize: 14 }}>
                     Forgot your password?
                   </Text>
                 </TouchableOpacity>
@@ -332,9 +333,9 @@ export default function LoginScreen() {
                   activeOpacity={0.7}
                   style={{ marginTop: 8, alignItems: "center" }}
                 >
-                  <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                  <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
                     New here?{" "}
-                    <Text style={{ color: GOLD, fontWeight: "600" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: GOLD}}>
                       Create an account
                     </Text>
                   </Text>
@@ -380,7 +381,7 @@ export default function LoginScreen() {
                 </View>
 
                 {info && !error ? (
-                  <Text style={{ color: GOLD, fontSize: 14 }}>{info}</Text>
+                  <Text style={{ fontFamily: SERIF, color: GOLD, fontSize: 14 }}>{info}</Text>
                 ) : null}
                 {error ? <Text style={errorText}>{error}</Text> : null}
 
@@ -410,7 +411,7 @@ export default function LoginScreen() {
                     onPress={() => setStep("credentials")}
                     activeOpacity={0.7}
                   >
-                    <Text style={{ color: GOLD, fontSize: 14, fontWeight: "500" }}>
+                    <Text style={{ fontFamily: SERIF, color: GOLD, fontSize: 14}}>
                       ← Use a different account
                     </Text>
                   </TouchableOpacity>
@@ -419,7 +420,7 @@ export default function LoginScreen() {
                     onPress={onSubmitCredentials}
                     activeOpacity={0.7}
                   >
-                    <Text style={{ color: GOLD, fontSize: 14, fontWeight: "500" }}>
+                    <Text style={{ fontFamily: SERIF, color: GOLD, fontSize: 14}}>
                       Resend code
                     </Text>
                   </TouchableOpacity>
@@ -474,21 +475,22 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
 }
 
 const eyebrowLabel = {
+  fontFamily: SERIF_BOLD,
   color: GOLD,
   fontSize: 12,
-  fontWeight: "600" as const,
   letterSpacing: 3,
 };
 const subhead = {
+  fontFamily: SERIF,
   marginTop: 10,
   fontSize: 13.5,
   color: INK_DIM,
   lineHeight: 19,
 };
 const fieldLabel = {
+  fontFamily: SERIF_BOLD,
   marginBottom: 8,
   fontSize: 13,
-  fontWeight: "700" as const,
   color: INK,
   letterSpacing: 1.5,
 };
@@ -517,11 +519,12 @@ const primaryBtn = {
   justifyContent: "center" as const,
 };
 const primaryBtnText = {
+  fontFamily: SERIF_BOLD,
   color: INK_ON_GOLD,
   fontSize: 17,
-  fontWeight: "600" as const,
 };
 const errorText = {
+  fontFamily: SERIF,
   color: ERROR,
   fontSize: 14,
   lineHeight: 20,

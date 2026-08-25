@@ -228,7 +228,7 @@ export default function VendorSignupScreen() {
               hitSlop={12}
               style={{ alignSelf: "flex-start", paddingVertical: 8 }}
             >
-              <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+              <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
                 ← Back
               </Text>
             </Pressable>
@@ -397,7 +397,7 @@ function AccountStep(p: AccountStepProps) {
               activeOpacity={0.7}
               style={{ paddingLeft: 10 }}
             >
-              <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: GOLD, fontSize: 14}}>
                 {p.showPassword ? "Hide" : "Show"}
               </Text>
             </TouchableOpacity>
@@ -464,6 +464,7 @@ function BusinessStep(p: BusinessStepProps) {
             />
             <Text
               style={{
+                fontFamily: SERIF,
                 fontSize: 16,
                 color: p.category ? INK : SUBTLE,
                 flex: 1,
@@ -497,6 +498,7 @@ function BusinessStep(p: BusinessStepProps) {
 
         <Text
           style={{
+            fontFamily: SERIF,
             marginTop: 4,
             textAlign: "center",
             fontSize: 12,
@@ -580,7 +582,7 @@ function CodeStep(p: CodeStepProps) {
           activeOpacity={0.7}
           style={{ alignItems: "center", paddingVertical: 8 }}
         >
-          <Text style={{ color: GOLD, fontSize: 14, fontWeight: "600" }}>
+          <Text style={{ fontFamily: SERIF_BOLD, color: GOLD, fontSize: 14}}>
             Resend code
           </Text>
         </TouchableOpacity>
@@ -610,6 +612,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
       </Text>
       <Text
         style={{
+          fontFamily: SERIF,
           marginTop: 16,
           fontSize: 15,
           color: INK_DIM,
@@ -756,10 +759,10 @@ function CategoryPicker({
               <View key={group.slug} style={{ marginBottom: 8 }}>
                 <Text
                   style={{
+                    fontFamily: SERIF_BOLD,
                     paddingHorizontal: 20,
                     paddingVertical: 8,
                     fontSize: 11,
-                    fontWeight: "600",
                     color: GOLD,
                     letterSpacing: 2,
                   }}
@@ -781,7 +784,7 @@ function CategoryPicker({
                         alignItems: "center",
                       }}
                     >
-                      <Text style={{ color: INK, fontSize: 16 }}>{sub}</Text>
+                      <Text style={{ fontFamily: SERIF, color: INK, fontSize: 16 }}>{sub}</Text>
                       {isSelected ? (
                         <MaterialCommunityIcons
                           name="check"
@@ -802,21 +805,22 @@ function CategoryPicker({
 }
 
 const eyebrowLabel = {
+  fontFamily: SERIF_BOLD,
   color: GOLD,
   fontSize: 12,
-  fontWeight: "600" as const,
   letterSpacing: 3,
 };
 const subhead = {
+  fontFamily: SERIF,
   marginTop: 10,
   fontSize: 13.5,
   color: INK_DIM,
   lineHeight: 19,
 };
 const fieldLabel = {
+  fontFamily: SERIF_BOLD,
   marginBottom: 8,
   fontSize: 13,
-  fontWeight: "700" as const,
   color: INK,
   letterSpacing: 1.5,
 };
@@ -847,11 +851,12 @@ const primaryBtn = {
   justifyContent: "center" as const,
 };
 const primaryBtnText = {
+  fontFamily: SERIF_BOLD,
   color: INK_ON_GOLD,
   fontSize: 17,
-  fontWeight: "600" as const,
 };
 const errorText = {
+  fontFamily: SERIF,
   color: ERROR,
   fontSize: 14,
   lineHeight: 20,

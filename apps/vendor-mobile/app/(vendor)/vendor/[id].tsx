@@ -174,7 +174,7 @@ export default function VendorDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-sm text-muted-foreground">Loading…</Text>
+          <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
         </View>
       </SafeAreaView>
     );
@@ -193,7 +193,7 @@ export default function VendorDetailScreen() {
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-base text-foreground text-center">
+          <Text className="text-base text-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
             Listing not found.
           </Text>
         </View>
@@ -254,7 +254,7 @@ export default function VendorDetailScreen() {
               className="items-center justify-center"
             >
               <Feather name="image" size={36} color="#a1a1aa" />
-              <Text className="mt-2 text-sm text-muted-foreground">
+              <Text className="mt-2 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                 No listing photos yet
               </Text>
             </View>
@@ -305,7 +305,7 @@ export default function VendorDetailScreen() {
                 backgroundColor: "rgba(0,0,0,0.55)",
               }}
             >
-              <Text className="text-xs font-semibold text-white">
+              <Text className="text-xs text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                 {photoIndex + 1} / {photos.length}
               </Text>
             </View>
@@ -331,7 +331,7 @@ export default function VendorDetailScreen() {
             >
               {vendor.business_name ?? "Vendor"}
             </Text>
-            <Text className="mt-2 text-base text-muted-foreground">
+            <Text className="mt-2 text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
               {vendor.category ?? ""}
               {vendor.location ? ` · ${vendor.location}` : ""}
             </Text>
@@ -343,7 +343,7 @@ export default function VendorDetailScreen() {
               <StatCell
                 top={
                   <View className="flex-row items-center gap-1">
-                    <Text className="text-base font-bold text-foreground">
+                    <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                       {vendor.verified_at ? "Verified" : "New"}
                     </Text>
                   </View>
@@ -353,7 +353,7 @@ export default function VendorDetailScreen() {
               <Divider />
               <StatCell
                 top={
-                  <Text className="text-base font-bold text-foreground">
+                  <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                     {faqs.length}
                   </Text>
                 }
@@ -367,7 +367,7 @@ export default function VendorDetailScreen() {
           {/* Bio */}
           {vendor.bio ? (
             <View className="px-5 pt-6">
-              <Text className="text-base text-foreground/90 leading-relaxed">
+              <Text className="text-base text-foreground/90 leading-relaxed" style={{ fontFamily: "LibreBaskerville" }}>
                 {vendor.bio}
               </Text>
             </View>
@@ -394,37 +394,37 @@ export default function VendorDetailScreen() {
             {price ? (
               <>
                 <Text
-                  className="text-xl font-bold text-foreground"
-                  style={{ textDecorationLine: "underline" }}
+                  className="text-xl text-foreground"
+                  style={{ fontFamily: "LibreBaskerville", textDecorationLine: "underline" }}
                 >
                   {price}
                 </Text>
-                <Text className="mt-0.5 text-xs text-muted-foreground">
+                <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                   {vendor.category ?? "Marketplace listing"}
                 </Text>
                 {models ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                     {models}
                   </Text>
                 ) : null}
                 {vendor.custom_pricing ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                     Pricing varies by event details.
                   </Text>
                 ) : null}
               </>
             ) : (
               <>
-                <Text className="text-xl font-bold text-foreground">
+                <Text className="text-xl text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
                   Pricing on request
                 </Text>
                 {models ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                     {models}
                   </Text>
                 ) : null}
                 {vendor.custom_pricing ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground">
+                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                     Pricing varies by event details.
                   </Text>
                 ) : null}
@@ -455,7 +455,7 @@ export default function VendorDetailScreen() {
             }}
           >
             <Feather name="external-link" size={16} color="#ffffff" />
-            <Text className="ml-2 text-base font-bold text-white">
+            <Text className="ml-2 text-base text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               View on web
             </Text>
           </Pressable>
@@ -523,7 +523,7 @@ function StatCell({
   return (
     <View className="flex-1 items-center px-2 py-3">
       {top}
-      <Text className="mt-1 text-xs text-muted-foreground">{bottom}</Text>
+      <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{bottom}</Text>
     </View>
   );
 }
@@ -541,7 +541,7 @@ function Section({
 }) {
   return (
     <View className="px-5 pt-7">
-      <Text className="text-xl font-semibold text-foreground mb-3">
+      <Text className="text-xl text-foreground mb-3" style={{ fontFamily: "LibreBaskerville-Bold" }}>
         {title}
       </Text>
       {children}

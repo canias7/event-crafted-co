@@ -294,7 +294,7 @@ export default function WelcomeScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: INK, fontSize: 16, fontWeight: "700" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
               Sign up
             </Text>
           </TouchableOpacity>
@@ -314,7 +314,7 @@ export default function WelcomeScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: INK, fontSize: 16, fontWeight: "700" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
               Sign in
             </Text>
           </TouchableOpacity>
@@ -329,6 +329,7 @@ export default function WelcomeScreen() {
 
           <Text
             style={{
+              fontFamily: SERIF,
               color: INK_DIM,
               fontSize: compact ? 10.5 : 11.5,
               lineHeight: compact ? 14 : 16,
@@ -338,14 +339,14 @@ export default function WelcomeScreen() {
           >
             By continuing, you agree to our{" "}
             <Text
-              style={{ color: BRONZE, fontWeight: "600" }}
+              style={{ fontFamily: SERIF_BOLD, color: BRONZE}}
               onPress={() => void Linking.openURL(TERMS_URL)}
             >
               Terms of Service
             </Text>{" "}
             and{" "}
             <Text
-              style={{ color: BRONZE, fontWeight: "600" }}
+              style={{ fontFamily: SERIF_BOLD, color: BRONZE}}
               onPress={() => void Linking.openURL(PRIVACY_URL)}
             >
               Privacy Policy

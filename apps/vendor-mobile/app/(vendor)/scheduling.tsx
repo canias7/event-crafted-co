@@ -361,9 +361,9 @@ export default function SchedulingScreen() {
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                   {t.name}
-                  {!t.active ? <Text style={{ fontSize: 12, color: INK_DIM }}>  · off</Text> : null}
+                  {!t.active ? <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>  · off</Text> : null}
                 </Text>
-                <Text style={{ marginTop: 1, fontSize: 12.5, color: INK_DIM }}>
+                <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 12.5, color: INK_DIM }}>
                   {t.duration_minutes} minutes
                 </Text>
               </View>
@@ -401,10 +401,10 @@ export default function SchedulingScreen() {
             }}
           >
             <Feather name="plus" size={16} color={INK} />
-            <Text style={{ fontSize: 14.5, fontWeight: "600", color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14.5, color: INK }}>
               Add appointment type
               {!premium ? (
-                <Text style={{ fontSize: 12, color: INK_DIM }}>
+                <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
                   {"  "}({types.length}/{pro ? PRO_TYPE_CAP : 1} on {pro ? "Pro" : "Free"})
                 </Text>
               ) : null}
@@ -454,10 +454,10 @@ export default function SchedulingScreen() {
                     />
                     <Text
                       style={{
+                        fontFamily: SERIF_BOLD,
                         width: 44,
                         marginLeft: 6,
                         fontSize: 14.5,
-                        fontWeight: "600",
                         color: day.on ? INK : INK_DIM,
                       }}
                     >
@@ -466,11 +466,11 @@ export default function SchedulingScreen() {
                     {day.on ? (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1, justifyContent: "flex-end" }}>
                         <TimePill label={timeLabel(day.start)} onPress={() => setTimeTarget([key, "start"])} />
-                        <Text style={{ color: INK_DIM }}>–</Text>
+                        <Text style={{ fontFamily: SERIF, color: INK_DIM }}>–</Text>
                         <TimePill label={timeLabel(day.end)} onPress={() => setTimeTarget([key, "end"])} />
                       </View>
                     ) : (
-                      <Text style={{ flex: 1, textAlign: "right", fontSize: 13, color: INK_DIM }}>
+                      <Text style={{ fontFamily: SERIF, flex: 1, textAlign: "right", fontSize: 13, color: INK_DIM }}>
                         Unavailable
                       </Text>
                     )}
@@ -605,7 +605,7 @@ export default function SchedulingScreen() {
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}>
                   {sug.open_dates.length} open date{sug.open_dates.length === 1 ? "" : "s"} coming up
                 </Text>
-                <Text style={{ marginTop: 4, fontSize: 13, color: INK_DIM }}>
+                <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, color: INK_DIM }}>
                   {sug.open_dates
                     .slice(0, 6)
                     .map((d) =>
@@ -617,7 +617,7 @@ export default function SchedulingScreen() {
                     .join(" · ")}
                   {sug.open_dates.length > 6 ? ` +${sug.open_dates.length - 6} more` : ""}
                 </Text>
-                <Text style={{ marginTop: 6, fontSize: 12.5, color: INK_DIM }}>
+                <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 12.5, color: INK_DIM }}>
                   Approve to highlight these as last-minute availability on your public listing.
                 </Text>
                 <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
@@ -632,7 +632,7 @@ export default function SchedulingScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "600" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14}}>
                       Promote openings
                     </Text>
                   </Pressable>
@@ -649,7 +649,7 @@ export default function SchedulingScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ color: INK, fontSize: 14, fontWeight: "600" }}>Not now</Text>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>Not now</Text>
                   </Pressable>
                 </View>
               </View>
@@ -676,7 +676,7 @@ export default function SchedulingScreen() {
               {saving ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
                   Save scheduling setup
                 </Text>
               )}
@@ -746,7 +746,7 @@ export default function SchedulingScreen() {
                       borderColor: BORDER,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: "600", color: INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
                       {timeLabel(t)}
                     </Text>
                   </Pressable>
@@ -785,7 +785,7 @@ function SectionTitle({ title, sub }: { title: string; sub?: string }) {
         {title}
       </Text>
       {sub ? (
-        <Text style={{ marginTop: 3, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
+        <Text style={{ fontFamily: SERIF, marginTop: 3, fontSize: 13.5, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
       ) : null}
     </View>
   );
@@ -802,7 +802,7 @@ function TimePill({ label, onPress }: { label: string; onPress: () => void }) {
         paddingVertical: 7,
       }}
     >
-      <Text style={{ fontSize: 13.5, fontWeight: "600", color: INK }}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK }}>{label}</Text>
     </Pressable>
   );
 }
@@ -820,7 +820,7 @@ function RuleChips({
 }) {
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={{ fontSize: 13.5, fontWeight: "600", color: INK, marginBottom: 8 }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: INK, marginBottom: 8 }}>
         {label}
       </Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -839,7 +839,7 @@ function RuleChips({
                 borderColor: on ? INK : BORDER,
               }}
             >
-              <Text style={{ fontSize: 13, fontWeight: "600", color: on ? "#ffffff" : INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#ffffff" : INK }}>
                 {o}
               </Text>
             </Pressable>
@@ -892,7 +892,7 @@ function ToggleCard({
         <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, color: INK }}>
           {title}
         </Text>
-        <Text style={{ marginTop: 2, fontSize: 12.5, lineHeight: 17, color: INK_DIM }}>{sub}</Text>
+        <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12.5, lineHeight: 17, color: INK_DIM }}>{sub}</Text>
       </View>
       <Switch
         value={on}
@@ -956,7 +956,7 @@ function AutoRow({
           <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15.5, color: INK }}>
             {title}
           </Text>
-          <Text style={{ marginTop: 2, fontSize: 12.5, color: INK_DIM }}>{sub}</Text>
+          <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12.5, color: INK_DIM }}>{sub}</Text>
         </View>
         <Switch
           value={on}
@@ -969,7 +969,7 @@ function AutoRow({
         <View style={{ marginTop: 12 }}>
           {chips ? (
             <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-              <Text style={{ fontSize: 12.5, fontWeight: "600", color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12.5, color: INK_DIM }}>
                 {chips.label}
               </Text>
               {chips.options.map((o, i) => {
@@ -985,7 +985,7 @@ function AutoRow({
                       backgroundColor: sel ? INK : SURFACE,
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: "600", color: sel ? "#ffffff" : INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: sel ? "#ffffff" : INK }}>
                       {o}
                     </Text>
                   </Pressable>
@@ -1102,7 +1102,7 @@ function TypeForm({
                       borderColor: on ? INK : BORDER,
                     }}
                   >
-                    <Text style={{ fontSize: 13.5, fontWeight: "600", color: on ? "#ffffff" : INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13.5, color: on ? "#ffffff" : INK }}>
                       {d >= 60 ? `${d / 60} hr${d > 60 ? "s" : ""}` : `${d} min`}
                     </Text>
                   </Pressable>
@@ -1118,7 +1118,7 @@ function TypeForm({
               paddingVertical: 10,
             }}
           >
-            <Text style={{ fontSize: 15, fontWeight: "600", color: INK }}>Bookable</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>Bookable</Text>
             <Switch
               value={active}
               onValueChange={setActive}
@@ -1142,14 +1142,14 @@ function TypeForm({
             {saving ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={{ color: "#ffffff", fontSize: 15.5, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15.5}}>
                 Save appointment type
               </Text>
             )}
           </Pressable>
           {type ? (
             <Pressable onPress={remove} style={{ alignItems: "center", paddingVertical: 16 }}>
-              <Text style={{ color: "#c0392b", fontSize: 14, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#c0392b", fontSize: 14}}>
                 Delete appointment type
               </Text>
             </Pressable>
@@ -1184,7 +1184,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 19, color: INK }}>
         Put it on autopilot
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
+      <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
         Your hours and rules are set — Premium makes Vendora work them for
         you, automatically.
       </Text>
@@ -1192,7 +1192,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
         {rows.map((r) => (
           <View key={r.icon} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Feather name={r.icon} size={15} color="#8a6f3e" />
-            <Text style={{ flex: 1, fontSize: 13.5, color: INK }}>{r.text}</Text>
+            <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 13.5, color: INK }}>{r.text}</Text>
           </View>
         ))}
       </View>
@@ -1210,7 +1210,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
         }}
       >
         <MaterialCommunityIcons name="arrow-up-circle-outline" size={15} color={GOLD} />
-        <Text style={{ color: "#ffffff", fontSize: 15, fontWeight: "600" }}>
+        <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
           Upgrade to Premium
         </Text>
       </Pressable>
@@ -1260,6 +1260,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
       </Text>
       <Text
         style={{
+          fontFamily: SERIF,
           marginTop: 6,
           textAlign: "center",
           fontSize: 14.5,
@@ -1289,7 +1290,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
               <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16.5, color: INK }}>
                 {r.title}
               </Text>
-              <Text style={{ marginTop: 2, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
                 {r.sub}
               </Text>
             </View>
@@ -1310,11 +1311,11 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
         }}
       >
         <MaterialCommunityIcons name="arrow-up-circle-outline" size={16} color={GOLD} />
-        <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "600" }}>
+        <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
           See plans
         </Text>
       </Pressable>
-      <Text style={{ marginTop: 10, textAlign: "center", fontSize: 12.5, color: INK_DIM }}>
+      <Text style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", fontSize: 12.5, color: INK_DIM }}>
         Scheduling controls come with Pro · automations with Premium
       </Text>
     </View>

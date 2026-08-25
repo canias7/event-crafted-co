@@ -254,9 +254,9 @@ export default function EditProfileScreen() {
             ) : (
               <Text
                 style={{
+                  fontFamily: SERIF_BOLD,
                   color: dirty ? INK : INK_DIM,
                   fontSize: 15,
-                  fontWeight: "700",
                 }}
               >
                 Save
@@ -338,7 +338,7 @@ export default function EditProfileScreen() {
                         }}
                       >
                         <Text
-                          style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}
+                          style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 13 }}
                         >
                           Uploading…
                         </Text>
@@ -352,9 +352,9 @@ export default function EditProfileScreen() {
                   >
                     <Text
                       style={{
+                        fontFamily: SERIF_BOLD,
                         color: INK,
                         fontSize: 14,
-                        fontWeight: "700",
                       }}
                     >
                       Change photo
@@ -418,9 +418,9 @@ function Field({
     <View style={{ marginTop: 22 }}>
       <Text
         style={{
+          fontFamily: SERIF_BOLD,
           color: INK_DIM,
           fontSize: 11,
-          fontWeight: "800",
           letterSpacing: 1,
         }}
       >
