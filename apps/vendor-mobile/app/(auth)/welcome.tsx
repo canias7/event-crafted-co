@@ -289,12 +289,12 @@ export default function WelcomeScreen() {
               marginTop: compact ? 12 : 16,
               height: compact ? 46 : 52,
               borderRadius: 999,
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
               Sign up
             </Text>
           </TouchableOpacity>
@@ -308,7 +308,7 @@ export default function WelcomeScreen() {
               height: compact ? 46 : 52,
               borderRadius: 999,
               borderWidth: 1.5,
-              borderColor: INK,
+              borderColor: GOLD,
               backgroundColor: CARD,
               alignItems: "center",
               justifyContent: "center",
