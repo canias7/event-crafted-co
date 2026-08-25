@@ -31,6 +31,10 @@ const PAGE = "#f4f1ea";
 const INK = "#14161a";
 const INK_ON_GOLD = "#14161a";
 const GOLD = "#c9a86a";
+// Champagne bronze — the landing page's text accent. #c9a86a is
+// reserved for fills and glyphs; as words on cream it only reaches
+// 2:1, so every gold *label* uses this instead.
+const BRONZE = "#8a6f3e";
 const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
 const INK_DIM = "#5e636e";
 const SUBTLE = "#8b8f99";
@@ -219,7 +223,7 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
 
 const eyebrowLabel = {
   fontFamily: SERIF_BOLD,
-  color: GOLD,
+  color: BRONZE,
   fontSize: 12,
   letterSpacing: 3,
 };
@@ -274,12 +278,14 @@ const primaryBtnText = {
 // it read as broken rather than as "nothing typed yet". Give the state
 // its own solid colours instead, and keep the lift for the live one.
 const GOLD_MUTED = "#e0d2b0";
-const INK_ON_GOLD_MUTED = "#7d6636";
 function primaryBtnFor(disabled: boolean) {
   return disabled ? { ...primaryBtn, backgroundColor: GOLD_MUTED } : primaryBtn;
 }
-function primaryBtnTextFor(disabled: boolean) {
-  return disabled ? { ...primaryBtnText, color: INK_ON_GOLD_MUTED } : primaryBtnText;
+// The label stays ink in both states. A bronze label only reaches 3.7:1
+// on the muted fill, and bronze-on-gold would be worse still — the fill
+// alone is a clear enough cue, and both states stay readable.
+function primaryBtnTextFor(_disabled: boolean) {
+  return primaryBtnText;
 }
 const errorText = {
   fontFamily: SERIF,

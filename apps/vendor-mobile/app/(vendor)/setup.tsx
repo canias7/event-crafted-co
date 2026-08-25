@@ -30,6 +30,10 @@ const CARD = "#fbf9f4";
 const INK = "#14161a";
 const INK_DIM = "#5e636e";
 const GOLD = "#c9a86a";
+// Champagne bronze — the landing page's text accent. #c9a86a is
+// reserved for fills and glyphs; as words on cream it only reaches
+// 2:1, so every gold *label* uses this instead.
+const BRONZE = "#8a6f3e";
 const GOLD_SOFT = "rgba(201,168,106,0.35)";
 const BORDER = "rgba(20,22,26,0.10)";
 const SERIF = "LibreBaskerville";
@@ -127,7 +131,7 @@ export default function SetupChecklistScreen() {
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              color: GOLD,
+              color: BRONZE,
               fontSize: 12,
               letterSpacing: 3,
             }}
