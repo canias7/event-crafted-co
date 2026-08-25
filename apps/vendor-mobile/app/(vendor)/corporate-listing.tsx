@@ -950,7 +950,7 @@ export default function CorporateListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#dc2828", fontSize: 14}}>
+                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#b23a34", fontSize: 14}}>
                   Delete listing
                 </Text>
               </TouchableOpacity>

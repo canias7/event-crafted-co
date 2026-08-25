@@ -260,7 +260,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="trash-2" size={18} color="#dc2828" />
+                  <Feather name="trash-2" size={18} color="#b23a34" />
                 </Pressable>
               </View>
             </View>
@@ -539,7 +539,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="trash-2" size={18} color="#dc2828" />
+                  <Feather name="trash-2" size={18} color="#b23a34" />
                 </Pressable>
               </View>
             </View>

@@ -486,11 +486,11 @@ export function SettingsSheet({
                   justifyContent: "center",
                 }}
               >
-                <Feather name="trash-2" size={16} color="#dc2828" />
+                <Feather name="trash-2" size={16} color="#b23a34" />
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: "#dc2828",
+                    color: "#b23a34",
                     fontSize: 16,
                     marginLeft: 8,
                   }}

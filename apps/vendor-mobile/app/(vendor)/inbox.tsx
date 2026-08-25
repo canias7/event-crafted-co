@@ -477,9 +477,9 @@ export default function InboxScreen() {
               paddingVertical: 12,
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: "#b3352b" }}>{error}</Text>
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: "#b23a34" }}>{error}</Text>
             <Pressable onPress={() => load(false)} hitSlop={6}>
-              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: "#b3352b" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: "#b23a34" }}>
                 Try again
               </Text>
             </Pressable>
@@ -930,7 +930,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           {row.special_requests ? (
             <Text
               numberOfLines={2}
-              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: "#3c3f45" }}
+              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: "#14161a" }}
             >
               {row.special_requests}
             </Text>

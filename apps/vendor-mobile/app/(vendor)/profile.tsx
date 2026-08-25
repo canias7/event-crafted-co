@@ -819,7 +819,7 @@ function Avatar({
           style={{
             fontFamily: SERIF,
             fontSize: 40,
-            color: "#3f4249",
+            color: "#14161a",
           }}
         >
           {initial}
@@ -1203,7 +1203,7 @@ function ListingCard({
           {isApproved ? (
             <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
           ) : null}
-          <CardAction icon="trash-2" color="#dc2828" onPress={destroy} disabled={busy} />
+          <CardAction icon="trash-2" color="#b23a34" onPress={destroy} disabled={busy} />
         </View>
       </View>
       <View className="mt-3 px-1">

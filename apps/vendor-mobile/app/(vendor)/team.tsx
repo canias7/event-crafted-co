@@ -251,7 +251,7 @@ export default function TeamScreen() {
                     disabled={i === members.length - 1}
                     onPress={() => move(i, 1)}
                   />
-                  <RowIcon icon="trash-2" color="#c0392b" onPress={() => confirmRemove(m)} />
+                  <RowIcon icon="trash-2" color="#b23a34" onPress={() => confirmRemove(m)} />
                 </View>
               </View>
             ))}

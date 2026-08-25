@@ -341,7 +341,7 @@ export default function EditProfileScreen() {
                         }}
                       >
                         <Text
-                          style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 13 }}
+                          style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13 }}
                         >
                           Uploading…
                         </Text>

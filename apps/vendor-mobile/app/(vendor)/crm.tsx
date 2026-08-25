@@ -229,7 +229,7 @@ export default function CrmScreen() {
               alignItems: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 15}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
               Upgrade to Pro
             </Text>
           </Pressable>
@@ -652,7 +652,7 @@ function ClientSheet({
             }}
           >
             <Feather name="message-circle" size={15} color="#fff" />
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 14.5}}>Message</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14.5}}>Message</Text>
           </Pressable>
 
           {/* Follow-up reminder */}

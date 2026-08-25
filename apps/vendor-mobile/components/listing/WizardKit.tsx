@@ -246,7 +246,7 @@ export function Field({
     <View style={{ marginTop: 16 }}>
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         {label}
-        {required ? <Text style={{ fontFamily: SERIF, color: "#c0392b" }}> *</Text> : null}
+        {required ? <Text style={{ fontFamily: SERIF, color: "#b23a34" }}> *</Text> : null}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -592,7 +592,7 @@ function BrandDialogView({
             style={{
               marginTop: 20,
               alignSelf: "stretch",
-              backgroundColor: isConfirm && spec?.destructive ? "#dc2828" : INK,
+              backgroundColor: isConfirm && spec?.destructive ? "#b23a34" : INK,
               borderRadius: 999,
               height: 48,
               alignItems: "center",
@@ -1130,7 +1130,7 @@ export function ListingPhotosGrid({
                   paddingVertical: 2,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 10}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 10}}>
                   COVER
                 </Text>
               </View>
