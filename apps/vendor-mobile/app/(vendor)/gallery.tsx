@@ -702,7 +702,7 @@ export default function GalleryScreen() {
                 onPress={uploadImages}
                 style={{
                   marginTop: 22,
-                  backgroundColor: INK,
+                  backgroundColor: GOLD,
                   borderRadius: 999,
                   paddingHorizontal: 24,
                   height: 50,
@@ -711,8 +711,8 @@ export default function GalleryScreen() {
                   gap: 8,
                 }}
               >
-                <Feather name="upload" size={15} color={WHITE} />
-                <Text style={{ fontFamily: SERIF_BOLD, color: WHITE, fontSize: 15}}>
+                <Feather name="upload" size={15} color={INK} />
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                   Upload your first photo
                 </Text>
               </Pressable>
@@ -1145,14 +1145,14 @@ function SmallBtn({ label, onPress, primary }: { label: string; onPress: () => v
         paddingHorizontal: 18,
         height: 42,
         borderRadius: 999,
-        backgroundColor: primary ? INK : WHITE,
+        backgroundColor: primary ? GOLD : WHITE,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, color: primary ? WHITE : INK}}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: INK}}>{label}</Text>
     </Pressable>
   );
 }

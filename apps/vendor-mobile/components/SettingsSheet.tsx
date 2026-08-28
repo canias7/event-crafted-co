@@ -30,6 +30,10 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const GOLD = "#c9a86a";
+// Disabled fill for the gold pill — solid, not faded, so "unavailable"
+// never reads as "broken".
+const GOLD_MUTED = "#e0d2b0";
 const GOLD_SOFT = "#eadfc6";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -638,8 +642,8 @@ export function SettingsSheet({
                   marginTop: 22,
                   backgroundColor:
                     pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd
-                      ? "#7b7973"
-                      : INK,
+                      ? GOLD_MUTED
+                      : GOLD,
                   borderRadius: 999,
                   height: 52,
                   alignItems: "center",
@@ -647,7 +651,7 @@ export function SettingsSheet({
                 }}
               >
                 <Text
-                  style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}
+                  style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}
                 >
                   {pwdSubmitting ? "Saving…" : "Save password"}
                 </Text>

@@ -56,7 +56,7 @@ export function LogoCropperModal({
         }}
       >
         <Text
-          style={{ fontFamily: "LibreBaskerville-Italic", fontSize: 20, color: INK}}
+          style={{ fontFamily: "LibreBaskerville-Italic", fontSize: 20, color: "#14161a"}}
         >
           Your logo
         </Text>
@@ -122,7 +122,7 @@ export function LogoCropperModal({
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: INK}}>Choose different</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a"}}>Choose different</Text>
           </Pressable>
           <Pressable
             onPress={onApply}
@@ -130,12 +130,12 @@ export function LogoCropperModal({
               paddingHorizontal: 24,
               height: 46,
               borderRadius: 999,
-              backgroundColor: INK,
+              backgroundColor: "#c9a86a",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff"}}>Use logo</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a"}}>Use logo</Text>
           </Pressable>
         </View>
       </View>

@@ -314,14 +314,14 @@ export default function SetupChecklistScreen() {
             activeOpacity={0.85}
             style={{
               marginTop: 24,
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               borderRadius: 999,
               height: 56,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
               Back to my profile
             </Text>
           </TouchableOpacity>

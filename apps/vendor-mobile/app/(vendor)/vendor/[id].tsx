@@ -447,14 +447,14 @@ export default function VendorDetailScreen() {
             className="rounded-full active:opacity-80"
             style={{
               // INK — the app-wide primary button fill.
-              backgroundColor: "#14161a",
+              backgroundColor: "#c9a86a",
               paddingHorizontal: 22,
               paddingVertical: 14,
               flexDirection: "row",
               alignItems: "center",
             }}
           >
-            <Feather name="external-link" size={16} color="#ffffff" />
+            <Feather name="external-link" size={16} color="#14161a" />
             <Text className="ml-2 text-base text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               View on web
             </Text>

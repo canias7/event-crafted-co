@@ -538,12 +538,12 @@ export default function InboxScreen() {
                 style={{
                   marginTop: 12,
                   borderRadius: 999,
-                  backgroundColor: INK,
+                  backgroundColor: GOLD,
                   paddingHorizontal: 22,
                   paddingVertical: 11,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: "#ffffff" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
                   Find a vendor
                 </Text>
               </TouchableOpacity>
@@ -811,7 +811,7 @@ function EmptyState({
           activeOpacity={0.85}
           style={{
             marginTop: 22,
-            backgroundColor: INK,
+            backgroundColor: GOLD,
             borderRadius: 999,
             paddingHorizontal: 22,
             height: 50,
@@ -820,8 +820,8 @@ function EmptyState({
             gap: 8,
           }}
         >
-          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={GOLD} />
-          <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={INK} />
+          <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
             Tips to get more inquiries
           </Text>
         </TouchableOpacity>

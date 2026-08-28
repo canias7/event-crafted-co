@@ -628,14 +628,14 @@ export default function SchedulingScreen() {
                     onPress={() => decideSuggestion(sug, "approved")}
                     style={{
                       flex: 1,
-                      backgroundColor: INK,
+                      backgroundColor: GOLD,
                       borderRadius: 999,
                       height: 44,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14}}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
                       Promote openings
                     </Text>
                   </Pressable>
@@ -668,7 +668,7 @@ export default function SchedulingScreen() {
               disabled={saving}
               style={{
                 marginTop: 26,
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 54,
                 alignItems: "center",
@@ -677,9 +677,9 @@ export default function SchedulingScreen() {
               }}
             >
               {saving ? (
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={INK} />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
                   Save scheduling setup
                 </Text>
               )}
@@ -1134,7 +1134,7 @@ function TypeForm({
             disabled={saving}
             style={{
               marginTop: 14,
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               borderRadius: 999,
               height: 52,
               alignItems: "center",
@@ -1143,9 +1143,9 @@ function TypeForm({
             }}
           >
             {saving ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={INK} />
             ) : (
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                 Save appointment type
               </Text>
             )}
@@ -1203,7 +1203,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
         onPress={onUpgrade}
         style={{
           marginTop: 16,
-          backgroundColor: INK,
+          backgroundColor: GOLD,
           borderRadius: 999,
           height: 48,
           flexDirection: "row",
@@ -1212,8 +1212,8 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
           gap: 8,
         }}
       >
-        <MaterialCommunityIcons name="arrow-up-circle-outline" size={15} color={GOLD} />
-        <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+        <MaterialCommunityIcons name="arrow-up-circle-outline" size={15} color={INK} />
+        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
           Upgrade to Premium
         </Text>
       </Pressable>
@@ -1304,7 +1304,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
         onPress={onUpgrade}
         style={{
           marginTop: 26,
-          backgroundColor: INK,
+          backgroundColor: GOLD,
           borderRadius: 999,
           height: 56,
           flexDirection: "row",
@@ -1313,8 +1313,8 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
           gap: 8,
         }}
       >
-        <MaterialCommunityIcons name="arrow-up-circle-outline" size={16} color={GOLD} />
-        <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
+        <MaterialCommunityIcons name="arrow-up-circle-outline" size={16} color={INK} />
+        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
           See plans
         </Text>
       </Pressable>

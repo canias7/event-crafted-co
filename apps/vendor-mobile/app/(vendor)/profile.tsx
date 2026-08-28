@@ -406,13 +406,13 @@ export default function ProfileScreen() {
                 >
                   <View
                     style={{
-                      backgroundColor: INK,
+                      backgroundColor: GOLD,
                       borderRadius: 999,
                       paddingHorizontal: 16,
                       paddingVertical: 9,
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, color: WHITE, fontSize: 14}}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
                       Continue setup
                     </Text>
                   </View>
@@ -897,13 +897,13 @@ function EmptyState({
           activeOpacity={0.85}
           style={{
             marginTop: 20,
-            backgroundColor: INK,
+            backgroundColor: GOLD,
             borderRadius: 999,
             paddingHorizontal: 26,
             paddingVertical: 13,
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: WHITE }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
             {ctaLabel}
           </Text>
         </TouchableOpacity>
@@ -974,13 +974,13 @@ function ListingTab({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.85}
             style={{
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 8,
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: WHITE }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
               New listing
             </Text>
           </TouchableOpacity>

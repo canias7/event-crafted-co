@@ -61,6 +61,9 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
+// Disabled fill for the gold pill — a solid lighter gold rather than
+// a faded one, so "unavailable" never reads as "broken".
+const GOLD_MUTED = "#e0d2b0";
 const PENDING_BG = "#f2e7cb";
 const PENDING_FG = "#8a6f3e";
 const HATCH = "#d6d1c6";
@@ -1511,7 +1514,7 @@ export default function CalendarScreen() {
                       alignItems: "center",
                       justifyContent: "center",
                       backgroundColor:
-                        blocking || rangeWritable.length === 0 ? INK_MUTED : INK,
+                        blocking || rangeWritable.length === 0 ? GOLD_MUTED : GOLD,
                       paddingVertical: 13,
                       borderRadius: 999,
                       // Press feedback only — the disabled look is carried
@@ -1522,10 +1525,10 @@ export default function CalendarScreen() {
                     <Feather
                       name={rangeAllBlocked ? "x" : "calendar"}
                       size={15}
-                      color="#ffffff"
+                      color={INK}
                       style={{ marginRight: 6 }}
                     />
-                    <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14}}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
                       {blocking
                         ? "Saving…"
                         : rangeWritable.length === 0
@@ -1598,8 +1601,8 @@ export default function CalendarScreen() {
                         alignItems: "center",
                         backgroundColor:
                           blocking || (isSelectedBooked && !isSelectedBlocked)
-                            ? INK_MUTED
-                            : INK,
+                            ? GOLD_MUTED
+                            : GOLD,
                         paddingHorizontal: 14,
                         paddingVertical: 9,
                         borderRadius: 999,
@@ -1609,10 +1612,10 @@ export default function CalendarScreen() {
                       <Feather
                         name={isSelectedBlocked ? "x" : "calendar"}
                         size={14}
-                        color="#ffffff"
+                        color={INK}
                         style={{ marginRight: 4 }}
                       />
-                      <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13}}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
                         {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block time"}
                       </Text>
                     </View>
@@ -2623,15 +2626,15 @@ function AppointmentsSection({
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 999,
                 opacity: pressed ? 0.6 : 1,
               }}
             >
-              <Feather name="plus" size={13} color={CREAM} style={{ marginRight: 4 }} />
-              <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 12}}>Add appointment</Text>
+              <Feather name="plus" size={13} color={INK} style={{ marginRight: 4 }} />
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>Add appointment</Text>
             </View>
           )}
         </Pressable>
@@ -2875,15 +2878,9 @@ function ActionBtn({
 }) {
   // Disabled gets solid colours rather than a blanket 50% opacity, which
   // fades fill and label together and reads as broken.
-  const fg = disabled
-    ? primary
-      ? "#e4e2dd"
-      : "#9a968c"
-    : primary
-      ? CREAM
-      : muted
-        ? INK_DIM
-        : INK;
+  // The gold pill keeps an ink label in both states — only the fill
+  // carries "disabled", same rule as the auth buttons.
+  const fg = disabled && !primary ? INK_MUTED : INK;
   return (
     <Pressable
       onPress={onPress}
@@ -2896,8 +2893,8 @@ function ActionBtn({
         borderRadius: 999,
         backgroundColor: primary
           ? disabled
-            ? INK_MUTED
-            : INK
+            ? GOLD_MUTED
+            : GOLD
           : muted
             ? "transparent"
             : CREAM_DEEP,
@@ -2930,7 +2927,7 @@ function SmallBtn({
         paddingHorizontal: 18,
         height: 42,
         borderRadius: 999,
-        backgroundColor: primary ? (disabled ? INK_MUTED : INK) : CREAM,
+        backgroundColor: primary ? (disabled ? GOLD_MUTED : GOLD) : CREAM,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
@@ -2940,7 +2937,7 @@ function SmallBtn({
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          color: primary ? CREAM : disabled ? "#9a968c" : INK,
+          color: primary ? INK : disabled ? INK_MUTED : INK,
         }}
       >
         {label}

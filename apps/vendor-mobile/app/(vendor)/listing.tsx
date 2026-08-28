@@ -45,6 +45,7 @@ import { wizardRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
+const GOLD = "#c9a86a";
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
@@ -1659,7 +1660,7 @@ const savePillText = {
 
 const publishPillStyle = {
   borderRadius: 999,
-  backgroundColor: INK,
+  backgroundColor: GOLD,
   paddingVertical: 14,
   alignItems: "center" as const,
 };
@@ -1667,6 +1668,6 @@ const publishPillStyle = {
 const publishPillText = {
   fontFamily: SERIF_BOLD,
   fontSize: 15,
-  color: CREAM,
+  color: INK,
 };
 

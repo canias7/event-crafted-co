@@ -223,13 +223,13 @@ export default function CrmScreen() {
             onPress={() => router.push("/(vendor)/subscription" as never)}
             style={{
               marginTop: 26,
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               borderRadius: 999,
               paddingVertical: 15,
               alignItems: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
               Upgrade to Pro
             </Text>
           </Pressable>
@@ -646,13 +646,13 @@ function ClientSheet({
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               borderRadius: 999,
               paddingVertical: 13,
             }}
           >
-            <Feather name="message-circle" size={15} color="#fff" />
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 14}}>Message</Text>
+            <Feather name="message-circle" size={15} color={INK} />
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>Message</Text>
           </Pressable>
 
           {/* Follow-up reminder */}
@@ -727,20 +727,20 @@ function ClientSheet({
               style={{
                 marginTop: 8,
                 alignSelf: "flex-end",
-                backgroundColor: noteText.trim() ? INK : SURFACE,
+                backgroundColor: noteText.trim() ? GOLD : SURFACE,
                 borderRadius: 999,
                 paddingHorizontal: 16,
                 paddingVertical: 9,
               }}
             >
               {savingNote ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={INK} />
               ) : (
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
                     fontSize: 13,
-                    color: noteText.trim() ? "#fff" : INK_DIM,
+                    color: INK_DIM,
                   }}
                 >
                   Save note
