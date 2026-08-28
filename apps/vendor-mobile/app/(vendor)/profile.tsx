@@ -35,8 +35,8 @@ import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
 
 // Vendora light theme (the user's reference design): warm cream page,
-// gold accents, a dark identity card. The light-side sibling of the
-// dark auth flow.
+// gold accents. Every block — the identity card included — is CARD on
+// PAGE with a hairline BORDER.
 const WHITE = "#ffffff";
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -48,10 +48,14 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const BORDER = "rgba(20,22,26,0.10)";
 const GOLD = "#c9a86a";
-const DARK_CARD = "#16181d";
-const DARK_HAIRLINE = "rgba(255,255,255,0.16)";
-const DARK_MUTED = "rgba(255,255,255,0.65)";
-const GOLD_ON_DARK = "#d9bd82";
+// Champagne bronze — the landing page's text accent. #c9a86a is
+// reserved for fills and glyphs; as words on cream it only reaches
+// 2:1, so every gold *label* uses this instead.
+const BRONZE = "#8a6f3e";
+// The identity card used to be the one dark block on a cream page.
+// It now uses the same CARD + BORDER as every other block, so these
+// are the cream equivalents of the old on-dark tokens.
+const GOLD_HAIRLINE = "rgba(201,168,106,0.45)";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -501,15 +505,12 @@ function BrandCard({
   return (
     <View
       style={{
-        borderRadius: 24,
+        borderRadius: 20,
         overflow: "hidden",
-        backgroundColor: DARK_CARD,
+        backgroundColor: CARD,
+        borderWidth: 1,
+        borderColor: BORDER,
         minHeight: 280,
-        shadowColor: "#000",
-        shadowOpacity: 0.18,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 4,
       }}
     >
       {/* Bio / Back flip chip — top-right so it doesn't crowd the avatar. */}
@@ -523,9 +524,9 @@ function BrandCard({
           zIndex: 5,
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "rgba(255,255,255,0.08)",
+          backgroundColor: SURFACE,
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: DARK_HAIRLINE,
+          borderColor: BORDER,
           borderRadius: 999,
           paddingHorizontal: 10,
           paddingVertical: 5,
@@ -534,7 +535,7 @@ function BrandCard({
         <Feather
           name={flipped ? "rotate-ccw" : "info"}
           size={11}
-          color={DARK_MUTED}
+          color={BRONZE}
         />
         <Text
           style={{
@@ -542,7 +543,7 @@ function BrandCard({
             marginLeft: 5,
             fontSize: 10,
             letterSpacing: 1.8,
-            color: DARK_MUTED,
+            color: BRONZE,
           }}
         >
           {flipped ? "BACK" : "BIO"}
@@ -556,7 +557,7 @@ function BrandCard({
               fontFamily: SERIF_BOLD,
               fontSize: 10,
               letterSpacing: 2,
-              color: DARK_MUTED,
+              color: BRONZE,
             }}
           >
             ABOUT {businessName.toUpperCase()}
@@ -567,7 +568,7 @@ function BrandCard({
               fontFamily: SERIF_ITALIC,
               fontSize: 18,
               lineHeight: 27,
-              color: bio?.trim() ? "rgba(255,255,255,0.85)" : DARK_MUTED,
+              color: bio?.trim() ? INK : BRONZE,
             }}
           >
             {bio?.trim() ? bio : `No bio yet for ${businessName}.`}
@@ -593,7 +594,7 @@ function BrandCard({
                   borderRadius: 15,
                   backgroundColor: GOLD,
                   borderWidth: 3,
-                  borderColor: DARK_CARD,
+                  borderColor: CARD,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -615,7 +616,7 @@ function BrandCard({
                   fontSize: 24,
                   lineHeight: 31,
                   letterSpacing: -0.5,
-                  color: WHITE,
+                  color: INK,
                 }}
               >
                 {businessName}
@@ -634,14 +635,14 @@ function BrandCard({
                   <MaterialCommunityIcons
                     name="shield-check"
                     size={16}
-                    color={GOLD_ON_DARK}
+                    color={GOLD}
                   />
                   <Text
                     style={{
                       fontFamily: SERIF,
                       marginLeft: 6,
                       fontSize: 14,
-                      color: GOLD_ON_DARK,
+                      color: BRONZE,
                     }}
                   >
                     Verified
@@ -665,19 +666,19 @@ function BrandCard({
               style={{
                 flex: 1,
                 height: 1,
-                backgroundColor: "rgba(217,189,130,0.45)",
+                backgroundColor: GOLD_HAIRLINE,
               }}
             />
             <MaterialCommunityIcons
               name="star-four-points"
               size={14}
-              color={GOLD_ON_DARK}
+              color={GOLD}
             />
             <View
               style={{
                 flex: 1,
                 height: 1,
-                backgroundColor: "rgba(217,189,130,0.45)",
+                backgroundColor: GOLD_HAIRLINE,
               }}
             />
           </View>
@@ -697,7 +698,7 @@ function BrandCard({
               />
             </View>
             <View
-              style={{ width: 1, height: 34, backgroundColor: DARK_HAIRLINE }}
+              style={{ width: 1, height: 34, backgroundColor: BORDER }}
             />
             <View style={{ flex: 1, alignItems: "center" }}>
               <CardStat value={joined} label="JOINED" />
@@ -729,7 +730,7 @@ function CardStat({ value, label }: { value: string; label: string }) {
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 20,
-          color: WHITE,
+          color: INK,
         }}
       >
         {value}
@@ -740,7 +741,7 @@ function CardStat({ value, label }: { value: string; label: string }) {
           marginTop: 3,
           fontSize: 10,
           letterSpacing: 1.5,
-          color: DARK_MUTED,
+          color: BRONZE,
         }}
       >
         {label}
@@ -768,14 +769,14 @@ function OutlineBtn({
         alignItems: "center",
         justifyContent: "center",
         borderWidth: 1,
-        borderColor: DARK_HAIRLINE,
+        borderColor: BORDER,
         borderRadius: 999,
         paddingVertical: 12,
       }}
     >
-      <MaterialCommunityIcons name={icon} size={15} color={GOLD_ON_DARK} />
+      <MaterialCommunityIcons name={icon} size={15} color={GOLD} />
       <Text
-        style={{ fontFamily: SERIF_BOLD, marginLeft: 7, fontSize: 14, color: WHITE }}
+        style={{ fontFamily: SERIF_BOLD, marginLeft: 7, fontSize: 14, color: INK }}
       >
         {label}
       </Text>
