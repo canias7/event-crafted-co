@@ -1255,7 +1255,7 @@ function StepRail({
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 13,
-                      color: current ? "#fff" : INK_DIM,
+                      color: current ? INK : INK_DIM,
                     }}
                   >
                     {i + 1}
@@ -1721,15 +1721,15 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
 }
 
 const darkPill = {
-  backgroundColor: INK,
+  backgroundColor: GOLD,
   borderRadius: 999,
-  height: 54,
+  height: 52,
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
 const darkPillText = {
   fontFamily: SERIF_BOLD,
-  color: "#ffffff",
+  color: INK,
   fontSize: 16,
 };
 const lightPill = {

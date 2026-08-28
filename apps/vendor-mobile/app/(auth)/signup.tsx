@@ -790,7 +790,7 @@ function CategoryPicker({
                         <MaterialCommunityIcons
                           name="check"
                           size={18}
-                          color={GOLD}
+                          color={INK}
                         />
                       ) : null}
                     </Pressable>

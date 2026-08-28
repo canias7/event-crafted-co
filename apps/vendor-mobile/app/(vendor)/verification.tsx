@@ -331,14 +331,14 @@ export default function VerificationScreen() {
             onPress={() => router.push("/(vendor)/subscription" as never)}
             style={{
               marginTop: 26,
-              backgroundColor: INK,
+              backgroundColor: GOLD,
               borderRadius: 999,
               height: 54,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
               Upgrade to apply
             </Text>
           </Pressable>
@@ -442,14 +442,14 @@ export default function VerificationScreen() {
               }}
               style={{
                 marginTop: 18,
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 52,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                 Update & resubmit
               </Text>
             </Pressable>
@@ -547,14 +547,14 @@ export default function VerificationScreen() {
               onPress={() => setStep("identity")}
               style={{
                 marginTop: 24,
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 54,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                 Start verification
               </Text>
             </Pressable>
@@ -622,14 +622,14 @@ export default function VerificationScreen() {
               }}
               style={{
                 marginTop: 20,
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 52,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>Continue</Text>
             </Pressable>
           </>
         ) : null}
@@ -736,14 +736,14 @@ export default function VerificationScreen() {
               }}
               style={{
                 marginTop: 16,
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 52,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>Continue</Text>
             </Pressable>
           </>
         ) : null}
@@ -804,7 +804,7 @@ export default function VerificationScreen() {
               disabled={submitting}
               style={{
                 marginTop: 18,
-                backgroundColor: INK,
+                backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 54,
                 alignItems: "center",
@@ -813,9 +813,9 @@ export default function VerificationScreen() {
               }}
             >
               {submitting ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={INK} />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
                   Submit for review
                 </Text>
               )}

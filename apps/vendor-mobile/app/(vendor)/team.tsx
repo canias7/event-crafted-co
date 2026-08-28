@@ -628,7 +628,7 @@ function MemberForm({
                 disabled={saving}
                 style={{
                   marginTop: 14,
-                  backgroundColor: INK,
+                  backgroundColor: GOLD,
                   borderRadius: 999,
                   height: 54,
                   alignItems: "center",
@@ -637,9 +637,9 @@ function MemberForm({
                 }}
               >
                 {saving ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={INK} />
                 ) : (
-                  <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 16}}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
                     Save team member
                   </Text>
                 )}

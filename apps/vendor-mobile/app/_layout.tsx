@@ -112,14 +112,14 @@ function JsFatalScreen({
           onPress={onReload}
           style={{
             marginTop: 20,
-            backgroundColor: "#14161a",
+            backgroundColor: "#c9a86a",
             borderRadius: 999,
             height: 52,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff", fontSize: 16}}>
+          <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a", fontSize: 16}}>
             Reload app
           </Text>
         </Pressable>

@@ -73,6 +73,10 @@ export // Secondary text is the same black as headings; hierarchy comes from
 const INK_DIM = "#14161a";
 export const BORDER = "#e5e2dc";
 export const GOLD = "#c9a86a";
+// Disabled fill for the gold pill. Same rule as the auth buttons: give
+// the state its own solid colour rather than fading fill and label
+// together, which reads as broken rather than unavailable.
+export const GOLD_MUTED = "#e0d2b0";
 export const GOLD_SOFT = "rgba(201,168,106,0.16)";
 export const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -81,16 +85,19 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 export const MIN_PHOTOS = 3;
 export const MAX_PHOTOS = 100;
 
+// The one button in the app: gold fill, ink label, 52/16 — identical to
+// the pill on the sign-in screen. Ink is still correct for things that
+// are not buttons (avatars, badges, the plan card, message bubbles).
 export const darkPill = {
-  backgroundColor: INK,
+  backgroundColor: GOLD,
   borderRadius: 999,
-  height: 54,
+  height: 52,
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
 export const darkPillText = {
   fontFamily: SERIF_BOLD,
-  color: "#ffffff",
+  color: INK,
   fontSize: 16,
 };
 export const lightPill = {
@@ -112,7 +119,7 @@ export const lightPillText = {
 // and label together toward the page, so a solid ink pill turns into a
 // washed grey slab that reads as broken. Same rule as the auth buttons:
 // give the state its own solid colours and keep full opacity.
-export const darkPillDisabled = { ...darkPill, backgroundColor: "#7b7973" };
+export const darkPillDisabled = { ...darkPill, backgroundColor: GOLD_MUTED };
 export const lightPillDisabled = {
   ...lightPill,
   backgroundColor: "#f3f1ec",
@@ -182,7 +189,7 @@ export function StepRail({
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 13,
-                      color: current ? "#fff" : INK_DIM,
+                      color: current ? INK : INK_DIM,
                     }}
                   >
                     {i + 1}
@@ -592,14 +599,20 @@ function BrandDialogView({
             style={{
               marginTop: 20,
               alignSelf: "stretch",
-              backgroundColor: isConfirm && spec?.destructive ? "#b23a34" : INK,
+              backgroundColor: isConfirm && spec?.destructive ? "#b23a34" : GOLD,
               borderRadius: 999,
               height: 48,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 15}}>
+            <Text
+              style={{
+                fontFamily: SERIF_BOLD,
+                color: isConfirm && spec?.destructive ? "#ffffff" : INK,
+                fontSize: 15,
+              }}
+            >
               {isConfirm
                 ? (spec?.confirmLabel ?? "Confirm")
                 : (spec?.buttonLabel ?? "OK")}

@@ -43,6 +43,9 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
+// Disabled fill for the gold pill — solid, not faded, so
+// "unavailable" never reads as "broken".
+const GOLD_MUTED = "#e0d2b0";
 const GOLD_SOFT = "#eadfc6";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -701,18 +704,18 @@ export default function SubscriptionScreen() {
                       isCurrent || !tier.priceId
                         ? BORDER
                         : acting !== null && !isActing
-                          ? "#7b7973"
-                          : INK,
+                          ? GOLD_MUTED
+                          : GOLD,
                   }}
                 >
                   {isActing ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
+                    <ActivityIndicator size="small" color={INK} />
                   ) : (
                     <Text
                       style={{
                         fontFamily: SERIF_BOLD,
                         fontSize: 14,
-                        color: isCurrent || !tier.priceId ? INK_DIM : "#ffffff",
+                        color: isCurrent || !tier.priceId ? INK_DIM : INK,
                       }}
                     >
                       {isCurrent
@@ -772,15 +775,15 @@ export default function SubscriptionScreen() {
                       paddingHorizontal: 16,
                       paddingVertical: 9,
                       backgroundColor:
-                        acting !== null && !isActing ? "#7b7973" : INK,
+                        acting !== null && !isActing ? GOLD_MUTED : GOLD,
                       minWidth: 64,
                       alignItems: "center",
                     }}
                   >
                     {isActing ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
+                      <ActivityIndicator size="small" color={INK} />
                     ) : (
-                      <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13}}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
                         Buy
                       </Text>
                     )}
