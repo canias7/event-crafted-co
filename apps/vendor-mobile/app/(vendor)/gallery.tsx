@@ -533,6 +533,7 @@ export default function GalleryScreen() {
         >
           <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
             <Text
+              numberOfLines={1}
               style={{
                 fontFamily: SERIF_BOLD,
                 fontSize: 38,
@@ -549,17 +550,17 @@ export default function GalleryScreen() {
               onPress={() => (selectMode ? exitSelect() : setSelectMode(true))}
               style={pillStyle(selectMode)}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: selectMode ? WHITE : INK, fontSize: 14 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
                 {selectMode ? "Done" : "Select"}
               </Text>
             </Pressable>
             <Pressable onPress={uploadImages} disabled={uploading} style={[pillStyle(true), { opacity: uploading ? 0.6 : 1 }]}>
               {uploading ? (
-                <ActivityIndicator size="small" color={WHITE} />
+                <ActivityIndicator size="small" color={INK} />
               ) : (
-                <Feather name="plus" size={15} color={GOLD} />
+                <Feather name="plus" size={15} color={INK} />
               )}
-              <Text style={{ fontFamily: SERIF_BOLD, color: WHITE, fontSize: 14, marginLeft: 6 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13, marginLeft: 6 }}>
                 {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Upload"}
               </Text>
             </Pressable>
@@ -607,14 +608,14 @@ export default function GalleryScreen() {
               backgroundColor: SURFACE,
               borderRadius: 18,
               paddingHorizontal: 16,
-              height: 62,
+              height: 56,
             }}
           >
             <Feather name="search" size={17} color={INK_DIM} />
             <TextInput
               value={search}
               onChangeText={setSearch}
-              placeholder="Search caption or filename"
+              placeholder="Search photos"
               placeholderTextColor="#a49f93"
               style={{ fontFamily: SERIF, flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
             />
@@ -808,10 +809,13 @@ export default function GalleryScreen() {
             backgroundColor: "#efe9dc",
             borderRadius: 20,
             padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
           }}
         >
+          {/* Icon + copy on one row, CTA on its own line below. Side by
+              side, the button held its full width (RN flex items don't
+              shrink by default), leaving the copy ~74pt and breaking
+              every word mid-syllable. Same fix the inbox banner uses. */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View
             style={{
               width: 52,
@@ -832,6 +836,7 @@ export default function GalleryScreen() {
               High-quality media helps you stand out and build trust.
             </Text>
           </View>
+          </View>
           <Pressable
             onPress={() =>
               dialog.show({
@@ -843,7 +848,8 @@ export default function GalleryScreen() {
               })
             }
             style={{
-              marginLeft: 10,
+              alignSelf: "flex-start",
+              marginTop: 12,
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: GOLD,
@@ -1002,10 +1008,12 @@ function pillStyle(filled: boolean) {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    height: 44,
-    paddingHorizontal: 18,
+    // 38/14 rather than 44/18: at the old size "Select" + "Upload" left
+    // the 38pt "Gallery" title under 372pt and it wrapped to "Galler/y".
+    height: 38,
+    paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: filled ? INK : CARD,
+    backgroundColor: filled ? GOLD : CARD,
     borderWidth: filled ? 0 : 1,
     borderColor: BORDER,
   };
@@ -1027,8 +1035,8 @@ function SquareBtn({
     <Pressable
       onPress={onPress}
       style={{
-        width: 62,
-        height: 62,
+        width: 56,
+        height: 56,
         borderRadius: 16,
         backgroundColor: active ? INK : CARD,
         borderWidth: 1,
