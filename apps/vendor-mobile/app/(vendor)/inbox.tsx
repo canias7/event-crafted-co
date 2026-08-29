@@ -415,11 +415,26 @@ export default function InboxScreen() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                paddingHorizontal: 20,
+                paddingRight: 20,
                 paddingBottom: 8,
               }}
             >
-              <View style={{ flexDirection: "row", gap: 10, flex: 1 }}>
+              {/* Scrolls like the inquiries row rather than sharing a fixed
+                  width with the + button. All three chips fit at 412pt, but
+                  they were landing UNDER the button on the pixel — a serif
+                  at 15pt is wide and the row had no slack at all. A narrower
+                  phone, or a longer label, now scrolls instead of colliding. */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ flex: 1 }}
+                contentContainerStyle={{
+                  gap: 10,
+                  paddingLeft: 20,
+                  paddingRight: 4,
+                  alignItems: "center",
+                }}
+              >
                 <Chip
                   active={partnerFilter === "all"}
                   icon="inbox"
@@ -438,7 +453,7 @@ export default function InboxScreen() {
                   label="Active"
                   onPress={() => setPartnerFilter("active")}
                 />
-              </View>
+              </ScrollView>
               {/* Discovery entry point. The search field above only filters
                   threads you already have; this is how you reach vendors you
                   haven't messaged yet. */}
@@ -721,8 +736,8 @@ function Chip({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 7,
-        paddingHorizontal: 15,
+        gap: 6,
+        paddingHorizontal: 13,
         height: 42,
         borderRadius: 999,
         backgroundColor: active ? INK : CARD,
