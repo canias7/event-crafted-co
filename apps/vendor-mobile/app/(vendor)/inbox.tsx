@@ -4,8 +4,8 @@
 //
 // Restyled to the cream Vendora mock: wordmark header with search /
 // filter rounds, serif Inbox title, dark segmented toggle with icons,
-// white rounded search, icon chips with count badges, framed empty
-// state with a Tips action, and the "Stand out" improve-profile banner.
+// white rounded search, icon chips, framed empty state with a Tips
+// action, and the "Stand out" improve-profile banner.
 //
 // No function-form style props anywhere (device interop drops them).
 
@@ -221,13 +221,6 @@ export default function InboxScreen() {
     return out;
   }, [partners, partnerFilter, search]);
 
-  const counts = {
-    all: inquiries.length,
-    new: inquiries.filter((r) => r.status === "new").length,
-    replied: inquiries.filter((r) => r.status === "replied" || r.status === "drafted").length,
-    booked: inquiries.filter((r) => r.status === "won").length,
-  };
-
   const filterActive =
     tab === "inquiries" ? inquiryFilter !== "all" : partnerFilter !== "all";
 
@@ -373,13 +366,12 @@ export default function InboxScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 8 }}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 20, paddingBottom: 8 }}
             >
               <Chip
                 active={inquiryFilter === "all"}
                 icon="inbox"
                 label="All"
-                count={counts.all}
                 onPress={() => setInquiryFilter("all")}
               />
               <Chip
@@ -387,26 +379,23 @@ export default function InboxScreen() {
                 iconNode={
                   <MaterialCommunityIcons
                     name="email-outline"
-                    size={15}
+                    size={14}
                     color={inquiryFilter === "new" ? "#ffffff" : INK}
                   />
                 }
                 label="New"
-                count={counts.new}
                 onPress={() => setInquiryFilter("new")}
               />
               <Chip
                 active={inquiryFilter === "replied"}
                 icon="corner-up-left"
                 label="Replied"
-                count={counts.replied}
                 onPress={() => setInquiryFilter("replied")}
               />
               <Chip
                 active={inquiryFilter === "booked"}
                 icon="calendar"
                 label="Booked"
-                count={counts.booked}
                 onPress={() => setInquiryFilter("booked")}
               />
             </ScrollView>
@@ -429,7 +418,7 @@ export default function InboxScreen() {
                 showsHorizontalScrollIndicator={false}
                 style={{ flex: 1 }}
                 contentContainerStyle={{
-                  gap: 10,
+                  gap: 8,
                   paddingLeft: 20,
                   paddingRight: 4,
                   alignItems: "center",
@@ -714,19 +703,20 @@ function Segment({
   );
 }
 
+// Icon + label, no count badge. The badge pushed the four inquiry
+// chips to ~509pt on a 372pt line, so they ran off the edge; 14/11/5
+// lands the set at ~360 and it fits outright at 412.
 function Chip({
   active,
   icon,
   iconNode,
   label,
-  count,
   onPress,
 }: {
   active: boolean;
   icon?: keyof typeof Feather.glyphMap;
   iconNode?: React.ReactNode;
   label: string;
-  count?: number;
   onPress: () => void;
 }) {
   return (
@@ -736,8 +726,8 @@ function Chip({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
-        paddingHorizontal: 13,
+        gap: 5,
+        paddingHorizontal: 10,
         height: 42,
         borderRadius: 999,
         backgroundColor: active ? INK : CARD,
@@ -747,34 +737,17 @@ function Chip({
     >
       {iconNode ??
         (icon ? (
-          <Feather name={icon} size={15} color={active ? "#ffffff" : INK} />
+          <Feather name={icon} size={14} color={active ? "#ffffff" : INK} />
         ) : null)}
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          fontSize: 15,
+          fontSize: 14,
           color: active ? "#ffffff" : INK,
         }}
       >
         {label}
       </Text>
-      {count !== undefined ? (
-        <View
-          style={{
-            minWidth: 22,
-            height: 22,
-            borderRadius: 999,
-            paddingHorizontal: 5,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: active ? "#f4f1ea" : TRACK,
-          }}
-        >
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: INK }}>
-            {count}
-          </Text>
-        </View>
-      ) : null}
     </TouchableOpacity>
   );
 }
