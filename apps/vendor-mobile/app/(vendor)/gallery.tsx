@@ -1011,7 +1011,7 @@ function pillStyle(filled: boolean) {
     // 38/14 rather than 44/18: at the old size "Select" + "Upload" left
     // the 38pt "Gallery" title under 372pt and it wrapped to "Galler/y".
     height: 38,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 999,
     backgroundColor: filled ? GOLD : CARD,
     borderWidth: filled ? 0 : 1,
