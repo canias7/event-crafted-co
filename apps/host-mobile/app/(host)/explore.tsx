@@ -32,6 +32,10 @@ import {
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
+
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
 type Author = { business_name: string | null; logo_url: string | null } | null;
@@ -236,8 +240,8 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="px-4 pt-4">
-        <Text className="text-2xl font-semibold text-foreground">Explore</Text>
-        <Text className="mt-1 text-sm text-muted-foreground">
+        <Text style={{ fontFamily: SERIF_BOLD }} className="text-2xl text-foreground">Explore</Text>
+        <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
           Listings, posts, reels, and buzz from approved vendors
         </Text>
       </View>
@@ -344,7 +348,7 @@ function ViewTab({
 function EmptyMessage({ body }: { body: string }) {
   return (
     <View className="items-center pt-16 px-6">
-      <Text className="text-sm text-muted-foreground text-center">{body}</Text>
+      <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground text-center">{body}</Text>
     </View>
   );
 }
@@ -364,9 +368,9 @@ function FeedAuthorHeader({ vendor }: { vendor: Author }) {
           resizeMode="cover"
         />
       </View>
-      <Text
+      <Text style={{ fontFamily: SERIF_BOLD }}
         numberOfLines={1}
-        className="flex-1 text-base font-semibold text-foreground"
+        className="flex-1 text-base text-foreground"
       >
         {vendor?.business_name ?? "Vendora"}
       </Text>
@@ -383,7 +387,7 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             style={{
               borderRadius: 16,
               overflow: "hidden",
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               shadowColor: "#000",
               shadowOpacity: 0.10,
               shadowRadius: 8,
@@ -401,8 +405,8 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             />
             {p.caption ? (
               <View className="px-4 py-3 bg-background">
-                <Text className="text-sm text-foreground">{p.caption}</Text>
-                <Text className="mt-1 text-xs text-muted-foreground">
+                <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{p.caption}</Text>
+                <Text style={{ fontFamily: SERIF }} className="mt-1 text-xs text-muted-foreground">
                   {new Date(p.created_at).toLocaleString()}
                 </Text>
               </View>
@@ -423,7 +427,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             style={{
               borderRadius: 16,
               overflow: "hidden",
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               shadowColor: "#000",
               shadowOpacity: 0.12,
               shadowRadius: 8,
@@ -467,7 +471,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             </View>
             {r.caption ? (
               <View className="px-4 py-3 bg-background">
-                <Text className="text-sm text-foreground">{r.caption}</Text>
+                <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{r.caption}</Text>
               </View>
             ) : null}
           </View>
@@ -486,8 +490,8 @@ function BuzzList({ items }: { items: BuzzRow[] }) {
           className="rounded-xl border border-border bg-background p-2"
         >
           <FeedAuthorHeader vendor={b.vendor} />
-          <Text className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
-          <Text className="px-3 pb-3 text-xs text-muted-foreground">
+          <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
+          <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-xs text-muted-foreground">
             {new Date(b.created_at).toLocaleString()}
           </Text>
         </View>
@@ -575,7 +579,7 @@ function ListingFeed({
           return (
             <View key={groupName}>
               <View className="px-4 mb-3">
-                <Text className="text-lg font-bold text-foreground">
+                <Text style={{ fontFamily: SERIF_BOLD }} className="text-lg text-foreground">
                   {groupName}
                 </Text>
               </View>
@@ -585,7 +589,7 @@ function ListingFeed({
                   if (rows.length === 0) return null;
                   return (
                     <View key={subName}>
-                      <Text className="px-4 mb-2 text-sm font-semibold text-muted-foreground">
+                      <Text style={{ fontFamily: SERIF_BOLD }} className="px-4 mb-2 text-sm text-muted-foreground">
                         {subName}
                       </Text>
                       <ScrollView
@@ -611,7 +615,7 @@ function ListingFeed({
         })}
         {visibleGroups.length === 0 ? (
           <View className="items-center pt-10 px-4">
-            <Text className="text-sm text-muted-foreground">
+            <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">
               No listings in this category yet.
             </Text>
           </View>
@@ -664,7 +668,7 @@ function ListingCard({
             style={{ backgroundColor: "#f4f4f5" }}
           >
             <Feather name="image" size={28} color="#a1a1aa" />
-            <Text className="mt-2 text-center text-xs text-muted-foreground">
+            <Text style={{ fontFamily: SERIF }} className="mt-2 text-center text-xs text-muted-foreground">
               No listing photos yet
             </Text>
           </View>
@@ -695,23 +699,23 @@ function ListingCard({
         </Pressable>
       </View>
       <View className="mt-3 px-1">
-        <Text
+        <Text style={{ fontFamily: SERIF_BOLD }}
           numberOfLines={1}
-          className="text-base font-semibold text-foreground"
+          className="text-base text-foreground"
         >
           {listing.business_name ?? "Vendor"}
         </Text>
-        <Text
+        <Text style={{ fontFamily: SERIF }}
           numberOfLines={1}
           className="mt-0.5 text-sm text-muted-foreground"
         >
           {listing.location ?? "Marketplace listing"}
         </Text>
         {price ? (
-          <Text className="mt-1 text-sm text-foreground/80">{price}</Text>
+          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-foreground/80">{price}</Text>
         ) : null}
         {models ? (
-          <Text
+          <Text style={{ fontFamily: SERIF }}
             numberOfLines={1}
             className="mt-0.5 text-xs text-muted-foreground"
           >
@@ -736,11 +740,11 @@ function CategoryChip({
     <Pressable
       onPress={onPress}
       className={`rounded-full px-4 py-2 active:opacity-70 ${
-        active ? "bg-foreground" : "border border-border bg-background"
+ active ? "bg-foreground" : "border border-border bg-background"
       }`}
     >
-      <Text
-        className={`text-xs font-semibold ${
+      <Text style={{ fontFamily: SERIF_BOLD }}
+        className={`text-xs ${
           active ? "text-background" : "text-foreground"
         }`}
       >

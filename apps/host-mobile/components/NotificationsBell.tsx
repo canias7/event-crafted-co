@@ -24,11 +24,13 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const CREAM = "#ffffff";
-const RED = "#dc2626";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const CREAM = "#f4f1ea";
+const RED = "#b23a34";
 
 const CARD_SHADOW = {
   shadowColor: "#0a0a0a",
@@ -142,9 +144,8 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
         <Text
           style={{
             color: INK,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 18,
-            fontWeight: "700",
           }}
         >
           {initial}
@@ -169,9 +170,8 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
       <Text
         style={{
           color: INK,
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
           fontSize: 18,
-          fontWeight: "700",
         }}
       >
         {initial}
@@ -210,12 +210,11 @@ function NotificationItem({
               }}
             >
               <Text
-                style={{
+                style={{ fontFamily: SERIF_BOLD,
                   flex: 1,
                   paddingRight: 8,
                   color: INK,
                   fontSize: 15,
-                  fontWeight: "700",
                   lineHeight: 20,
                 }}
                 numberOfLines={2}
@@ -229,7 +228,7 @@ function NotificationItem({
                   marginTop: 2,
                 }}
               >
-                <Text style={{ color: INK_DIM, fontSize: 12 }}>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}>
                   {relativeTime(row.created_at)}
                 </Text>
                 {unread ? (
@@ -247,7 +246,7 @@ function NotificationItem({
             </View>
             {row.body ? (
               <Text
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 3,
                   color: INK,
                   fontSize: 14,
@@ -278,13 +277,12 @@ function Section({
   return (
     <>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           marginTop: 22,
           marginBottom: 10,
           paddingHorizontal: 4,
           color: INK_DIM,
           fontSize: 11,
-          fontWeight: "800",
           letterSpacing: 1.2,
         }}
       >
@@ -292,7 +290,7 @@ function Section({
       </Text>
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 18,
           overflow: "hidden",
           ...CARD_SHADOW,
@@ -429,7 +427,7 @@ export function NotificationsBell({
               }}
             >
               <Text
-                style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}
+                style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 10,}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -461,15 +459,13 @@ export function NotificationsBell({
             }}
           >
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text style={{ color: INK, fontSize: 15 }}>Close</Text>
+              <Text style={{ fontFamily: SERIF, color: INK, fontSize: 15 }}>Close</Text>
             </Pressable>
             <Text
               style={{
                 color: INK,
-                fontFamily: SERIF,
-                fontStyle: "italic",
+                fontFamily: SERIF_BOLD,
                 fontSize: 22,
-                fontWeight: "700",
               }}
             >
               Notifications
@@ -480,10 +476,9 @@ export function NotificationsBell({
               disabled={unread === 0}
             >
               <Text
-                style={{
+                style={{ fontFamily: SERIF_BOLD,
                   color: unread > 0 ? INK : "#a89b8a",
                   fontSize: 15,
-                  fontWeight: "600",
                 }}
               >
                 Mark read
@@ -500,7 +495,7 @@ export function NotificationsBell({
           >
             {loading ? (
               <View style={{ alignItems: "center", paddingTop: 80 }}>
-                <Text style={{ color: INK_DIM, fontSize: 14 }}>Loading…</Text>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>Loading…</Text>
               </View>
             ) : rows.length === 0 ? (
               <View
@@ -508,7 +503,7 @@ export function NotificationsBell({
               >
                 <Feather name="bell-off" size={32} color={INK_DIM} />
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF,
                     marginTop: 14,
                     color: INK_DIM,
                     fontSize: 14,
@@ -535,8 +530,7 @@ export function NotificationsBell({
                     marginTop: 28,
                     textAlign: "center",
                     color: INK_DIM,
-                    fontFamily: SERIF,
-                    fontStyle: "italic",
+                    fontFamily: SERIF_ITALIC,
                     fontSize: 15,
                   }}
                 >

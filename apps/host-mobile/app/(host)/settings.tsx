@@ -26,13 +26,15 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const BORDER = "#e5e7eb";
-const DANGER = "#b42318";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const BORDER = "#e6e1d5";
+const DANGER = "#b23a34";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -139,10 +141,8 @@ export default function SettingsScreen() {
               style={{
                 marginLeft: 4,
                 color: INK,
-                fontFamily: SERIF,
-                fontStyle: "italic",
+                fontFamily: SERIF_ITALIC,
                 fontSize: 28,
-                fontWeight: "500",
               }}
             >
               Account settings
@@ -198,9 +198,8 @@ export default function SettingsScreen() {
                         <ActivityIndicator color={CREAM} />
                       ) : (
                         <Text
-                          style={{
+                          style={{ fontFamily: SERIF_BOLD,
                             color: dirty ? CREAM : INK_DIM,
-                            fontWeight: "700",
                           }}
                         >
                           Save
@@ -216,7 +215,7 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "#fbf9f4",
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                         borderRadius: 18,
@@ -227,11 +226,10 @@ export default function SettingsScreen() {
                     >
                       <Feather name="log-out" size={18} color={INK} />
                       <Text
-                        style={{
+                        style={{ fontFamily: SERIF_BOLD,
                           marginLeft: 12,
                           color: INK,
                           fontSize: 15,
-                          fontWeight: "600",
                         }}
                       >
                         Sign out
@@ -248,7 +246,7 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "#fbf9f4",
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                         borderRadius: 18,
@@ -261,11 +259,10 @@ export default function SettingsScreen() {
                     >
                       <Feather name="trash-2" size={18} color={DANGER} />
                       <Text
-                        style={{
+                        style={{ fontFamily: SERIF_BOLD,
                           marginLeft: 12,
                           color: DANGER,
                           fontSize: 15,
-                          fontWeight: "600",
                         }}
                       >
                         {deleting ? "Submitting…" : "Delete account"}
@@ -292,11 +289,10 @@ function SectionLabel({
   return (
     <Text
       style={[
-        {
+        { fontFamily: SERIF_BOLD,
           marginTop: 16,
           color: INK_DIM,
           fontSize: 12,
-          fontWeight: "700",
           letterSpacing: 0.8,
           textTransform: "uppercase",
         },
@@ -310,36 +306,35 @@ function SectionLabel({
 
 const field = {
   marginTop: 12,
-  backgroundColor: "#ffffff",
+  backgroundColor: "#fbf9f4",
   borderRadius: 18,
   paddingHorizontal: 16,
   paddingTop: 12,
   paddingBottom: 14,
 } as const;
 
-const fieldLabel = {
+const fieldLabel = { fontFamily: SERIF_BOLD,
   color: INK_DIM,
   fontSize: 12,
-  fontWeight: "700" as const,
   letterSpacing: 0.5,
   textTransform: "uppercase" as const,
 };
 
-const input = {
+const input = { fontFamily: SERIF,
   marginTop: 6,
   color: INK,
   fontSize: 16,
   paddingVertical: 4,
 };
 
-const readonly = {
+const readonly = { fontFamily: SERIF,
   marginTop: 6,
   color: INK,
   fontSize: 16,
   paddingVertical: 4,
 };
 
-const hint = {
+const hint = { fontFamily: SERIF,
   marginTop: 6,
   color: INK_DIM,
   fontSize: 12,

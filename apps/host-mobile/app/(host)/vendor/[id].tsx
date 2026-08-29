@@ -57,25 +57,24 @@ import {
 // Editorial type + tone palette — bold serif title, muted ink for
 // supporting copy. Matches the listing-detail design (cream cards on
 // white, with deep ink #0a0a0a as the foreground anchor).
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const CREAM = "#f5f5f5";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const CREAM = "#f4f1ea";
 
 const sectionHeaderStyle = {
   paddingHorizontal: 20,
   color: INK,
   fontSize: 13,
-  fontWeight: "800",
   letterSpacing: 0.8,
 } as const;
 
 const statValueStyle = {
   color: INK,
   fontSize: 18,
-  fontWeight: "600",
-  fontFamily: SERIF,
-  fontStyle: "italic",
+  fontFamily: SERIF_BOLD,
 } as const;
 
 // Shared shadow style for white cards floating on the cream backdrop.
@@ -338,7 +337,7 @@ export default function VendorDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-sm text-muted-foreground">Loading…</Text>
+          <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">Loading…</Text>
         </View>
       </SafeAreaView>
     );
@@ -357,7 +356,7 @@ export default function VendorDetailScreen() {
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-base text-foreground text-center">
+          <Text style={{ fontFamily: SERIF }} className="text-base text-foreground text-center">
             Listing not found.
           </Text>
         </View>
@@ -441,7 +440,7 @@ export default function VendorDetailScreen() {
               className="items-center justify-center"
             >
               <Feather name="image" size={36} color="#a1a1aa" />
-              <Text className="mt-2 text-sm text-muted-foreground">
+              <Text style={{ fontFamily: SERIF }} className="mt-2 text-sm text-muted-foreground">
                 No listing photos yet
               </Text>
             </View>
@@ -492,7 +491,7 @@ export default function VendorDetailScreen() {
                 backgroundColor: "rgba(0,0,0,0.55)",
               }}
             >
-              <Text className="text-xs font-semibold text-white">
+              <Text style={{ fontFamily: SERIF_BOLD }} className="text-xs text-white">
                 {photoIndex + 1} / {photos.length}
               </Text>
             </View>
@@ -526,10 +525,9 @@ export default function VendorDetailScreen() {
               }}
             >
               <Text
-                style={{
+                style={{ fontFamily: SERIF_BOLD,
                   color: "#ffffff",
                   fontSize: 11,
-                  fontWeight: "800",
                   letterSpacing: 0.6,
                 }}
               >
@@ -546,10 +544,9 @@ export default function VendorDetailScreen() {
                 }}
               >
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     color: INK,
                     fontSize: 12,
-                    fontWeight: "600",
                   }}
                 >
                   {vendor.category}
@@ -563,10 +560,8 @@ export default function VendorDetailScreen() {
             <Text
               style={{
                 color: INK,
-                fontFamily: SERIF,
+                fontFamily: SERIF_BOLD,
                 fontSize: 38,
-                fontWeight: "700",
-                fontStyle: "italic",
                 lineHeight: 42,
               }}
               numberOfLines={2}
@@ -585,7 +580,7 @@ export default function VendorDetailScreen() {
               >
                 <Feather name="map-pin" size={14} color={INK_DIM} />
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF,
                     marginLeft: 6,
                     color: INK_DIM,
                     fontSize: 14,
@@ -605,7 +600,7 @@ export default function VendorDetailScreen() {
             style={{
               marginHorizontal: 20,
               marginTop: 18,
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               borderRadius: 18,
               flexDirection: "row",
               ...CARD_SHADOW,
@@ -639,7 +634,7 @@ export default function VendorDetailScreen() {
                 style={{
                   marginHorizontal: 20,
                   marginTop: 10,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "#fbf9f4",
                   borderRadius: 18,
                   paddingVertical: 14,
                   paddingHorizontal: 14,
@@ -665,8 +660,7 @@ export default function VendorDetailScreen() {
                   <Text
                     style={{
                       color: "#ffffff",
-                      fontFamily: SERIF,
-                      fontWeight: "600",
+                      fontFamily: SERIF_BOLD,
                       fontSize: 18,
                     }}
                   >
@@ -675,17 +669,16 @@ export default function VendorDetailScreen() {
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text
-                    style={{
+                    style={{ fontFamily: SERIF_BOLD,
                       color: "#0a0a0a",
                       fontSize: 15,
-                      fontWeight: "700",
                     }}
                     numberOfLines={1}
                   >
                     Hosted by {owner.display_name}
                   </Text>
                   <Text
-                    style={{
+                    style={{ fontFamily: SERIF,
                       marginTop: 1,
                       color: INK_DIM,
                       fontSize: 13,
@@ -708,7 +701,7 @@ export default function VendorDetailScreen() {
             <View style={{ marginTop: 26 }}>
               <Text style={sectionHeaderStyle}>About</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
-                <Text style={{ color: INK, fontSize: 15, lineHeight: 22 }}>
+                <Text style={{ fontFamily: SERIF, color: INK, fontSize: 15, lineHeight: 22 }}>
                   {vendor.bio}
                 </Text>
               </View>
@@ -731,7 +724,7 @@ export default function VendorDetailScreen() {
                   <View
                     key={p.id}
                     style={{
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "#fbf9f4",
                       borderRadius: 18,
                       padding: 16,
                       marginBottom: 12,
@@ -746,21 +739,19 @@ export default function VendorDetailScreen() {
                       }}
                     >
                       <Text
-                        style={{
+                        style={{ fontFamily: SERIF_BOLD,
                           flex: 1,
                           paddingRight: 12,
                           color: "#0a0a0a",
                           fontSize: 17,
-                          fontWeight: "700",
                         }}
                       >
                         {p.name}
                       </Text>
                       <Text
-                        style={{
+                        style={{ fontFamily: SERIF_BOLD,
                           color: "#0a0a0a",
                           fontSize: 17,
-                          fontWeight: "700",
                         }}
                       >
                         ${(p.price_cents / 100).toLocaleString()}
@@ -768,7 +759,7 @@ export default function VendorDetailScreen() {
                     </View>
                     {p.description ? (
                       <Text
-                        style={{
+                        style={{ fontFamily: SERIF,
                           marginTop: 4,
                           color: INK_DIM,
                           fontSize: 14,
@@ -782,7 +773,7 @@ export default function VendorDetailScreen() {
                         {p.includes.map((line, idx) => (
                           <Text
                             key={idx}
-                            style={{
+                            style={{ fontFamily: SERIF,
                               color: INK_DIM,
                               fontSize: 13,
                               marginTop: 2,
@@ -808,7 +799,7 @@ export default function VendorDetailScreen() {
                   <View
                     key={m.id}
                     style={{
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "#fbf9f4",
                       borderRadius: 18,
                       padding: 16,
                       marginBottom: 12,
@@ -834,8 +825,7 @@ export default function VendorDetailScreen() {
                         <Text
                           style={{
                             color: "#ffffff",
-                            fontFamily: SERIF,
-                            fontWeight: "600",
+                            fontFamily: SERIF_BOLD,
                             fontSize: 18,
                           }}
                         >
@@ -855,10 +845,9 @@ export default function VendorDetailScreen() {
                           }}
                         >
                           <Text
-                            style={{
+                            style={{ fontFamily: SERIF_BOLD,
                               color: "#0a0a0a",
                               fontSize: 16,
-                              fontWeight: "700",
                             }}
                           >
                             {m.display_name}
@@ -874,10 +863,9 @@ export default function VendorDetailScreen() {
                               }}
                             >
                               <Text
-                                style={{
+                                style={{ fontFamily: SERIF_BOLD,
                                   color: "#0a0a0a",
                                   fontSize: 10,
-                                  fontWeight: "800",
                                   letterSpacing: 0.8,
                                 }}
                               >
@@ -888,7 +876,7 @@ export default function VendorDetailScreen() {
                         </View>
                         {m.role ? (
                           <Text
-                            style={{
+                            style={{ fontFamily: SERIF,
                               marginTop: 1,
                               color: INK_DIM,
                               fontSize: 13,
@@ -911,7 +899,7 @@ export default function VendorDetailScreen() {
                           }}
                         />
                         <Text
-                          style={{
+                          style={{ fontFamily: SERIF,
                             color: INK,
                             fontSize: 14,
                             lineHeight: 20,
@@ -974,7 +962,7 @@ export default function VendorDetailScreen() {
                     }}
                   >
                     <Text
-                      style={{
+                      style={{ fontFamily: SERIF,
                         color: "#0a0a0a",
                         fontSize: 14,
                         lineHeight: 20,
@@ -998,7 +986,7 @@ export default function VendorDetailScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderTopWidth: 1,
           borderTopColor: "#e5e7eb",
         }}
@@ -1016,10 +1004,9 @@ export default function VendorDetailScreen() {
             {price ? (
               <>
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     color: INK_DIM,
                     fontSize: 11,
-                    fontWeight: "700",
                     letterSpacing: 0.6,
                   }}
                 >
@@ -1038,10 +1025,9 @@ export default function VendorDetailScreen() {
                   }}
                 >
                   <Text
-                    style={{
+                    style={{ fontFamily: SERIF_BOLD,
                       color: INK,
                       fontSize: 22,
-                      fontWeight: "800",
                     }}
                   >
                     {price}
@@ -1049,7 +1035,7 @@ export default function VendorDetailScreen() {
                 </View>
                 {pricingModelsLabel(vendor.pricing_models) ? (
                   <Text
-                    style={{
+                    style={{ fontFamily: SERIF,
                       marginTop: 4,
                       color: INK_DIM,
                       fontSize: 12,
@@ -1061,7 +1047,7 @@ export default function VendorDetailScreen() {
                 ) : null}
                 {vendor.custom_pricing ? (
                   <Text
-                    style={{
+                    style={{ fontFamily: SERIF,
                       marginTop: 2,
                       color: INK_DIM,
                       fontSize: 12,
@@ -1074,10 +1060,9 @@ export default function VendorDetailScreen() {
               </>
             ) : (
               <Text
-                style={{
+                style={{ fontFamily: SERIF_BOLD,
                   color: "#0a0a0a",
                   fontSize: 18,
-                  fontWeight: "700",
                 }}
               >
                 Pricing on request
@@ -1103,10 +1088,9 @@ export default function VendorDetailScreen() {
                 }}
               >
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     color: "#ffffff",
                     fontSize: 15,
-                    fontWeight: "700",
                     marginRight: 6,
                   }}
                 >
@@ -1196,11 +1180,10 @@ function StatCell({
     <View style={{ flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 14 }}>
       {top}
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           marginTop: 4,
           color: INK_DIM,
           fontSize: 10,
-          fontWeight: "700",
           letterSpacing: 0.8,
         }}
       >
@@ -1222,7 +1205,7 @@ function FaqCard({ question, answer }: { question: string; answer: string }) {
     <Pressable
       onPress={() => setOpen((v) => !v)}
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fbf9f4",
         borderRadius: 18,
         paddingHorizontal: 16,
         paddingVertical: 14,
@@ -1238,12 +1221,11 @@ function FaqCard({ question, answer }: { question: string; answer: string }) {
         }}
       >
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             flex: 1,
             paddingRight: 12,
             color: INK,
             fontSize: 15,
-            fontWeight: "700",
           }}
         >
           {question}
@@ -1256,7 +1238,7 @@ function FaqCard({ question, answer }: { question: string; answer: string }) {
       </View>
       {open ? (
         <Text
-          style={{
+          style={{ fontFamily: SERIF,
             marginTop: 10,
             color: INK_DIM,
             fontSize: 14,
@@ -1276,7 +1258,7 @@ function PolicyCard({ label, value }: { label: string; value: string }) {
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fbf9f4",
         borderRadius: 18,
         paddingHorizontal: 16,
         paddingVertical: 14,
@@ -1287,16 +1269,15 @@ function PolicyCard({ label, value }: { label: string; value: string }) {
       }}
     >
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           color: INK,
           fontSize: 15,
-          fontWeight: "700",
         }}
       >
         {label}
       </Text>
       <Text
-        style={{
+        style={{ fontFamily: SERIF,
           flex: 1,
           marginLeft: 12,
           textAlign: "right",
@@ -1359,10 +1340,9 @@ function CategoryDetailSection({
   return (
     <View style={{ marginBottom: 14 }}>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           color: INK_DIM,
           fontSize: 11,
-          fontWeight: "800",
           letterSpacing: 1.2,
           marginBottom: 8,
         }}
@@ -1371,7 +1351,7 @@ function CategoryDetailSection({
       </Text>
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 18,
           paddingHorizontal: 16,
           paddingVertical: 4,
@@ -1441,11 +1421,10 @@ function CategoryDetailValue({
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <Feather name="check" size={16} color="#0a0a0a" />
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             marginLeft: 8,
             color: INK,
             fontSize: 15,
-            fontWeight: "600",
           }}
         >
           {field.label}
@@ -1462,7 +1441,7 @@ function CategoryDetailValue({
     return (
       <View>
         <Text
-          style={{
+          style={{ fontFamily: SERIF,
             color: INK_DIM,
             fontSize: 13,
             marginBottom: 8,
@@ -1481,7 +1460,7 @@ function CategoryDetailValue({
                 paddingVertical: 4,
               }}
             >
-              <Text style={{ color: INK, fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12,}}>
                 {t}
               </Text>
             </View>
@@ -1502,14 +1481,13 @@ function RowLabelValue({ label, value }: { label: string; value: string }) {
         justifyContent: "space-between",
       }}
     >
-      <Text style={{ flex: 1, color: INK_DIM, fontSize: 14, paddingRight: 12 }}>
+      <Text style={{ fontFamily: SERIF, flex: 1, color: INK_DIM, fontSize: 14, paddingRight: 12 }}>
         {label}
       </Text>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           color: INK,
           fontSize: 15,
-          fontWeight: "700",
           textAlign: "right",
         }}
         numberOfLines={2}
@@ -1567,7 +1545,7 @@ function VendorBusinessCard({
         style={{
           marginHorizontal: 18,
           marginTop: 14,
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 18,
           paddingVertical: 14,
           paddingHorizontal: 14,
@@ -1589,13 +1567,13 @@ function VendorBusinessCard({
         />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text
-            style={{ color: INK, fontSize: 15, fontWeight: "700" }}
+            style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15,}}
             numberOfLines={1}
           >
             Hosted by {owner?.display_name ?? vendor.business_name ?? "Vendor"}
           </Text>
           <Text
-            style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+            style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}
             numberOfLines={1}
           >
             {joinedLabel(vendor.created_at)}
@@ -1664,9 +1642,7 @@ function CreamOceanAvatar({
         <Text
           style={{
             color: "#ffffff",
-            fontFamily: SERIF,
-            fontStyle: "italic",
-            fontWeight: "700",
+            fontFamily: SERIF_BOLD,
             fontSize,
             lineHeight: fontSize * 1.05,
             letterSpacing: -1,
@@ -1821,10 +1797,10 @@ function VendorProfileSheet({
           }}
         >
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={{ fontSize: 16, color: INK_DIM }}>Close</Text>
+            <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Close</Text>
           </Pressable>
           <Text
-            style={{ fontSize: 17, fontWeight: "600", color: INK, fontFamily: SERIF }}
+            style={{ fontSize: 17, color: INK, fontFamily: SERIF_BOLD }}
           >
             Vendor profile
           </Text>
@@ -1848,9 +1824,8 @@ function VendorProfileSheet({
           {owner?.bio ? (
             <View style={{ marginTop: 22, paddingHorizontal: 22 }}>
               <Text
-                style={{
+                style={{ fontFamily: SERIF_BOLD,
                   fontSize: 11,
-                  fontWeight: "800",
                   letterSpacing: 1.6,
                   color: INK_DIM,
                 }}
@@ -1863,8 +1838,7 @@ function VendorProfileSheet({
                   color: INK,
                   fontSize: 15,
                   lineHeight: 22,
-                  fontStyle: "italic",
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_ITALIC,
                 }}
               >
                 {owner.bio}
@@ -1984,19 +1958,17 @@ function SheetTabPill({
         }}
       >
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             color: active ? "#ffffff" : INK,
             fontSize: 13,
-            fontWeight: "700",
           }}
         >
           {label}
         </Text>
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             color: active ? "#ffffff" : INK_DIM,
             fontSize: 13,
-            fontWeight: "600",
           }}
         >
           {count}
@@ -2011,8 +1983,7 @@ function SheetEmpty({ body }: { body: string }) {
     <View style={{ alignItems: "center", paddingVertical: 32 }}>
       <Text
         style={{
-          fontFamily: SERIF,
-          fontStyle: "italic",
+          fontFamily: SERIF_ITALIC,
           color: INK_DIM,
           fontSize: 15,
         }}
@@ -2114,7 +2085,7 @@ function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
         <View
           key={b.id}
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderRadius: 14,
             padding: 14,
             marginHorizontal: 4,
@@ -2130,7 +2101,7 @@ function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
           >
             {b.body}
           </Text>
-          <Text style={{ marginTop: 6, color: INK_DIM, fontSize: 12 }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 6, color: INK_DIM, fontSize: 12 }}>
             {new Date(b.created_at).toLocaleDateString()}
           </Text>
         </View>
@@ -2156,7 +2127,7 @@ function SheetListingsList({
           <Pressable key={l.id} onPress={() => onPress(l.id)}>
             <View
               style={{
-                backgroundColor: "#ffffff",
+                backgroundColor: "#fbf9f4",
                 borderRadius: 14,
                 padding: 12,
                 marginHorizontal: 4,
@@ -2191,9 +2162,8 @@ function SheetListingsList({
                   <Text
                     style={{
                       color: "#ffffff",
-                      fontFamily: SERIF,
+                      fontFamily: SERIF_BOLD,
                       fontSize: 18,
-                      fontWeight: "600",
                     }}
                   >
                     {(l.business_name?.[0] ?? "V").toUpperCase()}
@@ -2209,7 +2179,7 @@ function SheetListingsList({
                   }}
                 >
                   <Text
-                    style={{ color: INK, fontSize: 15, fontWeight: "700", flexShrink: 1 }}
+                    style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15, flexShrink: 1 }}
                     numberOfLines={1}
                   >
                     {l.business_name ?? "Listing"}
@@ -2224,10 +2194,9 @@ function SheetListingsList({
                       }}
                     >
                       <Text
-                        style={{
+                        style={{ fontFamily: SERIF_BOLD,
                           color: "#ffffff",
                           fontSize: 9,
-                          fontWeight: "800",
                           letterSpacing: 0.6,
                         }}
                       >
@@ -2238,7 +2207,7 @@ function SheetListingsList({
                 </View>
                 {l.category ? (
                   <Text
-                    style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+                    style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}
                     numberOfLines={1}
                   >
                     {l.category}
@@ -2260,9 +2229,8 @@ function ProfileSheetStat({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ flex: 1, paddingHorizontal: 14, alignItems: "center" }}>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           fontSize: 10,
-          fontWeight: "800",
           letterSpacing: 1.4,
           color: INK_DIM,
         }}
@@ -2378,7 +2346,7 @@ function CreamOceanCard({
               right: 0,
               bottom: 0,
               borderRadius: 22,
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               borderWidth: 1,
               borderColor: "#ebe1ce",
               overflow: "hidden",
@@ -2413,7 +2381,7 @@ function CreamOceanCard({
               right: 0,
               bottom: 0,
               borderRadius: 22,
-              backgroundColor: "#ffffff",
+              backgroundColor: "#fbf9f4",
               borderWidth: 1,
               borderColor: "#ebe1ce",
               overflow: "hidden",
@@ -2546,9 +2514,7 @@ function CreamOceanFront({
           <View style={{ flex: 1 }}>
             <Text
               style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
-                fontWeight: "700",
+                fontFamily: SERIF_BOLD,
                 fontSize: 32,
                 lineHeight: 34,
                 letterSpacing: -0.6,
@@ -2566,9 +2532,8 @@ function CreamOceanFront({
               >
                 <Feather name="map-pin" size={12} color="#9c8f80" />
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF,
                     fontSize: 13,
-                    fontWeight: "500",
                     color: "#5a4f44",
                   }}
                   numberOfLines={1}
@@ -2690,8 +2655,7 @@ function CreamOceanBack({
       <View style={{ padding: 22, paddingTop: 60 }}>
         <Text
           style={{
-            fontFamily: SERIF,
-            fontStyle: "italic",
+            fontFamily: SERIF_ITALIC,
             color: INK,
             fontSize: hasBio ? 18 : 16,
             lineHeight: hasBio ? 26 : 22,
@@ -2740,9 +2704,8 @@ function CreamOceanStat({
   return (
     <View style={{ flex: 1, paddingHorizontal: 8, alignItems: "center" }}>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           fontSize: 9,
-          fontWeight: "700",
           letterSpacing: 1.8,
           textTransform: "uppercase",
           color: "#9c8f80",
@@ -2753,9 +2716,7 @@ function CreamOceanStat({
       </Text>
       <Text
         style={{
-          fontFamily: SERIF,
-          fontWeight: italic ? "500" : "600",
-          fontStyle: italic ? "italic" : "normal",
+          fontFamily: italic ? SERIF_ITALIC : SERIF_BOLD,
           fontSize: italic ? 14 : 16,
           color: italic ? "#5a4f44" : INK,
         }}

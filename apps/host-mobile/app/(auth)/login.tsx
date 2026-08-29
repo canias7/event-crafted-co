@@ -14,15 +14,17 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#b42318";
+const CREAM = "#f4f1ea";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const INK_BORDER = "#e6e1d5";
+const INPUT_BG = "#fbf9f4";
+const ERROR = "#b23a34";
 const ACCENT = "#1B3654";
 
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 type Step = "credentials" | "code";
 
@@ -156,7 +158,7 @@ export default function LoginScreen() {
           hitSlop={12}
           style={{ alignSelf: "flex-start", paddingVertical: 8 }}
         >
-          <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
             ← Back
           </Text>
         </Pressable>
@@ -166,9 +168,8 @@ export default function LoginScreen() {
             <View style={{ marginTop: 24 }}>
               <Text
                 style={{
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 36,
-                  fontWeight: "700",
                   color: INK,
                   letterSpacing: -1,
                 }}
@@ -180,8 +181,7 @@ export default function LoginScreen() {
                   marginTop: 8,
                   fontSize: 15,
                   color: INK_DIM,
-                  fontStyle: "italic",
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_ITALIC,
                 }}
               >
                 Log in to plan your next event.
@@ -201,10 +201,9 @@ export default function LoginScreen() {
 
               <View>
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     marginBottom: 6,
                     fontSize: 12,
-                    fontWeight: "600",
                     color: INK_DIM,
                     letterSpacing: 0.5,
                   }}
@@ -219,7 +218,7 @@ export default function LoginScreen() {
                     placeholder="••••••••"
                     placeholderTextColor={INK_DIM}
                     autoComplete="current-password"
-                    style={{
+                    style={{ fontFamily: SERIF,
                       backgroundColor: INPUT_BG,
                       borderColor: INK_BORDER,
                       borderWidth: 1,
@@ -242,14 +241,14 @@ export default function LoginScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ color: ACCENT, fontSize: 13, fontWeight: "600" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: ACCENT, fontSize: 13,}}>
                       {showPassword ? "Hide" : "Show"}
                     </Text>
                   </Pressable>
                 </View>
               </View>
 
-              {error ? <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text> : null}
+              {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
 
               <Pressable
                 onPress={onSubmitCredentials}
@@ -264,12 +263,12 @@ export default function LoginScreen() {
                   opacity: submitting || !email || !password ? 0.5 : 1,
                 }}
               >
-                <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
                   {submitting ? "Sending code…" : "Continue"}
                 </Text>
               </Pressable>
               <Text
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 4,
                   textAlign: "center",
                   fontSize: 12,
@@ -283,7 +282,7 @@ export default function LoginScreen() {
                 onPress={() => router.push("/(auth)/forgot-password")}
                 style={{ marginTop: 12, alignItems: "center" }}
               >
-                <Text style={{ color: INK, fontWeight: "600", fontSize: 14 }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>
                   Forgot your password?
                 </Text>
               </Pressable>
@@ -292,9 +291,9 @@ export default function LoginScreen() {
                 onPress={() => router.replace("/(auth)/signup")}
                 style={{ marginTop: 12, alignItems: "center" }}
               >
-                <Text style={{ color: INK_DIM, fontSize: 14 }}>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
                   New here?{" "}
-                  <Text style={{ color: INK, fontWeight: "600" }}>Create an account</Text>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Create an account</Text>
                 </Text>
               </Pressable>
             </View>
@@ -304,9 +303,8 @@ export default function LoginScreen() {
             <View style={{ marginTop: 24 }}>
               <Text
                 style={{
-                  fontFamily: SERIF,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 36,
-                  fontWeight: "700",
                   color: INK,
                   letterSpacing: -1,
                 }}
@@ -318,8 +316,7 @@ export default function LoginScreen() {
                   marginTop: 8,
                   fontSize: 15,
                   color: INK_DIM,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
+                  fontFamily: SERIF_ITALIC,
                 }}
               >
                 We sent a 6-digit code to {email}. It expires in 10 minutes.
@@ -329,10 +326,9 @@ export default function LoginScreen() {
             <View style={{ marginTop: 32, gap: 16 }}>
               <View>
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     marginBottom: 6,
                     fontSize: 12,
-                    fontWeight: "600",
                     color: INK_DIM,
                     letterSpacing: 0.5,
                   }}
@@ -364,8 +360,8 @@ export default function LoginScreen() {
                 />
               </View>
 
-              {info && !error ? <Text style={{ color: ACCENT, fontSize: 14 }}>{info}</Text> : null}
-              {error ? <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text> : null}
+              {info && !error ? <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14 }}>{info}</Text> : null}
+              {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
 
               <Pressable
                 onPress={onSubmitCode}
@@ -380,19 +376,19 @@ export default function LoginScreen() {
                   opacity: submitting || code.length !== 6 ? 0.5 : 1,
                 }}
               >
-                <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
                   {submitting ? "Verifying…" : "Sign in"}
                 </Text>
               </Pressable>
 
               <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
                 <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
-                  <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "500" }}>
+                  <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14,}}>
                     ← Use a different account
                   </Text>
                 </Pressable>
                 <Pressable disabled={submitting} onPress={onSubmitCredentials}>
-                  <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "500" }}>
+                  <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14,}}>
                     Resend code
                   </Text>
                 </Pressable>
@@ -427,10 +423,9 @@ function Field({
   return (
     <View>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           marginBottom: 6,
           fontSize: 12,
-          fontWeight: "600",
           color: INK_DIM,
           letterSpacing: 0.5,
         }}
@@ -445,7 +440,7 @@ function Field({
         keyboardType={keyboardType}
         autoComplete={autoComplete}
         autoCapitalize={autoCapitalize}
-        style={{
+        style={{ fontFamily: SERIF,
           backgroundColor: INPUT_BG,
           borderColor: INK_BORDER,
           borderWidth: 1,

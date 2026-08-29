@@ -19,13 +19,15 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const INK_BORDER = "#e6e1d5";
 
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Per-character timing (ms). Mirrors the HTML constants.
 const OPENER_PER_CHAR = 55;
@@ -103,10 +105,11 @@ function AnimatedChar({
   return (
     <Animated.Text
       style={{
-        fontFamily: SERIF,
+        // The face carries weight and slant — Android won't synthesise
+        // either for a custom family. There is no bold-italic face in
+        // Libre Baskerville, so bold wins when both are asked for.
+        fontFamily: bold ? SERIF_BOLD : italic ? SERIF_ITALIC : SERIF,
         fontSize,
-        fontStyle: italic ? "italic" : "normal",
-        fontWeight: bold ? "700" : "500",
         color,
         letterSpacing,
         opacity,
@@ -259,7 +262,7 @@ function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
             }}
           >
             {icon ?? null}
-            <Text style={{ color: fg, fontSize: 16, fontWeight: "600" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: fg, fontSize: 16,}}>
               {label}
             </Text>
           </View>
@@ -477,8 +480,7 @@ export default function WelcomeScreen() {
             style={{
               color: CREAM,
               fontSize: 17,
-              fontWeight: "600",
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
             }}
           >
             Sign up
@@ -508,8 +510,7 @@ export default function WelcomeScreen() {
             style={{
               color: INK,
               fontSize: 17,
-              fontWeight: "600",
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
             }}
           >
             Sign in
