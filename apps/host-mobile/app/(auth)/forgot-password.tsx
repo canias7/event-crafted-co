@@ -20,13 +20,15 @@ import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#b42318";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const CREAM = "#f4f1ea";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const INK_BORDER = "#e6e1d5";
+const INPUT_BG = "#fbf9f4";
+const ERROR = "#b23a34";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -75,10 +77,8 @@ export default function ForgotPasswordScreen() {
           <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
             <Text
               style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
+                fontFamily: SERIF_BOLD,
                 fontSize: 36,
-                fontWeight: "700",
                 color: INK,
                 letterSpacing: -1,
               }}
@@ -86,7 +86,7 @@ export default function ForgotPasswordScreen() {
               Forgot your password?
             </Text>
             <Text
-              style={{
+              style={{ fontFamily: SERIF,
                 marginTop: 10,
                 color: INK_DIM,
                 fontSize: 15,
@@ -99,10 +99,9 @@ export default function ForgotPasswordScreen() {
 
             <View style={{ marginTop: 24 }}>
               <Text
-                style={{
+                style={{ fontFamily: SERIF_BOLD,
                   color: INK_DIM,
                   fontSize: 12,
-                  fontWeight: "700",
                   letterSpacing: 0.8,
                 }}
               >
@@ -118,7 +117,7 @@ export default function ForgotPasswordScreen() {
                 onSubmitEditing={onSubmit}
                 placeholder="you@example.com"
                 placeholderTextColor={INK_DIM}
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: INPUT_BG,
                   borderRadius: 14,
@@ -134,7 +133,7 @@ export default function ForgotPasswordScreen() {
 
             {error ? (
               <Text
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 12,
                   color: ERROR,
                   fontSize: 13,
@@ -157,7 +156,7 @@ export default function ForgotPasswordScreen() {
                 opacity: submitting || !email.trim() ? 0.5 : 1,
               }}
             >
-              <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
                 {submitting ? "Sending…" : "Send reset link"}
               </Text>
             </Pressable>
@@ -166,10 +165,8 @@ export default function ForgotPasswordScreen() {
           <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
             <Text
               style={{
-                fontFamily: SERIF,
-                fontStyle: "italic",
+                fontFamily: SERIF_BOLD,
                 fontSize: 36,
-                fontWeight: "700",
                 color: INK,
                 letterSpacing: -1,
               }}
@@ -177,7 +174,7 @@ export default function ForgotPasswordScreen() {
               Check your email
             </Text>
             <Text
-              style={{
+              style={{ fontFamily: SERIF,
                 marginTop: 12,
                 fontSize: 15,
                 color: INK_DIM,
@@ -185,7 +182,7 @@ export default function ForgotPasswordScreen() {
               }}
             >
               If an account exists for{" "}
-              <Text style={{ color: INK, fontWeight: "600" }}>{email}</Text>,
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{email}</Text>,
               you'll get a reset link within a minute. Open it on this
               device to set a new password.
             </Text>
@@ -201,7 +198,7 @@ export default function ForgotPasswordScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
                 Back to sign in
               </Text>
             </Pressable>

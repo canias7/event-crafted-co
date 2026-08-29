@@ -74,12 +74,14 @@ import { supabase } from "@/lib/supabase";
 // shorthand, not full conversation — pick a real keyboard for that.
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
 const ACTIVE_GREEN = "#22c55e";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
@@ -522,7 +524,7 @@ function EmojiPickerModal({
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 12,
@@ -543,10 +545,8 @@ function EmojiPickerModal({
           <Text
             style={{
               color: INK,
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_ITALIC,
               fontSize: 18,
-              fontWeight: "500",
               marginBottom: 12,
               paddingHorizontal: 4,
             }}
@@ -573,7 +573,7 @@ function EmojiPickerModal({
                       opacity: pressed ? 0.6 : 1,
                     }}
                   >
-                    <Text style={{ fontSize: 28 }}>{e}</Text>
+                    <Text style={{ fontFamily: SERIF, fontSize: 28 }}>{e}</Text>
                   </View>
                 )}
               </Pressable>
@@ -626,8 +626,7 @@ function Header({
           <Text
             style={{
               color: CREAM,
-              fontFamily: SERIF,
-              fontWeight: "600",
+              fontFamily: SERIF_BOLD,
               fontSize: 18,
             }}
           >
@@ -655,9 +654,7 @@ function Header({
           numberOfLines={1}
           style={{
             color: INK,
-            fontFamily: SERIF,
-            fontStyle: "italic",
-            fontWeight: "700",
+            fontFamily: SERIF_BOLD,
             fontSize: 18,
           }}
         >
@@ -665,10 +662,9 @@ function Header({
         </Text>
         {isActive ? (
           <Text
-            style={{
+            style={{ fontFamily: SERIF_BOLD,
               color: ACTIVE_GREEN,
               fontSize: 12,
-              fontWeight: "600",
               marginTop: 1,
             }}
           >
@@ -726,8 +722,7 @@ function MessageRow({
                 <Text
                   style={{
                     color: CREAM,
-                    fontFamily: SERIF,
-                    fontWeight: "600",
+                    fontFamily: SERIF_BOLD,
                     fontSize: 13,
                   }}
                 >
@@ -786,7 +781,7 @@ function MessageRow({
                       size={16}
                       color={INK}
                     />
-                    <Text style={{ color: INK, fontSize: 14 }}>
+                    <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14 }}>
                       {audio
                         ? "Voice message"
                         : a.filename ?? "Attachment"}
@@ -843,10 +838,9 @@ function MessageRow({
                   />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
-                      style={{
+                      style={{ fontFamily: SERIF_BOLD,
                         color: isMine ? CREAM : INK,
                         fontSize: 11,
-                        fontWeight: "700",
                         marginBottom: 1,
                       }}
                       numberOfLines={1}
@@ -854,7 +848,7 @@ function MessageRow({
                       {m.replyTo.senderRole === "host" ? "You" : "Vendor"}
                     </Text>
                     <Text
-                      style={{
+                      style={{ fontFamily: SERIF,
                         color: isMine ? CREAM : INK,
                         fontSize: 12,
                         opacity: 0.75,
@@ -869,7 +863,7 @@ function MessageRow({
                 </View>
               ) : null}
               <Text
-                style={{
+                style={{ fontFamily: SERIF,
                   color: m.deleted_at ? INK_DIM : isMine ? CREAM : INK,
                   fontSize: 16,
                   lineHeight: 22,
@@ -880,7 +874,7 @@ function MessageRow({
               </Text>
               {m.edited_at && !m.deleted_at ? (
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF,
                     color: isMine ? CREAM : INK_DIM,
                     fontSize: 10,
                     marginTop: 3,
@@ -896,7 +890,7 @@ function MessageRow({
       </View>
       {isMine && showDelivered && m.isLastInGroup ? (
         <Text
-          style={{
+          style={{ fontFamily: SERIF,
             alignSelf: "flex-end",
             color: INK_DIM,
             fontSize: 11,
@@ -917,8 +911,7 @@ function DateSeparator({ label }: { label: string }) {
       <Text
         style={{
           color: INK_DIM,
-          fontFamily: SERIF,
-          fontStyle: "italic",
+          fontFamily: SERIF_ITALIC,
           fontSize: 13,
         }}
       >
@@ -933,7 +926,7 @@ function EmptyState() {
     <View style={{ alignItems: "center", paddingTop: 64, paddingHorizontal: 24 }}>
       <Feather name="message-square" size={28} color={INK_DIM} />
       <Text
-        style={{
+        style={{ fontFamily: SERIF,
           color: INK_DIM,
           marginTop: 12,
           textAlign: "center",
@@ -968,7 +961,7 @@ function Composer({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 999,
           paddingLeft: 14,
           paddingRight: 6,
@@ -989,7 +982,7 @@ function Composer({
           placeholder="Write a message…"
           placeholderTextColor="#a89b8a"
           multiline
-          style={{
+          style={{ fontFamily: SERIF,
             flex: 1,
             color: INK,
             fontSize: 15,

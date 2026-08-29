@@ -24,16 +24,18 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const BORDER = "#e5e7eb";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const BORDER = "#e6e1d5";
 const GREEN = "#22c55e";
-const AMBER = "#d99e2b";
+const AMBER = "#c9a86a";
 const GREEN_BG = "#e3f5e8";
 const AMBER_BG = "#fbeed1";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Same hue palette as inbox so a vendor's avatar color is consistent
 // everywhere they appear in the app.
@@ -319,15 +321,13 @@ export default function EventsScreen() {
               <Text
                 style={{
                   color: INK,
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
+                  fontFamily: SERIF_ITALIC,
                   fontSize: 34,
-                  fontWeight: "500",
                 }}
               >
                 Events
               </Text>
-              <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                 {upcoming.length} upcoming · {fmtMonthYear(today)}
               </Text>
             </View>
@@ -389,8 +389,7 @@ export default function EventsScreen() {
             <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
               <Text
                 style={{
-                  fontFamily: SERIF,
-                  fontStyle: "italic",
+                  fontFamily: SERIF_ITALIC,
                   fontSize: 20,
                   color: INK,
                   marginBottom: 10,
@@ -428,8 +427,7 @@ export default function EventsScreen() {
                     <Text
                       style={{
                         color: INK,
-                        fontFamily: SERIF,
-                        fontStyle: "italic",
+                        fontFamily: SERIF_ITALIC,
                         fontSize: 17,
                       }}
                     >
@@ -453,8 +451,7 @@ export default function EventsScreen() {
                   >
                     <Text
                       style={{
-                        fontFamily: SERIF,
-                        fontStyle: "italic",
+                        fontFamily: SERIF_ITALIC,
                         fontSize: 20,
                         color: INK,
                       }}
@@ -465,7 +462,7 @@ export default function EventsScreen() {
                       onPress={() => router.push("/(host)/inbox" as never)}
                       hitSlop={6}
                     >
-                      <Text style={{ color: INK_DIM, fontSize: 13 }}>
+                      <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}>
                         See all
                       </Text>
                     </Pressable>
@@ -490,13 +487,12 @@ export default function EventsScreen() {
                     paddingVertical: 12,
                   }}
                 >
-                  <Text style={{ color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
+                  <Text style={{ fontFamily: SERIF, color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
                   <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
                     <Text
-                      style={{
+                      style={{ fontFamily: SERIF_BOLD,
                         color: "#9b2c1b",
                         fontSize: 13,
-                        fontWeight: "700",
                       }}
                     >
                       Try again
@@ -518,7 +514,7 @@ export default function EventsScreen() {
                 >
                   <Feather name="calendar" size={28} color={INK_DIM} />
                   <Text
-                    style={{
+                    style={{ fontFamily: SERIF,
                       color: INK_DIM,
                       fontSize: 14,
                       textAlign: "center",
@@ -567,10 +563,9 @@ function DayPill({
       }}
     >
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           color: isSelected ? CREAM : INK_DIM,
           fontSize: 11,
-          fontWeight: "600",
           letterSpacing: 0.6,
         }}
       >
@@ -581,8 +576,7 @@ function DayPill({
           marginTop: 2,
           color: isSelected ? CREAM : INK,
           fontSize: 22,
-          fontWeight: "700",
-          fontFamily: SERIF,
+          fontFamily: SERIF_BOLD,
         }}
       >
         {day}
@@ -632,10 +626,9 @@ function VendorBubbles({
           }}
         >
           <Text
-            style={{
+            style={{ fontFamily: SERIF_BOLD,
               color: "#ffffff",
               fontSize: small ? 9 : 10,
-              fontWeight: "700",
             }}
           >
             {initialsOf(v.name)}
@@ -658,7 +651,7 @@ function VendorBubbles({
           }}
         >
           <Text
-            style={{ color: INK, fontSize: small ? 10 : 11, fontWeight: "700" }}
+            style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: small ? 10 : 11,}}
           >
             +{overflow}
           </Text>
@@ -735,7 +728,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: CREAM, fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 12,}}>
                 {relativeLabel(event.eventDate)}
               </Text>
             </View>
@@ -751,16 +744,14 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
           style={{
             marginTop: 18,
             color: CREAM,
-            fontFamily: SERIF,
-            fontStyle: "italic",
+            fontFamily: SERIF_ITALIC,
             fontSize: 28,
-            fontWeight: "500",
           }}
         >
           {event.title}
         </Text>
         <Text
-          style={{
+          style={{ fontFamily: SERIF,
             marginTop: 6,
             color: "rgba(250,245,236,0.65)",
             fontSize: 14,
@@ -800,11 +791,10 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
           >
             <VendorBubbles vendors={event.vendors} />
             <Text
-              style={{
+              style={{ fontFamily: SERIF_BOLD,
                 marginLeft: 10,
                 color: CREAM,
                 fontSize: 14,
-                fontWeight: "600",
                 flexShrink: 1,
               }}
               numberOfLines={1}
@@ -825,7 +815,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                   opacity: pressed ? 0.85 : 1,
                 }}
               >
-                <Text style={{ color: INK, fontSize: 13, fontWeight: "700" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13,}}>
                   View
                 </Text>
                 <Feather
@@ -858,7 +848,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
       {({ pressed }) => (
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 20,
           flexDirection: "row",
           alignItems: "center",
@@ -883,26 +873,24 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
         }}
       >
         <Text
-          style={{ color: INK_DIM, fontSize: 10, fontWeight: "600", letterSpacing: 0.6 }}
+          style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 10, letterSpacing: 0.6 }}
         >
           {month ?? "TBD"}
         </Text>
         <Text
           style={{
             color: INK,
-            fontFamily: SERIF,
+            fontFamily: SERIF_BOLD,
             fontSize: 24,
-            fontWeight: "700",
             marginTop: 2,
           }}
         >
           {day ?? "—"}
         </Text>
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             color: INK_DIM,
             fontSize: 10,
-            fontWeight: "600",
             letterSpacing: 0.6,
             marginTop: 2,
           }}
@@ -913,17 +901,16 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
 
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             color: INK,
             fontSize: 15,
-            fontWeight: "700",
           }}
           numberOfLines={1}
         >
           {event.title}
         </Text>
         <Text
-          style={{ marginTop: 2, color: INK_DIM, fontSize: 12 }}
+          style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12 }}
           numberOfLines={1}
         >
           {event.location ?? "Location TBD"}
@@ -939,7 +926,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <VendorBubbles vendors={event.vendors} small />
             <Text
-              style={{ marginLeft: 8, color: INK_DIM, fontSize: 12, fontWeight: "600" }}
+              style={{ fontFamily: SERIF_BOLD, marginLeft: 8, color: INK_DIM, fontSize: 12,}}
             >
               {event.vendors.length}{" "}
               {event.vendors.length === 1 ? "vendor" : "vendors"}
@@ -953,7 +940,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
               backgroundColor: status.bg,
             }}
           >
-            <Text style={{ color: status.fg, fontSize: 11, fontWeight: "700" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: status.fg, fontSize: 11,}}>
               {status.text}
             </Text>
           </View>

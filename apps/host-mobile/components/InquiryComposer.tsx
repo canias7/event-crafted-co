@@ -21,6 +21,10 @@ import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
+
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
 const EVENT_TYPES: { key: EventType; label: string }[] = [
@@ -128,13 +132,13 @@ export function InquiryComposer({
             <Pressable onPress={onClose} hitSlop={8}>
               <Feather name="x" size={22} color="#0a0a0a" />
             </Pressable>
-            <Text className="text-base font-semibold text-foreground">
+            <Text style={{ fontFamily: SERIF_BOLD }} className="text-base text-foreground">
               Inquire
             </Text>
             <Pressable onPress={submit} hitSlop={8} disabled={!canSubmit}>
               <Text
-                className="text-sm font-semibold"
-                style={{ color: canSubmit ? "#0a0a0a" : "#a1a1aa" }}
+                className="text-sm"
+                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? "#0a0a0a" : "#a1a1aa" }}
               >
                 {submitting ? "Sending…" : "Send"}
               </Text>
@@ -147,17 +151,17 @@ export function InquiryComposer({
           >
             {vendorName ? (
               <View>
-                <Text className="text-xs uppercase tracking-wide text-muted-foreground">
+                <Text style={{ fontFamily: SERIF }} className="text-xs uppercase tracking-wide text-muted-foreground">
                   To
                 </Text>
-                <Text className="mt-1 text-base font-semibold text-foreground">
+                <Text style={{ fontFamily: SERIF_BOLD }} className="mt-1 text-base text-foreground">
                   {vendorName}
                 </Text>
               </View>
             ) : null}
 
             <View>
-              <Text className="text-sm font-semibold text-foreground mb-2">
+              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
                 Event type
               </Text>
               <View className="flex-row flex-wrap gap-2">
@@ -168,13 +172,13 @@ export function InquiryComposer({
                       key={t.key}
                       onPress={() => setEventType(t.key)}
                       className={`rounded-full px-4 py-2 active:opacity-70 ${
-                        active
+ active
                           ? "bg-foreground"
                           : "border border-border bg-background"
                       }`}
                     >
-                      <Text
-                        className={`text-sm font-semibold ${
+                      <Text style={{ fontFamily: SERIF_BOLD }}
+                        className={`text-sm ${
                           active ? "text-background" : "text-foreground"
                         }`}
                       >
@@ -228,10 +232,10 @@ export function InquiryComposer({
             </View>
 
             <View>
-              <Text className="text-sm font-semibold text-foreground mb-2">
+              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
                 Message
               </Text>
-              <TextInput
+              <TextInput style={{ fontFamily: SERIF }}
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Tell the vendor about your event…"
@@ -265,8 +269,8 @@ function Field({
 }) {
   return (
     <View>
-      <Text className="text-sm font-semibold text-foreground mb-2">{label}</Text>
-      <TextInput
+      <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">{label}</Text>
+      <TextInput style={{ fontFamily: SERIF }}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

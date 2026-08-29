@@ -22,14 +22,16 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-const CREAM = "#ffffff";
-const CREAM_DEEP = "#f5f5f5";
-const INK = "#0a0a0a";
-const INK_DIM = "#6b7280";
-const BORDER = "#e5e7eb";
-const GOLD = "#d99e2b";
+const CREAM = "#f4f1ea";
+const CREAM_DEEP = "#ece7db";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const BORDER = "#e6e1d5";
+const GOLD = "#c9a86a";
 const GREEN = "#22c55e";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface Stats {
   inquiries: number;
@@ -203,10 +205,8 @@ export default function ProfileScreen() {
             <Text
               style={{
                 color: INK,
-                fontFamily: SERIF,
-                fontStyle: "italic",
+                fontFamily: SERIF_ITALIC,
                 fontSize: 34,
-                fontWeight: "500",
               }}
             >
               Profile
@@ -328,7 +328,7 @@ export default function ProfileScreen() {
                 }}
               >
                 <Text
-                  style={{ color: INK_DIM, fontSize: 15, fontWeight: "500" }}
+                  style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 15,}}
                 >
                   Log out
                 </Text>
@@ -357,7 +357,7 @@ function HeroCard({
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fbf9f4",
         borderRadius: 28,
         paddingTop: 28,
         paddingBottom: 22,
@@ -384,10 +384,8 @@ function HeroCard({
           <Text
             style={{
               color: CREAM,
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_ITALIC,
               fontSize: 56,
-              fontWeight: "500",
             }}
           >
             {initial}
@@ -401,7 +399,7 @@ function HeroCard({
             width: 30,
             height: 30,
             borderRadius: 999,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             alignItems: "center",
             justifyContent: "center",
             borderWidth: 2,
@@ -416,16 +414,14 @@ function HeroCard({
         style={{
           marginTop: 14,
           color: INK,
-          fontFamily: SERIF,
-          fontStyle: "italic",
+          fontFamily: SERIF_ITALIC,
           fontSize: 26,
-          fontWeight: "500",
         }}
         numberOfLines={1}
       >
         {name}
       </Text>
-      <Text style={{ marginTop: 4, color: INK_DIM, fontSize: 13 }}>
+      <Text style={{ fontFamily: SERIF, marginTop: 4, color: INK_DIM, fontSize: 13 }}>
         {verified ? "Verified Host  •  " : ""}Member since {memberSince}
       </Text>
 
@@ -469,10 +465,9 @@ function StatCol({
     <View style={{ flex: 1, alignItems: "center" }}>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <Text
-          style={{
+          style={{ fontFamily: SERIF_BOLD,
             color: INK,
             fontSize: 22,
-            fontWeight: "700",
           }}
         >
           {value}
@@ -480,11 +475,10 @@ function StatCol({
         {trailingIcon ?? null}
       </View>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           marginTop: 4,
           color: INK_DIM,
           fontSize: 11,
-          fontWeight: "600",
           letterSpacing: 0.6,
         }}
       >
@@ -512,7 +506,7 @@ function ShortcutTile({
       {({ pressed }) => (
         <View
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderRadius: 22,
             padding: 16,
             opacity: pressed ? 0.85 : 1,
@@ -551,7 +545,7 @@ function ShortcutTile({
                   paddingVertical: 4,
                 }}
               >
-                <Text style={{ color: CREAM, fontSize: 11, fontWeight: "700" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 11,}}>
                   {badge}
                 </Text>
               </View>
@@ -561,15 +555,13 @@ function ShortcutTile({
             style={{
               marginTop: 14,
               color: INK,
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_ITALIC,
               fontSize: 18,
-              fontWeight: "500",
             }}
           >
             {title}
           </Text>
-          <Text style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
             {subtitle}
           </Text>
         </View>
@@ -599,7 +591,7 @@ function ActionCard({
         <View
           style={{
             marginTop: 12,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#fbf9f4",
             borderRadius: 20,
             paddingVertical: 16,
             paddingHorizontal: 16,
@@ -627,17 +619,16 @@ function ActionCard({
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text
-              style={{
+              style={{ fontFamily: SERIF_BOLD,
                 color: INK,
                 fontSize: 16,
-                fontWeight: "600",
               }}
             >
               {title}
             </Text>
             {subtitle ? (
               <Text
-                style={{ marginTop: 2, color: INK_DIM, fontSize: 13 }}
+                style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}
                 numberOfLines={1}
               >
                 {subtitle}

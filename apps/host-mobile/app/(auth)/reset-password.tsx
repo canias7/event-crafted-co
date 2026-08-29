@@ -36,13 +36,15 @@ import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#b42318";
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const CREAM = "#f4f1ea";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const INK_BORDER = "#e6e1d5";
+const INPUT_BG = "#fbf9f4";
+const ERROR = "#b23a34";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 type State = "loading" | "ready" | "submitting" | "done" | "error";
 
@@ -226,16 +228,14 @@ export default function ResetPasswordScreen() {
         <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
           <Text
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_BOLD,
               fontSize: 32,
-              fontWeight: "700",
               color: INK,
             }}
           >
             Link expired
           </Text>
-          <Text style={{ marginTop: 10, color: INK_DIM, fontSize: 15 }}>
+          <Text style={{ fontFamily: SERIF, marginTop: 10, color: INK_DIM, fontSize: 15 }}>
             {error ?? "This password reset link is no longer valid."}
           </Text>
           <Pressable
@@ -249,7 +249,7 @@ export default function ResetPasswordScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
               Request a new link
             </Text>
           </Pressable>
@@ -267,10 +267,8 @@ export default function ResetPasswordScreen() {
         <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
           <Text
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
+              fontFamily: SERIF_BOLD,
               fontSize: 36,
-              fontWeight: "700",
               color: INK,
               letterSpacing: -1,
             }}
@@ -279,7 +277,7 @@ export default function ResetPasswordScreen() {
           </Text>
           {state === "done" ? (
             <Text
-              style={{
+              style={{ fontFamily: SERIF,
                 marginTop: 12,
                 color: INK_DIM,
                 fontSize: 15,
@@ -291,7 +289,7 @@ export default function ResetPasswordScreen() {
           ) : (
             <>
               <Text
-                style={{
+                style={{ fontFamily: SERIF,
                   marginTop: 10,
                   color: INK_DIM,
                   fontSize: 15,
@@ -304,10 +302,9 @@ export default function ResetPasswordScreen() {
 
               <View style={{ marginTop: 24 }}>
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     color: INK_DIM,
                     fontSize: 12,
-                    fontWeight: "700",
                     letterSpacing: 0.8,
                   }}
                 >
@@ -332,7 +329,7 @@ export default function ResetPasswordScreen() {
                     autoComplete="password-new"
                     placeholder="••••••••"
                     placeholderTextColor={INK_DIM}
-                    style={{
+                    style={{ fontFamily: SERIF,
                       flex: 1,
                       paddingHorizontal: 14,
                       paddingVertical: 12,
@@ -355,7 +352,7 @@ export default function ResetPasswordScreen() {
               </View>
 
               {error ? (
-                <Text style={{ marginTop: 12, color: ERROR, fontSize: 13 }}>
+                <Text style={{ fontFamily: SERIF, marginTop: 12, color: ERROR, fontSize: 13 }}>
                   {error}
                 </Text>
               ) : null}
@@ -374,7 +371,7 @@ export default function ResetPasswordScreen() {
                     state === "submitting" || password.length < 8 ? 0.5 : 1,
                 }}
               >
-                <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
                   {state === "submitting" ? "Saving…" : "Save password"}
                 </Text>
               </Pressable>

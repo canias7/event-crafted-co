@@ -27,15 +27,17 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 
-const CREAM = "#ffffff";
-const INK = "#0a0a0a";
-const INK_DIM = "rgba(26,20,16,0.6)";
-const INK_BORDER = "rgba(26,20,16,0.18)";
-const INPUT_BG = "#ffffff";
-const ERROR = "#b42318";
+const CREAM = "#f4f1ea";
+const INK = "#14161a";
+const INK_DIM = "#14161a";
+const INK_BORDER = "#e6e1d5";
+const INPUT_BG = "#fbf9f4";
+const ERROR = "#b23a34";
 const ACCENT = "#1B3654";
 
-const SERIF = Platform.OS === "ios" ? "Times New Roman" : "serif";
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 type Stage = "form" | "code";
 
@@ -179,7 +181,7 @@ export default function SignupScreen() {
           hitSlop={12}
           style={{ alignSelf: "flex-start", paddingVertical: 8 }}
         >
-          <Text style={{ color: INK_DIM, fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
             ← Back
           </Text>
         </Pressable>
@@ -187,9 +189,8 @@ export default function SignupScreen() {
         <View style={{ marginTop: 24 }}>
           <Text
             style={{
-              fontFamily: SERIF,
+              fontFamily: SERIF_BOLD,
               fontSize: 36,
-              fontWeight: "700",
               color: INK,
               letterSpacing: -1,
             }}
@@ -201,8 +202,7 @@ export default function SignupScreen() {
               marginTop: 8,
               fontSize: 15,
               color: INK_DIM,
-              fontStyle: "italic",
-              fontFamily: SERIF,
+              fontFamily: SERIF_ITALIC,
             }}
           >
             {stage === "form"
@@ -225,10 +225,9 @@ export default function SignupScreen() {
               />
               <View>
                 <Text
-                  style={{
+                  style={{ fontFamily: SERIF_BOLD,
                     marginBottom: 6,
                     fontSize: 12,
-                    fontWeight: "600",
                     color: INK_DIM,
                     letterSpacing: 0.5,
                   }}
@@ -242,7 +241,7 @@ export default function SignupScreen() {
                     onChangeText={setPassword}
                     placeholder="At least 8 characters"
                     placeholderTextColor={INK_DIM}
-                    style={{
+                    style={{ fontFamily: SERIF,
                       backgroundColor: INPUT_BG,
                       borderColor: INK_BORDER,
                       borderWidth: 1,
@@ -266,7 +265,7 @@ export default function SignupScreen() {
                     }}
                   >
                     <Text
-                      style={{ color: ACCENT, fontSize: 13, fontWeight: "600" }}
+                      style={{ fontFamily: SERIF_BOLD, color: ACCENT, fontSize: 13,}}
                     >
                       {showPassword ? "Hide" : "Show"}
                     </Text>
@@ -286,10 +285,10 @@ export default function SignupScreen() {
           )}
 
           {error ? (
-            <Text style={{ color: ERROR, fontSize: 14 }}>{error}</Text>
+            <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text>
           ) : null}
           {info && !error ? (
-            <Text style={{ color: ACCENT, fontSize: 14 }}>{info}</Text>
+            <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14 }}>{info}</Text>
           ) : null}
 
           <Pressable
@@ -310,7 +309,7 @@ export default function SignupScreen() {
                   : 1,
             }}
           >
-            <Text style={{ color: CREAM, fontSize: 16, fontWeight: "600" }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
               {submitting
                 ? stage === "form"
                   ? "Sending…"
@@ -327,7 +326,7 @@ export default function SignupScreen() {
               disabled={submitting}
               style={{ alignItems: "center", paddingVertical: 8 }}
             >
-              <Text style={{ color: ACCENT, fontSize: 14, fontWeight: "600" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: ACCENT, fontSize: 14,}}>
                 Resend code
               </Text>
             </Pressable>
@@ -336,9 +335,9 @@ export default function SignupScreen() {
               onPress={() => router.replace("/(auth)/login")}
               style={{ marginTop: 12, alignItems: "center" }}
             >
-              <Text style={{ color: INK_DIM, fontSize: 14 }}>
+              <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
                 Already have an account?{" "}
-                <Text style={{ color: INK, fontWeight: "600" }}>Log in</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Log in</Text>
               </Text>
             </Pressable>
           )}
@@ -370,10 +369,9 @@ function Field({
   return (
     <View>
       <Text
-        style={{
+        style={{ fontFamily: SERIF_BOLD,
           marginBottom: 6,
           fontSize: 12,
-          fontWeight: "600",
           color: INK_DIM,
           letterSpacing: 0.5,
         }}
@@ -388,7 +386,7 @@ function Field({
         keyboardType={keyboardType}
         autoComplete={autoComplete}
         autoCapitalize={autoCapitalize}
-        style={{
+        style={{ fontFamily: SERIF,
           backgroundColor: INPUT_BG,
           borderColor: INK_BORDER,
           borderWidth: 1,

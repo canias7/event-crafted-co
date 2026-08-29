@@ -24,6 +24,10 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+const SERIF = "LibreBaskerville";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+const SERIF_ITALIC = "LibreBaskerville-Italic";
+
 interface InquiryRow {
   id: string;
   status: "new" | "replied" | "drafted" | "won" | "lost" | "expired";
@@ -152,8 +156,8 @@ export default function InboxScreen() {
         }
       >
         <View className="px-5 pt-2 pb-4">
-          <Text className="text-3xl font-semibold text-foreground">Inbox</Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
+          <Text style={{ fontFamily: SERIF_BOLD }} className="text-3xl text-foreground">Inbox</Text>
+          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
             Your inquiries to vendors — all in one place
           </Text>
         </View>
@@ -161,7 +165,7 @@ export default function InboxScreen() {
         <View className="px-5 mb-3">
           <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
             <Feather name="search" size={16} color="#6b7280" />
-            <TextInput
+            <TextInput style={{ fontFamily: SERIF }}
               value={search}
               onChangeText={setSearch}
               placeholder="Search by vendor, event, or message"
@@ -204,12 +208,12 @@ export default function InboxScreen() {
 
         {error ? (
           <View className="mx-5 mb-3 rounded-xl bg-red-50 px-4 py-3 border border-red-200">
-            <Text className="text-sm text-red-700">{error}</Text>
+            <Text style={{ fontFamily: SERIF }} className="text-sm text-red-700">{error}</Text>
             <Pressable
               onPress={() => load(false)}
               className="mt-2 active:opacity-70"
             >
-              <Text className="text-sm font-semibold text-red-700">
+              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-red-700">
                 Try again
               </Text>
             </Pressable>
@@ -257,11 +261,11 @@ function Chip({
     <Pressable
       onPress={onPress}
       className={`flex-row items-center px-4 py-2 rounded-full ${
-        active ? "bg-foreground" : "bg-muted"
+ active ? "bg-foreground" : "bg-muted"
       }`}
     >
-      <Text
-        className={`text-sm font-medium ${
+      <Text style={{ fontFamily: SERIF_BOLD }}
+        className={`text-sm ${
           active ? "text-background" : "text-foreground"
         }`}
       >
@@ -270,11 +274,11 @@ function Chip({
       {count !== undefined ? (
         <View
           className={`ml-2 min-w-[20px] px-1.5 rounded-full items-center ${
-            active ? "bg-background/20" : "bg-foreground/10"
+ active ? "bg-background/20" : "bg-foreground/10"
           }`}
         >
-          <Text
-            className={`text-xs font-semibold ${
+          <Text style={{ fontFamily: SERIF_BOLD }}
+            className={`text-xs ${
               active ? "text-background" : "text-foreground"
             }`}
           >
@@ -292,7 +296,7 @@ function Avatar({ seed, label }: { seed: string; label: string }) {
       className="h-12 w-12 rounded-full items-center justify-center"
       style={{ backgroundColor: avatarColor(seed) }}
     >
-      <Text className="text-sm font-semibold text-white">{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-white">{label}</Text>
     </View>
   );
 }
@@ -334,8 +338,8 @@ function InquiryCard({ row }: { row: InquiryRow }) {
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-shrink">
-              <Text
-                className="text-base font-semibold text-foreground"
+              <Text style={{ fontFamily: SERIF_BOLD }}
+                className="text-base text-foreground"
                 numberOfLines={1}
               >
                 {vendorName}
@@ -344,18 +348,18 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                 <View className="ml-2 h-2 w-2 rounded-full bg-red-500" />
               ) : null}
             </View>
-            <Text className="text-xs text-muted-foreground">
+            <Text style={{ fontFamily: SERIF }} className="text-xs text-muted-foreground">
               {relativeTime(row.created_at)}
             </Text>
           </View>
-          <Text className="mt-0.5 text-xs text-muted-foreground" numberOfLines={1}>
+          <Text style={{ fontFamily: SERIF }} className="mt-0.5 text-xs text-muted-foreground" numberOfLines={1}>
             {category ? `${category} · ` : ""}
             {row.event_type ?? "Event"}
             {row.event_date ? ` · ${row.event_date}` : ""}
             {previewBudget}
           </Text>
           {row.special_requests ? (
-            <Text
+            <Text style={{ fontFamily: SERIF }}
               className="mt-1.5 text-sm text-foreground/80"
               numberOfLines={2}
             >
@@ -364,13 +368,13 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           ) : null}
           {isUnread ? (
             <View className="mt-2 self-start rounded-full bg-red-100 px-2 py-0.5">
-              <Text className="text-[10px] font-semibold uppercase tracking-wide text-red-600">
+              <Text style={{ fontFamily: SERIF_BOLD }} className="text-[10px] uppercase tracking-wide text-red-600">
                 Replied
               </Text>
             </View>
           ) : row.status === "won" ? (
             <View className="mt-2 self-start rounded-full bg-green-100 px-2 py-0.5">
-              <Text className="text-[10px] font-semibold uppercase tracking-wide text-green-700">
+              <Text style={{ fontFamily: SERIF_BOLD }} className="text-[10px] uppercase tracking-wide text-green-700">
                 Booked
               </Text>
             </View>
@@ -384,7 +388,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
 function Empty({ msg }: { msg: string }) {
   return (
     <View className="px-5 py-16 items-center">
-      <Text className="text-sm text-muted-foreground text-center">{msg}</Text>
+      <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground text-center">{msg}</Text>
     </View>
   );
 }
