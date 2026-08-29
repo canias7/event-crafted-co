@@ -42,6 +42,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -281,6 +282,11 @@ function isValidHHMM(s: string): boolean {
 export default function CalendarScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  // "Add booking" + "Block time" need ~278pt. On a 360pt phone that
+  // leaves the date ~63pt and it truncates to "Sat, Au…", so below 400
+  // the date takes its own line and the buttons sit under it.
+  const { width: winWidth } = useWindowDimensions();
+  const stackDayHeader = winWidth < 400;
 
   // Every vendor_profiles row this user owns. The calendar is ALWAYS
   // account-level: it aggregates bookings / appointments / blocks across
@@ -1545,12 +1551,20 @@ export default function CalendarScreen() {
             <View
               style={{
                 marginTop: 18,
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: stackDayHeader ? "column" : "row",
+                alignItems: stackDayHeader ? "flex-start" : "center",
+                gap: stackDayHeader ? 10 : 0,
                 justifyContent: "space-between",
               }}
             >
-              <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  flex: stackDayHeader ? undefined : 1,
+                  alignSelf: stackDayHeader ? "stretch" : undefined,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
                 <Text
                   style={{
                     color: INK,
