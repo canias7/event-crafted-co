@@ -22,6 +22,8 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
+const GOLD = "#c9a86a";
+const CARD = "#fbf9f4";
 const INK_DIM = "#14161a";
 const INK_BORDER = "#e6e1d5";
 
@@ -219,58 +221,7 @@ function AnimatedLine({
 
 type Scene = "opener" | "phrases" | "wordmark" | "done";
 
-interface AuthButtonProps {
-  variant: "solid-light" | "solid-dark" | "outline";
-  onPress: () => void;
-  label: string;
-  icon?: React.ReactNode;
-  last?: boolean;
-}
 
-// Centered icon+label pill. Uses an inner row so the layout is
-// deterministic — Pressable's alignItems was acting up across iOS
-// versions, leaving labels left-aligned.
-function AuthButton({ variant, onPress, label, icon, last }: AuthButtonProps) {
-  const isLight = variant === "solid-light";
-  const isOutline = variant === "outline";
-  const bg = isLight
-    ? "#ffffff"
-    : isOutline
-      ? "transparent"
-      : "#262626";
-  const fg = isLight ? "#000000" : "#ffffff";
-  return (
-    <Pressable onPress={onPress}>
-      {({ pressed }) => (
-        <View
-          style={{
-            backgroundColor: bg,
-            borderRadius: 22,
-            marginBottom: last ? 0 : 8,
-            opacity: pressed ? 0.7 : 1,
-            borderWidth: isOutline ? 1 : 0,
-            borderColor: "rgba(255,255,255,0.22)",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              paddingVertical: 16,
-              gap: 10,
-            }}
-          >
-            {icon ?? null}
-            <Text style={{ fontFamily: SERIF_BOLD, color: fg, fontSize: 16,}}>
-              {label}
-            </Text>
-          </View>
-        </View>
-      )}
-    </Pressable>
-  );
-}
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -463,23 +414,20 @@ export default function WelcomeScreen() {
           style={{
             width: "88%",
             maxWidth: 320,
-            height: 54,
+            // 52 / 16, gold, ink label, no shadow — the same pill the
+            // vendor app uses, so the two flows read as one product.
+            height: 52,
             borderRadius: 999,
-            backgroundColor: INK,
+            backgroundColor: GOLD,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: INK,
-            shadowOpacity: 0.18,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 8 },
-            elevation: 6,
             marginBottom: 10,
           }}
         >
           <Text
             style={{
-              color: CREAM,
-              fontSize: 17,
+              color: INK,
+              fontSize: 16,
               fontFamily: SERIF_BOLD,
             }}
           >
@@ -492,24 +440,21 @@ export default function WelcomeScreen() {
           style={{
             width: "88%",
             maxWidth: 320,
-            height: 54,
+            height: 52,
             borderRadius: 999,
-            backgroundColor: CREAM_DEEP,
-            borderWidth: 1,
+            // Secondary: card fill with a hairline, matching vendor's
+            // Sign in. No shadow anywhere in this palette.
+            backgroundColor: CARD,
+            borderWidth: 1.5,
             borderColor: INK_BORDER,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: INK,
-            shadowOpacity: 0.10,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 3,
           }}
         >
           <Text
             style={{
               color: INK,
-              fontSize: 17,
+              fontSize: 16,
               fontFamily: SERIF_BOLD,
             }}
           >

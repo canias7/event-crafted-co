@@ -29,6 +29,9 @@ import { supabase } from "@/lib/supabase";
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
+const GOLD = "#c9a86a";
+// Disabled fill for the gold pill — solid, not faded.
+const GOLD_MUTED = "#e0d2b0";
 const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const DANGER = "#b23a34";
@@ -187,7 +190,7 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: dirty ? INK : BORDER,
+                        backgroundColor: dirty ? GOLD : GOLD_MUTED,
                         paddingVertical: 14,
                         borderRadius: 16,
                         alignItems: "center",
@@ -195,11 +198,11 @@ export default function SettingsScreen() {
                       }}
                     >
                       {saving ? (
-                        <ActivityIndicator color={CREAM} />
+                        <ActivityIndicator color={INK} />
                       ) : (
                         <Text
                           style={{ fontFamily: SERIF_BOLD,
-                            color: dirty ? CREAM : INK_DIM,
+                            color: INK,
                           }}
                         >
                           Save
