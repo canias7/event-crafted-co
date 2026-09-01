@@ -2,14 +2,14 @@
 //   Inquiries: leads from hosts (inquiries table)
 //   Partners:  vendor-to-vendor threads (vendor_partner_threads)
 //
-// Restyled to the cream Vendora mock: wordmark header with search /
-// filter rounds, serif Inbox title, dark segmented toggle with icons,
+// Restyled to the cream Vendora mock: wordmark header with a filter
+// round, serif Inbox title, dark segmented toggle with icons,
 // white rounded search, icon chips, framed empty state with a Tips
 // action, and the "Stand out" improve-profile banner.
 //
 // No function-form style props anywhere (device interop drops them).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -103,7 +103,6 @@ export default function InboxScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const dialog = useBrandDialog();
-  const searchRef = useRef<TextInput>(null);
   const [tab, setTab] = useState<Tab>("inquiries");
   const [search, setSearch] = useState("");
   const [inquiryFilter, setInquiryFilter] = useState<"all" | "new" | "replied" | "booked">("all");
@@ -259,32 +258,28 @@ export default function InboxScreen() {
           }}
         >
           <Wordmark />
-          <View style={{ flexDirection: "row", gap: 10 }}>
+          {/* Filters only. The search round next to it just focused the
+              search bar, which is always on screen — a control whose
+              whole job was reachable without it. */}
+          <View>
             <HeaderRound
-              icon="search"
-              label="Search"
-              onPress={() => searchRef.current?.focus()}
+              icon="sliders"
+              label="Toggle filters"
+              onPress={() => setFiltersOpen((v) => !v)}
             />
-            <View>
-              <HeaderRound
-                icon="sliders"
-                label="Toggle filters"
-                onPress={() => setFiltersOpen((v) => !v)}
+            {filterActive ? (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  backgroundColor: INK,
+                }}
               />
-              {filterActive ? (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 2,
-                    right: 2,
-                    width: 8,
-                    height: 8,
-                    borderRadius: 999,
-                    backgroundColor: INK,
-                  }}
-                />
-              ) : null}
-            </View>
+            ) : null}
           </View>
         </View>
 
@@ -347,7 +342,6 @@ export default function InboxScreen() {
           >
             <Feather name="search" size={17} color={INK_DIM} />
             <TextInput
-              ref={searchRef}
               value={search}
               onChangeText={setSearch}
               placeholder={
