@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { eventTypeLabel } from "@vendora/core";
 import { lazyWithReload } from "@/lib/lazyWithReload";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Inbox, Search } from "lucide-react";
@@ -391,7 +392,7 @@ export default function InquiriesPage() {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {r.event_type.replace("_", " ")}
+                            {eventTypeLabel(r.event_type)}
                             {r.event_date && (
                               <>
                                 {" "}

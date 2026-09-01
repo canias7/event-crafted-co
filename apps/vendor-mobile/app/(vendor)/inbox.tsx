@@ -24,6 +24,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { eventTypeLabel } from "@vendora/core";
 import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -874,7 +875,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
       }}
     >
       <View style={{ flexDirection: "row", gap: 12 }}>
-        <Avatar seed={seed} label={initials(row.event_type ?? "Inquiry")} />
+        <Avatar seed={seed} label={initials(eventTypeLabel(row.event_type, "Inquiry"))} />
         <View style={{ flex: 1 }}>
           <View
             style={{
@@ -892,7 +893,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                   color: INK,
                 }}
               >
-                {row.event_type ?? "Inquiry"}
+                {eventTypeLabel(row.event_type, "Inquiry")}
               </Text>
               {isUnread ? (
                 <View

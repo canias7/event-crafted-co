@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { eventTypeLabel } from "@vendora/core";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -786,7 +787,7 @@ export default function HostInquiryDetailPage() {
   const vendorName = inquiry.vendor?.business_name?.trim() || "Vendor";
   const vendorInitial = vendorName.charAt(0).toUpperCase();
   const eventTypeNice = inquiry.event_type
-    ? `${inquiry.event_type.charAt(0).toUpperCase()}${inquiry.event_type.slice(1).replace(/_/g, " ")}`
+    ? eventTypeLabel(inquiry.event_type)
     : "";
 
   // "Seen" indicator — only fires when the vendor has read past the
@@ -1456,7 +1457,7 @@ function InquirySummarySheet({
             <div>
               <p className="font-label text-muted-foreground">Event</p>
               <p className="text-sm capitalize mt-1">
-                {inquiry.event_type.replace(/_/g, " ")}
+                {eventTypeLabel(inquiry.event_type)}
                 {inquiry.event_date && (
                   <>
                     {" · "}

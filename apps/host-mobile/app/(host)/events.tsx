@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -63,13 +64,6 @@ function initialsOf(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function titleCase(s: string | null | undefined): string {
-  if (!s) return "Event";
-  return s
-    .split(/[ _-]+/)
-    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
-    .join(" ");
-}
 
 interface RawInquiry {
   id: string;
@@ -113,7 +107,7 @@ function groupIntoEvents(rows: RawInquiry[]): HostEvent[] {
     if (!map.has(key)) {
       map.set(key, {
         key,
-        title: titleCase(r.event_type),
+        title: eventTypeLabel(r.event_type),
         eventDate: asDate(r.event_date),
         location: r.location,
         vendors: [],

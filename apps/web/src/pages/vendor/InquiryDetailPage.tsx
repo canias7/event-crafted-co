@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { eventTypeLabel } from "@vendora/core";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -959,7 +960,7 @@ export default function InquiryDetailPage() {
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
               {inquiry.event_type
-                ? `${inquiry.event_type.charAt(0).toUpperCase()}${inquiry.event_type.slice(1)} inquiry`
+                ? `${eventTypeLabel(inquiry.event_type)} inquiry`
                 : "Inquiry"}
               {inquiry.event_date
                 ? ` · ${new Date(inquiry.event_date).toLocaleDateString(undefined, {
