@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { eventTypeLabel } from "@vendora/core";
 import {
   Plus,
   Trash2,
@@ -209,7 +210,7 @@ export function RealEventsManager({
                   {e.title}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                  {e.event_type?.replace("_", " ") ?? "Event"}
+                  {eventTypeLabel(e.event_type)}
                   {e.location ? ` · ${e.location}` : ""}
                 </p>
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">

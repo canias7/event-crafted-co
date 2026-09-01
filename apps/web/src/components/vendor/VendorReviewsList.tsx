@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { eventTypeLabel } from "@vendora/core";
 import { ReportButton } from "@/components/trust/ReportButton";
 
 // Review block on the vendor detail page. Falls back to a curated
@@ -116,7 +117,7 @@ export function VendorReviewsList({
                   </p>
                   {r.inquiry && (
                     <p className="text-xs text-muted-foreground capitalize">
-                      {r.inquiry.event_type.replace("_", " ")}
+                      {eventTypeLabel(r.inquiry.event_type)}
                       {r.inquiry.event_date && (
                         <>
                           {" · "}

@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -354,7 +355,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           </View>
           <Text style={{ fontFamily: SERIF }} className="mt-0.5 text-xs text-muted-foreground" numberOfLines={1}>
             {category ? `${category} · ` : ""}
-            {row.event_type ?? "Event"}
+            {eventTypeLabel(row.event_type)}
             {row.event_date ? ` · ${row.event_date}` : ""}
             {previewBudget}
           </Text>

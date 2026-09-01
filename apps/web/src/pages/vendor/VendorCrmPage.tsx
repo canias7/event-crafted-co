@@ -6,6 +6,7 @@
 // vendor_crm_clients() RPC (crm_requires_pro), same as the app.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { eventTypeLabel } from "@vendora/core";
 import { Link } from "react-router-dom";
 import {
   Bell,
@@ -457,7 +458,7 @@ function ClientRecord({
                 >
                   <div className="min-w-0">
                     <p className="m-0 truncate text-sm font-medium">
-                      {e.event_type?.trim() || "Event inquiry"}
+                      {eventTypeLabel(e.event_type, "Event inquiry")}
                     </p>
                     <p className="m-0 mt-0.5 text-[11.5px] text-muted-foreground">
                       {[

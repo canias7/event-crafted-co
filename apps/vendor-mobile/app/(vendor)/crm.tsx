@@ -22,6 +22,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
@@ -808,7 +809,7 @@ function ClientSheet({
                         color: INK,
                       }}
                     >
-                      {e.event_type?.trim() || "Event inquiry"}
+                      {eventTypeLabel(e.event_type, "Event inquiry")}
                     </Text>
                     <View
                       style={{

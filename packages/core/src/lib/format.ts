@@ -57,6 +57,50 @@ export function pricingModelsLabel(models?: string[] | null): string {
     .join(" · ");
 }
 
+// inquiries.event_type is a lowercase, underscored enum in Postgres
+// (see the inquiries_event_type_check constraint). It is never fit to
+// show a user: raw it reads "wedding", and "holiday_dinner" keeps its
+// underscore. Every surface was formatting it by hand and disagreeing —
+// a bare value in the mobile inbox, .replace("_"," ") in three web
+// files, titleCase in the host events tab (which produces
+// "Holiday_dinner"), and two different capitalise-the-first-letter
+// expressions. This is the one place that decides.
+export type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
+
+export const EVENT_TYPES: EventType[] = [
+  "wedding",
+  "birthday",
+  "holiday_dinner",
+  "other",
+];
+
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  wedding: "Wedding",
+  birthday: "Birthday",
+  holiday_dinner: "Holiday Dinner",
+  other: "Other",
+};
+
+/**
+ * "Holiday Dinner" — the human label for an inquiry's event type.
+ * Falls back to de-underscoring and capitalising anything unrecognised,
+ * so a value added to the DB before this map still reads acceptably.
+ */
+export function eventTypeLabel(
+  type?: string | null,
+  fallback = "Event",
+): string {
+  const t = type?.trim();
+  if (!t) return fallback;
+  const known = EVENT_TYPE_LABELS[t as EventType];
+  if (known) return known;
+  return t
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 function dollars(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString()}`;
 }
