@@ -80,7 +80,11 @@ interface ListingRow {
 
 export default function ExploreScreen() {
   const { user } = useAuth();
-  const [view, setView] = useState<ViewKind>("grid");
+  // Listings is the landing tab: it is the only view with content today
+  // (vendor_posts and vendor_reels are both empty), so defaulting to the
+  // photo grid meant every new host opened the app onto "No vendor posts
+  // yet." The rail is ordered to match, listings first.
+  const [view, setView] = useState<ViewKind>("listing");
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [reels, setReels] = useState<ReelRow[]>([]);
   const [buzz, setBuzz] = useState<BuzzRow[]>([]);
@@ -250,6 +254,11 @@ export default function ExploreScreen() {
 
       <View className="mt-12 flex-row border-t border-border">
         <ViewTab
+          active={view === "listing"}
+          onPress={() => setView("listing")}
+          iconName="shopping-bag"
+        />
+        <ViewTab
           active={view === "grid"}
           onPress={() => setView("grid")}
           iconName="grid"
@@ -263,11 +272,6 @@ export default function ExploreScreen() {
           active={view === "buzz"}
           onPress={() => setView("buzz")}
           iconName="align-left"
-        />
-        <ViewTab
-          active={view === "listing"}
-          onPress={() => setView("listing")}
-          iconName="shopping-bag"
         />
       </View>
 
