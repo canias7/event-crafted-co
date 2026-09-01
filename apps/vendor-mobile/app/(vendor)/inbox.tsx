@@ -2,14 +2,14 @@
 //   Inquiries: leads from hosts (inquiries table)
 //   Partners:  vendor-to-vendor threads (vendor_partner_threads)
 //
-// Restyled to the cream Vendora mock: wordmark header with search /
-// filter rounds, serif Inbox title, dark segmented toggle with icons,
+// Restyled to the cream Vendora mock: wordmark header with a filter
+// round, serif Inbox title, dark segmented toggle with icons,
 // white rounded search, icon chips, framed empty state with a Tips
 // action, and the "Stand out" improve-profile banner.
 //
 // No function-form style props anywhere (device interop drops them).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -103,17 +103,11 @@ export default function InboxScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const dialog = useBrandDialog();
-  const searchRef = useRef<TextInput>(null);
   const [tab, setTab] = useState<Tab>("inquiries");
   const [search, setSearch] = useState("");
   const [inquiryFilter, setInquiryFilter] = useState<"all" | "new" | "replied" | "booked">("all");
   const [partnerFilter, setPartnerFilter] = useState<"all" | "unread" | "active">("all");
   const [filtersOpen, setFiltersOpen] = useState(true);
-  // The search round used to focus a bar that was always on screen —
-  // a control that did nothing you couldn't already do. The bar now
-  // lives behind it, which both gives the round a job and returns a
-  // 68pt row to the list. Header chrome was 486 of 915pt at 412 wide.
-  const [searchOpen, setSearchOpen] = useState(false);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [partners, setPartners] = useState<PartnerThread[]>([]);
   const [loading, setLoading] = useState(true);
@@ -264,58 +258,28 @@ export default function InboxScreen() {
           }}
         >
           <Wordmark />
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <View>
-              <HeaderRound
-                icon="search"
-                label="Search"
-                onPress={() => {
-                  setSearchOpen((v) => {
-                    if (v) {
-                      // collapsing: drop the query too, or the list stays
-                      // filtered by something no longer on screen
-                      setSearch("");
-                      return false;
-                    }
-                    // autoFocus on mount handles the keyboard
-                    return true;
-                  });
+          {/* Filters only. The search round next to it just focused the
+              search bar, which is always on screen — a control whose
+              whole job was reachable without it. */}
+          <View>
+            <HeaderRound
+              icon="sliders"
+              label="Toggle filters"
+              onPress={() => setFiltersOpen((v) => !v)}
+            />
+            {filterActive ? (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  backgroundColor: INK,
                 }}
               />
-              {search.trim() ? (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 2,
-                    right: 2,
-                    width: 8,
-                    height: 8,
-                    borderRadius: 999,
-                    backgroundColor: INK,
-                  }}
-                />
-              ) : null}
-            </View>
-            <View>
-              <HeaderRound
-                icon="sliders"
-                label="Toggle filters"
-                onPress={() => setFiltersOpen((v) => !v)}
-              />
-              {filterActive ? (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 2,
-                    right: 2,
-                    width: 8,
-                    height: 8,
-                    borderRadius: 999,
-                    backgroundColor: INK,
-                  }}
-                />
-              ) : null}
-            </View>
+            ) : null}
           </View>
         </View>
 
@@ -362,8 +326,7 @@ export default function InboxScreen() {
           />
         </View>
 
-        {/* Search — hidden until the header round asks for it. */}
-        {searchOpen ? (
+        {/* Search */}
         <View style={{ paddingHorizontal: 20, marginBottom: 14 }}>
           <View
             style={{
@@ -379,7 +342,6 @@ export default function InboxScreen() {
           >
             <Feather name="search" size={17} color={INK_DIM} />
             <TextInput
-              ref={searchRef}
               value={search}
               onChangeText={setSearch}
               placeholder={
@@ -388,12 +350,10 @@ export default function InboxScreen() {
                   : "Search vendors or messages"
               }
               placeholderTextColor="#a49f93"
-              autoFocus
               style={{ fontFamily: "LibreBaskerville", marginLeft: 10, flex: 1, fontSize: 15, color: INK }}
             />
           </View>
         </View>
-        ) : null}
 
         {/* Filter chips */}
         {filtersOpen ? (
