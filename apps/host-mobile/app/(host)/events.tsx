@@ -23,6 +23,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 
 const CREAM = "#f4f1ea";
@@ -303,6 +304,9 @@ export default function EventsScreen() {
           }
         >
           {/* Header */}
+          <View style={{ paddingHorizontal: 22, marginBottom: 10 }}>
+            <Wordmark />
+          </View>
           <View
             style={{
               paddingHorizontal: 22,

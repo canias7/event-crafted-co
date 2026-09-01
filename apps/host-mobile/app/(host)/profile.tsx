@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
+import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
@@ -194,6 +195,9 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header row: title + bell */}
+          <View style={{ marginBottom: 12 }}>
+            <Wordmark />
+          </View>
           <View
             style={{
               flexDirection: "row",
@@ -629,7 +633,10 @@ function ActionCard({
             {subtitle ? (
               <Text
                 style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}
-                numberOfLines={1}
+                // Two lines: "Build trust with vendors. Faster replies,
+                // better matches." needs ~364pt and the card gives it
+                // ~270, so on one line it truncated mid-sentence.
+                numberOfLines={2}
               >
                 {subtitle}
               </Text>

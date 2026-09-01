@@ -30,6 +30,7 @@ import {
   pricingModelsLabel,
 } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 
 const SERIF = "LibreBaskerville";
@@ -240,7 +241,8 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="px-4 pt-4">
-        <Text style={{ fontFamily: SERIF_BOLD }} className="text-2xl text-foreground">Explore</Text>
+        <Wordmark />
+        <Text style={{ fontFamily: SERIF_BOLD }} className="mt-2 text-2xl text-foreground">Explore</Text>
         <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
           Listings, posts, reels, and buzz from approved vendors
         </Text>

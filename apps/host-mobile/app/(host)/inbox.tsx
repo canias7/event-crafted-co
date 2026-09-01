@@ -23,6 +23,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 
 const SERIF = "LibreBaskerville";
@@ -157,7 +158,8 @@ export default function InboxScreen() {
         }
       >
         <View className="px-5 pt-2 pb-4">
-          <Text style={{ fontFamily: SERIF_BOLD }} className="text-3xl text-foreground">Inbox</Text>
+          <Wordmark />
+          <Text style={{ fontFamily: SERIF_BOLD }} className="mt-2 text-3xl text-foreground">Inbox</Text>
           <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
             Your inquiries to vendors — all in one place
           </Text>
@@ -184,37 +186,36 @@ export default function InboxScreen() {
           <Chip
             active={filter === "all"}
             label="All"
-            count={counts.all}
             onPress={() => setFilter("all")}
           />
           <Chip
             active={filter === "awaiting"}
             label="Awaiting"
-            count={counts.awaiting}
             onPress={() => setFilter("awaiting")}
           />
           <Chip
             active={filter === "replied"}
             label="Replied"
-            count={counts.replied}
             onPress={() => setFilter("replied")}
           />
           <Chip
             active={filter === "booked"}
             label="Booked"
-            count={counts.booked}
             onPress={() => setFilter("booked")}
           />
         </ScrollView>
 
         {error ? (
-          <View className="mx-5 mb-3 rounded-xl bg-red-50 px-4 py-3 border border-red-200">
-            <Text style={{ fontFamily: SERIF }} className="text-sm text-red-700">{error}</Text>
+          <View
+            className="mx-5 mb-3 rounded-xl px-4 py-3 border"
+            style={{ backgroundColor: "#f7ece9", borderColor: "#e6c9c2" }}
+          >
+            <Text style={{ fontFamily: SERIF, color: "#b23a34" }} className="text-sm">{error}</Text>
             <Pressable
               onPress={() => load(false)}
               className="mt-2 active:opacity-70"
             >
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-red-700">
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34" }} className="text-sm">
                 Try again
               </Text>
             </Pressable>
@@ -247,15 +248,16 @@ export default function InboxScreen() {
   );
 }
 
+// Label only, no count badge. With four filters the badges pushed the
+// row past the viewport so "Booked" was unreachable without scrolling —
+// the same call made on the vendor inbox.
 function Chip({
   active,
   label,
-  count,
   onPress,
 }: {
   active: boolean;
   label: string;
-  count?: number;
   onPress: () => void;
 }) {
   return (
@@ -272,21 +274,6 @@ function Chip({
       >
         {label}
       </Text>
-      {count !== undefined ? (
-        <View
-          className={`ml-2 min-w-[20px] px-1.5 rounded-full items-center ${
- active ? "bg-background/20" : "bg-foreground/10"
-          }`}
-        >
-          <Text style={{ fontFamily: SERIF_BOLD }}
-            className={`text-xs ${
-              active ? "text-background" : "text-foreground"
-            }`}
-          >
-            {count}
-          </Text>
-        </View>
-      ) : null}
     </Pressable>
   );
 }
@@ -346,7 +333,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                 {vendorName}
               </Text>
               {isUnread ? (
-                <View className="ml-2 h-2 w-2 rounded-full bg-red-500" />
+                <View className="ml-2 h-2 w-2 rounded-full" style={{ backgroundColor: "#c9a86a" }} />
               ) : null}
             </View>
             <Text style={{ fontFamily: SERIF }} className="text-xs text-muted-foreground">
@@ -368,14 +355,20 @@ function InquiryCard({ row }: { row: InquiryRow }) {
             </Text>
           ) : null}
           {isUnread ? (
-            <View className="mt-2 self-start rounded-full bg-red-100 px-2 py-0.5">
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-[10px] uppercase tracking-wide text-red-600">
+            <View
+              className="mt-2 self-start rounded-full px-2 py-0.5"
+              style={{ backgroundColor: "#f0e6d2" }}
+            >
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#8a6f3e" }} className="text-[10px] uppercase tracking-wide">
                 Replied
               </Text>
             </View>
           ) : row.status === "won" ? (
-            <View className="mt-2 self-start rounded-full bg-green-100 px-2 py-0.5">
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-[10px] uppercase tracking-wide text-green-700">
+            <View
+              className="mt-2 self-start rounded-full px-2 py-0.5"
+              style={{ backgroundColor: "#14161a" }}
+            >
+              <Text style={{ fontFamily: SERIF_BOLD, color: "#f4f1ea" }} className="text-[10px] uppercase tracking-wide">
                 Booked
               </Text>
             </View>

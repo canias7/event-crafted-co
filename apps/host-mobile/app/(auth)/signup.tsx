@@ -29,6 +29,9 @@ import { supabase } from "@/lib/supabase";
 
 const CREAM = "#f4f1ea";
 const INK = "#14161a";
+const GOLD = "#c9a86a";
+// Disabled fill for the gold pill — solid, not faded.
+const GOLD_MUTED = "#e0d2b0";
 const INK_DIM = "#14161a";
 const INK_BORDER = "#e6e1d5";
 const INPUT_BG = "#fbf9f4";
@@ -298,18 +301,14 @@ export default function SignupScreen() {
             }
             style={{
               marginTop: 8,
-              backgroundColor: INK,
+              backgroundColor: submitting || (stage === "form" ? !formValid : !codeValid) ? GOLD_MUTED : GOLD,
               borderRadius: 999,
-              height: 54,
+              height: 52,
               alignItems: "center",
               justifyContent: "center",
-              opacity:
-                submitting || (stage === "form" ? !formValid : !codeValid)
-                  ? 0.5
-                  : 1,
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16,}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
               {submitting
                 ? stage === "form"
                   ? "Sending…"
