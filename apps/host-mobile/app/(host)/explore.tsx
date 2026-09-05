@@ -244,7 +244,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="px-4 pt-4">
+      <View className="px-4 pt-4 pb-4">
         <Wordmark />
         <Text style={{ fontFamily: SERIF_BOLD }} className="mt-2 text-2xl text-foreground">Explore</Text>
         <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
@@ -252,7 +252,7 @@ export default function ExploreScreen() {
         </Text>
       </View>
 
-      <View className="mt-12 flex-row border-t border-border">
+      <View className="flex-row border-t border-border">
         <ViewTab
           active={view === "listing"}
           onPress={() => setView("listing")}
