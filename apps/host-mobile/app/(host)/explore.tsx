@@ -37,6 +37,18 @@ const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
+// Page title — one treatment across both apps. Vendor sets every
+// screen heading at 38/44 with a -0.5 tracking correction; host had
+// drifted to three different sizes and two families.
+const PAGE_TITLE = {
+  fontFamily: SERIF_BOLD,
+  fontSize: 38,
+  lineHeight: 44,
+  letterSpacing: -0.5,
+  color: "#14161a",
+  marginTop: 8,
+} as const;
+
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
 
 type Author = { business_name: string | null; logo_url: string | null } | null;
@@ -244,9 +256,9 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="px-4 pt-4 pb-4">
+      <View className="px-5 pt-4 pb-4">
         <Wordmark />
-        <Text style={{ fontFamily: SERIF_BOLD }} className="mt-2 text-2xl text-foreground">Explore</Text>
+        <Text style={PAGE_TITLE}>Explore</Text>
         <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
           Listings, posts, reels, and buzz from approved vendors
         </Text>
@@ -329,10 +341,12 @@ function ViewTab({
       onPress={onPress}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        backgroundColor: active ? "#ffffff" : "transparent",
+        // Card cream, not pure white — the border + shadow carry the
+        // "raised / active" read, same as every other card in the app.
+        backgroundColor: active ? "#fbf9f4" : "transparent",
         borderRadius: active ? 14 : 0,
         borderWidth: active ? 1 : 0,
-        borderColor: "#e5e5e5",
+        borderColor: "#e6e1d5",
         marginHorizontal: active ? 4 : 0,
         marginVertical: active ? 4 : 0,
         ...(active
@@ -346,7 +360,7 @@ function ViewTab({
           : null),
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#0a0a0a" : "#737373"} />
+      <Feather name={iconName} size={22} color={active ? "#14161a" : "#6f6a60"} />
     </Pressable>
   );
 }
@@ -388,7 +402,7 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
   return (
     <View className="gap-4">
       {posts.map((p) => (
-        <View key={p.id} className="px-4">
+        <View key={p.id} className="px-5">
           <View
             style={{
               borderRadius: 16,
@@ -428,7 +442,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
   return (
     <View className="gap-4">
       {reels.map((r) => (
-        <View key={r.id} className="px-4">
+        <View key={r.id} className="px-5">
           <View
             style={{
               borderRadius: 16,
@@ -489,7 +503,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
 
 function BuzzList({ items }: { items: BuzzRow[] }) {
   return (
-    <View className="gap-3 px-4">
+    <View className="gap-3 px-5">
       {items.map((b) => (
         <View
           key={b.id}
@@ -584,7 +598,7 @@ function ListingFeed({
           ];
           return (
             <View key={groupName}>
-              <View className="px-4 mb-3">
+              <View className="px-5 mb-3">
                 <Text style={{ fontFamily: SERIF_BOLD }} className="text-lg text-foreground">
                   {groupName}
                 </Text>
@@ -595,7 +609,7 @@ function ListingFeed({
                   if (rows.length === 0) return null;
                   return (
                     <View key={subName}>
-                      <Text style={{ fontFamily: SERIF_BOLD }} className="px-4 mb-2 text-sm text-muted-foreground">
+                      <Text style={{ fontFamily: SERIF_BOLD }} className="px-5 mb-2 text-sm text-muted-foreground">
                         {subName}
                       </Text>
                       <ScrollView
@@ -620,7 +634,7 @@ function ListingFeed({
           );
         })}
         {visibleGroups.length === 0 ? (
-          <View className="items-center pt-10 px-4">
+          <View className="items-center pt-10 px-5">
             <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">
               No listings in this category yet.
             </Text>
@@ -671,9 +685,9 @@ function ListingCard({
         ) : (
           <View
             className="flex-1 items-center justify-center px-6"
-            style={{ backgroundColor: "#f4f4f5" }}
+            style={{ backgroundColor: "#ece7db" }}
           >
-            <Feather name="image" size={28} color="#a1a1aa" />
+            <Feather name="image" size={28} color="#a89b8a" />
             <Text style={{ fontFamily: SERIF }} className="mt-2 text-center text-xs text-muted-foreground">
               No listing photos yet
             </Text>

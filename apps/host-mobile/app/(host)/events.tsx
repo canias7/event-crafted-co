@@ -37,6 +37,19 @@ const GREEN_BG = "#e3f5e8";
 const AMBER_BG = "#fbeed1";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
+
+// Page title — one treatment across both apps. Vendor sets every
+// screen heading at 38/44 with a -0.5 tracking correction; host had
+// drifted to three different sizes and two families.
+const PAGE_TITLE = {
+  fontFamily: SERIF_BOLD,
+  fontSize: 38,
+  lineHeight: 44,
+  letterSpacing: -0.5,
+  color: "#14161a",
+  marginTop: 8,
+} as const;
+
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Same hue palette as inbox so a vendor's avatar color is consistent
@@ -304,27 +317,19 @@ export default function EventsScreen() {
           }
         >
           {/* Header */}
-          <View style={{ paddingHorizontal: 22, marginBottom: 10 }}>
+          <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
             <Wordmark />
           </View>
           <View
             style={{
-              paddingHorizontal: 22,
+              paddingHorizontal: 20,
               flexDirection: "row",
               alignItems: "flex-start",
               justifyContent: "space-between",
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: INK,
-                  fontFamily: SERIF_ITALIC,
-                  fontSize: 34,
-                }}
-              >
-                Events
-              </Text>
+              <Text style={PAGE_TITLE}>Events</Text>
               <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
                 {upcoming.length} upcoming · {fmtMonthYear(today)}
               </Text>
@@ -406,7 +411,7 @@ export default function EventsScreen() {
                 <>
                   <View
                     style={{
-                      paddingHorizontal: 22,
+                      paddingHorizontal: 20,
                       marginTop: 22,
                       marginBottom: 8,
                       flexDirection: "row",
@@ -438,7 +443,7 @@ export default function EventsScreen() {
 
               {/* This month */}
               {thisMonthList.length > 0 ? (
-                <View style={{ paddingHorizontal: 22, marginTop: 28 }}>
+                <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
                   <View
                     style={{
                       flexDirection: "row",
@@ -506,7 +511,7 @@ export default function EventsScreen() {
                 <View
                   style={{
                     alignItems: "center",
-                    paddingHorizontal: 22,
+                    paddingHorizontal: 20,
                     paddingVertical: 64,
                   }}
                 >
@@ -693,12 +698,12 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
       : `${event.vendors.length} ${event.vendors.length === 1 ? "vendor" : "vendors"} pending`;
 
   return (
-    <View style={{ paddingHorizontal: 22 }}>
+    <View style={{ paddingHorizontal: 20 }}>
       <View
         style={{
           backgroundColor: INK,
           borderRadius: 28,
-          paddingHorizontal: 22,
+          paddingHorizontal: 20,
           paddingTop: 20,
           paddingBottom: 18,
         }}

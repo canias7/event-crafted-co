@@ -28,6 +28,19 @@ import { supabase } from "@/lib/supabase";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
+
+// Page title — one treatment across both apps. Vendor sets every
+// screen heading at 38/44 with a -0.5 tracking correction; host had
+// drifted to three different sizes and two families.
+const PAGE_TITLE = {
+  fontFamily: SERIF_BOLD,
+  fontSize: 38,
+  lineHeight: 44,
+  letterSpacing: -0.5,
+  color: "#14161a",
+  marginTop: 8,
+} as const;
+
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface InquiryRow {
@@ -153,13 +166,13 @@ export default function InboxScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#0a0a0a"
+            tintColor="#14161a"
           />
         }
       >
         <View className="px-5 pt-2 pb-4">
           <Wordmark />
-          <Text style={{ fontFamily: SERIF_BOLD }} className="mt-2 text-3xl text-foreground">Inbox</Text>
+          <Text style={PAGE_TITLE}>Inbox</Text>
           <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
             Your inquiries to vendors — all in one place
           </Text>
@@ -167,7 +180,7 @@ export default function InboxScreen() {
 
         <View className="px-5 mb-3">
           <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-            <Feather name="search" size={16} color="#6b7280" />
+            <Feather name="search" size={16} color="#6f6a60" />
             <TextInput style={{ fontFamily: SERIF }}
               value={search}
               onChangeText={setSearch}
@@ -225,7 +238,7 @@ export default function InboxScreen() {
         <View className="mt-2">
           {loading ? (
             <View className="items-center pt-16">
-              <ActivityIndicator color="#0a0a0a" />
+              <ActivityIndicator color="#14161a" />
             </View>
           ) : filteredRows.length === 0 ? (
             <Empty
