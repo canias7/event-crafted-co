@@ -23,15 +23,22 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { eventTypeLabel } from "@vendora/core";
 import type { InquiryRow } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { useBrandDialog } from "@/components/listing/WizardKit";
+import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
+import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
 
 type Tab = "inquiries" | "partners";
+
+// Publishing already enforces a floor of 3 photos, so vendors who land
+// on exactly 3 uploaded the minimum and stopped. Nudge them, and leave
+// anyone who has genuinely built out a portfolio alone. Deliberately
+// low: the ask is optional, not a second checklist.
+const PHOTO_NUDGE_BELOW = 5;
 
 // Cream editorial palette — matches the reference mock (warmer than the
 // wizards' near-white CREAM).
@@ -113,6 +120,53 @@ export default function InboxScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [setup, setSetup] = useState<SetupState | null>(null);
+
+  // Reloaded on focus, like the Profile tab does — the vendor may have
+  // just finished a checklist item or uploaded photos and come straight
+  // back here, and a stale banner is worse than none.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      if (!user?.id) return;
+      loadSetupState(user.id)
+        .then((s) => {
+          if (!cancelled) setSetup(s);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [user?.id]),
+  );
+
+  // What the banner should say, or null for "say nothing". Ordered by
+  // what actually blocks the vendor: an unfinished profile keeps them
+  // out of search entirely, so it outranks the optional photo nudge.
+  const nudge = useMemo(() => {
+    if (!setup) return null; // still loading — don't flash a banner
+    if (!setup.complete) {
+      return {
+        icon: "bullhorn-outline" as const,
+        title: "Stand out. Get more booked.",
+        body: "Complete your profile and get discovered.",
+        cta: "Improve profile",
+        onPress: () => router.push("/(vendor)/setup"),
+      };
+    }
+    if (setup.photoCount < PHOTO_NUDGE_BELOW && setup.primaryListingId) {
+      const id = setup.primaryListingId;
+      const route = editorRouteFor(setup.primaryCategory);
+      return {
+        icon: "image-multiple-outline" as const,
+        title: "Add a few more photos.",
+        body: "Optional — but more photos give hosts a better feel for your work.",
+        cta: "Add photos",
+        onPress: () => router.push(`/(vendor)/${route}?id=${id}` as never),
+      };
+    }
+    return null;
+  }, [setup, router]);
 
   const load = useCallback(
     async (isRefresh: boolean) => {
@@ -556,69 +610,76 @@ export default function InboxScreen() {
           )}
         </View>
 
-        {/* Stand out banner */}
-        <TouchableOpacity
-          onPress={() => router.push("/(vendor)/setup")}
-          activeOpacity={0.85}
-          style={{
-            marginHorizontal: 20,
-            marginTop: 18,
-            backgroundColor: "#efe9dc",
-            borderRadius: 20,
-            padding: 16,
-          }}
-        >
-          {/* Icon + copy on one row, CTA on its own line below. All
-              three side by side squeezed the title onto three lines. */}
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View
+        {/* Nudge card. Three states, and the third is "gone":
+              1. setup unfinished  -> finish it
+              2. setup done, thin portfolio -> optional photo nudge
+              3. nothing to say    -> render nothing
+            A card that never goes away is a card vendors learn to skip,
+            so the banner has to be able to earn its place. */}
+        {nudge ? (
+          <TouchableOpacity
+            onPress={nudge.onPress}
+            activeOpacity={0.85}
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 999,
-              backgroundColor: "#f7f3e9",
-              alignItems: "center",
-              justifyContent: "center",
+              marginHorizontal: 20,
+              marginTop: 18,
+              backgroundColor: "#efe9dc",
+              borderRadius: 20,
+              padding: 16,
             }}
           >
-            <MaterialCommunityIcons name="bullhorn-outline" size={24} color={GOLD} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text
+            {/* Icon + copy on one row, CTA on its own line below. All
+                three side by side squeezed the title onto three lines. */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 999,
+                  backgroundColor: "#f7f3e9",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <MaterialCommunityIcons name={nudge.icon} size={24} color={GOLD} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 14 }}>
+                <Text
+                  style={{
+                    fontFamily: SERIF_BOLD,
+                    fontSize: 16,
+                    color: INK,
+                  }}
+                >
+                  {nudge.title}
+                </Text>
+                <Text style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 13, color: INK_DIM }}>
+                  {nudge.body}
+                </Text>
+              </View>
+            </View>
+            <View
               style={{
-                fontFamily: SERIF_BOLD,
-                fontSize: 16,
-                color: INK,
+                alignSelf: "flex-start",
+                marginTop: 12,
+                backgroundColor: CARD,
+                borderWidth: 1,
+                borderColor: BORDER,
+                borderRadius: 999,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
               }}
             >
-              Stand out. Get more booked.
-            </Text>
-            <Text style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 13, color: INK_DIM }}>
-              Complete your profile and get discovered.
-            </Text>
-          </View>
-          </View>
-          <View
-            style={{
-              alignSelf: "flex-start",
-              marginTop: 12,
-              backgroundColor: CARD,
-              borderWidth: 1,
-              borderColor: BORDER,
-              borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 9,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-            }}
-          >
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
-              Improve profile
-            </Text>
-            <Feather name="arrow-right" size={13} color={INK} />
-          </View>
-        </TouchableOpacity>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
+                {nudge.cta}
+              </Text>
+              <Feather name="arrow-right" size={13} color={INK} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
 
       {dialog.element}

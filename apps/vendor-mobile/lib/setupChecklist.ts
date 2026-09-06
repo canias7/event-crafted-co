@@ -35,6 +35,12 @@ export interface SetupState {
   primaryListingId: string | null;
   /** Its category — picks the right editor (wizard vs generic form). */
   primaryCategory: string | null;
+  /**
+   * Portfolio photos across every listing the vendor owns. Not a
+   * checklist item — publishing already enforces a floor of 3 — but
+   * surfaces the optional "add a few more" nudge once setup is done.
+   */
+  photoCount: number;
 }
 
 function filled(v: unknown): boolean {
@@ -70,27 +76,38 @@ export async function loadSetupState(userId: string): Promise<SetupState> {
   // mechanism the Calendar tab writes: a recurring weekday rule or a
   // one-off blocked date, on any of their listings.
   let availabilityDone = false;
+  let photoCount = 0;
   if (vendorIds.length > 0) {
-    const [{ data: rules }, { data: dates }] = await Promise.all([
-      supabase
-        .from("vendor_availability_rules")
-        .select("vendor_id")
-        .in("vendor_id", vendorIds)
-        .limit(1),
-      supabase
-        .from("vendor_unavailable_dates")
-        .select("vendor_id")
-        .in("vendor_id", vendorIds)
-        .limit(1),
-    ]);
+    const [{ data: rules }, { data: dates }, { count: photos }] =
+      await Promise.all([
+        supabase
+          .from("vendor_availability_rules")
+          .select("vendor_id")
+          .in("vendor_id", vendorIds)
+          .limit(1),
+        supabase
+          .from("vendor_unavailable_dates")
+          .select("vendor_id")
+          .in("vendor_id", vendorIds)
+          .limit(1),
+        supabase
+          .from("vendor_portfolio_images")
+          .select("id", { count: "exact", head: true })
+          .in("vendor_id", vendorIds),
+      ]);
     availabilityDone = (rules ?? []).length > 0 || (dates ?? []).length > 0;
+    photoCount = photos ?? 0;
   }
 
   const hasPricing = listings.some(
     (l) =>
       l.price_min_cents != null ||
       l.base_price_cents != null ||
-      filled(l.custom_pricing) ||
+      // custom_pricing is a boolean column — filled() only ever returns
+      // true for a non-empty string, so this used to be dead. A vendor
+      // who chose "custom quote" and nothing else was told their pricing
+      // was unfinished forever, and the checklist never reached complete.
+      l.custom_pricing === true ||
       (Array.isArray(l.pricing_models) && l.pricing_models.length > 0),
   );
   const hasPublishedListing = listings.some(
@@ -173,5 +190,6 @@ export async function loadSetupState(userId: string): Promise<SetupState> {
     complete: requiredDone === required.length,
     primaryListingId: primary?.id ?? null,
     primaryCategory: primary?.category ?? null,
+    photoCount,
   };
 }
