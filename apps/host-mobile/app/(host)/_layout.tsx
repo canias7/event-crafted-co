@@ -51,7 +51,10 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#f5f5f5",
+          // Warm card cream, same as vendor's floating bar. The old
+          // #f5f5f5 was a cold grey that read as a different app
+          // against the cream page.
+          backgroundColor: "#fbf9f4",
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -89,13 +92,13 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFocused ? "#0a0a0a" : "transparent",
+                backgroundColor: isFocused ? "#14161a" : "transparent",
               }}
             >
               <Feather
                 name={iconName}
                 size={20}
-                color={isFocused ? "#ffffff" : "#6b7280"}
+                color={isFocused ? "#ffffff" : "#6f6a60"}
               />
             </Pressable>
           );

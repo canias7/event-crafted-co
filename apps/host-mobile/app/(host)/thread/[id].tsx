@@ -537,7 +537,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#e5e7eb",
+              backgroundColor: "#e6e1d5",
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -606,7 +606,7 @@ function Header({
         paddingHorizontal: 16,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#e5e7eb",
+        borderBottomColor: "#e6e1d5",
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -1000,7 +1000,7 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#e5e7eb",
+            backgroundColor: enabled ? INK : "#e6e1d5",
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,

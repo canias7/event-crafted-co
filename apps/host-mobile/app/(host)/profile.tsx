@@ -32,6 +32,19 @@ const GOLD = "#c9a86a";
 const GREEN = "#22c55e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
+
+// Page title — one treatment across both apps. Vendor sets every
+// screen heading at 38/44 with a -0.5 tracking correction; host had
+// drifted to three different sizes and two families.
+const PAGE_TITLE = {
+  fontFamily: SERIF_BOLD,
+  fontSize: 38,
+  lineHeight: 44,
+  letterSpacing: -0.5,
+  color: "#14161a",
+  marginTop: 8,
+} as const;
+
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface Stats {
@@ -206,15 +219,7 @@ export default function ProfileScreen() {
               marginBottom: 18,
             }}
           >
-            <Text
-              style={{
-                color: INK,
-                fontFamily: SERIF_ITALIC,
-                fontSize: 34,
-              }}
-            >
-              Profile
-            </Text>
+            <Text style={PAGE_TITLE}>Profile</Text>
             <View
               style={{
                 width: 38,
@@ -365,7 +370,7 @@ function HeroCard({
         borderRadius: 28,
         paddingTop: 28,
         paddingBottom: 22,
-        paddingHorizontal: 22,
+        paddingHorizontal: 20,
         alignItems: "center",
         shadowColor: INK,
         shadowOpacity: 0.10,

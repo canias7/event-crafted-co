@@ -33,7 +33,7 @@ const CREAM = "#f4f1ea";
 const RED = "#b23a34";
 
 const CARD_SHADOW = {
-  shadowColor: "#0a0a0a",
+  shadowColor: "#14161a",
   shadowOpacity: 0.10,
   shadowRadius: 20,
   shadowOffset: { width: 0, height: 6 },
@@ -316,7 +316,7 @@ function Section({
 }
 
 export function NotificationsBell({
-  iconColor = "#0a0a0a",
+  iconColor = "#14161a",
 }: { iconColor?: string }) {
   const { user } = useAuth();
   const router = useRouter();
