@@ -11,6 +11,12 @@ type UserRow = {
   suspended_at: string | null;
   created_at: string;
   last_sign_in_at: string | null;
+  // Last time a session token refreshed, which happens while the app is
+  // foregrounded — a usable proxy for "last opened". last_sign_in_at is
+  // NOT that: sessions persist, so a daily user still shows the sign-in
+  // from the day they first logged in.
+  last_active_at: string | null;
+  days_since_active: number | null;
   // Display role — admin sees only this. Differentiates approved
   // vendors from in-flight applicants so the Users tab is accurate
   // without needing to bounce to the Vendor applications tab.
@@ -21,6 +27,27 @@ type UserRow = {
     | "Vendor (rejected)"
     | "Admin";
 };
+
+// "3 days ago" reads faster than a date when the question is "who has
+// drifted away". The exact date sits underneath for when it matters.
+function formatDormancy(days: number | null): string {
+  if (days === null) return "—";
+  if (days < 1) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? "1 month ago" : `${months} months ago`;
+}
+
+// 14 days is the dormant threshold scan-dormant-users uses; keeping the
+// two in step means the table and the scanner never disagree about who
+// counts as gone.
+function dormancyClass(days: number | null): string {
+  if (days === null) return "text-ink/40";
+  if (days >= 14) return "text-red-700";
+  if (days >= 7) return "text-amber-700";
+  return "text-ink/70";
+}
 
 export function UsersPage() {
   const [rows, setRows] = useState<UserRow[]>([]);
@@ -180,7 +207,7 @@ export function UsersPage() {
                 <th className="px-4 py-2">Role</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Joined</th>
-                <th className="px-4 py-2">Last sign-in</th>
+                <th className="px-4 py-2">Last active</th>
                 <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -212,9 +239,18 @@ export function UsersPage() {
                     {new Date(r.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-2 text-xs text-ink/60">
-                    {r.last_sign_in_at
-                      ? new Date(r.last_sign_in_at).toLocaleDateString()
-                      : "—"}
+                    {r.last_active_at ? (
+                      <>
+                        <div className={dormancyClass(r.days_since_active)}>
+                          {formatDormancy(r.days_since_active)}
+                        </div>
+                        <div className="text-[11px] text-ink/40">
+                          {new Date(r.last_active_at).toLocaleDateString()}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-ink/40">Never opened</span>
+                    )}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-3">
