@@ -204,6 +204,15 @@ export default function GalleryScreen() {
     setRefreshing(false);
   }
 
+  // Does this vendor have any live photo at all? Distinct from
+  // `visible.length === 0`, which is also true when a filter simply
+  // matched nothing — in that case the toolbar has to stay put so the
+  // filter can be cleared.
+  const hasAnyPhotos = useMemo(
+    () => images.some((r) => !r.deleted_at),
+    [images],
+  );
+
   // ---- derived: the visible set after album + smart + search + sort ----
   const visible = useMemo(() => {
     const now = Date.now();
@@ -570,10 +579,28 @@ export default function GalleryScreen() {
           Your media library — upload once, reuse across listings.
         </Text>
 
+        {/* Toolbar. Hidden until there is something to search, sort or
+            filter — on an empty gallery it was five rows of controls
+            above a card that just says "upload a photo". */}
+        {!hasAnyPhotos ? null : (
+        <>
         {/* Album chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          /* Bleed through the 20pt page gutter. Clipped flush at the
+             gutter the row looked cut off rather than scrollable — the
+             last chip was sliced mid-word with clean air beside it. */
+          style={{ marginTop: 16, marginHorizontal: -20 }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
+        >
           <Chip label="All" active={activeAlbum === ALL} onPress={() => setActiveAlbum(ALL)} icon="grid" />
-          <Chip label="Uncategorized" active={activeAlbum === NONE} onPress={() => setActiveAlbum(NONE)} icon="folder" />
+          {/* With no albums, "Uncategorized" returns exactly what "All"
+              returns. It only becomes a distinct view once something has
+              been filed elsewhere. */}
+          {albums.length === 0 ? null : (
+            <Chip label="Uncategorized" active={activeAlbum === NONE} onPress={() => setActiveAlbum(NONE)} icon="folder" />
+          )}
           {albums.map((a) => (
             <Chip key={a.id} label={a.name} active={activeAlbum === a.id} onPress={() => setActiveAlbum(a.id)} />
           ))}
@@ -587,7 +614,12 @@ export default function GalleryScreen() {
         </ScrollView>
 
         {/* Smart collections */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginTop: 8, marginHorizontal: -20 }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
+        >
           <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, alignSelf: "center" }}>
             SMART
           </Text>
@@ -625,17 +657,26 @@ export default function GalleryScreen() {
               </Pressable>
             ) : null}
           </View>
-          <SquareBtn icon="sliders" label="Sort" onPress={cycleSort(sort, setSort)} />
+          {/* No Sort square here: it fired the same cycleSort as the
+              "Sort: Newest first" row below, so the page carried two
+              controls for one action. The labelled one wins — it shows
+              the current mode instead of hiding it behind an icon. */}
+          {/* One three-state control — comfortable grid, dense grid,
+              list — instead of two buttons whose behaviour depended on
+              each other ("View" exited list mode, except when it didn't). */}
           <SquareBtn
-            icon={dense ? "grid" : "square"}
-            label="View"
-            onPress={() => (listView ? setListView(false) : setDense((d) => !d))}
-          />
-          <SquareBtn
-            icon="list"
-            label="List"
-            active={listView}
-            onPress={() => setListView((v) => !v)}
+            icon={listView ? "list" : dense ? "grid" : "square"}
+            label={listView ? "List" : dense ? "Dense" : "Grid"}
+            onPress={() => {
+              if (listView) {
+                setListView(false);
+                setDense(false);
+              } else if (dense) {
+                setListView(true);
+              } else {
+                setDense(true);
+              }
+            }}
           />
         </View>
         <Pressable
@@ -646,6 +687,8 @@ export default function GalleryScreen() {
           <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{sortLabel(sort)}</Text>
           <Feather name="chevron-down" size={14} color={INK} />
         </Pressable>
+        </>
+        )}
 
         {/* Grid / list */}
         {loading ? (
