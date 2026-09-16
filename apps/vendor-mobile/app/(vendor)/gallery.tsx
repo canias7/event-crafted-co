@@ -93,6 +93,7 @@ type SmartFilter =
   | "large";
 
 type SortMode = "newest" | "oldest" | "name_asc" | "name_desc";
+type GalleryTab = "media" | "albums" | "trash";
 
 interface GalleryImage {
   id: string;
@@ -147,6 +148,9 @@ export default function GalleryScreen() {
     null,
   );
 
+  // Three places, not a filter strip: My Media, Albums, Trash.
+  const [tab, setTab] = useState<GalleryTab>("media");
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [activeAlbum, setActiveAlbum] = useState<string>(ALL);
   const [smart, setSmart] = useState<SmartFilter>(null);
   const [search, setSearch] = useState("");
@@ -204,12 +208,21 @@ export default function GalleryScreen() {
     setRefreshing(false);
   }
 
+  // Does this vendor have any live photo at all? Distinct from
+  // `visible.length === 0`, which is also true when a filter simply
+  // matched nothing — in that case the toolbar has to stay put so the
+  // filter can be cleared.
+  const hasAnyPhotos = useMemo(
+    () => images.some((r) => !r.deleted_at),
+    [images],
+  );
+
   // ---- derived: the visible set after album + smart + search + sort ----
   const visible = useMemo(() => {
     const now = Date.now();
     let rows = images;
 
-    if (activeAlbum === TRASH) {
+    if (tab === "trash") {
       rows = rows.filter((r) => r.deleted_at);
     } else {
       rows = rows.filter((r) => !r.deleted_at);
@@ -263,7 +276,7 @@ export default function GalleryScreen() {
       }
     });
     return sorted;
-  }, [images, activeAlbum, smart, search, sort]);
+  }, [images, tab, activeAlbum, smart, search, sort]);
 
   const activeCount = useMemo(() => images.filter((r) => !r.deleted_at).length, [images]);
   const trashCount = useMemo(() => images.filter((r) => r.deleted_at).length, [images]);
@@ -484,7 +497,7 @@ export default function GalleryScreen() {
   function confirmBulkDelete() {
     const ids = [...selected];
     if (ids.length === 0) return;
-    const inTrash = activeAlbum === TRASH;
+    const inTrash = tab === "trash";
     Alert.alert(
       inTrash ? "Delete forever?" : "Move to trash?",
       inTrash
@@ -522,7 +535,8 @@ export default function GalleryScreen() {
         {/* Wordmark */}
         <Wordmark />
 
-        {/* Title + actions */}
+        {/* Title + upload. Select moved into Options — it is a mode you
+            enter occasionally, not a peer of the primary action. */}
         <View
           style={{
             marginTop: 14,
@@ -531,124 +545,194 @@ export default function GalleryScreen() {
             justifyContent: "space-between",
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
-            <Text
-              numberOfLines={1}
-              style={{
-                fontFamily: SERIF_BOLD,
-                fontSize: 38,
-                lineHeight: 46,
-                letterSpacing: -0.5,
-                color: INK,
-              }}
-            >
-              Gallery
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: SERIF_BOLD,
+              fontSize: 38,
+              lineHeight: 46,
+              letterSpacing: -0.5,
+              color: INK,
+              flexShrink: 1,
+            }}
+          >
+            Gallery
+          </Text>
+          <Pressable
+            onPress={uploadImages}
+            disabled={uploading}
+            style={[pillStyle(true), { opacity: uploading ? 0.6 : 1 }]}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color={INK} />
+            ) : (
+              <Feather name="plus" size={15} color={INK} />
+            )}
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13, marginLeft: 6 }}>
+              {uploading && uploadProgress
+                ? `${uploadProgress.done}/${uploadProgress.total}`
+                : "Upload"}
             </Text>
-          </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Pressable
-              onPress={() => (selectMode ? exitSelect() : setSelectMode(true))}
-              style={pillStyle(selectMode)}
-            >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
-                {selectMode ? "Done" : "Select"}
-              </Text>
-            </Pressable>
-            <Pressable onPress={uploadImages} disabled={uploading} style={[pillStyle(true), { opacity: uploading ? 0.6 : 1 }]}>
-              {uploading ? (
-                <ActivityIndicator size="small" color={INK} />
-              ) : (
-                <Feather name="plus" size={15} color={INK} />
-              )}
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13, marginLeft: 6 }}>
-                {uploading && uploadProgress ? `${uploadProgress.done}/${uploadProgress.total}` : "Upload"}
-              </Text>
-            </Pressable>
-          </View>
+          </Pressable>
         </View>
         <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
           Your media library — upload once, reuse across listings.
         </Text>
 
-        {/* Album chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }} contentContainerStyle={{ gap: 8 }}>
-          <Chip label="All" active={activeAlbum === ALL} onPress={() => setActiveAlbum(ALL)} icon="grid" />
-          <Chip label="Uncategorized" active={activeAlbum === NONE} onPress={() => setActiveAlbum(NONE)} icon="folder" />
-          {albums.map((a) => (
-            <Chip key={a.id} label={a.name} active={activeAlbum === a.id} onPress={() => setActiveAlbum(a.id)} />
-          ))}
-          <Chip
-            label={trashCount ? `Trash ${trashCount}` : "Trash"}
-            active={activeAlbum === TRASH}
-            onPress={() => setActiveAlbum(TRASH)}
+        {/* Three tabs instead of two scrolling chip rows. Albums and Trash
+            are places, not filters — they were sharing a strip with smart
+            collections, which are filters, and neither row fit on screen. */}
+        <View style={{ flexDirection: "row", marginTop: 18, borderBottomWidth: 1, borderBottomColor: BORDER }}>
+          <TabItem icon="image" label="My Media" active={tab === "media"} onPress={() => setTab("media")} />
+          <View style={{ width: 1, backgroundColor: BORDER, marginVertical: 10 }} />
+          <TabItem icon="folder" label="Albums" active={tab === "albums"} onPress={() => setTab("albums")} />
+          <View style={{ width: 1, backgroundColor: BORDER, marginVertical: 10 }} />
+          <TabItem
             icon="trash-2"
-          />
-          <Chip label="New album" onPress={() => setNewAlbumOpen(true)} icon="folder-plus" outline />
-        </ScrollView>
-
-        {/* Smart collections */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 8 }}>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, alignSelf: "center" }}>
-            SMART
-          </Text>
-          <Chip label="Last 7 days" small active={smart === "recent7"} onPress={() => setSmart(smart === "recent7" ? null : "recent7")} />
-          <Chip label="Last 30 days" small active={smart === "recent30"} onPress={() => setSmart(smart === "recent30" ? null : "recent30")} />
-          <Chip label="Portraits" small active={smart === "portraits"} onPress={() => setSmart(smart === "portraits" ? null : "portraits")} />
-          <Chip label="Landscapes" small active={smart === "landscapes"} onPress={() => setSmart(smart === "landscapes" ? null : "landscapes")} />
-          <Chip label="Large" small active={smart === "large"} onPress={() => setSmart(smart === "large" ? null : "large")} />
-        </ScrollView>
-
-        {/* Search + sort + view */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14 }}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: SURFACE,
-              borderRadius: 18,
-              paddingHorizontal: 16,
-              height: 56,
-            }}
-          >
-            <Feather name="search" size={17} color={INK_DIM} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search photos"
-              placeholderTextColor="#a49f93"
-              style={{ fontFamily: SERIF, flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
-            />
-            {search ? (
-              <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <Feather name="x" size={16} color={INK_DIM} />
-              </Pressable>
-            ) : null}
-          </View>
-          <SquareBtn icon="sliders" label="Sort" onPress={cycleSort(sort, setSort)} />
-          <SquareBtn
-            icon={dense ? "grid" : "square"}
-            label="View"
-            onPress={() => (listView ? setListView(false) : setDense((d) => !d))}
-          />
-          <SquareBtn
-            icon="list"
-            label="List"
-            active={listView}
-            onPress={() => setListView((v) => !v)}
+            label={trashCount ? `Trash ${trashCount}` : "Trash"}
+            active={tab === "trash"}
+            onPress={() => setTab("trash")}
           />
         </View>
-        <Pressable
-          onPress={cycleSort(sort, setSort)}
-          hitSlop={6}
-          style={{ marginTop: 10, flexDirection: "row", alignItems: "center", gap: 4 }}
-        >
-          <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{sortLabel(sort)}</Text>
-          <Feather name="chevron-down" size={14} color={INK} />
-        </Pressable>
+
+        {tab === "albums" ? null : (
+          <>
+            {/* Search + Options. The five smart collections and the density
+                and select toggles all live behind Options now — they were
+                four controls competing with the search field for one row. */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 }}>
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: SURFACE,
+                  borderRadius: 18,
+                  paddingHorizontal: 16,
+                  height: 56,
+                }}
+              >
+                <Feather name="search" size={17} color={INK_DIM} />
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search your gallery..."
+                  placeholderTextColor="#a49f93"
+                  style={{ fontFamily: SERIF, flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
+                />
+                {search ? (
+                  <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                    <Feather name="x" size={16} color={INK_DIM} />
+                  </Pressable>
+                ) : null}
+              </View>
+              <SquareBtn
+                icon="sliders"
+                label="Options"
+                active={!!smart || dense || selectMode}
+                onPress={() => setOptionsOpen(true)}
+              />
+            </View>
+
+            {/* Sort on the left, layout on the right — one row, and the
+                sort label states the current mode rather than hiding it
+                behind an icon that did the same thing. */}
+            <View
+              style={{
+                marginTop: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Pressable
+                onPress={cycleSort(sort, setSort)}
+                hitSlop={6}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              >
+                <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{sortLabel(sort)}</Text>
+                <Feather name="chevron-down" size={14} color={INK} />
+              </Pressable>
+              <View
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: CARD,
+                  borderWidth: 1,
+                  borderColor: BORDER,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                }}
+              >
+                <SegBtn icon="grid" active={!listView} onPress={() => setListView(false)} />
+                <SegBtn icon="list" active={listView} onPress={() => setListView(true)} />
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* Albums tab. Its own view rather than chips in a strip —
+            albums are somewhere photos live, and the count is the thing
+            you actually want to see before opening one. */}
+        {tab === "albums" ? (
+          <View style={{ marginTop: 18 }}>
+            <AlbumRow
+              icon="image"
+              name="All photos"
+              count={images.filter((r) => !r.deleted_at).length}
+              onPress={() => {
+                setActiveAlbum(ALL);
+                setTab("media");
+              }}
+            />
+            {/* Until an album exists there is nowhere else for a photo
+                to be, so "Uncategorized" would list exactly what "All
+                photos" lists — the same duplicate row, one level down. */}
+            {albums.length === 0 ? null : (
+              <AlbumRow
+                icon="folder"
+                name="Uncategorized"
+                count={images.filter((r) => !r.deleted_at && !r.album_id).length}
+                onPress={() => {
+                  setActiveAlbum(NONE);
+                  setTab("media");
+                }}
+              />
+            )}
+            {albums.map((a) => (
+              <AlbumRow
+                key={a.id}
+                icon="folder"
+                name={a.name}
+                count={images.filter((r) => !r.deleted_at && r.album_id === a.id).length}
+                onPress={() => {
+                  setActiveAlbum(a.id);
+                  setTab("media");
+                }}
+              />
+            ))}
+            <Pressable
+              onPress={() => setNewAlbumOpen(true)}
+              style={{
+                marginTop: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                height: 52,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: BORDER,
+                borderStyle: "dashed",
+              }}
+            >
+              <Feather name="folder-plus" size={16} color={INK} />
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>New album</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Grid / list */}
-        {loading ? (
+        {tab === "albums" ? null : loading ? (
           <View style={{ paddingTop: 80, alignItems: "center" }}>
             <ActivityIndicator />
           </View>
@@ -668,7 +752,7 @@ export default function GalleryScreen() {
             <View style={{ alignItems: "center" }}>
               <MaterialCommunityIcons
                 name={
-                  activeAlbum === TRASH
+                  tab === "trash"
                     ? "delete-empty-outline"
                     : "folder-multiple-image"
                 }
@@ -685,14 +769,14 @@ export default function GalleryScreen() {
                 textAlign: "center",
               }}
             >
-              {activeAlbum === TRASH
+              {tab === "trash"
                 ? "Trash is empty"
                 : search || smart
                   ? "No matches"
                   : "Your gallery is empty"}
             </Text>
             <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
-              {activeAlbum === TRASH
+              {tab === "trash"
                 ? "Deleted photos land here for 30 days."
                 : search || smart
                   ? "Try a different search or filter."
@@ -802,41 +886,11 @@ export default function GalleryScreen() {
           </View>
         )}
 
-        {/* Tips banner */}
-        <View
-          style={{
-            marginTop: 18,
-            backgroundColor: "#efe9dc",
-            borderRadius: 20,
-            padding: 16,
-          }}
-        >
-          {/* Icon + copy on one row, CTA on its own line below. Side by
-              side, the button held its full width (RN flex items don't
-              shrink by default), leaving the copy ~74pt and breaking
-              every word mid-syllable. Same fix the inbox banner uses. */}
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 999,
-              backgroundColor: "#f7f3e9",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <MaterialCommunityIcons name="image-multiple-outline" size={22} color={GOLD} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
-              Organize. Showcase. Get booked.
-            </Text>
-            <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, color: INK_DIM }}>
-              High-quality media helps you stand out and build trust.
-            </Text>
-          </View>
-          </View>
+        {/* Pro tip. Was a full banner with its own heading and button,
+            stacked directly under "Your gallery is empty" — two cards
+            telling you to add photos. Now one quiet row: labelled as a
+            tip so it reads as an aside, and the whole row is the tap. */}
+        {tab === "albums" ? null : (
           <Pressable
             onPress={() =>
               dialog.show({
@@ -848,26 +902,123 @@ export default function GalleryScreen() {
               })
             }
             style={{
-              alignSelf: "flex-start",
-              marginTop: 12,
-              backgroundColor: CARD,
-              borderWidth: 1,
-              borderColor: GOLD,
-              borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 9,
+              marginTop: 18,
+              backgroundColor: "#efe9dc",
+              borderRadius: 20,
+              padding: 16,
               flexDirection: "row",
               alignItems: "center",
-              gap: 4,
+              gap: 14,
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
-              Tips for better photos
-            </Text>
-            <Feather name="chevron-right" size={13} color={INK} />
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                backgroundColor: CARD,
+                borderWidth: 1,
+                borderColor: GOLD,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="zap" size={18} color={GOLD} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: GOLD }}>Pro tip</Text>
+              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 19, color: INK }}>
+                {hasAnyPhotos
+                  ? "Create albums to keep your photos organized by event type, client, or service."
+                  : "Shoot in daylight and lead with your strongest photo — it becomes your cover everywhere."}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={INK_DIM} />
           </Pressable>
-        </View>
+        )}
       </ScrollView>
+
+      {/* Options sheet. Everything that used to compete for space in the
+          toolbar: the five smart collections, grid density, and select
+          mode. None of them are needed often enough to hold a permanent
+          row, and all three were unlabelled icons before. */}
+      <Modal visible={optionsOpen} transparent animationType="slide" onRequestClose={() => setOptionsOpen(false)}>
+        <Pressable
+          onPress={() => setOptionsOpen(false)}
+          style={{ flex: 1, backgroundColor: "rgba(20,22,26,0.35)", justifyContent: "flex-end" }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: PAGE,
+              borderTopLeftRadius: 26,
+              borderTopRightRadius: 26,
+              paddingHorizontal: 20,
+              paddingTop: 10,
+              paddingBottom: 34,
+            }}
+          >
+            <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 999, backgroundColor: BORDER }} />
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 22, color: INK, marginTop: 16 }}>
+              Options
+            </Text>
+
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, marginTop: 20 }}>
+              SMART COLLECTIONS
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+              {(
+                [
+                  ["recent7", "Last 7 days"],
+                  ["recent30", "Last 30 days"],
+                  ["portraits", "Portraits"],
+                  ["landscapes", "Landscapes"],
+                  ["large", "Large"],
+                ] as [Exclude<SmartFilter, null>, string][]
+              ).map(([key, label]) => (
+                <Chip
+                  key={key}
+                  label={label}
+                  small
+                  active={smart === key}
+                  onPress={() => setSmart(smart === key ? null : key)}
+                />
+              ))}
+            </View>
+
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, marginTop: 22 }}>
+              LAYOUT
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+              <Chip label="Comfortable" small active={!dense} onPress={() => setDense(false)} />
+              <Chip label="Dense" small active={dense} onPress={() => setDense(true)} />
+            </View>
+
+            <Pressable
+              onPress={() => {
+                setOptionsOpen(false);
+                if (selectMode) exitSelect();
+                else setSelectMode(true);
+              }}
+              style={{
+                marginTop: 24,
+                height: 52,
+                borderRadius: 999,
+                backgroundColor: selectMode ? SURFACE : GOLD,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+              }}
+            >
+              <Feather name={selectMode ? "x" : "check-square"} size={16} color={INK} />
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+                {selectMode ? "Exit select mode" : "Select photos"}
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {dialog.element}
 
@@ -890,12 +1041,12 @@ export default function GalleryScreen() {
         >
           <Text style={{ fontFamily: SERIF_BOLD, color: WHITE}}>{selected.size} selected</Text>
           <View style={{ flexDirection: "row", gap: 18 }}>
-            {activeAlbum === TRASH ? (
+            {tab === "trash" ? (
               <BarAction icon="rotate-ccw" label="Restore" onPress={async () => { await restore([...selected]); exitSelect(); }} />
             ) : (
               <BarAction icon="folder" label="Move" onPress={() => setMoveOpen(true)} />
             )}
-            <BarAction icon="trash-2" label={activeAlbum === TRASH ? "Delete" : "Trash"} onPress={confirmBulkDelete} danger />
+            <BarAction icon="trash-2" label={tab === "trash" ? "Delete" : "Trash"} onPress={confirmBulkDelete} danger />
           </View>
         </View>
       ) : null}
@@ -1020,6 +1171,126 @@ function pillStyle(filled: boolean) {
 }
 
 // Labeled square action button (Sort / View / List) per the mock.
+// Underlined tab. Gold rule under the active one — the same accent the
+// primary button uses, so "where am I" and "what acts" read as one system.
+function TabItem({
+  icon,
+  label,
+  active,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: 7,
+        paddingVertical: 12,
+        borderBottomWidth: 2,
+        borderBottomColor: active ? GOLD : "transparent",
+        marginBottom: -1,
+      }}
+    >
+      <Feather name={icon} size={16} color={active ? INK : INK_DIM} />
+      <Text
+        numberOfLines={1}
+        style={{ fontFamily: active ? SERIF_BOLD : SERIF, fontSize: 13, color: active ? INK : INK_DIM }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+// Half of the grid/list pair. Two segments in one bordered capsule, so
+// the choice reads as one setting rather than two independent buttons.
+function SegBtn({
+  icon,
+  active,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: 46,
+        height: 40,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: active ? SURFACE : "transparent",
+      }}
+    >
+      <Feather name={icon} size={17} color={INK} />
+    </Pressable>
+  );
+}
+
+// One album as a row: name, how many photos are in it, and a chevron.
+// The count is the thing worth knowing before you open it.
+function AlbumRow({
+  icon,
+  name,
+  count,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  name: string;
+  count: number;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
+        backgroundColor: CARD,
+        borderWidth: 1,
+        borderColor: BORDER,
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        height: 66,
+        marginBottom: 8,
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          backgroundColor: SURFACE,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Feather name={icon} size={17} color={INK} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+          {name}
+        </Text>
+        <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 1 }}>
+          {count} {count === 1 ? "photo" : "photos"}
+        </Text>
+      </View>
+      <Feather name="chevron-right" size={18} color={INK_DIM} />
+    </Pressable>
+  );
+}
+
 function SquareBtn({
   icon,
   label,
