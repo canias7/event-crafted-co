@@ -15,6 +15,10 @@ project_id = "pahpjjubhbcbwqjpamwv"
   # false or the gateway 401s every push before the handler runs.
   [functions.send-push]
     verify_jwt = false
+  # Invoked by the inquiries AFTER INSERT trigger, which has no JWT.
+  # Guarded by x-cron-secret once CRON_SECRET is set on the function.
+  [functions.notify-inquiry-email]
+    verify_jwt = false
   [functions.axion-generate]
     verify_jwt = true
   [functions.ai-site-generate]
