@@ -188,7 +188,13 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: 999,
+                  // Exactly half the size, not 999. On Android (new
+                  // architecture) this indicator drew as a hard-cornered
+                  // square with 999, while web drew the circle — so every
+                  // preview looked right and the phone didn't. An exact
+                  // radius doesn't depend on how the platform clamps an
+                  // oversized one.
+                  borderRadius: 20,
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: isFocused ? "#14161a" : "transparent",
@@ -207,7 +213,9 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       right: -2,
                       minWidth: 18,
                       height: 18,
-                      borderRadius: 999,
+                      // Half the height, for the same Android reason as
+                      // the indicator above — 999 risks a square badge.
+                      borderRadius: 9,
                       paddingHorizontal: 5,
                       backgroundColor: "#b23a34",
                       // Ring in the bar's own cream so the badge reads as
