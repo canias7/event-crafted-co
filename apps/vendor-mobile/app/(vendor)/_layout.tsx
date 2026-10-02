@@ -188,18 +188,38 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 style={{
                   width: 40,
                   height: 40,
-                  // Exactly half the size, not 999. On Android (new
-                  // architecture) this indicator drew as a hard-cornered
-                  // square with 999, while web drew the circle — so every
-                  // preview looked right and the phone didn't. An exact
-                  // radius doesn't depend on how the platform clamps an
-                  // oversized one.
-                  borderRadius: 20,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: isFocused ? "#14161a" : "transparent",
                 }}
               >
+                {/* The ink circle is its own view, mounted only while the
+                    tab is active — never a background colour toggled on a
+                    view that already exists.
+
+                    That toggle is what drew squares on Android (new
+                    architecture). The tab that was active at launch got a
+                    view created already-ink, and drew round. Every tab you
+                    switched to afterwards had an existing transparent view
+                    recoloured to ink, and Android repainted it without the
+                    corner radius. Mounting a fresh view on every switch puts
+                    each tab down the same path as launch, which is the path
+                    observed to work.
+
+                    The radius value was never the cause: 999 and 20 both
+                    rendered square on a switch and round on a fresh mount. */}
+                {isFocused ? (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#14161a",
+                    }}
+                  />
+                ) : null}
                 <Feather
                   name={iconName}
                   size={20}
