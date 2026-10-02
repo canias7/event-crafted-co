@@ -1280,9 +1280,8 @@ export default function CalendarScreen() {
     setEditingBlockDate(null);
     setBlockModalOpen(true);
   }
-  // Serif is wider than the sans this used to be, and "September 2026"
-  // was ellipsising against the Month / List toggle. The year is only
-  // informative once you leave the current one, so drop it otherwise.
+  // The year is only informative once you leave the current one, so
+  // drop it otherwise and keep the card header short.
   const monthLabel = viewMonth.toLocaleDateString(
     undefined,
     viewMonth.getFullYear() === new Date().getFullYear()
@@ -1345,63 +1344,46 @@ export default function CalendarScreen() {
             style={{
               marginTop: 14,
               flexDirection: "row",
-              alignItems: "flex-start",
+              alignItems: "center",
               justifyContent: "space-between",
             }}
           >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: INK,
-                  fontFamily: SERIF_BOLD,
-                  fontSize: 38,
-                  letterSpacing: -0.5,
-                }}
-              >
-                Calendar
-              </Text>
-              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-                Manage your bookings & availability
-              </Text>
-            </View>
+            {/* Three 40pt buttons leave a 360pt phone about 190pt for a
+                38pt "Calendar"; let it shrink a touch rather than wrap. */}
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              style={{
+                flex: 1,
+                marginRight: 8,
+                color: INK,
+                fontFamily: SERIF_BOLD,
+                fontSize: 38,
+                letterSpacing: -0.5,
+              }}
+            >
+              Calendar
+            </Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <Pressable
+              <RoundIconButton
+                icon="zap"
+                label="Scheduling"
                 onPress={() => router.push("/(vendor)/scheduling" as never)}
-                hitSlop={6}
-              >
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 999,
-                      backgroundColor: CREAM_DEEP,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: pressed ? 0.85 : 1,
-                    }}
-                  >
-                    <Feather name="zap" size={18} color={INK} />
-                  </View>
-                )}
-              </Pressable>
-              <Pressable onPress={jumpToToday} hitSlop={6}>
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 999,
-                      backgroundColor: CREAM_DEEP,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: pressed ? 0.85 : 1,
-                    }}
-                  >
-                    <Feather name="calendar" size={18} color={INK} />
-                  </View>
-                )}
-              </Pressable>
+              />
+              {/* List: just the Appointments list, without the grid. A
+                  round button rather than a Month / List toggle of its
+                  own, so the page has one switch, not two. */}
+              <RoundIconButton
+                icon="list"
+                label="Appointments list"
+                active={calView === "list"}
+                onPress={() => {
+                  if (selectMode) exitSelectMode();
+                  setCalView((v) => (v === "list" ? "month" : "list"));
+                }}
+              />
+              <RoundIconButton icon="calendar" label="Jump to today" onPress={jumpToToday} />
             </View>
           </View>
 
@@ -1414,7 +1396,7 @@ export default function CalendarScreen() {
               switchY.current = e.nativeEvent.layout.y;
             }}
             style={{
-              marginTop: 18,
+              marginTop: 16,
               flexDirection: "row",
               backgroundColor: "#ffffff",
               borderRadius: 26,
@@ -1440,101 +1422,6 @@ export default function CalendarScreen() {
             />
           </View>
 
-          {/* Month nav + view toggle */}
-          <View
-            style={{
-              marginTop: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
-              <ChevButton dir="left" onPress={() => shiftMonth(-1)} />
-              <Text
-                numberOfLines={1}
-                style={{
-                  color: INK,
-                  fontFamily: SERIF_ITALIC,
-                  // Serif runs wider than the sans this used to be, and
-                  // "September 2026" was ellipsising against the Month /
-                  // List toggle. 20 fits the longest month.
-                  fontSize: 20,
-                  flexShrink: 1,
-                }}
-              >
-                {monthLabel}
-              </Text>
-              <ChevButton dir="right" onPress={() => shiftMonth(1)} />
-            </View>
-            {/* While blocking, the Month / List toggle's spot holds "Fill
-                gaps": it's next to the grid, and the block bar can't cover
-                it the way it covered a button under the calendar. */}
-            {selectMode && fill ? (
-              <Pressable onPress={fillIn} hitSlop={6}>
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      backgroundColor: CARD,
-                      borderWidth: 1,
-                      borderColor: BORDER,
-                      height: 36,
-                      paddingHorizontal: 12,
-                      borderRadius: 18,
-                      opacity: pressed ? 0.6 : 1,
-                    }}
-                  >
-                    <Feather name="plus" size={14} color={INK} style={{ marginRight: 4 }} />
-                    <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
-                      Fill gaps
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            ) : null}
-            {/* Month / List. Hidden while blocking: dates are picked on
-                the month grid, so the list has nothing to offer there. */}
-            {!selectMode ? (
-            <View
-              style={{
-                flexDirection: "row",
-                backgroundColor: "#ffffff",
-                borderRadius: 999,
-                padding: 3,
-              }}
-            >
-              <Pressable
-                onPress={() => setCalView("month")}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                  backgroundColor: calView === "month" ? CREAM_DEEP : "transparent",
-                }}
-              >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>Month</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setCalView("list")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 5,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                  backgroundColor: calView === "list" ? CREAM_DEEP : "transparent",
-                }}
-              >
-                <Feather name="list" size={14} color={INK} />
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>List</Text>
-              </Pressable>
-            </View>
-            ) : null}
-          </View>
-
           {calView === "month" ? (
           <>
           {/* Calendar card. Gold outline while blocking, so the mode shows
@@ -1543,7 +1430,7 @@ export default function CalendarScreen() {
               mode on doesn't nudge the grid. */}
           <View
             style={{
-              marginTop: 12,
+              marginTop: 14,
               backgroundColor: "#ffffff",
               borderRadius: 24,
               borderWidth: 2,
@@ -1558,6 +1445,31 @@ export default function CalendarScreen() {
               elevation: 2,
             }}
           >
+            {/* Month nav lives in the card it pages, not on a row of its
+                own above it. */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 10,
+              }}
+            >
+              <ChevButton dir="left" onPress={() => shiftMonth(-1)} />
+              <Text
+                numberOfLines={1}
+                style={{
+                  flexShrink: 1,
+                  marginHorizontal: 8,
+                  color: INK,
+                  fontFamily: SERIF_ITALIC,
+                  fontSize: 20,
+                }}
+              >
+                {monthLabel}
+              </Text>
+              <ChevButton dir="right" onPress={() => shiftMonth(1)} />
+            </View>
             {selectMode ? (
               <View
                 style={{
@@ -1603,15 +1515,39 @@ export default function CalendarScreen() {
               />
             )}
 
-            {/* Legend */}
+            {/* Fill gaps: right under the grid it fills. */}
+            {selectMode && fill ? (
+              <Pressable onPress={fillIn} style={{ alignSelf: "center", marginTop: 10 }}>
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: CARD,
+                      borderWidth: 1,
+                      borderColor: BORDER,
+                      height: 36,
+                      paddingHorizontal: 14,
+                      borderRadius: 18,
+                      opacity: pressed ? 0.6 : 1,
+                    }}
+                  >
+                    <Feather name="plus" size={14} color={INK} style={{ marginRight: 5 }} />
+                    <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
+                      Fill gaps
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            ) : null}
+
+            {/* Legend. One quiet centred line, no rule above it. */}
             <View
               style={{
-                marginTop: 14,
-                paddingTop: 12,
-                borderTopWidth: 1,
-                borderTopColor: BORDER,
+                marginTop: 12,
                 flexDirection: "row",
-                justifyContent: "space-around",
+                justifyContent: "center",
+                gap: 18,
               }}
             >
               {showListingColors ? (
@@ -2291,8 +2227,61 @@ function LegendDot({ swatch, label }: { swatch: React.ReactNode; label: string }
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       {swatch}
-      <Text style={{ fontFamily: SERIF_BOLD, marginLeft: 6, color: INK, fontSize: 12}}>{label}</Text>
+      <Text style={{ fontFamily: SERIF, marginLeft: 6, color: INK, fontSize: 12 }}>{label}</Text>
     </View>
+  );
+}
+
+// Round icon button in the title row. "Active" (List is on) mounts an
+// ink fill instead of flipping the background colour, for the same
+// Android corner-radius reason as ModeTab below.
+function RoundIconButton({
+  icon,
+  label,
+  onPress,
+  active = false,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+    >
+      {({ pressed }) => (
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: CREAM_DEEP,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.85 : 1,
+          }}
+        >
+          {active ? (
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: INK,
+              }}
+            />
+          ) : null}
+          <Feather name={icon} size={18} color={active ? "#ffffff" : INK} />
+        </View>
+      )}
+    </Pressable>
   );
 }
 

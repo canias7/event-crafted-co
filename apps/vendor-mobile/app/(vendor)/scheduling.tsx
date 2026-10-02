@@ -44,7 +44,10 @@ const INK = "#14161a";
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
-const GOLD_SOFT = "rgba(201,168,106,0.16)";
+// Plan tags and quiet counts.
+const GOLD_TAG = "#eadfc6";
+const BRONZE = "#8a6f3e";
+const MUTED = "#7b7973";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -313,22 +316,28 @@ export default function SchedulingScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Pressable onPress={() => router.back()} hitSlop={10}>
-            <Feather name="chevron-left" size={26} color={INK} />
-          </Pressable>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 18, color: INK }}>
-            Smart Scheduling & Automations
-          </Text>
-          <View style={{ width: 26 }} />
-        </View>
+        {/* Header: back, then the same big serif title the tabs use. */}
+        <Pressable onPress={() => router.back()} hitSlop={10} style={{ alignSelf: "flex-start", marginTop: 4 }}>
+          <Feather name="chevron-left" size={26} color={INK} />
+        </Pressable>
+        <Text
+          style={{
+            marginTop: 10,
+            fontFamily: SERIF_BOLD,
+            fontSize: 38,
+            lineHeight: 46,
+            letterSpacing: -0.5,
+            color: INK,
+          }}
+        >
+          Scheduling
+        </Text>
+        <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
+          What hosts can book, and when.
+        </Text>
 
         {/* Appointment types — available on every plan (free = 1). */}
-        <SectionTitle
-          title="Appointment types"
-          sub="What can hosts book with you? Give each a name and a length."
-        />
+        <SectionTitle title="Appointment types" />
         <View style={{ gap: 10 }}>
           {types.map((t) => (
             <Pressable
@@ -391,27 +400,43 @@ export default function SchedulingScreen() {
               setTypeFormOpen(true);
             }}
             style={{
-              borderWidth: 1.5,
-              borderStyle: "dashed",
-              borderColor: GOLD,
-              backgroundColor: GOLD_SOFT,
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
               borderRadius: 16,
-              paddingVertical: 14,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
-              gap: 7,
             }}
           >
-            <Feather name="plus" size={16} color={INK} />
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-              Add appointment type
-              {!premium ? (
-                <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
-                  {"  "}({types.length}/{pro ? PRO_TYPE_CAP : 1} on {pro ? "Pro" : "Free"})
-                </Text>
-              ) : null}
-            </Text>
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 11,
+                backgroundColor: SURFACE,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="plus" size={17} color={INK} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+                Add appointment type
+              </Text>
+              <Text numberOfLines={1} style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, color: INK_DIM }}>
+                A call, a tasting, a consultation…
+              </Text>
+            </View>
+            {/* Plan allowance, quietly, instead of "(0/1 on Free)" in
+                the button label. */}
+            {!premium ? (
+              <Text style={{ fontFamily: SERIF, fontSize: 12, color: MUTED, marginLeft: 8 }}>
+                {types.length} of {pro ? PRO_TYPE_CAP : 1}
+              </Text>
+            ) : null}
           </Pressable>
         </View>
 
@@ -781,14 +806,17 @@ export default function SchedulingScreen() {
 
 // ---------- pieces ----------
 
+// Section label: small caps over the cards, like the More page's groups.
+// A 20pt heading per section made a long settings page read as a stack of
+// headlines.
 function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
-    <View style={{ marginTop: 26, marginBottom: 12 }}>
-      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
-        {title}
+    <View style={{ marginTop: 26, marginBottom: 10, paddingHorizontal: 2 }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1.2, color: INK }}>
+        {title.toUpperCase()}
       </Text>
       {sub ? (
-        <Text style={{ fontFamily: SERIF, marginTop: 3, fontSize: 13, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
+        <Text style={{ fontFamily: SERIF, marginTop: 5, fontSize: 13, lineHeight: 19, color: INK_DIM }}>{sub}</Text>
       ) : null}
     </View>
   );
@@ -1221,81 +1249,83 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
   );
 }
 
-// Free-plan pitch, per the mock's "Work less. Book more." screen.
+// Free-plan pitch: one short card per plan, three lines each. It used
+// to be a hero icon, a headline, four icon rows whose titles wrapped
+// around their "— Pro" / "— Premium" suffixes, and a footnote repeating
+// which plan had what.
+const PLAN_CARDS: {
+  title: string;
+  tag: "PRO" | "PREMIUM";
+  lines: string[];
+}[] = [
+  {
+    title: "Smart availability",
+    tag: "PRO",
+    lines: ["Working hours and buffers", "Booking rules and daily limits", "Up to 5 appointment types"],
+  },
+  {
+    title: "Automations",
+    tag: "PREMIUM",
+    lines: [
+      "Confirmations, reminders, follow-ups",
+      "Suggest open dates when you're booked",
+      "Alerts to fill open dates",
+    ],
+  },
+];
+
 function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
-  const rows: { icon: keyof typeof Feather.glyphMap; title: string; sub: string }[] = [
-    {
-      icon: "calendar",
-      title: "Smart availability — Pro",
-      sub: "Working hours, buffers, booking rules, and up to 5 appointment types.",
-    },
-    {
-      icon: "message-circle",
-      title: "Automated messages — Premium",
-      sub: "Send confirmations, reminders, and follow-ups automatically.",
-    },
-    {
-      icon: "send",
-      title: "Unavailable date suggestions — Premium",
-      sub: "Instantly suggest alternate dates when you're booked.",
-    },
-    {
-      icon: "bell",
-      title: "Fill your calendar — Premium",
-      sub: "Get notified about open dates and attract last-minute bookings.",
-    },
-  ];
   return (
-    <View style={{ marginTop: 26 }}>
-      <View style={{ alignItems: "center" }}>
-        <MaterialCommunityIcons name="calendar-check-outline" size={72} color="#d9c9a6" />
-      </View>
-      <Text
-        style={{
-          marginTop: 14,
-          textAlign: "center",
-          fontFamily: SERIF_BOLD,
-          fontSize: 24,
-          color: INK,
-        }}
-      >
-        Work less. Book more.
-      </Text>
-      <Text
-        style={{
-          fontFamily: SERIF,
-          marginTop: 6,
-          textAlign: "center",
-          fontSize: 14,
-          lineHeight: 21,
-          color: INK_DIM,
-        }}
-      >
-        Let Vendora handle the back-and-forth so you can focus on what you do
-        best.
-      </Text>
-      <View style={{ marginTop: 22, gap: 14 }}>
-        {rows.map((r) => (
-          <View key={r.title} style={{ flexDirection: "row", alignItems: "center" }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 999,
-                backgroundColor: "#f0e9da",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name={r.icon} size={19} color={INK} />
+    <View>
+      <SectionTitle title="Unlock more" />
+      <View style={{ gap: 12 }}>
+        {PLAN_CARDS.map((c) => (
+          <View
+            key={c.tag}
+            style={{
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
+              borderRadius: 18,
+              paddingHorizontal: 16,
+              paddingTop: 15,
+              paddingBottom: 14,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK, flexShrink: 1 }}>
+                {c.title}
+              </Text>
+              <View
+                style={{
+                  marginLeft: 8,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 6,
+                  backgroundColor: c.tag === "PRO" ? GOLD_TAG : INK,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: SERIF_BOLD,
+                    fontSize: 9.5,
+                    letterSpacing: 1,
+                    color: c.tag === "PRO" ? BRONZE : GOLD,
+                  }}
+                >
+                  {c.tag}
+                </Text>
+              </View>
             </View>
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
-                {r.title}
-              </Text>
-              <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
-                {r.sub}
-              </Text>
+            <View style={{ marginTop: 8, gap: 7 }}>
+              {c.lines.map((line) => (
+                <View key={line} style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Feather name="check" size={14} color={BRONZE} style={{ marginRight: 9 }} />
+                  <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 13, lineHeight: 18, color: INK }}>
+                    {line}
+                  </Text>
+                </View>
+              ))}
             </View>
           </View>
         ))}
@@ -1303,24 +1333,19 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
       <Pressable
         onPress={onUpgrade}
         style={{
-          marginTop: 26,
+          marginTop: 18,
           backgroundColor: GOLD,
-          borderRadius: 999,
-          height: 56,
+          borderRadius: 27,
+          height: 54,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
           gap: 8,
         }}
       >
-        <MaterialCommunityIcons name="arrow-up-circle-outline" size={16} color={INK} />
-        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
-          See plans
-        </Text>
+        <Feather name="arrow-up-circle" size={16} color={INK} />
+        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>See plans</Text>
       </Pressable>
-      <Text style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", fontSize: 13, color: INK_DIM }}>
-        Scheduling controls come with Pro · automations with Premium
-      </Text>
     </View>
   );
 }
