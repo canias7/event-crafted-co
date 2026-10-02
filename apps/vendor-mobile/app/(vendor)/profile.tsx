@@ -55,7 +55,6 @@ const BRONZE = "#8a6f3e";
 // The identity card used to be the one dark block on a cream page.
 // It now uses the same CARD + BORDER as every other block, so these
 // are the cream equivalents of the old on-dark tokens.
-const GOLD_HAIRLINE = "rgba(201,168,106,0.45)";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -317,120 +316,37 @@ export default function ProfileScreen() {
     <View style={{ flex: 1, backgroundColor: PAGE }}>
       <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: PAGE }}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 140 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Brand wordmark, then the serif page header with a settings
-              shortcut on the right. */}
+          {/* Brand wordmark, then the serif page header. There used to be a
+              settings cog on the right; it only opened More, which is
+              already a tab in the bar. */}
           <Wordmark />
-          <View
+          <Text
             style={{
               marginTop: 14,
-              flexDirection: "row",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
+              fontFamily: SERIF_BOLD,
+              fontSize: 38,
+              lineHeight: 46,
+              color: INK,
+              letterSpacing: -0.5,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
-              <Text
-                style={{
-                  fontFamily: SERIF_BOLD,
-                  fontSize: 38,
-                  color: INK,
-                  letterSpacing: -0.5,
-                }}
-              >
-                My Profile
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push("/(vendor)/more" as never)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.6}
-              style={{ paddingTop: 8 }}
-            >
-              <MaterialCommunityIcons name="cog-outline" size={24} color={INK} />
-            </TouchableOpacity>
-          </View>
+            My Profile
+          </Text>
           <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
             Manage how your business appears on Vendora.
           </Text>
 
-          {/* "You're almost live!" — setup progress banner. Hidden once
-              every required checklist item is done. */}
+          {/* "You're almost live!" — setup progress, as one slim row with a
+              bar. Hidden once every required checklist item is done. */}
           {setup && !setup.complete ? (
-            <TouchableOpacity
+            <SetupRow
+              done={setup.requiredDone}
+              total={setup.requiredTotal}
               onPress={() => router.push("/(vendor)/setup" as never)}
-              activeOpacity={0.8}
-              style={{
-                marginTop: 16,
-                backgroundColor: CARD,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: BORDER,
-                padding: 16,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <MaterialCommunityIcons
-                name="rocket-launch-outline"
-                size={30}
-                color={GOLD}
-                style={{ marginRight: 14 }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontFamily: SERIF_BOLD,
-                    fontSize: 20,
-                    color: INK,
-                  }}
-                >
-                  You&rsquo;re almost live!
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: SERIF,
-                    marginTop: 3,
-                    fontSize: 13,
-                    lineHeight: 18,
-                    color: INK_DIM,
-                  }}
-                >
-                  Complete your profile to start getting discovered by
-                  customers.
-                </Text>
-                <View
-                  style={{
-                    marginTop: 10,
-                    flexDirection: "row",
-                    alignItems: "center",
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: GOLD,
-                      borderRadius: 999,
-                      paddingHorizontal: 16,
-                      paddingVertical: 9,
-                    }}
-                  >
-                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
-                      Continue setup
-                    </Text>
-                  </View>
-                  <Text style={{ fontFamily: SERIF, marginLeft: 12, fontSize: 12, color: INK_DIM }}>
-                    {setup.requiredDone} of {setup.requiredTotal} done
-                  </Text>
-                </View>
-              </View>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={INK_DIM}
-              />
-            </TouchableOpacity>
+            />
           ) : null}
 
           {/* Brand identity card — mirrors web BrandCardShell + HeaderCard:
@@ -510,7 +426,6 @@ function BrandCard({
         backgroundColor: CARD,
         borderWidth: 1,
         borderColor: BORDER,
-        minHeight: 280,
       }}
     >
       {/* Bio / Back flip chip — top-right so it doesn't crowd the avatar. */}
@@ -575,32 +490,13 @@ function BrandCard({
           </Text>
         </View>
       ) : (
-        <View style={{ padding: 22, paddingTop: 24 }}>
+        <View style={{ padding: 20 }}>
           {/* Avatar + name/verification, side by side. */}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View>
               <Avatar logoUrl={logoUrl} businessName={businessName} />
-              {/* Gold pencil badge — jumps straight to Edit identity. */}
-              <TouchableOpacity
-                onPress={onEditIdentity}
-                activeOpacity={0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                style={{
-                  position: "absolute",
-                  bottom: -2,
-                  right: -2,
-                  width: 30,
-                  height: 30,
-                  borderRadius: 15,
-                  backgroundColor: GOLD,
-                  borderWidth: 3,
-                  borderColor: CARD,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Feather name="edit-2" size={12} color={INK} />
-              </TouchableOpacity>
+              {/* No pencil badge here any more: it opened Edit identity,
+                  which is a labelled button at the bottom of this card. */}
               {studio ? (
                 <View style={{ position: "absolute", top: -6, right: -6 }}>
                   <StudioBadge size={24} />
@@ -608,7 +504,11 @@ function BrandCard({
               ) : null}
             </View>
 
-            <View style={{ flex: 1, marginLeft: 18 }}>
+            {/* Right padding keeps a long name clear of the BIO chip; it
+                used to run underneath it. The chip is ~66pt wide and sits
+                14pt in from the card edge; the card has 20pt of padding,
+                so the name needs 60pt of clearance, plus a gap. */}
+            <View style={{ flex: 1, marginLeft: 16, paddingRight: 70 }}>
               <Text
                 numberOfLines={2}
                 style={{
@@ -652,40 +552,9 @@ function BrandCard({
             </View>
           </View>
 
-          {/* Gold hairline meeting a four-point star — the divider the
-              whole app's design language hangs on. */}
           <View
             style={{
               marginTop: 20,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-            }}
-          >
-            <View
-              style={{
-                flex: 1,
-                height: 1,
-                backgroundColor: GOLD_HAIRLINE,
-              }}
-            />
-            <MaterialCommunityIcons
-              name="star-four-points"
-              size={14}
-              color={GOLD}
-            />
-            <View
-              style={{
-                flex: 1,
-                height: 1,
-                backgroundColor: GOLD_HAIRLINE,
-              }}
-            />
-          </View>
-
-          <View
-            style={{
-              marginTop: 18,
               flexDirection: "row",
               justifyContent: "center",
               alignItems: "center",
@@ -705,7 +574,7 @@ function BrandCard({
             </View>
           </View>
 
-          <View style={{ marginTop: 22, flexDirection: "row", gap: 12 }}>
+          <View style={{ marginTop: 18, flexDirection: "row", gap: 12 }}>
             <OutlineBtn
               icon="share-variant-outline"
               label="Share profile"
@@ -797,9 +666,9 @@ function Avatar({
   return (
     <View
       style={{
-        width: 88,
-        height: 88,
-        borderRadius: 44,
+        width: 72,
+        height: 72,
+        borderRadius: 36,
         overflow: "hidden",
         backgroundColor: logoUrl ? WHITE : "#e9e4da",
         alignItems: "center",
@@ -819,7 +688,7 @@ function Avatar({
         <Text
           style={{
             fontFamily: SERIF,
-            fontSize: 38,
+            fontSize: 31,
             color: "#14161a",
           }}
         >
@@ -1200,7 +1069,7 @@ function ListingCard({
             gap: 8,
           }}
         >
-          <CardAction icon="edit-2" onPress={onEdit} disabled={busy} />
+          {/* No edit button: tapping the card already opens the editor. */}
           {isApproved ? (
             <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
           ) : null}
@@ -1271,5 +1140,65 @@ function CardAction({
     >
       <Feather name={icon} size={16} color={color} />
     </Pressable>
+  );
+}
+
+// Setup progress as one row: the heading, "x of y done" and a bar. It
+// replaces a ~140pt banner that carried a rocket, a 20pt heading, two
+// lines of body copy and its own gold button. Same destination; the
+// whole row is the button.
+function SetupRow({
+  done,
+  total,
+  onPress,
+}: {
+  done: number;
+  total: number;
+  onPress: () => void;
+}) {
+  const pct = total > 0 ? Math.max(0, Math.min(1, done / total)) : 0;
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={{
+        marginTop: 16,
+        backgroundColor: CARD,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: BORDER,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      <MaterialCommunityIcons name="rocket-launch-outline" size={22} color={GOLD} />
+      <View style={{ flex: 1 }}>
+        <View
+          style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}
+        >
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+            You&rsquo;re almost live!
+          </Text>
+          <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK }}>
+            {done} of {total} done
+          </Text>
+        </View>
+        <View
+          style={{
+            marginTop: 8,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: SURFACE,
+            overflow: "hidden",
+          }}
+        >
+          <View style={{ width: `${pct * 100}%`, height: 6, borderRadius: 3, backgroundColor: GOLD }} />
+        </View>
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={22} color={INK} />
+    </TouchableOpacity>
   );
 }
