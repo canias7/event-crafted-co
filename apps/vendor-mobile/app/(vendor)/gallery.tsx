@@ -46,6 +46,7 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
 
 // Cream editorial palette — matches the Inbox restyle / reference mock.
 const WHITE = "#ffffff";
@@ -582,16 +583,15 @@ export default function GalleryScreen() {
         {/* Three tabs instead of two scrolling chip rows. Albums and Trash
             are places, not filters — they were sharing a strip with smart
             collections, which are filters, and neither row fit on screen. */}
-        <View style={{ flexDirection: "row", marginTop: 18, borderBottomWidth: 1, borderBottomColor: BORDER }}>
-          <TabItem icon="image" label="My Media" active={tab === "media"} onPress={() => setTab("media")} />
-          <View style={{ width: 1, backgroundColor: BORDER, marginVertical: 10 }} />
-          <TabItem icon="folder" label="Albums" active={tab === "albums"} onPress={() => setTab("albums")} />
-          <View style={{ width: 1, backgroundColor: BORDER, marginVertical: 10 }} />
-          <TabItem
-            icon="trash-2"
-            label={trashCount ? `Trash ${trashCount}` : "Trash"}
-            active={tab === "trash"}
-            onPress={() => setTab("trash")}
+        <View style={{ marginTop: 18 }}>
+          <UnderlineTabs
+            value={tab}
+            onChange={(k) => setTab(k as GalleryTab)}
+            tabs={[
+              { key: "media", icon: "image", label: "My Media" },
+              { key: "albums", icon: "folder", label: "Albums" },
+              { key: "trash", icon: "trash-2", label: trashCount ? `Trash ${trashCount}` : "Trash" },
+            ]}
           />
         </View>
 
@@ -601,32 +601,8 @@ export default function GalleryScreen() {
                 and select toggles all live behind Options now — they were
                 four controls competing with the search field for one row. */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 }}>
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: SURFACE,
-                  borderRadius: 18,
-                  paddingHorizontal: 16,
-                  height: 56,
-                }}
-              >
-                <Feather name="search" size={17} color={INK_DIM} />
-                <TextInput
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder="Search your gallery..."
-                  placeholderTextColor="#a49f93"
-                  style={{ fontFamily: SERIF, flex: 1, marginLeft: 10, color: INK, fontSize: 15 }}
-                />
-                {search ? (
-                  <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                    <Feather name="x" size={16} color={INK_DIM} />
-                  </Pressable>
-                ) : null}
-              </View>
-              <SquareBtn
+              <SearchField value={search} onChangeText={setSearch} placeholder="Search your gallery..." />
+              <ToolbarButton
                 icon="sliders"
                 label="Options"
                 active={!!smart || dense || selectMode}
@@ -754,7 +730,7 @@ export default function GalleryScreen() {
                 name={
                   tab === "trash"
                     ? "delete-empty-outline"
-                    : "folder-multiple-image"
+                    : "image-multiple-outline"
                 }
                 size={64}
                 color="#d9c9a6"
@@ -1170,46 +1146,6 @@ function pillStyle(filled: boolean) {
   };
 }
 
-// Labeled square action button (Sort / View / List) per the mock.
-// Underlined tab. Gold rule under the active one — the same accent the
-// primary button uses, so "where am I" and "what acts" read as one system.
-function TabItem({
-  icon,
-  label,
-  active,
-  onPress,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "row",
-        gap: 7,
-        paddingVertical: 12,
-        borderBottomWidth: 2,
-        borderBottomColor: active ? GOLD : "transparent",
-        marginBottom: -1,
-      }}
-    >
-      <Feather name={icon} size={16} color={active ? INK : INK_DIM} />
-      <Text
-        numberOfLines={1}
-        style={{ fontFamily: active ? SERIF_BOLD : SERIF, fontSize: 13, color: active ? INK : INK_DIM }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 // Half of the grid/list pair. Two segments in one bordered capsule, so
 // the choice reads as one setting rather than two independent buttons.
 function SegBtn({
@@ -1287,40 +1223,6 @@ function AlbumRow({
         </Text>
       </View>
       <Feather name="chevron-right" size={18} color={INK_DIM} />
-    </Pressable>
-  );
-}
-
-function SquareBtn({
-  icon,
-  label,
-  onPress,
-  active,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  onPress: () => void;
-  active?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        width: 56,
-        height: 56,
-        borderRadius: 16,
-        backgroundColor: active ? INK : CARD,
-        borderWidth: 1,
-        borderColor: active ? INK : BORDER,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 3,
-      }}
-    >
-      <Feather name={icon} size={17} color={active ? WHITE : INK} />
-      <Text style={{ fontFamily: SERIF, fontSize: 11, color: active ? WHITE : INK }}>
-        {label}
-      </Text>
     </Pressable>
   );
 }
