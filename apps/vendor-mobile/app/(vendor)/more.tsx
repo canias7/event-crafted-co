@@ -1,7 +1,12 @@
-// More tab — overflow hub, per the cream reference mock: brand rows
-// (Edit profile / Subscription / Settings), Upcoming updates with a
-// "New" badge, Help & support, About, and the "Love Vendora?" rate-us
-// banner. Settings opens the same account sheet as before.
+// More tab — overflow hub. Ten destinations in four labelled groups
+// (Your business / Tools / Account / Vendora), then the "Love Vendora?"
+// rate-us card. Settings opens the same account sheet as before.
+//
+// Each destination used to be its own bordered card: eleven boxes, eleven
+// icon tiles, and a gap between every one, which is what made the page
+// read as crowded. Rows now share a card per group, separated by an inset
+// hairline, the way a settings list is usually laid out — and the group
+// headings make it scannable rather than one long column of equals.
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
@@ -121,125 +126,102 @@ export default function MoreScreen() {
           Everything else, one tap away.
         </Text>
 
-        <View style={cardStyle}>
-          <MenuRow
-            icon={<Feather name="edit-3" size={19} color={INK} />}
+        <MenuSection title="YOUR BUSINESS" first>
+          <GroupRow
+            icon={<Feather name="edit-3" size={18} color={INK} />}
             label="Edit brand profile"
             body="Name, logo, bio, and more"
             onPress={() => router.push("/(vendor)/edit-profile" as never)}
           />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<MaterialCommunityIcons name="crown-outline" size={21} color={INK} />}
-            label="Subscription"
-            body="Plan, billing, and usage"
-            onPress={() => router.push("/(vendor)/subscription" as never)}
-          />
-        </View>
-
-        <View
-          style={[
-            cardStyle,
-            { marginTop: 14 },
-            verifyEligible ? { backgroundColor: "#f3ecdd", borderColor: GOLD_SOFT } : null,
-          ]}
-        >
-          <MenuRow
-            icon={<MaterialCommunityIcons name="shield-check-outline" size={20} color={INK} />}
-            label="Verification"
-            body="Get your verified badge"
-            badge={verifyEligible ? "Eligible" : "Pro"}
-            onPress={() => router.push("/(vendor)/verification" as never)}
-          />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="zap" size={19} color={INK} />}
-            label="Smart Scheduling"
-            body="Hours, services, and automations"
-            badge="New"
-            onPress={() => router.push("/(vendor)/scheduling" as never)}
-          />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="users" size={19} color={INK} />}
-            label="Vendora CRM"
-            body="Clients, notes, and follow-ups"
-            badge="Pro"
-            onPress={() => router.push("/(vendor)/crm" as never)}
-          />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="settings" size={19} color={INK} />}
-            label="Settings"
-            body="Account, password, and privacy"
-            onPress={() => setSettingsOpen(true)}
-          />
-        </View>
-
-        <View
-          style={[
-            cardStyle,
-            { marginTop: 14 },
-            hasFreshUpdate() ? { backgroundColor: "#f3ecdd", borderColor: GOLD_SOFT } : null,
-          ]}
-        >
-          <MenuRow
-            icon={
-              <MaterialCommunityIcons
-                name="file-document-edit-outline"
-                size={20}
-                color={INK}
-              />
-            }
-            label="Upcoming updates"
-            body="What's new and what's next"
-            badge={hasFreshUpdate() ? "New" : undefined}
-            onPress={() => router.push("/(vendor)/updates" as never)}
-          />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="users" size={19} color={INK} />}
+          <GroupRow
+            divider
+            // Its own icon — it used to share "users" with Vendora CRM.
+            icon={<Feather name="user-plus" size={18} color={INK} />}
             label="Meet the Team"
             body="Introduce the people behind your business"
             badge="Optional"
             onPress={() => router.push("/(vendor)/team" as never)}
           />
-        </View>
+          <GroupRow
+            divider
+            icon={<MaterialCommunityIcons name="shield-check-outline" size={19} color={INK} />}
+            label="Verification"
+            body="Get your verified badge"
+            // The card used to turn gold when the vendor was eligible. A
+            // single tinted row inside a shared card reads as a glitch, so
+            // the "Eligible" badge carries that signal on its own.
+            badge={verifyEligible ? "Eligible" : "Pro"}
+            onPress={() => router.push("/(vendor)/verification" as never)}
+          />
+        </MenuSection>
 
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="help-circle" size={19} color={INK} />}
+        <MenuSection title="TOOLS">
+          <GroupRow
+            icon={<Feather name="zap" size={18} color={INK} />}
+            label="Smart Scheduling"
+            body="Hours, services, and automations"
+            badge="New"
+            onPress={() => router.push("/(vendor)/scheduling" as never)}
+          />
+          <GroupRow
+            divider
+            icon={<Feather name="users" size={18} color={INK} />}
+            label="Vendora CRM"
+            body="Clients, notes, and follow-ups"
+            badge="Pro"
+            onPress={() => router.push("/(vendor)/crm" as never)}
+          />
+        </MenuSection>
+
+        <MenuSection title="ACCOUNT">
+          <GroupRow
+            icon={<MaterialCommunityIcons name="crown-outline" size={20} color={INK} />}
+            label="Subscription"
+            body="Plan, billing, and usage"
+            onPress={() => router.push("/(vendor)/subscription" as never)}
+          />
+          <GroupRow
+            divider
+            icon={<Feather name="settings" size={18} color={INK} />}
+            label="Settings"
+            body="Account, password, and privacy"
+            onPress={() => setSettingsOpen(true)}
+          />
+        </MenuSection>
+
+        <MenuSection title="VENDORA">
+          <GroupRow
+            icon={
+              <MaterialCommunityIcons name="file-document-edit-outline" size={19} color={INK} />
+            }
+            label="Upcoming updates"
+            body="What's new and what's next"
+            // Same as Verification: the badge replaces the gold card tint.
+            badge={hasFreshUpdate() ? "New" : undefined}
+            onPress={() => router.push("/(vendor)/updates" as never)}
+          />
+          <GroupRow
+            divider
+            icon={<Feather name="help-circle" size={18} color={INK} />}
             label="Help & support"
             body="FAQs, guides, and contact us"
             onPress={openSupport}
           />
-        </View>
-
-        <View style={[cardStyle, { marginTop: 14 }]}>
-          <MenuRow
-            icon={<Feather name="info" size={19} color={INK} />}
+          <GroupRow
+            divider
+            icon={<Feather name="info" size={18} color={INK} />}
             label="About Vendora"
             body="App info, terms, and policies"
             onPress={openAbout}
           />
-        </View>
+        </MenuSection>
 
         {/* Love Vendora? */}
         <View
           style={[
             cardStyle,
             {
-              marginTop: 14,
+              marginTop: 22,
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
@@ -311,65 +293,109 @@ const cardStyle = {
   overflow: "hidden" as const,
 };
 
-function MenuRow({
+// A labelled group of rows sharing one card.
+function MenuSection({
+  title,
+  first,
+  children,
+}: {
+  title: string;
+  first?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <View style={{ marginTop: first ? 0 : 22 }}>
+      <Text
+        style={{
+          fontFamily: SERIF_BOLD,
+          fontSize: 10,
+          letterSpacing: 1,
+          color: INK_DIM,
+          marginBottom: 8,
+          marginLeft: 4,
+        }}
+      >
+        {title}
+      </Text>
+      <View style={cardStyle}>{children}</View>
+    </View>
+  );
+}
+
+// One row inside a MenuSection. The hairline above it is inset to line up
+// with the text, not the icon. The badge sits right after the title rather
+// than in a column on the right, so it no longer squeezes the description
+// onto a second line.
+function GroupRow({
   icon,
   label,
   body,
   badge,
   onPress,
+  divider,
 }: {
   icon: ReactNode;
   label: string;
   body: string;
   badge?: string;
   onPress: () => void;
+  divider?: boolean;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-      }}
-    >
+    <Pressable onPress={onPress}>
+      {divider ? (
+        // 16 padding + 38 icon + 13 gap = where the text starts.
+        <View style={{ height: 1, backgroundColor: BORDER, marginLeft: 67 }} />
+      ) : null}
       <View
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: 13,
-          backgroundColor: SURFACE,
+          flexDirection: "row",
           alignItems: "center",
-          justifyContent: "center",
+          paddingHorizontal: 16,
+          paddingVertical: 13,
         }}
       >
-        {icon}
-      </View>
-      <View style={{ flex: 1, marginLeft: 13 }}>
-        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>
-          {label}
-        </Text>
-        <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-          {body}
-        </Text>
-      </View>
-      {badge ? (
         <View
           style={{
-            marginRight: 8,
-            backgroundColor: GOLD_SOFT,
-            borderRadius: 999,
-            paddingHorizontal: 11,
-            paddingVertical: 4,
+            width: 38,
+            height: 38,
+            borderRadius: 11,
+            backgroundColor: SURFACE,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: "#8a6f3e" }}>
-            {badge}
+          {icon}
+        </View>
+        <View style={{ flex: 1, marginLeft: 13 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15, flexShrink: 1 }}
+            >
+              {label}
+            </Text>
+            {badge ? (
+              <View
+                style={{
+                  backgroundColor: GOLD_SOFT,
+                  borderRadius: 10,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, color: "#8a6f3e" }}>
+                  {badge}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
+            {body}
           </Text>
         </View>
-      ) : null}
-      <Feather name="chevron-right" size={20} color={INK_DIM} />
+        <Feather name="chevron-right" size={18} color={INK_DIM} />
+      </View>
     </Pressable>
   );
 }
