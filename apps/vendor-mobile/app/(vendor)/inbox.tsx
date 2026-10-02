@@ -17,7 +17,6 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -31,6 +30,7 @@ import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
 
 type Tab = "inquiries" | "partners";
 
@@ -301,49 +301,20 @@ export default function InboxScreen() {
           />
         }
       >
-        {/* Wordmark header + search / filter rounds */}
-        <View
-          style={{
-            paddingHorizontal: 20,
-            paddingTop: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        {/* Wordmark alone, as on Gallery. The filter control used to sit
+            beside it, which made this row taller than Gallery's and sat the
+            logo lower on screen; it now lives beside the search field. */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
           <Wordmark />
-          {/* Filters only. The search round next to it just focused the
-              search bar, which is always on screen — a control whose
-              whole job was reachable without it. */}
-          <View>
-            <HeaderRound
-              icon="sliders"
-              label="Toggle filters"
-              onPress={() => setFiltersOpen((v) => !v)}
-            />
-            {filterActive ? (
-              <View
-                style={{
-                  position: "absolute",
-                  top: 2,
-                  right: 2,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 999,
-                  backgroundColor: INK,
-                }}
-              />
-            ) : null}
-          </View>
         </View>
 
         {/* Title */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 18 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
           <Text
             style={{
               fontFamily: SERIF_BOLD,
               fontSize: 38,
-              lineHeight: 44,
+              lineHeight: 46,
               letterSpacing: -0.5,
               color: INK,
             }}
@@ -355,58 +326,48 @@ export default function InboxScreen() {
           </Text>
         </View>
 
-        {/* Segmented toggle */}
-        <View
-          style={{
-            marginHorizontal: 20,
-            marginBottom: 16,
-            flexDirection: "row",
-            backgroundColor: TRACK,
-            borderRadius: 18,
-            padding: 4,
-          }}
-        >
-          <Segment
-            active={tab === "inquiries"}
-            icon="message-circle"
-            label="Inquiries"
-            onPress={() => setTab("inquiries")}
-          />
-          <Segment
-            active={tab === "partners"}
-            icon="users"
-            label="Partners"
-            onPress={() => setTab("partners")}
+        {/* Section tabs — the same underlined tabs Gallery uses. */}
+        <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
+          <UnderlineTabs
+            value={tab}
+            onChange={(k) => setTab(k as Tab)}
+            tabs={[
+              { key: "inquiries", icon: "message-circle", label: "Inquiries" },
+              { key: "partners", icon: "users", label: "Partners" },
+            ]}
           />
         </View>
 
-        {/* Search */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 14 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: CARD,
-              borderWidth: 1,
-              borderColor: BORDER,
-              borderRadius: 999,
-              paddingHorizontal: 18,
-              height: 54,
-            }}
-          >
-            <Feather name="search" size={17} color={INK_DIM} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder={
-                tab === "inquiries"
-                  ? "Search by name, event, or message"
-                  : "Search vendors or messages"
-              }
-              placeholderTextColor="#a49f93"
-              style={{ fontFamily: "LibreBaskerville", marginLeft: 10, flex: 1, fontSize: 15, color: INK }}
-            />
-          </View>
+        {/* Search + filter toggle, laid out like Gallery's search + Options.
+            The toggle still only shows or hides the chip row below, and
+            fills ink when a filter other than "All" is applied (it was a
+            small dot on the old round button). */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            marginTop: 16,
+            marginBottom: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <SearchField
+            value={search}
+            onChangeText={setSearch}
+            placeholder={
+              tab === "inquiries"
+                ? "Search by name, event, or message"
+                : "Search vendors or messages"
+            }
+          />
+          <ToolbarButton
+            icon="sliders"
+            label="Filters"
+            accessibilityLabel="Toggle filters"
+            active={filterActive}
+            onPress={() => setFiltersOpen((v) => !v)}
+          />
         </View>
 
         {/* Filter chips */}
@@ -687,78 +648,6 @@ export default function InboxScreen() {
   );
 }
 
-function HeaderRound({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      hitSlop={6}
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: 999,
-        backgroundColor: CARD,
-        borderWidth: 1,
-        borderColor: BORDER,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Feather name={icon} size={17} color={INK} />
-    </TouchableOpacity>
-  );
-}
-
-function Segment({
-  active,
-  icon,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={{
-        flex: 1,
-        height: 52,
-        borderRadius: 15,
-        backgroundColor: active ? INK : "transparent",
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-      }}
-    >
-      <Feather name={icon} size={17} color={active ? "#ffffff" : INK} />
-      <Text
-        style={{
-          fontFamily: SERIF_BOLD,
-          fontSize: 16,
-          color: active ? "#ffffff" : INK,
-        }}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
 // Icon + label, no count badge. The badge pushed the four inquiry
 // chips to ~509pt on a 372pt line, so they ran off the edge; 14/11/5
 // lands the set at ~360 and it fits outright at 412.
@@ -857,7 +746,7 @@ function EmptyState({
             marginTop: 22,
             backgroundColor: GOLD,
             borderRadius: 999,
-            paddingHorizontal: 22,
+            paddingHorizontal: 24,
             height: 50,
             flexDirection: "row",
             alignItems: "center",
