@@ -45,7 +45,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Line } from "react-native-svg";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -74,6 +74,9 @@ const BRONZE = "#8a6f3e";
 // Solid stand-in for INK on a disabled control.
 const INK_MUTED = "#7b7973";
 const CARD = "#fbf9f4";
+// Pale gold behind the block-mode hint: warmer than the page, lighter
+// than the pending-day fill so the two don't read as related.
+const HINT_BG = "#f7efdc";
 const GREEN = "#16a34a";
 const AMBER = "#d97706";
 // Status dots for the multi-listing account view (match web STATUS_DOT).
@@ -184,7 +187,7 @@ function parseYmd(s: string | null): Date | null {
 }
 
 // A vendor blocking a season shouldn't be able to write an unbounded
-// number of rows from one "Fill in", so spans cap at a year.
+// number of rows from one "Fill gaps", so spans cap at a year.
 const MAX_RANGE_DAYS = 366;
 
 // Inclusive list of YYYY-MM-DD keys between two days, in either order.
@@ -250,7 +253,7 @@ function nameDays(sorted: string[]): string {
     const [a, b] = runs[0];
     return a === b ? prettyDay(a) : prettyRange(a, b);
   }
-  return `${sorted.length} days`;
+  return `${sorted.length} dates`;
 }
 
 function fmtMoneyShort(cents: number): string {
@@ -314,7 +317,8 @@ function isValidHHMM(s: string): boolean {
 export default function CalendarScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  // "Add booking" + "Block time" need ~278pt. On a 360pt phone that
+  const insets = useSafeAreaInsets();
+  // "Add booking" + "Block day" need ~270pt. On a 360pt phone that
   // leaves the date ~63pt and it truncates to "Sat, Au…", so below 400
   // the date takes its own line and the buttons sit under it.
   const { width: winWidth } = useWindowDimensions();
@@ -793,7 +797,7 @@ export default function CalendarScreen() {
   // Opt-in: a tap keeps meaning "show me this day" until the vendor turns
   // this on, because blocking one day is still the common case. In select
   // mode every tap toggles that one day, so the days don't have to be in a
-  // row: three Saturdays and a long weekend go in one write. "Fill in"
+  // row: three Saturdays and a long weekend go in one write. "Fill gaps"
   // covers the vacation case: pick the first and last day, fill the gap.
   //
   // Each pick remembers which listings already had that day blocked. The
@@ -877,11 +881,11 @@ export default function CalendarScreen() {
       return next;
     });
     setPickNote(
-      fill.skipped > 0
-        ? `Left out ${fill.skipped} day${fill.skipped === 1 ? "" : "s"} with a booking or request on ${
-            fill.skipped === 1 ? "it" : "them"
-          }.`
-        : null,
+      `Filled in ${prettyRange(fill.first, fill.last)}.${
+        fill.skipped > 0
+          ? ` Skipped ${fill.skipped} booked or pending date${fill.skipped === 1 ? "" : "s"}.`
+          : ""
+      }`,
     );
   }, [fill, blockListingIds]);
 
@@ -1237,6 +1241,45 @@ export default function CalendarScreen() {
   }
 
   const [calView, setCalView] = useState<"month" | "list">("month");
+
+  // Tapping "Block dates" scrolls the switch to the top of the screen:
+  // the block bar takes the bottom, and on a small phone the last week
+  // of the month would otherwise sit under it.
+  const scrollRef = useRef<ScrollView>(null);
+  const switchY = useRef(0);
+
+  const enterSelectMode = useCallback(() => {
+    setSelectMode(true);
+    setPicked(new Map());
+    setPickNote(null);
+    // Picking happens on the month grid; the list has no days to tap.
+    setCalView("month");
+  }, []);
+
+  // The block bar's button: block the picked dates, or unblock them when
+  // every one is already blocked.
+  function blockPicked() {
+    if (needsListing) {
+      explainNeedsListing();
+      return;
+    }
+    if (pickedAllBlocked) {
+      Alert.alert(
+        "Re-open these dates?",
+        pickedDates.length === 1
+          ? "1 date becomes bookable again."
+          : `${pickedDates.length} dates become bookable again.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Unblock", style: "destructive", onPress: commitUnblockPicked },
+        ],
+      );
+      return;
+    }
+    setBlockTitleInput("");
+    setEditingBlockDate(null);
+    setBlockModalOpen(true);
+  }
   // Serif is wider than the sans this used to be, and "September 2026"
   // was ellipsising against the Month / List toggle. The year is only
   // informative once you leave the current one, so drop it otherwise.
@@ -1259,10 +1302,12 @@ export default function CalendarScreen() {
     <View style={{ flex: 1, backgroundColor: CREAM }}>
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{
             paddingHorizontal: 18,
             paddingTop: 8,
-            paddingBottom: 140,
+            // Room for the block bar too while it's up.
+            paddingBottom: selectMode ? 230 : 140,
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -1360,10 +1405,45 @@ export default function CalendarScreen() {
             </View>
           </View>
 
+          {/* View / Block switch. Blocking dates is a mode, and it gets a
+              switch at the top: as a button under the calendar vendors
+              didn't find it, and once in it nothing said that a tap now
+              picked a date instead of opening it. */}
+          <View
+            onLayout={(e) => {
+              switchY.current = e.nativeEvent.layout.y;
+            }}
+            style={{
+              marginTop: 18,
+              flexDirection: "row",
+              backgroundColor: "#ffffff",
+              borderRadius: 26,
+              padding: 4,
+              shadowColor: INK,
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 1,
+            }}
+          >
+            <ModeTab label="View bookings" active={!selectMode} onPress={exitSelectMode} />
+            <ModeTab
+              label="Block dates"
+              active={selectMode}
+              onPress={() => {
+                if (selectMode) return;
+                enterSelectMode();
+                requestAnimationFrame(() =>
+                  scrollRef.current?.scrollTo({ y: Math.max(0, switchY.current - 8), animated: true }),
+                );
+              }}
+            />
+          </View>
+
           {/* Month nav + view toggle */}
           <View
             style={{
-              marginTop: 22,
+              marginTop: 16,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1387,6 +1467,36 @@ export default function CalendarScreen() {
               </Text>
               <ChevButton dir="right" onPress={() => shiftMonth(1)} />
             </View>
+            {/* While blocking, the Month / List toggle's spot holds "Fill
+                gaps": it's next to the grid, and the block bar can't cover
+                it the way it covered a button under the calendar. */}
+            {selectMode && fill ? (
+              <Pressable onPress={fillIn} hitSlop={6}>
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: CARD,
+                      borderWidth: 1,
+                      borderColor: BORDER,
+                      height: 36,
+                      paddingHorizontal: 12,
+                      borderRadius: 18,
+                      opacity: pressed ? 0.6 : 1,
+                    }}
+                  >
+                    <Feather name="plus" size={14} color={INK} style={{ marginRight: 4 }} />
+                    <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
+                      Fill gaps
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            ) : null}
+            {/* Month / List. Hidden while blocking: dates are picked on
+                the month grid, so the list has nothing to offer there. */}
+            {!selectMode ? (
             <View
               style={{
                 flexDirection: "row",
@@ -1422,19 +1532,25 @@ export default function CalendarScreen() {
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>List</Text>
               </Pressable>
             </View>
+            ) : null}
           </View>
 
           {calView === "month" ? (
           <>
-          {/* Calendar card */}
+          {/* Calendar card. Gold outline while blocking, so the mode shows
+              on the thing being tapped, not only on the switch above it.
+              The border is always 2pt (white when off) so turning the
+              mode on doesn't nudge the grid. */}
           <View
             style={{
               marginTop: 12,
               backgroundColor: "#ffffff",
               borderRadius: 24,
-              paddingHorizontal: 14,
-              paddingTop: 12,
-              paddingBottom: 14,
+              borderWidth: 2,
+              borderColor: selectMode ? GOLD : "#ffffff",
+              paddingHorizontal: 12,
+              paddingTop: 10,
+              paddingBottom: 12,
               shadowColor: INK,
               shadowOpacity: 0.1,
               shadowRadius: 20,
@@ -1442,6 +1558,29 @@ export default function CalendarScreen() {
               elevation: 2,
             }}
           >
+            {selectMode ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: HINT_BG,
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  marginBottom: 10,
+                }}
+              >
+                <Feather
+                  name={pickNote ? "info" : "edit-2"}
+                  size={14}
+                  color={BRONZE}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={{ flex: 1, fontFamily: SERIF, fontSize: 12.5, lineHeight: 18, color: BRONZE }}>
+                  {pickNote ?? "Tap the dates you can't work."}
+                </Text>
+              </View>
+            ) : null}
             {loading ? (
               <View style={{ paddingVertical: 70, alignItems: "center" }}>
                 <ActivityIndicator color={INK} />
@@ -1458,10 +1597,7 @@ export default function CalendarScreen() {
                 // Press-and-hold is a shortcut into select mode, the same
                 // gesture photo apps use, starting with the held day.
                 onLongSelect={(k) => {
-                  if (!selectMode) {
-                    setSelectMode(true);
-                    setPicked(new Map());
-                  }
+                  if (!selectMode) enterSelectMode();
                   togglePick(k);
                 }}
               />
@@ -1524,138 +1660,7 @@ export default function CalendarScreen() {
           </View>
 
           {/* Selected-day header + actions */}
-          {selectMode ? (
-            <View style={{ marginTop: 18 }}>
-              <View
-                style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}
-              >
-                <View style={{ flex: 1, paddingRight: 10 }}>
-                  <Text
-                    style={{
-                      color: INK,
-                      fontFamily: SERIF_ITALIC,
-                      fontSize: 20,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {pickedDates.length === 0
-                      ? "Select days"
-                      : `${pickedDates.length} day${pickedDates.length === 1 ? "" : "s"} selected`}
-                  </Text>
-                  <Text
-                    style={{ fontFamily: SERIF, marginTop: 3, color: INK_DIM, fontSize: 13, lineHeight: 19 }}
-                    numberOfLines={3}
-                  >
-                    {pickedDates.length === 0
-                      ? "Tap each day you want to block. They don't have to be in a row."
-                      : describeDays(pickedDates)}
-                  </Text>
-                  {pickedToBlock.length > 0 && pickedToBlock.length < pickedDates.length ? (
-                    <Text style={{ fontFamily: SERIF, marginTop: 3, color: INK_MUTED, fontSize: 12 }}>
-                      {pickedDates.length - pickedToBlock.length} already blocked
-                    </Text>
-                  ) : null}
-                  {pickNote ? (
-                    <Text
-                      style={{ fontFamily: SERIF_ITALIC, marginTop: 5, color: BRONZE, fontSize: 12, lineHeight: 17 }}
-                    >
-                      {pickNote}
-                    </Text>
-                  ) : null}
-                </View>
-                <Pressable onPress={exitSelectMode} hitSlop={10} style={{ paddingTop: 5 }}>
-                  <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13}}>
-                    Cancel
-                  </Text>
-                </Pressable>
-              </View>
-
-              {fill ? (
-                <Pressable onPress={fillIn} style={{ alignSelf: "flex-start", marginTop: 12 }}>
-                  {({ pressed }) => (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        backgroundColor: CARD,
-                        borderWidth: 1,
-                        borderColor: BORDER,
-                        paddingHorizontal: 14,
-                        paddingVertical: 9,
-                        borderRadius: 999,
-                        opacity: pressed ? 0.6 : 1,
-                      }}
-                    >
-                      <Feather name="plus" size={14} color={INK} style={{ marginRight: 5 }} />
-                      <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
-                        Fill in {prettyRange(fill.first, fill.last)}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              ) : null}
-
-              <Pressable
-                onPress={() => {
-                  if (needsListing) {
-                    explainNeedsListing();
-                    return;
-                  }
-                  if (pickedAllBlocked) {
-                    Alert.alert(
-                      "Re-open these days?",
-                      pickedDates.length === 1
-                        ? "1 day becomes bookable again."
-                        : `${pickedDates.length} days become bookable again.`,
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Unblock", style: "destructive", onPress: commitUnblockPicked },
-                      ],
-                    );
-                    return;
-                  }
-                  setBlockTitleInput("");
-                  setEditingBlockDate(null);
-                  setBlockModalOpen(true);
-                }}
-                disabled={blocking || pickedDates.length === 0}
-              >
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      marginTop: 14,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor:
-                        blocking || pickedDates.length === 0 ? GOLD_MUTED : GOLD,
-                      paddingVertical: 13,
-                      borderRadius: 999,
-                      // Press feedback only — the disabled look is carried
-                      // by the fill above, not by fading the whole pill.
-                      opacity: pressed ? 0.7 : 1,
-                    }}
-                  >
-                    <Feather
-                      name={pickedAllBlocked ? "x" : "calendar"}
-                      size={15}
-                      color={INK}
-                      style={{ marginRight: 6 }}
-                    />
-                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
-                      {blocking
-                        ? "Saving…"
-                        : pickedDates.length === 0
-                          ? "Block days"
-                          : pickedAllBlocked
-                            ? `Unblock ${pickedDates.length} day${pickedDates.length === 1 ? "" : "s"}`
-                            : `Block ${pickedToBlock.length} day${pickedToBlock.length === 1 ? "" : "s"}`}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          ) : selectedYmd ? (
+          {!selectMode && selectedYmd ? (
             <View
               style={{
                 marginTop: 18,
@@ -1738,48 +1743,13 @@ export default function CalendarScreen() {
                         style={{ marginRight: 4 }}
                       />
                       <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
-                        {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block time"}
+                        {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block day"}
                       </Text>
                     </View>
                   )}
                 </Pressable>
               </View>
             </View>
-          ) : null}
-
-          {/* Into select mode. A full-width button on its own row: this
-              used to be a small text link, and vendors who never spotted
-              it concluded days could only be blocked one at a time. */}
-          {!selectMode ? (
-            <Pressable
-              onPress={() => {
-                setSelectMode(true);
-                setPicked(new Map());
-                setPickNote(null);
-              }}
-            >
-              {({ pressed }) => (
-                <View
-                  style={{
-                    marginTop: 14,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: CARD,
-                    borderWidth: 1,
-                    borderColor: BORDER,
-                    paddingVertical: 12,
-                    borderRadius: 999,
-                    opacity: pressed ? 0.6 : 1,
-                  }}
-                >
-                  <Feather name="check-square" size={15} color={INK} style={{ marginRight: 7 }} />
-                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>
-                    Block several days
-                  </Text>
-                </View>
-              )}
-            </Pressable>
           ) : null}
 
           {/* Per-listing block target (account view, >1 listing) */}
@@ -1910,6 +1880,107 @@ export default function CalendarScreen() {
         </ScrollView>
       </SafeAreaView>
 
+      {/* Block bar. Pinned just above the tab bar so the button stays on
+          screen while the vendor taps dates, instead of sitting somewhere
+          below the calendar. */}
+      {selectMode ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            left: 16,
+            right: 16,
+            // The tab bar: its bottom padding + its 74pt height.
+            bottom: Math.max(insets.bottom, 12) + 74 + 10,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: INK,
+              borderRadius: 22,
+              paddingVertical: 12,
+              paddingLeft: 18,
+              paddingRight: 12,
+              shadowColor: "#000",
+              shadowOpacity: 0.25,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 10,
+            }}
+          >
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: "#ffffff" }}>
+                {pickedDates.length === 0
+                  ? "No dates selected"
+                  : `${pickedDates.length} date${pickedDates.length === 1 ? "" : "s"} selected`}
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{ flexShrink: 1, fontFamily: SERIF, fontSize: 12, color: "#d9d4c8" }}
+                >
+                  {pickedDates.length === 0
+                    ? "Tap dates on the calendar"
+                    : describeDays(pickedDates) +
+                      (pickedToBlock.length > 0 && pickedToBlock.length < pickedDates.length
+                        ? ` · ${pickedDates.length - pickedToBlock.length} already blocked`
+                        : "")}
+                </Text>
+                {pickedDates.length > 0 ? (
+                  <Pressable
+                    onPress={() => {
+                      setPicked(new Map());
+                      setPickNote(null);
+                    }}
+                    hitSlop={10}
+                  >
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: GOLD, marginLeft: 8 }}>
+                      Clear
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+            <Pressable onPress={blockPicked} disabled={blocking || pickedDates.length === 0}>
+              {({ pressed }) => (
+                <View
+                  style={{
+                    height: 42,
+                    // Exact half-height, not 999: Android doesn't always
+                    // clamp an oversized radius on a view whose fill changes.
+                    borderRadius: 21,
+                    paddingHorizontal: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: blocking || pickedDates.length === 0 ? "#3a3c41" : GOLD,
+                    opacity: pressed ? 0.75 : 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: SERIF_BOLD,
+                      fontSize: 14,
+                      color: blocking || pickedDates.length === 0 ? "#8d8a83" : INK,
+                    }}
+                  >
+                    {blocking
+                      ? "Saving…"
+                      : pickedDates.length === 0
+                        ? "Block"
+                        : pickedAllBlocked
+                          ? `Unblock ${pickedDates.length} date${pickedDates.length === 1 ? "" : "s"}`
+                          : `Block ${pickedToBlock.length} date${pickedToBlock.length === 1 ? "" : "s"}`}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {/* Block-title modal */}
       <CenterModal
         visible={blockModalOpen}
@@ -1930,9 +2001,9 @@ export default function CalendarScreen() {
           {editingBlockDate
             ? "Change the title for this blocked day. Leave blank to clear it."
             : selectMode
-              ? `${pickedToBlock.length} day${
+              ? `${pickedToBlock.length} date${
                   pickedToBlock.length === 1 ? "" : "s"
-                } will be marked unavailable. Add an optional title so you remember why (“Vacation”). Only you see it — hosts just see the days as unavailable.`
+                } will be marked unavailable. Add an optional title so you remember why (“Vacation”). Only you see it — hosts just see the dates as unavailable.`
               : "Add an optional title so you remember why (“Christian’s birthday”). Only you see it — hosts just see the day as unavailable."}
         </Text>
         <TextInput
@@ -2222,6 +2293,46 @@ function LegendDot({ swatch, label }: { swatch: React.ReactNode; label: string }
       {swatch}
       <Text style={{ fontFamily: SERIF_BOLD, marginLeft: 6, color: INK, fontSize: 12}}>{label}</Text>
     </View>
+  );
+}
+
+// One half of the View bookings / Block dates switch. The ink fill is its
+// own view, mounted only on the active half: on Android a view whose
+// background flips between transparent and a colour can drop its corner
+// radius (the tab-bar circle that came back square).
+function ModeTab({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      style={{ flex: 1, height: 44, alignItems: "center", justifyContent: "center" }}
+    >
+      {active ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: 22,
+            backgroundColor: INK,
+          }}
+        />
+      ) : null}
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: active ? "#ffffff" : INK }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
