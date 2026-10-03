@@ -2045,7 +2045,7 @@ export default function WebsiteBuilderPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-[18px] font-medium">Moderate guest activity</h2>
+                <h2 className="text-[18px] font-bold">Moderate guest activity</h2>
                 <p className="text-[12px] text-white/50 mt-1">
                   Hide or delete anything your guests posted on the site.
                 </p>

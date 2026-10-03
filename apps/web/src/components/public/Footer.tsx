@@ -43,7 +43,7 @@ export function Footer() {
               </Link>
               <a
                 href="mailto:hello@eventvendora.com"
-                className="block text-sm transition-colors hover:text-accent"
+                className="block text-sm transition-colors hover:text-accent [overflow-wrap:anywhere]"
               >
                 hello@eventvendora.com
               </a>

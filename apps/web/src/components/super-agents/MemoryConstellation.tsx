@@ -719,7 +719,7 @@ export function MemoryConstellation({
               </div>
             ) : (
               <>
-                <h3 className="text-white font-medium text-base leading-snug">
+                <h3 className="text-white font-bold text-base leading-snug">
                   {selected.title}
                 </h3>
                 <p className="mt-2 text-sm text-white/65 whitespace-pre-wrap break-words leading-relaxed">

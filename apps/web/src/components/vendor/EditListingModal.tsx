@@ -548,7 +548,7 @@ export function EditListingModal({
         >
           <X className="h-5 w-5" />
         </button>
-        <h2 className="font-editorial text-xl italic">Edit listing</h2>
+        <h2 className="font-editorial text-xl">Edit listing</h2>
         <div className="w-7" />
       </header>
 

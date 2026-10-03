@@ -92,7 +92,7 @@ export default function PressPage() {
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             Everything you need to{" "}
-            <span className="italic font-light text-accent">write about us.</span>
+            <span className="text-accent">write about us.</span>
           </h1>
           <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed mb-8">
             Logos, screenshots, the elevator pitch, and a real human you can

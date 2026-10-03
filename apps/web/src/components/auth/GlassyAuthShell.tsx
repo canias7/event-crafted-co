@@ -186,10 +186,10 @@ export function GlassyAuthShell({
           {title}
         </h1>
         <h1
-          className="font-editorial italic text-black m-0 text-center"
+          className="font-editorial text-black m-0 text-center"
           style={{
             fontSize: "50px",
-            fontWeight: 500,
+            fontWeight: 700,
             lineHeight: 1.02,
             letterSpacing: "-0.7px",
             marginBottom: "16px",
@@ -200,7 +200,7 @@ export function GlassyAuthShell({
           </span>
         </h1>
         <p
-          className="font-editorial italic m-0 text-center mb-9"
+          className="font-serif italic m-0 text-center mb-9"
           style={{ fontSize: "16px", opacity: 0.7 }}
         >
           {subtitle}

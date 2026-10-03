@@ -75,7 +75,7 @@ export function CategoryAttributesDisplay({
 
   return (
     <div className="space-y-7">
-      <h2 className="font-editorial italic text-3xl sm:text-4xl text-foreground">
+      <h2 className="font-editorial text-3xl sm:text-4xl text-foreground">
         About this {category.toLowerCase()}
       </h2>
       <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7">

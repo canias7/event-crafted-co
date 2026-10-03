@@ -258,8 +258,8 @@ export default function LandingPage() {
               >
                 Where{" "}
                 <span
-                  className="font-editorial italic"
-                  style={{ color: GOLD, fontWeight: 500 }}
+                  className="font-editorial"
+                  style={{ color: GOLD }}
                 >
                   unforgettable
                 </span>
@@ -478,7 +478,7 @@ export default function LandingPage() {
             style={{ color: INK, lineHeight: 1.1 }}
           >
             Plan with confidence.{" "}
-            <span className="font-editorial italic" style={{ color: BRONZE, fontWeight: 500 }}>
+            <span className="font-editorial" style={{ color: BRONZE }}>
               Enjoy
             </span>{" "}
             every moment.
@@ -561,7 +561,7 @@ export default function LandingPage() {
             style={{ color: CREAM, lineHeight: 1.1 }}
           >
             More clients. More bookings. More{" "}
-            <span className="font-editorial italic" style={{ color: GOLD, fontWeight: 500 }}>
+            <span className="font-editorial" style={{ color: GOLD }}>
               growth
             </span>
             .
@@ -655,7 +655,7 @@ export default function LandingPage() {
             style={{ color: INK, lineHeight: 1.15 }}
           >
             Powerful tools.{" "}
-            <span className="font-editorial italic" style={{ fontWeight: 500 }}>
+            <span className="font-editorial">
               Seamless
             </span>{" "}
             experience.
@@ -695,7 +695,7 @@ export default function LandingPage() {
             style={{ color: CREAM, lineHeight: 1.12 }}
           >
             Join the hosts and vendors creating{" "}
-            <span className="font-editorial italic" style={{ color: GOLD, fontWeight: 500 }}>
+            <span className="font-editorial" style={{ color: GOLD }}>
               unforgettable
             </span>{" "}
             events.

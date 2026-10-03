@@ -2718,7 +2718,7 @@ function CreamOceanStat({
       </Text>
       <Text
         style={{
-          fontFamily: italic ? SERIF_ITALIC : SERIF_BOLD,
+          fontFamily: SERIF_BOLD,
           fontSize: italic ? 14 : 16,
           color: INK,
         }}

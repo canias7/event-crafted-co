@@ -503,7 +503,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           )}
         </button>
         <p
-          className="text-center font-editorial italic"
+          className="text-center font-serif italic"
           style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
         >
           We'll email you a 6-digit code to confirm it's you.

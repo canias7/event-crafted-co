@@ -205,7 +205,7 @@ export default function PublicEventRsvpPage() {
               border: "0.5px solid rgba(0,0,0,0.32)",
             }}
           >
-            <p className="font-editorial italic text-2xl">Thanks for RSVPing.</p>
+            <p className="font-editorial text-2xl">Thanks for RSVPing.</p>
             <p className="mt-2 text-sm text-muted-foreground">
               The host will see your response on their events page.
             </p>

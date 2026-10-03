@@ -1286,7 +1286,7 @@ function CountdownTile({
         WebkitBackdropFilter: "blur(4px)",
       }}
     >
-      <span className="text-2xl md:text-3xl font-light tabular-nums text-white leading-none">
+      <span className="text-2xl md:text-3xl font-bold tabular-nums text-white leading-none">
         {text}
       </span>
       <span className="text-[9px] uppercase tracking-[0.1em] text-white/55 mt-1.5">

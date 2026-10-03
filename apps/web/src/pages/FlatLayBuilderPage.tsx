@@ -404,7 +404,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <section className="mb-7">
       <div className="flex items-baseline justify-between mb-2.5">
-        <h2 className="text-[15px] font-medium">{title}</h2>
+        <h2 className="text-[15px] font-bold">{title}</h2>
         {hint && <span className="text-[11px] text-black/40">{hint}</span>}
       </div>
       <div className="space-y-3">{children}</div>

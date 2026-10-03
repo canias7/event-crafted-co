@@ -95,7 +95,7 @@ export default function CheckEmailPage() {
         )}
 
         <p
-          className="text-center font-editorial italic"
+          className="text-center font-serif italic"
           style={{ fontSize: "12.5px", opacity: 0.7, lineHeight: 1.5 }}
         >
           {isVendor ? (

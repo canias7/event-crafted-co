@@ -14,7 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        // Brand rule: Libre Baskerville for all text, so `sans` points at it too.
+        sans: ['Libre Baskerville', 'Georgia', 'Times New Roman', 'serif'],
         serif: ['Libre Baskerville', 'Georgia', 'Times New Roman', 'serif'],
       },
       colors: {

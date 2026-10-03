@@ -97,7 +97,6 @@ const LISTING_PALETTE = [
 ];
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
-const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 const DAY_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1463,7 +1462,7 @@ export default function CalendarScreen() {
                   flexShrink: 1,
                   marginHorizontal: 8,
                   color: INK,
-                  fontFamily: SERIF_ITALIC,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 20,
                 }}
               >
@@ -1618,7 +1617,7 @@ export default function CalendarScreen() {
                 <Text
                   style={{
                     color: INK,
-                    fontFamily: SERIF_ITALIC,
+                    fontFamily: SERIF_BOLD,
                     fontSize: 20,
                     flexShrink: 1,
                   }}

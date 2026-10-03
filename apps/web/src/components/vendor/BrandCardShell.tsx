@@ -95,7 +95,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
           </p>
           <div className="relative flex-1 mt-3 overflow-y-auto pr-2">
             {bio?.trim() ? (
-              <p className="font-editorial italic text-foreground text-[17px] sm:text-[19px] leading-[1.5] whitespace-pre-line">
+              <p className="font-serif italic text-foreground text-[17px] sm:text-[19px] leading-[1.5] whitespace-pre-line">
                 {bio}
               </p>
             ) : (

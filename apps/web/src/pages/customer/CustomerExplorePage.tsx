@@ -381,7 +381,7 @@ function ListingCard({
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-3xl font-serif italic text-muted-foreground">
+            <div className="w-full h-full flex items-center justify-center text-3xl font-serif font-bold text-muted-foreground">
               {(l.business_name ?? "V")[0]?.toUpperCase()}
             </div>
           )}
@@ -390,7 +390,7 @@ function ListingCard({
           <p className="text-xs uppercase tracking-widest text-muted-foreground truncate">
             {l.category ?? "Vendor"}
           </p>
-          <h3 className="mt-1 font-medium text-foreground truncate">
+          <h3 className="mt-1 font-bold text-foreground truncate">
             {l.business_name ?? "Vendor"}
           </h3>
           <p className="text-xs text-muted-foreground truncate">

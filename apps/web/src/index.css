@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -97,7 +97,8 @@
 
   body {
     @apply text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    /* Brand rule: Libre Baskerville for all text, as in the apps. */
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Cream base matching the apps' PAGE (#f4f1ea), with champagne
@@ -261,26 +262,25 @@
     line-height: 1.1;
   }
 
-  /* Editorial italic serif. Carries the Vendora
-     wordmark and the editorial headlines across the host portal.
-     Falls back to Times New Roman until the web font loads. */
+  /* Title style. Brand rule: titles are bold and upright everywhere,
+     like the apps' screen titles (this used to be an italic cut). */
   .font-editorial {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
-    font-style: italic;
-    font-weight: 500;
+    font-style: normal;
+    font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.05;
   }
 
   .font-body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-weight: 400;
     line-height: 1.6;
   }
 
   .font-label {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 500;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-weight: 700;
     letter-spacing: 0.06em;
     font-size: 0.75rem;
     text-transform: uppercase;
@@ -701,9 +701,9 @@
     background: rgba(0, 0, 0, 0.025);
   }
 
-  /* Tabular money — sans + tabular for legibility. */
+  /* Tabular money: the brand serif with tabular figures. */
   .my-vendora-cockpit .cockpit-money {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-variant-numeric: lining-nums tabular-nums;
     font-weight: 500;
     color: #1a1a1a;

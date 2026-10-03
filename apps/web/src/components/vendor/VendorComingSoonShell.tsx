@@ -49,7 +49,7 @@ export function VendorComingSoonShell({
             >
               <Icon className="w-6 h-6" />
             </div>
-            <h2 className="font-editorial italic text-3xl mb-2">
+            <h2 className="font-editorial text-3xl mb-2">
               Coming soon
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">

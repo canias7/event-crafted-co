@@ -1510,7 +1510,7 @@ function OverviewRevenueChart({
         <div>
           <div
             className="text-[22px] font-semibold leading-tight"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             Revenue · last 30 days
           </div>
@@ -1521,7 +1521,7 @@ function OverviewRevenueChart({
         <div className="text-right">
           <div
             className="text-[28px] font-semibold leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             {formatMoney(total, currency)}
           </div>
@@ -2107,7 +2107,7 @@ function SummaryCard({ label, value, sub }: { label: string; value: string; sub:
       </div>
       <div
         className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-        style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+        style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
       >
         {value}
       </div>
@@ -3880,7 +3880,7 @@ function DocumentCanvas({
               placeholder="Type your template body here…"
               rows={Math.max(16, body.split("\n").length + 2)}
               className={`block w-full text-[15px] leading-7 resize-none ${editableCls}`}
-              style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
+              style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
             />
           </div>
 
@@ -6498,7 +6498,7 @@ function ExpensesTab({
         <div>
           <h2
             className="text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             Expenses
           </h2>
@@ -6529,7 +6529,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             {formatMoney(kpis.ytdCents)}
           </div>
@@ -6546,7 +6546,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             {formatMoney(kpis.monthCents)}
           </div>
@@ -6560,7 +6560,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             {formatMoney(kpis.thirtyDayCents)}
           </div>
@@ -6574,7 +6574,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold leading-none truncate"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
             title={kpis.topItem ? kpis.topItem[0] : undefined}
           >
             {kpis.topItem ? kpis.topItem[0] : "—"}
@@ -6905,7 +6905,7 @@ function ExpensesTab({
                       {filteredRows.length < rows.length ? "Filtered total" : "Total"}{" "}
                       <span
                         className="text-foreground tabular-nums"
-                        style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: "14px" }}
+                        style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", fontWeight: 600, fontSize: "14px" }}
                       >
                         {formatMoney(filteredTotal)}
                       </span>

@@ -717,7 +717,7 @@ export default function ListingScreen() {
           <CircleButton onPress={() => router.back()} icon="chevron-left" />
           <Text
             style={{
-              fontFamily: SERIF_ITALIC,
+              fontFamily: SERIF_BOLD,
               fontSize: 24,
               color: INK,
             }}
