@@ -20,10 +20,11 @@ const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded.
 const GOLD_MUTED = "#e0d2b0";
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const INK_BORDER = "#e6e1d5";
 const INPUT_BG = "#fbf9f4";
 const ERROR = "#b23a34";
-const ACCENT = "#1B3654";
+const BRONZE = "#8a6f3e";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -219,7 +220,7 @@ export default function LoginScreen() {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="••••••••"
-                    placeholderTextColor={INK_DIM}
+                    placeholderTextColor={PLACEHOLDER}
                     autoComplete="current-password"
                     style={{ fontFamily: SERIF,
                       backgroundColor: INPUT_BG,
@@ -244,7 +245,7 @@ export default function LoginScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, color: ACCENT, fontSize: 13,}}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}>
                       {showPassword ? "Hide" : "Show"}
                     </Text>
                   </Pressable>
@@ -345,7 +346,7 @@ export default function LoginScreen() {
                   onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
                   maxLength={6}
                   placeholder="••••••"
-                  placeholderTextColor={INK_DIM}
+                  placeholderTextColor={PLACEHOLDER}
                   autoFocus
                   style={{
                     backgroundColor: INPUT_BG,
@@ -362,7 +363,7 @@ export default function LoginScreen() {
                 />
               </View>
 
-              {info && !error ? <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14 }}>{info}</Text> : null}
+              {info && !error ? <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14 }}>{info}</Text> : null}
               {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
 
               <Pressable
@@ -384,12 +385,12 @@ export default function LoginScreen() {
 
               <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
                 <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
-                  <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14,}}>
+                  <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
                     ← Use a different account
                   </Text>
                 </Pressable>
                 <Pressable disabled={submitting} onPress={onSubmitCredentials}>
-                  <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14,}}>
+                  <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
                     Resend code
                   </Text>
                 </Pressable>
@@ -437,7 +438,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={INK_DIM}
+        placeholderTextColor={PLACEHOLDER}
         keyboardType={keyboardType}
         autoComplete={autoComplete}
         autoCapitalize={autoCapitalize}

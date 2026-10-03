@@ -462,7 +462,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
               style={{
                 aspectRatio: 4 / 5,
                 width: "100%",
-                backgroundColor: "#1a1a1a",
+                backgroundColor: "#14161a",
               }}
             >
               {r.thumbnail_url ? (
@@ -671,7 +671,7 @@ function ListingCard({
         style={{
           borderRadius: 18,
           overflow: "hidden",
-          backgroundColor: "#1a1a1a",
+          backgroundColor: "#14161a",
           aspectRatio: 1,
           width: "100%",
         }}
@@ -714,7 +714,7 @@ function ListingCard({
           <Feather
             name="heart"
             size={22}
-            color={saved ? "#dc2626" : "#fff"}
+            color={saved ? "#c9a86a" : "#fff"}
           />
         </Pressable>
       </View>
@@ -732,7 +732,7 @@ function ListingCard({
           {listing.location ?? "Marketplace listing"}
         </Text>
         {price ? (
-          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-foreground/80">{price}</Text>
+          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-foreground">{price}</Text>
         ) : null}
         {models ? (
           <Text style={{ fontFamily: SERIF }}

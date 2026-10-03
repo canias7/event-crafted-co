@@ -33,10 +33,11 @@ const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded.
 const GOLD_MUTED = "#e0d2b0";
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const INK_BORDER = "#e6e1d5";
 const INPUT_BG = "#fbf9f4";
 const ERROR = "#b23a34";
-const ACCENT = "#1B3654";
+const BRONZE = "#8a6f3e";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -243,7 +244,7 @@ export default function SignupScreen() {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="At least 8 characters"
-                    placeholderTextColor={INK_DIM}
+                    placeholderTextColor={PLACEHOLDER}
                     style={{ fontFamily: SERIF,
                       backgroundColor: INPUT_BG,
                       borderColor: INK_BORDER,
@@ -268,7 +269,7 @@ export default function SignupScreen() {
                     }}
                   >
                     <Text
-                      style={{ fontFamily: SERIF_BOLD, color: ACCENT, fontSize: 13,}}
+                      style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}
                     >
                       {showPassword ? "Hide" : "Show"}
                     </Text>
@@ -291,7 +292,7 @@ export default function SignupScreen() {
             <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text>
           ) : null}
           {info && !error ? (
-            <Text style={{ fontFamily: SERIF, color: ACCENT, fontSize: 14 }}>{info}</Text>
+            <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14 }}>{info}</Text>
           ) : null}
 
           <Pressable
@@ -325,7 +326,7 @@ export default function SignupScreen() {
               disabled={submitting}
               style={{ alignItems: "center", paddingVertical: 8 }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: ACCENT, fontSize: 14,}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14,}}>
                 Resend code
               </Text>
             </Pressable>
@@ -381,7 +382,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={INK_DIM}
+        placeholderTextColor={PLACEHOLDER}
         keyboardType={keyboardType}
         autoComplete={autoComplete}
         autoCapitalize={autoCapitalize}
