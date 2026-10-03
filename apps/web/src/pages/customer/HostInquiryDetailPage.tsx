@@ -744,7 +744,7 @@ export default function HostInquiryDetailPage() {
         <main className="flex-1 pb-20 lg:pb-0 p-8">
           <Link
             to="/customer/inquiries"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to inquiries
@@ -1055,7 +1055,7 @@ export default function HostInquiryDetailPage() {
                                 <button
                                   type="button"
                                   onClick={cancelEditing}
-                                  className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1"
+                                  className="text-[11px] text-muted-foreground hover:text-accent px-2 py-1"
                                 >
                                   Cancel
                                 </button>
@@ -1277,7 +1277,7 @@ export default function HostInquiryDetailPage() {
                         )
                       }
                       aria-label="Remove attachment"
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-accent"
                     >
                       <X className="w-3 h-3" />
                     </button>

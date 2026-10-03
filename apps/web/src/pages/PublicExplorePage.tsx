@@ -166,7 +166,7 @@ export default function PublicExplorePage() {
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                     active
                       ? "bg-foreground text-background"
-                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:text-accent"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -316,7 +316,7 @@ function CategoryChip({
       className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
         active
           ? "bg-foreground text-background"
-          : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+          : "bg-secondary/60 text-muted-foreground hover:text-accent"
       }`}
     >
       {label}

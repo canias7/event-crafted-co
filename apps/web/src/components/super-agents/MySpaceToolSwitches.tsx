@@ -366,7 +366,7 @@ export function MySpaceToolSwitches() {
           <button
             type="button"
             onClick={() => setAll(true)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-accent transition-colors"
           >
             All on
           </button>
@@ -374,7 +374,7 @@ export function MySpaceToolSwitches() {
           <button
             type="button"
             onClick={() => setAll(false)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-accent transition-colors"
           >
             All off
           </button>
@@ -416,7 +416,7 @@ export function MySpaceToolSwitches() {
                             <button
                               type="button"
                               aria-label={`What "${tool.label}" does`}
-                              className="shrink-0 text-muted-foreground/50 hover:text-foreground transition-colors"
+                              className="shrink-0 text-muted-foreground/50 hover:text-accent transition-colors"
                             >
                               <Info className="w-3.5 h-3.5" />
                             </button>

@@ -1949,7 +1949,7 @@ function BlockedDayCard({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="group flex items-center gap-1.5 font-medium text-foreground hover:text-foreground/70 transition-colors text-left max-w-full"
+              className="group flex items-center gap-1.5 font-medium text-foreground hover:text-accent transition-colors text-left max-w-full"
               aria-label="Edit title"
             >
               <span className="truncate">{title}</span>

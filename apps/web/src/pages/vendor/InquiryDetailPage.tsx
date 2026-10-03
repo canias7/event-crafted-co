@@ -1209,7 +1209,7 @@ export default function InquiryDetailPage() {
                                 <button
                                   type="button"
                                   onClick={cancelEditing}
-                                  className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1"
+                                  className="text-[11px] text-muted-foreground hover:text-accent px-2 py-1"
                                 >
                                   Cancel
                                 </button>
@@ -1436,7 +1436,7 @@ export default function InquiryDetailPage() {
                         )
                       }
                       aria-label="Remove attachment"
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-accent"
                     >
                       <X className="w-3 h-3" />
                     </button>

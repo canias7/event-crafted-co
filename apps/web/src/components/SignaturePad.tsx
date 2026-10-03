@@ -97,7 +97,7 @@ export function SignaturePad({
         <button
           type="button"
           onClick={clear}
-          className="mt-1.5 text-xs text-muted-foreground hover:text-foreground underline"
+          className="mt-1.5 text-xs text-muted-foreground hover:text-accent underline"
         >
           Clear
         </button>

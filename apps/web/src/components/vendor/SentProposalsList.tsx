@@ -189,7 +189,7 @@ export function SentProposalsList({
                   <button
                     type="button"
                     onClick={() => window.open(`${ORIGIN}/proposal/${p.view_token}`, "_blank")}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
@@ -197,7 +197,7 @@ export function SentProposalsList({
                   <button
                     type="button"
                     onClick={() => downloadPdf(p)}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
                   >
                     <Download className="w-3.5 h-3.5" />
                     PDF
@@ -206,7 +206,7 @@ export function SentProposalsList({
                     <button
                       type="button"
                       onClick={() => copyLink(p.view_token)}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       Link

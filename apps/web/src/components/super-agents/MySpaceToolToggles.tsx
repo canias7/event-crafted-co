@@ -378,7 +378,7 @@ export function MySpaceToolToggles() {
             type="button"
             onClick={resetToDefaults}
             disabled={resetting}
-            className="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            className="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-accent transition-colors"
             title="Reset all toggles to defaults"
           >
             {resetting ? (

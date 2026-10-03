@@ -1054,7 +1054,7 @@ function BillingPanel({
               type="button"
               onClick={() => openPortal("update")}
               disabled={actingId !== null}
-              className="text-xs font-medium text-foreground hover:text-foreground rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
+              className="text-xs font-medium text-foreground hover:text-accent rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
             >
               Update
             </button>
@@ -1153,7 +1153,7 @@ function BillingPanel({
                                   href={row.hostedUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="hover:text-foreground"
+                                  className="hover:text-accent"
                                 >
                                   View
                                 </a>
@@ -1169,7 +1169,7 @@ function BillingPanel({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download
-                                  className="hover:text-foreground"
+                                  className="hover:text-accent"
                                   aria-label="Download PDF"
                                   title="Download PDF"
                                 >
@@ -1187,7 +1187,7 @@ function BillingPanel({
                   <button
                     type="button"
                     onClick={() => setInvoicesExpanded((v) => !v)}
-                    className="mt-2 self-start text-xs font-medium text-foreground hover:text-foreground"
+                    className="mt-2 self-start text-xs font-medium text-foreground hover:text-accent"
                   >
                     {invoicesExpanded
                       ? "Show less"
@@ -1236,7 +1236,7 @@ function BillingIntervalToggle({
     `rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors ${
       active
         ? "bg-foreground text-background"
-        : "text-foreground hover:text-foreground"
+        : "text-foreground hover:text-accent"
     }`;
   return (
     <div

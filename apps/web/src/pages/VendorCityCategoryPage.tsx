@@ -138,7 +138,7 @@ export default function VendorCityCategoryPage() {
         <div className="container mx-auto px-6 md:px-8 max-w-4xl relative">
           <Link
             to={`/vendors/category/${categorySlug}`}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent transition-colors mb-6"
           >
             <ArrowLeft className="w-3 h-3" />
             All {config.display}

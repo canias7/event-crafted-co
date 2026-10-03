@@ -209,7 +209,7 @@ export function CommandPaletteTrigger({
       }}
       className={
         className ??
-        "inline-flex items-center gap-2 px-3 h-9 rounded-full border border-border bg-card text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+        "inline-flex items-center gap-2 px-3 h-9 rounded-full border border-border bg-card text-xs text-muted-foreground hover:text-accent hover:border-foreground/30 transition-colors"
       }
       aria-label="Open search"
     >

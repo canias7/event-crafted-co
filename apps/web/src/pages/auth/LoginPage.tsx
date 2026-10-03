@@ -479,7 +479,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
               aria-label={showPassword ? "Hide password" : "Show password"}
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
-              className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors"
+              className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-accent transition-colors"
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />

@@ -133,7 +133,7 @@ export default function NotificationSettingsPage() {
           <button
             type="button"
             onClick={() => navigate("/settings")}
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent transition-colors mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Settings

@@ -117,7 +117,7 @@ export default function VendorCityPage() {
         <div className="container mx-auto px-6 md:px-8 max-w-5xl">
           <Link
             to="/vendors/locations"
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-accent transition-colors mb-8"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             All cities

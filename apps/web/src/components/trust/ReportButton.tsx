@@ -73,7 +73,7 @@ export function ReportButton({
         variant={variant}
         size={size}
         onClick={() => setOpen(true)}
-        className="text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-accent"
         aria-label="Report this content"
       >
         <Flag className={size === "icon" ? "w-3.5 h-3.5" : "w-3.5 h-3.5 mr-1.5"} />

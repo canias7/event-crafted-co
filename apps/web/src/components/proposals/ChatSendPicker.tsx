@@ -439,7 +439,7 @@ export function ChatSendPicker({
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="text-sm text-muted-foreground hover:text-foreground px-2 py-1.5"
+                  className="text-sm text-muted-foreground hover:text-accent px-2 py-1.5"
                 >
                   Back
                 </button>

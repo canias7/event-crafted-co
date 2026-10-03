@@ -155,7 +155,7 @@ export function DashboardSidebar({
         } ${
           isActive
             ? "text-foreground bg-secondary"
-            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            : "text-muted-foreground hover:text-accent hover:bg-secondary/50"
         }`}
       >
         {item.icon ? (
@@ -219,7 +219,7 @@ export function DashboardSidebar({
                     className={`flex items-center gap-3 rounded-lg text-[13px] font-medium transition-colors duration-200 px-2.5 py-1.5 ${
                       childActive
                         ? "text-foreground bg-secondary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        : "text-muted-foreground hover:text-accent hover:bg-secondary/50"
                     }`}
                   >
                     {child.icon ? (
@@ -265,7 +265,7 @@ export function DashboardSidebar({
             type="button"
             onClick={() => setCollapsed(false)}
             aria-label="Expand sidebar"
-            className="w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-md text-muted-foreground hover:text-accent hover:bg-secondary/50 flex items-center justify-center transition-colors"
           >
             <PanelLeftOpen className="w-4 h-4" />
           </button>
@@ -301,7 +301,7 @@ export function DashboardSidebar({
             type="button"
             onClick={() => setCollapsed(true)}
             aria-label="Collapse sidebar"
-            className="w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 flex items-center justify-center transition-colors shrink-0"
+            className="w-7 h-7 rounded-md text-muted-foreground hover:text-accent hover:bg-secondary/50 flex items-center justify-center transition-colors shrink-0"
           >
             <PanelLeftClose className="w-3.5 h-3.5" />
           </button>

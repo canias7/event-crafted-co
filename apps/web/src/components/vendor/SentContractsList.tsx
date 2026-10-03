@@ -195,7 +195,7 @@ export function SentContractsList({
                   <button
                     type="button"
                     onClick={() => window.open(`${ORIGIN}/sign/${c.sign_token}`, "_blank")}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
@@ -203,7 +203,7 @@ export function SentContractsList({
                   <button
                     type="button"
                     onClick={() => downloadPdf(c)}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
                   >
                     <Download className="w-3.5 h-3.5" />
                     PDF
@@ -212,7 +212,7 @@ export function SentContractsList({
                     <button
                       type="button"
                       onClick={() => copyLink(c.sign_token)}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-full px-2.5 py-1"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       Link

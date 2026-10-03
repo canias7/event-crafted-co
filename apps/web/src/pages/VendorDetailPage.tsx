@@ -555,7 +555,7 @@ export default function VendorDetailPage() {
           {!isPreview && (
             <Link
               to="/vendors"
-              className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground transition-colors mb-8"
+              className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-accent transition-colors mb-8"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Back to directory

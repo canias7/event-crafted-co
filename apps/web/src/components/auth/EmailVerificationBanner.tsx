@@ -86,7 +86,7 @@ export function EmailVerificationBanner() {
         <button
           type="button"
           onClick={dismiss}
-          className="text-muted-foreground hover:text-foreground p-1"
+          className="text-muted-foreground hover:text-accent p-1"
           aria-label="Dismiss"
         >
           <X className="w-3.5 h-3.5" />

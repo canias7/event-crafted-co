@@ -65,7 +65,7 @@ export function MessageReplyContext({
           type="button"
           onClick={onCancel}
           aria-label="Cancel reply"
-          className="shrink-0 text-muted-foreground hover:text-foreground self-center"
+          className="shrink-0 text-muted-foreground hover:text-accent self-center"
         >
           <X className="w-3.5 h-3.5" />
         </button>

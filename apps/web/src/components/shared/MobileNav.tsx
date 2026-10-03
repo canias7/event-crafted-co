@@ -101,7 +101,7 @@ export function MobileNav({ items }: MobileNavProps) {
               className={`flex items-center justify-center rounded-full w-12 h-12 transition-colors ${
                 isActive
                   ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-accent"
               }`}
               aria-current={isActive ? "page" : undefined}
               aria-label={t(item.labelKey)}
@@ -117,7 +117,7 @@ export function MobileNav({ items }: MobileNavProps) {
           <SheetTrigger asChild>
             <button
               type="button"
-              className="flex items-center justify-center rounded-full w-12 h-12 text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center justify-center rounded-full w-12 h-12 text-muted-foreground hover:text-accent transition-colors"
               aria-label="More navigation"
             >
               <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
@@ -145,7 +145,7 @@ export function MobileNav({ items }: MobileNavProps) {
                       className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                         isActive
                           ? "bg-secondary text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                          : "text-muted-foreground hover:text-accent hover:bg-secondary/50"
                       }`}
                       aria-current={isActive ? "page" : undefined}
                     >
