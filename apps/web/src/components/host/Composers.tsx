@@ -36,7 +36,7 @@ export function ModalShell({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-accent"
           >
             <X className="h-4 w-4" />
           </button>

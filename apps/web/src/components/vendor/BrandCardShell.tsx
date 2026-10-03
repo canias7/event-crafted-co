@@ -32,7 +32,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
         type="button"
         onClick={() => setFlipped((f) => !f)}
         aria-label={flipped ? "Show profile front" : "Show bio on back"}
-        className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground hover:text-foreground transition-colors"
+        className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground hover:text-accent transition-colors"
         style={{
           background: "rgba(255,255,255,0.7)",
           border: "0.5px solid rgba(0,0,0,0.28)",

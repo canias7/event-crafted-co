@@ -190,7 +190,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
             className={`rounded-full whitespace-nowrap h-8 text-xs ${
               filter === opt.value
                 ? "bg-foreground text-background hover:bg-foreground/90"
-                : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                : "bg-secondary/60 text-muted-foreground hover:text-accent"
             }`}
           >
             {opt.label}

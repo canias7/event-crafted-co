@@ -380,7 +380,7 @@ function ClientRecord({
             <button
               onClick={() => void setFollowUp(null)}
               disabled={savingFollow}
-              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+              className="text-xs font-semibold text-muted-foreground hover:text-accent"
             >
               Clear
             </button>

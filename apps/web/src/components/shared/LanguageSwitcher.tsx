@@ -29,7 +29,7 @@ export function LanguageSwitcher({
   const triggerClass =
     tone === "dark"
       ? "text-background/70 hover:text-background"
-      : "text-muted-foreground hover:text-foreground";
+      : "text-muted-foreground hover:text-accent";
 
   return (
     <DropdownMenu>

@@ -100,7 +100,7 @@ export default function HelpPage() {
                 {SUPPORT_EMAIL} · usually a reply within 24 hours
               </p>
             </div>
-            <span className="text-xs font-medium text-muted-foreground hover:text-foreground">
+            <span className="text-xs font-medium text-muted-foreground hover:text-accent">
               Open →
             </span>
           </div>

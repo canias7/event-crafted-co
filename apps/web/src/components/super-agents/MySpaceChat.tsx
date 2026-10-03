@@ -1269,7 +1269,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={sending || pendingAttachments.length >= 5}
-            className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-40 transition-colors"
+            className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-secondary/40 disabled:opacity-40 transition-colors"
             aria-label="Attach file"
             title="Attach an image or PDF (max 5)"
           >
@@ -1286,7 +1286,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
                 className={`shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center transition-colors disabled:opacity-40 ${
                   voiceRecording
                     ? "bg-red-500/15 text-red-600"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                    : "text-muted-foreground hover:text-accent hover:bg-secondary/40"
                 }`}
                 aria-label={voiceRecording ? "Stop voice" : "Start voice"}
                 title={voiceRecording ? "Tap to stop" : "Voice input"}
@@ -1440,7 +1440,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
               <button
                 type="button"
                 aria-label="Open chat menu"
-                className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5 text-muted-foreground hover:text-accent hover:bg-secondary/40"
               >
                 <Menu className="w-4 h-4" />
                 Threads
@@ -1479,7 +1479,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
                     setMobileNavOpen(false);
                     setMemoryOpen(true);
                   }}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-2 text-xs font-medium rounded-md px-2 py-1.5 text-muted-foreground hover:text-accent hover:bg-secondary/40"
                 >
                   <BookOpen className="w-3.5 h-3.5" />
                   Memory
@@ -1769,7 +1769,7 @@ function ThreadListItem({
                 e.stopPropagation();
                 setEditing(true);
               }}
-              className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-foreground transition-opacity"
+              className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-accent transition-opacity"
               aria-label="Rename chat"
               title="Rename chat"
             >
@@ -1781,7 +1781,7 @@ function ThreadListItem({
           type="button"
           onClick={onDelete}
           disabled={deleting}
-          className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-foreground transition-opacity"
+          className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-accent transition-opacity"
           aria-label="Delete chat"
           title="Delete chat"
         >
@@ -1946,7 +1946,7 @@ function MessageBubble(
             <button
               type="button"
               onClick={copyText}
-              className="inline-flex items-center gap-0.5 hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-0.5 hover:text-accent transition-colors"
               aria-label="Copy"
               title="Copy message"
             >
@@ -2081,7 +2081,7 @@ function AttachmentChip(
       <button
         type="button"
         onClick={onRemove}
-        className="text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-accent"
         aria-label="Remove attachment"
       >
         <X className="w-3 h-3" />

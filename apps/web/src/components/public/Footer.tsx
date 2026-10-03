@@ -27,23 +27,23 @@ export function Footer() {
           <div>
             <p className="font-label mb-4 text-accent">{t("footer.vendors")}</p>
             <div className="space-y-3">
-              <Link to="/vendors" className="block text-sm">{t("footer.browse")}</Link>
-              <Link to="/vendors/locations" className="block text-sm">{t("footer.by_location")}</Link>
-              <Link to="/explore" className="block text-sm">Explore</Link>
+              <Link to="/vendors" className="block text-sm transition-colors hover:text-accent">{t("footer.browse")}</Link>
+              <Link to="/vendors/locations" className="block text-sm transition-colors hover:text-accent">{t("footer.by_location")}</Link>
+              <Link to="/explore" className="block text-sm transition-colors hover:text-accent">Explore</Link>
             </div>
           </div>
           <div>
             <p className="font-label mb-4 text-accent">{t("footer.legal")}</p>
             <div className="space-y-3">
-              <Link to="/privacy" className="block text-sm">
+              <Link to="/privacy" className="block text-sm transition-colors hover:text-accent">
                 {t("footer.privacy")}
               </Link>
-              <Link to="/terms" className="block text-sm">
+              <Link to="/terms" className="block text-sm transition-colors hover:text-accent">
                 {t("footer.terms")}
               </Link>
               <a
                 href="mailto:hello@eventvendora.com"
-                className="block text-sm"
+                className="block text-sm transition-colors hover:text-accent"
               >
                 hello@eventvendora.com
               </a>

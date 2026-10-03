@@ -198,7 +198,7 @@ export function HostReputationCard({
           variant="ghost"
           size="sm"
           onClick={() => setFlagOpen(true)}
-          className="rounded-full text-xs h-7 px-2.5 -ml-2 text-muted-foreground hover:text-foreground"
+          className="rounded-full text-xs h-7 px-2.5 -ml-2 text-muted-foreground hover:text-accent"
         >
           <Flag className="w-3 h-3 mr-1.5" />
           Flag this host

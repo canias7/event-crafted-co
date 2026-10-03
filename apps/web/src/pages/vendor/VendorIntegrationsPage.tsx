@@ -216,7 +216,7 @@ export default function VendorIntegrationsPage() {
           <button
             type="button"
             onClick={() => navigate("/settings")}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent transition-colors mb-2"
           >
             <ChevronLeft className="w-3 h-3" />
             Settings

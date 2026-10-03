@@ -39,7 +39,7 @@ export function SharedVendorCard({ card }: { card: VendorCardAttachment }) {
           {meta || "View profile"}
         </p>
       </div>
-      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 group-hover:text-foreground transition-colors" />
+      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 group-hover:text-accent transition-colors" />
     </Link>
   );
 }

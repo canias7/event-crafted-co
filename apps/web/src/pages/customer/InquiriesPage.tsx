@@ -276,7 +276,7 @@ export default function InquiriesPage() {
                   className={`rounded-full whitespace-nowrap h-9 text-xs ${
                     statusFilter === opt.value
                       ? "bg-foreground text-background hover:bg-foreground/90"
-                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:text-accent"
                   }`}
                 >
                   {opt.label}

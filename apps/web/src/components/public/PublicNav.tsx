@@ -81,7 +81,7 @@ export function PublicNav() {
                 className={`inline-flex items-center gap-1 text-sm font-medium transition-colors duration-200 outline-none ${
                   location.pathname.startsWith("/vendors")
                     ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-accent"
                 }`}
                 aria-current={
                   location.pathname.startsWith("/vendors") ? "page" : undefined
@@ -142,7 +142,7 @@ export function PublicNav() {
               className={`text-sm font-medium transition-colors duration-200 ${
                 location.pathname === item.path
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-accent"
               }`}
               aria-current={location.pathname === item.path ? "page" : undefined}
             >
@@ -157,7 +157,7 @@ export function PublicNav() {
             className={`text-sm font-medium transition-colors duration-200 ${
               location.pathname === "/explore"
                 ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-accent"
             }`}
             aria-current={location.pathname === "/explore" ? "page" : undefined}
           >
@@ -184,7 +184,7 @@ export function PublicNav() {
                 return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                  <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
                     {navLogo ? (
                       <img
                         src={navLogo}
@@ -272,7 +272,7 @@ export function PublicNav() {
           <button
             type="button"
             onClick={() => setMobileVendorsOpen((x) => !x)}
-            className="flex items-center justify-between w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+            className="flex items-center justify-between w-full py-3 text-sm font-medium text-muted-foreground hover:text-accent"
             aria-expanded={mobileVendorsOpen}
           >
             <span>{t("nav.vendors")}</span>
@@ -317,7 +317,7 @@ export function PublicNav() {
                     key={c.slug}
                     to={`/vendors/category/${c.slug}`}
                     onClick={() => setMobileOpen(false)}
-                    className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                    className="block py-2 text-sm text-muted-foreground hover:text-accent"
                   >
                     {c.display}
                   </Link>
@@ -330,7 +330,7 @@ export function PublicNav() {
               key={item.path}
               to={item.path}
               onClick={() => setMobileOpen(false)}
-              className="block py-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+              className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
             >
               {item.label}
             </Link>
@@ -338,7 +338,7 @@ export function PublicNav() {
           <Link
             to="/explore"
             onClick={() => setMobileOpen(false)}
-            className="block py-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+            className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
           >
             Explore
           </Link>

@@ -1153,7 +1153,7 @@ export default function VendorGalleryPage() {
             <button
               type="button"
               onClick={createAlbum}
-              className="inline-flex items-center gap-1.5 shrink-0 rounded-full border border-dashed border-border bg-card/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-card/60 hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 shrink-0 rounded-full border border-dashed border-border bg-card/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-card/60 hover:text-accent transition-colors"
             >
               <FolderPlus className="w-3.5 h-3.5" />
               New album
@@ -1368,7 +1368,7 @@ export default function VendorGalleryPage() {
                       setDateFrom("");
                       setDateTo("");
                     }}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground"
+                    className="w-full text-xs text-muted-foreground hover:text-accent"
                   >
                     Clear
                   </button>
@@ -1482,7 +1482,7 @@ export default function VendorGalleryPage() {
                   type="button"
                   onClick={downloadActiveAlbum}
                   disabled={zipping}
-                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 disabled:opacity-60"
+                  className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1 disabled:opacity-60"
                 >
                   {zipping ? (
                     <>
@@ -1499,7 +1499,7 @@ export default function VendorGalleryPage() {
                 <button
                   type="button"
                   onClick={renameActiveAlbum}
-                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                  className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1"
                 >
                   <Pencil className="w-3 h-3" />
                   Rename
@@ -1792,7 +1792,7 @@ function AlbumTab({
       className={`shrink-0 inline-flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 text-xs font-medium transition-colors ${
         active
           ? "bg-foreground text-background"
-          : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-foreground"
+          : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-accent"
       }`}
     >
       {coverUrl ? (
@@ -1841,7 +1841,7 @@ function ViewBtn({
       className={`px-2.5 h-9 inline-flex items-center justify-center transition-colors ${
         active
           ? "bg-foreground text-background"
-          : "bg-card text-muted-foreground hover:text-foreground"
+          : "bg-card text-muted-foreground hover:text-accent"
       }`}
     >
       {icon}

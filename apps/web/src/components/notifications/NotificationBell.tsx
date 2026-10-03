@@ -151,7 +151,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
 
   const triggerColor =
     variant === "light"
-      ? "text-muted-foreground hover:text-foreground"
+      ? "text-muted-foreground hover:text-accent"
       : "text-background/85 hover:text-background";
 
   return (

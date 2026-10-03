@@ -394,7 +394,7 @@ function IconBtn({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-foreground disabled:opacity-30"
+      className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-accent disabled:opacity-30"
     >
       {children}
     </button>

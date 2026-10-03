@@ -1270,7 +1270,7 @@ function OverviewTab({
               <button
                 type="button"
                 onClick={onViewActivity}
-                className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+                className="text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
               >
                 View all →
               </button>
@@ -1370,7 +1370,7 @@ function OverviewUpcomingAppointments({
         <button
           type="button"
           onClick={onViewAll}
-          className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+          className="text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
         >
           View all →
         </button>
@@ -1923,7 +1923,7 @@ function OverviewExpensesCard({
           <button
             type="button"
             onClick={onViewAll}
-            className="text-xs text-muted-foreground hover:text-foreground border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+            className="text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
           >
             View all →
           </button>
@@ -2334,7 +2334,7 @@ function TransactionsTab({
                             <button
                               type="button"
                               aria-label="Show where this money went"
-                              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
+                              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground hover:text-accent hover:bg-foreground/10 transition-colors"
                             >
                               <Info className="w-3.5 h-3.5" />
                             </button>
@@ -3361,7 +3361,7 @@ function InvoiceCanvas({
           <button
             type="button"
             onClick={addRow}
-            className="mt-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="mt-2 text-xs font-medium text-muted-foreground hover:text-accent"
           >
             + Add line
           </button>
@@ -3969,7 +3969,7 @@ function DocumentCanvas({
               type="button"
               onClick={openNew}
               disabled={!templateVendorId}
-              className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5 disabled:opacity-50"
+              className="text-[11px] text-muted-foreground hover:text-accent inline-flex items-center gap-0.5 disabled:opacity-50"
             >
               <Plus className="w-3 h-3" /> New
             </button>
@@ -4013,7 +4013,7 @@ function DocumentCanvas({
                       <button
                         type="button"
                         onClick={() => void makeDefault(row.id)}
-                        className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-1 rounded"
+                        className="text-[10px] text-muted-foreground hover:text-accent px-1.5 py-1 rounded"
                       >
                         Make default
                       </button>
@@ -4135,7 +4135,7 @@ function EmailSendingOptInCard() {
           <button
             type="button"
             aria-label="What is automated invoice delivery?"
-            className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
+            className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground hover:text-accent hover:bg-foreground/10 transition-colors"
           >
             <Info className="w-3.5 h-3.5" />
           </button>
@@ -5532,7 +5532,7 @@ function CustomersTab({
                     />
                   </th>
                   <th
-                    className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-accent"
                     onClick={() => toggleSort("name")}
                   >
                     Name {sortField === "name" ? (
@@ -5552,7 +5552,7 @@ function CustomersTab({
                     Location
                   </th>
                   <th
-                    className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-accent"
                     onClick={() => toggleSort("invoices")}
                   >
                     Invoices {sortField === "invoices" ? (
@@ -6795,7 +6795,7 @@ function ExpensesTab({
                   />
                 </th>
                 <th
-                  className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                  className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-accent"
                   onClick={() => toggleSort("date")}
                 >
                   Date {sortField === "date" ? (
@@ -6815,7 +6815,7 @@ function ExpensesTab({
                   Payee
                 </th>
                 <th
-                  className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                  className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground cursor-pointer select-none hover:text-accent"
                   onClick={() => toggleSort("amount")}
                 >
                   Total {sortField === "amount" ? (
@@ -8271,7 +8271,7 @@ function PayLinksTab({
                             <button
                               type="button"
                               onClick={() => copyLink(l.slug)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 rounded-md border border-foreground/10 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 rounded-md border border-foreground/10 px-2 py-1 text-xs text-muted-foreground hover:text-accent hover:bg-foreground/[0.04]"
                             >
                               <Copy className="w-3 h-3" />
                               Copy URL
@@ -8283,7 +8283,7 @@ function PayLinksTab({
                                 <button
                                   type="button"
                                   aria-label="Pay link actions"
-                                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-accent hover:bg-foreground/10 transition-colors"
                                 >
                                   <MoreHorizontal className="w-4 h-4" />
                                 </button>

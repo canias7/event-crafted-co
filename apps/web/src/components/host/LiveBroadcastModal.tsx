@@ -498,7 +498,7 @@ export function LiveBroadcastModal({
                 <button
                   type="button"
                   onClick={() => setShowAdvanced((v) => !v)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-xs text-muted-foreground hover:text-accent transition-colors"
                 >
                   {showAdvanced ? "Hide" : "Use OBS / Larix instead"}
                 </button>

@@ -46,7 +46,7 @@ export function SubNavTabs({
             className={`whitespace-nowrap text-sm h-8 px-3 inline-flex items-center rounded-full transition-colors ${
               active
                 ? "bg-foreground text-background"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                : "text-muted-foreground hover:text-accent hover:bg-secondary"
             }`}
           >
             {t.label}

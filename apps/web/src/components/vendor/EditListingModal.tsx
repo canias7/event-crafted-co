@@ -543,7 +543,7 @@ export function EditListingModal({
       <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <button
           onClick={attemptClose}
-          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-accent"
           aria-label="Close"
         >
           <X className="h-5 w-5" />
@@ -631,7 +631,7 @@ export function EditListingModal({
                             <button
                               type="button"
                               onClick={() => fileRef.current?.click()}
-                              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-foreground"
+                              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-accent"
                             >
                               <Upload className="h-5 w-5" />
                               <span className="text-xs">Add photo</span>
@@ -644,7 +644,7 @@ export function EditListingModal({
                       <button
                         type="button"
                         onClick={() => setPhotosExpanded((v) => !v)}
-                        className="mt-3 text-xs font-medium text-foreground hover:text-foreground"
+                        className="mt-3 text-xs font-medium text-foreground hover:text-accent"
                       >
                         {photosExpanded
                           ? `Show first ${PHOTO_GRID_CAP}`
@@ -784,7 +784,7 @@ export function EditListingModal({
                         onClick={() =>
                           setFaqs((prev) => prev.filter((_, j) => j !== i))
                         }
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-accent"
                         aria-label="Remove FAQ"
                       >
                         <Trash2 className="h-4 w-4" />

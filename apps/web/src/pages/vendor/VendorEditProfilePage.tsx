@@ -233,7 +233,7 @@ export default function VendorEditProfilePage() {
                     <button
                       type="button"
                       onClick={() => set("logo_url", null)}
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                      className="text-xs text-muted-foreground hover:text-accent"
                     >
                       Remove
                     </button>
