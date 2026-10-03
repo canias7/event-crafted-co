@@ -34,6 +34,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -393,7 +394,7 @@ export default function PartnerThreadScreen() {
                 value={draft}
                 onChangeText={setDraft}
                 placeholder="Message your partner…"
-                placeholderTextColor={INK_DIM}
+                placeholderTextColor={PLACEHOLDER}
                 multiline
                 style={{ fontFamily: SERIF,
                   flex: 1,

@@ -757,7 +757,7 @@ export default function VendorSubscriptionPage() {
 
                     <ul className="mt-3 space-y-1.5 flex-1">
                       {tier.highlights.map((h) => (
-                        <li key={h} className="flex items-start gap-1.5 text-xs text-foreground/85">
+                        <li key={h} className="flex items-start gap-1.5 text-xs text-foreground">
                           <Check className="w-3 h-3 text-accent shrink-0 mt-[3px]" />
                           <span className="inline-flex items-center gap-1">
                             {h}
@@ -1054,7 +1054,7 @@ function BillingPanel({
               type="button"
               onClick={() => openPortal("update")}
               disabled={actingId !== null}
-              className="text-xs font-medium text-foreground/70 hover:text-foreground rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
+              className="text-xs font-medium text-foreground hover:text-foreground rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
             >
               Update
             </button>
@@ -1187,7 +1187,7 @@ function BillingPanel({
                   <button
                     type="button"
                     onClick={() => setInvoicesExpanded((v) => !v)}
-                    className="mt-2 self-start text-xs font-medium text-foreground/70 hover:text-foreground"
+                    className="mt-2 self-start text-xs font-medium text-foreground hover:text-foreground"
                   >
                     {invoicesExpanded
                       ? "Show less"
@@ -1236,7 +1236,7 @@ function BillingIntervalToggle({
     `rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors ${
       active
         ? "bg-foreground text-background"
-        : "text-foreground/70 hover:text-foreground"
+        : "text-foreground hover:text-foreground"
     }`;
   return (
     <div

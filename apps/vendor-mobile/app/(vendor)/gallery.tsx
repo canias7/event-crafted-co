@@ -58,6 +58,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const ACCENT = "#1b3654";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
@@ -1106,7 +1107,7 @@ export default function GalleryScreen() {
           value={newAlbumName}
           onChangeText={setNewAlbumName}
           placeholder="Album name"
-          placeholderTextColor={INK_DIM}
+          placeholderTextColor={PLACEHOLDER}
           autoFocus
           style={{ fontFamily: SERIF, marginTop: 14, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
         />

@@ -153,7 +153,7 @@ function FieldDisplay({
     if (tags.length === 0) return null;
     return (
       <div>
-        <dt className="text-foreground/85 mb-2">{field.label}</dt>
+        <dt className="text-foreground mb-2">{field.label}</dt>
         <dd className="flex flex-wrap gap-2">
           {tags.map((t) => (
             <span

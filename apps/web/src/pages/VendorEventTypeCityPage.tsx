@@ -166,7 +166,7 @@ export default function VendorEventTypeCityPage() {
             {config.display.replace(" Vendors", "")} in{" "}
             <span className="italic font-light text-accent">{cityLabel}</span>
           </h1>
-          <p className="text-base md:text-lg text-foreground/75 max-w-2xl leading-relaxed">
+          <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
             {config.description} Showing vendors who serve {cityLabel} for{" "}
             {config.noun}.
           </p>

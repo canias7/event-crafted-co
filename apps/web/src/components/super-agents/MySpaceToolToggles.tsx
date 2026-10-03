@@ -529,7 +529,7 @@ export function MySpaceToolToggles() {
                 No listing yet — the prompt will appear once you publish one.
               </div>
             ) : (
-              <pre className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed text-foreground/80 font-mono whitespace-pre-wrap">{prompt}</pre>
+              <pre className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed text-foreground font-mono whitespace-pre-wrap">{prompt}</pre>
             )}
           </div>
         ) : null}

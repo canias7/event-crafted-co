@@ -71,6 +71,7 @@ export // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 export const BORDER = "#e5e2dc";
 export const GOLD = "#c9a86a";
 // Disabled fill for the gold pill. Same rule as the auth buttons: give
@@ -264,7 +265,7 @@ export function Input(props: ComponentProps<typeof TextInput>) {
   const { multiline } = props;
   return (
     <TextInput
-      placeholderTextColor={INK_DIM}
+      placeholderTextColor={PLACEHOLDER}
       {...props}
       style={{ fontFamily: SERIF,
         backgroundColor: "#ffffff",
@@ -348,7 +349,7 @@ export function ChipMulti({
             onBlur={commitCustom}
             autoFocus
             placeholder="Type and press return"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF,
               borderRadius: 999,
               paddingHorizontal: 14,

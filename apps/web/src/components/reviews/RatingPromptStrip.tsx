@@ -244,7 +244,7 @@ function PromptCard({
               : "Quick read on this conversation."}
           </p>
         </div>
-        <span className="shrink-0 text-xs font-medium text-foreground/70 underline underline-offset-2">
+        <span className="shrink-0 text-xs font-medium text-foreground underline underline-offset-2">
           Rate
         </span>
       </div>

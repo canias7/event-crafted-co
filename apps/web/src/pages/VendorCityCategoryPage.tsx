@@ -151,7 +151,7 @@ export default function VendorCityCategoryPage() {
             {config.display} in{" "}
             <span className="italic font-light text-accent">{cityLabel}</span>
           </h1>
-          <p className="text-base md:text-lg text-foreground/75 max-w-2xl leading-relaxed">
+          <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
             {config.longCopy} Showing the curated list of{" "}
             {config.display.toLowerCase()} serving {cityLabel}.
           </p>

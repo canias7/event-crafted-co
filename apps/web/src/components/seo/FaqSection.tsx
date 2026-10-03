@@ -55,7 +55,7 @@ export function FaqSection({
                     isOpen ? "grid-rows-[1fr] pb-6" : "grid-rows-[0fr]"
                   }`}
                 >
-                  <p className="overflow-hidden text-foreground/75 leading-relaxed">
+                  <p className="overflow-hidden text-foreground leading-relaxed">
                     {item.a}
                   </p>
                 </div>

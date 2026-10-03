@@ -87,7 +87,7 @@ export function VendorReviewsList({
                   ))}
                 </div>
                 {r.body && (
-                  <p className="text-foreground/85 leading-relaxed mb-4">
+                  <p className="text-foreground leading-relaxed mb-4">
                     "{r.body}"
                   </p>
                 )}
@@ -132,7 +132,7 @@ export function VendorReviewsList({
                     <p className="font-label text-accent mb-1.5">
                       Response from {vendorName}
                     </p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">
+                    <p className="text-sm text-foreground leading-relaxed">
                       {r.response.body}
                     </p>
                   </div>
@@ -160,7 +160,7 @@ export function VendorReviewsList({
                     />
                   ))}
                 </div>
-                <p className="text-foreground/85 leading-relaxed mb-4">
+                <p className="text-foreground leading-relaxed mb-4">
                   "{r.text}"
                 </p>
                 <div>

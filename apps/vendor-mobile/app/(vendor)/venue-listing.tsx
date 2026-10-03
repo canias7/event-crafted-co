@@ -55,6 +55,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "rgba(201,168,106,0.16)";
@@ -1330,7 +1331,7 @@ function Input(props: ComponentProps<typeof TextInput>) {
   const { multiline } = props;
   return (
     <TextInput
-      placeholderTextColor={INK_DIM}
+      placeholderTextColor={PLACEHOLDER}
       {...props}
       style={{ fontFamily: SERIF,
         backgroundColor: "#ffffff",
@@ -1415,7 +1416,7 @@ function ChipMulti({
             onBlur={commitCustom}
             autoFocus
             placeholder="Type and press return"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF,
               borderRadius: 999,
               paddingHorizontal: 14,

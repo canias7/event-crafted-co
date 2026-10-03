@@ -298,7 +298,7 @@ export function PublicNav() {
               >
                 By location
               </Link>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mt-3 mb-1">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-3 mb-1">
                 Categories
               </p>
               {sortedCategories.map((c) =>

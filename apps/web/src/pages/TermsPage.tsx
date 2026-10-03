@@ -23,7 +23,7 @@ export default function TermsPage() {
           Last updated: May 3, 2026
         </p>
 
-        <div className="space-y-8 text-foreground/80 leading-relaxed">
+        <div className="space-y-8 text-foreground leading-relaxed">
           <p>
             By using Vendora, you agree to these terms. If you don't, please
             don't use the platform. We may update these terms; meaningful
@@ -178,7 +178,7 @@ function Section({
   return (
     <section>
       <h2 className="font-editorial text-2xl mb-3">{title}</h2>
-      <div className="text-sm leading-relaxed text-foreground/80 space-y-2">
+      <div className="text-sm leading-relaxed text-foreground space-y-2">
         {children}
       </div>
     </section>

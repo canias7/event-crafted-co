@@ -949,7 +949,7 @@ export default function VendorPartnersPage() {
                           <p
                             className={`text-xs truncate ${
                               isUnread
-                                ? "text-foreground/80"
+                                ? "text-foreground"
                                 : "text-muted-foreground"
                             }`}
                           >
@@ -1168,7 +1168,7 @@ function PartnerChatPane(props: {
             type="button"
             onClick={onBack}
             aria-label="Back to threads"
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -1222,7 +1222,7 @@ function PartnerChatPane(props: {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Thread actions"
-                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -1423,7 +1423,7 @@ function PartnerChatPane(props: {
                     ) : null}
                     {!isDeleted && m.contact_info_flagged ? (
                       <p
-                        className={`text-[10px] text-muted-foreground/80 mt-0.5 inline-flex items-center gap-1 ${
+                        className={`text-[10px] text-muted-foreground mt-0.5 inline-flex items-center gap-1 ${
                           it.isMe ? "self-end pr-1" : "self-start pl-1"
                         }`}
                       >
@@ -1433,7 +1433,7 @@ function PartnerChatPane(props: {
                     ) : null}
                     {it.showTail && !isDeleted ? (
                       <p
-                        className={`text-[10px] text-muted-foreground/80 tnum mt-0.5 ${
+                        className={`text-[10px] text-muted-foreground tnum mt-0.5 ${
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >

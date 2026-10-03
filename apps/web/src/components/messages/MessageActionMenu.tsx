@@ -52,7 +52,7 @@ export function MessageActionMenu({
             aria-label="React"
             className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-sm hover:bg-secondary"
           >
-            <Smile className="w-3.5 h-3.5 text-foreground/70" />
+            <Smile className="w-3.5 h-3.5 text-foreground" />
           </button>
         </PopoverTrigger>
         <PopoverContent
@@ -84,7 +84,7 @@ export function MessageActionMenu({
               aria-label="More"
               className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-sm hover:bg-secondary"
             >
-              <MoreHorizontal className="w-3.5 h-3.5 text-foreground/70" />
+              <MoreHorizontal className="w-3.5 h-3.5 text-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isMine ? "end" : "start"}>

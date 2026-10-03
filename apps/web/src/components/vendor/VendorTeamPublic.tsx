@@ -102,7 +102,7 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
                 <p className="text-xs text-accent mt-0.5">{m.role_title}</p>
                 {m.bio && (
                   <p
-                    className={`text-sm text-foreground/75 leading-relaxed mt-3 ${
+                    className={`text-sm text-foreground leading-relaxed mt-3 ${
                       open ? "" : "line-clamp-3"
                     }`}
                   >
@@ -113,13 +113,13 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
                   <div className="mt-3 space-y-1.5">
                     {m.specialty && (
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-foreground/80 font-medium">Specialty:</span>{" "}
+                        <span className="text-foreground font-medium">Specialty:</span>{" "}
                         {m.specialty}
                       </p>
                     )}
                     {m.years_with_business && (
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-foreground/80 font-medium">
+                        <span className="text-foreground font-medium">
                           With the business:
                         </span>{" "}
                         {m.years_with_business}
@@ -146,7 +146,7 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
                   <button
                     type="button"
                     onClick={() => setExpanded(open ? null : m.id)}
-                    className="mt-3 text-xs font-medium text-foreground/80 hover:text-accent transition-colors"
+                    className="mt-3 text-xs font-medium text-foreground hover:text-accent transition-colors"
                   >
                     {open ? "Show less" : "View bio →"}
                   </button>

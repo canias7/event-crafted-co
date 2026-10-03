@@ -390,7 +390,7 @@ export default function InvoiceCheckoutPage() {
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                 Notes
               </p>
-              <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-foreground mt-1 whitespace-pre-wrap leading-relaxed">
                 {invoice.notes}
               </p>
             </section>
@@ -400,7 +400,7 @@ export default function InvoiceCheckoutPage() {
           <footer className="mt-12 pt-6 border-t border-foreground/10 flex items-center justify-between gap-4 flex-wrap text-[11px] text-muted-foreground">
             <span>Thank you for your business.</span>
             <span>
-              Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+              Powered by <span className="font-semibold text-foreground">VendoraPay</span>
             </span>
           </footer>
         </article>

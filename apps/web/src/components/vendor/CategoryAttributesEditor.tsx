@@ -462,7 +462,7 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
           if (!draft.trim()) setEditing(false);
         }}
         placeholder="Type and press Enter"
-        className="text-xs bg-transparent outline-none border-0 w-40 placeholder:text-muted-foreground/60"
+        className="text-xs bg-transparent outline-none border-0 w-40 placeholder:text-placeholder"
       />
       <button
         type="button"

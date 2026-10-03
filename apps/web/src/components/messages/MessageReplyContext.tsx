@@ -50,7 +50,7 @@ export function MessageReplyContext({
           {authorName}
         </p>
         <p
-          className="leading-snug overflow-hidden text-foreground/70"
+          className="leading-snug overflow-hidden text-foreground"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,

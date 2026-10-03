@@ -332,7 +332,7 @@ export function Lightbox({
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
                   Caption
                 </p>
-                <p className="text-sm text-foreground/90 leading-relaxed">
+                <p className="text-sm text-foreground leading-relaxed">
                   {row.caption}
                 </p>
               </div>

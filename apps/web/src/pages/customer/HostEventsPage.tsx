@@ -738,7 +738,7 @@ function UpNextHero({
       }}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground/80">
+        <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground">
           <Sparkles className="w-3 h-3" />
           {label}
           {isLive ? (
@@ -754,7 +754,7 @@ function UpNextHero({
               <button
                 type="button"
                 aria-label="Event actions"
-                className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-foreground/10 text-foreground/70 -mt-1 -mr-1"
+                className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-foreground/10 text-foreground -mt-1 -mr-1"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
@@ -780,10 +780,10 @@ function UpNextHero({
         ) : null}
       </div>
       <h3 className="font-editorial text-3xl mt-2">{event.title}</h3>
-      <p className="mt-1 text-sm text-foreground/80">{fmtDate(event.event_date)}</p>
-      {time ? <p className="text-sm text-foreground/80">{time}</p> : null}
+      <p className="mt-1 text-sm text-foreground">{fmtDate(event.event_date)}</p>
+      {time ? <p className="text-sm text-foreground">{time}</p> : null}
       {event.location ? (
-        <p className="mt-2 text-sm text-foreground/80 inline-flex items-center gap-1.5">
+        <p className="mt-2 text-sm text-foreground inline-flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5" />
           {event.location}
         </p>
@@ -909,7 +909,7 @@ function EventCard({
             ) : null}
           </div>
           {event.notes ? (
-            <p className="mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+            <p className="mt-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
               {event.notes}
             </p>
           ) : null}

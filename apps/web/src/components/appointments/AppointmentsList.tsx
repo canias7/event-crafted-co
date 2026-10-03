@@ -284,7 +284,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                 </div>
 
                 {appt.notes && (
-                  <p className="text-sm text-foreground/80 leading-relaxed border-l-2 border-border pl-3 mb-3 whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed border-l-2 border-border pl-3 mb-3 whitespace-pre-wrap">
                     {appt.notes}
                   </p>
                 )}

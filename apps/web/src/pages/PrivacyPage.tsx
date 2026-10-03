@@ -23,7 +23,7 @@ export default function PrivacyPage() {
           Last updated: May 3, 2026
         </p>
 
-        <div className="space-y-8 text-foreground/80 leading-relaxed">
+        <div className="space-y-8 text-foreground leading-relaxed">
           <p>
             Vendora is a vendor-first event marketplace. This page describes
             what we collect, how we use it, and the rights you have over your
@@ -159,7 +159,7 @@ function Section({
   return (
     <section>
       <h2 className="font-editorial text-2xl mb-3">{title}</h2>
-      <div className="text-sm leading-relaxed text-foreground/80 space-y-2">
+      <div className="text-sm leading-relaxed text-foreground space-y-2">
         {children}
       </div>
     </section>

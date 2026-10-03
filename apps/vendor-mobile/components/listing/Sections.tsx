@@ -19,6 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 
+const PLACEHOLDER = "#746a58";
+
 // ----------------------------------------------------------------------------
 // Section header — section title + add button.
 function SectionHeader({
@@ -325,6 +327,7 @@ function PackEditorModal({
                 value={draft.name}
                 onChangeText={(v) => onChange({ ...draft, name: v })}
                 placeholder="Standard package"
+                placeholderTextColor={PLACEHOLDER}
                 className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
@@ -336,6 +339,7 @@ function PackEditorModal({
                 value={draft.description}
                 onChangeText={(v) => onChange({ ...draft, description: v })}
                 placeholder="One or two sentences."
+                placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -350,6 +354,7 @@ function PackEditorModal({
                 value={draft.price}
                 onChangeText={(v) => onChange({ ...draft, price: v })}
                 placeholder="0"
+                placeholderTextColor={PLACEHOLDER}
                 keyboardType="decimal-pad"
                 className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
               />
@@ -365,6 +370,7 @@ function PackEditorModal({
                 value={draft.includes}
                 onChangeText={(v) => onChange({ ...draft, includes: v })}
                 placeholder={"4 hours of coverage\nEdited photo gallery\nLocation scouting"}
+                placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={5}
                 textAlignVertical="top"
@@ -584,6 +590,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                     setEditing({ ...editing, question: v })
                   }
                   placeholder="Do you travel for events?"
+                  placeholderTextColor={PLACEHOLDER}
                   className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
                 />
               </View>
@@ -595,6 +602,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   value={editing.answer}
                   onChangeText={(v) => setEditing({ ...editing, answer: v })}
                   placeholder="Yes, we cover anywhere within 100 miles…"
+                  placeholderTextColor={PLACEHOLDER}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -715,6 +723,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           value={depositPct}
           onChangeText={setDepositPct}
           placeholder="25"
+          placeholderTextColor={PLACEHOLDER}
           keyboardType="number-pad"
           className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
         />
@@ -741,6 +750,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           value={reschedule}
           onChangeText={setReschedule}
           placeholder="14"
+          placeholderTextColor={PLACEHOLDER}
           keyboardType="number-pad"
           className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
         />
@@ -751,6 +761,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           value={notes}
           onChangeText={setNotes}
           placeholder="Any additional terms hosts should know."
+          placeholderTextColor={PLACEHOLDER}
           multiline
           numberOfLines={3}
           textAlignVertical="top"

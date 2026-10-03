@@ -147,7 +147,7 @@ export function AxionStoryboardDemo() {
         active={stage !== "idle"}
       >
         <div
-          className="relative font-mono text-[11.5px] leading-[1.5] text-foreground/85 rounded-xl p-2.5 min-h-[80px] max-h-[90px] overflow-y-auto"
+          className="relative font-mono text-[11.5px] leading-[1.5] text-foreground rounded-xl p-2.5 min-h-[80px] max-h-[90px] overflow-y-auto"
           style={{
             background: "rgba(255,255,255,0.35)",
             border: "0.5px solid rgba(0,0,0,0.08)",
@@ -342,7 +342,7 @@ function StoryboardPanel({
         className="flex items-center justify-between pb-1.5 mb-2"
         style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
       >
-        <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] font-medium text-foreground/75">
+        <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] font-medium text-foreground">
           <span
             className="font-mono text-[9px]"
             style={{ color: "#18181b", opacity: 0.85 }}

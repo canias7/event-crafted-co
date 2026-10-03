@@ -1469,7 +1469,7 @@ export default function WebsiteBuilderPage() {
                       if (e.key === "Enter") renameSlug();
                       if (e.key === "Escape") setRenameOpen(false);
                     }}
-                    className="bg-transparent text-[12px] text-white outline-none w-44"
+                    className="bg-transparent text-[12px] text-white outline-none w-44 placeholder:text-gray-400"
                     placeholder="my-event-slug"
                     disabled={renameBusy}
                   />

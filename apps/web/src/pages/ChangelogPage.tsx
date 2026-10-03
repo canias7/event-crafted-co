@@ -76,7 +76,7 @@ export default function ChangelogPage() {
             What we've been{" "}
             <span className="italic font-light text-accent">shipping.</span>
           </h1>
-          <p className="text-base md:text-lg text-foreground/75 max-w-2xl leading-relaxed">
+          <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
             A running log of every notable feature, improvement, and fix
             we've shipped. Updated whenever something user-visible lands —
             no marketing fluff, just the work.
@@ -120,7 +120,7 @@ export default function ChangelogPage() {
                         <h3 className="font-editorial text-xl leading-tight mb-1.5">
                           {entry.title}
                         </h3>
-                        <p className="text-sm text-foreground/75 leading-relaxed max-w-2xl">
+                        <p className="text-sm text-foreground leading-relaxed max-w-2xl">
                           {entry.description}
                         </p>
                       </li>

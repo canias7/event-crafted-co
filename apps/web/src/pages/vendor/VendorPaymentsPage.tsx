@@ -2334,7 +2334,7 @@ function TransactionsTab({
                             <button
                               type="button"
                               aria-label="Show where this money went"
-                              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors"
+                              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
                             >
                               <Info className="w-3.5 h-3.5" />
                             </button>
@@ -2354,7 +2354,7 @@ function TransactionsTab({
                                 <span className="text-muted-foreground">
                                   VendoraPay fees
                                   {Math.abs(t.amount_cents) > 0 ? (
-                                    <span className="text-muted-foreground/70">
+                                    <span className="text-muted-foreground">
                                       {" "}({((t.fee_cents / Math.abs(t.amount_cents)) * 100).toFixed(1)}%)
                                     </span>
                                   ) : null}
@@ -3430,7 +3430,7 @@ function InvoiceCanvas({
         >
           <span>Thank you for your business.</span>
           <span>
-            Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+            Powered by <span className="font-semibold text-foreground">VendoraPay</span>
           </span>
         </footer>
       </div>
@@ -3890,7 +3890,7 @@ function DocumentCanvas({
           >
             <span>{displayName}</span>
             <span>
-              Powered by <span className="font-semibold text-foreground/70">VendoraPay</span>
+              Powered by <span className="font-semibold text-foreground">VendoraPay</span>
             </span>
           </footer>
         </div>
@@ -4135,7 +4135,7 @@ function EmailSendingOptInCard() {
           <button
             type="button"
             aria-label="What is automated invoice delivery?"
-            className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-colors"
+            className="inline-flex items-center justify-center w-4 h-4 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
           >
             <Info className="w-3.5 h-3.5" />
           </button>

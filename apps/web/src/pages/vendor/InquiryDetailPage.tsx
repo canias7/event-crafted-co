@@ -912,7 +912,7 @@ export default function InquiryDetailPage() {
           <Link
             to="/vendor/inbox"
             aria-label="Back to inbox"
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -974,7 +974,7 @@ export default function InquiryDetailPage() {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Inquiry details"
-                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -1252,7 +1252,7 @@ export default function InquiryDetailPage() {
                         left edge of theirs. */}
                     {it.showTail ? (
                       <p
-                        className={`text-[10px] text-muted-foreground/80 tnum mt-0.5 ${
+                        className={`text-[10px] text-muted-foreground tnum mt-0.5 ${
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
@@ -1644,7 +1644,7 @@ function InquiryIntakeCard({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-background/90 backdrop-blur-sm border border-border/40 text-foreground/70 rounded-full px-2.5 py-1 shadow-sm">
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-background/90 backdrop-blur-sm border border-border/40 text-foreground rounded-full px-2.5 py-1 shadow-sm">
           <Sparkles className="w-3 h-3 text-accent" />
           New inquiry
         </span>
@@ -1696,7 +1696,7 @@ function InquiryIntakeCard({
               {intakeEntries.map(([label, val]) => (
                 <div key={label} className="flex items-start gap-2 text-xs">
                   <span className="text-muted-foreground shrink-0">{label}:</span>
-                  <span className="text-foreground/90">{val}</span>
+                  <span className="text-foreground">{val}</span>
                 </div>
               ))}
             </div>

@@ -20,7 +20,7 @@ const BORDER = "#e6e1d5";
 const INK = "#14161a";
 const GOLD = "#c9a86a";
 const WHITE = "#ffffff";
-const PLACEHOLDER = "#a49f93";
+const PLACEHOLDER = "#746a58";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 

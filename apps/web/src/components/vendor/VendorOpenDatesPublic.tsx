@@ -60,7 +60,7 @@ export function VendorOpenDatesPublic({ vendorId }: { vendorId: string }) {
         This vendor has open dates coming up
       </p>
       {message && (
-        <p className="text-sm text-foreground/75 leading-relaxed mb-3">{message}</p>
+        <p className="text-sm text-foreground leading-relaxed mb-3">{message}</p>
       )}
       <div className="flex flex-wrap gap-2">
         {dates.map((d) => (

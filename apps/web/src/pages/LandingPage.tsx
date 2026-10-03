@@ -358,7 +358,7 @@ export default function LandingPage() {
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="What are you planning?"
-                    className="w-full bg-transparent text-[14px] outline-none placeholder:text-black/40"
+                    className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
                     style={{ color: INK }}
                   />
                 </div>
@@ -371,7 +371,7 @@ export default function LandingPage() {
                     value={loc}
                     onChange={(e) => setLoc(e.target.value)}
                     placeholder="Location"
-                    className="w-full bg-transparent text-[14px] outline-none placeholder:text-black/40"
+                    className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
                     style={{ color: INK }}
                   />
                 </div>

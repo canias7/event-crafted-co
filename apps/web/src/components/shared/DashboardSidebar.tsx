@@ -164,7 +164,7 @@ export function DashboardSidebar({
         {!collapsed && <span className="truncate flex-1">{label}</span>}
         {showBalance && (
           <span
-            className="text-[11px] font-medium tnum shrink-0 text-foreground/70"
+            className="text-[11px] font-medium tnum shrink-0 text-foreground"
             aria-label={`${liveBalance.toLocaleString()} credits`}
           >
             {liveBalance.toLocaleString()}
@@ -172,7 +172,7 @@ export function DashboardSidebar({
         )}
         {hasChildren && !collapsed && (
           <ChevronDown
-            className={`w-3.5 h-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-200 ${
+            className={`w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${
               expanded ? "" : "-rotate-90"
             }`}
             aria-hidden="true"

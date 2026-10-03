@@ -31,7 +31,7 @@ export default function AccountDeletionPage() {
           <strong>Vendora for Vendors</strong> apps. Last updated: June 17, 2026.
         </p>
 
-        <div className="space-y-8 text-foreground/80 leading-relaxed">
+        <div className="space-y-8 text-foreground leading-relaxed">
           <p>
             You can permanently delete your Vendora account and its associated
             data at any time. Here's how, and exactly what happens to your data.
@@ -142,7 +142,7 @@ function Section({
   return (
     <section>
       <h2 className="font-editorial text-2xl mb-3">{title}</h2>
-      <div className="text-sm leading-relaxed text-foreground/80 space-y-2">
+      <div className="text-sm leading-relaxed text-foreground space-y-2">
         {children}
       </div>
     </section>

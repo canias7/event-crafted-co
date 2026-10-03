@@ -32,6 +32,8 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+const PLACEHOLDER = "#746a58";
+
 interface VendorResult {
   id: string;
   user_id: string | null;
@@ -184,7 +186,7 @@ export default function FindVendorScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder="Search vendors by business name"
-            placeholderTextColor="#a3a3a3"
+            placeholderTextColor={PLACEHOLDER}
             autoFocus
             autoCapitalize="none"
             autoCorrect={false}

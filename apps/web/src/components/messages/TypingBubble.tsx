@@ -20,7 +20,7 @@ export function TypingBubble({ withAvatarSpacer, label }: Props) {
       {withAvatarSpacer ? <span className="shrink-0 w-6" aria-hidden /> : null}
       <div className="flex flex-col items-start gap-0.5">
         {label ? (
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 px-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-1">
             {label}
           </span>
         ) : null}

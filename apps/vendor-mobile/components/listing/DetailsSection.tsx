@@ -25,6 +25,8 @@ import {
 } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 
+const PLACEHOLDER = "#746a58";
+
 type AttrValue = string | number | boolean | string[] | null;
 type Attrs = Record<string, AttrValue>;
 
@@ -206,6 +208,7 @@ function FieldEditor({
               onChange(Number.isFinite(num) ? num : null);
             }}
             placeholder="0"
+            placeholderTextColor={PLACEHOLDER}
             keyboardType={field.type === "int" ? "number-pad" : "decimal-pad"}
             className="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
           />
@@ -335,7 +338,7 @@ function TagsField({
               value={draft}
               onChangeText={setDraft}
               placeholder="Type and add"
-              placeholderTextColor="rgba(26,22,18,0.4)"
+              placeholderTextColor={PLACEHOLDER}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={commit}

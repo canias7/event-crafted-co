@@ -20,39 +20,39 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1">
             <h3 className="font-editorial text-2xl mb-4">Vendora</h3>
-            <p className="text-sm opacity-70 leading-relaxed max-w-xs">
+            <p className="text-sm leading-relaxed max-w-xs">
               {t("footer.tagline")}
             </p>
           </div>
           <div>
-            <p className="font-label mb-4 opacity-50">{t("footer.vendors")}</p>
+            <p className="font-label mb-4 text-accent">{t("footer.vendors")}</p>
             <div className="space-y-3">
-              <Link to="/vendors" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.browse")}</Link>
-              <Link to="/vendors/locations" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">{t("footer.by_location")}</Link>
-              <Link to="/explore" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">Explore</Link>
+              <Link to="/vendors" className="block text-sm">{t("footer.browse")}</Link>
+              <Link to="/vendors/locations" className="block text-sm">{t("footer.by_location")}</Link>
+              <Link to="/explore" className="block text-sm">Explore</Link>
             </div>
           </div>
           <div>
-            <p className="font-label mb-4 opacity-50">{t("footer.legal")}</p>
+            <p className="font-label mb-4 text-accent">{t("footer.legal")}</p>
             <div className="space-y-3">
-              <Link to="/privacy" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">
+              <Link to="/privacy" className="block text-sm">
                 {t("footer.privacy")}
               </Link>
-              <Link to="/terms" className="block text-sm opacity-70 hover:opacity-100 transition-opacity">
+              <Link to="/terms" className="block text-sm">
                 {t("footer.terms")}
               </Link>
               <a
                 href="mailto:hello@eventvendora.com"
-                className="block text-sm opacity-70 hover:opacity-100 transition-opacity"
+                className="block text-sm"
               >
                 hello@eventvendora.com
               </a>
             </div>
           </div>
         </div>
-        <div className="mt-16 pt-8 border-t border-foreground/10 flex items-center justify-between gap-3 text-sm opacity-60 flex-wrap">
+        <div className="mt-16 pt-8 border-t border-foreground/10 flex items-center justify-between gap-3 text-sm flex-wrap">
           <p>© {new Date().getFullYear()} Vendora. {t("footer.rights")}</p>
-          <LanguageSwitcher tone="dark" />
+          <LanguageSwitcher tone="light" />
         </div>
       </div>
     </footer>

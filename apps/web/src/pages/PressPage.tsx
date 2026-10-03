@@ -94,7 +94,7 @@ export default function PressPage() {
             Everything you need to{" "}
             <span className="italic font-light text-accent">write about us.</span>
           </h1>
-          <p className="text-base md:text-lg text-foreground/75 max-w-2xl leading-relaxed mb-8">
+          <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed mb-8">
             Logos, screenshots, the elevator pitch, and a real human you can
             email. If you need anything that's not here, ask — we'd rather
             send the right asset than have you ship the wrong one.
@@ -164,7 +164,7 @@ export default function PressPage() {
                 <dt className="text-xs uppercase tracking-[0.3em] text-accent mb-1.5">
                   {f.label}
                 </dt>
-                <dd className="text-base text-foreground/80 leading-relaxed">
+                <dd className="text-base text-foreground leading-relaxed">
                   {f.body}
                 </dd>
               </div>
@@ -199,7 +199,7 @@ export default function PressPage() {
           <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
             The wordmark uses our display typeface and works on dark or
             light. Don't reproduce the mark on a colored background other
-            than #0a0a0a or #ffffff. Don't add effects, gradients, drop
+            than #14161a or #ffffff. Don't add effects, gradients, drop
             shadows, or rotate it.
           </p>
 
@@ -223,15 +223,19 @@ export default function PressPage() {
           </div>
 
           <h3 className="font-editorial text-2xl mb-4">Color palette</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {[
-              { name: "Ink", hex: "#0A0A0A", swatch: "bg-foreground" },
-              { name: "Cream", hex: "#FAF7F2", swatch: "bg-background border border-border" },
-              { name: "Accent", hex: "#A08259", swatch: "bg-accent" },
-              { name: "Muted", hex: "#8B8580", swatch: "bg-muted-foreground" },
+              { name: "Ink", hex: "#14161A" },
+              { name: "Ivory", hex: "#F4F1EA", light: true },
+              { name: "Cream", hex: "#FBF9F4", light: true },
+              { name: "Bronze", hex: "#8A6F3E" },
+              { name: "Champagne", hex: "#C9A86A" },
             ].map((c) => (
               <div key={c.name}>
-                <div className={`h-16 rounded-2xl ${c.swatch}`} />
+                <div
+                  className={`h-16 rounded-2xl ${c.light ? "border border-border" : ""}`}
+                  style={{ backgroundColor: c.hex }}
+                />
                 <p className="font-display text-sm mt-2">{c.name}</p>
                 <p className="text-[11px] text-muted-foreground tnum">{c.hex}</p>
               </div>
@@ -286,7 +290,7 @@ export default function PressPage() {
           <h2 className="font-editorial text-4xl md:text-4xl mb-3">
             Let's talk
           </h2>
-          <p className="text-base text-foreground/75 mb-8 leading-relaxed max-w-xl mx-auto">
+          <p className="text-base text-foreground mb-8 leading-relaxed max-w-xl mx-auto">
             Editorial requests, interviews, partnership inquiries — we
             actually read these and reply within a business day.
           </p>
