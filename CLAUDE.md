@@ -27,6 +27,49 @@ What Claude does NOT have direct shell access to:
 
 - **`bunx expo install` writes to the ROOT `package.json`**, not the app's, even when run from inside `apps/<app>-mobile`. If you add packages to render an app headlessly (react-native-web, react-dom, @expo/metro-runtime), reverting `apps/<app>-mobile/package.json` does NOT undo it — check `git status` at the repo root before committing. Leaving them in desyncs `bun.lock`, and every OTA then dies on `bun install --frozen-lockfile` with "lockfile had changes, but lockfile is frozen".
 
+## Brand system (locked with the owner, Oct 2026)
+
+Applies to the website (`apps/web`) and both apps. Use these tokens and rules; don't introduce new colours, fonts or styles. If something doesn't fit, ask the owner.
+
+**Colours**
+
+| Role | Value | Web token | App constant |
+|---|---|---|---|
+| Ink: all text, "done" pills | `#14161a` | `foreground`, `primary`, `muted-foreground` | `INK`, `INK_DIM` |
+| Ivory page | `#f4f1ea` | `background` (`#f4f2eb`) | `PAGE` / `CREAM` |
+| Cream card, fields | `#fbf9f4` | `card` | `CARD` / `INPUT_BG` |
+| Surface: chips, neutral pills | `#ece7db` | `muted`, `secondary` | `SURFACE` / `CREAM_DEEP` |
+| Hairline border | `#e6e1d5` | `border` | `BORDER` |
+| Bronze: gold *text* on light | `#8a6f3e` | `accent` | `BRONZE` |
+| Champagne: ornament, fills, unread dots, gold on dark | `#c9a86a` | `gold` | `GOLD` |
+| Gold tint: "waiting" | `#f2e7cb` | `pending` | `PENDING_BG` |
+| Red: errors, delete, problems | `#b23a34` | `destructive` | `ERROR` |
+| Placeholder text | `#746a58` | `placeholder` (a base rule covers bare inputs) | `PLACEHOLDER` / `SUBTLE` |
+
+- **No grey text.** Text is ink or bronze. Don't use Tailwind palette colours (`slate`, `zinc`, `gray`, `emerald`, `rose`, `sky`…) or one-off hexes. Grey icons are fine.
+- **Status language:** done = ink pill (`bg-primary text-primary-foreground`), waiting = bronze on gold tint (`bg-pending text-accent`), problem = red on its tint (`bg-destructive/10 text-destructive`), neutral = `bg-muted text-foreground`. Lead temperature: hot red, warm gold, cold neutral. Verified marks are bronze. Money in is bronze, money out ink.
+- **Links hover to bronze** (`hover:text-accent`), never `hover:text-foreground`, which changes nothing now that text is ink.
+- **Green is only for live signals:** online and "active now" dots, the status page's "operational". The green "Active now" text in both apps stays (owner's call).
+- Fields on dark surfaces keep a light placeholder.
+
+**Fonts**
+
+- **Libre Baskerville for all text** (headlines, body, labels, buttons, tables) on the website and in both apps. No Inter or other faces. The only exceptions are the signature script and monospace code.
+- **Titles are bold and upright**: on the web, h1–h6, `font-editorial` and `font-display`; in the apps, `SERIF_BOLD`. Highlighted words in a title are upright too (just `text-accent`).
+- **Italic is only for** quotes, bios, captions and state notes like "message deleted", at regular weight (`font-serif italic` / `SERIF_ITALIC`).
+- Labels and buttons are bold. Baskerville only has 400 and 700, plus 400 italic, so `font-medium` renders as regular and `font-semibold` as bold.
+- `.font-editorial` is a custom utility, emitted after Tailwind's core utilities. It beats `not-italic`/`font-normal` on the same element, so don't combine them expecting the core class to win.
+- The logo wordmark (`VendoraLogo`) is italic regular. Leave it.
+
+**Deliberately different (don't "fix")**
+
+- The Stripe-style pay-link creator and its outlined status pills (`PayLinksTab` in `VendorPaymentsPage`), by owner request.
+- The website builder, the AI-site pages (`MySites`, `SiteRsvps`, `PublicAiSite`) and the MySpace AI screens (`components/super-agents`).
+- Sign-in area colours (`GlassyAuthShell`, `pages/auth`), pending a redesign.
+- Proposal and invoice document palettes, media players' black backgrounds, and avatar colour palettes.
+
+**When changing UI:** keep text at 4.5:1 contrast or better. Baskerville is wider than a sans, so check phone width (390px) for sideways overflow.
+
 ## Mobile apps (host-mobile + vendor-mobile)
 
 **Cross-platform by default**: any mobile change applies to BOTH iOS and Android unless explicitly stated otherwise. JS code (components, styles, business logic) runs identically on both via React Native, so the same edit covers both platforms. For full rebuilds, run iOS *and* Android.
@@ -38,7 +81,7 @@ Both apps have `expo-updates` wired up, so JS-only changes ship via OTA instead 
 - **JS-only change** (components, styling, copy, business logic) → `cd apps/<app>-mobile && eas update --branch production --message "..."`. Picks up on next launch.
 - **Native change** (new package with native code, `Info.plist`, app icon, splash) → bump `runtimeVersion` in `app.json` and rebuild via `eas build --platform all --profile production --auto-submit`.
 
-`runtimeVersion` is a **fixed string** (`"1"`) — NOT `{ policy: "appVersion" }`. The appVersion policy caused OTAs to silently target a runtimeVersion that no installed app was running, since bumping `version` to cut a new build also bumped the runtime. With a fixed string, OTA reaches every install until you intentionally bump the string.
+`runtimeVersion` is a **fixed string** per app (vendor-mobile `"2"`, host-mobile `"1"`) — NOT `{ policy: "appVersion" }`. The appVersion policy caused OTAs to silently target a runtimeVersion that no installed app was running, since bumping `version` to cut a new build also bumped the runtime. With a fixed string, OTA reaches every install until you intentionally bump the string.
 
 ### OTA from a cloud / sandbox session (no `eas login`)
 
@@ -55,7 +98,7 @@ git commit -am "Trigger OTA: both apps"
 git push -u origin trigger-ota/<short-tag>
 ```
 
-Watch the run at https://github.com/canias7/event-crafted-co/actions. After it completes, you can delete the trigger branch.
+Watch the run at https://github.com/canias7/event-crafted-co/actions. After it completes, the trigger branch can be deleted. Claude's git credential can't delete branches (or push tags), so ask the owner to delete it.
 
 Workflow_dispatch is also available (lets you pick `vendor` / `host` / `both` explicitly) but no MCP tool currently invokes it — so push-trigger with the default override is the path.
 
