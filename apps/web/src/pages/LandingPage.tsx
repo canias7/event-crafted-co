@@ -729,7 +729,7 @@ export default function LandingPage() {
       {/* ═══════════════ FOOTER — premium dark ═══════════════ */}
       <footer
         className="px-6 pt-16 pb-8 md:px-10"
-        style={{ backgroundColor: "#101216", borderTop: "1px solid rgba(201,168,106,0.2)" }}
+        style={{ backgroundColor: "#14161a", borderTop: "1px solid rgba(201,168,106,0.2)" }}
       >
         <div className="mx-auto mb-12 grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>

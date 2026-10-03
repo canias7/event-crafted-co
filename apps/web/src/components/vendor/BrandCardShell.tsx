@@ -116,7 +116,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
 // absolute` to overlay the front and Tailwind's `relative` utility
 // would otherwise win the cascade and stack the back below.
 const SHELL_OUTER_CLASSES =
-  "overflow-hidden rounded-3xl border border-[#e4e4e7] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)] px-6 py-7 sm:px-8 sm:py-8";
+  "overflow-hidden rounded-3xl border border-border shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)] px-6 py-7 sm:px-8 sm:py-8";
 
 // Radial sun + four horizontal cream ripple lines used on the front
 // face. Decorative; sits behind every other content.

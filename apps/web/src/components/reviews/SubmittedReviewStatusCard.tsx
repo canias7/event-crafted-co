@@ -158,7 +158,7 @@ function StatusTile({
             background: waiting
               ? "rgba(0,0,0,0.04)"
               : "rgba(0,0,0,0.08)",
-            color: waiting ? "#666" : "#18181b",
+            color: waiting ? "#8a6f3e" : "#14161a",
           }}
           aria-hidden
         >

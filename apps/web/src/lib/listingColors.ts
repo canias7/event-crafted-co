@@ -4,7 +4,7 @@
 // Each listing gets a stable color by its index in the account's listing
 // list; the palette cycles if there are more listings than colors.
 export const LISTING_PALETTE = [
-  "#18181b", // ink
+  "#14161a", // ink
   "#2563eb", // blue
   "#0a7c4a", // green
   "#9333ea", // purple

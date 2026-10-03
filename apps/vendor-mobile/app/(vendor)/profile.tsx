@@ -78,11 +78,11 @@ function statusRank(s: string | null): number {
 // Status pill copy + tones for a listing card (matches web's Live /
 // Pending review / Rejected / Draft directory-card pills).
 function statusMeta(s: string | null): { label: string; bg: string; fg: string } {
-  if (s === "approved") return { label: "Live", bg: "#d1fae5", fg: "#047857" };
-  if (s === "rejected") return { label: "Rejected", bg: "#fee2e2", fg: "#b91c1c" };
+  if (s === "approved") return { label: "Live", bg: INK, fg: WHITE };
+  if (s === "rejected") return { label: "Rejected", bg: "#f7ece9", fg: "#b23a34" };
   if (s === "pending" || s === "submitted")
-    return { label: "Pending review", bg: "rgba(20,22,26,0.08)", fg: "#374151" };
-  return { label: "Draft", bg: "rgba(20,22,26,0.08)", fg: "#374151" };
+    return { label: "Pending review", bg: "#f2e7cb", fg: BRONZE };
+  return { label: "Draft", bg: SURFACE, fg: INK };
 }
 
 // Studio-tier verified seal — the 16-point starburst + check used on
@@ -92,7 +92,7 @@ function StudioBadge({ size = 20 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 64 64">
       <Path
         d="M32 2 L36 6.5 L42 4.5 L44 10 L50 10 L50 16 L55.5 18 L53.5 24 L58 28 L54 32 L58 36 L53.5 40 L55.5 46 L50 48 L50 54 L44 54 L42 59.5 L36 57.5 L32 62 L28 57.5 L22 59.5 L20 54 L14 54 L14 48 L8.5 46 L10.5 40 L6 36 L10 32 L6 28 L10.5 24 L8.5 18 L14 16 L14 10 L20 10 L22 4.5 L28 6.5 Z"
-        fill="#1d6dde"
+        fill={BRONZE}
       />
       <Path
         d="M21 33 L29 41 L44 24"

@@ -151,7 +151,7 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          icon={<Check className="w-7 h-7 text-emerald-600" />}
+          icon={<Check className="w-7 h-7 text-accent" />}
           title="Payment received"
           sub={
             <span>
@@ -252,7 +252,7 @@ export default function InvoiceCheckoutPage() {
         </div>
         {invoice.vendor_can_accept === false ? (
           <div className="max-w-3xl mx-auto px-4 sm:px-8 pb-3 -mt-1">
-            <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <p className="text-[12px] text-accent bg-pending border border-accent/25 rounded-lg px-3 py-2">
               Heads up — this vendor is still finishing their payment setup, so
               online payment may not be available just yet. You can review the
               invoice below in the meantime.
@@ -437,7 +437,7 @@ function Centered({
   return (
     <div className="max-w-md mx-auto px-4 py-24 text-center">
       {icon ? (
-        <div className="w-14 h-14 rounded-full bg-emerald-50 inline-flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-full bg-pending inline-flex items-center justify-center mb-4">
           {icon}
         </div>
       ) : null}

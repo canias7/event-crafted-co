@@ -430,7 +430,7 @@ export function ChatSendPicker({
                 className="w-full text-[13px] leading-relaxed rounded-md border border-input bg-background px-3 py-2 resize-y"
               />
               {/\[[^\]]+\]/.test(editing.body) ? (
-                <p className="text-[11px] text-amber-700">
+                <p className="text-[11px] text-accent">
                   Heads up — there are still unfilled [placeholders] in the{" "}
                   {editing.mode}.
                 </p>

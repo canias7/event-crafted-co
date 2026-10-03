@@ -45,18 +45,18 @@ const LEAD_SCORE_STYLE: Record<
   { dot: string; text: string; label: string }
 > = {
   hot: {
-    dot: "bg-rose-500",
-    text: "text-rose-700",
+    dot: "bg-destructive",
+    text: "text-destructive",
     label: "Hot",
   },
   warm: {
-    dot: "bg-zinc-800",
-    text: "text-zinc-800",
+    dot: "bg-accent",
+    text: "text-accent",
     label: "Warm",
   },
   cold: {
-    dot: "bg-sky-500",
-    text: "text-sky-700",
+    dot: "bg-foreground/30",
+    text: "text-foreground",
     label: "Cold",
   },
 };
@@ -334,12 +334,12 @@ export default function VendorInboxPage() {
               <h1 className="font-editorial text-3xl">
                 Inbox
                 {totalCount !== null ? (
-                  <span className="ml-2 align-middle text-base font-bold text-[#1a1208]/70">
+                  <span className="ml-2 align-middle text-base font-bold text-foreground">
                     {totalCount}
                   </span>
                 ) : null}
               </h1>
-              <p className="text-sm font-bold text-[#1a1208]">
+              <p className="text-sm font-bold text-foreground">
                 Conversations with hosts — every message in one place
               </p>
             </div>
@@ -352,12 +352,12 @@ export default function VendorInboxPage() {
 
         <div className="p-4 md:p-8 max-w-3xl">
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1a1208]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by host, event type, location, or date"
-              className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1 font-bold text-[#1a1208] placeholder:text-[#1a1208] placeholder:font-bold"
+              className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1 font-bold text-foreground placeholder:text-foreground placeholder:font-bold"
             />
           </div>
 
@@ -367,9 +367,9 @@ export default function VendorInboxPage() {
           <div className="mb-4 flex items-center gap-1.5 overflow-x-auto">
             {([
               { key: "all", label: "All", count: totalCount ?? rows.length, dot: "" },
-              { key: "hot", label: "Hot", count: leadCounts.hot, dot: "bg-rose-500" },
-              { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-zinc-800" },
-              { key: "cold", label: "Cold", count: leadCounts.cold, dot: "bg-sky-500" },
+              { key: "hot", label: "Hot", count: leadCounts.hot, dot: "bg-destructive" },
+              { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-accent" },
+              { key: "cold", label: "Cold", count: leadCounts.cold, dot: "bg-foreground/30" },
             ] as const).map((pill) => {
               const active = leadFilter === pill.key;
               return (
@@ -434,13 +434,13 @@ export default function VendorInboxPage() {
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                 <Inbox className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="font-display text-xl font-bold text-[#1a1208]">
+              <p className="font-display text-xl font-bold text-foreground">
                 {rows.length === 0
                   ? "No inquiries yet"
                   : "Nothing matches that search"}
               </p>
               {rows.length === 0 ? (
-                <p className="text-sm font-bold text-[#1a1208] mt-2 max-w-sm mx-auto">
+                <p className="text-sm font-bold text-foreground mt-2 max-w-sm mx-auto">
                   When a host sends you an inquiry, the conversation will land
                   here.
                 </p>
@@ -529,7 +529,7 @@ function ConversationRow({
           title={isUnread ? "Unread" : undefined}
         >
           {isUnread ? (
-            <span className="block w-2 h-2 rounded-full bg-blue-500" />
+            <span className="block w-2 h-2 rounded-full bg-gold" />
           ) : null}
         </span>
 
@@ -546,7 +546,7 @@ function ConversationRow({
             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold"
             style={{
               background: "rgba(0,0,0,0.08)",
-              color: "#18181b",
+              color: "#14161a",
             }}
             aria-hidden
           >

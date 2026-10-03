@@ -42,11 +42,11 @@ function fmtDate(iso: string | null): string {
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string; icon: "check" | "clock" }> = {
-    sent: { label: "Awaiting", cls: "bg-amber-100 text-amber-800", icon: "clock" },
-    accepted: { label: "Accepted", cls: "bg-emerald-100 text-emerald-700", icon: "check" },
-    cancelled: { label: "Cancelled", cls: "bg-slate-100 text-slate-600", icon: "clock" },
+    sent: { label: "Awaiting", cls: "bg-pending text-accent", icon: "clock" },
+    accepted: { label: "Accepted", cls: "bg-primary text-primary-foreground", icon: "check" },
+    cancelled: { label: "Cancelled", cls: "bg-muted text-foreground", icon: "clock" },
   };
-  const m = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600", icon: "clock" as const };
+  const m = map[status] ?? { label: status, cls: "bg-muted text-foreground", icon: "clock" as const };
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.cls}`}

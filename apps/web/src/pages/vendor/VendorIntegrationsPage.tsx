@@ -68,7 +68,7 @@ const CONNECTORS: Connector[] = [
       <BrandMark bg="rgba(0,0,0,0.08)">
         <span
           className="font-bold text-lg tracking-tight"
-          style={{ color: "#18181b" }}
+          style={{ color: "#14161a" }}
         >
           V
         </span>
@@ -256,7 +256,7 @@ export default function VendorIntegrationsPage() {
                             {c.kind === "vendorapay" &&
                             vendorapayConnected &&
                             !chargesEnabled ? (
-                              <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                              <span className="inline-flex items-center rounded-full bg-muted text-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                 Pending KYC
                               </span>
                             ) : null}
@@ -297,7 +297,7 @@ function StatusPill({
 }) {
   if (status === "connected") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
         <Check className="w-2.5 h-2.5" />
         Connected
       </span>

@@ -88,9 +88,9 @@ interface Inquiry {
 }
 
 const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string; label: string }> = {
-  hot: { bg: "bg-rose-100", text: "text-rose-700", label: "Hot lead" },
-  warm: { bg: "bg-zinc-100", text: "text-zinc-800", label: "Warm lead" },
-  cold: { bg: "bg-sky-100", text: "text-sky-700", label: "Cold lead" },
+  hot: { bg: "bg-destructive/10", text: "text-destructive", label: "Hot lead" },
+  warm: { bg: "bg-pending", text: "text-accent", label: "Warm lead" },
+  cold: { bg: "bg-muted", text: "text-foreground", label: "Cold lead" },
 };
 
 interface Message {
@@ -927,7 +927,7 @@ export default function InquiryDetailPage() {
             ) : (
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
+                style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
                 aria-hidden
               >
                 {initial}
@@ -1115,7 +1115,7 @@ export default function InquiryDetailPage() {
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
                             background: "rgba(0,0,0,0.08)",
-                            color: "#18181b",
+                            color: "#14161a",
                           }}
                           aria-hidden
                         >
@@ -1662,7 +1662,7 @@ function InquiryIntakeCard({
             className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold mt-2"
             style={{
               background: "rgba(0,0,0,0.08)",
-              color: "#18181b",
+              color: "#14161a",
             }}
             aria-hidden
           >

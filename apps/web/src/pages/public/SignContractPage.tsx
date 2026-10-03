@@ -197,26 +197,26 @@ export default function SignContractPage() {
           <div className="border-t border-foreground/10 mt-6 pt-6">
             {isSigned ? (
               <div className="space-y-4">
-                <div className="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-                  <div className="w-9 h-9 rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
+                <div className="flex items-start gap-3 rounded-xl bg-muted border border-border p-4">
+                  <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground inline-flex items-center justify-center shrink-0">
                     <Check className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-emerald-900">
+                    <p className="font-semibold text-foreground">
                       Signed by {contract.signer_name}
                     </p>
-                    <p className="text-sm text-emerald-800/80">
+                    <p className="text-sm text-foreground">
                       {fmtDate(contract.signed_at)}
                     </p>
                     {contract.signature_image ? (
                       <img
                         src={contract.signature_image}
                         alt="Signature"
-                        className="mt-2 h-14 bg-white rounded border border-emerald-200"
+                        className="mt-2 h-14 bg-white rounded border border-border"
                       />
                     ) : (
                       <p
-                        className="mt-1 text-2xl text-emerald-900"
+                        className="mt-1 text-2xl text-foreground"
                         style={{ fontFamily: "'Brush Script MT', cursive" }}
                       >
                         {contract.signer_name}

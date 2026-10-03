@@ -347,7 +347,7 @@ function HeroCard({
         </button>
         {verified ? (
           <div className="absolute -right-1 bottom-1 w-8 h-8 rounded-full bg-card border-2 border-background flex items-center justify-center">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            <CheckCircle2 className="h-5 w-5 text-accent" />
           </div>
         ) : null}
       </div>

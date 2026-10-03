@@ -40,10 +40,10 @@ export interface ListingOpt {
 
 function statusBadge(s: ListingOpt["application_status"]) {
   if (s === "approved")
-    return { label: "Live", bg: "rgba(34,197,94,0.14)", color: "#0a7c4a" };
+    return { label: "Live", bg: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" };
   if (s === "rejected")
-    return { label: "Rejected", bg: "rgba(220,38,38,0.14)", color: "#a3160d" };
-  return { label: "Pending", bg: "rgba(0,0,0,0.08)", color: "#18181b" };
+    return { label: "Rejected", bg: "hsl(var(--destructive) / 0.1)", color: "hsl(var(--destructive))" };
+  return { label: "Pending", bg: "hsl(var(--pending))", color: "hsl(var(--accent))" };
 }
 
 export function ListingPicker({
@@ -98,7 +98,7 @@ export function ListingPicker({
                 className="w-9 h-9 rounded-full shrink-0 overflow-hidden inline-flex items-center justify-center text-xs font-medium"
                 style={{
                   background: "rgba(0,0,0,0.08)",
-                  color: "#18181b",
+                  color: "#14161a",
                 }}
               >
                 {selected?.logo_url ? (

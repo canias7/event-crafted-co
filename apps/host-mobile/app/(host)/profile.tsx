@@ -29,7 +29,7 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
-const GREEN = "#22c55e";
+const BRONZE = "#8a6f3e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -274,7 +274,7 @@ export default function ProfileScreen() {
               support. */}
           {state?.verifStatus === "approved" ? (
             <ActionCard
-              iconBgColor={GREEN}
+              iconBgColor={BRONZE}
               iconColor={CREAM}
               icon="check-circle"
               title="You're verified"
@@ -415,7 +415,7 @@ function HeroCard({
             borderColor: CREAM,
           }}
         >
-          <Feather name="check" size={16} color={GREEN} />
+          <Feather name="check" size={16} color={BRONZE} />
         </View>
       </View>
 

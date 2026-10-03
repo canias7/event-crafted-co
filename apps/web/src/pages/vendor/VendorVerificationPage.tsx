@@ -423,7 +423,7 @@ function StatusCard({ request, onEdit }: { request: RequestRow; onEdit: () => vo
     <div className="card-soft p-8 text-center">
       <Icon
         className={`mx-auto h-9 w-9 ${
-          s === "approved" ? "text-emerald-600" : s === "needs_info" ? "text-amber-600" : "text-accent"
+          s === "approved" ? "text-foreground" : s === "needs_info" ? "text-destructive" : "text-accent"
         }`}
       />
       <h2 className="font-editorial text-3xl mt-4">{title}</h2>

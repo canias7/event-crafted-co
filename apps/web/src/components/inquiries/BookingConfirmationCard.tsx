@@ -124,7 +124,7 @@ export function BookingConfirmationCard({
               state === "confirmed"
                 ? "rgba(0,0,0,0.08)"
                 : "rgba(0,0,0,0.04)",
-            color: state === "confirmed" ? "#18181b" : "#666",
+            color: state === "confirmed" ? "#14161a" : "#8a6f3e",
           }}
           aria-hidden
         >

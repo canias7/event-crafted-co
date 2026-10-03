@@ -260,7 +260,7 @@ function SettingRow({
           background: destructive
             ? "rgba(220,38,38,0.10)"
             : "rgba(0,0,0,0.14)",
-          color: destructive ? "#a3160d" : "#18181b",
+          color: destructive ? "#b23a34" : "#14161a",
         }}
         aria-hidden
       >

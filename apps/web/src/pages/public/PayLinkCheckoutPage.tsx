@@ -246,7 +246,7 @@ export default function PayLinkCheckoutPage() {
     return (
       <Shell>
         <Centered
-          icon={<Check className="w-7 h-7 text-emerald-600" />}
+          icon={<Check className="w-7 h-7 text-accent" />}
           title="Payment received"
           sub={`Thanks. ${link.vendor_business_name ?? "Your vendor"} will be in touch.`}
         />
@@ -370,9 +370,9 @@ export default function PayLinkCheckoutPage() {
               appearance: {
                 theme: "stripe",
                 variables: {
-                  colorPrimary: "#18181b",
+                  colorPrimary: "#14161a",
                   colorBackground: "#ffffff",
-                  colorText: "#18181b",
+                  colorText: "#14161a",
                   colorTextSecondary: "#71717a",
                   colorDanger: "#dc2626",
                   fontFamily: "system-ui, sans-serif",
@@ -513,7 +513,7 @@ function Centered({
   return (
     <div className="max-w-md mx-auto px-4 py-24 text-center">
       {icon ? (
-        <div className="w-14 h-14 rounded-full bg-emerald-50 inline-flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-full bg-pending inline-flex items-center justify-center mb-4">
           {icon}
         </div>
       ) : null}

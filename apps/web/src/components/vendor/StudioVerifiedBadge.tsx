@@ -14,8 +14,8 @@ function VerifiedSeal({ className }: { className?: string }) {
     >
       <defs>
         <linearGradient id="vendora-verified-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#3aa6ff" />
-          <stop offset="100%" stopColor="#1d6dde" />
+          <stop offset="0%" stopColor="#c9a86a" />
+          <stop offset="100%" stopColor="#8a6f3e" />
         </linearGradient>
       </defs>
       {/* 16-point starburst. Outer points at r=30 from center, inner
@@ -59,9 +59,9 @@ export function StudioVerifiedBadge({
         title="Verified vendor"
         style={{
           background:
-            "linear-gradient(135deg, rgba(56,134,255,0.18) 0%, rgba(56,134,255,0.08) 100%)",
-          color: "#1d6dde",
-          border: "1px solid rgba(56,134,255,0.35)",
+            "hsl(var(--pending))",
+          color: "hsl(var(--accent))",
+          border: "1px solid hsl(var(--accent) / 0.35)",
         }}
       >
         <VerifiedSeal className={iconClass} />

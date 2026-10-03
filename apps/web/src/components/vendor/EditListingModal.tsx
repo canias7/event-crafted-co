@@ -665,7 +665,7 @@ export function EditListingModal({
               <div className="mt-4 space-y-4">
                 <div>
                   <Label htmlFor="edit-category" className="font-semibold">
-                    Category <span className="text-red-500">•</span>
+                    Category <span className="text-destructive">•</span>
                   </Label>
                   <select
                     id="edit-category"
@@ -688,7 +688,7 @@ export function EditListingModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-location" className="font-semibold">
-                      Location <span className="text-red-500">•</span>
+                      Location <span className="text-destructive">•</span>
                     </Label>
                     <Input
                       id="edit-location"
@@ -701,7 +701,7 @@ export function EditListingModal({
                 </div>
                 <div>
                     <Label className="font-semibold">
-                      Pricing model <span className="text-red-500">•</span>
+                      Pricing model <span className="text-destructive">•</span>
                     </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">Pick all that apply.</p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -719,7 +719,7 @@ export function EditListingModal({
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="edit-price-min" className="font-semibold">Typical min <span className="text-red-500">•</span></Label>
+                      <Label htmlFor="edit-price-min" className="font-semibold">Typical min <span className="text-destructive">•</span></Label>
                       <div className="relative mt-1">
                         <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
                         <Input id="edit-price-min" value={priceMin} onChange={(e) => setPriceMin(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0" inputMode="decimal" className="pl-7" />

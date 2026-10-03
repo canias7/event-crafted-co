@@ -212,7 +212,7 @@ function VerificationCard({
           )
         }
         icon={CheckCircle2}
-        iconBg="bg-emerald-500"
+        iconBg="bg-accent"
         iconColor="text-white"
         title="You're verified"
         subtitle="Vendors prioritize verified hosts."
@@ -226,7 +226,7 @@ function VerificationCard({
           toast.message("Verification pending — we'll email you within 48h.")
         }
         icon={Clock}
-        iconBg="bg-zinc-800"
+        iconBg="bg-foreground"
         iconColor="text-white"
         title="Verification pending"
         subtitle="We'll reach out within 48 hours."

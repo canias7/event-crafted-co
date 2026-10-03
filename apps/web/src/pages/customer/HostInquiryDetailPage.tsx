@@ -844,7 +844,7 @@ export default function HostInquiryDetailPage() {
             ) : (
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
+                style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
                 aria-hidden
               >
                 {vendorInitial}
@@ -966,7 +966,7 @@ export default function HostInquiryDetailPage() {
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
                             background: "rgba(0,0,0,0.08)",
-                            color: "#18181b",
+                            color: "#14161a",
                           }}
                           aria-hidden
                         >

@@ -193,7 +193,7 @@ export default function VendorEditProfilePage() {
                     />
                   ) : (
                     // Neutral person silhouette default (no logo set).
-                    <div className="w-24 h-24 rounded-full bg-[#e5e1da] flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
                       <User className="w-12 h-12" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
                     </div>
                   )}
