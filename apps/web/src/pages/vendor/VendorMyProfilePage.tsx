@@ -350,13 +350,13 @@ function HeaderCard({
             />
           ) : (
             // Neutral person silhouette default (no logo set).
-            <div className="w-24 h-24 rounded-full bg-[#e5e1da] flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
               <User className="w-12 h-12" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
             </div>
           )}
           {verified ? (
             <div className="absolute -right-1 bottom-1 w-7 h-7 rounded-full bg-card border-2 border-background flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <CheckCircle2 className="h-4 w-4 text-accent" />
             </div>
           ) : null}
           {/* Studio starburst seal — floating just outside the logo,
@@ -509,10 +509,12 @@ function ListingDirectoryCard({
           : "Draft";
   const statusTone =
     listing.application_status === "approved"
-      ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+      ? "bg-primary text-primary-foreground border-transparent"
       : listing.application_status === "rejected"
-        ? "bg-red-500/15 text-red-700 border-red-500/30"
-        : "bg-foreground/10 text-foreground border-foreground/15";
+        ? "bg-destructive/10 text-destructive border-destructive/30"
+        : listing.application_status === "pending"
+          ? "bg-pending text-accent border-transparent"
+          : "bg-muted text-foreground border-transparent";
   return (
     <>
       <button
@@ -625,7 +627,7 @@ function ListingPreviewModal({
             </DialogTitle>
             {listing.verified_at ? (
               <CheckCircle2
-                className="w-4 h-4 text-emerald-600 shrink-0"
+                className="w-4 h-4 text-accent shrink-0"
                 aria-label="Verified"
               />
             ) : null}

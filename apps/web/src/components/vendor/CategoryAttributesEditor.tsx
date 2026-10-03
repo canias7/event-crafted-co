@@ -324,7 +324,7 @@ function FieldEditor({
                   active
                     ? {
                         background: "rgba(0,0,0,0.08)",
-                        color: "#18181b",
+                        color: "#14161a",
                         border: "0.5px solid rgba(0,0,0,0.45)",
                       }
                     : {
@@ -349,7 +349,7 @@ function FieldEditor({
               className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
               style={{
                 background: "rgba(0,0,0,0.08)",
-                color: "#18181b",
+                color: "#14161a",
                 border: "0.5px solid rgba(0,0,0,0.45)",
               }}
               title="Custom entry — click to remove"

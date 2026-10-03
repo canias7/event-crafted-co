@@ -226,7 +226,7 @@ function PromptCard({
           className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
           style={{
             background: "rgba(0,0,0,0.08)",
-            color: "#18181b",
+            color: "#14161a",
           }}
           aria-hidden
         >

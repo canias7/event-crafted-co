@@ -99,14 +99,14 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
             <img
               src={logoUrl}
               alt={businessName}
-              className="w-[110px] h-[110px] rounded-[20px] object-cover bg-[#0a0a0a]"
+              className="w-[110px] h-[110px] rounded-[20px] object-cover bg-foreground"
               style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             />
           ) : (
             // Neutral person silhouette when no logo is set — soft gray
             // placeholder (Google/Twitter style) instead of an initial.
             <div
-              className="w-[110px] h-[110px] rounded-[20px] bg-[#e5e1da] flex items-center justify-center"
+              className="w-[110px] h-[110px] rounded-[20px] bg-muted flex items-center justify-center"
               style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             >
               <User className="w-14 h-14" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
@@ -114,7 +114,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           )}
           {/* KYC verified mark (bottom-right) — admin-verified vendor. */}
           {verified ? (
-            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-[#18181b] border-[3px] border-[#ffffff] flex items-center justify-center">
+            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-foreground border-[3px] border-white flex items-center justify-center">
               <CheckCircle2 className="w-3 h-3 text-white" />
             </div>
           ) : null}
@@ -135,16 +135,16 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-editorial text-3xl text-[#0a0a0a] leading-[1.05] tracking-tight">
+          <h3 className="font-editorial text-3xl text-foreground leading-[1.05] tracking-tight">
             {businessName}
           </h3>
           {row.location ? (
-            <p className="mt-1 text-sm text-[#6b7280]">{row.location}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{row.location}</p>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 rounded-2xl bg-white/55 backdrop-blur-sm border border-white/40 px-3 py-3 divide-x divide-[#e8dfcf]">
+      <div className="mt-6 grid grid-cols-2 rounded-2xl bg-white/55 backdrop-blur-sm border border-white/40 px-3 py-3 divide-x divide-border">
         <StatCell
           label="Rating"
           value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
@@ -169,11 +169,11 @@ function StatCell({
   return (
     <div className="flex flex-col items-center justify-center px-2">
       <span
-        className={`text-xl text-[#0a0a0a] tnum ${italic ? "font-editorial" : "font-semibold"}`}
+        className={`text-xl text-foreground tnum ${italic ? "font-editorial" : "font-semibold"}`}
       >
         {value}
       </span>
-      <span className="mt-0.5 text-[10px] uppercase tracking-wider text-[#6b7280]">
+      <span className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
     </div>

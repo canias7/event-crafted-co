@@ -329,7 +329,7 @@ export default function LiveWatchPage() {
               playbackId={playerSrc}
               streamType={playerStreamType}
               autoPlay={isLiveStatus ? "muted" : false}
-              accentColor="#18181b"
+              accentColor="#14161a"
               metadata={{
                 video_title: headerTitle ?? "Vendora",
                 viewer_user_id: "anon",

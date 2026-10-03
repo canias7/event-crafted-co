@@ -417,7 +417,7 @@ function ListingCard({
         className="absolute top-2 right-2 rounded-full bg-background/90 backdrop-blur p-1.5 shadow-sm hover:bg-background"
       >
         <Heart
-          className={`h-4 w-4 ${saved ? "fill-rose-500 text-rose-500" : "text-foreground"}`}
+          className={`h-4 w-4 ${saved ? "fill-accent text-accent" : "text-foreground"}`}
         />
       </button>
     </div>

@@ -44,7 +44,7 @@ export function VendorComingSoonShell({
               className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
               style={{
                 background: "rgba(0,0,0,0.08)",
-                color: "#18181b",
+                color: "#14161a",
               }}
             >
               <Icon className="w-6 h-6" />

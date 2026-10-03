@@ -379,7 +379,7 @@ export default function InquiriesPage() {
                             {isUnread ? (
                               <span
                                 aria-label="Unread"
-                                className="shrink-0 w-2 h-2 rounded-full bg-blue-500"
+                                className="shrink-0 w-2 h-2 rounded-full bg-gold"
                               />
                             ) : null}
                             <h3 className="font-display text-base truncate">

@@ -1224,7 +1224,7 @@ export default function VendorAppointmentsPage({
               ) : (
                 <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
                   <LegendDot swatchClass="bg-foreground" label="Booked" />
-                  <LegendDot swatchClass="bg-zinc-200" label="Pending" />
+                  <LegendDot swatchClass="bg-pending" label="Pending" />
                   <LegendDot swatchClass="hatch" label="Blocked" />
                 </div>
               )}
@@ -1832,7 +1832,7 @@ function DayCell({
     state === "booked"
       ? "bg-foreground text-background"
       : state === "pending"
-        ? "bg-zinc-200 text-zinc-800"
+        ? "bg-pending text-accent"
         : state === "blocked"
           ? "text-foreground"
           : "text-foreground";
@@ -1847,7 +1847,7 @@ function DayCell({
         {state === "blocked" ? (
           <span
             className="absolute inset-0 rounded-xl"
-            style={{ background: "#f4f4f5" }}
+            style={{ background: "hsl(var(--muted))" }}
           />
         ) : null}
         {state === "blocked" ? (
@@ -1877,7 +1877,7 @@ function LegendDot({
         <span className="w-3 h-3 rounded-sm overflow-hidden inline-block relative">
           <span
             className="absolute inset-0"
-            style={{ background: "#f4f4f5" }}
+            style={{ background: "hsl(var(--muted))" }}
           />
           <svg className="absolute inset-0 w-full h-full" aria-hidden>
             <rect width="100%" height="100%" fill="url(#hatch-legend)" />

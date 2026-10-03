@@ -39,8 +39,16 @@
     --accent: 39 38% 39%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    /* The apps' red (#b23a34), for errors, delete and overdue. */
+    --destructive: 3 55% 45%;
     --destructive-foreground: 0 0% 100%;
+
+    /* Status language shared with the apps: done = ink pill (primary),
+       waiting = bronze on this gold tint (#f2e7cb), problem = destructive. */
+    --pending: 43 60% 87%;
+
+    /* Champagne (#c9a86a), for ornament and fills such as unread dots. */
+    --gold: 39 47% 60%;
 
     --border: 35 25% 25% / 0.12;
     --input: 42 31% 91%;
@@ -636,19 +644,19 @@
     line-height: 1.4;
   }
   .my-vendora-cockpit .cockpit-pill--success {
-    background: rgba(0,0,0,0.06) !important; color: #1a1a1a !important; border-color: transparent !important;
+    background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--info {
-    background: rgba(0,0,0,0.05) !important; color: #1a1a1a !important; border-color: transparent !important;
+    background: hsl(var(--pending)) !important; color: hsl(var(--accent)) !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--warning {
-    background: rgba(0,0,0,0.05) !important; color: #1a1a1a !important; border-color: transparent !important;
+    background: hsl(var(--muted)) !important; color: hsl(var(--foreground)) !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--danger {
-    background: rgba(0,0,0,0.05) !important; color: #71717a !important; border-color: transparent !important;
+    background: hsl(var(--destructive) / 0.1) !important; color: hsl(var(--destructive)) !important; border-color: transparent !important;
   }
   .my-vendora-cockpit .cockpit-pill--neutral {
-    background: rgba(0, 0, 0, 0.1) !important; color: #4a4a4a !important; border-color: transparent !important;
+    background: hsl(var(--muted)) !important; color: hsl(var(--foreground)) !important; border-color: transparent !important;
   }
 
   /* Dense data table — glassy surface, warm-tinted hover rows. */

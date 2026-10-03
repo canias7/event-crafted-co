@@ -170,7 +170,7 @@ export default function NotificationSettingsPage() {
                       className="w-10 h-10 rounded-xl inline-flex items-center justify-center shrink-0"
                       style={{
                         background: "rgba(0,0,0,0.14)",
-                        color: "#18181b",
+                        color: "#14161a",
                       }}
                     >
                       <Bell className="w-4 h-4" />

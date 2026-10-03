@@ -161,7 +161,7 @@ function FieldDisplay({
               className="inline-flex text-[13px] rounded-full px-3.5 py-1.5"
               style={{
                 background: "rgba(0,0,0,0.12)",
-                color: "#18181b",
+                color: "#14161a",
                 border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >

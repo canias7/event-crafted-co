@@ -582,7 +582,7 @@ export default function VendorSubscriptionPage() {
               className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
               style={{
                 background:
-                  "linear-gradient(135deg, #18181b 0%, #27272a 45%, #3f3f46 100%)",
+                  "linear-gradient(135deg, #14161a 0%, #27272a 45%, #3f3f46 100%)",
                 border: "1px solid rgba(0,0,0,0.35)",
                 boxShadow: "0 12px 40px -16px rgba(0,0,0,0.35)",
               }}
@@ -603,8 +603,8 @@ export default function VendorSubscriptionPage() {
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] font-bold"
                     style={{
                       background:
-                        "linear-gradient(135deg, #e4e4e7 0%, #ffffff 100%)",
-                      color: "#18181b",
+                        "linear-gradient(135deg, #c9a86a 0%, #e9dcc0 100%)",
+                      color: "#14161a",
                     }}
                   >
                     <Flame className="w-3 h-3" />
@@ -612,7 +612,7 @@ export default function VendorSubscriptionPage() {
                   </span>
                   <h2
                     className="mt-4 font-editorial leading-[0.95] text-4xl md:text-5xl"
-                    style={{ color: "#fafafa" }}
+                    style={{ color: "#f4f1ea" }}
                   >
                     Vendora Pro &amp; Premium
                   </h2>
@@ -711,14 +711,14 @@ export default function VendorSubscriptionPage() {
                         {tier.wasMonthly && offerActive && !isCurrent && (
                           <span
                             className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
-                            style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
+                            style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
                           >
                             Save {Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100)}%
                           </span>
                         )}
                       </div>
                       {isCurrent && (
-                        <span className="text-[10px] uppercase tracking-wide font-semibold text-[#18181b]">
+                        <span className="text-[10px] uppercase tracking-wide font-semibold text-foreground">
                           Current
                         </span>
                       )}
@@ -750,7 +750,7 @@ export default function VendorSubscriptionPage() {
                         hidden from marketing copy (usage tab still
                         shows the balance + grant). */}
                     {tier.wasMonthly && offerActive && !isCurrent && (
-                      <p className="text-[10px] text-[#18181b] font-medium mt-0.5">
+                      <p className="text-[10px] text-foreground font-medium mt-0.5">
                         Launch pricing — limited time
                       </p>
                     )}
@@ -1085,9 +1085,9 @@ function BillingPanel({
               const date = new Date(inv.created * 1000);
               const paidStyle =
                 inv.status === "paid"
-                  ? "text-emerald-700"
+                  ? "text-foreground"
                   : inv.status === "open"
-                    ? "text-zinc-800"
+                    ? "text-accent"
                     : "text-muted-foreground";
               const lines = (inv.lines ?? []).filter((l) => l.amount > 0);
               if (lines.length === 0) {

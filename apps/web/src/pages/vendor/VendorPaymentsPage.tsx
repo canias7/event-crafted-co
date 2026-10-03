@@ -1411,8 +1411,8 @@ function OverviewUpcomingAppointments({
                     <span
                       className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
                       style={{
-                        background: confirmed ? "rgba(34,197,94,0.12)" : "#f4ece7",
-                        color: confirmed ? "#0a7c4a" : "#7d5a4f",
+                        background: confirmed ? "hsl(var(--primary))" : "hsl(var(--pending))",
+                        color: confirmed ? "hsl(var(--primary-foreground))" : "hsl(var(--accent))",
                       }}
                     >
                       {confirmed ? "Confirmed" : "Proposed"}
@@ -1510,25 +1510,25 @@ function OverviewRevenueChart({
         <div>
           <div
             className="text-[22px] font-semibold leading-tight"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
           >
             Revenue · last 30 days
           </div>
-          <div className="text-[13px] mt-0.5" style={{ color: "#9ca3af" }}>
+          <div className="text-[13px] mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
             Daily paid-invoice totals
           </div>
         </div>
         <div className="text-right">
           <div
             className="text-[28px] font-semibold leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
           >
             {formatMoney(total, currency)}
           </div>
           {deltaPct !== null ? (
             <div
               className="text-xs font-semibold mt-1"
-              style={{ color: deltaPositive ? "#16a34a" : "#dc2626" }}
+              style={{ color: deltaPositive ? "hsl(var(--accent))" : "hsl(var(--destructive))" }}
             >
               {deltaPositive ? "▲" : "▼"} {Math.abs(deltaPct).toFixed(1)}%
             </div>
@@ -1609,8 +1609,8 @@ function OverviewRevenueChart({
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#16a34a" stopOpacity={hasData ? 0.18 : 0.08} />
-                  <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#8a6f3e" stopOpacity={hasData ? 0.18 : 0.08} />
+                  <stop offset="100%" stopColor="#8a6f3e" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {/* Horizontal grid lines + y-axis tick labels */}
@@ -1619,7 +1619,7 @@ function OverviewRevenueChart({
                 return (
                   <g key={t}>
                     <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(0, 0, 0,0.06)" strokeWidth="1" />
-                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#9ca3af">
+                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#14161a">
                       {hasData ? (t === 0 ? "$0" : formatMoneyCompact(plotMax * t, currency)) : ""}
                     </text>
                   </g>
@@ -1629,7 +1629,7 @@ function OverviewRevenueChart({
               <path
                 d={linePath}
                 fill="none"
-                stroke="#16a34a"
+                stroke="#8a6f3e"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1637,8 +1637,8 @@ function OverviewRevenueChart({
               />
               {showHover ? (
                 <>
-                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#16a34a" strokeOpacity="0.45" strokeWidth="1" />
-                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#16a34a" strokeWidth="2.5" />
+                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#8a6f3e" strokeOpacity="0.45" strokeWidth="1" />
+                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#8a6f3e" strokeWidth="2.5" />
                 </>
               ) : null}
               {/* Hit-test rect — captures pointer moves and converts
@@ -1662,13 +1662,13 @@ function OverviewRevenueChart({
                   left: `${(hoverX / W) * 100}%`,
                   top: `${(hoverY / H) * 100}%`,
                   transform: "translate(-50%, calc(-100% - 12px))",
-                  background: "#2b2320",
+                  background: "#14161a",
                   color: "#fff",
                   boxShadow: "0 6px 16px -6px rgba(0,0,0,0.4)",
                 }}
               >
                 {formatMoney(series[hoverIdx as number], currency)}
-                <span className="block font-normal text-[11px] mt-0.5" style={{ color: "#c9bdb6" }}>
+                <span className="block font-normal text-[11px] mt-0.5" style={{ color: "rgba(244,241,234,0.7)" }}>
                   {hoverDate}
                 </span>
                 {/* Triangle pointer below the tip */}
@@ -1679,7 +1679,7 @@ function OverviewRevenueChart({
                     height: 0,
                     borderLeft: "5px solid transparent",
                     borderRight: "5px solid transparent",
-                    borderTop: "5px solid #2b2320",
+                    borderTop: "5px solid #14161a",
                   }}
                 />
               </div>
@@ -1691,7 +1691,7 @@ function OverviewRevenueChart({
             <div
               className="flex justify-between text-[11px] mt-2"
               style={{
-                color: "#9ca3af",
+                color: "hsl(var(--muted-foreground))",
                 paddingLeft: `${(50 / 620) * 100}%`,
                 paddingRight: `${(8 / 620) * 100}%`,
               }}
@@ -1705,7 +1705,7 @@ function OverviewRevenueChart({
                 <div
                   className="text-xs italic rounded-full px-3 py-1.5"
                   style={{
-                    color: "#9ca3af",
+                    color: "hsl(var(--muted-foreground))",
                     background: "rgba(253,240,234,0.7)",
                     border: "0.5px solid rgba(0, 0, 0,0.22)",
                     backdropFilter: "blur(8px)",
@@ -1745,10 +1745,10 @@ function OverviewLeadsCard({
   leads: { new: number; active: number; won: number; lost: number; total: number };
 }) {
   const rows: Array<{ label: string; count: number; color: string }> = [
-    { label: "New",    count: leads.new,    color: "#dc2626" }, // crimson — needs attention
-    { label: "Active", count: leads.active, color: "#f59e0b" }, // amber — in conversation
-    { label: "Won",    count: leads.won,    color: "#16a34a" }, // green — converted
-    { label: "Lost",   count: leads.lost,   color: "#a8a29e" }, // warm gray — lost/expired
+    { label: "New",    count: leads.new,    color: "#c9a86a" }, // champagne — new, needs a reply
+    { label: "Active", count: leads.active, color: "#8a6f3e" }, // bronze — in conversation
+    { label: "Won",    count: leads.won,    color: "#14161a" }, // ink — converted
+    { label: "Lost",   count: leads.lost,   color: "#d9d1bf" }, // sand — lost/expired
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
   const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
@@ -1819,8 +1819,8 @@ function OverviewCashflowCard({
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: "Money in",  value: moneyIn,  color: "#16a34a" }, // green
-    { label: "Money out", value: moneyOut, color: "#dc2626" }, // crimson
+    { label: "Money in",  value: moneyIn,  color: "#8a6f3e" }, // bronze
+    { label: "Money out", value: moneyOut, color: "#14161a" }, // ink
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -1837,7 +1837,7 @@ function OverviewCashflowCard({
           <div className="cockpit-kpi-label">Net</div>
           <div
             className="cockpit-money cockpit-money--lg"
-            style={{ color: netPositive ? "#16a34a" : "#dc2626" }}
+            style={{ color: netPositive ? "hsl(var(--accent))" : "hsl(var(--destructive))" }}
           >
             {netPositive ? "" : "−"}{formatMoney(Math.abs(net), currency)}
           </div>
@@ -1897,11 +1897,11 @@ function OverviewExpensesCard({
   currency: string;
   onViewAll?: () => void;
 }) {
-  // Categorical palette (crimson → terra → amber → green) so a vendor
-  // scanning the page picks up category rank by color.
-  const palette = ["#dc2626", "#ea580c", "#f59e0b", "#16a34a"];
+  // Brand ramp (ink → bronze → champagne → sand) so a vendor scanning
+  // the page picks up category rank by tone.
+  const palette = ["#14161a", "#8a6f3e", "#c9a86a", "#d9d1bf"];
   const rows = expenses.topCategories.map((c, i) => ({
-    ...c, color: palette[i] ?? "#a8a29e",
+    ...c, color: palette[i] ?? "#ece7db",
   }));
   // Donut geometry — stroked circle with stroke-dasharray for each
   // segment. Radius 38 + strokeWidth 14 gives an outer ring at 45
@@ -2107,7 +2107,7 @@ function SummaryCard({ label, value, sub }: { label: string; value: string; sub:
       </div>
       <div
         className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-        style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+        style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
       >
         {value}
       </div>
@@ -2322,7 +2322,7 @@ function TransactionsTab({
                     <div className="flex items-center justify-end gap-1.5">
                       <span
                         className={`text-sm font-semibold tabular-nums ${
-                          meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
+                          meta.tone === "in" ? "text-accent" : "text-foreground"
                         }`}
                       >
                         {meta.tone === "out" ? "-" : "+"}
@@ -2359,13 +2359,13 @@ function TransactionsTab({
                                     </span>
                                   ) : null}
                                 </span>
-                                <span className="tabular-nums text-rose-700">
+                                <span className="tabular-nums text-foreground">
                                   -{formatMoney(t.fee_cents, t.currency)}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between gap-3 pt-1.5 border-t border-foreground/10">
                                 <span className="font-semibold">Net to your bank</span>
-                                <span className="tabular-nums font-semibold text-emerald-700">
+                                <span className="tabular-nums font-semibold text-accent">
                                   {formatMoney(t.net_cents, t.currency)}
                                 </span>
                               </div>
@@ -2759,14 +2759,14 @@ function PayoutsTab({
                   className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-sky-50 text-sky-700">
+                    <div className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-muted text-foreground">
                       <Banknote className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate flex items-center gap-2 flex-wrap">
                         {p.description ?? "Bank deposit"}
                         {recon && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-primary text-primary-foreground">
                             ✓ Reconciled
                           </span>
                         )}
@@ -3997,9 +3997,9 @@ function DocumentCanvas({
                     className="flex-1 min-w-0 text-left"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[13px] font-semibold text-black truncate">{row.name}</span>
+                      <span className="text-[13px] font-semibold text-foreground truncate">{row.name}</span>
                       {row.is_default ? (
-                        <span className="text-[9px] uppercase tracking-wide rounded-full border border-emerald-300 text-emerald-700 px-1 py-0.5 shrink-0">
+                        <span className="text-[9px] uppercase tracking-wide rounded-full border border-accent/40 text-accent px-1 py-0.5 shrink-0">
                           Default
                         </span>
                       ) : null}
@@ -4280,13 +4280,13 @@ function SenderDomainCard({ vendorId }: { vendorId: string | null }) {
               style={
                 verified
                   ? {
-                      background: "rgba(34,197,94,0.14)",
-                      color: "#0a7c4a",
-                      border: "0.5px solid rgba(34,197,94,0.35)",
+                      background: "hsl(var(--pending))",
+                      color: "hsl(var(--accent))",
+                      border: "0.5px solid hsl(var(--accent) / 0.35)",
                     }
                   : {
                       background: "rgba(0,0,0,0.14)",
-                      color: "#18181b",
+                      color: "#14161a",
                       border: "0.5px solid rgba(0,0,0,0.35)",
                     }
               }
@@ -4685,7 +4685,7 @@ function InvoicesTab({
                     <span className="text-sm font-semibold tabular-nums tracking-tight">{inv.invoice_number}</span>
                     <InvoiceStatusPill status={inv.status} />
                     {inv.payment_failed_at && !inv.paid_at && (
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-rose-100 text-rose-700">
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-destructive/10 text-destructive">
                         Card declined
                       </span>
                     )}
@@ -4703,7 +4703,7 @@ function InvoicesTab({
                       : ""}
                   </p>
                   {inv.payment_failed_at && !inv.paid_at && inv.payment_failure_message && (
-                    <p className="text-xs text-rose-700 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       Buyer's last attempt failed: {inv.payment_failure_message}
                     </p>
                   )}
@@ -4711,7 +4711,7 @@ function InvoicesTab({
                 <div className="text-right shrink-0">
                   <div className="text-lg font-editorial">{formatMoney(inv.total_cents, inv.currency)}</div>
                   {inv.paid_at ? (
-                    <div className="text-[10px] text-emerald-700 mt-2">Paid {formatDate(inv.paid_at)}</div>
+                    <div className="text-[10px] text-foreground mt-2">Paid {formatDate(inv.paid_at)}</div>
                   ) : inv.sent_at ? (
                     <div className="text-[10px] text-muted-foreground mt-2">Sent {formatDate(inv.sent_at)}</div>
                   ) : null}
@@ -4829,15 +4829,15 @@ function InvoiceStatusPill({ status }: { status: Invoice["status"] }) {
   // a missing key would render `undefined.className` and crash
   // the InvoicesTab row.
   const map: Record<Invoice["status"], { label: string; className: string; cockpit: string }> = {
-    draft: { label: "Draft", className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" },
-    sent: { label: "Sent", className: "bg-emerald-100 text-emerald-700", cockpit: "cockpit-pill--info" },
-    paid: { label: "Paid", className: "bg-sky-100 text-sky-700", cockpit: "cockpit-pill--success" },
-    cancelled: { label: "Cancelled", className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" },
-    overdue: { label: "Overdue", className: "bg-rose-100 text-rose-700", cockpit: "cockpit-pill--danger" },
-    refunded: { label: "Refunded", className: "bg-zinc-100 text-zinc-800", cockpit: "cockpit-pill--warning" },
-    partial_refund: { label: "Partial refund", className: "bg-zinc-100 text-zinc-800", cockpit: "cockpit-pill--warning" },
+    draft: { label: "Draft", className: "bg-muted text-foreground", cockpit: "cockpit-pill--neutral" },
+    sent: { label: "Sent", className: "bg-pending text-accent", cockpit: "cockpit-pill--info" },
+    paid: { label: "Paid", className: "bg-primary text-primary-foreground", cockpit: "cockpit-pill--success" },
+    cancelled: { label: "Cancelled", className: "bg-muted text-foreground", cockpit: "cockpit-pill--neutral" },
+    overdue: { label: "Overdue", className: "bg-destructive/10 text-destructive", cockpit: "cockpit-pill--danger" },
+    refunded: { label: "Refunded", className: "bg-muted text-foreground", cockpit: "cockpit-pill--warning" },
+    partial_refund: { label: "Partial refund", className: "bg-muted text-foreground", cockpit: "cockpit-pill--warning" },
   };
-  const m = map[status] ?? { label: status, className: "bg-slate-100 text-slate-700", cockpit: "cockpit-pill--neutral" };
+  const m = map[status] ?? { label: status, className: "bg-muted text-foreground", cockpit: "cockpit-pill--neutral" };
   return (
     <span className={`cockpit-pill ${m.cockpit} inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${m.className}`}>
       {m.label}
@@ -5382,7 +5382,7 @@ function CustomersTab({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                  Email <span className="text-rose-500">*</span>
+                  Email <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="email"
@@ -5501,7 +5501,7 @@ function CustomersTab({
                   size="sm"
                   onClick={() => void bulkDelete()}
                   disabled={bulkDeleting}
-                  className="rounded-lg text-[#18181b]"
+                  className="rounded-lg text-foreground"
                 >
                   {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 mr-1.5" />}
                   Remove
@@ -5536,7 +5536,7 @@ function CustomersTab({
                     onClick={() => toggleSort("name")}
                   >
                     Name {sortField === "name" ? (
-                      <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                      <span className="text-foreground text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                     ) : null}
                   </th>
                   <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -5556,7 +5556,7 @@ function CustomersTab({
                     onClick={() => toggleSort("invoices")}
                   >
                     Invoices {sortField === "invoices" ? (
-                      <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                      <span className="text-foreground text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                     ) : null}
                   </th>
                   <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -5616,7 +5616,7 @@ function CustomersTab({
                           <button
                             type="button"
                             onClick={() => startEdit(c)}
-                            className="text-[#18181b] hover:underline text-sm font-medium"
+                            className="text-foreground hover:underline text-sm font-medium"
                           >
                             {isBilledRow(c.id) ? "Save" : "Edit"}
                           </button>
@@ -5683,7 +5683,7 @@ function CustomersTab({
                                 key={p}
                                 type="button"
                                 onClick={() => setPage(p)}
-                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#18181b] text-white border-[#18181b]" : "border-foreground/10 hover:border-accent"}`}
+                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-foreground text-white border-foreground" : "border-foreground/10 hover:border-accent"}`}
                               >
                                 {p}
                               </button>
@@ -6498,7 +6498,7 @@ function ExpensesTab({
         <div>
           <h2
             className="text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
           >
             Expenses
           </h2>
@@ -6529,7 +6529,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
           >
             {formatMoney(kpis.ytdCents)}
           </div>
@@ -6546,7 +6546,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
           >
             {formatMoney(kpis.monthCents)}
           </div>
@@ -6560,7 +6560,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold tabular-nums leading-none"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
           >
             {formatMoney(kpis.thirtyDayCents)}
           </div>
@@ -6574,7 +6574,7 @@ function ExpensesTab({
           </div>
           <div
             className="mt-1 text-[22px] font-semibold leading-none truncate"
-            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#2b2320" }}
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: "#14161a" }}
             title={kpis.topItem ? kpis.topItem[0] : undefined}
           >
             {kpis.topItem ? kpis.topItem[0] : "—"}
@@ -6612,7 +6612,7 @@ function ExpensesTab({
 
       {/* Bulk action bar — only visible with at least one row checked. */}
       {selectedIds.size > 0 ? (
-        <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg text-white text-sm" style={{ background: "#2b2320" }}>
+        <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg text-white text-sm" style={{ background: "#14161a" }}>
           <span className="font-semibold">
             {selectedIds.size} selected
           </span>
@@ -6799,7 +6799,7 @@ function ExpensesTab({
                   onClick={() => toggleSort("date")}
                 >
                   Date {sortField === "date" ? (
-                    <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                    <span className="text-foreground text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                   ) : null}
                 </th>
                 <th className="px-3 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -6819,7 +6819,7 @@ function ExpensesTab({
                   onClick={() => toggleSort("amount")}
                 >
                   Total {sortField === "amount" ? (
-                    <span className="text-[#18181b] text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
+                    <span className="text-foreground text-[9px]">{sortDir === "desc" ? "▼" : "▲"}</span>
                   ) : null}
                 </th>
                 <th className="px-3 py-3 text-right text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -6855,7 +6855,7 @@ function ExpensesTab({
                         <span
                           title="Auto-logged from a recurring rule"
                           className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                          style={{ background: "#f4ece7", color: "#7d5a4f" }}
+                          style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }}
                         >
                           <RotateCcw className="w-2.5 h-2.5" /> Recurring
                         </span>
@@ -6873,7 +6873,7 @@ function ExpensesTab({
                       <button
                         type="button"
                         onClick={() => startEdit(e)}
-                        className="text-[#18181b] hover:underline text-sm font-medium"
+                        className="text-foreground hover:underline text-sm font-medium"
                       >
                         Edit
                       </button>
@@ -6928,7 +6928,7 @@ function ExpensesTab({
                               key={p}
                               type="button"
                               onClick={() => setPage(p)}
-                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-[#18181b] text-white border-[#18181b]" : "border-foreground/10 hover:border-accent"}`}
+                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-foreground text-white border-foreground" : "border-foreground/10 hover:border-accent"}`}
                             >
                               {p}
                             </button>
@@ -7377,24 +7377,24 @@ function disputeStatusPill(status: string | null | undefined): {
   // without a status) so the .startsWith / .replace calls below — and
   // the `${pill.className}` template at the call site — never throw.
   if (!status) {
-    return { label: "—", className: "bg-slate-100 text-slate-700" };
+    return { label: "—", className: "bg-muted text-foreground" };
   }
   if (status === "won" || status === "warning_closed") {
-    return { label: "Won", className: "bg-emerald-100 text-emerald-700" };
+    return { label: "Won", className: "bg-primary text-primary-foreground" };
   }
   if (status === "lost" || status === "charge_refunded") {
-    return { label: "Lost", className: "bg-rose-100 text-rose-700" };
+    return { label: "Lost", className: "bg-destructive/10 text-destructive" };
   }
   if (status.startsWith("warning")) {
-    return { label: "Warning", className: "bg-zinc-100 text-zinc-800" };
+    return { label: "Warning", className: "bg-pending text-accent" };
   }
   if (status === "needs_response") {
-    return { label: "Needs response", className: "bg-zinc-100 text-zinc-800" };
+    return { label: "Needs response", className: "bg-destructive/10 text-destructive" };
   }
   if (status === "under_review") {
-    return { label: "Under review", className: "bg-sky-100 text-sky-700" };
+    return { label: "Under review", className: "bg-pending text-accent" };
   }
-  return { label: status.replace(/_/g, " "), className: "bg-slate-100 text-slate-700" };
+  return { label: status.replace(/_/g, " "), className: "bg-muted text-foreground" };
 }
 
 function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
@@ -8417,10 +8417,10 @@ function StatusDot({
     typeof tone,
     { dot: string; text: string; bg: string; border: string }
   > = {
-    good: { dot: "#ffffff", text: "#ffffff", bg: "#18181b", border: "transparent" },
+    good: { dot: "#ffffff", text: "#ffffff", bg: "#14161a", border: "transparent" },
     info: { dot: "#71717a", text: "#3f3f46", bg: "rgba(0,0,0,0.06)", border: "transparent" },
-    warn: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
-    bad: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+    warn: { dot: "#14161a", text: "#14161a", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+    bad: { dot: "#14161a", text: "#14161a", bg: "transparent", border: "rgba(0,0,0,0.45)" },
   };
   const c = palette[tone];
   return (
@@ -8513,10 +8513,8 @@ function TransactionRow({ tx, showBorder }: { tx: Transaction; showBorder: boole
   const Icon = meta.tone === "in" ? ArrowDownRight : meta.tone === "out" ? ArrowUpRight : ArrowDownRight;
   const iconTone =
     meta.tone === "in"
-      ? "text-emerald-600 bg-emerald-50"
-      : meta.tone === "out"
-        ? "text-rose-600 bg-rose-50"
-        : "text-slate-600 bg-slate-50";
+      ? "text-accent bg-pending"
+      : "text-foreground bg-muted";
   return (
     <div className={`flex items-center gap-3 p-4 md:p-5 ${showBorder ? "border-t border-foreground/5" : ""}`}>
       <div className={`shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center ${iconTone}`}>
@@ -8531,7 +8529,7 @@ function TransactionRow({ tx, showBorder }: { tx: Transaction; showBorder: boole
       <div className="text-right shrink-0">
         <div
           className={`text-sm font-semibold ${
-            meta.tone === "in" ? "text-emerald-700" : meta.tone === "out" ? "text-rose-700" : "text-foreground"
+            meta.tone === "in" ? "text-accent" : "text-foreground"
           }`}
         >
           {meta.tone === "out" ? "-" : "+"}

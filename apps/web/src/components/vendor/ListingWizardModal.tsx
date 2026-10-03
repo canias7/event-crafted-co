@@ -602,7 +602,7 @@ export function ListingWizardModal({
             <div className="mt-4 space-y-4">
               <div>
                 <Label htmlFor="category" className="font-semibold">
-                  Category <span className="text-red-500">•</span>
+                  Category <span className="text-destructive">•</span>
                 </Label>
                 <select
                   id="category"
@@ -626,7 +626,7 @@ export function ListingWizardModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="location" className="font-semibold">
-                    Location <span className="text-red-500">•</span>
+                    Location <span className="text-destructive">•</span>
                   </Label>
                   <Input
                     id="location"
@@ -639,7 +639,7 @@ export function ListingWizardModal({
               </div>
               <div>
                 <Label className="font-semibold">
-                  Pricing model <span className="text-red-500">•</span>
+                  Pricing model <span className="text-destructive">•</span>
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Pick all that apply.
@@ -669,7 +669,7 @@ export function ListingWizardModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="price-min" className="font-semibold">
-                    Typical min <span className="text-red-500">•</span>
+                    Typical min <span className="text-destructive">•</span>
                   </Label>
                   <div className="relative mt-1">
                     <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>

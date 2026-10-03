@@ -908,7 +908,7 @@ export default function VendorPartnersPage() {
                           aria-label={isUnread ? "Unread" : undefined}
                         >
                           {isUnread ? (
-                            <span className="block w-2 h-2 rounded-full bg-blue-500" />
+                            <span className="block w-2 h-2 rounded-full bg-gold" />
                           ) : null}
                         </span>
 
@@ -923,7 +923,7 @@ export default function VendorPartnersPage() {
                             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold self-center"
                             style={{
                               background: "rgba(0,0,0,0.08)",
-                              color: "#18181b",
+                              color: "#14161a",
                             }}
                             aria-hidden
                           >
@@ -1185,7 +1185,7 @@ function PartnerChatPane(props: {
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
                 style={{
                   background: "rgba(0,0,0,0.08)",
-                  color: "#18181b",
+                  color: "#14161a",
                 }}
                 aria-hidden
               >
@@ -1307,7 +1307,7 @@ function PartnerChatPane(props: {
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
                             background: "rgba(0,0,0,0.08)",
-                            color: "#18181b",
+                            color: "#14161a",
                           }}
                           aria-hidden
                         >
@@ -1822,7 +1822,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                     type="button"
                     disabled={isStarting}
                     onClick={() => void startThread(r)}
-                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40"
+                    className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     style={{
                       background: "rgba(255,255,255,0.6)",
                       border: "0.5px solid rgba(0,0,0,0.08)",
@@ -1839,7 +1839,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                         className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
                         style={{
                           background: "rgba(0,0,0,0.08)",
-                          color: "#18181b",
+                          color: "#14161a",
                         }}
                       >
                         {initial}

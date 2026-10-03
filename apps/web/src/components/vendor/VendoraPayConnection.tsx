@@ -56,10 +56,10 @@ function StatusDot({
     typeof tone,
     { dot: string; text: string; bg: string; border: string }
   > = {
-    good: { dot: "#ffffff", text: "#ffffff", bg: "#18181b", border: "transparent" },
+    good: { dot: "#ffffff", text: "#ffffff", bg: "#14161a", border: "transparent" },
     info: { dot: "#71717a", text: "#3f3f46", bg: "rgba(0,0,0,0.06)", border: "transparent" },
-    warn: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
-    bad: { dot: "#18181b", text: "#18181b", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+    warn: { dot: "#14161a", text: "#14161a", bg: "transparent", border: "rgba(0,0,0,0.45)" },
+    bad: { dot: "#14161a", text: "#14161a", bg: "transparent", border: "rgba(0,0,0,0.45)" },
   };
   const c = palette[tone];
   return (
@@ -177,7 +177,7 @@ export function VendoraPayConnection() {
           >
             <div
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-              style={{ background: "rgba(0,0,0,0.16)", color: "#18181b" }}
+              style={{ background: "rgba(0,0,0,0.16)", color: "#14161a" }}
             >
               <Landmark className="w-5 h-5" />
             </div>
@@ -203,7 +203,7 @@ export function VendoraPayConnection() {
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
                 background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
-                color: "#18181b",
+                color: "#14161a",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
               }}
               aria-hidden
@@ -268,7 +268,7 @@ export function VendoraPayConnection() {
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
                 background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
-                color: "#18181b",
+                color: "#14161a",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
               }}
               aria-hidden

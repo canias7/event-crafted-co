@@ -49,7 +49,7 @@ export function SignaturePad({
     if (!c || !ctx) return;
     const p = point(e);
     ctx.lineTo(p.x, p.y);
-    ctx.strokeStyle = "#18181b";
+    ctx.strokeStyle = "#14161a";
     ctx.lineWidth = 2.2;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";

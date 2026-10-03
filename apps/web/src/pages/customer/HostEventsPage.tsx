@@ -550,7 +550,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     >
       <div
         className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(0,0,0,0.08)", color: "#18181b" }}
+        style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
       >
         <CalendarIcon className="w-6 h-6" />
       </div>
@@ -701,7 +701,7 @@ function CalendarCell({
                 ? "rgba(255,255,255,0.85)"
                 : disabled
                   ? "rgba(0,0,0,0.08)"
-                  : "#18181b",
+                  : "#14161a",
             }}
           />
         ) : null}
@@ -903,7 +903,7 @@ function EventCard({
             ) : null}
             {event.going_count != null ? (
               <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <Check className="w-3.5 h-3.5 text-accent" />
                 {event.going_count} going
               </span>
             ) : null}
@@ -921,7 +921,7 @@ function EventCard({
             >
               {copied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <Check className="w-3.5 h-3.5 text-accent" />
                   Copied
                 </>
               ) : (

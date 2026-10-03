@@ -328,7 +328,7 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
     <div>
       <p
         className="font-label mb-3"
-        style={{ color: "#18181b", letterSpacing: "0.22em" }}
+        style={{ color: "#14161a", letterSpacing: "0.22em" }}
       >
         FAQ
       </p>
@@ -392,7 +392,7 @@ export function FaqCardList({
             <span
               className="shrink-0 hidden group-open:grid place-items-center w-7 h-7 rounded-full"
               style={{
-                background: "#18181b",
+                background: "#14161a",
                 boxShadow: "0 6px 18px -8px rgba(0,0,0,0.6)",
               }}
               aria-hidden

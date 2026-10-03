@@ -64,7 +64,7 @@ const ACTION_COLOR: Record<string, string> = {
   hilux_reply: "#52525b",
   hilux_regenerate: "#3f3f46",
   hilux_draft: "#71717a",
-  hilux_followup: "#18181b",
+  hilux_followup: "#14161a",
   axion_image: "#9333ea",
   mux_minute: "#06b6d4",
   email_parse: "#10b981",
@@ -391,7 +391,7 @@ export function VendorUsagePageImpl() {
                         className="h-full rounded-full transition-all"
                         style={{
                           width: `${usagePct}%`,
-                          background: "linear-gradient(90deg, #52525b 0%, #18181b 100%)",
+                          background: "linear-gradient(90deg, #52525b 0%, #14161a 100%)",
                         }}
                       />
                     </div>
@@ -446,7 +446,7 @@ export function VendorUsagePageImpl() {
                         style={{
                           height: d.credits > 0 ? `${Math.max(heightPct, 4)}%` : "4px",
                           background: d.credits > 0
-                            ? "linear-gradient(180deg, #52525b 0%, #18181b 100%)"
+                            ? "linear-gradient(180deg, #52525b 0%, #14161a 100%)"
                             : "rgba(0,0,0,0.08)",
                           opacity: hoveredBarIdx === null || active ? 1 : 0.55,
                         }}
@@ -663,7 +663,7 @@ export function VendorUsagePageImpl() {
                         </div>
                         <div
                           className={`text-sm font-semibold tnum shrink-0 ${
-                            positive ? "text-emerald-600" : "text-foreground"
+                            positive ? "text-accent" : "text-foreground"
                           }`}
                         >
                           {positive ? "+" : ""}
@@ -725,7 +725,7 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
   const cellColor = (v: number) => {
     if (v === 0 || max === 0) return "rgba(0,0,0,0.05)";
     const ratio = v / max;
-    if (ratio > 0.75) return "#18181b";
+    if (ratio > 0.75) return "#14161a";
     if (ratio > 0.5) return "#52525b";
     if (ratio > 0.25) return "rgba(0,0,0,0.55)";
     return "rgba(0,0,0,0.28)";
@@ -735,7 +735,7 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
     "rgba(0,0,0,0.28)",
     "rgba(0,0,0,0.55)",
     "#52525b",
-    "#18181b",
+    "#14161a",
   ];
   return (
     <div className="mt-4 flex-1 flex flex-col">
