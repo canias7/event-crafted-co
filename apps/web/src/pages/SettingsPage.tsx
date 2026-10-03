@@ -84,7 +84,7 @@ export default function SettingsPage() {
                 right={
                   <a
                     href="mailto:hello@eventvendora.com"
-                    className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors truncate"
+                    className="text-sm font-medium text-foreground hover:text-foreground transition-colors truncate"
                     title="Contact hello@eventvendora.com to change your email"
                   >
                     {user?.email ?? ""}

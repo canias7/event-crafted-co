@@ -37,6 +37,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const GOLD = "#c9a86a";
 const GOLD_SOFT = "#eadfc6";
 const SERIF = "LibreBaskerville";
@@ -303,7 +304,7 @@ export default function CrmScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder="Search clients"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF, flex: 1, marginLeft: 9, paddingVertical: 12, fontSize: 15, color: INK }}
           />
           {query ? (
@@ -718,7 +719,7 @@ function ClientSheet({
               value={noteText}
               onChangeText={setNoteText}
               placeholder="Add a private note — pricing, preferences, kids' names…"
-              placeholderTextColor={INK_DIM}
+              placeholderTextColor={PLACEHOLDER}
               multiline
               style={{ fontFamily: SERIF, minHeight: 60, fontSize: 14, color: INK, textAlignVertical: "top" }}
             />

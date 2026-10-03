@@ -190,7 +190,7 @@ export default function SignContractPage() {
           }}
         >
           <h1 className="font-editorial text-3xl mb-4">{contract.title}</h1>
-          <div className="text-[14px] leading-relaxed text-foreground/90 whitespace-pre-wrap border-t border-foreground/10 pt-4">
+          <div className="text-[14px] leading-relaxed text-foreground whitespace-pre-wrap border-t border-foreground/10 pt-4">
             {contract.body}
           </div>
 
@@ -247,7 +247,7 @@ export default function SignContractPage() {
                   />
                   {signerName.trim() && !signatureImage ? (
                     <p
-                      className="mt-2 text-2xl text-foreground/90"
+                      className="mt-2 text-2xl text-foreground"
                       style={{ fontFamily: "'Brush Script MT', cursive" }}
                     >
                       {signerName.trim()}
@@ -269,7 +269,7 @@ export default function SignContractPage() {
                     Verify your email to sign
                   </label>
                   <div className="mt-1 flex gap-2 items-center">
-                    <div className="flex-1 rounded-md border border-foreground/15 bg-muted/40 px-3 py-2 text-sm text-foreground/80">
+                    <div className="flex-1 rounded-md border border-foreground/15 bg-muted/40 px-3 py-2 text-sm text-foreground">
                       We'll send a code to{" "}
                       <span className="font-medium">
                         {contract.recipient_email_masked}
@@ -309,7 +309,7 @@ export default function SignContractPage() {
                     </div>
                   ) : null}
                 </div>
-                <label className="flex items-start gap-2 text-sm text-foreground/80 cursor-pointer">
+                <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
                   <input
                     type="checkbox"
                     checked={agreed}

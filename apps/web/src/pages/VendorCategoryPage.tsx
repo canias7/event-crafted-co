@@ -204,7 +204,7 @@ export default function VendorCategoryPage() {
                     className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
                       active
                         ? "bg-foreground text-background border-foreground"
-                        : "bg-background border-border text-foreground/80 hover:border-foreground/40"
+                        : "bg-background border-border text-foreground hover:border-foreground/40"
                     }`}
                   >
                     {sub}

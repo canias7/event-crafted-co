@@ -40,6 +40,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -433,7 +434,7 @@ function Field({
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={INK_DIM}
+        placeholderTextColor={PLACEHOLDER}
         multiline={multiline}
         style={{ fontFamily: SERIF,
           marginTop: 6,

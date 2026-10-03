@@ -1431,7 +1431,7 @@ export default function VendorAppointmentsPage({
                 htmlFor="block-title"
                 className="block text-xs font-medium text-muted-foreground mb-1.5"
               >
-                What is it? <span className="text-muted-foreground/70">(optional)</span>
+                What is it? <span className="text-muted-foreground">(optional)</span>
               </label>
               <Input
                 id="block-title"
@@ -1750,7 +1750,7 @@ function RecurringBlocksSection({
               className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
                 isOff
                   ? "bg-foreground text-background"
-                  : "bg-secondary/60 text-foreground/70 hover:bg-secondary"
+                  : "bg-secondary/60 text-foreground hover:bg-secondary"
               }`}
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : short}

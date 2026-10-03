@@ -366,7 +366,7 @@ export function ChatSendPicker({
               aria-label="Send an invoice, pay link, proposal, or contract"
               className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
             >
-              <Plus className="w-3.5 h-3.5 text-foreground/70" />
+              <Plus className="w-3.5 h-3.5 text-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
@@ -374,14 +374,14 @@ export function ChatSendPicker({
               const Icon = KIND_META[k].icon;
               return (
                 <DropdownMenuItem key={k} onClick={() => setKind(k)}>
-                  <Icon className="w-3.5 h-3.5 mr-2 text-foreground/70" />
+                  <Icon className="w-3.5 h-3.5 mr-2 text-foreground" />
                   {KIND_META[k].label}
                 </DropdownMenuItem>
               );
             })}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className="select-none text-foreground/80">Send</span>
+        <span className="select-none text-foreground">Send</span>
       </div>
 
       <Dialog

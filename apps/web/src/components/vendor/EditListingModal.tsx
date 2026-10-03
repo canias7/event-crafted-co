@@ -644,7 +644,7 @@ export function EditListingModal({
                       <button
                         type="button"
                         onClick={() => setPhotosExpanded((v) => !v)}
-                        className="mt-3 text-xs font-medium text-foreground/70 hover:text-foreground"
+                        className="mt-3 text-xs font-medium text-foreground hover:text-foreground"
                       >
                         {photosExpanded
                           ? `Show first ${PHOTO_GRID_CAP}`

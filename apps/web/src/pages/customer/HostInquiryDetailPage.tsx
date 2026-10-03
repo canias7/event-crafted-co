@@ -829,7 +829,7 @@ export default function HostInquiryDetailPage() {
           <Link
             to="/customer/inquiries"
             aria-label="Back to inquiries"
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -871,7 +871,7 @@ export default function HostInquiryDetailPage() {
             type="button"
             onClick={() => setSummaryOpen(true)}
             aria-label="Inquiry details"
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground/80 hover:bg-white"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
           >
             <Info className="w-4 h-4" />
           </button>
@@ -1096,7 +1096,7 @@ export default function HostInquiryDetailPage() {
                         under the last message in a run. */}
                     {it.showTail ? (
                       <p
-                        className={`text-[10px] text-muted-foreground/80 tnum mt-0.5 ${
+                        className={`text-[10px] text-muted-foreground tnum mt-0.5 ${
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
@@ -1241,7 +1241,7 @@ export default function HostInquiryDetailPage() {
               onClick={() => setAppointmentModalOpen(true)}
               className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
             >
-              <CalendarDays className="w-3.5 h-3.5 text-foreground/70" />
+              <CalendarDays className="w-3.5 h-3.5 text-foreground" />
               Propose meeting
             </button>
           </div>
@@ -1436,7 +1436,7 @@ function InquirySummarySheet({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-background/95 border border-border/40 shadow-sm text-foreground/80 hover:bg-white inline-flex items-center justify-center"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-background/95 border border-border/40 shadow-sm text-foreground hover:bg-white inline-flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>

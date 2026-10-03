@@ -197,7 +197,7 @@ function StatusTile({
             ))}
           </div>
           {row.body && (
-            <p className="text-xs text-foreground/75 mt-1.5 leading-relaxed italic line-clamp-3">
+            <p className="text-xs text-foreground mt-1.5 leading-relaxed italic line-clamp-3">
               "{row.body}"
             </p>
           )}

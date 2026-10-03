@@ -581,7 +581,7 @@ export default function VendorDetailPage() {
                     <h2 className="font-editorial text-4xl mb-6">
                       About {vendor.name}
                     </h2>
-                    <p className="text-base text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap">
                       {vendor.description}
                     </p>
                   </div>
@@ -883,7 +883,7 @@ export default function VendorDetailPage() {
                             : ""}
                         </p>
                         {r.note && (
-                          <p className="text-xs text-foreground/75 leading-relaxed mt-3 italic line-clamp-3">
+                          <p className="text-xs text-foreground leading-relaxed mt-3 italic line-clamp-3">
                             "{r.note}"
                           </p>
                         )}
@@ -936,7 +936,7 @@ export default function VendorDetailPage() {
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-2.5 text-sm">
                       <Calendar className="w-4 h-4 text-accent flex-shrink-0" />
-                      <span className="text-foreground/80">
+                      <span className="text-foreground">
                         Live availability calendar
                       </span>
                     </div>
@@ -1004,7 +1004,7 @@ export default function VendorDetailPage() {
                 </div>
 
                 <div className="bg-secondary/50 rounded-sm p-5 text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-medium text-foreground/85">No pay-to-rank.</span>{" "}
+                  <span className="font-medium text-foreground">No pay-to-rank.</span>{" "}
                   Vendora doesn't accept money to influence search ranking. Vendors
                   appear based on fit and review quality, not ad spend.
                 </div>

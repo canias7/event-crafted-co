@@ -139,7 +139,7 @@ export function HostReputationCard({
     <div className="card-soft p-4">
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <TierIcon className="w-3.5 h-3.5 text-foreground/70" />
+          <TierIcon className="w-3.5 h-3.5 text-foreground" />
           <p className="font-label text-muted-foreground">Host signals</p>
         </div>
         <span

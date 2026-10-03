@@ -50,6 +50,7 @@ const GOLD = "#c9a86a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
 const ACCENT = "#1B3654";
 const SERIF = "LibreBaskerville";
@@ -905,7 +906,7 @@ export default function ListingScreen() {
                     value={priceMin}
                     onChangeText={setPriceMin}
                     placeholder="0"
-                    placeholderTextColor={INK_DIM}
+                    placeholderTextColor={PLACEHOLDER}
                     keyboardType="decimal-pad"
                     style={{ fontFamily: SERIF, flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
                   />
@@ -923,7 +924,7 @@ export default function ListingScreen() {
                     value={priceMax}
                     onChangeText={setPriceMax}
                     placeholder="—"
-                    placeholderTextColor={INK_DIM}
+                    placeholderTextColor={PLACEHOLDER}
                     keyboardType="decimal-pad"
                     style={{ fontFamily: SERIF, flex: 1, fontSize: 16, color: INK, paddingVertical: 0 }}
                   />
@@ -1394,7 +1395,7 @@ function TextField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={INK_DIM}
+        placeholderTextColor={PLACEHOLDER}
         multiline={multiline}
         keyboardType={keyboardType}
         style={{ fontFamily: SERIF,

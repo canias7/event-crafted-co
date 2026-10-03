@@ -42,7 +42,7 @@ export function UnderConstruction({ title }: { title?: string }) {
           }}
         >
           <div className="w-12 h-12 mx-auto rounded-full bg-foreground/10 flex items-center justify-center mb-4">
-            <Construction className="w-6 h-6 text-foreground/70" />
+            <Construction className="w-6 h-6 text-foreground" />
           </div>
           <h2 className="font-editorial text-2xl mb-2">
             {title ? `${title} — under construction` : "Under construction"}

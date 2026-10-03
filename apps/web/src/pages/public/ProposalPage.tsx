@@ -419,6 +419,7 @@ export default function ProposalPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Type your full name to accept"
+                  className="placeholder:text-gray-400"
                   style={{
                     width: "100%",
                     background: "#2a2a2a",

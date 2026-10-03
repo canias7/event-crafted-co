@@ -550,7 +550,7 @@ export function InquiryFormModal({
                     modifiers={{ blocked: blockedDateObjects }}
                     modifiersClassNames={{
                       blocked:
-                        "line-through text-muted-foreground/70 bg-muted/40",
+                        "line-through text-muted-foreground bg-muted/40",
                     }}
                   />
                   <div className="px-3 pb-3 pt-1 text-[11px] text-muted-foreground border-t border-border">

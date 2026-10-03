@@ -380,7 +380,7 @@ export default function VendorInboxPage() {
                   className={`shrink-0 inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
                     active
                       ? "bg-foreground text-background border-foreground"
-                      : "bg-secondary/50 text-foreground/75 border-transparent hover:bg-secondary"
+                      : "bg-secondary/50 text-foreground border-transparent hover:bg-secondary"
                   }`}
                 >
                   {pill.dot ? (

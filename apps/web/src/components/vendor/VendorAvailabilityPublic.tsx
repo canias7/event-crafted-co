@@ -153,7 +153,7 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
           }}
           modifiersClassNames={{
             blocked:
-              "line-through text-muted-foreground/70 bg-muted/40 hover:bg-muted/40",
+              "line-through text-muted-foreground bg-muted/40 hover:bg-muted/40",
           }}
         />
       </div>

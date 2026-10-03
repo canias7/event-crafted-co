@@ -217,7 +217,7 @@ function PostsGrid({
               />
             </div>
             {p.caption ? (
-              <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+              <p className="mt-2 text-xs text-foreground leading-snug line-clamp-2">
                 {p.caption}
               </p>
             ) : null}
@@ -280,7 +280,7 @@ function ReelsGrid({
               </span>
             </div>
             {r.caption ? (
-              <p className="mt-2 text-xs text-foreground/80 leading-snug line-clamp-2">
+              <p className="mt-2 text-xs text-foreground leading-snug line-clamp-2">
                 {r.caption}
               </p>
             ) : null}

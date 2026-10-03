@@ -60,6 +60,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — a solid lighter gold rather than
@@ -1946,7 +1947,7 @@ export default function CalendarScreen() {
           value={blockTitleInput}
           onChangeText={setBlockTitleInput}
           placeholder="What is it? (optional)"
-          placeholderTextColor={INK_DIM}
+          placeholderTextColor={PLACEHOLDER}
           autoFocus
           maxLength={80}
           returnKeyType="done"
@@ -2063,7 +2064,7 @@ export default function CalendarScreen() {
             value={aTitle}
             onChangeText={setATitle}
             placeholder="Vacation, External shoot…"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             style={inputStyle}
           />
           <ScrollView
@@ -2096,7 +2097,7 @@ export default function CalendarScreen() {
             value={aTime}
             onChangeText={setATime}
             placeholder="09:00"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             keyboardType="numbers-and-punctuation"
             maxLength={5}
             style={inputStyle}
@@ -2169,7 +2170,7 @@ export default function CalendarScreen() {
             value={aLocation}
             onChangeText={setALocation}
             placeholder="Address, Zoom…"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             style={inputStyle}
           />
 
@@ -2178,7 +2179,7 @@ export default function CalendarScreen() {
             value={aNotes}
             onChangeText={setANotes}
             placeholder="Anything to remember"
-            placeholderTextColor={INK_DIM}
+            placeholderTextColor={PLACEHOLDER}
             multiline
             style={[inputStyle, { height: 70, textAlignVertical: "top" }]}
           />

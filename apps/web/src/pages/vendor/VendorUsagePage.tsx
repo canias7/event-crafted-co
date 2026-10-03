@@ -609,7 +609,7 @@ export function VendorUsagePageImpl() {
                   <button
                     type="button"
                     onClick={() => setActivityExpanded((v) => !v)}
-                    className="text-xs text-foreground/70 hover:text-foreground font-medium"
+                    className="text-xs text-foreground hover:text-foreground font-medium"
                   >
                     {/* Ledger is capped at 25 rows, so once we hit that
                         we can't honestly call it "all" — say "recent 25"

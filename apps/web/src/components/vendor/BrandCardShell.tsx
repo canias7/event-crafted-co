@@ -32,7 +32,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
         type="button"
         onClick={() => setFlipped((f) => !f)}
         aria-label={flipped ? "Show profile front" : "Show bio on back"}
-        className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground/80 hover:text-foreground transition-colors"
+        className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground hover:text-foreground transition-colors"
         style={{
           background: "rgba(255,255,255,0.7)",
           border: "0.5px solid rgba(0,0,0,0.28)",
@@ -95,7 +95,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
           </p>
           <div className="relative flex-1 mt-3 overflow-y-auto pr-2">
             {bio?.trim() ? (
-              <p className="font-editorial italic text-foreground/85 text-[17px] sm:text-[19px] leading-[1.5] whitespace-pre-line">
+              <p className="font-editorial italic text-foreground text-[17px] sm:text-[19px] leading-[1.5] whitespace-pre-line">
                 {bio}
               </p>
             ) : (

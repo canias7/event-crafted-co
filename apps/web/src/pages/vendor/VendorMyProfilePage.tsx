@@ -512,7 +512,7 @@ function ListingDirectoryCard({
       ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
       : listing.application_status === "rejected"
         ? "bg-red-500/15 text-red-700 border-red-500/30"
-        : "bg-foreground/10 text-foreground/70 border-foreground/15";
+        : "bg-foreground/10 text-foreground border-foreground/15";
   return (
     <>
       <button
@@ -546,7 +546,7 @@ function ListingDirectoryCard({
             {[listing.category, listing.location].filter(Boolean).join(" · ")}
           </p>
           {price ? (
-            <p className="text-xs text-foreground/80 mt-0.5 tnum">{price}</p>
+            <p className="text-xs text-foreground mt-0.5 tnum">{price}</p>
           ) : null}
           {pricingModelsLabel(listing.pricing_models) && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
@@ -697,7 +697,7 @@ function ListingPreviewModal({
                 <p className="mt-3 text-sm font-medium tnum">{price}</p>
               ) : null}
               {listing.bio ? (
-                <p className="mt-4 text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                <p className="mt-4 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                   {listing.bio}
                 </p>
               ) : (

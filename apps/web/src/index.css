@@ -26,7 +26,13 @@
     --secondary-foreground: 220 14% 9%;
 
     --muted: 42 31% 89%;
-    --muted-foreground: 220 8% 40%;
+    /* Secondary text is ink, not grey — the app's "black or bronze
+       everywhere" rule. Kept as its own token so it can diverge again. */
+    --muted-foreground: 220 14% 9%;
+
+    /* Placeholder text — warm and lighter than typed text, but still
+       4.5:1+ on cream fields. Same value as the app's PLACEHOLDER. */
+    --placeholder: 38 14% 40%;
 
     /* Accent = champagne bronze (the app's gold text tone #8a6f3e).
        Used for links, focus rings, badges, labels, the ✦ accents. */
@@ -71,6 +77,14 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  /* Preflight's default placeholder is a cool grey (#9ca3af) that fails
+     contrast on cream. Bare inputs start from the token instead; a
+     placeholder: utility on the element still wins. */
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--placeholder));
   }
 
   body {

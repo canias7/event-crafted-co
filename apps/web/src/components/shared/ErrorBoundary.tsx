@@ -139,7 +139,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <summary className="text-xs uppercase tracking-wide text-muted-foreground cursor-pointer">
                 Stack trace (dev only)
               </summary>
-              <pre className="text-[10px] mt-3 whitespace-pre-wrap font-mono text-foreground/85">
+              <pre className="text-[10px] mt-3 whitespace-pre-wrap font-mono text-foreground">
                 {this.state.error.toString()}
                 {this.state.errorInfo?.componentStack}
               </pre>

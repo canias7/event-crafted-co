@@ -144,7 +144,7 @@ export function InquiryReviewCard({
         </div>
       </div>
       {review.body ? (
-        <p className="text-sm leading-relaxed text-foreground/85">
+        <p className="text-sm leading-relaxed text-foreground">
           "{review.body}"
         </p>
       ) : (
@@ -174,12 +174,12 @@ export function InquiryReviewCard({
                   Edit ({minsLeft}m left)
                 </Button>
               ) : (
-                <span className="text-[10px] text-muted-foreground/70">
+                <span className="text-[10px] text-muted-foreground">
                   Edit window closed
                 </span>
               )}
             </div>
-            <p className="text-sm leading-relaxed text-foreground/85">
+            <p className="text-sm leading-relaxed text-foreground">
               {review.response.body}
             </p>
           </>

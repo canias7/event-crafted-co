@@ -145,7 +145,7 @@ export default function VendorCityPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...spring, delay: 0.25 }}
-            className="text-base md:text-lg text-foreground/75 max-w-2xl leading-relaxed"
+            className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed"
           >
             {inCity.length}{" "}
             {inCity.length === 1 ? "vendor" : "vendors"} based in or
@@ -165,7 +165,7 @@ export default function VendorCityPage() {
                   <Link
                     key={cat}
                     to={`/vendors/${slug}/in/${citySlug}`}
-                    className="text-xs uppercase tracking-wide bg-secondary/60 hover:bg-secondary text-foreground/80 px-3 py-1.5 rounded-full transition-colors"
+                    className="text-xs uppercase tracking-wide bg-secondary/60 hover:bg-secondary text-foreground px-3 py-1.5 rounded-full transition-colors"
                   >
                     {cat}
                     <span className="text-muted-foreground ml-1.5 tnum">

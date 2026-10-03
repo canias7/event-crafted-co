@@ -30,6 +30,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded, so "unavailable"
 // never reads as "broken".
@@ -591,7 +592,7 @@ export function SettingsSheet({
                 value={newPwd}
                 onChangeText={setNewPwd}
                 placeholder="••••••••"
-                placeholderTextColor={INK_DIM}
+                placeholderTextColor={PLACEHOLDER}
                 style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: CARD,
@@ -621,7 +622,7 @@ export function SettingsSheet({
                 value={confirmPwd}
                 onChangeText={setConfirmPwd}
                 placeholder="••••••••"
-                placeholderTextColor={INK_DIM}
+                placeholderTextColor={PLACEHOLDER}
                 style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: CARD,

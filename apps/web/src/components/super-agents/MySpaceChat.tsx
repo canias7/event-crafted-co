@@ -1260,7 +1260,7 @@ export function MySpaceChat({ docked = false }: { docked?: boolean } = {}) {
         onKeyDown={onKeyDown}
         rows={2}
         placeholder={composerPlaceholder}
-        className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[52px] max-h-60 py-1.5 px-1 placeholder:text-foreground/40 text-foreground"
+        className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[52px] max-h-60 py-1.5 px-1 placeholder:text-placeholder text-foreground"
         disabled={sending}
       />
       <div className="flex items-center justify-between gap-2 mt-1.5">
