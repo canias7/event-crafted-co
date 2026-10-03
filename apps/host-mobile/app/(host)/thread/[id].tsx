@@ -546,7 +546,7 @@ function EmojiPickerModal({
           <Text
             style={{
               color: INK,
-              fontFamily: SERIF_ITALIC,
+              fontFamily: SERIF_BOLD,
               fontSize: 18,
               marginBottom: 12,
               paddingHorizontal: 4,

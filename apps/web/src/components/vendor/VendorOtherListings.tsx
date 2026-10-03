@@ -130,7 +130,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
                       loading="lazy"
                     />
                   ) : (
-                    <span className="font-serif italic text-4xl text-muted-foreground">
+                    <span className="font-serif font-bold text-4xl text-muted-foreground">
                       {displayName[0]?.toUpperCase()}
                     </span>
                   )}
@@ -139,7 +139,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
                   <p className="text-xs uppercase tracking-widest text-muted-foreground truncate">
                     {l.category ?? "Vendor"}
                   </p>
-                  <h3 className="mt-1 font-medium text-foreground truncate">
+                  <h3 className="mt-1 font-bold text-foreground truncate">
                     {displayName}
                   </h3>
                   {l.location ? (

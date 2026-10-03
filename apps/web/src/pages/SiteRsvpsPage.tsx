@@ -147,7 +147,7 @@ export default function SiteRsvpsPage() {
         <div className="text-[14px] uppercase tracking-[2px] text-black/40 mb-4">
           Not found
         </div>
-        <h1 className="text-[24px] font-medium mb-3">
+        <h1 className="text-[24px] font-bold mb-3">
           We couldn't find that site (or it isn't yours).
         </h1>
         <Link
@@ -191,7 +191,7 @@ export default function SiteRsvpsPage() {
           <div className="text-[11px] uppercase tracking-[2px] text-black/40 mb-1">
             RSVPs for
           </div>
-          <h1 className="text-[28px] font-medium">{site?.title ?? slug}</h1>
+          <h1 className="text-[28px] font-bold">{site?.title ?? slug}</h1>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">

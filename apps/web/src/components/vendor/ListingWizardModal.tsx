@@ -505,7 +505,7 @@ export function ListingWizardModal({
           <X className="h-5 w-5" />
         </button>
         <div className="text-center">
-          <h2 className="font-editorial text-xl italic">New listing</h2>
+          <h2 className="font-editorial text-xl">New listing</h2>
         </div>
         <div className="w-7" />
       </header>

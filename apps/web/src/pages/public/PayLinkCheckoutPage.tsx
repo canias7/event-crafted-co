@@ -367,15 +367,16 @@ export default function PayLinkCheckoutPage() {
             stripe={stripePromise}
             options={{
               clientSecret,
+              fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" }],
               appearance: {
                 theme: "stripe",
                 variables: {
                   colorPrimary: "#14161a",
                   colorBackground: "#ffffff",
                   colorText: "#14161a",
-                  colorTextSecondary: "#71717a",
-                  colorDanger: "#dc2626",
-                  fontFamily: "system-ui, sans-serif",
+                  colorTextSecondary: "#14161a",
+                  colorDanger: "#b23a34",
+                  fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif",
                   borderRadius: "12px",
                 },
               },

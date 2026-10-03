@@ -85,7 +85,9 @@ export function VendoraLogo({
       />
       <span className="flex flex-col leading-none">
         <span
-          className={cn("font-editorial not-italic lowercase", dims.name)}
+          // Italic regular, exactly as the wordmark has always rendered. Plain
+          // utilities only: the custom font-editorial class would win over them.
+          className={cn("font-serif italic font-normal lowercase", dims.name)}
           style={{ color: name, letterSpacing: "0.01em", lineHeight: 1 }}
         >
           vendora

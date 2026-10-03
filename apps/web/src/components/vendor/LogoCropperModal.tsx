@@ -176,7 +176,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
           <X className="w-4 h-4" />
         </button>
 
-        <h2 className="font-editorial italic text-2xl mb-1">Adjust your logo</h2>
+        <h2 className="font-editorial text-2xl mb-1">Adjust your logo</h2>
         <p className="text-xs text-muted-foreground mb-5">
           Drag to position. Slide to zoom — zoom all the way out to fit your
           whole logo.

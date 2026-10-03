@@ -351,7 +351,7 @@ export function MySpaceToolSwitches() {
         <div className="flex items-center gap-2">
           <Settings2 className="w-4 h-4 text-muted-foreground" />
           <div>
-            <h3 className="text-sm font-medium">My Space tools</h3>
+            <h3 className="text-sm font-bold">My Space tools</h3>
             <p className="text-xs text-muted-foreground">
               {loading
                 ? "Loading…"

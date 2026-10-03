@@ -99,7 +99,7 @@ export default function SuperAgentsPage() {
       <AmbientBackdrop disabled={!!reduceMotion} />
 
       <header className="relative z-20 flex items-center justify-between px-6 py-5 md:px-10 md:py-6">
-        <Link to="/" className="font-editorial text-[22px] italic text-black">
+        <Link to="/" className="font-editorial text-[22px] text-black">
           Vendora
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-[13px] text-black/80">
@@ -358,13 +358,13 @@ export function AgentsSection() {
         className="text-center font-editorial mx-auto mb-20"
         style={{
           fontSize: "clamp(48px, 7vw, 92px)",
-          fontWeight: 500,
+          fontWeight: 700,
           lineHeight: 1,
           letterSpacing: "-1.5px",
           maxWidth: 1000,
         }}
       >
-        Two minds. <span className="italic">One vendor.</span>
+        Two minds. <span>One vendor.</span>
       </motion.h1>
 
       <div className="space-y-24 md:space-y-40">
@@ -418,7 +418,7 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
             className="font-editorial"
             style={{
               fontSize: "clamp(40px, 5.5vw, 64px)",
-              fontWeight: 500,
+              fontWeight: 700,
               letterSpacing: "-1.5px",
               lineHeight: 1,
             }}
@@ -433,7 +433,7 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
           </span>
         </div>
         <p
-          className="mt-3 font-editorial italic text-black/85"
+          className="mt-3 font-serif italic text-black/85"
           style={{ fontSize: "clamp(20px, 2.5vw, 28px)", lineHeight: 1.2 }}
         >
           {agent.tagline}
@@ -575,10 +575,9 @@ function FloatingCharacter({ agent }: { agent: Agent }) {
         className="absolute inset-x-0 top-[6%] flex justify-center -z-10 select-none"
       >
         <span
-          className="font-editorial italic"
+          className="font-editorial"
           style={{
             fontSize: "clamp(80px, 14vw, 180px)",
-            fontWeight: 500,
             letterSpacing: "-4px",
             color: "rgba(0,0,0,0.04)",
             lineHeight: 1,

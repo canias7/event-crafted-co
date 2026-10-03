@@ -494,7 +494,7 @@ export default function ExperienceListingScreen() {
           </Pressable>
           <Text
             style={{
-              fontFamily: "LibreBaskerville-Italic",
+              fontFamily: "LibreBaskerville-Bold",
               fontSize: 24,
               color: INK,
             }}

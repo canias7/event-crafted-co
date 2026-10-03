@@ -233,7 +233,7 @@ export default function StatusPage() {
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
             How the system is{" "}
-            <span className="italic font-light text-accent">behaving.</span>
+            <span className="text-accent">behaving.</span>
           </h1>
 
           {/* Top-line overall */}

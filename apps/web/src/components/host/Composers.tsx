@@ -31,7 +31,7 @@ export function ModalShell({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h3 className="font-medium">{title}</h3>
+          <h3 className="font-bold">{title}</h3>
           <button
             type="button"
             onClick={onClose}

@@ -180,7 +180,7 @@ export default function HostAccountPage() {
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                 <Sparkles className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="font-editorial italic text-2xl">Coming soon</p>
+              <p className="font-editorial text-2xl">Coming soon</p>
               <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto leading-relaxed">
                 Premium host plans for unlimited inquiries, priority replies,
                 and concierge support are on the way.

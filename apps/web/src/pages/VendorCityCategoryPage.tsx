@@ -149,7 +149,7 @@ export default function VendorCityCategoryPage() {
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             {config.display} in{" "}
-            <span className="italic font-light text-accent">{cityLabel}</span>
+            <span className="text-accent">{cityLabel}</span>
           </h1>
           <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
             {config.longCopy} Showing the curated list of{" "}

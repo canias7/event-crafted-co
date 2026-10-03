@@ -217,7 +217,7 @@ export default function ProposalPage() {
         className="flex items-center justify-center px-6 text-center"
       >
         <div>
-          <h1 style={{ fontFamily: "Georgia, serif", color: C.ink }} className="text-3xl mb-2">
+          <h1 style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: C.ink }} className="text-3xl mb-2">
             Proposal not found
           </h1>
           <p style={{ color: C.sub }} className="text-sm">
@@ -265,9 +265,9 @@ export default function ProposalPage() {
           <div style={{ padding: "38px 42px" }}>
             <h1
               style={{
-                fontFamily: "Georgia, 'Times New Roman', serif",
+                fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif",
                 fontSize: 33,
-                fontWeight: 400,
+                fontWeight: 700,
                 letterSpacing: "-0.4px",
                 lineHeight: 1.1,
                 color: C.ink,
@@ -351,8 +351,9 @@ export default function ProposalPage() {
                     {b.amount ? (
                       <div
                         style={{
-                          fontFamily: "Georgia, serif",
+                          fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif",
                           fontSize: 30,
+                          fontWeight: 700,
                           color: C.ink,
                           whiteSpace: "nowrap",
                         }}
@@ -406,7 +407,7 @@ export default function ProposalPage() {
           ) : isOpen ? (
             <div style={{ background: C.foot, color: C.footInk, padding: "30px 42px 38px" }}>
               <h3
-                style={{ fontFamily: "Georgia, serif", fontSize: 23, fontWeight: 400 }}
+                style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", fontSize: 23, fontWeight: 700 }}
                 className="text-center mb-1.5"
               >
                 Ready to move forward?

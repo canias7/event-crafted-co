@@ -98,7 +98,7 @@ export default function VendorLocationsPage() {
           </p>
           <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-4">
             Find your team{" "}
-            <span className="italic font-light text-accent">near you.</span>
+            <span className="text-accent">near you.</span>
           </h1>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed">
             {totalLocations} {totalLocations === 1 ? "city" : "cities"} on Vendora

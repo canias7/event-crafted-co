@@ -50,7 +50,6 @@ const PAGE_TITLE = {
   marginTop: 8,
 } as const;
 
-const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Same hue palette as inbox so a vendor's avatar color is consistent
 // everywhere they appear in the app.
@@ -392,7 +391,7 @@ export default function EventsScreen() {
             <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
               <Text
                 style={{
-                  fontFamily: SERIF_ITALIC,
+                  fontFamily: SERIF_BOLD,
                   fontSize: 20,
                   color: INK,
                   marginBottom: 10,
@@ -430,7 +429,7 @@ export default function EventsScreen() {
                     <Text
                       style={{
                         color: INK,
-                        fontFamily: SERIF_ITALIC,
+                        fontFamily: SERIF_BOLD,
                         fontSize: 17,
                       }}
                     >
@@ -454,7 +453,7 @@ export default function EventsScreen() {
                   >
                     <Text
                       style={{
-                        fontFamily: SERIF_ITALIC,
+                        fontFamily: SERIF_BOLD,
                         fontSize: 20,
                         color: INK,
                       }}
@@ -747,7 +746,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
           style={{
             marginTop: 18,
             color: CREAM,
-            fontFamily: SERIF_ITALIC,
+            fontFamily: SERIF_BOLD,
             fontSize: 28,
           }}
         >

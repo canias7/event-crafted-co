@@ -1829,7 +1829,7 @@ function InquiryPreviewSheet({
         <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-accent mb-2">
           Inquiry preview
         </p>
-        <h2 className="font-editorial italic text-3xl mb-1">{hostName}</h2>
+        <h2 className="font-editorial text-3xl mb-1">{hostName}</h2>
         <p className="text-sm text-muted-foreground capitalize mb-6">
           {eventLabel}
         </p>

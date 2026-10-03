@@ -45,7 +45,6 @@ const PAGE_TITLE = {
   marginTop: 8,
 } as const;
 
-const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 interface Stats {
   inquiries: number;
@@ -393,7 +392,7 @@ function HeroCard({
           <Text
             style={{
               color: CREAM,
-              fontFamily: SERIF_ITALIC,
+              fontFamily: SERIF_BOLD,
               fontSize: 56,
             }}
           >
@@ -423,7 +422,7 @@ function HeroCard({
         style={{
           marginTop: 14,
           color: INK,
-          fontFamily: SERIF_ITALIC,
+          fontFamily: SERIF_BOLD,
           fontSize: 26,
         }}
         numberOfLines={1}
@@ -564,7 +563,7 @@ function ShortcutTile({
             style={{
               marginTop: 14,
               color: INK,
-              fontFamily: SERIF_ITALIC,
+              fontFamily: SERIF_BOLD,
               fontSize: 18,
             }}
           >

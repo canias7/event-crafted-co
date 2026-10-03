@@ -332,7 +332,7 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
       >
         FAQ
       </p>
-      <h2 className="font-editorial italic text-4xl mb-7 text-foreground">
+      <h2 className="font-editorial text-4xl mb-7 text-foreground">
         Common questions
       </h2>
       <FaqCardList items={faqs.map((f) => ({ q: f.q, a: f.a }))} />

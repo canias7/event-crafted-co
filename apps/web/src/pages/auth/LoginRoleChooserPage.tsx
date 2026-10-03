@@ -88,7 +88,7 @@ export default function LoginRoleChooserPage() {
       {/* Top-left wordmark */}
       <Link
         to="/"
-        className="absolute z-[3] font-editorial italic"
+        className="absolute z-[3] font-editorial"
         style={{ top: "32px", left: "40px", fontSize: "26px", color: "#000" }}
       >
         Vendora
@@ -153,10 +153,9 @@ export default function LoginRoleChooserPage() {
           Sign in
         </h1>
         <h1
-          className="font-editorial italic text-black mt-2 mb-4 text-center"
+          className="font-editorial text-black mt-2 mb-4 text-center"
           style={{
             fontSize: "48px",
-            fontWeight: 500,
             lineHeight: 1.1,
             letterSpacing: "-0.8px",
           }}
@@ -254,7 +253,7 @@ function RoleCard({
       </div>
       <div className="flex-1">
         <div
-          className="font-editorial italic"
+          className="font-editorial"
           style={{ fontSize: "20px", color: "#000", marginBottom: "3px" }}
         >
           {title}

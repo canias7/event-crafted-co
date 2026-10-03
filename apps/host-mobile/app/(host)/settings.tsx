@@ -38,7 +38,6 @@ const BORDER = "#e6e1d5";
 const DANGER = "#b23a34";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
-const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -145,7 +144,7 @@ export default function SettingsScreen() {
               style={{
                 marginLeft: 4,
                 color: INK,
-                fontFamily: SERIF_ITALIC,
+                fontFamily: SERIF_BOLD,
                 fontSize: 28,
               }}
             >

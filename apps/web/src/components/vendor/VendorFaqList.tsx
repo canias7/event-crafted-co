@@ -29,7 +29,7 @@ export function VendorFaqList({
       >
         {eyebrow}
       </p>
-      <h2 className="font-editorial italic text-4xl mb-7 text-foreground">
+      <h2 className="font-editorial text-4xl mb-7 text-foreground">
         {title}
       </h2>
       <FaqCardList items={items} />

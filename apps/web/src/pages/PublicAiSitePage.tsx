@@ -60,7 +60,7 @@ export default function PublicAiSitePage() {
         <div className="text-[14px] uppercase tracking-[2px] text-black/40 mb-4">
           Site not found
         </div>
-        <h1 className="text-[28px] font-medium mb-3">
+        <h1 className="text-[28px] font-bold mb-3">
           This link has expired or never existed.
         </h1>
         <Link

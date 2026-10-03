@@ -137,7 +137,7 @@ export default function VendorCityPage() {
             className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6"
           >
             The {cityLabel} list,{" "}
-            <span className="italic font-light text-accent">
+            <span className="text-accent">
               hand-curated.
             </span>
           </motion.h1>
