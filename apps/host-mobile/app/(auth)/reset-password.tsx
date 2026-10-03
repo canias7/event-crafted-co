@@ -42,6 +42,7 @@ const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded.
 const GOLD_MUTED = "#e0d2b0";
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const INK_BORDER = "#e6e1d5";
 const INPUT_BG = "#fbf9f4";
 const ERROR = "#b23a34";
@@ -331,7 +332,7 @@ export default function ResetPasswordScreen() {
                     secureTextEntry={!showPassword}
                     autoComplete="password-new"
                     placeholder="••••••••"
-                    placeholderTextColor={INK_DIM}
+                    placeholderTextColor={PLACEHOLDER}
                     style={{ fontFamily: SERIF,
                       flex: 1,
                       paddingHorizontal: 14,

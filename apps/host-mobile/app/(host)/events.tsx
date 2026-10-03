@@ -32,9 +32,9 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const GREEN = "#22c55e";
-const AMBER = "#c9a86a";
-const GREEN_BG = "#e3f5e8";
-const AMBER_BG = "#fbeed1";
+const PENDING_FG = "#8a6f3e";
+const PENDING_BG = "#f2e7cb";
+const ERROR = "#b23a34";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -483,18 +483,18 @@ export default function EventsScreen() {
                     marginHorizontal: 20,
                     marginTop: 16,
                     borderRadius: 12,
-                    backgroundColor: "#fdecea",
+                    backgroundColor: "#f7ece9",
                     borderWidth: 1,
-                    borderColor: "#f5c5c0",
+                    borderColor: "#e6c9c2",
                     paddingHorizontal: 14,
                     paddingVertical: 12,
                   }}
                 >
-                  <Text style={{ fontFamily: SERIF, color: "#9b2c1b", fontSize: 13 }}>{error}</Text>
+                  <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 13 }}>{error}</Text>
                   <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
                     <Text
                       style={{ fontFamily: SERIF_BOLD,
-                        color: "#9b2c1b",
+                        color: ERROR,
                         fontSize: 13,
                       }}
                     >
@@ -674,13 +674,13 @@ function statusOf(vendors: VendorChip[]): {
     (v) => v.status === "new" || v.status === "replied" || v.status === "drafted",
   ).length;
   if (vendors.length > 0 && won === vendors.length) {
-    return { text: "Confirmed", fg: GREEN, bg: GREEN_BG };
+    return { text: "Confirmed", fg: "#ffffff", bg: INK };
   }
   if (pending > 0) {
     return {
       text: `Awaiting ${pending}`,
-      fg: AMBER,
-      bg: AMBER_BG,
+      fg: PENDING_FG,
+      bg: PENDING_BG,
     };
   }
   return {

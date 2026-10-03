@@ -26,6 +26,8 @@ import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 
+const PLACEHOLDER = "#746a58";
+
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -185,7 +187,7 @@ export default function InboxScreen() {
               value={search}
               onChangeText={setSearch}
               placeholder="Search by vendor, event, or message"
-              placeholderTextColor="#a89b8a"
+              placeholderTextColor={PLACEHOLDER}
               className="ml-2 flex-1 text-base text-foreground"
             />
           </View>
@@ -361,7 +363,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           </Text>
           {row.special_requests ? (
             <Text style={{ fontFamily: SERIF }}
-              className="mt-1.5 text-sm text-foreground/80"
+              className="mt-1.5 text-sm text-foreground"
               numberOfLines={2}
             >
               {row.special_requests}

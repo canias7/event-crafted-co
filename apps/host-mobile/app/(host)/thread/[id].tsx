@@ -78,6 +78,7 @@ const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const ACTIVE_GREEN = "#22c55e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -980,7 +981,7 @@ function Composer({
           value={value}
           onChangeText={onChange}
           placeholder="Write a message…"
-          placeholderTextColor="#a89b8a"
+          placeholderTextColor={PLACEHOLDER}
           multiline
           style={{ fontFamily: SERIF,
             flex: 1,

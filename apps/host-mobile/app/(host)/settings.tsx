@@ -33,6 +33,7 @@ const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded.
 const GOLD_MUTED = "#e0d2b0";
 const INK_DIM = "#14161a";
+const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
 const DANGER = "#b23a34";
 const SERIF = "LibreBaskerville";
@@ -170,7 +171,7 @@ export default function SettingsScreen() {
                     value={displayName}
                     onChangeText={setDisplayName}
                     placeholder="Your name"
-                    placeholderTextColor={INK_DIM}
+                    placeholderTextColor={PLACEHOLDER}
                     style={input}
                     autoCapitalize="words"
                   />

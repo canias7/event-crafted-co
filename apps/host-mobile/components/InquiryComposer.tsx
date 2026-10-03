@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
+const PLACEHOLDER = "#746a58";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
@@ -239,6 +240,7 @@ export function InquiryComposer({
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Tell the vendor about your event…"
+                placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
@@ -274,6 +276,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor={PLACEHOLDER}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         className="rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"

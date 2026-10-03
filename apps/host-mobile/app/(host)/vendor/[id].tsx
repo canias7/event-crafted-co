@@ -63,6 +63,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 const INK = "#14161a";
 const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
+const BRONZE = "#8a6f3e";
 const CREAM = "#f4f1ea";
 
 const sectionHeaderStyle = {
@@ -469,7 +470,7 @@ export default function VendorDetailScreen() {
               <RoundButton
                 onPress={toggleSaved}
                 icon="heart"
-                iconColor={saved ? "#dc2626" : "#14161a"}
+                iconColor={saved ? BRONZE : INK}
                 fillHeart={saved}
               />
             </View>
@@ -1162,7 +1163,7 @@ function RoundButton({
             width: 10,
             height: 10,
             borderRadius: 999,
-            backgroundColor: iconColor ?? "#dc2626",
+            backgroundColor: iconColor ?? BRONZE,
           }}
         />
       ) : null}
@@ -2500,7 +2501,7 @@ function CreamOceanFront({
                   width: 26,
                   height: 26,
                   borderRadius: 13,
-                  backgroundColor: "#b8472f",
+                  backgroundColor: BRONZE,
                   borderWidth: 3,
                   borderColor: "#ffffff",
                   alignItems: "center",
@@ -2535,7 +2536,7 @@ function CreamOceanFront({
                 <Text
                   style={{ fontFamily: SERIF,
                     fontSize: 13,
-                    color: "#5a4f44",
+                    color: INK,
                   }}
                   numberOfLines={1}
                 >
@@ -2597,7 +2598,7 @@ function CreamOceanFront({
           justifyContent: "center",
         }}
       >
-        <Feather name="rotate-cw" size={18} color="#ff0000" />
+        <Feather name="rotate-cw" size={18} color={INK} />
       </Pressable>
     </>
   );
@@ -2687,7 +2688,7 @@ function CreamOceanBack({
           justifyContent: "center",
         }}
       >
-        <Feather name="rotate-ccw" size={14} color="#5a4f44" />
+        <Feather name="rotate-ccw" size={14} color={INK} />
       </Pressable>
     </>
   );
@@ -2709,7 +2710,7 @@ function CreamOceanStat({
           fontSize: 9,
           letterSpacing: 1.8,
           textTransform: "uppercase",
-          color: "#9c8f80",
+          color: INK_DIM,
           marginBottom: 3,
         }}
       >
@@ -2719,7 +2720,7 @@ function CreamOceanStat({
         style={{
           fontFamily: italic ? SERIF_ITALIC : SERIF_BOLD,
           fontSize: italic ? 14 : 16,
-          color: italic ? "#5a4f44" : INK,
+          color: INK,
         }}
         numberOfLines={1}
       >
