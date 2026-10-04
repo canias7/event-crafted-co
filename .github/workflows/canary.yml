@@ -1,54 +1,89 @@
-name: Canary (deployed site)
+name: Canary
 
-# Read-only production canary for the deployed Vendora web app on Cloudflare
-# Pages. Drives the LIVE site with Playwright (apps/web/playwright.canary.config.ts
-# — no local Vite server) as a signed-out visitor and as dedicated synthetic
-# test accounts. It never creates, edits, sends or deletes anything; write
-# flows are tested only against an isolated local Supabase stack
-# (.github/workflows/write-flow-tests.yml).
+# Everything that checks Vendora, in one workflow you can run by hand
+# (Actions → Canary → Run workflow):
 #
-# Triggers
-#   - schedule: hourly at :23 (scheduled runs use the default branch)
-#   - workflow_run: after a successful production "Deploy to Cloudflare Pages" on main
-#   - workflow_dispatch: manual, optional base URL override
-#   - pull_request: when the canary itself changes, so changes are proven
-#     before merge
+#   Live site          Read-only Playwright run against the DEPLOYED site
+#                      (desktop + phone viewports): signed-out visitor, plus a
+#                      dedicated synthetic vendor and host. Never creates,
+#                      edits, sends or deletes anything.
+#   Webhook contracts  Real stripe / vendorapay / resend / mux webhook code
+#                      under Deno with synthetic secrets and a stub database:
+#                      valid, forged, stale and duplicate deliveries. No egress.
+#   Database tests     `supabase start` replays every migration into a
+#                      throwaway local stack, then profile / inquiry / calendar
+#                      / invoice / payment-link / cross-vendor isolation write
+#                      flows run as ordinary users. Never touches production.
+#   App type check     Static type check of web, admin and both native apps.
+#
+# When it runs
+#   - workflow_dispatch: manual, with the inputs below
+#   - schedule: hourly at :23 — live site only
+#   - workflow_run: after a successful production "Deploy to Cloudflare Pages"
+#     on main — live site + app type check
+#   - pull_request: when the canary, the write tests, the webhooks or the
+#     migrations change — everything
 #
 # Credentials (dedicated test accounts) are only passed to TRUSTED code:
-# default-branch runs (schedule, workflow_run, dispatch on main) and pull
-# requests from branches of THIS repository. Fork PRs never receive them
-# (GitHub withholds secrets from forks; the expressions below make that
-# explicit). Anyone who can push a branch here can already edit workflows
-# that read secrets, so same-repo branches are the practical trust boundary.
+# default-branch runs and pull requests from branches of THIS repository.
+# Fork PRs never receive them.
 #
-# Required secrets — see apps/web/tests/canary/README.md:
-#   E2E_VENDOR_EMAIL, E2E_SUPABASE_SERVICE_ROLE_KEY
-# Optional: E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY, E2E_HOST_EMAIL,
-#   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID (deployment identity)
-# Missing required secrets make the run FAIL (preflight) — authenticated
-# coverage is reported as BLOCKED, never as a silent skip.
+# Secrets — see apps/web/tests/canary/README.md:
+#   required for the live-site signed-in checks:
+#     E2E_VENDOR_EMAIL, E2E_SUPABASE_SERVICE_ROLE_KEY
+#   optional: E2E_HOST_EMAIL, E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY,
+#     CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID (records the deployment)
+# Repository variable (optional): CANARY_ALLOWED_LISTINGS — listing ids that
+# look like test data but are intentional; used when the input is empty
+# (scheduled runs).
+# Missing required secrets make the run FAIL (preflight); signed-in coverage
+# is reported as BLOCKED, never silently skipped.
 
 on:
-  schedule:
-    - cron: "23 * * * *"
-  workflow_run:
-    workflows: ["Deploy to Cloudflare Pages"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       base_url:
         description: "Site to test"
         required: false
         default: "https://eventvendora.com"
+      live_site:
+        description: "Live site checks (read-only)"
+        type: boolean
+        default: true
+      write_tests:
+        description: "Webhook contracts + database tests (isolated, never production)"
+        type: boolean
+        default: true
+      app_typecheck:
+        description: "Type-check web, admin and both apps"
+        type: boolean
+        default: true
+      allowed_listings:
+        description: "Listing ids that look like test data but are intentional (comma-separated)"
+        required: false
+        default: ""
+  schedule:
+    - cron: "23 * * * *"
+  workflow_run:
+    workflows: ["Deploy to Cloudflare Pages"]
+    types: [completed]
+    branches: [main]
   pull_request:
     branches: [main]
     paths:
       - ".github/workflows/canary.yml"
       - "apps/web/playwright.canary.config.ts"
+      - "apps/web/playwright.write.config.ts"
       - "apps/web/tests/canary/**"
+      - "apps/web/tests/write/**"
       - "apps/web/tests/e2e/session.ts"
       - "scripts/canary/**"
+      - "supabase/functions/stripe-webhook/**"
+      - "supabase/functions/vendorapay-webhook/**"
+      - "supabase/functions/resend-webhook/**"
+      - "supabase/functions/mux-webhook/**"
+      - "supabase/functions/_shared/payments.ts"
+      - "supabase/migrations/**"
 
 permissions:
   contents: read
@@ -65,13 +100,15 @@ env:
 
 jobs:
   canary:
-    name: Deployed-site canary
-    # After a deploy, only react to a successful push/dispatch deploy of main.
+    name: Live site (read-only)
+    # Manual runs: when "Live site" is ticked. After a deploy: only a
+    # successful push/dispatch deploy of main.
     if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main' &&
-       github.event.workflow_run.event != 'pull_request')
+      (github.event_name != 'workflow_dispatch' || inputs.live_site) &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event != 'pull_request'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -79,6 +116,7 @@ jobs:
       CANARY_BASE_URL: ${{ inputs.base_url || 'https://eventvendora.com' }}
       CANARY_DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
       CANARY_DEPLOY_RUN_URL: ${{ github.event.workflow_run.html_url }}
+      CANARY_ALLOWED_LISTINGS: ${{ inputs.allowed_listings || vars.CANARY_ALLOWED_LISTINGS || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -121,7 +159,7 @@ jobs:
         if: always()
         run: >-
           node scripts/canary/summarize.mjs
-          --title "Deployed-site canary"
+          --title "Live site (read-only)"
           --results apps/web/canary-results/results.json
           --meta apps/web/canary-results/metadata.json
           --preflight apps/web/canary-results/preflight.json
@@ -147,7 +185,12 @@ jobs:
     # The canary's "mobile" project is a phone-sized BROWSER viewport on the
     # web app. The native apps (apps/vendor-mobile, apps/host-mobile) are NOT
     # exercised at runtime by anything here; this job only type-checks them.
-    name: Native apps — static type check only
+    name: App type check (web, admin, native)
+    # Not on the hourly schedule: it checks code, not the deployed site.
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.app_typecheck) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -177,3 +220,139 @@ jobs:
             echo "> No native runtime coverage: no simulator/emulator or device tests ran. The canary's mobile project is a browser viewport on the web app."
           } >> "$GITHUB_STEP_SUMMARY"
           exit $rc
+
+  webhook-contracts:
+    name: Webhook contracts (isolated)
+    # Manual runs (when ticked) and pull requests only: these test the code
+    # in the repo, never the deployed site or production data.
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.write_tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: bun install --frozen-lockfile
+      - name: Cache function dependencies (network allowed here only)
+        run: |
+          for f in stripe-webhook vendorapay-webhook resend-webhook mux-webhook; do
+            deno cache --no-lock "supabase/functions/$f/index.ts"
+          done
+          deno cache --no-lock apps/web/tests/write/webhooks/launch.ts
+      - name: Run webhook contract tests
+        id: tests
+        continue-on-error: true
+        working-directory: apps/web
+        env:
+          DENO_BIN: deno
+        run: bunx playwright test -c playwright.write.config.ts --project=webhooks
+      - name: Summarize
+        if: always()
+        run: >-
+          node scripts/canary/summarize.mjs
+          --title "Webhook contracts (real function code, stub DB)"
+          --results apps/web/write-results/results.json
+          --out apps/web/write-results
+      - name: Sanitize
+        if: always()
+        run: node scripts/canary/sanitize.mjs apps/web/write-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webhook-contracts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/web/write-results
+          retention-days: 14
+
+  local-stack:
+    name: Database tests (migration replay + write flows, isolated)
+    # Manual runs (when ticked) and pull requests only: these test the code
+    # in the repo, never the deployed site or production data.
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.write_tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: bun install --frozen-lockfile
+
+      # `supabase start` applies every migration in supabase/migrations in
+      # order and exits non-zero on the first one that fails.
+      - name: Start local Supabase (replays all migrations)
+        id: start
+        continue-on-error: true
+        run: |
+          mkdir -p apps/web/write-results
+          supabase --version | tee apps/web/write-results/supabase-cli-version.txt
+          ls supabase/migrations | wc -l | xargs echo "migrations:" | tee -a apps/web/write-results/supabase-cli-version.txt
+          set -o pipefail
+          supabase start -x studio,imgproxy,vector,logflare,edge-runtime --debug 2>&1 | tee apps/web/write-results/supabase-start.log
+
+      - name: Expose local stack to the tests
+        if: steps.start.outcome == 'success'
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export /')"
+          {
+            echo "LOCAL_SUPABASE_URL=$API_URL"
+            echo "LOCAL_ANON_KEY=$ANON_KEY"
+            echo "LOCAL_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Record the migration failure
+        if: steps.start.outcome != 'success'
+        run: |
+          reason="$(node scripts/canary/migration-failure.mjs apps/web/write-results/supabase-start.log apps/web/write-results/blockers.json)"
+          echo "LOCAL_BLOCKED_REASON=$reason" >> "$GITHUB_ENV"
+          echo "::error title=Migration replay failed::$reason"
+
+      - name: Run DB write-flow tests
+        continue-on-error: true
+        working-directory: apps/web
+        run: bunx playwright test -c playwright.write.config.ts --project=db-write
+
+      - name: Summarize
+        if: always()
+        run: >-
+          node scripts/canary/summarize.mjs
+          --title "DB write flows (isolated local stack)"
+          --results apps/web/write-results/results.json
+          --blockers apps/web/write-results/blockers.json
+          --out apps/web/write-results
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
+      - name: Sanitize
+        if: always()
+        env:
+          LOCAL_SERVICE_ROLE_KEY: ${{ env.LOCAL_SERVICE_ROLE_KEY }}
+        run: node scripts/canary/sanitize.mjs apps/web/write-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: write-flows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/web/write-results
+          retention-days: 14

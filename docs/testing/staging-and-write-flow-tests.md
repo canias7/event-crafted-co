@@ -169,8 +169,9 @@ place until all 489 files applied. What changed:
 
 Production is unaffected: its migration history starts at `20260507044459`
 and records different versions, so none of these files re-run there. The real
-check is the `local-stack` job (`supabase start`), which now also runs on any
-change under `supabase/migrations/`.
+check is the "Database tests" job (`supabase start`) in `.github/workflows/canary.yml`
+(formerly `write-flow-tests.yml`), which runs on any change under
+`supabase/migrations/` and on demand from Actions → Canary.
 
 ## Operator decisions needed
 - **Which option** (A recommended).

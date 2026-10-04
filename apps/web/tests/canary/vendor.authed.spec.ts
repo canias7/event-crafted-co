@@ -145,6 +145,10 @@ test.describe("vendor journeys (seeded session)", () => {
     for (const path of ["/vendor/workspace", "/vendor/payments", "/vendor/ai-superagents"]) {
       await page.goto(path, { waitUntil: "domcontentloaded" });
       await expect(page, path).toHaveURL(/\/vendor\/overview$/, { timeout: 20_000 });
+      // Let the Overview finish loading before the next jump; leaving
+      // mid-load aborts its requests and the app logs "Failed to fetch".
+      await expectSettled(page);
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
     }
     await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 20_000 });
     await expectNoHorizontalOverflow(page, "/vendor/overview");
