@@ -1,5 +1,5 @@
 import { test, expect, expectSettled, expectNoHorizontalOverflow } from "./fixtures";
-import { ADMIN_URL, ALT_URLS, BASE_URL, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
+import { ADMIN_URL, ALLOWED_LISTING_IDS, ALT_URLS, BASE_URL, SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 // Public, unauthenticated journeys on the DEPLOYED site. Read-only: these
 // tests click, search and navigate, but never submit a form that writes.
@@ -107,7 +107,18 @@ test.describe("public site", () => {
     // Content check: test fixtures must not be shown to real visitors.
     const SYNTHETIC = /\b(test|testing|e2e|dummy|lorem)\b/i;
     const api = await approvedVendors();
-    const leaked = api.filter((v) => SYNTHETIC.test(v.business_name)).map((v) => `${v.business_name} (${v.id})`);
+    // Listings the owner confirmed as intentional (workflow input
+    // allowed_listings) are reported, not failed.
+    const allowed = api.filter((v) => ALLOWED_LISTING_IDS.has(v.id));
+    if (allowed.length) {
+      test.info().annotations.push({
+        type: "allowed",
+        description: `allowed by the owner: ${allowed.map((v) => `${v.business_name} (${v.id})`).join(", ")}`,
+      });
+    }
+    const leaked = api
+      .filter((v) => SYNTHETIC.test(v.business_name) && !ALLOWED_LISTING_IDS.has(v.id))
+      .map((v) => `${v.business_name} (${v.id})`);
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expectSettled(page);
     const featured = page.getByText("Featured vendor", { exact: false }).first();
@@ -115,7 +126,8 @@ test.describe("public site", () => {
     if (await featured.count()) {
       featuredText = (await featured.locator("xpath=ancestor::*[3]").innerText()).replace(/\s+/g, " ").trim();
     }
-    expect.soft(SYNTHETIC.test(featuredText) ? featuredText : "", "homepage features a test listing").toBe("");
+    const featuredIsAllowed = allowed.some((v) => featuredText.includes(v.business_name));
+    expect.soft(SYNTHETIC.test(featuredText) && !featuredIsAllowed ? featuredText : "", "homepage features a test listing").toBe("");
     expect(leaked, "approved public listings that look like test data").toEqual([]);
   });
 

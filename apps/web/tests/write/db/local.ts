@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-// Isolated local Supabase stack (started by write-flow-tests.yml with
+// Isolated local Supabase stack (started by the canary.yml "Database tests" job with
 // `supabase start`). These values come from `supabase status -o env` on the
 // runner; there are no production credentials anywhere in this suite.
 export const LOCAL_URL = process.env.LOCAL_SUPABASE_URL || "";

@@ -1,11 +1,22 @@
-# Deployed-site canary
+# Canary
 
-Read-only Playwright checks against the **live** Vendora web app on Cloudflare
-Pages (`https://eventvendora.com`, plus `app.` and `admin.`), run by
-`.github/workflows/canary.yml`. It does not start Vite; config is
-`apps/web/playwright.canary.config.ts`.
+One workflow, `.github/workflows/canary.yml`, runs every check:
 
-## What runs
+| Job | What | Touches production? |
+|---|---|---|
+| Live site (read-only) | Playwright against the **live** web app (`https://eventvendora.com`, plus `app.` and `admin.`), config `apps/web/playwright.canary.config.ts` | Reads only |
+| Webhook contracts (isolated) | Real webhook code under Deno, stub database (`tests/write/webhooks.spec.ts`) | No |
+| Database tests (isolated) | `supabase start` replays every migration, then write flows (`tests/write/db/`) | No |
+| App type check | `bun run typecheck:all` (web, admin, vendor-mobile, host-mobile) | No |
+
+**Run it by hand:** Actions → **Canary** → **Run workflow**. Inputs: the site
+to test, which jobs to run (all ticked by default), and `allowed_listings`
+(listing ids whose names look like test data but are intentional — leave
+empty to flag every such listing). For scheduled runs, put the same ids in the
+repository variable `CANARY_ALLOWED_LISTINGS` (Settings → Secrets and
+variables → Actions → Variables).
+
+## Live site: what runs
 
 | Project | Viewport | Needs secrets | Covers |
 |---|---|---|---|
@@ -23,7 +34,7 @@ First-party 4xx responses are recorded as annotations without failing.
 
 `*-mobile` projects are a **phone-sized browser viewport on the web app**.
 The native apps (`apps/vendor-mobile`, `apps/host-mobile`) get **only a static
-type check** (`native-static` job). Nothing here exercises them at runtime.
+type check** (the "App type check" job). Nothing here exercises them at runtime.
 
 ### Seeded session vs. login
 
@@ -39,7 +50,7 @@ is checked only up to the point where a real credential would be submitted.
 
 Production checks never save forms, send messages, block dates or create
 payments. Write flows live in `tests/write/` and run only against an isolated
-local Supabase stack (`.github/workflows/write-flow-tests.yml`).
+local Supabase stack (the "Database tests" job in the same workflow).
 
 ## Secrets
 

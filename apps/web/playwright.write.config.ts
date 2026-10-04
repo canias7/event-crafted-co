@@ -4,7 +4,7 @@ import { defineConfig } from "@playwright/test";
 //   webhooks  real edge-function code under Deno + a stub database; needs no
 //             Supabase stack (runs even when the migration replay fails)
 //   db-write  create/update/delete flows against an ISOLATED local Supabase
-//             stack started by .github/workflows/write-flow-tests.yml
+//             stack started by the "Database tests" job in .github/workflows/canary.yml
 //             (LOCAL_SUPABASE_URL etc.). Reported as BLOCKED when that stack
 //             couldn't be built.
 const OUT = "write-results";

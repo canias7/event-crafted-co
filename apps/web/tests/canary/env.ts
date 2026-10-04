@@ -25,6 +25,15 @@ export const HOST_EMAIL = process.env.E2E_HOST_EMAIL || "e2e-host-1@eventvendora
 
 export const SUPABASE_REF = new URL(SUPABASE_URL).hostname.split(".")[0];
 
+// Listing ids the owner has confirmed are intentional even though their name
+// looks like test data (comma-separated; the workflow's allowed_listings input).
+export const ALLOWED_LISTING_IDS = new Set(
+  (process.env.CANARY_ALLOWED_LISTINGS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
+
 // First-party hosts: a failed request to one of these is a canary failure.
 export const FIRST_PARTY_HOSTS = [
   new URL(BASE_URL).hostname,
