@@ -227,7 +227,7 @@ export default function EditProfileScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 14,
+            paddingHorizontal: 20,
             paddingVertical: 10,
           }}
         >
@@ -275,7 +275,7 @@ export default function EditProfileScreen() {
         >
           <ScrollView
             contentContainerStyle={{
-              paddingHorizontal: 18,
+              paddingHorizontal: 20,
               paddingTop: 6,
               paddingBottom: 80,
             }}
@@ -419,7 +419,7 @@ function Field({
   multiline?: boolean;
 }) {
   return (
-    <View style={{ marginTop: 22 }}>
+    <View style={{ marginTop: 24 }}>
       <Text
         style={{
           fontFamily: SERIF_BOLD,
@@ -439,10 +439,10 @@ function Field({
         style={{ fontFamily: SERIF,
           marginTop: 6,
           backgroundColor: "#fbf9f4",
-          borderRadius: 14,
+          borderRadius: 12,
           borderWidth: 1,
           borderColor: BORDER,
-          paddingHorizontal: 14,
+          paddingHorizontal: 16,
           paddingVertical: 12,
           color: INK,
           fontSize: 16,

@@ -21,7 +21,6 @@ import { supabase } from "@/lib/supabase";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 
 // Cream Vendora palette — same tokens as the tab screens.
-const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
 const SURFACE = "#ece7db";
 const BORDER = "#e6e1d5";
@@ -264,9 +263,9 @@ export function SettingsSheet({
         <Pressable
           onPress={() => {}}
           style={{
-            backgroundColor: PAGE,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
+            backgroundColor: CARD,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
             paddingTop: 10,
             paddingBottom: 24,
             maxHeight: "92%",
@@ -279,15 +278,15 @@ export function SettingsSheet({
               width: 36,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "rgba(20,22,26,0.08)",
-              marginBottom: 14,
+              backgroundColor: BORDER,
+              marginBottom: 16,
             }}
           />
 
           {view === "main" ? (
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 8 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 8 }}
             >
               {/* Title row */}
               <View
@@ -338,7 +337,7 @@ export function SettingsSheet({
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  marginTop: 26,
+                  marginTop: 24,
                   marginBottom: 10,
                   color: INK_DIM,
                   fontSize: 11,
@@ -352,7 +351,7 @@ export function SettingsSheet({
                   backgroundColor: CARD,
                   borderWidth: 1,
                   borderColor: BORDER,
-                  borderRadius: 18,
+                  borderRadius: 20,
                   overflow: "hidden",
                 }}
               >
@@ -415,7 +414,7 @@ export function SettingsSheet({
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  marginTop: 26,
+                  marginTop: 24,
                   marginBottom: 10,
                   color: INK_DIM,
                   fontSize: 11,
@@ -429,7 +428,7 @@ export function SettingsSheet({
                   backgroundColor: CARD,
                   borderWidth: 1,
                   borderColor: BORDER,
-                  borderRadius: 18,
+                  borderRadius: 20,
                   overflow: "hidden",
                 }}
               >
@@ -454,11 +453,11 @@ export function SettingsSheet({
                 onPress={onSignOutPress}
                 style={{
                   marginTop: 24,
-                  backgroundColor: CARD,
+                  backgroundColor: "#ffffff",
                   borderWidth: 1,
                   borderColor: BORDER,
-                  borderRadius: 18,
-                  paddingVertical: 16,
+                  borderRadius: 999,
+                  height: 52,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
@@ -481,21 +480,19 @@ export function SettingsSheet({
                 onPress={onDeleteAccount}
                 style={{
                   marginTop: 10,
-                  backgroundColor: CARD,
-                  borderRadius: 18,
-                  borderWidth: 1,
-                  borderColor: "#e8c8bf",
-                  paddingVertical: 16,
+                  backgroundColor: "#b23a34",
+                  borderRadius: 999,
+                  height: 52,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Feather name="trash-2" size={16} color="#b23a34" />
+                <Feather name="trash-2" size={16} color="#ffffff" />
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: "#b23a34",
+                    color: "#ffffff",
                     fontSize: 16,
                     marginLeft: 8,
                   }}
@@ -524,7 +521,7 @@ export function SettingsSheet({
             // the main settings view, save updates the auth user.
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 24 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
               keyboardShouldPersistTaps="handled"
             >
               <View
@@ -566,7 +563,7 @@ export function SettingsSheet({
               <Text
                 style={{
                   fontFamily: SERIF,
-                  marginTop: 14,
+                  marginTop: 16,
                   color: INK_DIM,
                   fontSize: 14,
                   lineHeight: 20,
@@ -596,10 +593,10 @@ export function SettingsSheet({
                 style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: CARD,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   borderWidth: 1,
                   borderColor: BORDER,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 16,
                   paddingVertical: 12,
                   color: INK,
                   fontSize: 16,
@@ -609,7 +606,7 @@ export function SettingsSheet({
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  marginTop: 18,
+                  marginTop: 20,
                   color: INK_DIM,
                   fontSize: 11,
                   letterSpacing: 1,
@@ -626,10 +623,10 @@ export function SettingsSheet({
                 style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: CARD,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   borderWidth: 1,
                   borderColor: BORDER,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 16,
                   paddingVertical: 12,
                   color: INK,
                   fontSize: 16,
@@ -640,7 +637,7 @@ export function SettingsSheet({
                 onPress={changePassword}
                 disabled={pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd}
                 style={{
-                  marginTop: 22,
+                  marginTop: 24,
                   backgroundColor:
                     pwdSubmitting || newPwd.length < 8 || newPwd !== confirmPwd
                       ? GOLD_MUTED
@@ -684,8 +681,8 @@ function SettingsRow({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 14,
-        paddingVertical: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
       }}
     >
       <View

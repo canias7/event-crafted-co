@@ -59,7 +59,7 @@ const INK_DIM = "#14161a";
 const SUBTLE = "#746a58";
 const BORDER = "#e6e1d5";
 const FIELD_BG = "#fbf9f4";
-const FIELD_BORDER = "#d9d1bf";
+const FIELD_BORDER = "#e6e1d5";
 const ERROR = "#b23a34";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -245,7 +245,7 @@ export default function ResetPasswordScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
         <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
-        <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
           <Pressable
             onPress={() => router.replace("/(auth)/login")}
             hitSlop={12}
@@ -287,7 +287,7 @@ export default function ResetPasswordScreen() {
       >
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: 24,
+            paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: 48,
             flexGrow: 1,
@@ -367,7 +367,7 @@ function StarDivider() {
         flexDirection: "row",
         alignItems: "center",
         marginTop: 28,
-        gap: 14,
+        gap: 16,
       }}
     >
       <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
@@ -425,7 +425,7 @@ const inputRow = {
   backgroundColor: FIELD_BG,
   borderColor: FIELD_BORDER,
   borderWidth: 1,
-  borderRadius: 16,
+  borderRadius: 12,
   paddingHorizontal: 16,
   minHeight: 60,
 };

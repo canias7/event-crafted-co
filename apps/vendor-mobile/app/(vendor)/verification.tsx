@@ -302,16 +302,16 @@ export default function VerificationScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
           showsVerticalScrollIndicator={false}
         >
           <Header title="Verification" onBack={() => router.back()} />
-          <View style={{ alignItems: "center", marginTop: 26 }}>
+          <View style={{ alignItems: "center", marginTop: 28 }}>
             <MaterialCommunityIcons name="shield-check-outline" size={70} color="#d9c9a6" />
           </View>
           <Text
             style={{
-              marginTop: 14,
+              marginTop: 16,
               textAlign: "center",
               fontFamily: SERIF_BOLD,
               fontSize: 24,
@@ -330,10 +330,10 @@ export default function VerificationScreen() {
           <Pressable
             onPress={() => router.push("/(vendor)/subscription" as never)}
             style={{
-              marginTop: 26,
+              marginTop: 28,
               backgroundColor: GOLD,
               borderRadius: 999,
-              height: 54,
+              height: 52,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -375,18 +375,18 @@ export default function VerificationScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
           showsVerticalScrollIndicator={false}
         >
           <Header title="Verification" onBack={() => router.back()} />
           <View
             style={{
-              marginTop: 22,
+              marginTop: 24,
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: s === "approved" ? "#bcd8c5" : BORDER,
               borderRadius: 20,
-              padding: 22,
+              padding: 16,
               alignItems: "center",
             }}
           >
@@ -423,7 +423,7 @@ export default function VerificationScreen() {
                   gap: 7,
                   backgroundColor: GOLD_SOFT,
                   borderRadius: 999,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 16,
                   paddingVertical: 8,
                 }}
               >
@@ -441,7 +441,7 @@ export default function VerificationScreen() {
                 setStep("identity");
               }}
               style={{
-                marginTop: 18,
+                marginTop: 20,
                 backgroundColor: GOLD,
                 borderRadius: 999,
                 height: 52,
@@ -476,7 +476,7 @@ export default function VerificationScreen() {
             </View>
             <Text
               style={{
-                marginTop: 14,
+                marginTop: 16,
                 textAlign: "center",
                 fontFamily: SERIF_BOLD,
                 fontSize: 24,
@@ -491,7 +491,7 @@ export default function VerificationScreen() {
               Verified vendors stand out and give clients confidence in your
               business.
             </Text>
-            <View style={{ marginTop: 24, gap: 14 }}>
+            <View style={{ marginTop: 24, gap: 16 }}>
               {[
                 { icon: "user-check", t: "Identity verification", s: "Confirm who you are" },
                 { icon: "briefcase", t: "Business verification", s: "Confirm your business info" },
@@ -502,7 +502,7 @@ export default function VerificationScreen() {
                     style={{
                       width: 46,
                       height: 46,
-                      borderRadius: 14,
+                      borderRadius: 12,
                       backgroundColor: SURFACE,
                       alignItems: "center",
                       justifyContent: "center",
@@ -510,7 +510,7 @@ export default function VerificationScreen() {
                   >
                     <Feather name={r.icon as never} size={18} color={INK} />
                   </View>
-                  <View style={{ flex: 1, marginLeft: 13 }}>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                       {r.t}
                     </Text>
@@ -521,11 +521,11 @@ export default function VerificationScreen() {
             </View>
             <View
               style={{
-                marginTop: 22,
+                marginTop: 24,
                 backgroundColor: CARD,
                 borderWidth: 1,
                 borderColor: BORDER,
-                borderRadius: 18,
+                borderRadius: 20,
                 padding: 16,
               }}
             >
@@ -549,7 +549,7 @@ export default function VerificationScreen() {
                 marginTop: 24,
                 backgroundColor: GOLD,
                 borderRadius: 999,
-                height: 54,
+                height: 52,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -567,7 +567,7 @@ export default function VerificationScreen() {
               title="Identity verification"
               onBack={() => (editing && request ? setEditing(false) : setStep("intro"))}
             />
-            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
+            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 16 }}>
               Your legal details stay private — they're only used to verify
               your identity.
             </Text>
@@ -637,7 +637,7 @@ export default function VerificationScreen() {
         {step === "business" ? (
           <>
             <Header title="Business verification" onBack={() => setStep("identity")} />
-            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
+            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 16 }}>
               Tell us about your business.
             </Text>
             <Field label="Business / Display name" required>
@@ -703,12 +703,12 @@ export default function VerificationScreen() {
                   )
                 }
                 style={{
-                  borderWidth: 1.5,
+                  borderWidth: 1,
                   borderStyle: "dashed",
                   borderColor: GOLD,
                   backgroundColor: "rgba(201,168,106,0.12)",
-                  borderRadius: 14,
-                  paddingVertical: 13,
+                  borderRadius: 12,
+                  paddingVertical: 12,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
@@ -751,7 +751,7 @@ export default function VerificationScreen() {
         {step === "review" ? (
           <>
             <Header title="Review & submit" onBack={() => setStep("business")} />
-            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 14 }}>
+            <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 16 }}>
               Please review your information before submitting.
             </Text>
             <SummaryCard
@@ -784,8 +784,8 @@ export default function VerificationScreen() {
                 backgroundColor: "#f3ecdd",
                 borderWidth: 1,
                 borderColor: GOLD_SOFT,
-                borderRadius: 16,
-                padding: 15,
+                borderRadius: 20,
+                padding: 16,
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
@@ -803,13 +803,12 @@ export default function VerificationScreen() {
               onPress={() => void submit()}
               disabled={submitting}
               style={{
-                marginTop: 18,
-                backgroundColor: GOLD,
+                marginTop: 20,
+                backgroundColor: submitting ? "#e0d2b0" : GOLD,
                 borderRadius: 999,
-                height: 54,
+                height: 52,
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: submitting ? 0.6 : 1,
               }}
             >
               {submitting ? (
@@ -852,9 +851,9 @@ function DocTile({
       style={{
         backgroundColor: CARD,
         borderWidth: 1,
-        borderColor: has ? GOLD : BORDER,
+        borderColor: has ? INK : BORDER,
         borderStyle: has ? "solid" : "dashed",
-        borderRadius: 14,
+        borderRadius: 12,
         padding: 12,
         flexDirection: "row",
         alignItems: "center",
@@ -864,14 +863,14 @@ function DocTile({
       {doc?.uri ? (
         <Image
           source={{ uri: doc.uri }}
-          style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: SURFACE }}
+          style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: SURFACE }}
         />
       ) : (
         <View
           style={{
             width: 44,
             height: 44,
-            borderRadius: 10,
+            borderRadius: 8,
             backgroundColor: SURFACE,
             alignItems: "center",
             justifyContent: "center",
@@ -912,9 +911,9 @@ function SummaryCard({
         backgroundColor: CARD,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 16,
-        padding: 15,
-        marginBottom: 10,
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 12,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>

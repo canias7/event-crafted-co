@@ -81,7 +81,7 @@ export default function UpdatesScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -105,7 +105,7 @@ export default function UpdatesScreen() {
         </View>
         <Text
           style={{
-            marginTop: 14,
+            marginTop: 16,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
             letterSpacing: -0.5,
@@ -118,7 +118,7 @@ export default function UpdatesScreen() {
           The latest improvements to Vendora for Vendors.
         </Text>
 
-        <View style={{ marginTop: 22, gap: 12 }}>
+        <View style={{ marginTop: 24, gap: 12 }}>
           {SHIPPED.map((u) => (
             <View
               key={u.title}
@@ -160,7 +160,7 @@ export default function UpdatesScreen() {
 
         <Text
           style={{
-            marginTop: 28,
+            marginTop: 32,
             fontFamily: SERIF_BOLD,
             fontSize: 20,
             color: INK,

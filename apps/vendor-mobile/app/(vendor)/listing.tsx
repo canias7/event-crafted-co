@@ -658,9 +658,9 @@ export default function ListingScreen() {
           </Text>
           <Pressable
             onPress={loadAll}
-            className="rounded-full bg-foreground px-6 py-3 active:opacity-80"
+            className="rounded-full bg-accent px-6 py-3 active:opacity-80"
           >
-            <Text className="text-sm text-background" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               Try again
             </Text>
           </Pressable>
@@ -685,7 +685,7 @@ export default function ListingScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingTop: 8,
             paddingBottom: 6,
           }}
@@ -710,8 +710,8 @@ export default function ListingScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingVertical: 18,
+            paddingHorizontal: 20,
+            paddingVertical: 20,
           }}
         >
           <CircleButton onPress={() => router.back()} icon="chevron-left" />
@@ -799,7 +799,7 @@ export default function ListingScreen() {
                     >
                       <Image
                         source={{ uri: p.url }}
-                        style={{ flex: 1, borderRadius: 10 }}
+                        style={{ flex: 1, borderRadius: 12 }}
                         resizeMode="cover"
                       />
                     </Pressable>
@@ -869,7 +869,7 @@ export default function ListingScreen() {
                       )
                     }
                     style={{
-                      paddingHorizontal: 14,
+                      paddingHorizontal: 16,
                       paddingVertical: 10,
                       borderRadius: 999,
                       borderWidth: 1,
@@ -881,7 +881,7 @@ export default function ListingScreen() {
                       style={{
                         fontFamily: SERIF_BOLD,
                         fontSize: 13,
-                        color: active ? CREAM : INK,
+                        color: active ? "#ffffff" : INK,
                       }}
                     >
                       {PRICING_MODEL_LABELS[m]}
@@ -989,7 +989,7 @@ export default function ListingScreen() {
             }
           />
           {profile?.id && category ? (
-            <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
               <DetailsSection vendorId={profile.id} category={category} />
             </View>
           ) : (
@@ -1003,7 +1003,7 @@ export default function ListingScreen() {
             body="Answer the first three or four hosts will ask — saves you typing later."
           />
           {profile?.id ? (
-            <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
               <FaqsSection vendorId={profile.id} />
             </View>
           ) : null}
@@ -1023,7 +1023,7 @@ export default function ListingScreen() {
             left: 0,
             right: 0,
             bottom: 0,
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingTop: 12,
             paddingBottom: 24,
             flexDirection: "row",
@@ -1114,7 +1114,7 @@ export default function ListingScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              paddingHorizontal: 16,
+              paddingHorizontal: 20,
               paddingVertical: 12,
               borderBottomWidth: 1,
               borderColor: BORDER,
@@ -1132,11 +1132,11 @@ export default function ListingScreen() {
           </View>
           <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
             {CATEGORY_GROUPS.map((group) => (
-              <View key={group.slug} style={{ marginTop: 18 }}>
+              <View key={group.slug} style={{ marginTop: 20 }}>
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    paddingHorizontal: 24,
+                    paddingHorizontal: 28,
                     paddingBottom: 8,
                     fontSize: 12,
                     letterSpacing: 1.4,
@@ -1147,9 +1147,9 @@ export default function ListingScreen() {
                 </Text>
                 <View
                   style={{
-                    marginHorizontal: 16,
+                    marginHorizontal: 20,
                     backgroundColor: "#fbf9f4",
-                    borderRadius: 14,
+                    borderRadius: 20,
                     borderWidth: 1,
                     borderColor: BORDER,
                     overflow: "hidden",
@@ -1184,7 +1184,7 @@ export default function ListingScreen() {
                         <View
                           style={{
                             paddingHorizontal: 16,
-                            paddingVertical: 14,
+                            paddingVertical: 16,
                             flexDirection: "row",
                             alignItems: "center",
                             justifyContent: "space-between",
@@ -1243,11 +1243,8 @@ function CircleButton({
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.7 : 1,
-        shadowColor: INK,
-        shadowOpacity: 0.10,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 1,
+        borderWidth: 1,
+        borderColor: BORDER,
       })}
     >
       <Feather name={icon} size={18} color={INK} />
@@ -1265,7 +1262,7 @@ function StepHeader({
   body: string;
 }) {
   return (
-    <View style={{ paddingHorizontal: 22, paddingTop: 28, paddingBottom: 4 }}>
+    <View style={{ paddingHorizontal: 20, paddingTop: 32, paddingBottom: 4 }}>
       <Text
         style={{
           fontFamily: SERIF_BOLD,
@@ -1314,7 +1311,7 @@ function SectionBlock({
   children: React.ReactNode;
 }) {
   return (
-    <View style={{ paddingHorizontal: 22, paddingTop: 22 }}>
+    <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
       <Text
         style={{
           fontFamily: SERIF_BOLD,
@@ -1441,7 +1438,7 @@ function PhotoGrid({
           <View style={{ flex: 1, position: "relative" }}>
             <Image
               source={{ uri: cover.url }}
-              style={{ flex: 1, borderRadius: 16 }}
+              style={{ flex: 1, borderRadius: 12 }}
               resizeMode="cover"
             />
             <View
@@ -1535,7 +1532,7 @@ function ThumbSlot({
       >
         <Image
           source={{ uri: photo.url }}
-          style={{ flex: 1, borderRadius: 14 }}
+          style={{ flex: 1, borderRadius: 12 }}
           resizeMode="cover"
         />
       </Pressable>
@@ -1568,13 +1565,13 @@ function BannerCard({
   return (
     <View
       style={{
-        marginHorizontal: 16,
-        marginTop: 18,
-        borderRadius: 14,
+        marginHorizontal: 20,
+        marginTop: 20,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: accentBorder,
         backgroundColor: accentBg,
-        padding: 14,
+        padding: 16,
       }}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{title}</Text>
@@ -1595,16 +1592,16 @@ function BannerCard({
 
 function EmptyCard({ body }: { body: string }) {
   return (
-    <View style={{ paddingHorizontal: 22, paddingTop: 14 }}>
+    <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
       <View
         style={{
-          borderRadius: 14,
+          borderRadius: 20,
           borderWidth: 1,
           borderColor: BORDER,
           borderStyle: "dashed",
           backgroundColor: CREAM_DEEP,
           paddingVertical: 28,
-          paddingHorizontal: 18,
+          paddingHorizontal: 20,
           alignItems: "center",
         }}
       >
@@ -1629,11 +1626,11 @@ function fieldBox(multiline = false) {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     backgroundColor: "#fbf9f4",
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
-    paddingHorizontal: 14,
-    paddingVertical: multiline ? 12 : 14,
+    paddingHorizontal: 16,
+    paddingVertical: multiline ? 12 : 16,
     minHeight: multiline ? 100 : 50,
     marginTop: 6,
   };
@@ -1643,7 +1640,7 @@ function dashedSlot() {
   return {
     flex: 1,
     backgroundColor: CREAM_DEEP,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
     borderStyle: "dashed" as const,
@@ -1656,8 +1653,9 @@ const savePillStyle = {
   borderRadius: 999,
   borderWidth: 1,
   borderColor: BORDER,
-  backgroundColor: "#fbf9f4",
-  paddingVertical: 14,
+  backgroundColor: "#ffffff",
+  height: 52,
+  justifyContent: "center" as const,
   alignItems: "center" as const,
 };
 
@@ -1670,7 +1668,8 @@ const savePillText = {
 const publishPillStyle = {
   borderRadius: 999,
   backgroundColor: GOLD,
-  paddingVertical: 14,
+  height: 52,
+  justifyContent: "center" as const,
   alignItems: "center" as const,
 };
 

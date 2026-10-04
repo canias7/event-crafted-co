@@ -238,10 +238,10 @@ export default function PartnerThreadScreen() {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingVertical: 10,
             borderBottomWidth: 1,
-            borderBottomColor: "#efe5d2",
+            borderBottomColor: "#e6e1d5",
           }}
         >
           <Pressable
@@ -298,7 +298,7 @@ export default function PartnerThreadScreen() {
           <ScrollView
             ref={scrollRef}
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12 }}
             keyboardShouldPersistTaps="handled"
           >
             {loading ? (
@@ -344,11 +344,11 @@ export default function PartnerThreadScreen() {
                           backgroundColor: isMine ? INK : CREAM_DEEP,
                           paddingHorizontal: 16,
                           paddingVertical: 10,
-                          borderRadius: 22,
+                          borderRadius: 20,
                           borderBottomRightRadius:
-                            isMine && !m.isLastInGroup ? 8 : 22,
+                            isMine && !m.isLastInGroup ? 8 : 20,
                           borderBottomLeftRadius:
-                            !isMine && !m.isLastInGroup ? 8 : 22,
+                            !isMine && !m.isLastInGroup ? 8 : 20,
                         }}
                       >
                         <Text
@@ -372,11 +372,11 @@ export default function PartnerThreadScreen() {
           {/* Composer */}
           <View
             style={{
-              paddingHorizontal: 12,
+              paddingHorizontal: 20,
               paddingTop: 6,
               paddingBottom: 12,
               borderTopWidth: 1,
-              borderTopColor: "#efe5d2",
+              borderTopColor: "#e6e1d5",
               backgroundColor: CREAM,
             }}
           >
@@ -385,8 +385,8 @@ export default function PartnerThreadScreen() {
                 flexDirection: "row",
                 alignItems: "flex-end",
                 backgroundColor: "#fbf9f4",
-                borderRadius: 22,
-                paddingHorizontal: 14,
+                borderRadius: 20,
+                paddingHorizontal: 16,
                 paddingVertical: 6,
               }}
             >

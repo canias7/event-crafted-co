@@ -153,7 +153,7 @@ export function DetailsSection({
       <Pressable
         onPress={save}
         disabled={busy}
-        className="rounded-full border border-border bg-background py-3 items-center active:opacity-80"
+        className="rounded-full border border-border bg-white h-11 items-center justify-center active:opacity-80"
       >
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           {busy ? "Saving…" : "Save details"}
@@ -210,7 +210,7 @@ function FieldEditor({
             placeholder="0"
             placeholderTextColor={PLACEHOLDER}
             keyboardType={field.type === "int" ? "number-pad" : "decimal-pad"}
-            className="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+            className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
           />
           {"suffix" in field && field.suffix ? (
             <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
@@ -328,7 +328,7 @@ function TagsField({
               alignItems: "center",
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: "rgba(10,10,10,0.4)",
+              borderColor: "#e6e1d5",
               paddingLeft: 12,
               paddingRight: 4,
               backgroundColor: "#fff",
@@ -376,12 +376,12 @@ function TagsField({
               flexDirection: "row",
               alignItems: "center",
               gap: 6,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 8,
               borderRadius: 999,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: "rgba(10,10,10,0.4)",
+              borderColor: "#e6e1d5",
             }}
           >
             <Feather name="plus" size={13} color="rgba(26,22,18,0.55)" />
@@ -411,20 +411,20 @@ function Chip({
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 999,
         borderWidth: 1,
-        backgroundColor: active ? "rgba(10,10,10,0.08)" : "#ffffff",
-        borderColor: active ? "rgba(10,10,10,0.45)" : "rgba(10,10,10,0.12)",
+        backgroundColor: active ? "#14161a" : "#ffffff",
+        borderColor: active ? "#14161a" : "#e6e1d5",
       }}
     >
-      {active ? <Feather name="check" size={13} color="#18181b" /> : null}
+      {active ? <Feather name="check" size={13} color="#ffffff" /> : null}
       <Text
         style={{
           fontFamily: "LibreBaskerville",
           fontSize: 13,
-          color: active ? "#18181b" : "rgba(26,22,18,0.65)",
+          color: active ? "#ffffff" : "rgba(26,22,18,0.65)",
         }}
       >
         {text}
@@ -451,7 +451,7 @@ function SelectField({
       ) : null}
       <Pressable
         onPress={() => setOpen(true)}
-        className="mt-2 rounded-lg border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
+        className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
       >
         <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
           {value || "— pick one —"}
@@ -465,7 +465,7 @@ function SelectField({
         onRequestClose={() => setOpen(false)}
       >
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
               <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
             </Pressable>

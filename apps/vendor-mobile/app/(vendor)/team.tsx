@@ -175,13 +175,13 @@ export default function TeamScreen() {
         {/* Master toggle */}
         <View
           style={{
-            marginTop: 18,
+            marginTop: 20,
             backgroundColor: CARD,
             borderWidth: 1,
             borderColor: BORDER,
-            borderRadius: 18,
+            borderRadius: 20,
             paddingHorizontal: 16,
-            paddingVertical: 14,
+            paddingVertical: 16,
             flexDirection: "row",
             alignItems: "center",
           }}
@@ -203,7 +203,7 @@ export default function TeamScreen() {
             <ActivityIndicator color={INK} />
           </View>
         ) : (
-          <View style={{ marginTop: 16, gap: 10 }}>
+          <View style={{ marginTop: 16, gap: 12 }}>
             {members.map((m, i) => (
               <View
                 key={m.id}
@@ -211,9 +211,9 @@ export default function TeamScreen() {
                   backgroundColor: CARD,
                   borderWidth: 1,
                   borderColor: BORDER,
-                  borderRadius: 18,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
+                  borderRadius: 20,
+                  paddingHorizontal: 16,
+                  paddingVertical: 16,
                   flexDirection: "row",
                   alignItems: "center",
                   opacity: m.visible ? 1 : 0.55,
@@ -263,12 +263,12 @@ export default function TeamScreen() {
                 setFormOpen(true);
               }}
               style={{
-                borderWidth: 1.5,
+                borderWidth: 1,
                 borderStyle: "dashed",
                 borderColor: GOLD,
                 backgroundColor: "rgba(201,168,106,0.10)",
-                borderRadius: 18,
-                paddingVertical: 18,
+                borderRadius: 20,
+                paddingVertical: 20,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
@@ -494,7 +494,7 @@ function MemberForm({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              paddingHorizontal: 16,
+              paddingHorizontal: 20,
               paddingVertical: 12,
             }}
           >
@@ -554,7 +554,7 @@ function MemberForm({
               </Text>
             </Pressable>
 
-            <View style={{ marginTop: 18 }}>
+            <View style={{ marginTop: 20 }}>
               <Field label="Full name" required>
                 <Input value={name} onChangeText={setName} placeholder="e.g., Jessica Brown" />
               </Field>
@@ -627,13 +627,12 @@ function MemberForm({
                 onPress={save}
                 disabled={saving}
                 style={{
-                  marginTop: 14,
-                  backgroundColor: GOLD,
+                  marginTop: 16,
+                  backgroundColor: saving ? "#e0d2b0" : GOLD,
                   borderRadius: 999,
-                  height: 54,
+                  height: 52,
                   alignItems: "center",
                   justifyContent: "center",
-                  opacity: saving ? 0.6 : 1,
                 }}
               >
                 {saving ? (

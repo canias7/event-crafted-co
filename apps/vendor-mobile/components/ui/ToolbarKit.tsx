@@ -18,7 +18,6 @@ import { Feather } from "@expo/vector-icons";
 const CARD = "#fbf9f4";
 const BORDER = "#e6e1d5";
 const INK = "#14161a";
-const GOLD = "#c9a86a";
 const WHITE = "#ffffff";
 const PLACEHOLDER = "#746a58";
 const SERIF = "LibreBaskerville";
@@ -36,9 +35,9 @@ export interface TabSpec {
   label: string;
 }
 
-// Underlined section tabs. Gold rule under the active tab, the same accent
-// the primary button uses, so "where am I" and "what acts" read as one
-// system. Hairline dividers between tabs, hairline rule along the bottom.
+// Underlined section tabs. Ink rule under the active tab (selection is ink
+// across the app; gold is for actions and ornament). Hairline dividers
+// between tabs, hairline rule along the bottom.
 export function UnderlineTabs({
   tabs,
   value,
@@ -51,7 +50,7 @@ export function UnderlineTabs({
   return (
     <View style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: BORDER }}>
       {/* Dividers and tabs are siblings in one row (no wrapper per tab):
-          each tab's gold rule uses marginBottom: -1 to sit on top of the
+          each tab's ink rule uses marginBottom: -1 to sit on top of the
           row's hairline, which only works if the tab's parent IS that row. */}
       {tabs.map((t, i) => {
         const active = t.key === value;
@@ -71,8 +70,8 @@ export function UnderlineTabs({
                 flexDirection: "row",
                 gap: 7,
                 paddingVertical: 12,
-                borderBottomWidth: 2,
-                borderBottomColor: active ? GOLD : "transparent",
+                borderBottomWidth: 1,
+                borderBottomColor: active ? INK : "transparent",
                 marginBottom: -1,
               }}
             >
@@ -115,7 +114,7 @@ export function SearchField({
         // the tab-bar indicator: don't rely on how the platform clamps an
         // oversized radius.
         borderRadius: CONTROL_HEIGHT / 2,
-        paddingHorizontal: 18,
+        paddingHorizontal: 20,
         height: CONTROL_HEIGHT,
       }}
     >
@@ -162,7 +161,7 @@ export function ToolbarButton({
       style={{
         width: CONTROL_HEIGHT,
         height: CONTROL_HEIGHT,
-        borderRadius: 16,
+        borderRadius: 12,
         backgroundColor: active ? INK : CARD,
         borderWidth: 1,
         borderColor: active ? INK : BORDER,

@@ -49,7 +49,7 @@ import {
 // the listing over.
 const THIS_ROUTE = "venue-listing";
 
-const CREAM = "#fdfcfa";
+const CREAM = "#fbf9f4";
 const INK = "#14161a";
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
@@ -676,7 +676,7 @@ export default function VenueListingScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingVertical: 10,
           }}
         >
@@ -699,11 +699,12 @@ export default function VenueListingScreen() {
             style={{
               borderWidth: 1,
               borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
+              paddingHorizontal: 16,
+              height: 36,
+              justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f3f1ec" : "#ffffff",
-              borderColor: busy ? "#ece9e1" : BORDER,
+              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              borderColor: BORDER,
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
@@ -854,11 +855,11 @@ export default function VenueListingScreen() {
                 activeOpacity={0.7}
                 style={{
                   marginTop: 8,
-                  borderWidth: 1.5,
+                  borderWidth: 1,
                   borderStyle: "dashed",
-                  borderColor: "rgba(20,22,26,0.25)",
-                  borderRadius: 16,
-                  paddingVertical: 14,
+                  borderColor: BORDER,
+                  borderRadius: 20,
+                  paddingVertical: 16,
                   alignItems: "center",
                   flexDirection: "row",
                   justifyContent: "center",
@@ -1051,9 +1052,9 @@ export default function VenueListingScreen() {
                   style={{
                     width: "31%",
                     aspectRatio: 1,
-                    borderWidth: 1.5,
+                    borderWidth: 1,
                     borderStyle: "dashed",
-                    borderColor: "rgba(20,22,26,0.25)",
+                    borderColor: BORDER,
                     borderRadius: 12,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1213,7 +1214,7 @@ function StepRail({
       style={{
         flexDirection: "row",
         alignItems: "flex-start",
-        paddingHorizontal: 18,
+        paddingHorizontal: 20,
         paddingTop: 4,
         paddingBottom: 8,
       }}
@@ -1232,7 +1233,7 @@ function StepRail({
                   flex: 1,
                   height: 1.5,
                   backgroundColor: done || current ? INK : BORDER,
-                  marginTop: 14,
+                  marginTop: 16,
                 }}
               />
             ) : null}
@@ -1245,7 +1246,7 @@ function StepRail({
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: done ? INK : current ? GOLD : "transparent",
-                  borderWidth: done || current ? 0 : 1.5,
+                  borderWidth: done || current ? 0 : 1,
                   borderColor: BORDER,
                 }}
               >
@@ -1291,7 +1292,7 @@ function StepTitle({
   topGap?: boolean;
 }) {
   return (
-    <View style={{ marginTop: topGap ? 30 : 6, marginBottom: 6 }}>
+    <View style={{ marginTop: topGap ? 32 : 6, marginBottom: 6 }}>
       <Text
         style={{
           fontFamily: SERIF_BOLD,
@@ -1338,7 +1339,7 @@ function Input(props: ComponentProps<typeof TextInput>) {
         borderWidth: 1,
         borderColor: BORDER,
         borderRadius: 12,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 15,
         color: INK,
@@ -1388,11 +1389,11 @@ function ChipMulti({
             activeOpacity={0.7}
             style={{
               borderRadius: 999,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? GOLD : "#ffffff",
+              backgroundColor: on ? INK : "#ffffff",
               borderWidth: 1,
-              borderColor: on ? GOLD : BORDER,
+              borderColor: on ? INK : BORDER,
             }}
           >
             <Text
@@ -1419,7 +1420,7 @@ function ChipMulti({
             placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF,
               borderRadius: 999,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 9,
               backgroundColor: GOLD_SOFT,
               borderWidth: 1,
@@ -1435,7 +1436,7 @@ function ChipMulti({
             activeOpacity={0.7}
             style={{
               borderRadius: 999,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 9,
               backgroundColor: "#ffffff",
               borderWidth: 1,
@@ -1478,9 +1479,9 @@ function ChipSingle({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? GOLD : "#ffffff",
+              backgroundColor: on ? INK : "#ffffff",
               borderWidth: 1,
-              borderColor: on ? GOLD : BORDER,
+              borderColor: on ? INK : BORDER,
             }}
           >
             <Text
@@ -1566,11 +1567,11 @@ function SpaceCard({
     <View
       style={{
         marginTop: 12,
-        backgroundColor: "#ffffff",
+        backgroundColor: CREAM,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 16,
-        padding: 14,
+        borderRadius: 20,
+        padding: 16,
       }}
     >
       <Pressable
@@ -1684,8 +1685,8 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
           alignItems: "center",
           gap: 10,
           backgroundColor: GOLD_SOFT,
-          borderRadius: 14,
-          padding: 14,
+          borderRadius: 20,
+          padding: 16,
         }}
       >
         <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
@@ -1698,11 +1699,11 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: CREAM,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 14,
-        padding: 14,
+        borderRadius: 20,
+        padding: 16,
       }}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
@@ -1738,7 +1739,7 @@ const lightPill = {
   borderColor: BORDER,
   backgroundColor: "#ffffff",
   borderRadius: 999,
-  height: 54,
+  height: 52,
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
@@ -1746,11 +1747,11 @@ const lightPill = {
 // Local copies of the shared wizard pills, so they get the same solid
 // disabled treatment rather than a washed-out 50% opacity.
 function darkPillFor(disabled: boolean) {
-  return disabled ? { ...darkPill, backgroundColor: "#7b7973" } : darkPill;
+  return disabled ? { ...darkPill, backgroundColor: "#e0d2b0" } : darkPill;
 }
 function lightPillFor(disabled: boolean) {
   return disabled
-    ? { ...lightPill, backgroundColor: "#f3f1ec", borderColor: "#ece9e1" }
+    ? { ...lightPill, backgroundColor: "#f4f1ea", borderColor: BORDER }
     : lightPill;
 }
 const lightPillText = {

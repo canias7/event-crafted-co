@@ -338,7 +338,7 @@ export default function SchedulingScreen() {
 
         {/* Appointment types — available on every plan (free = 1). */}
         <SectionTitle title="Appointment types" />
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: 12 }}>
           {types.map((t) => (
             <Pressable
               key={t.id}
@@ -350,9 +350,9 @@ export default function SchedulingScreen() {
                 backgroundColor: CARD,
                 borderWidth: 1,
                 borderColor: BORDER,
-                borderRadius: 16,
-                paddingHorizontal: 14,
-                paddingVertical: 13,
+                borderRadius: 20,
+                paddingHorizontal: 16,
+                paddingVertical: 16,
                 flexDirection: "row",
                 alignItems: "center",
                 opacity: t.active ? 1 : 0.55,
@@ -403,9 +403,9 @@ export default function SchedulingScreen() {
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
-              borderRadius: 16,
-              paddingHorizontal: 14,
-              paddingVertical: 13,
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 16,
               flexDirection: "row",
               alignItems: "center",
             }}
@@ -414,7 +414,7 @@ export default function SchedulingScreen() {
               style={{
                 width: 38,
                 height: 38,
-                borderRadius: 11,
+                borderRadius: 12,
                 backgroundColor: SURFACE,
                 alignItems: "center",
                 justifyContent: "center",
@@ -452,8 +452,8 @@ export default function SchedulingScreen() {
                 backgroundColor: CARD,
                 borderWidth: 1,
                 borderColor: BORDER,
-                borderRadius: 18,
-                paddingHorizontal: 14,
+                borderRadius: 20,
+                paddingHorizontal: 16,
                 paddingVertical: 4,
               }}
             >
@@ -622,11 +622,11 @@ export default function SchedulingScreen() {
               <View
                 key={sug.id}
                 style={{
-                  marginTop: 10,
+                  marginTop: 12,
                   backgroundColor: "#f3ecdd",
                   borderWidth: 1,
                   borderColor: GOLD,
-                  borderRadius: 18,
+                  borderRadius: 20,
                   padding: 16,
                 }}
               >
@@ -668,7 +668,7 @@ export default function SchedulingScreen() {
                     onPress={() => decideSuggestion(sug, "dismissed")}
                     style={{
                       flex: 1,
-                      backgroundColor: CARD,
+                      backgroundColor: "#ffffff",
                       borderWidth: 1,
                       borderColor: BORDER,
                       borderRadius: 999,
@@ -692,13 +692,12 @@ export default function SchedulingScreen() {
               onPress={save}
               disabled={saving}
               style={{
-                marginTop: 26,
-                backgroundColor: GOLD,
+                marginTop: 28,
+                backgroundColor: saving ? "#e0d2b0" : GOLD,
                 borderRadius: 999,
-                height: 54,
+                height: 52,
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: saving ? 0.6 : 1,
               }}
             >
               {saving ? (
@@ -733,11 +732,11 @@ export default function SchedulingScreen() {
           <Pressable
             onPress={() => {}}
             style={{
-              backgroundColor: PAGE,
+              backgroundColor: CARD,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              paddingTop: 18,
-              paddingBottom: 34,
+              paddingTop: 24,
+              paddingBottom: 36,
               maxHeight: "60%",
             }}
           >
@@ -751,7 +750,7 @@ export default function SchedulingScreen() {
             >
               {timeTarget?.[1] === "start" ? "Start time" : "End time"}
             </Text>
-            <ScrollView contentContainerStyle={{ padding: 18 }}>
+            <ScrollView contentContainerStyle={{ padding: 24 }}>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {TIME_OPTIONS.map((t) => (
                   <Pressable
@@ -766,7 +765,7 @@ export default function SchedulingScreen() {
                       setTimeTarget(null);
                     }}
                     style={{
-                      paddingHorizontal: 14,
+                      paddingHorizontal: 16,
                       paddingVertical: 10,
                       borderRadius: 999,
                       backgroundColor: CARD,
@@ -811,7 +810,7 @@ export default function SchedulingScreen() {
 // headlines.
 function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
-    <View style={{ marginTop: 26, marginBottom: 10, paddingHorizontal: 2 }}>
+    <View style={{ marginTop: 24, marginBottom: 10, paddingHorizontal: 2 }}>
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1.2, color: INK }}>
         {title.toUpperCase()}
       </Text>
@@ -828,7 +827,7 @@ function TimePill({ label, onPress }: { label: string; onPress: () => void }) {
       onPress={onPress}
       style={{
         backgroundColor: SURFACE,
-        borderRadius: 10,
+        borderRadius: 8,
         paddingHorizontal: 11,
         paddingVertical: 7,
       }}
@@ -850,7 +849,7 @@ function RuleChips({
   onSelect: (i: number) => void;
 }) {
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={{ marginBottom: 16 }}>
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginBottom: 8 }}>
         {label}
       </Text>
@@ -862,7 +861,7 @@ function RuleChips({
               key={o}
               onPress={() => onSelect(i)}
               style={{
-                paddingHorizontal: 14,
+                paddingHorizontal: 16,
                 paddingVertical: 9,
                 borderRadius: 999,
                 backgroundColor: on ? INK : CARD,
@@ -897,12 +896,12 @@ function ToggleCard({
   return (
     <View
       style={{
-        marginBottom: 10,
+        marginBottom: 12,
         backgroundColor: CARD,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 18,
-        padding: 14,
+        borderRadius: 20,
+        padding: 16,
         flexDirection: "row",
         alignItems: "center",
       }}
@@ -962,12 +961,12 @@ function AutoRow({
   return (
     <View
       style={{
-        marginBottom: 10,
+        marginBottom: 12,
         backgroundColor: CARD,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 18,
-        padding: 14,
+        borderRadius: 20,
+        padding: 16,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -1100,7 +1099,7 @@ function TypeForm({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingVertical: 12,
           }}
         >
@@ -1125,7 +1124,7 @@ function TypeForm({
                     key={d}
                     onPress={() => setDuration(d)}
                     style={{
-                      paddingHorizontal: 15,
+                      paddingHorizontal: 16,
                       paddingVertical: 10,
                       borderRadius: 999,
                       backgroundColor: on ? INK : CARD,
@@ -1161,13 +1160,12 @@ function TypeForm({
             onPress={save}
             disabled={saving}
             style={{
-              marginTop: 14,
-              backgroundColor: GOLD,
+              marginTop: 16,
+              backgroundColor: saving ? "#e0d2b0" : GOLD,
               borderRadius: 999,
               height: 52,
               alignItems: "center",
               justifyContent: "center",
-              opacity: saving ? 0.6 : 1,
             }}
           >
             {saving ? (
@@ -1204,12 +1202,12 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <View
       style={{
-        marginTop: 26,
+        marginTop: 28,
         backgroundColor: "#f3ecdd",
         borderWidth: 1,
         borderColor: GOLD,
-        borderRadius: 18,
-        padding: 18,
+        borderRadius: 20,
+        padding: 16,
       }}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 18, color: INK }}>
@@ -1219,7 +1217,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
         Your hours and rules are set — Premium makes Vendora work them for
         you, automatically.
       </Text>
-      <View style={{ marginTop: 14, gap: 10 }}>
+      <View style={{ marginTop: 16, gap: 10 }}>
         {rows.map((r) => (
           <View key={r.icon} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Feather name={r.icon} size={15} color="#8a6f3e" />
@@ -1233,7 +1231,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
           marginTop: 16,
           backgroundColor: GOLD,
           borderRadius: 999,
-          height: 48,
+          height: 44,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
@@ -1286,10 +1284,10 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
-              borderRadius: 18,
+              borderRadius: 20,
               paddingHorizontal: 16,
-              paddingTop: 15,
-              paddingBottom: 14,
+              paddingTop: 16,
+              paddingBottom: 16,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -1301,7 +1299,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
                   marginLeft: 8,
                   paddingHorizontal: 8,
                   paddingVertical: 4,
-                  borderRadius: 6,
+                  borderRadius: 8,
                   backgroundColor: c.tag === "PRO" ? GOLD_TAG : INK,
                 }}
               >
@@ -1333,10 +1331,10 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
       <Pressable
         onPress={onUpgrade}
         style={{
-          marginTop: 18,
+          marginTop: 20,
           backgroundColor: GOLD,
-          borderRadius: 27,
-          height: 54,
+          borderRadius: 999,
+          height: 52,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",

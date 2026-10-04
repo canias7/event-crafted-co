@@ -183,7 +183,7 @@ export default function VendorDetailScreen() {
   if (!vendor) {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-        <View className="flex-row items-center px-4 py-3">
+        <View className="flex-row items-center px-5 py-3">
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
@@ -274,7 +274,7 @@ export default function VendorDetailScreen() {
         >
           <View
             pointerEvents="box-none"
-            className="flex-row items-center justify-between px-4 pt-2"
+            className="flex-row items-center justify-between px-5 pt-2"
           >
             <RoundButton onPress={() => router.back()} icon="chevron-left" />
             <View className="flex-row gap-2">
@@ -318,7 +318,7 @@ export default function VendorDetailScreen() {
             backgroundColor: "#fbf9f4",
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
-            marginTop: -22,
+            marginTop: -24,
             paddingTop: 20,
             paddingBottom: 8,
           }}
@@ -338,7 +338,7 @@ export default function VendorDetailScreen() {
           </View>
 
           {/* Stats row — 3 cells separated by vertical lines. */}
-          <View className="mx-5 mt-5 rounded-2xl border border-border">
+          <View className="mx-5 mt-5 rounded-[20px] border border-border">
             <View className="flex-row">
               <StatCell
                 top={
@@ -446,16 +446,16 @@ export default function VendorDetailScreen() {
             }}
             className="rounded-full active:opacity-80"
             style={{
-              // INK — the app-wide primary button fill.
+              // Gold — the app-wide primary button fill, with an ink label.
               backgroundColor: "#c9a86a",
-              paddingHorizontal: 22,
-              paddingVertical: 14,
+              paddingHorizontal: 24,
+              height: 52,
               flexDirection: "row",
               alignItems: "center",
             }}
           >
             <Feather name="external-link" size={16} color="#14161a" />
-            <Text className="ml-2 text-base text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="ml-2 text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
               View on web
             </Text>
           </Pressable>

@@ -131,8 +131,8 @@ export default function WelcomeScreen() {
           style={{
             width: width,
             height: heroHeight,
-            borderBottomLeftRadius: 34,
-            borderBottomRightRadius: 34,
+            borderBottomLeftRadius: 24,
+            borderBottomRightRadius: 24,
             overflow: "hidden",
             backgroundColor: SURFACE,
           }}
@@ -145,7 +145,7 @@ export default function WelcomeScreen() {
           />
         </View>
 
-        <View style={{ paddingHorizontal: 26 }}>
+        <View style={{ paddingHorizontal: 20 }}>
           {/* Logo badge straddling the hero's lower edge. */}
           <View
             style={{
@@ -155,7 +155,7 @@ export default function WelcomeScreen() {
               height: BADGE,
               borderRadius: BADGE / 2,
               backgroundColor: CARD,
-              borderWidth: 1.5,
+              borderWidth: 1,
               borderColor: GOLD,
               alignItems: "center",
               justifyContent: "center",
@@ -211,8 +211,8 @@ export default function WelcomeScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              marginTop: compact ? 9 : 13,
-              marginBottom: compact ? 11 : 15,
+              marginTop: compact ? 9 : 12,
+              marginBottom: compact ? 11 : 16,
             }}
           >
             <View style={{ width: 54, height: 1, backgroundColor: BORDER }} />
@@ -237,7 +237,7 @@ export default function WelcomeScreen() {
                 backgroundColor: CARD,
                 borderWidth: 1,
                 borderColor: BORDER,
-                borderRadius: 16,
+                borderRadius: 20,
                 padding: compact ? 9 : 11,
                 marginBottom: compact ? 6 : 8,
               }}
@@ -246,7 +246,7 @@ export default function WelcomeScreen() {
                 style={{
                   width: compact ? 36 : 42,
                   height: compact ? 36 : 42,
-                  borderRadius: compact ? 11 : 13,
+                  borderRadius: 12,
                   backgroundColor: SURFACE,
                   alignItems: "center",
                   justifyContent: "center",
@@ -290,7 +290,7 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
             style={{
               marginTop: compact ? 12 : 16,
-              height: compact ? 46 : 52,
+              height: compact ? 44 : 52,
               borderRadius: 999,
               backgroundColor: GOLD,
               alignItems: "center",
@@ -308,11 +308,11 @@ export default function WelcomeScreen() {
             activeOpacity={0.7}
             style={{
               marginTop: compact ? 8 : 10,
-              height: compact ? 46 : 52,
+              height: compact ? 44 : 52,
               borderRadius: 999,
-              borderWidth: 1.5,
-              borderColor: GOLD,
-              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
+              backgroundColor: "#ffffff",
               alignItems: "center",
               justifyContent: "center",
             }}

@@ -38,7 +38,7 @@ const GOLD = "#c9a86a";
 // 2:1, so every gold *label* uses this instead.
 const BRONZE = "#8a6f3e";
 const GOLD_SOFT = "rgba(201,168,106,0.35)";
-const BORDER = "rgba(20,22,26,0.10)";
+const BORDER = "#e6e1d5";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -169,12 +169,12 @@ export default function SetupChecklistScreen() {
         </View>
 
         {/* Progress — gold fill on a hairline track, X of Y. */}
-        <View style={{ marginTop: 22 }}>
+        <View style={{ marginTop: 24 }}>
           <View
             style={{
               height: 8,
               borderRadius: 4,
-              backgroundColor: "rgba(20,22,26,0.08)",
+              backgroundColor: BORDER,
               overflow: "hidden",
             }}
           >
@@ -195,7 +195,7 @@ export default function SetupChecklistScreen() {
         {/* Checklist rows. */}
         <View
           style={{
-            marginTop: 18,
+            marginTop: 20,
             backgroundColor: CARD,
             borderRadius: 20,
             borderWidth: 1,
@@ -211,7 +211,7 @@ export default function SetupChecklistScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   paddingHorizontal: 16,
-                  paddingVertical: 15,
+                  paddingVertical: 16,
                   borderTopWidth: i === 0 ? 0 : 1,
                   borderTopColor: BORDER,
                 }}
@@ -223,11 +223,11 @@ export default function SetupChecklistScreen() {
                     height: 26,
                     borderRadius: 13,
                     backgroundColor: item.done ? GOLD : "transparent",
-                    borderWidth: item.done ? 0 : 1.5,
+                    borderWidth: item.done ? 0 : 1,
                     borderColor: GOLD_SOFT,
                     alignItems: "center",
                     justifyContent: "center",
-                    marginRight: 14,
+                    marginRight: 16,
                   }}
                 >
                   {item.done ? (
@@ -316,7 +316,7 @@ export default function SetupChecklistScreen() {
               marginTop: 24,
               backgroundColor: GOLD,
               borderRadius: 999,
-              height: 56,
+              height: 52,
               alignItems: "center",
               justifyContent: "center",
             }}

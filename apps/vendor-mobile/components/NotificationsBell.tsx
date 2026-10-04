@@ -184,7 +184,7 @@ export function NotificationsBell({
           className="flex-1 bg-background"
           edges={["top", "bottom"]}
         >
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
               <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Close</Text>
             </Pressable>
