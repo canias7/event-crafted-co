@@ -12,10 +12,12 @@ insert into storage.buckets (id, name, public)
 values ('review-photos', 'review-photos', true)
 on conflict (id) do nothing;
 
+drop policy if exists "review photos public read" on storage.objects;
 create policy "review photos public read"
   on storage.objects for select
   using (bucket_id = 'review-photos');
 
+drop policy if exists "review photos owner insert" on storage.objects;
 create policy "review photos owner insert"
   on storage.objects for insert to authenticated
   with check (
@@ -23,6 +25,7 @@ create policy "review photos owner insert"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "review photos owner delete" on storage.objects;
 create policy "review photos owner delete"
   on storage.objects for delete to authenticated
   using (

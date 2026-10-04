@@ -17,11 +17,17 @@
 --    case. Constrain to [1, 31] at the DB level so a direct SQL
 --    write can't plant a pathological value.
 
-update public.vendor_recurring_invoices
-set day_of_month = extract(day from next_run_at at time zone 'UTC')::smallint
-where day_of_month is null
-  and interval in ('monthly', 'quarterly', 'yearly');
+-- Fresh replays: this file sorts before 20260526090000, which creates the
+-- table, so skip when it doesn't exist yet (the feature was dropped later).
+do $guard$
+begin
+  if to_regclass('public.vendor_recurring_invoices') is null then
+    return;
+  end if;
+  update public.vendor_recurring_invoices
+  set day_of_month = extract(day from next_run_at at time zone 'UTC')::smallint
+  where day_of_month is null
+    and interval in ('monthly', 'quarterly', 'yearly');
 
-alter table public.vendor_recurring_invoices
-  add constraint vendor_recurring_invoices_day_of_month_check
-    check (day_of_month is null or (day_of_month between 1 and 31));
+  begin alter table public.vendor_recurring_invoices add constraint vendor_recurring_invoices_day_of_month_check check (day_of_month is null or (day_of_month between 1 and 31)); exception when duplicate_object or duplicate_table then null; end;
+end $guard$;

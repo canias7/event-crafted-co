@@ -242,9 +242,8 @@ test.describe("mux-webhook: signature checks", () => {
 });
 
 test("mux-webhook fails closed when MUX_WEBHOOK_SECRET is not configured", async () => {
-  // Today the function logs a warning and ACCEPTS unsigned events when the
-  // secret is missing. A misconfigured deploy would then let anyone flip live
-  // stream state. This asserts the safer behavior.
+  // A deploy missing the secret must reject events rather than let anyone
+  // flip live-stream state with an unsigned request.
   const stub = await startStub();
   const fn = await startFunction("mux-webhook", { SUPABASE_URL: stub.url, SUPABASE_SERVICE_ROLE_KEY: "stub-service-role" });
   try {

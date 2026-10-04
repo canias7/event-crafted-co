@@ -1,4 +1,4 @@
-create table public.support_tickets (
+create table if not exists public.support_tickets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null,
   subject text not null,
@@ -10,16 +10,21 @@ create table public.support_tickets (
   updated_at timestamptz not null default now(),
   closed_at timestamptz
 );
-create index support_tickets_user_idx on public.support_tickets (user_id, created_at desc);
-create index support_tickets_status_idx on public.support_tickets (status, priority desc, created_at desc);
+create index if not exists support_tickets_user_idx on public.support_tickets (user_id, created_at desc);
+create index if not exists support_tickets_status_idx on public.support_tickets (status, priority desc, created_at desc);
 alter table public.support_tickets enable row level security;
+drop policy if exists "support_tickets own select" on public.support_tickets;
 create policy "support_tickets own select" on public.support_tickets for select to authenticated using (auth.uid() = user_id or public.is_admin());
+drop policy if exists "support_tickets own insert" on public.support_tickets;
 create policy "support_tickets own insert" on public.support_tickets for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "support_tickets admin update" on public.support_tickets;
 create policy "support_tickets admin update" on public.support_tickets for update to authenticated using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "support_tickets own close" on public.support_tickets;
 create policy "support_tickets own close" on public.support_tickets for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop trigger if exists support_tickets_updated on public.support_tickets;
 create trigger support_tickets_updated before update on public.support_tickets for each row execute function public.tg_set_updated_at();
 
-create table public.support_messages (
+create table if not exists public.support_messages (
   id uuid primary key default gen_random_uuid(),
   ticket_id uuid not null references public.support_tickets(id) on delete cascade,
   sender_id uuid not null,
@@ -28,10 +33,12 @@ create table public.support_messages (
   attachments jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
-create index support_messages_ticket_idx on public.support_messages (ticket_id, created_at);
+create index if not exists support_messages_ticket_idx on public.support_messages (ticket_id, created_at);
 alter table public.support_messages enable row level security;
+drop policy if exists "support_messages participant select" on public.support_messages;
 create policy "support_messages participant select" on public.support_messages for select to authenticated
   using (public.is_admin() or exists (select 1 from public.support_tickets t where t.id = ticket_id and t.user_id = auth.uid()));
+drop policy if exists "support_messages participant insert" on public.support_messages;
 create policy "support_messages participant insert" on public.support_messages for insert to authenticated
   with check (sender_id = auth.uid() and (
     (sender_role = 'admin' and public.is_admin())
@@ -52,6 +59,7 @@ begin
   end if;
   return new;
 end$$;
+drop trigger if exists support_messages_notify_admins on public.support_messages;
 create trigger support_messages_notify_admins after insert on public.support_messages
   for each row execute function public.notify_admins_support_event();
 
@@ -66,6 +74,7 @@ begin
   values (v_user, 'support_ticket_reply', 'Support replied: ' || coalesce(v_subject, 'your ticket'), substring(new.body for 140), '/support?ticket=' || new.ticket_id::text);
   return new;
 end$$;
+drop trigger if exists support_messages_notify_user on public.support_messages;
 create trigger support_messages_notify_user after insert on public.support_messages
   for each row execute function public.notify_user_support_admin_reply();
 revoke execute on function public.notify_admins_support_event() from public, anon, authenticated;

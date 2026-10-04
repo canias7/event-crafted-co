@@ -1,7 +1,8 @@
 -- Remove My Space (the AI super-agent / HILUX auto-responder) entirely.
 --
--- Drops its cron jobs, triggers, helper functions and the my_space_* /
--- hilux_* tables (owner approved dropping the data), plus profile
+-- Drops its cron jobs, triggers, helper functions, the my_space_* /
+-- hilux_* tables and the stored Stripe keys it used (owner approved dropping
+-- the data), plus profile
 -- settings columns that nothing reads any more.
 --
 -- Kept on purpose:
@@ -50,6 +51,8 @@ drop table if exists public.my_space_threads cascade;
 drop table if exists public.my_space_knowledge cascade;
 drop table if exists public.hilux_action_log cascade;
 drop table if exists public.hilux_private_config cascade;
+-- Vendors' Stripe restricted keys, stored only for My Space's Stripe tools.
+drop table if exists public.vendor_stripe_mcp_secrets cascade;
 drop function if exists public.touch_my_space_thread();
 drop function if exists public.set_my_space_knowledge_updated_at();
 

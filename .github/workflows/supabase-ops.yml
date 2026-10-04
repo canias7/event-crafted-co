@@ -146,4 +146,10 @@ jobs:
             left=$(supabase functions list --project-ref "$PROJECT_REF" -o json | jq -r '.[].slug' \
               | grep -xF -f <(grep -v '^\s*#' supabase/ops/retired-functions.txt | sed '/^\s*$/d') || true)
             echo "${left:-none}"
+            echo ""
+            echo "Webhook secrets configured (names only, values never read):"
+            names=$(curl -sS "$API/secrets" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '.[].name')
+            for n in MUX_WEBHOOK_SECRET RESEND_WEBHOOK_SECRET STRIPE_WEBHOOK_SECRET; do
+              if grep -qx "$n" <<<"$names"; then echo "- $n: set"; else echo "- $n: MISSING"; fi
+            done
           } | tee -a "$GITHUB_STEP_SUMMARY"

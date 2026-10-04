@@ -50,6 +50,8 @@ comment on view public.user_last_active is
 revoke all on public.user_last_active from public, anon, authenticated;
 grant select on public.user_last_active to service_role;
 
+-- Return type changed: drop the old version so a fresh replay can recreate it.
+drop function if exists public.admin_list_users;
 create or replace function public.admin_list_users()
 returns table(
   id uuid,

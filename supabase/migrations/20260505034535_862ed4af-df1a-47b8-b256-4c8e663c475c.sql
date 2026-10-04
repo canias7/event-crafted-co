@@ -1,4 +1,4 @@
-create table public.admin_audit_log (
+create table if not exists public.admin_audit_log (
   id uuid primary key default gen_random_uuid(),
   admin_id uuid,
   action text not null,
@@ -8,11 +8,13 @@ create table public.admin_audit_log (
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
-create index admin_audit_log_admin_idx on public.admin_audit_log (admin_id, created_at desc);
-create index admin_audit_log_target_idx on public.admin_audit_log (target_type, target_id, created_at desc);
-create index admin_audit_log_created_idx on public.admin_audit_log (created_at desc);
+create index if not exists admin_audit_log_admin_idx on public.admin_audit_log (admin_id, created_at desc);
+create index if not exists admin_audit_log_target_idx on public.admin_audit_log (target_type, target_id, created_at desc);
+create index if not exists admin_audit_log_created_idx on public.admin_audit_log (created_at desc);
 alter table public.admin_audit_log enable row level security;
+drop policy if exists "admin_audit_log admin select" on public.admin_audit_log;
 create policy "admin_audit_log admin select" on public.admin_audit_log for select to authenticated using (public.is_admin());
+drop policy if exists "admin_audit_log admin insert" on public.admin_audit_log;
 create policy "admin_audit_log admin insert" on public.admin_audit_log for insert to authenticated with check (public.is_admin() and admin_id = auth.uid());
 
 create or replace function public.log_admin_action(

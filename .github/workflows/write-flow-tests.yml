@@ -34,6 +34,7 @@ on:
       - "supabase/functions/resend-webhook/**"
       - "supabase/functions/mux-webhook/**"
       - "supabase/functions/_shared/payments.ts"
+      - "supabase/migrations/**"
 
 permissions:
   contents: read

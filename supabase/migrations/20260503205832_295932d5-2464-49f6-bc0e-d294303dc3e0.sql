@@ -1,4 +1,4 @@
-create table public.vendor_team_members (
+create table if not exists public.vendor_team_members (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -6,11 +6,11 @@ create table public.vendor_team_members (
   created_at timestamptz not null default now(),
   unique (vendor_id, user_id)
 );
-create index vendor_team_members_user_idx on public.vendor_team_members (user_id);
-create index vendor_team_members_vendor_idx on public.vendor_team_members (vendor_id);
+create index if not exists vendor_team_members_user_idx on public.vendor_team_members (user_id);
+create index if not exists vendor_team_members_vendor_idx on public.vendor_team_members (vendor_id);
 alter table public.vendor_team_members enable row level security;
 
-create table public.vendor_team_invites (
+create table if not exists public.vendor_team_invites (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   email text not null,
@@ -21,8 +21,8 @@ create table public.vendor_team_invites (
   accepted_at timestamptz,
   created_at timestamptz not null default now()
 );
-create index vendor_team_invites_vendor_idx on public.vendor_team_invites (vendor_id, accepted_at);
-create index vendor_team_invites_email_idx on public.vendor_team_invites (lower(email));
+create index if not exists vendor_team_invites_vendor_idx on public.vendor_team_invites (vendor_id, accepted_at);
+create index if not exists vendor_team_invites_email_idx on public.vendor_team_invites (lower(email));
 alter table public.vendor_team_invites enable row level security;
 
 insert into public.vendor_team_members (vendor_id, user_id, role)
@@ -75,16 +75,21 @@ grant execute on function public.is_vendor_team_admin(uuid) to authenticated;
 grant execute on function public.shares_vendor_team(uuid) to authenticated;
 
 -- vendor_team_members policies (use helpers to avoid recursion)
+drop policy if exists "vendor_team_members select teammates" on public.vendor_team_members;
 create policy "vendor_team_members select teammates" on public.vendor_team_members for select to authenticated
   using (user_id = auth.uid() or public.is_vendor_member(vendor_id));
+drop policy if exists "vendor_team_members admin delete" on public.vendor_team_members;
 create policy "vendor_team_members admin delete" on public.vendor_team_members for delete to authenticated
   using (public.is_vendor_team_admin(vendor_id) and role <> 'owner');
 
 -- vendor_team_invites policies
+drop policy if exists "vendor_team_invites admin select" on public.vendor_team_invites;
 create policy "vendor_team_invites admin select" on public.vendor_team_invites for select to authenticated
   using (public.is_vendor_team_admin(vendor_id));
+drop policy if exists "vendor_team_invites admin insert" on public.vendor_team_invites;
 create policy "vendor_team_invites admin insert" on public.vendor_team_invites for insert to authenticated
   with check (invited_by = auth.uid() and public.is_vendor_team_admin(vendor_id));
+drop policy if exists "vendor_team_invites admin delete" on public.vendor_team_invites;
 create policy "vendor_team_invites admin delete" on public.vendor_team_invites for delete to authenticated
   using (public.is_vendor_team_admin(vendor_id));
 
@@ -94,20 +99,27 @@ begin
   drop policy if exists "vendor_unavailable_dates owner insert" on public.vendor_unavailable_dates;
   drop policy if exists "vendor_unavailable_dates owner update" on public.vendor_unavailable_dates;
   drop policy if exists "vendor_unavailable_dates owner delete" on public.vendor_unavailable_dates;
-  create policy "vendor_unavailable_dates member insert" on public.vendor_unavailable_dates for insert to authenticated with check (public.is_vendor_member(vendor_id));
-  create policy "vendor_unavailable_dates member update" on public.vendor_unavailable_dates for update to authenticated using (public.is_vendor_member(vendor_id));
-  create policy "vendor_unavailable_dates member delete" on public.vendor_unavailable_dates for delete to authenticated using (public.is_vendor_member(vendor_id));
+  drop policy if exists "vendor_unavailable_dates member insert" on public.vendor_unavailable_dates;
+create policy "vendor_unavailable_dates member insert" on public.vendor_unavailable_dates for insert to authenticated with check (public.is_vendor_member(vendor_id));
+  drop policy if exists "vendor_unavailable_dates member update" on public.vendor_unavailable_dates;
+create policy "vendor_unavailable_dates member update" on public.vendor_unavailable_dates for update to authenticated using (public.is_vendor_member(vendor_id));
+  drop policy if exists "vendor_unavailable_dates member delete" on public.vendor_unavailable_dates;
+create policy "vendor_unavailable_dates member delete" on public.vendor_unavailable_dates for delete to authenticated using (public.is_vendor_member(vendor_id));
 
   drop policy if exists "vendor_message_templates owner all" on public.vendor_message_templates;
-  create policy "vendor_message_templates member all" on public.vendor_message_templates for all to authenticated
+  drop policy if exists "vendor_message_templates member all" on public.vendor_message_templates;
+create policy "vendor_message_templates member all" on public.vendor_message_templates for all to authenticated
     using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
 
   drop policy if exists "vendor_portfolio_images owner insert" on public.vendor_portfolio_images;
   drop policy if exists "vendor_portfolio_images owner update" on public.vendor_portfolio_images;
   drop policy if exists "vendor_portfolio_images owner delete" on public.vendor_portfolio_images;
-  create policy "vendor_portfolio_images member insert" on public.vendor_portfolio_images for insert to authenticated with check (public.is_vendor_member(vendor_id));
-  create policy "vendor_portfolio_images member update" on public.vendor_portfolio_images for update to authenticated using (public.is_vendor_member(vendor_id));
-  create policy "vendor_portfolio_images member delete" on public.vendor_portfolio_images for delete to authenticated using (public.is_vendor_member(vendor_id));
+  drop policy if exists "vendor_portfolio_images member insert" on public.vendor_portfolio_images;
+create policy "vendor_portfolio_images member insert" on public.vendor_portfolio_images for insert to authenticated with check (public.is_vendor_member(vendor_id));
+  drop policy if exists "vendor_portfolio_images member update" on public.vendor_portfolio_images;
+create policy "vendor_portfolio_images member update" on public.vendor_portfolio_images for update to authenticated using (public.is_vendor_member(vendor_id));
+  drop policy if exists "vendor_portfolio_images member delete" on public.vendor_portfolio_images;
+create policy "vendor_portfolio_images member delete" on public.vendor_portfolio_images for delete to authenticated using (public.is_vendor_member(vendor_id));
 
   drop policy if exists "proposals participants select" on public.proposals;
   drop policy if exists "proposals vendor insert" on public.proposals;
@@ -118,15 +130,19 @@ begin
 end$$;
 
 drop policy if exists "vendor_profiles update own" on public.vendor_profiles;
+drop policy if exists "vendor_profiles team admin update" on public.vendor_profiles;
 create policy "vendor_profiles team admin update" on public.vendor_profiles for update to authenticated using (public.is_vendor_team_admin(id));
 
+drop policy if exists "profiles select teammates" on public.profiles;
 create policy "profiles select teammates" on public.profiles for select to authenticated using (public.shares_vendor_team(id));
 
 -- Storage policies for vendor-portfolios bucket
 drop policy if exists "vendor portfolios owner insert" on storage.objects;
 drop policy if exists "vendor portfolios owner delete" on storage.objects;
+drop policy if exists "vendor portfolios member insert" on storage.objects;
 create policy "vendor portfolios member insert" on storage.objects for insert to authenticated
   with check (bucket_id = 'vendor-portfolios' and public.is_vendor_member(((storage.foldername(name))[1])::uuid));
+drop policy if exists "vendor portfolios member delete" on storage.objects;
 create policy "vendor portfolios member delete" on storage.objects for delete to authenticated
   using (bucket_id = 'vendor-portfolios' and public.is_vendor_member(((storage.foldername(name))[1])::uuid));
 

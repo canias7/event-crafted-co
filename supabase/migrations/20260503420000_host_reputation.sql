@@ -14,7 +14,7 @@
 
 -- Vendor-supplied post-event flags. One per (vendor, host, inquiry, flag_type)
 -- so a vendor can layer multiple flags on the same engagement.
-create table public.host_reliability_flags (
+create table if not exists public.host_reliability_flags (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   host_id uuid not null references public.profiles(id) on delete cascade,
@@ -31,14 +31,15 @@ create table public.host_reliability_flags (
   created_at timestamptz not null default now()
 );
 
-create index host_reliability_flags_host_idx
+create index if not exists host_reliability_flags_host_idx
   on public.host_reliability_flags (host_id, created_at desc);
-create index host_reliability_flags_vendor_idx
+create index if not exists host_reliability_flags_vendor_idx
   on public.host_reliability_flags (vendor_id, created_at desc);
 
 alter table public.host_reliability_flags enable row level security;
 
 -- Vendor reads / writes their own flags.
+drop policy if exists "host_reliability_flags vendor select" on public.host_reliability_flags;
 create policy "host_reliability_flags vendor select"
   on public.host_reliability_flags for select to authenticated
   using (
@@ -48,6 +49,7 @@ create policy "host_reliability_flags vendor select"
     )
   );
 
+drop policy if exists "host_reliability_flags vendor insert" on public.host_reliability_flags;
 create policy "host_reliability_flags vendor insert"
   on public.host_reliability_flags for insert to authenticated
   with check (
@@ -63,6 +65,7 @@ create policy "host_reliability_flags vendor insert"
     )
   );
 
+drop policy if exists "host_reliability_flags vendor delete" on public.host_reliability_flags;
 create policy "host_reliability_flags vendor delete"
   on public.host_reliability_flags for delete to authenticated
   using (

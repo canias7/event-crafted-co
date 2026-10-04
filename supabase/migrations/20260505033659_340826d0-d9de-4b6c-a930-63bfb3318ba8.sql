@@ -1,4 +1,4 @@
-create table public.real_events (
+create table if not exists public.real_events (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   inquiry_id uuid references public.inquiries(id) on delete set null,
@@ -17,23 +17,29 @@ create table public.real_events (
   updated_at timestamptz not null default now()
 );
 
-create index real_events_vendor_idx on public.real_events (vendor_id, created_at desc);
-create index real_events_published_idx on public.real_events (published_at desc nulls last)
+create index if not exists real_events_vendor_idx on public.real_events (vendor_id, created_at desc);
+create index if not exists real_events_published_idx on public.real_events (published_at desc nulls last)
   where published_at is not null and host_consent_given_at is not null;
 
 alter table public.real_events enable row level security;
 
+drop policy if exists "real_events public read" on public.real_events;
 create policy "real_events public read" on public.real_events for select
   using (published_at is not null and host_consent_given_at is not null);
+drop policy if exists "real_events vendor team read" on public.real_events;
 create policy "real_events vendor team read" on public.real_events for select to authenticated
   using (public.is_vendor_member(vendor_id));
+drop policy if exists "real_events vendor team insert" on public.real_events;
 create policy "real_events vendor team insert" on public.real_events for insert to authenticated
   with check (public.is_vendor_member(vendor_id));
+drop policy if exists "real_events vendor team update" on public.real_events;
 create policy "real_events vendor team update" on public.real_events for update to authenticated
   using (public.is_vendor_member(vendor_id));
+drop policy if exists "real_events vendor team delete" on public.real_events;
 create policy "real_events vendor team delete" on public.real_events for delete to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop trigger if exists real_events_updated on public.real_events;
 create trigger real_events_updated before update on public.real_events
   for each row execute function public.tg_set_updated_at();
 

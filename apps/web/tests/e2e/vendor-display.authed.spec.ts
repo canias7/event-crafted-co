@@ -55,6 +55,26 @@ test.describe("vendor dashboard display (authenticated)", () => {
       // No uncaught runtime errors.
       expect(pageErrors, `Uncaught errors on ${route}`).toEqual([]);
 
+      // Let the page finish loading its data before measuring: the
+      // overflow that matters (long names, tables) only appears once real
+      // content replaces the spinner and skeletons.
+      await expect(page.getByText("Loading…", { exact: true })).toHaveCount(0, { timeout: 20_000 });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      // Skeleton blocks (pulsing placeholders bigger than a status dot).
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                [...document.querySelectorAll(".animate-pulse")].filter((el) => {
+                  const r = el.getBoundingClientRect();
+                  return r.width > 16 && r.height > 16;
+                }).length,
+            ),
+          { message: `skeletons never cleared on ${route}`, timeout: 15_000 },
+        )
+        .toBe(0);
+
       // No horizontal overflow at this (mobile) viewport — guards the
       // bottom-nav clearance / table / grid display fixes. Allow a 2px
       // tolerance for sub-pixel rounding.

@@ -1,4 +1,4 @@
-create table public.vendor_partner_threads (
+create table if not exists public.vendor_partner_threads (
   id uuid primary key default gen_random_uuid(),
   vendor_a_id uuid not null,
   vendor_b_id uuid not null,
@@ -7,28 +7,33 @@ create table public.vendor_partner_threads (
   check (vendor_a_id < vendor_b_id),
   unique (vendor_a_id, vendor_b_id)
 );
-create index vendor_partner_threads_a_idx on public.vendor_partner_threads (vendor_a_id, last_message_at desc);
-create index vendor_partner_threads_b_idx on public.vendor_partner_threads (vendor_b_id, last_message_at desc);
+create index if not exists vendor_partner_threads_a_idx on public.vendor_partner_threads (vendor_a_id, last_message_at desc);
+create index if not exists vendor_partner_threads_b_idx on public.vendor_partner_threads (vendor_b_id, last_message_at desc);
 alter table public.vendor_partner_threads enable row level security;
+drop policy if exists "vendor_partner_threads participants select" on public.vendor_partner_threads;
 create policy "vendor_partner_threads participants select" on public.vendor_partner_threads for select to authenticated
   using (public.is_vendor_member(vendor_a_id) or public.is_vendor_member(vendor_b_id));
+drop policy if exists "vendor_partner_threads insert via rpc" on public.vendor_partner_threads;
 create policy "vendor_partner_threads insert via rpc" on public.vendor_partner_threads for insert to authenticated
   with check (public.is_vendor_member(vendor_a_id) or public.is_vendor_member(vendor_b_id));
+drop policy if exists "vendor_partner_threads participants update" on public.vendor_partner_threads;
 create policy "vendor_partner_threads participants update" on public.vendor_partner_threads for update to authenticated
   using (public.is_vendor_member(vendor_a_id) or public.is_vendor_member(vendor_b_id));
 
-create table public.vendor_partner_messages (
+create table if not exists public.vendor_partner_messages (
   id uuid primary key default gen_random_uuid(),
   thread_id uuid not null references public.vendor_partner_threads(id) on delete cascade,
   sender_vendor_id uuid not null,
   body text not null,
   created_at timestamptz not null default now()
 );
-create index vendor_partner_messages_thread_idx on public.vendor_partner_messages (thread_id, created_at);
+create index if not exists vendor_partner_messages_thread_idx on public.vendor_partner_messages (thread_id, created_at);
 alter table public.vendor_partner_messages enable row level security;
+drop policy if exists "vendor_partner_messages participants select" on public.vendor_partner_messages;
 create policy "vendor_partner_messages participants select" on public.vendor_partner_messages for select to authenticated
   using (exists (select 1 from public.vendor_partner_threads t where t.id = thread_id
     and (public.is_vendor_member(t.vendor_a_id) or public.is_vendor_member(t.vendor_b_id))));
+drop policy if exists "vendor_partner_messages send" on public.vendor_partner_messages;
 create policy "vendor_partner_messages send" on public.vendor_partner_messages for insert to authenticated
   with check (public.is_vendor_member(sender_vendor_id) and exists (
     select 1 from public.vendor_partner_threads t where t.id = thread_id

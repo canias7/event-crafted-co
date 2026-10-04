@@ -133,6 +133,13 @@ async function verifySvix(
     // not base64; ignore
   }
 
+  // Svix spec: reject timestamps more than 5 minutes from now, so a
+  // captured signed request can't be replayed later.
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > SVIX_TOLERANCE_SECONDS) {
+    return false;
+  }
+
   const toSign = `${msgId}.${timestamp}.${body}`;
   const sigs = headerValue
     .split(" ")
@@ -155,10 +162,21 @@ async function verifySvix(
     );
     const ours = b64(new Uint8Array(sig));
     for (const s of sigs) {
-      if (s === ours) return true;
+      if (constantTimeEqual(s, ours)) return true;
     }
   }
   return false;
+}
+
+const SVIX_TOLERANCE_SECONDS = 5 * 60;
+
+// Compares without an early exit, so response time doesn't leak how many
+// leading characters of a forged signature were right.
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 function b64(buf: Uint8Array): string {

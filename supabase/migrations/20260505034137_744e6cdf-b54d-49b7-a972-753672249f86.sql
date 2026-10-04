@@ -88,8 +88,7 @@ grant execute on function public.get_vendor_profile_score(uuid) to authenticated
 
 -- background check verification kind
 alter table public.vendor_verifications drop constraint if exists vendor_verifications_kind_check;
-alter table public.vendor_verifications add constraint vendor_verifications_kind_check
-  check (kind in ('identity', 'insurance', 'business_license', 'background_check'));
+do $con$ begin alter table public.vendor_verifications add constraint vendor_verifications_kind_check check (kind in ('identity', 'insurance', 'business_license', 'background_check')); exception when duplicate_object or duplicate_table then null; end $con$;
 
 -- onboarding tour
 alter table public.profiles add column if not exists tour_dismissed_at timestamptz;
@@ -129,7 +128,7 @@ update public.appointments set meeting_url = 'https://meet.jit.si/vendora-' || r
   meeting_provider = 'jitsi' where meeting_url is null and kind in ('consultation','phone_call','other');
 
 -- reengagement
-create table public.vendor_reengagement_log (
+create table if not exists public.vendor_reengagement_log (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null,
   host_id uuid not null,
@@ -140,8 +139,9 @@ create table public.vendor_reengagement_log (
   notified_at timestamptz not null default now(),
   unique (vendor_id, host_id, inquiry_id, occasion)
 );
-create index vendor_reengagement_log_vendor_idx on public.vendor_reengagement_log (vendor_id, notified_at desc);
+create index if not exists vendor_reengagement_log_vendor_idx on public.vendor_reengagement_log (vendor_id, notified_at desc);
 alter table public.vendor_reengagement_log enable row level security;
+drop policy if exists "vendor_reengagement_log vendor read" on public.vendor_reengagement_log;
 create policy "vendor_reengagement_log vendor read" on public.vendor_reengagement_log for select to authenticated
   using (public.is_vendor_member(vendor_id));
 alter table public.profiles add column if not exists reengagement_emails_enabled boolean not null default true;

@@ -17,7 +17,7 @@ create index if not exists event_guests_vip_idx
   on public.event_guests (host_id)
   where is_vip = true;
 
-create table public.guest_message_blasts (
+create table if not exists public.guest_message_blasts (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   subject text not null,
@@ -29,11 +29,12 @@ create table public.guest_message_blasts (
   audience jsonb not null default '{}'::jsonb
 );
 
-create index guest_message_blasts_host_idx
+create index if not exists guest_message_blasts_host_idx
   on public.guest_message_blasts (host_id, sent_at desc);
 
 alter table public.guest_message_blasts enable row level security;
 
+drop policy if exists "guest_message_blasts host all" on public.guest_message_blasts;
 create policy "guest_message_blasts host all"
   on public.guest_message_blasts for all to authenticated
   using (auth.uid() = host_id)

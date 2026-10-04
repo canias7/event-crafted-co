@@ -1,17 +1,22 @@
 -- Event registry
-create table public.event_registry_links (
+create table if not exists public.event_registry_links (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   provider text not null, label text not null, url text not null, description text,
   display_order int not null default 0,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index event_registry_links_host_idx on public.event_registry_links (host_id, display_order, created_at);
+create index if not exists event_registry_links_host_idx on public.event_registry_links (host_id, display_order, created_at);
 alter table public.event_registry_links enable row level security;
+drop policy if exists "event_registry_links collaborator select" on public.event_registry_links;
 create policy "event_registry_links collaborator select" on public.event_registry_links for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "event_registry_links editor insert" on public.event_registry_links;
 create policy "event_registry_links editor insert" on public.event_registry_links for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "event_registry_links editor update" on public.event_registry_links;
 create policy "event_registry_links editor update" on public.event_registry_links for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "event_registry_links editor delete" on public.event_registry_links;
 create policy "event_registry_links editor delete" on public.event_registry_links for delete to authenticated using (public.is_planning_editor(host_id));
+drop trigger if exists event_registry_links_updated on public.event_registry_links;
 create trigger event_registry_links_updated before update on public.event_registry_links for each row execute function public.tg_set_updated_at();
 
 -- Geocoding + intro video
@@ -28,19 +33,24 @@ alter table public.vendor_profiles
 create index if not exists vendor_profiles_geocoded_idx on public.vendor_profiles (latitude, longitude) where latitude is not null and longitude is not null;
 
 -- Contract templates
-create table public.vendor_contract_templates (
+create table if not exists public.vendor_contract_templates (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   name text not null, body text not null, is_default boolean not null default false,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index vendor_contract_templates_vendor_idx on public.vendor_contract_templates (vendor_id, name);
-create unique index vendor_contract_templates_one_default on public.vendor_contract_templates (vendor_id) where is_default = true;
+create index if not exists vendor_contract_templates_vendor_idx on public.vendor_contract_templates (vendor_id, name);
+create unique index if not exists vendor_contract_templates_one_default on public.vendor_contract_templates (vendor_id) where is_default = true;
 alter table public.vendor_contract_templates enable row level security;
+drop policy if exists "vct member select" on public.vendor_contract_templates;
 create policy "vct member select" on public.vendor_contract_templates for select to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vct member insert" on public.vendor_contract_templates;
 create policy "vct member insert" on public.vendor_contract_templates for insert to authenticated with check (public.is_vendor_member(vendor_id));
+drop policy if exists "vct member update" on public.vendor_contract_templates;
 create policy "vct member update" on public.vendor_contract_templates for update to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vct member delete" on public.vendor_contract_templates;
 create policy "vct member delete" on public.vendor_contract_templates for delete to authenticated using (public.is_vendor_member(vendor_id));
+drop trigger if exists vct_updated on public.vendor_contract_templates;
 create trigger vct_updated before update on public.vendor_contract_templates for each row execute function public.tg_set_updated_at();
 
 alter table public.proposals
@@ -56,7 +66,7 @@ alter table public.inquiries
   add column if not exists intake_answers jsonb;
 
 -- Vendor recommendations
-create table public.vendor_recommendations (
+create table if not exists public.vendor_recommendations (
   id uuid primary key default gen_random_uuid(),
   recommender_id uuid not null references public.vendor_profiles(id) on delete cascade,
   recommended_id uuid not null references public.vendor_profiles(id) on delete cascade,
@@ -65,12 +75,16 @@ create table public.vendor_recommendations (
   unique (recommender_id, recommended_id),
   check (recommender_id <> recommended_id)
 );
-create index vendor_recs_recommender_idx on public.vendor_recommendations (recommender_id, display_order, created_at);
-create index vendor_recs_recommended_idx on public.vendor_recommendations (recommended_id);
+create index if not exists vendor_recs_recommender_idx on public.vendor_recommendations (recommender_id, display_order, created_at);
+create index if not exists vendor_recs_recommended_idx on public.vendor_recommendations (recommended_id);
 alter table public.vendor_recommendations enable row level security;
+drop policy if exists "vendor_recommendations public read" on public.vendor_recommendations;
 create policy "vendor_recommendations public read" on public.vendor_recommendations for select using (true);
+drop policy if exists "vendor_recommendations member insert" on public.vendor_recommendations;
 create policy "vendor_recommendations member insert" on public.vendor_recommendations for insert to authenticated with check (public.is_vendor_member(recommender_id));
+drop policy if exists "vendor_recommendations member update" on public.vendor_recommendations;
 create policy "vendor_recommendations member update" on public.vendor_recommendations for update to authenticated using (public.is_vendor_member(recommender_id));
+drop policy if exists "vendor_recommendations member delete" on public.vendor_recommendations;
 create policy "vendor_recommendations member delete" on public.vendor_recommendations for delete to authenticated using (public.is_vendor_member(recommender_id));
 
 -- Calendar feed token
@@ -119,27 +133,36 @@ create trigger vendor_profiles_set_slug before insert on public.vendor_profiles 
 -- Review photos
 alter table public.reviews add column if not exists photo_urls jsonb not null default '[]'::jsonb;
 insert into storage.buckets (id, name, public) values ('review-photos', 'review-photos', true) on conflict (id) do nothing;
+drop policy if exists "review photos public read" on storage.objects;
 create policy "review photos public read" on storage.objects for select using (bucket_id = 'review-photos');
+drop policy if exists "review photos owner insert" on storage.objects;
 create policy "review photos owner insert" on storage.objects for insert to authenticated with check (bucket_id = 'review-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "review photos owner delete" on storage.objects;
 create policy "review photos owner delete" on storage.objects for delete to authenticated using (bucket_id = 'review-photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- Intake form
-create table public.vendor_intake_forms (
+create table if not exists public.vendor_intake_forms (
   vendor_id uuid primary key references public.vendor_profiles(id) on delete cascade,
   intro text, questions jsonb not null default '[]'::jsonb,
   is_published boolean not null default false,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 alter table public.vendor_intake_forms enable row level security;
+drop policy if exists "vif public read published" on public.vendor_intake_forms;
 create policy "vif public read published" on public.vendor_intake_forms for select using (is_published = true);
+drop policy if exists "vif member read all" on public.vendor_intake_forms;
 create policy "vif member read all" on public.vendor_intake_forms for select to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vif member upsert" on public.vendor_intake_forms;
 create policy "vif member upsert" on public.vendor_intake_forms for insert to authenticated with check (public.is_vendor_member(vendor_id));
+drop policy if exists "vif member update" on public.vendor_intake_forms;
 create policy "vif member update" on public.vendor_intake_forms for update to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vif member delete" on public.vendor_intake_forms;
 create policy "vif member delete" on public.vendor_intake_forms for delete to authenticated using (public.is_vendor_member(vendor_id));
+drop trigger if exists vif_updated on public.vendor_intake_forms;
 create trigger vif_updated before update on public.vendor_intake_forms for each row execute function public.tg_set_updated_at();
 
 -- Vendor referrals
-create table public.vendor_referrals (
+create table if not exists public.vendor_referrals (
   id uuid primary key default gen_random_uuid(),
   referrer_id uuid not null references public.vendor_profiles(id) on delete cascade,
   email text not null,
@@ -151,18 +174,22 @@ create table public.vendor_referrals (
   expires_at timestamptz not null default (now() + interval '90 days'),
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index vr_referrer_idx on public.vendor_referrals (referrer_id, status);
-create index vr_email_idx on public.vendor_referrals (lower(email));
-create index vr_code_idx on public.vendor_referrals (referral_code);
+create index if not exists vr_referrer_idx on public.vendor_referrals (referrer_id, status);
+create index if not exists vr_email_idx on public.vendor_referrals (lower(email));
+create index if not exists vr_code_idx on public.vendor_referrals (referral_code);
 alter table public.vendor_referrals enable row level security;
+drop policy if exists "vr member select" on public.vendor_referrals;
 create policy "vr member select" on public.vendor_referrals for select to authenticated
   using (public.is_vendor_member(referrer_id) or (referred_id is not null and public.is_vendor_member(referred_id)));
+drop policy if exists "vr member insert" on public.vendor_referrals;
 create policy "vr member insert" on public.vendor_referrals for insert to authenticated with check (public.is_vendor_member(referrer_id));
+drop policy if exists "vr member delete pending" on public.vendor_referrals;
 create policy "vr member delete pending" on public.vendor_referrals for delete to authenticated using (public.is_vendor_member(referrer_id) and status = 'pending');
+drop trigger if exists vr_updated on public.vendor_referrals;
 create trigger vr_updated before update on public.vendor_referrals for each row execute function public.tg_set_updated_at();
 
 -- Mood board comments
-create table public.mood_board_comments (
+create table if not exists public.mood_board_comments (
   id uuid primary key default gen_random_uuid(),
   board_id uuid not null references public.mood_boards(id) on delete cascade,
   item_id uuid references public.mood_board_items(id) on delete cascade,
@@ -171,18 +198,23 @@ create table public.mood_board_comments (
   body text not null check (length(trim(body)) > 0),
   created_at timestamptz not null default now()
 );
-create index mbc_board_idx on public.mood_board_comments (board_id, created_at desc);
-create index mbc_item_idx on public.mood_board_comments (item_id) where item_id is not null;
+create index if not exists mbc_board_idx on public.mood_board_comments (board_id, created_at desc);
+create index if not exists mbc_item_idx on public.mood_board_comments (item_id) where item_id is not null;
 alter table public.mood_board_comments enable row level security;
+drop policy if exists "mbc public read" on public.mood_board_comments;
 create policy "mbc public read" on public.mood_board_comments for select using (true);
+drop policy if exists "mbc author insert" on public.mood_board_comments;
 create policy "mbc author insert" on public.mood_board_comments for insert to authenticated with check (author_id = auth.uid());
+drop policy if exists "mbc author update" on public.mood_board_comments;
 create policy "mbc author update" on public.mood_board_comments for update to authenticated using (author_id = auth.uid());
+drop policy if exists "mbc author delete" on public.mood_board_comments;
 create policy "mbc author delete" on public.mood_board_comments for delete to authenticated using (author_id = auth.uid());
+drop policy if exists "mbc owner delete" on public.mood_board_comments;
 create policy "mbc owner delete" on public.mood_board_comments for delete to authenticated
   using (exists (select 1 from public.mood_boards b where b.id = mood_board_comments.board_id and b.host_id = auth.uid()));
 
 -- Direct threads + messages
-create table public.direct_threads (
+create table if not exists public.direct_threads (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references auth.users(id) on delete cascade,
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
@@ -191,14 +223,17 @@ create table public.direct_threads (
   created_at timestamptz not null default now(),
   unique (host_id, vendor_id)
 );
-create index dt_host_idx on public.direct_threads (host_id, last_message_at desc);
-create index dt_vendor_idx on public.direct_threads (vendor_id, last_message_at desc);
+create index if not exists dt_host_idx on public.direct_threads (host_id, last_message_at desc);
+create index if not exists dt_vendor_idx on public.direct_threads (vendor_id, last_message_at desc);
 alter table public.direct_threads enable row level security;
+drop policy if exists "dt participants select" on public.direct_threads;
 create policy "dt participants select" on public.direct_threads for select to authenticated using (auth.uid() = host_id or public.is_vendor_member(vendor_id));
+drop policy if exists "dt host insert" on public.direct_threads;
 create policy "dt host insert" on public.direct_threads for insert to authenticated with check (auth.uid() = host_id);
+drop policy if exists "dt update participants" on public.direct_threads;
 create policy "dt update participants" on public.direct_threads for update to authenticated using (auth.uid() = host_id or public.is_vendor_member(vendor_id));
 
-create table public.direct_messages (
+create table if not exists public.direct_messages (
   id uuid primary key default gen_random_uuid(),
   thread_id uuid not null references public.direct_threads(id) on delete cascade,
   sender_id uuid not null references auth.users(id) on delete cascade,
@@ -207,10 +242,12 @@ create table public.direct_messages (
   contact_info_flagged boolean not null default false,
   created_at timestamptz not null default now()
 );
-create index dm_thread_idx on public.direct_messages (thread_id, created_at);
+create index if not exists dm_thread_idx on public.direct_messages (thread_id, created_at);
 alter table public.direct_messages enable row level security;
+drop policy if exists "dm participants select" on public.direct_messages;
 create policy "dm participants select" on public.direct_messages for select to authenticated
   using (exists (select 1 from public.direct_threads t where t.id = thread_id and (auth.uid() = t.host_id or public.is_vendor_member(t.vendor_id))));
+drop policy if exists "dm participants insert" on public.direct_messages;
 create policy "dm participants insert" on public.direct_messages for insert to authenticated
   with check (sender_id = auth.uid() and exists (select 1 from public.direct_threads t where t.id = thread_id and ((sender_role = 'host' and auth.uid() = t.host_id) or (sender_role = 'vendor' and public.is_vendor_member(t.vendor_id)))));
 
@@ -220,7 +257,7 @@ alter table public.event_guests
   add column if not exists vip_role text;
 create index if not exists event_guests_vip_idx on public.event_guests (host_id) where is_vip = true;
 
-create table public.guest_message_blasts (
+create table if not exists public.guest_message_blasts (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   subject text not null, body text not null,
@@ -228,12 +265,13 @@ create table public.guest_message_blasts (
   sent_at timestamptz not null default now(),
   audience jsonb not null default '{}'::jsonb
 );
-create index gmb_host_idx on public.guest_message_blasts (host_id, sent_at desc);
+create index if not exists gmb_host_idx on public.guest_message_blasts (host_id, sent_at desc);
 alter table public.guest_message_blasts enable row level security;
+drop policy if exists "gmb host all" on public.guest_message_blasts;
 create policy "gmb host all" on public.guest_message_blasts for all to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
 
 -- Inquiry labels
-create table public.vendor_inquiry_labels (
+create table if not exists public.vendor_inquiry_labels (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   name text not null,
@@ -242,22 +280,26 @@ create table public.vendor_inquiry_labels (
   created_at timestamptz not null default now(),
   unique (vendor_id, name)
 );
-create index vil_vendor_idx on public.vendor_inquiry_labels (vendor_id, display_order);
+create index if not exists vil_vendor_idx on public.vendor_inquiry_labels (vendor_id, display_order);
 alter table public.vendor_inquiry_labels enable row level security;
+drop policy if exists "vil member select" on public.vendor_inquiry_labels;
 create policy "vil member select" on public.vendor_inquiry_labels for select to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vil member insert" on public.vendor_inquiry_labels;
 create policy "vil member insert" on public.vendor_inquiry_labels for insert to authenticated with check (public.is_vendor_member(vendor_id));
+drop policy if exists "vil member update" on public.vendor_inquiry_labels;
 create policy "vil member update" on public.vendor_inquiry_labels for update to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vil member delete" on public.vendor_inquiry_labels;
 create policy "vil member delete" on public.vendor_inquiry_labels for delete to authenticated using (public.is_vendor_member(vendor_id));
 
-create table public.inquiry_label_assignments (
+create table if not exists public.inquiry_label_assignments (
   id uuid primary key default gen_random_uuid(),
   inquiry_id uuid not null references public.inquiries(id) on delete cascade,
   label_id uuid not null references public.vendor_inquiry_labels(id) on delete cascade,
   created_at timestamptz not null default now(),
   unique (inquiry_id, label_id)
 );
-create index ila_inquiry_idx on public.inquiry_label_assignments (inquiry_id);
-create index ila_label_idx on public.inquiry_label_assignments (label_id);
+create index if not exists ila_inquiry_idx on public.inquiry_label_assignments (inquiry_id);
+create index if not exists ila_label_idx on public.inquiry_label_assignments (label_id);
 alter table public.inquiry_label_assignments enable row level security;
 
 create or replace function public.is_inquiry_vendor_member(_inquiry_id uuid)
@@ -265,12 +307,15 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (select 1 from public.inquiries i join public.vendor_team_members m on m.vendor_id = i.vendor_id and m.user_id = auth.uid() where i.id = _inquiry_id)
 $$;
 grant execute on function public.is_inquiry_vendor_member(uuid) to authenticated;
+drop policy if exists "ila vendor select" on public.inquiry_label_assignments;
 create policy "ila vendor select" on public.inquiry_label_assignments for select to authenticated using (public.is_inquiry_vendor_member(inquiry_id));
+drop policy if exists "ila vendor insert" on public.inquiry_label_assignments;
 create policy "ila vendor insert" on public.inquiry_label_assignments for insert to authenticated with check (public.is_inquiry_vendor_member(inquiry_id));
+drop policy if exists "ila vendor delete" on public.inquiry_label_assignments;
 create policy "ila vendor delete" on public.inquiry_label_assignments for delete to authenticated using (public.is_inquiry_vendor_member(inquiry_id));
 
 -- Group gifts
-create table public.gift_wishes (
+create table if not exists public.gift_wishes (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   title text not null, description text,
@@ -278,31 +323,38 @@ create table public.gift_wishes (
   share_token text not null unique default replace(gen_random_uuid()::text, '-', ''),
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index gw_host_idx on public.gift_wishes (host_id, created_at desc);
-create index gw_token_idx on public.gift_wishes (share_token);
+create index if not exists gw_host_idx on public.gift_wishes (host_id, created_at desc);
+create index if not exists gw_token_idx on public.gift_wishes (share_token);
 alter table public.gift_wishes enable row level security;
+drop policy if exists "gw public read" on public.gift_wishes;
 create policy "gw public read" on public.gift_wishes for select using (true);
+drop policy if exists "gw host insert" on public.gift_wishes;
 create policy "gw host insert" on public.gift_wishes for insert to authenticated with check (auth.uid() = host_id);
+drop policy if exists "gw host update" on public.gift_wishes;
 create policy "gw host update" on public.gift_wishes for update to authenticated using (auth.uid() = host_id);
+drop policy if exists "gw host delete" on public.gift_wishes;
 create policy "gw host delete" on public.gift_wishes for delete to authenticated using (auth.uid() = host_id);
+drop trigger if exists gw_updated on public.gift_wishes;
 create trigger gw_updated before update on public.gift_wishes for each row execute function public.tg_set_updated_at();
 
-create table public.gift_pledges (
+create table if not exists public.gift_pledges (
   id uuid primary key default gen_random_uuid(),
   wish_id uuid not null references public.gift_wishes(id) on delete cascade,
   contributor_name text not null, contributor_email text,
   amount_cents integer not null check (amount_cents > 0),
   message text, created_at timestamptz not null default now()
 );
-create index gp_wish_idx on public.gift_pledges (wish_id, created_at desc);
+create index if not exists gp_wish_idx on public.gift_pledges (wish_id, created_at desc);
 alter table public.gift_pledges enable row level security;
+drop policy if exists "gp host select" on public.gift_pledges;
 create policy "gp host select" on public.gift_pledges for select to authenticated
   using (exists (select 1 from public.gift_wishes w where w.id = wish_id and w.host_id = auth.uid()));
+drop policy if exists "gp host delete" on public.gift_pledges;
 create policy "gp host delete" on public.gift_pledges for delete to authenticated
   using (exists (select 1 from public.gift_wishes w where w.id = wish_id and w.host_id = auth.uid()));
 
 -- Imported reviews
-create table public.imported_reviews (
+create table if not exists public.imported_reviews (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   source text not null check (source in ('knot','yelp','google','wedding_wire','facebook','other')),
@@ -311,37 +363,48 @@ create table public.imported_reviews (
   body text, reviewed_at date,
   created_at timestamptz not null default now()
 );
-create index ir_vendor_idx on public.imported_reviews (vendor_id, reviewed_at desc, created_at desc);
+create index if not exists ir_vendor_idx on public.imported_reviews (vendor_id, reviewed_at desc, created_at desc);
 alter table public.imported_reviews enable row level security;
+drop policy if exists "ir public read" on public.imported_reviews;
 create policy "ir public read" on public.imported_reviews for select using (true);
+drop policy if exists "ir member insert" on public.imported_reviews;
 create policy "ir member insert" on public.imported_reviews for insert to authenticated with check (public.is_vendor_member(vendor_id));
+drop policy if exists "ir member update" on public.imported_reviews;
 create policy "ir member update" on public.imported_reviews for update to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "ir member delete" on public.imported_reviews;
 create policy "ir member delete" on public.imported_reviews for delete to authenticated using (public.is_vendor_member(vendor_id));
 
 -- Showcase clips
 insert into storage.buckets (id, name, public) values ('vendor-showcase-clips', 'vendor-showcase-clips', true) on conflict (id) do nothing;
+drop policy if exists "vsc public read" on storage.objects;
 create policy "vsc public read" on storage.objects for select using (bucket_id = 'vendor-showcase-clips');
+drop policy if exists "vsc owner insert" on storage.objects;
 create policy "vsc owner insert" on storage.objects for insert to authenticated
   with check (bucket_id = 'vendor-showcase-clips' and exists (select 1 from public.vendor_profiles vp where vp.id::text = (storage.foldername(name))[1] and vp.user_id = auth.uid()));
+drop policy if exists "vsc owner delete" on storage.objects;
 create policy "vsc owner delete" on storage.objects for delete to authenticated
   using (bucket_id = 'vendor-showcase-clips' and exists (select 1 from public.vendor_profiles vp where vp.id::text = (storage.foldername(name))[1] and vp.user_id = auth.uid()));
 
-create table public.vendor_showcase_clips (
+create table if not exists public.vendor_showcase_clips (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   video_path text not null, poster_path text, caption text,
   display_order int not null default 0,
   created_at timestamptz not null default now()
 );
-create index vsc_vendor_idx on public.vendor_showcase_clips (vendor_id, display_order, created_at);
+create index if not exists vsc_vendor_idx on public.vendor_showcase_clips (vendor_id, display_order, created_at);
 alter table public.vendor_showcase_clips enable row level security;
+drop policy if exists "vsc public read tbl" on public.vendor_showcase_clips;
 create policy "vsc public read tbl" on public.vendor_showcase_clips for select using (true);
+drop policy if exists "vsc member insert" on public.vendor_showcase_clips;
 create policy "vsc member insert" on public.vendor_showcase_clips for insert to authenticated with check (public.is_vendor_member(vendor_id));
+drop policy if exists "vsc member update" on public.vendor_showcase_clips;
 create policy "vsc member update" on public.vendor_showcase_clips for update to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vsc member delete" on public.vendor_showcase_clips;
 create policy "vsc member delete" on public.vendor_showcase_clips for delete to authenticated using (public.is_vendor_member(vendor_id));
 
 -- Host reputation
-create table public.host_reliability_flags (
+create table if not exists public.host_reliability_flags (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   host_id uuid not null references public.profiles(id) on delete cascade,
@@ -349,13 +412,16 @@ create table public.host_reliability_flags (
   flag_type text not null check (flag_type in ('no_show','unresponsive','paid_late','pleasant','great_communication','rebooked')),
   note text, created_at timestamptz not null default now()
 );
-create index hrf_host_idx on public.host_reliability_flags (host_id, created_at desc);
-create index hrf_vendor_idx on public.host_reliability_flags (vendor_id, created_at desc);
+create index if not exists hrf_host_idx on public.host_reliability_flags (host_id, created_at desc);
+create index if not exists hrf_vendor_idx on public.host_reliability_flags (vendor_id, created_at desc);
 alter table public.host_reliability_flags enable row level security;
+drop policy if exists "hrf vendor select" on public.host_reliability_flags;
 create policy "hrf vendor select" on public.host_reliability_flags for select to authenticated
   using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "hrf vendor insert" on public.host_reliability_flags;
 create policy "hrf vendor insert" on public.host_reliability_flags for insert to authenticated
   with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid())
     and exists (select 1 from public.inquiries i where i.host_id = host_reliability_flags.host_id and i.vendor_id = host_reliability_flags.vendor_id));
+drop policy if exists "hrf vendor delete" on public.host_reliability_flags;
 create policy "hrf vendor delete" on public.host_reliability_flags for delete to authenticated
   using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));

@@ -7,7 +7,7 @@
 -- a jsonb array. Each question has: id, label, type (text|number|
 -- select|multiselect|yesno), options (for select), required.
 
-create table public.vendor_intake_forms (
+create table if not exists public.vendor_intake_forms (
   vendor_id uuid primary key references public.vendor_profiles(id) on delete cascade,
   intro text,
   questions jsonb not null default '[]'::jsonb,
@@ -20,26 +20,32 @@ alter table public.vendor_intake_forms enable row level security;
 
 -- Public read on published forms only — anonymous hosts see them when
 -- they open the inquiry modal.
+drop policy if exists "vendor_intake_forms public read published" on public.vendor_intake_forms;
 create policy "vendor_intake_forms public read published"
   on public.vendor_intake_forms for select
   using (is_published = true);
 
+drop policy if exists "vendor_intake_forms member read all" on public.vendor_intake_forms;
 create policy "vendor_intake_forms member read all"
   on public.vendor_intake_forms for select to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_intake_forms member upsert" on public.vendor_intake_forms;
 create policy "vendor_intake_forms member upsert"
   on public.vendor_intake_forms for insert to authenticated
   with check (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_intake_forms member update" on public.vendor_intake_forms;
 create policy "vendor_intake_forms member update"
   on public.vendor_intake_forms for update to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_intake_forms member delete" on public.vendor_intake_forms;
 create policy "vendor_intake_forms member delete"
   on public.vendor_intake_forms for delete to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop trigger if exists vendor_intake_forms_updated on public.vendor_intake_forms;
 create trigger vendor_intake_forms_updated
   before update on public.vendor_intake_forms
   for each row execute function public.tg_set_updated_at();

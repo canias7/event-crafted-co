@@ -11,6 +11,8 @@
 alter table public.saved_searches
   add column if not exists email_alerts_enabled boolean not null default false;
 
+-- Return type changed: drop the old version so a fresh replay can recreate it.
+drop function if exists public.enqueue_saved_search_matches();
 create or replace function public.enqueue_saved_search_matches()
 returns table (
   saved_search_id uuid,

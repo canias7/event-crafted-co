@@ -9,8 +9,8 @@
 -- can be dropped later once mobile is on the new schema.
 
 alter table public.vendor_partner_threads
-  add column user_a_id uuid references public.profiles(id) on delete cascade,
-  add column user_b_id uuid references public.profiles(id) on delete cascade;
+  add column if not exists user_a_id uuid references public.profiles(id) on delete cascade,
+  add column if not exists user_b_id uuid references public.profiles(id) on delete cascade;
 
 alter table public.vendor_partner_threads
   alter column user_a_id set not null,
@@ -25,7 +25,7 @@ create unique index if not exists vendor_partner_threads_user_pair_key
   on public.vendor_partner_threads (user_a_id, user_b_id);
 
 alter table public.vendor_partner_messages
-  add column sender_user_id uuid references public.profiles(id) on delete cascade;
+  add column if not exists sender_user_id uuid references public.profiles(id) on delete cascade;
 
 alter table public.vendor_partner_messages
   alter column sender_user_id set not null,
@@ -47,6 +47,7 @@ create policy "vendor_partner_threads insert via rpc"
   to authenticated
   with check (user_a_id = (select auth.uid()) or user_b_id = (select auth.uid()));
 
+drop policy if exists "vendor_partner_threads participants update" on public.vendor_partner_threads;
 create policy "vendor_partner_threads participants update"
   on public.vendor_partner_threads
   for update

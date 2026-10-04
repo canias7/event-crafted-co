@@ -11,10 +11,12 @@ insert into storage.buckets (id, name, public)
 values ('vendor-showcase-clips', 'vendor-showcase-clips', true)
 on conflict (id) do nothing;
 
+drop policy if exists "vendor showcase clips public read" on storage.objects;
 create policy "vendor showcase clips public read"
   on storage.objects for select
   using (bucket_id = 'vendor-showcase-clips');
 
+drop policy if exists "vendor showcase clips owner insert" on storage.objects;
 create policy "vendor showcase clips owner insert"
   on storage.objects for insert
   to authenticated
@@ -27,6 +29,7 @@ create policy "vendor showcase clips owner insert"
     )
   );
 
+drop policy if exists "vendor showcase clips owner delete" on storage.objects;
 create policy "vendor showcase clips owner delete"
   on storage.objects for delete
   to authenticated
@@ -42,7 +45,7 @@ create policy "vendor showcase clips owner delete"
 -- Metadata table. video_path is bucket-relative ("<vendor_id>/<uuid>.mp4").
 -- poster_path optional — vendors can upload a still or we leave the video
 -- to render its first frame. caption is short (think hashtag-line, not paragraph).
-create table public.vendor_showcase_clips (
+create table if not exists public.vendor_showcase_clips (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   video_path text not null,
@@ -52,23 +55,27 @@ create table public.vendor_showcase_clips (
   created_at timestamptz not null default now()
 );
 
-create index vendor_showcase_clips_vendor_idx
+create index if not exists vendor_showcase_clips_vendor_idx
   on public.vendor_showcase_clips (vendor_id, display_order, created_at);
 
 alter table public.vendor_showcase_clips enable row level security;
 
 -- Public read: anonymous visitors browsing the directory.
+drop policy if exists "vendor_showcase_clips public read" on public.vendor_showcase_clips;
 create policy "vendor_showcase_clips public read"
   on public.vendor_showcase_clips for select using (true);
 
+drop policy if exists "vendor_showcase_clips member insert" on public.vendor_showcase_clips;
 create policy "vendor_showcase_clips member insert"
   on public.vendor_showcase_clips for insert to authenticated
   with check (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_showcase_clips member update" on public.vendor_showcase_clips;
 create policy "vendor_showcase_clips member update"
   on public.vendor_showcase_clips for update to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_showcase_clips member delete" on public.vendor_showcase_clips;
 create policy "vendor_showcase_clips member delete"
   on public.vendor_showcase_clips for delete to authenticated
   using (public.is_vendor_member(vendor_id));

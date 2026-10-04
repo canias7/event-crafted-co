@@ -5267,45 +5267,6 @@ export type Database = {
         }
         Relationships: []
       }
-      vendor_stripe_mcp_secrets: {
-        Row: {
-          api_key: string
-          connected_at: string
-          last4: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          api_key: string
-          connected_at?: string
-          last4: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          api_key?: string
-          connected_at?: string
-          last4?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_stripe_mcp_secrets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vendor_stripe_mcp_secrets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "vendor_brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       vendor_team_invites: {
         Row: {
           accepted_at: string | null

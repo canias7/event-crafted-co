@@ -7,7 +7,7 @@
 -- relationship + discount eligibility so when payments land, the
 -- system can apply the reduced commission.
 
-create table public.vendor_referrals (
+create table if not exists public.vendor_referrals (
   id uuid primary key default gen_random_uuid(),
   referrer_id uuid not null references public.vendor_profiles(id) on delete cascade,
   email text not null,
@@ -27,17 +27,18 @@ create table public.vendor_referrals (
   updated_at timestamptz not null default now()
 );
 
-create index vendor_referrals_referrer_idx
+create index if not exists vendor_referrals_referrer_idx
   on public.vendor_referrals (referrer_id, status);
 
-create index vendor_referrals_email_idx
+create index if not exists vendor_referrals_email_idx
   on public.vendor_referrals (lower(email));
 
-create index vendor_referrals_code_idx
+create index if not exists vendor_referrals_code_idx
   on public.vendor_referrals (referral_code);
 
 alter table public.vendor_referrals enable row level security;
 
+drop policy if exists "vendor_referrals member select" on public.vendor_referrals;
 create policy "vendor_referrals member select"
   on public.vendor_referrals for select to authenticated
   using (
@@ -45,10 +46,12 @@ create policy "vendor_referrals member select"
     or (referred_id is not null and public.is_vendor_member(referred_id))
   );
 
+drop policy if exists "vendor_referrals member insert" on public.vendor_referrals;
 create policy "vendor_referrals member insert"
   on public.vendor_referrals for insert to authenticated
   with check (public.is_vendor_member(referrer_id));
 
+drop policy if exists "vendor_referrals member delete pending" on public.vendor_referrals;
 create policy "vendor_referrals member delete pending"
   on public.vendor_referrals for delete to authenticated
   using (
@@ -56,6 +59,7 @@ create policy "vendor_referrals member delete pending"
     and status = 'pending'
   );
 
+drop trigger if exists vendor_referrals_updated on public.vendor_referrals;
 create trigger vendor_referrals_updated
   before update on public.vendor_referrals
   for each row execute function public.tg_set_updated_at();

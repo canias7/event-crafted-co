@@ -1,4 +1,4 @@
-create table public.event_party_invites (
+create table if not exists public.event_party_invites (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null,
   event_id uuid not null references public.host_events(id) on delete cascade,
@@ -10,16 +10,18 @@ create table public.event_party_invites (
   created_at timestamptz not null default now(),
   unique (event_id, email)
 );
-create index event_party_invites_member_idx on public.event_party_invites (member_user_id) where member_user_id is not null;
-create index event_party_invites_host_idx on public.event_party_invites (host_id, event_id, created_at desc);
-create index event_party_invites_token_idx on public.event_party_invites (token);
+create index if not exists event_party_invites_member_idx on public.event_party_invites (member_user_id) where member_user_id is not null;
+create index if not exists event_party_invites_host_idx on public.event_party_invites (host_id, event_id, created_at desc);
+create index if not exists event_party_invites_token_idx on public.event_party_invites (token);
 alter table public.event_party_invites enable row level security;
+drop policy if exists "event_party_invites host all" on public.event_party_invites;
 create policy "event_party_invites host all" on public.event_party_invites for all to authenticated
   using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop policy if exists "event_party_invites member select" on public.event_party_invites;
 create policy "event_party_invites member select" on public.event_party_invites for select to authenticated
   using (auth.uid() = member_user_id);
 
-create table public.event_party_tasks (
+create table if not exists public.event_party_tasks (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.host_events(id) on delete cascade,
   invite_id uuid not null references public.event_party_invites(id) on delete cascade,
@@ -31,13 +33,16 @@ create table public.event_party_tasks (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index event_party_tasks_invite_idx on public.event_party_tasks (invite_id, display_order, due_date);
+create index if not exists event_party_tasks_invite_idx on public.event_party_tasks (invite_id, display_order, due_date);
 alter table public.event_party_tasks enable row level security;
+drop policy if exists "event_party_tasks host all" on public.event_party_tasks;
 create policy "event_party_tasks host all" on public.event_party_tasks for all to authenticated
   using (exists (select 1 from public.host_events e where e.id = event_id and e.host_id = auth.uid()))
   with check (exists (select 1 from public.host_events e where e.id = event_id and e.host_id = auth.uid()));
+drop policy if exists "event_party_tasks member select" on public.event_party_tasks;
 create policy "event_party_tasks member select" on public.event_party_tasks for select to authenticated
   using (exists (select 1 from public.event_party_invites i where i.id = invite_id and i.member_user_id = auth.uid()));
+drop policy if exists "event_party_tasks member mark complete" on public.event_party_tasks;
 create policy "event_party_tasks member mark complete" on public.event_party_tasks for update to authenticated
   using (exists (select 1 from public.event_party_invites i where i.id = invite_id and i.member_user_id = auth.uid()))
   with check (exists (select 1 from public.event_party_invites i where i.id = invite_id and i.member_user_id = auth.uid()));

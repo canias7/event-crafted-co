@@ -86,22 +86,20 @@ serve(async (req: Request) => {
 
   const raw = await req.text();
 
-  // Allow unsigned-but-logged in dev when the secret hasn't been set
-  // yet; in prod the secret should always be configured. The "verified"
-  // flag goes to the log so we'd notice an unsigned event.
-  let verified = false;
-  if (MUX_WEBHOOK_SECRET) {
-    verified = await verifyMuxSignature(
-      raw,
-      req.headers.get("mux-signature"),
-      MUX_WEBHOOK_SECRET,
-    );
-    if (!verified) {
-      console.error("[mux-webhook] signature verification failed");
-      return new Response("invalid signature", { status: 400 });
-    }
-  } else {
-    console.warn("[mux-webhook] MUX_WEBHOOK_SECRET not set — accepting unsigned");
+  // Fail closed: without the secret we can't tell a real Mux event from
+  // a forged one, and these events flip live-stream state.
+  if (!MUX_WEBHOOK_SECRET) {
+    console.error("[mux-webhook] MUX_WEBHOOK_SECRET not set — rejecting");
+    return new Response("webhook secret not configured", { status: 503 });
+  }
+  const verified = await verifyMuxSignature(
+    raw,
+    req.headers.get("mux-signature"),
+    MUX_WEBHOOK_SECRET,
+  );
+  if (!verified) {
+    console.error("[mux-webhook] signature verification failed");
+    return new Response("invalid signature", { status: 400 });
   }
 
   let event: any;

@@ -144,6 +144,34 @@ the chain replays. The webhook contract tests (`apps/web/tests/write/webhooks.sp
 don't need the stack and run regardless. Later migrations past this point
 have not been reached, so further conflicts are still unknown.
 
+### Fixed 2026-10-04 (path 1): the chain replays from scratch
+Replayed locally on Postgres 16 with a small Supabase shim (auth / storage /
+realtime schemas, stub pg_cron / pg_net / vault / pgmq), fixing each failure in
+place until all 489 files applied. What changed:
+
+- **Idempotent DDL** in ~40 early (mostly Lovable-era) files: `add column if
+  not exists`, `create table/index if not exists`, `create or replace
+  function/view`, `drop policy/trigger if exists` before re-creating, guarded
+  `create type`, `add constraint` and realtime publication adds.
+- **Real bugs:** `20260503370000_inquiry_labels.sql` had `unique (vendor_id,
+  lower(name))` in a table constraint (invalid; now the expression index that
+  production has); `20260503580000_planner_workspace.sql` had a misplaced
+  `coalesce(…)` (syntax error).
+- **Return-type changes:** functions recreated with a different return type
+  now `drop function if exists` first.
+- **Objects created outside migrations** are backfilled from production's
+  definitions: `20260503449999_backfill_user_roles.sql`,
+  `20260511175959_backfill_untracked_tables.sql`, plus a few single-column
+  backfills at the top of the file that first needs them.
+- **Out-of-order files:** `20260526084000` / `20260526086000` ran before the
+  migration that creates `vendor_recurring_invoices`; they now skip when it
+  doesn't exist.
+
+Production is unaffected: its migration history starts at `20260507044459`
+and records different versions, so none of these files re-run there. The real
+check is the `local-stack` job (`supabase start`), which now also runs on any
+change under `supabase/migrations/`.
+
 ## Operator decisions needed
 - **Which option** (A recommended).
 - For A: confirm CI can run Docker (`supabase start` needs it) on the runner.

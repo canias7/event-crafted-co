@@ -7,7 +7,7 @@
 -- platform), so the schema is separate from `reviews`. Aggregate
 -- rating displays should pull from both tables.
 
-create table public.imported_reviews (
+create table if not exists public.imported_reviews (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   source text not null check (source in ('knot','yelp','google','wedding_wire','facebook','other')),
@@ -20,23 +20,27 @@ create table public.imported_reviews (
   created_at timestamptz not null default now()
 );
 
-create index imported_reviews_vendor_idx
+create index if not exists imported_reviews_vendor_idx
   on public.imported_reviews (vendor_id, reviewed_at desc, created_at desc);
 
 alter table public.imported_reviews enable row level security;
 
 -- Public read: surfaces on the vendor's profile page.
+drop policy if exists "imported_reviews public read" on public.imported_reviews;
 create policy "imported_reviews public read"
   on public.imported_reviews for select using (true);
 
+drop policy if exists "imported_reviews member insert" on public.imported_reviews;
 create policy "imported_reviews member insert"
   on public.imported_reviews for insert to authenticated
   with check (public.is_vendor_member(vendor_id));
 
+drop policy if exists "imported_reviews member update" on public.imported_reviews;
 create policy "imported_reviews member update"
   on public.imported_reviews for update to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "imported_reviews member delete" on public.imported_reviews;
 create policy "imported_reviews member delete"
   on public.imported_reviews for delete to authenticated
   using (public.is_vendor_member(vendor_id));

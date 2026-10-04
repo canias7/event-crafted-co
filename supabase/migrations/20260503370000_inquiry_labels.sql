@@ -6,39 +6,46 @@
 -- Labels are vendor-scoped (each vendor has their own set). Inquiries
 -- are tagged via a join table so an inquiry can carry multiple labels.
 
-create table public.vendor_inquiry_labels (
+create table if not exists public.vendor_inquiry_labels (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   name text not null,
   -- Hex color (with #) for the chip background. Lightweight palette.
   color text not null default '#a08259',
   display_order int not null default 0,
-  created_at timestamptz not null default now(),
-  unique (vendor_id, lower(name))
+  created_at timestamptz not null default now()
 );
+-- Case-insensitive uniqueness needs an expression index (a table
+-- constraint can't hold lower(name)); matches production.
+create unique index if not exists vendor_inquiry_labels_vendor_name_unique
+  on public.vendor_inquiry_labels (vendor_id, lower(name));
 
-create index vendor_inquiry_labels_vendor_idx
+create index if not exists vendor_inquiry_labels_vendor_idx
   on public.vendor_inquiry_labels (vendor_id, display_order);
 
 alter table public.vendor_inquiry_labels enable row level security;
 
+drop policy if exists "vendor_inquiry_labels member select" on public.vendor_inquiry_labels;
 create policy "vendor_inquiry_labels member select"
   on public.vendor_inquiry_labels for select to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_inquiry_labels member insert" on public.vendor_inquiry_labels;
 create policy "vendor_inquiry_labels member insert"
   on public.vendor_inquiry_labels for insert to authenticated
   with check (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_inquiry_labels member update" on public.vendor_inquiry_labels;
 create policy "vendor_inquiry_labels member update"
   on public.vendor_inquiry_labels for update to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_inquiry_labels member delete" on public.vendor_inquiry_labels;
 create policy "vendor_inquiry_labels member delete"
   on public.vendor_inquiry_labels for delete to authenticated
   using (public.is_vendor_member(vendor_id));
 
-create table public.inquiry_label_assignments (
+create table if not exists public.inquiry_label_assignments (
   id uuid primary key default gen_random_uuid(),
   inquiry_id uuid not null references public.inquiries(id) on delete cascade,
   label_id uuid not null references public.vendor_inquiry_labels(id) on delete cascade,
@@ -46,10 +53,10 @@ create table public.inquiry_label_assignments (
   unique (inquiry_id, label_id)
 );
 
-create index inquiry_label_assignments_inquiry_idx
+create index if not exists inquiry_label_assignments_inquiry_idx
   on public.inquiry_label_assignments (inquiry_id);
 
-create index inquiry_label_assignments_label_idx
+create index if not exists inquiry_label_assignments_label_idx
   on public.inquiry_label_assignments (label_id);
 
 alter table public.inquiry_label_assignments enable row level security;
@@ -72,14 +79,17 @@ $$;
 
 grant execute on function public.is_inquiry_vendor_member(uuid) to authenticated;
 
+drop policy if exists "inquiry_label_assignments vendor select" on public.inquiry_label_assignments;
 create policy "inquiry_label_assignments vendor select"
   on public.inquiry_label_assignments for select to authenticated
   using (public.is_inquiry_vendor_member(inquiry_id));
 
+drop policy if exists "inquiry_label_assignments vendor insert" on public.inquiry_label_assignments;
 create policy "inquiry_label_assignments vendor insert"
   on public.inquiry_label_assignments for insert to authenticated
   with check (public.is_inquiry_vendor_member(inquiry_id));
 
+drop policy if exists "inquiry_label_assignments vendor delete" on public.inquiry_label_assignments;
 create policy "inquiry_label_assignments vendor delete"
   on public.inquiry_label_assignments for delete to authenticated
   using (public.is_inquiry_vendor_member(inquiry_id));

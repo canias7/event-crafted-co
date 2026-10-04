@@ -2,10 +2,11 @@
 
 ## Live URLs
 
-- **Public site:** https://eventvendora.com (and https://app.eventvendora.com) — both serve the same Vercel deployment from `apps/web`. These are THE URLs for the public web app. Auto-redeploy on push to `main`.
-- **Admin:** https://admin.eventvendora.com (and https://vendora-admin-henna.vercel.app) — PIN-gated (`9236`) admin panel from `apps/admin`. Auto-redeploys on push to `main`.
+- **Public site:** https://eventvendora.com (and https://app.eventvendora.com) — both serve the same **Cloudflare Pages** deployment of `apps/web`, deployed by `.github/workflows/cloudflare-pages.yml` on push to `main`. Routing and cache headers live in `apps/web/public/_redirects` / `_headers`; `/s/<slug>` is the Pages Function in `apps/web/functions/s/`.
+- **Admin:** https://admin.eventvendora.com — PIN-gated (`9236`) admin panel from `apps/admin`, also on Cloudflare Pages via the same workflow (headers in `apps/admin/public/_headers`).
+- https://vendora-admin-henna.vercel.app still answers from an older Vercel project. The `vercel.json` files only apply to those leftover Vercel projects, not to the live sites.
 
-The DNS for `eventvendora.com` and `app.eventvendora.com` was migrated off Lovable and onto Vercel. Old Lovable host is no longer in the picture.
+DNS for `eventvendora.com` moved off Lovable (then Vercel) and onto Cloudflare.
 
 ## What Claude has access to
 
@@ -15,6 +16,8 @@ Future-Claude reading this: yes, you DO have integration tokens. Don't gaslight 
 - **Supabase MCP** (project `pahpjjubhbcbwqjpamwv`). Used for: `execute_sql`, `apply_migration`, `deploy_edge_function`, `list_tables`, `get_advisors`, `get_logs`, etc. Full DB + edge function control.
 - **Git push to remote** via local proxy at `127.0.0.1:<port>/git/canias7/event-crafted-co`. Lets you `git push -u origin <branch>` directly.
 
+Supabase MCP caveat: DDL and other destructive SQL (`drop`, `alter`) through `apply_migration` / `execute_sql` can hang for 60s and time out in a cloud session (it waits on a confirmation that never shows). Reads and plain `select` calls work. For production schema changes, Auth config changes and deleting deployed functions, use `.github/workflows/supabase-ops.yml`: list the work in `supabase/ops/` and merge to `main` (see `supabase/ops/README.md`).
+
 What Claude does NOT have direct shell access to:
 
 - **`EXPO_TOKEN`** — lives only as a GitHub Actions repo secret, readable by the `mobile-ota.yml` workflow when it runs. Not in the shell env (deliberately — same model as Vercel deploy tokens). To OTA mobile apps, push a `trigger-ota/*` branch and the workflow uses the secret. Do not loop "where is the token" — it's NOT in `~/.expo`, `~/.config/eas-cli*`, env vars, or any dotfile. The trigger-branch CI dance IS the access path.
@@ -23,7 +26,7 @@ What Claude does NOT have direct shell access to:
 
 ## Workflow preferences
 
-- **Always merge to `main`** when finishing a feature branch. Don't suggest changing Vercel/CI production branches as a substitute — merge instead so `main` stays the source of truth and production deploys flow through it. Use `mcp__github__create_pull_request` + `mcp__github__merge_pull_request`.
+- **Always merge to `main`** when finishing a feature branch. Don't suggest changing Cloudflare/CI production branches as a substitute — merge instead so `main` stays the source of truth and production deploys flow through it. Use `mcp__github__create_pull_request` + `mcp__github__merge_pull_request`.
 
 - **`bunx expo install` writes to the ROOT `package.json`**, not the app's, even when run from inside `apps/<app>-mobile`. If you add packages to render an app headlessly (react-native-web, react-dom, @expo/metro-runtime), reverting `apps/<app>-mobile/package.json` does NOT undo it — check `git status` at the repo root before committing. Leaving them in desyncs `bun.lock`, and every OTA then dies on `bun install --frozen-lockfile` with "lockfile had changes, but lockfile is frozen".
 
@@ -76,8 +79,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 
 **Deliberately different (don't "fix")**
 
-- The Stripe-style pay-link creator and its outlined status pills (`PayLinksTab` in `VendorPaymentsPage`), by owner request.
-- The website builder, the AI-site pages (`MySites`, `SiteRsvps`, `PublicAiSite`) and the MySpace AI screens (`components/super-agents`).
+- The website builder and the AI-site pages (`MySites`, `SiteRsvps`, `PublicAiSite`).
 - Sign-in area colours (`GlassyAuthShell`, `pages/auth`), pending a redesign.
 - Proposal and invoice document palettes, media players' black backgrounds, and avatar colour palettes.
 - The vendor app's calendar block mode marks picked days in gold, not ink, so they don't read as booked.

@@ -263,9 +263,7 @@ export default function VendorMyProfilePage() {
             <HeaderCard
               initials={initials}
               logoUrl={account?.logo_url ?? null}
-              businessName={
-                account?.business_name ?? user?.email ?? "Vendor"
-              }
+              businessName={account?.business_name?.trim() || "Your business"}
               bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}
@@ -369,8 +367,10 @@ function HeaderCard({
             </div>
           ) : null}
         </div>
-        <div className="flex-1 min-w-0 pl-16 sm:pl-0">
-          <h2 className="font-editorial text-2xl text-foreground truncate">
+        {/* w-full: in the phone column layout (items-start) a flex child
+            otherwise sizes to its text, so a long name overflowed the card. */}
+        <div className="w-full sm:w-auto flex-1 min-w-0 pl-16 sm:pl-0">
+          <h2 className="font-editorial text-2xl text-foreground break-words">
             {businessName}
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-2 max-w-xs">
@@ -689,7 +689,7 @@ function ListingPreviewModal({
               <p className="font-label text-muted-foreground text-xs mb-1">
                 Preview (not yet published)
               </p>
-              <h2 className="font-editorial text-3xl">{name}</h2>
+              <h2 className="font-editorial text-3xl break-words">{name}</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {[listing.category, listing.location]
                   .filter(Boolean)
