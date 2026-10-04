@@ -1,63 +1,60 @@
-import { Download, Mail, Copy, Check, ExternalLink } from "lucide-react";
+// Press kit. Only facts that are true today: claims that weren't (stock
+// photos captioned as screenshots, an "editorial team" checking
+// references, calendar sync, real-event galleries, US-wide coverage…)
+// came off in Oct 2026 and are tracked in the owner's "Press page — to
+// work on later" doc until they're real.
+
+import { Download, Mail, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { PublicNav } from "@/components/public/PublicNav";
-import { Footer } from "@/components/public/Footer";
-import { Picture } from "@/components/shared/Picture";
+import { CONTACT_EMAIL, Footer } from "@/components/public/Footer";
+import { VendoraLogo } from "@/components/shared/VendoraLogo";
 import { Button } from "@/components/ui/button";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import heroDinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
-import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
-import featureFlorals from "@/assets/vendora-feature-1.jpg?as=picture";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 const STATS: Array<{ value: string; label: string }> = [
-  { value: "10+", label: "Vendor categories" },
-  { value: "All", label: "US event types" },
-  { value: "Multi", label: "Language ready" },
-];
-
-const SCREENSHOTS = [
-  {
-    src: heroDinner,
-    alt: "Vendora landing — cinematic event imagery",
-    caption: "Landing page",
-  },
-  {
-    src: featureFlorals,
-    alt: "Vendora vendor profile with portfolio + reviews",
-    caption: "Vendor profile",
-  },
-  {
-    src: heroGala,
-    alt: "Vendora analytics dashboard for vendors",
-    caption: "Vendor analytics",
-  },
+  { value: "31", label: "Vendor categories" },
+  { value: "2", label: "Languages" },
+  { value: "$0", label: "To list a business" },
 ];
 
 const QUICK_FACTS = [
   {
     label: "What it is",
-    body: "A vendor-first event marketplace plus the planning tools hosts need to run their event without leaving the platform — weddings, milestone birthdays, holiday gatherings, baby showers, anniversaries.",
+    body: "An event marketplace where hosts find, message and book vendors, and keep each event's date, guests and notes in one place. Weddings, birthdays, corporate events, parties and more.",
   },
   {
     label: "Founded",
-    body: "2026 — pre-launch, building in public.",
+    body: "2026.",
   },
   {
-    label: "How vendors are vetted",
-    body: "Hand-reviewed by an editorial team for portfolio quality, references, and professional standing. Open marketplace mechanics — closed editorial gate.",
+    label: "How vendors are reviewed",
+    body: "Every listing is reviewed by the Vendora team before it goes live.",
   },
   {
-    label: "Differentiators",
-    body: "Vendor-first signup flow, programmatic SEO depth (per-city + per-category landing pages), trust verification badges (identity / insurance / business license / background check), real-event editorial galleries, two-way calendar sync.",
+    label: "What vendors get",
+    body: "A listing with portfolio photos, packages and prices; one inbox for inquiries; proposals and contracts clients sign online; and secure online payments. The Free plan includes one listing.",
   },
   {
-    label: "Coverage",
-    body: "United States. Multi-language ready (English + Spanish at launch).",
+    label: "Finding vendors",
+    body: "Search by category, city and date, with a page for each city and category.",
   },
+  {
+    label: "Languages",
+    body: "English and Spanish.",
+  },
+];
+
+const PALETTE = [
+  { name: "Ink", hex: "#14161A" },
+  { name: "Ivory", hex: "#F4F1EA", light: true },
+  { name: "Cream", hex: "#FBF9F4", light: true },
+  { name: "Bronze", hex: "#8A6F3E" },
+  { name: "Champagne", hex: "#C9A86A" },
 ];
 
 export default function PressPage() {
@@ -65,67 +62,50 @@ export default function PressPage() {
 
   useDocumentMeta({
     title: "Press kit — Vendora",
-    description:
-      "Brand assets, screenshots, founder bios, and contact info for press, partners, and editorial coverage of Vendora.",
+    description: "Vendora's logo, colours, quick facts and press contact.",
   });
 
   async function copyEmail() {
     try {
-      await navigator.clipboard.writeText("hello@eventvendora.com");
+      await navigator.clipboard.writeText(CONTACT_EMAIL);
       setCopied(true);
-      toast.success("Press email copied");
+      toast.success("Email copied");
       setTimeout(() => setCopied(false), 1500);
     } catch {
       toast.error("Copy failed");
     }
   }
 
+  const emailButton = (
+    <Button type="button" onClick={copyEmail}>
+      {copied ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Mail className="mr-1.5 h-3.5 w-3.5" />}
+      {CONTACT_EMAIL}
+      <Copy className="ml-1.5 h-3 w-3" />
+    </Button>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
       {/* Hero */}
-      <section className="border-b border-border pt-32 pb-12 md:pb-16">
-        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
-          <p className="font-label text-accent tracking-[0.4em] mb-4">
-            — PRESS KIT
-          </p>
-          <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
-            Everything you need to{" "}
-            <span className="text-accent">write about us.</span>
+      <section className="border-b border-border pb-12 pt-32 md:pb-16">
+        <div className="container mx-auto max-w-5xl px-5 md:px-8">
+          <p className="mb-4 font-label text-accent">Press kit</p>
+          <h1 className="mb-5 font-editorial text-5xl leading-[1.0] md:text-6xl">
+            Everything you need to <span className="text-accent">write about us.</span>
           </h1>
-          <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed mb-8">
-            Logos, screenshots, the elevator pitch, and a real human you can
-            email. If you need anything that's not here, ask — we'd rather
-            send the right asset than have you ship the wrong one.
+          <p className="mb-8 max-w-2xl text-base leading-relaxed text-foreground md:text-lg">
+            Our logo and colours, the short version of what we do, and a real
+            person you can email.
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              type="button"
-              onClick={copyEmail}
-            >
-              {copied ? (
-                <Check className="w-3.5 h-3.5 mr-1.5" />
-              ) : (
-                <Mail className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              hello@eventvendora.com
-              <Copy className="w-3 h-3 ml-1.5 opacity-60" />
-            </Button>
-            <a
-              href="/changelog"
-              className="text-xs text-accent hover:underline inline-flex items-center gap-1 ml-2"
-            >
-              See what's shipped
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
+          {emailButton}
         </div>
       </section>
 
       {/* Stats */}
-      <section className="py-12 border-b border-border">
-        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
+      <section className="border-b border-border py-12">
+        <div className="container mx-auto max-w-5xl px-5 md:px-8">
           <div className="grid grid-cols-3 gap-4">
             {STATS.map((s, i) => (
               <motion.div
@@ -136,12 +116,8 @@ export default function PressPage() {
                 transition={{ ...spring, delay: i * 0.08 }}
                 className="text-center md:text-left"
               >
-                <p className="font-editorial text-4xl md:text-5xl tnum mb-1">
-                  {s.value}
-                </p>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  {s.label}
-                </p>
+                <p className="mb-1 font-editorial text-4xl tnum md:text-5xl">{s.value}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-foreground">{s.label}</p>
               </motion.div>
             ))}
           </div>
@@ -150,22 +126,14 @@ export default function PressPage() {
 
       {/* Quick facts */}
       <section className="py-14 md:py-20">
-        <div className="container mx-auto px-5 md:px-8 max-w-3xl">
-          <p className="font-label text-accent mb-3 tracking-[0.4em]">
-            — QUICK FACTS
-          </p>
-          <h2 className="font-editorial text-4xl md:text-4xl mb-10">
-            The 60-second version
-          </h2>
+        <div className="container mx-auto max-w-3xl px-5 md:px-8">
+          <p className="mb-3 font-label text-accent">Quick facts</p>
+          <h2 className="mb-10 font-editorial text-4xl">The 60-second version</h2>
           <dl className="space-y-6">
             {QUICK_FACTS.map((f) => (
               <div key={f.label}>
-                <dt className="text-xs uppercase tracking-[0.3em] text-accent mb-1.5">
-                  {f.label}
-                </dt>
-                <dd className="text-base text-foreground leading-relaxed">
-                  {f.body}
-                </dd>
+                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-accent">{f.label}</dt>
+                <dd className="m-0 text-base leading-relaxed text-foreground">{f.body}</dd>
               </div>
             ))}
           </dl>
@@ -173,138 +141,70 @@ export default function PressPage() {
       </section>
 
       {/* Logo + brand */}
-      <section className="py-14 md:py-20 border-t border-border">
-        <div className="container mx-auto px-5 md:px-8 max-w-3xl">
-          <p className="font-label text-accent mb-3 tracking-[0.4em]">
-            — BRAND
-          </p>
-          <h2 className="font-editorial text-4xl md:text-4xl mb-8">
-            Logos and palette
-          </h2>
+      <section className="border-t border-border py-14 md:py-20">
+        <div className="container mx-auto max-w-3xl px-5 md:px-8">
+          <p className="mb-3 font-label text-accent">Brand</p>
+          <h2 className="mb-8 font-editorial text-4xl">Logo and colours</h2>
 
-          <div className="grid sm:grid-cols-2 gap-3 mb-8">
-            <div className="rounded-2xl border border-border bg-foreground p-10 flex items-center justify-center">
-              <span className="font-editorial text-5xl text-background">
-                Vendora
-              </span>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2">
+            <div className="flex items-center justify-center rounded-2xl border border-border bg-foreground p-10">
+              <VendoraLogo size="md" color="#f4f1ea" withTagline />
             </div>
-            <div className="rounded-2xl border border-border bg-background p-10 flex items-center justify-center">
-              <span className="font-editorial text-5xl text-foreground">
-                Vendora
-              </span>
+            <div className="flex items-center justify-center rounded-2xl border border-border bg-background p-10">
+              <VendoraLogo size="md" color="#14161a" />
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
-            The wordmark uses our display typeface and works on dark or
-            light. Don't reproduce the mark on a colored background other
-            than #14161a or #ffffff. Don't add effects, gradients, drop
-            shadows, or rotate it.
+          <p className="mb-6 text-sm leading-relaxed text-foreground">
+            Use the logo on Ink (#14161A) or Ivory (#F4F1EA). Don't stretch,
+            recolour or rotate it, or add effects. Need a logo file? Email us.
           </p>
 
-          <div className="flex items-center gap-3 text-xs flex-wrap mb-8">
+          <div className="mb-10 flex flex-wrap items-center gap-3 text-xs">
             <a
               href="/pwa-512.png"
               download
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 hover:border-foreground/30 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-bold transition-colors hover:border-foreground/30"
             >
-              <Download className="w-3 h-3" />
+              <Download className="h-3 w-3" />
               App icon (512×512)
             </a>
             <a
               href="/pwa-192.png"
               download
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 hover:border-foreground/30 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-bold transition-colors hover:border-foreground/30"
             >
-              <Download className="w-3 h-3" />
+              <Download className="h-3 w-3" />
               App icon (192×192)
             </a>
           </div>
 
-          <h3 className="font-editorial text-2xl mb-4">Color palette</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            {[
-              { name: "Ink", hex: "#14161A" },
-              { name: "Ivory", hex: "#F4F1EA", light: true },
-              { name: "Cream", hex: "#FBF9F4", light: true },
-              { name: "Bronze", hex: "#8A6F3E" },
-              { name: "Champagne", hex: "#C9A86A" },
-            ].map((c) => (
+          <h3 className="mb-4 font-editorial text-2xl">Colours</h3>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            {PALETTE.map((c) => (
               <div key={c.name}>
                 <div
                   className={`h-16 rounded-2xl ${c.light ? "border border-border" : ""}`}
                   style={{ backgroundColor: c.hex }}
                 />
-                <p className="font-display text-sm mt-2">{c.name}</p>
-                <p className="text-[11px] text-muted-foreground tnum">{c.hex}</p>
+                <p className="mt-2 text-sm font-bold">{c.name}</p>
+                <p className="m-0 text-[11px] tnum text-foreground">{c.hex}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Screenshots */}
-      <section className="py-14 md:py-20 border-t border-border">
-        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
-          <p className="font-label text-accent mb-3 tracking-[0.4em]">
-            — SCREENSHOTS
-          </p>
-          <h2 className="font-editorial text-4xl md:text-4xl mb-8">
-            Use these for editorial
-          </h2>
-          <p className="text-sm text-muted-foreground max-w-2xl mb-8 leading-relaxed">
-            Right-click and save, or email us if you want vendor-anonymized
-            versions for an article that needs them.
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {SCREENSHOTS.map((s) => (
-              <figure
-                key={s.caption}
-                className="rounded-2xl overflow-hidden border border-border bg-card"
-              >
-                <div className="aspect-[4/3] bg-muted overflow-hidden">
-                  <Picture
-                    source={s.src}
-                    alt={s.alt}
-                    loading="lazy"
-                    sizes="(min-width: 768px) 50vw, 100vw"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <figcaption className="px-4 py-3 text-xs text-muted-foreground border-t border-border">
-                  {s.caption}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Contact */}
-      <section className="py-14 md:py-20 border-t border-border bg-card/40">
-        <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
-          <p className="font-label text-accent mb-3 tracking-[0.4em]">
-            — CONTACT
+      <section className="border-t border-border py-14 md:py-20">
+        <div className="container mx-auto max-w-3xl px-5 text-center md:px-8">
+          <p className="mb-3 font-label text-accent">Contact</p>
+          <h2 className="mb-3 font-editorial text-4xl">Let's talk</h2>
+          <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-foreground">
+            Editorial requests, interviews and partnership inquiries. We read
+            every message.
           </p>
-          <h2 className="font-editorial text-4xl md:text-4xl mb-3">
-            Let's talk
-          </h2>
-          <p className="text-base text-foreground mb-8 leading-relaxed max-w-xl mx-auto">
-            Editorial requests, interviews, partnership inquiries — we
-            actually read these and reply within a business day.
-          </p>
-          <Button
-            type="button"
-            onClick={copyEmail}
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 mr-1.5" />
-            ) : (
-              <Mail className="w-3.5 h-3.5 mr-1.5" />
-            )}
-            hello@eventvendora.com
-            <Copy className="w-3 h-3 ml-1.5 opacity-60" />
-          </Button>
+          {emailButton}
         </div>
       </section>
 
