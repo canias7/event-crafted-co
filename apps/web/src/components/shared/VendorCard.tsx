@@ -88,21 +88,36 @@ interface VendorCardProps {
   };
   /** Above-the-fold cards should pass eager so the first paint isn't a flash of empty squares. */
   eager?: boolean;
+  /** `dark` for dark pages (the vendors page): faint white fill, white-at-15% hairline, cream text, champagne accents. */
+  tone?: "light" | "dark";
+  /** Taller 4:5 photo, for wider cards. */
+  tall?: boolean;
 }
 
-export function VendorCard({ vendor, eager = false }: VendorCardProps) {
+export function VendorCard({ vendor, eager = false, tone = "light", tall = false }: VendorCardProps) {
   const { isSaved, toggle } = useSavedVendors();
   const saved = isSaved(vendor.id);
+  const dark = tone === "dark";
 
   // Flat card (brand standard): cream fill, hairline border that darkens
   // on hover, nothing lifts. Photo inset with its own corners, then the
   // category in small bronze capitals, the name, and location | price.
+  // On dark pages the hairline brightens instead and the accents turn
+  // champagne.
   return (
     <Link
       to={`/vendors/${vendor.id}`}
-      className="group flex h-full flex-col rounded-2xl border border-border bg-card p-2 transition-colors hover:border-foreground/30"
+      className={`group flex h-full flex-col rounded-2xl border p-2 transition-colors ${
+        dark
+          ? "border-white/15 bg-white/[0.03] text-[#f4f1ea] hover:border-white/40"
+          : "border-border bg-card hover:border-foreground/30"
+      }`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+      <div
+        className={`relative overflow-hidden rounded-xl ${tall ? "aspect-[4/5]" : "aspect-[4/3]"} ${
+          dark ? "bg-white/5" : "bg-muted"
+        }`}
+      >
         {vendor.heroImageUrl ? (
           <img
             src={vendor.heroImageUrl}
@@ -116,7 +131,11 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
           // We never substitute stock category art / posts / logos:
           // the marketplace card only shows what the vendor put
           // into their listing.
-          <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+          <div
+            className={`w-full h-full flex flex-col items-center justify-center gap-1 ${
+              dark ? "text-[#f4f1ea]/75" : "bg-muted text-muted-foreground"
+            }`}
+          >
             <ImageIcon className="w-6 h-6" aria-hidden="true" />
             <span className="text-xs">No listing photos yet</span>
           </div>
@@ -139,11 +158,19 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col px-3 pb-3 pt-4">
-        <p className="m-0 truncate text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
+        <p
+          className={`m-0 truncate text-[11px] font-bold uppercase tracking-[0.18em] ${
+            dark ? "text-gold" : "text-accent"
+          }`}
+        >
           {vendor.category}
         </p>
         <div className="mt-1.5 flex items-center gap-1.5">
-          <h3 className="m-0 truncate font-editorial text-[19px] leading-tight transition-colors group-hover:text-accent">
+          <h3
+            className={`m-0 min-w-0 truncate font-editorial text-[19px] leading-tight transition-colors ${
+              dark ? "group-hover:text-gold" : "group-hover:text-accent"
+            }`}
+          >
             {vendor.name}
           </h3>
           {vendor.studioVerified && <StudioVerifiedBadge />}
@@ -153,10 +180,10 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
         </div>
         <div className="mt-auto flex items-center gap-3 pt-4 text-[13px]">
           <p className="m-0 flex min-w-0 flex-1 items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+            <MapPin className={`h-3.5 w-3.5 shrink-0 ${dark ? "text-gold" : "text-accent"}`} aria-hidden />
             <span className="truncate">{vendor.location ?? vendor.distance}</span>
           </p>
-          <span className="h-5 w-px shrink-0 bg-border" aria-hidden />
+          <span className={`h-5 w-px shrink-0 ${dark ? "bg-white/15" : "bg-border"}`} aria-hidden />
           <p className="m-0 shrink-0 tnum">
             {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
           </p>
