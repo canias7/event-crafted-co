@@ -476,11 +476,16 @@ export function SettingsSheet({
                 </Text>
               </Pressable>
 
+              {/* The way in to deleting an account stays quiet: a secondary
+                  pill with a red label. The solid red danger button is for
+                  the confirmation step, not the entry point. */}
               <Pressable
                 onPress={onDeleteAccount}
                 style={{
-                  marginTop: 10,
-                  backgroundColor: "#b23a34",
+                  marginTop: 12,
+                  backgroundColor: "#ffffff",
+                  borderWidth: 1,
+                  borderColor: BORDER,
                   borderRadius: 999,
                   height: 52,
                   flexDirection: "row",
@@ -488,11 +493,11 @@ export function SettingsSheet({
                   justifyContent: "center",
                 }}
               >
-                <Feather name="trash-2" size={16} color="#ffffff" />
+                <Feather name="trash-2" size={16} color="#b23a34" />
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: "#ffffff",
+                    color: "#b23a34",
                     fontSize: 16,
                     marginLeft: 8,
                   }}
