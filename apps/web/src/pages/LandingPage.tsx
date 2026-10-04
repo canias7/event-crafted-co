@@ -5,7 +5,6 @@ import {
   CalendarDays,
   CreditCard,
   FileText,
-  Heart,
   MapPin,
   MessageCircle,
   Search,
@@ -14,9 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useVendors } from "@/hooks/useVendors";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
-import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { Picture } from "@/components/shared/Picture";
 // vite-imagetools `?as=picture` (see vite.config.ts) → AVIF + WebP + JPG
 // at 640/1024/1600, same pattern VendorCard uses for the browse grid.
@@ -34,15 +31,6 @@ const CREAM = "#f4f1ea";
 const GOLD = "#c9a86a";
 const BRONZE = "#8a6f3e";
 
-const POPULAR_SEARCHES = [
-  { label: "Wedding venues", to: "/vendors?category=venues" },
-  { label: "Photographers", to: "/vendors?q=photographer" },
-  { label: "Caterers", to: "/vendors?category=food-beverage" },
-  { label: "DJs", to: "/vendors?q=dj" },
-  { label: "Rentals", to: "/vendors?q=rentals" },
-  { label: "Party planners", to: "/vendors?q=planner" },
-];
-
 const HOST_STEPS = [
   {
     n: "1",
@@ -59,7 +47,7 @@ const HOST_STEPS = [
   {
     n: "3",
     title: "Plan",
-    body: "Keep every detail, timeline, and inspiration in one beautiful place.",
+    body: "Keep every event's details, dates and budget in one place.",
     image: designDecor,
   },
   {
@@ -121,7 +109,6 @@ const TOOLS = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const { session, hasVendorAccess, hasHostAccess } = useAuth();
-  const { vendors } = useVendors();
   const [q, setQ] = useState("");
   const [loc, setLoc] = useState("");
 
@@ -130,16 +117,6 @@ export default function LandingPage() {
     : hasHostAccess
       ? "/customer/explore"
       : null;
-
-  // Floating hero card — a REAL vendor (verified first, most reviewed),
-  // so the "premium marketplace" promise is a live listing, not a prop.
-  const featured = [...vendors]
-    .sort(
-      (a, b) =>
-        Number(b.studioVerified) - Number(a.studioVerified) ||
-        b.reviews - a.reviews,
-    )
-    .find((v) => v.name);
 
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -244,224 +221,143 @@ export default function LandingPage() {
 
         {/* HERO CONTENT */}
         <div className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24">
-          <div className="grid items-center gap-10 lg:grid-cols-[1fr_300px]">
-            <div className="text-center lg:text-left lg:pr-6">
-              <h1
-                className="m-0 landing-fadeup"
+          <div className="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
+            <h1
+              className="m-0 landing-fadeup"
+              style={{
+                color: CREAM,
+                fontSize: "clamp(42px, 7vw, 76px)",
+                lineHeight: 1.04,
+                letterSpacing: "-1.5px",
+                fontWeight: 700,
+              }}
+            >
+              Where{" "}
+              <span
+                className="font-editorial"
+                style={{ color: GOLD }}
+              >
+                unforgettable
+              </span>
+              <br />
+              events begin
+              <span style={{ color: GOLD }}>.</span>
+              <span
+                className="align-super text-[0.35em] ml-1"
+                style={{ color: GOLD }}
+              >
+                ✦
+              </span>
+            </h1>
+            <p
+              className="mx-auto lg:mx-0 mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup"
+              style={{ color: "rgba(244,241,234,0.75)", animationDelay: "120ms" }}
+            >
+              The all-in-one marketplace and planning experience for hosts and
+              the vendors who bring visions to life.
+            </p>
+
+            {/* Two paths */}
+            <div
+              className="mt-8 grid gap-3 sm:grid-cols-2 landing-fadeup"
+              style={{ animationDelay: "220ms" }}
+            >
+              <Link
+                to="/vendors"
+                className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors"
                 style={{
-                  color: CREAM,
-                  fontSize: "clamp(42px, 7vw, 76px)",
-                  lineHeight: 1.04,
-                  letterSpacing: "-1.5px",
-                  fontWeight: 700,
+                  backgroundColor: "rgba(244,241,234,0.94)",
+                  border: "1px solid rgba(244,241,234,0.4)",
                 }}
               >
-                Where{" "}
                 <span
-                  className="font-editorial"
-                  style={{ color: GOLD }}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: "rgba(201,168,106,0.18)" }}
                 >
-                  unforgettable
+                  <Users className="h-5 w-5" style={{ color: BRONZE }} />
                 </span>
-                <br />
-                events begin
-                <span style={{ color: GOLD }}>.</span>
-                <span
-                  className="align-super text-[0.35em] ml-1"
-                  style={{ color: GOLD }}
-                >
-                  ✦
+                <span className="flex-1">
+                  <span className="block text-[14.5px] font-semibold" style={{ color: INK }}>
+                    I'm planning an event
+                  </span>
+                  <span className="block text-[12.5px] mt-0.5" style={{ color: "rgba(20,22,26,0.6)" }}>
+                    Find and book trusted vendors for any occasion
+                  </span>
                 </span>
-              </h1>
-              <p
-                className="mx-auto lg:mx-0 mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup"
-                style={{ color: "rgba(244,241,234,0.75)", animationDelay: "120ms" }}
-              >
-                The all-in-one marketplace and planning experience for hosts and
-                the vendors who bring visions to life.
-              </p>
-
-              {/* Two paths */}
-              <div
-                className="mt-8 grid gap-3 sm:grid-cols-2 landing-fadeup"
-                style={{ animationDelay: "220ms" }}
-              >
-                <Link
-                  to="/vendors"
-                  className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors"
-                  style={{
-                    backgroundColor: "rgba(244,241,234,0.94)",
-                    border: "1px solid rgba(244,241,234,0.4)",
-                  }}
-                >
-                  <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                    style={{ backgroundColor: "rgba(201,168,106,0.18)" }}
-                  >
-                    <Users className="h-5 w-5" style={{ color: BRONZE }} />
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-[14.5px] font-semibold" style={{ color: INK }}>
-                      I'm planning an event
-                    </span>
-                    <span className="block text-[12.5px] mt-0.5" style={{ color: "rgba(20,22,26,0.6)" }}>
-                      Find and book trusted vendors for any occasion
-                    </span>
-                  </span>
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                    style={{ color: BRONZE }}
-                  />
-                </Link>
-                <Link
-                  to="/signup/vendor"
-                  className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors hover:bg-white/10"
-                  style={{
-                    backgroundColor: "rgba(20,22,26,0.55)",
-                    border: "1px solid rgba(244,241,234,0.22)",
-                    backdropFilter: "blur(10px)",
-                  }}
-                >
-                  <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                    style={{ backgroundColor: "rgba(201,168,106,0.22)" }}
-                  >
-                    <Store className="h-5 w-5" style={{ color: GOLD }} />
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-[14.5px] font-semibold" style={{ color: CREAM }}>
-                      I'm a vendor
-                    </span>
-                    <span className="block text-[12.5px] mt-0.5" style={{ color: "rgba(244,241,234,0.65)" }}>
-                      Get discovered, connect with clients, grow your business
-                    </span>
-                  </span>
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                    style={{ color: GOLD }}
-                  />
-                </Link>
-              </div>
-
-              {/* Search */}
-              <form
-                onSubmit={submitSearch}
-                className="mt-4 flex flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:rounded-full landing-fadeup"
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  style={{ color: BRONZE }}
+                />
+              </Link>
+              <Link
+                to="/signup/vendor"
+                className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors hover:bg-white/10"
                 style={{
-                  backgroundColor: "rgba(244,241,234,0.96)",
-                  animationDelay: "320ms",
+                  backgroundColor: "rgba(20,22,26,0.55)",
+                  border: "1px solid rgba(244,241,234,0.22)",
+                  backdropFilter: "blur(10px)",
                 }}
               >
-                <div className="flex flex-1 items-center gap-2.5 px-3 py-2">
-                  <Search className="h-4 w-4 shrink-0" style={{ color: BRONZE }} />
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="What are you planning?"
-                    className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
-                    style={{ color: INK }}
-                  />
-                </div>
-                <div
-                  className="flex flex-1 items-center gap-2.5 px-3 py-2 sm:border-l"
-                  style={{ borderColor: "rgba(20,22,26,0.12)" }}
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: "rgba(201,168,106,0.22)" }}
                 >
-                  <MapPin className="h-4 w-4 shrink-0" style={{ color: BRONZE }} />
-                  <input
-                    value={loc}
-                    onChange={(e) => setLoc(e.target.value)}
-                    placeholder="Location"
-                    className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
-                    style={{ color: INK }}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
-                >
-                  Search
-                </button>
-              </form>
-
-              {/* Popular searches */}
-              <div
-                className="mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start landing-fadeup"
-                style={{ animationDelay: "420ms" }}
-              >
-                <span className="text-[11.5px]" style={{ color: "rgba(244,241,234,0.55)" }}>
-                  Popular searches:
+                  <Store className="h-5 w-5" style={{ color: GOLD }} />
                 </span>
-                {POPULAR_SEARCHES.map((s) => (
-                  <Link
-                    key={s.label}
-                    to={s.to}
-                    className="rounded-full px-3 py-1 text-[11.5px] transition-colors hover:bg-white/15"
-                    style={{
-                      color: "rgba(244,241,234,0.85)",
-                      border: "1px solid rgba(244,241,234,0.28)",
-                    }}
-                  >
-                    {s.label}
-                  </Link>
-                ))}
-              </div>
+                <span className="flex-1">
+                  <span className="block text-[14.5px] font-semibold" style={{ color: CREAM }}>
+                    I'm a vendor
+                  </span>
+                  <span className="block text-[12.5px] mt-0.5" style={{ color: "rgba(244,241,234,0.65)" }}>
+                    Get discovered, connect with clients, grow your business
+                  </span>
+                </span>
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  style={{ color: GOLD }}
+                />
+              </Link>
             </div>
 
-            {/* Floating REAL vendor card (desktop only) */}
-            {featured ? (
-              <Link
-                to={featured.slug ? `/vendors/${featured.slug}` : "/vendors"}
-                className="hidden lg:block landing-float"
-                aria-label={`View ${featured.name}`}
+            {/* Search */}
+            <form
+              onSubmit={submitSearch}
+              className="mt-4 flex flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:rounded-full landing-fadeup"
+              style={{
+                backgroundColor: "rgba(244,241,234,0.96)",
+                animationDelay: "320ms",
+              }}
+            >
+              <div className="flex flex-1 items-center gap-2.5 px-3 py-2">
+                <Search className="h-4 w-4 shrink-0" style={{ color: BRONZE }} />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="What are you planning?"
+                  className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
+                  style={{ color: INK }}
+                />
+              </div>
+              <div
+                className="flex flex-1 items-center gap-2.5 px-3 py-2 sm:border-l"
+                style={{ borderColor: "rgba(20,22,26,0.12)" }}
               >
-                <div
-                  className="overflow-hidden rounded-3xl"
-                  style={{
-                    backgroundColor: "rgba(244,241,234,0.97)",
-                    boxShadow: "0 24px 48px -18px hsl(220 14% 9% / 0.35)",
-                  }}
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <Picture
-                      source={heroDinner}
-                      alt=""
-                      sizes="300px"
-                      className="h-full w-full object-cover"
-                    />
-                    <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/85">
-                      <Heart className="h-4 w-4" style={{ color: INK }} />
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    {featured.studioVerified ? (
-                      <span className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: BRONZE }}>
-                        <StudioVerifiedBadge /> Verified vendor
-                      </span>
-                    ) : (
-                      <span className="mb-1.5 inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: BRONZE }}>
-                        ✦ Featured vendor
-                      </span>
-                    )}
-                    <p className="m-0 font-editorial not-italic text-[19px]" style={{ color: INK }}>
-                      {featured.name}
-                    </p>
-                    <p className="m-0 mt-0.5 text-[12px]" style={{ color: "rgba(20,22,26,0.55)" }}>
-                      {featured.category}
-                    </p>
-                    <p className="m-0 mt-1.5 flex items-center gap-1 text-[12px]" style={{ color: "rgba(20,22,26,0.7)" }}>
-                      {featured.reviews > 0 ? (
-                        <>
-                          <Star className="h-3.5 w-3.5 fill-current" style={{ color: GOLD }} />
-                          {featured.rating.toFixed(1)} ({featured.reviews})
-                        </>
-                      ) : (
-                        <span>{featured.location ?? "On Vendora"}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ) : null}
+                <MapPin className="h-4 w-4 shrink-0" style={{ color: BRONZE }} />
+                <input
+                  value={loc}
+                  onChange={(e) => setLoc(e.target.value)}
+                  placeholder="Location"
+                  className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
+                  style={{ color: INK }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+              >
+                Search
+              </button>
+            </form>
           </div>
         </div>
       </section>
@@ -714,7 +610,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mx-auto mt-8 text-[12.5px]" style={{ color: "rgba(244,241,234,0.5)" }}>
-            <span style={{ color: GOLD }}>✦</span> Curated, verified vendors
+            <span style={{ color: GOLD }}>✦</span> Curated vendors
             <span className="mx-2.5" style={{ color: "rgba(244,241,234,0.25)" }}>·</span>
             Secure payments
             <span className="mx-2.5" style={{ color: "rgba(244,241,234,0.25)" }}>·</span>
@@ -808,8 +704,6 @@ export default function LandingPage() {
           <div className="flex gap-5 text-[12px]">
             {[
               { label: "Instagram", href: "https://instagram.com/eventvendora" },
-              { label: "TikTok", href: "https://tiktok.com/@eventvendora" },
-              { label: "Facebook", href: "https://facebook.com/eventvendora" },
             ].map((s) => (
               <a
                 key={s.label}
