@@ -82,21 +82,6 @@ const importPress = () => import("@/pages/PressPage");
 export const PressPage = lazyWithReload(importPress);
 
 
-const importWebsiteBuilder = () => import("@/pages/WebsiteBuilderPage");
-export const WebsiteBuilderPage = lazyWithReload(importWebsiteBuilder);
-
-const importFlatLayBuilder = () => import("@/pages/FlatLayBuilderPage");
-export const FlatLayBuilderPage = lazyWithReload(importFlatLayBuilder);
-
-const importPublicAiSite = () => import("@/pages/PublicAiSitePage");
-export const PublicAiSitePage = lazyWithReload(importPublicAiSite);
-
-const importMySites = () => import("@/pages/MySitesPage");
-export const MySitesPage = lazyWithReload(importMySites);
-
-const importSiteRsvps = () => import("@/pages/SiteRsvpsPage");
-export const SiteRsvpsPage = lazyWithReload(importSiteRsvps);
-
 const importSettings = () => import("@/pages/SettingsPage");
 export const SettingsPage = lazyWithReload(importSettings);
 
@@ -206,11 +191,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },
-  { pattern: "/website-builder", importer: importWebsiteBuilder },
-  { pattern: "/flatlay-builder", importer: importFlatLayBuilder },
-  { pattern: "/my-sites", importer: importMySites },
-  { pattern: "/my-sites/:slug/rsvps", importer: importSiteRsvps },
-  { pattern: "/s/:slug", importer: importPublicAiSite },
   { pattern: "/g/:token", importer: importPublicGalleryShare },
   { pattern: "/settings", importer: importSettings },
   { pattern: "/settings/notifications", importer: importNotificationSettings },

@@ -11,16 +11,15 @@ Mobile apps (`*-mobile`) are unaffected — they ship through EAS, not Vercel.
 | Vercel | Cloudflare equivalent |
 |--------|-----------------------|
 | `apps/web/vercel.json` rewrites/headers | `apps/web/public/_redirects` + `apps/web/public/_headers` |
-| `apps/web/api/render.ts` (Edge Function) | `apps/web/functions/s/[slug].ts` (Pages Function) |
+| `apps/web/api/render.ts` (Edge Function) | `apps/web/functions/s/[slug].ts` (Pages Function); both removed with the website builder, Oct 2026 |
 | `apps/admin/vercel.json` | `apps/admin/public/_redirects` + `apps/admin/public/_headers` |
 | Vercel Git auto-deploy | `.github/workflows/cloudflare-pages.yml` (Wrangler) |
 | `apps/web/wrangler.toml`, `apps/admin/wrangler.toml` | Pages project config (name + build output dir) |
 
-The `/s/<slug>` route still works identically: the Pages Function renders the
-public event page server-side on hard loads / for crawlers, while the SPA's
-client-side React route handles in-app navigation. The old `vercel.json` and
-`api/render.ts` are left in place as rollback references — Cloudflare only
-deploys the `dist/` output, so they are inert.
+The old `vercel.json` files are left in place as rollback references —
+Cloudflare only deploys the `dist/` output, so they are inert. (The `/s/<slug>`
+Pages Function that used to render website-builder pages was removed along
+with the builder in Oct 2026.)
 
 ## One-time Cloudflare setup (operator)
 
@@ -46,8 +45,7 @@ deploys the `dist/` output, so they are inert.
 Run the workflow manually (Actions → *Deploy to Cloudflare Pages* → *Run
 workflow*) or push a change under `apps/web/**` / `apps/admin/**` to `main`.
 Each Pages project gets a `*.pages.dev` preview URL — verify both, especially:
-- web: load `/s/<a-known-slug>` and confirm the event page renders (not raw
-  source) and that a deep link like `/dashboard` returns the SPA (not a 404).
+- web: confirm a deep link like `/dashboard` returns the SPA (not a 404).
 - admin: confirm the PIN gate loads and the `noindex` header is present.
 
 ## DNS cutover (do last)
@@ -58,5 +56,5 @@ Each Pages project gets a `*.pages.dev` preview URL — verify both, especially:
    `app.eventvendora.com`.
 3. Under **vendora-admin** → *Custom domains*, add `admin.eventvendora.com`.
 4. Once traffic is served by Cloudflare and verified, remove the domains from
-   the Vercel projects. The `vercel.json` files and `apps/web/api/render.ts`
-   can then be deleted in a cleanup PR.
+   the Vercel projects. The `vercel.json` files can then be deleted in a
+   cleanup PR.

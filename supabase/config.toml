@@ -15,34 +15,6 @@ project_id = "pahpjjubhbcbwqjpamwv"
   # false or the gateway 401s every push before the handler runs.
   [functions.send-push]
     verify_jwt = false
-  [functions.ai-site-generate]
-    verify_jwt = false
-  [functions.ai-site-rsvp-submit]
-    verify_jwt = false
-  [functions.ai-site-image-generate]
-    verify_jwt = false
-  [functions.ai-site-render]
-    verify_jwt = false
-  [functions.ai-site-revert]
-    verify_jwt = false
-  [functions.ai-site-image-upload]
-    verify_jwt = false
-  [functions.ai-site-compose]
-    verify_jwt = false
-  [functions.flatlay-generate]
-    verify_jwt = false
-  [functions.ai-site-ics]
-    verify_jwt = false
-  [functions.ai-site-messages]
-    verify_jwt = false
-  [functions.ai-site-photos]
-    verify_jwt = false
-  [functions.ai-site-guests]
-    verify_jwt = true
-  [functions.ai-site-versions]
-    verify_jwt = true
-  [functions.ai-site-rsvps-export]
-    verify_jwt = true
   [functions.cleanup-portfolio-orphans]
     verify_jwt = false
   [functions.geocode-vendor]

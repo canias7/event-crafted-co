@@ -57,11 +57,6 @@ import {
   ChangelogPage,
   StatusPage,
   PressPage,
-  WebsiteBuilderPage,
-  FlatLayBuilderPage,
-  PublicAiSitePage,
-  MySitesPage,
-  SiteRsvpsPage,
   SettingsPage,
   NotificationSettingsPage,
   NotFound,
@@ -161,11 +156,13 @@ const App = () => (
               <Route path="/press" element={<PressPage />} />
               {/* My Space (AI super-agents) was removed; old links go home. */}
               <Route path="/super-agents" element={<Navigate to="/" replace />} />
-              <Route path="/website-builder" element={<WebsiteBuilderPage />} />
-              <Route path="/flatlay-builder" element={<FlatLayBuilderPage />} />
-              <Route path="/my-sites" element={<MySitesPage />} />
-              <Route path="/my-sites/:slug/rsvps" element={<SiteRsvpsPage />} />
-              <Route path="/s/:slug" element={<PublicAiSitePage />} />
+              {/* The website builder (and the sites it published at /s/)
+                  was removed; old links go home. */}
+              <Route path="/website-builder" element={<Navigate to="/" replace />} />
+              <Route path="/flatlay-builder" element={<Navigate to="/" replace />} />
+              <Route path="/my-sites" element={<Navigate to="/" replace />} />
+              <Route path="/my-sites/:slug/rsvps" element={<Navigate to="/" replace />} />
+              <Route path="/s/:slug" element={<Navigate to="/" replace />} />
               {/* /vendor-apply removed — vendors now sign up through
                   the regular Sign up button. Old bookmarks redirect
                   to the signup chooser so the URL doesn't 404. */}
