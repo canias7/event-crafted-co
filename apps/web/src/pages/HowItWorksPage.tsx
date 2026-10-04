@@ -37,7 +37,7 @@ const HOST_STEPS: Step[] = [
     title: "Find your inspiration",
     body: "Start with ideas. Scroll the Explore feed to see real work from vendors on Vendora.",
     points: [
-      "Browse vendors' photos, posts and reels",
+      "Browse vendors' portfolio photos",
       "Filter by category, from photography to catering",
       "Save the vendors you love with the heart",
     ],
@@ -91,7 +91,7 @@ const VENDOR_STEPS: Omit<Step, "image">[] = [
   },
   {
     title: "Showcase your work",
-    body: "Add portfolio photos, posts and reels so hosts can see what you do.",
+    body: "Add portfolio photos so hosts can see what you do.",
     points: [],
   },
   {
