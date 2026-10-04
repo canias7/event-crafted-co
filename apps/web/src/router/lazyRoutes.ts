@@ -65,6 +65,10 @@ const importHelp = () => import("@/pages/HelpPage");
 export const HelpPage = lazyWithReload(importHelp);
 const importHowItWorks = () => import("@/pages/HowItWorksPage");
 export const HowItWorksPage = lazyWithReload(importHowItWorks);
+const importForHosts = () => import("@/pages/ForHostsPage");
+export const ForHostsPage = lazyWithReload(importForHosts);
+const importForVendors = () => import("@/pages/ForVendorsPage");
+export const ForVendorsPage = lazyWithReload(importForVendors);
 
 const importPayLinkCheckout = () => import("@/pages/public/PayLinkCheckoutPage");
 export const PayLinkCheckoutPage = lazyWithReload(importPayLinkCheckout);
@@ -186,6 +190,8 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/terms", importer: importTerms },
   { pattern: "/help", importer: importHelp },
   { pattern: "/how-it-works", importer: importHowItWorks },
+  { pattern: "/for-hosts", importer: importForHosts },
+  { pattern: "/for-vendors", importer: importForVendors },
   { pattern: "/pay/link/:slug", importer: importPayLinkCheckout },
   { pattern: "/pay/invoice/:slug", importer: importInvoiceCheckout },
   { pattern: "/changelog", importer: importChangelog },
