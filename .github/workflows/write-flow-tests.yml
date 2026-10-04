@@ -1,44 +1,175 @@
-name: Write-flow tests (local Supabase)
+name: Write-flow tests (isolated, never production)
 
-# Option A from docs/testing/staging-and-write-flow-tests.md: spin up an
-# ephemeral local Supabase stack in CI (Docker on ubuntu-latest) so write
-# flows + edge functions can be tested in isolation, never against prod.
+# Create/update/delete coverage that must NEVER touch production:
 #
-# Step 1 (this workflow, for now): prove the 444 migrations apply cleanly
-# from scratch — `supabase start` applies them and fails the job if any
-# migration errors. This is the prerequisite gate before we layer on the
-# function-serve + write-flow test suite.
-# Manual-only for now: the migration chain does NOT yet apply cleanly from
-# scratch (see docs/testing/staging-and-write-flow-tests.md → "Finding"), so
-# auto-running this on every migration push would just be red noise. Run it
-# on demand to re-check once the migrations are made idempotent.
+#   webhook-contracts  Real edge-function code (stripe-webhook,
+#                      vendorapay-webhook, resend-webhook, mux-webhook) run
+#                      under Deno with synthetic secrets and a stub database.
+#                      Valid / forged / stale signatures and duplicate
+#                      delivery. Independent of the migration chain. No egress:
+#                      function processes get a dead HTTPS proxy.
+#
+#   local-stack        `supabase start` replays every migration into an
+#                      ephemeral local stack (Docker on the runner), then runs
+#                      profile / inquiry-status / calendar / invoice /
+#                      payment-link / cross-vendor isolation flows as ordinary
+#                      users. If the replay fails, the exact migration + error
+#                      is reported and every DB-dependent test is BLOCKED (the
+#                      job fails; nothing is "fixed" to force green).
+#
+# See docs/testing/staging-and-write-flow-tests.md. No repository secrets are
+# used: local keys come from `supabase status` on the runner.
+
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/write-flow-tests.yml"
+      - "apps/web/playwright.write.config.ts"
+      - "apps/web/tests/write/**"
+      - "scripts/canary/**"
+      - "supabase/functions/stripe-webhook/**"
+      - "supabase/functions/vendorapay-webhook/**"
+      - "supabase/functions/resend-webhook/**"
+      - "supabase/functions/mux-webhook/**"
+      - "supabase/functions/_shared/payments.ts"
+      - "supabase/migrations/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: write-flow-${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  local-stack:
-    name: Local stack + migrations-from-scratch
+  webhook-contracts:
+    name: Webhook signature + dedupe contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
+    env:
+      CI: "true"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: bun install --frozen-lockfile
+      - name: Cache function dependencies (network allowed here only)
+        run: |
+          for f in stripe-webhook vendorapay-webhook resend-webhook mux-webhook; do
+            deno cache --no-lock "supabase/functions/$f/index.ts"
+          done
+          deno cache --no-lock apps/web/tests/write/webhooks/launch.ts
+      - name: Run webhook contract tests
+        id: tests
+        continue-on-error: true
+        working-directory: apps/web
+        env:
+          DENO_BIN: deno
+        run: bunx playwright test -c playwright.write.config.ts --project=webhooks
+      - name: Summarize
+        if: always()
+        run: >-
+          node scripts/canary/summarize.mjs
+          --title "Webhook contracts (real function code, stub DB)"
+          --results apps/web/write-results/results.json
+          --out apps/web/write-results
+      - name: Sanitize
+        if: always()
+        run: node scripts/canary/sanitize.mjs apps/web/write-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webhook-contracts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/web/write-results
+          retention-days: 14
+
+  local-stack:
+    name: Local stack — migration replay + DB write flows
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      # `supabase start` boots the local stack (Postgres + Auth + PostgREST +
-      # Storage + …) and applies every migration in supabase/migrations in
-      # order. If any migration fails to apply, this step exits non-zero.
-      - name: Start local Supabase (applies all migrations)
-        run: supabase start
-      - name: Show local stack status
-        if: always()
-        run: supabase status || true
-      - name: Sanity-check the schema is queryable
+      - run: bun install --frozen-lockfile
+
+      # `supabase start` applies every migration in supabase/migrations in
+      # order and exits non-zero on the first one that fails.
+      - name: Start local Supabase (replays all migrations)
+        id: start
+        continue-on-error: true
         run: |
-          set -e
-          DB_URL="$(supabase status -o env | grep '^DB_URL=' | cut -d= -f2- | tr -d '"')"
-          echo "Querying local DB…"
-          # A couple of core tables should exist after a clean migration apply.
-          psql "$DB_URL" -tAc "select count(*) from public.vendor_profiles;"
-          psql "$DB_URL" -tAc "select count(*) from public.inquiries;"
-          echo "Migrations applied from scratch and core tables are queryable."
+          mkdir -p apps/web/write-results
+          supabase --version | tee apps/web/write-results/supabase-cli-version.txt
+          ls supabase/migrations | wc -l | xargs echo "migrations:" | tee -a apps/web/write-results/supabase-cli-version.txt
+          set -o pipefail
+          supabase start -x studio,imgproxy,vector,logflare,edge-runtime --debug 2>&1 | tee apps/web/write-results/supabase-start.log
+
+      - name: Expose local stack to the tests
+        if: steps.start.outcome == 'success'
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export /')"
+          {
+            echo "LOCAL_SUPABASE_URL=$API_URL"
+            echo "LOCAL_ANON_KEY=$ANON_KEY"
+            echo "LOCAL_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Record the migration failure
+        if: steps.start.outcome != 'success'
+        run: |
+          reason="$(node scripts/canary/migration-failure.mjs apps/web/write-results/supabase-start.log apps/web/write-results/blockers.json)"
+          echo "LOCAL_BLOCKED_REASON=$reason" >> "$GITHUB_ENV"
+          echo "::error title=Migration replay failed::$reason"
+
+      - name: Run DB write-flow tests
+        continue-on-error: true
+        working-directory: apps/web
+        run: bunx playwright test -c playwright.write.config.ts --project=db-write
+
+      - name: Summarize
+        if: always()
+        run: >-
+          node scripts/canary/summarize.mjs
+          --title "DB write flows (isolated local stack)"
+          --results apps/web/write-results/results.json
+          --blockers apps/web/write-results/blockers.json
+          --out apps/web/write-results
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
+      - name: Sanitize
+        if: always()
+        env:
+          LOCAL_SERVICE_ROLE_KEY: ${{ env.LOCAL_SERVICE_ROLE_KEY }}
+        run: node scripts/canary/sanitize.mjs apps/web/write-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: write-flows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/web/write-results
+          retention-days: 14

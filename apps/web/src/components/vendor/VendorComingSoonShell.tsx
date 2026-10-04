@@ -4,8 +4,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
 // Shared shell for the three forward-looking vendor tools that don't
-// have working implementations yet (AI Superagents, Vendora Pay,
-// Gallery). Each landing page is a thin wrapper that hands the title +
+// have working implementations yet (e.g. Gallery). Each landing page is a thin wrapper that hands the title +
 // subtitle + icon to this shell.
 
 export function VendorComingSoonShell({

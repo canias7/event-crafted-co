@@ -128,6 +128,50 @@ such conflicts later in the 444-migration chain.
 
 The validation workflow is now `workflow_dispatch`-only so it doesn't auto-fail.
 
+### Re-checked 2026-10-04 (485 migrations): still failing, same place
+`write-flow-tests.yml` (local-stack job) replays the chain on every run that
+touches the write tests, and reports the failing migration instead of hiding
+it. On 2026-10-04 it stopped at the same file with the same error:
+
+```
+20260503205144_eb966d2e-e2fe-4cb1-a978-9d02b09e87e7.sql
+ERROR: column "event_type" of relation "profiles" already exists (SQLSTATE 42701)
+At statement: 2 — alter table public.profiles add column event_type text …
+```
+
+Everything in `apps/web/tests/write/db/` is therefore reported BLOCKED until
+the chain replays. The webhook contract tests (`apps/web/tests/write/webhooks.spec.ts`)
+don't need the stack and run regardless. Later migrations past this point
+have not been reached, so further conflicts are still unknown.
+
+### Fixed 2026-10-04 (path 1): the chain replays from scratch
+Replayed locally on Postgres 16 with a small Supabase shim (auth / storage /
+realtime schemas, stub pg_cron / pg_net / vault / pgmq), fixing each failure in
+place until all 489 files applied. What changed:
+
+- **Idempotent DDL** in ~40 early (mostly Lovable-era) files: `add column if
+  not exists`, `create table/index if not exists`, `create or replace
+  function/view`, `drop policy/trigger if exists` before re-creating, guarded
+  `create type`, `add constraint` and realtime publication adds.
+- **Real bugs:** `20260503370000_inquiry_labels.sql` had `unique (vendor_id,
+  lower(name))` in a table constraint (invalid; now the expression index that
+  production has); `20260503580000_planner_workspace.sql` had a misplaced
+  `coalesce(…)` (syntax error).
+- **Return-type changes:** functions recreated with a different return type
+  now `drop function if exists` first.
+- **Objects created outside migrations** are backfilled from production's
+  definitions: `20260503449999_backfill_user_roles.sql`,
+  `20260511175959_backfill_untracked_tables.sql`, plus a few single-column
+  backfills at the top of the file that first needs them.
+- **Out-of-order files:** `20260526084000` / `20260526086000` ran before the
+  migration that creates `vendor_recurring_invoices`; they now skip when it
+  doesn't exist.
+
+Production is unaffected: its migration history starts at `20260507044459`
+and records different versions, so none of these files re-run there. The real
+check is the `local-stack` job (`supabase start`), which now also runs on any
+change under `supabase/migrations/`.
+
 ## Operator decisions needed
 - **Which option** (A recommended).
 - For A: confirm CI can run Docker (`supabase start` needs it) on the runner.

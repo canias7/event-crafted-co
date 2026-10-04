@@ -1,9 +1,11 @@
 insert into storage.buckets (id, name, public) values ('vendor-verifications', 'vendor-verifications', false) on conflict (id) do nothing;
 
+drop policy if exists "vendor verifications owner insert" on storage.objects;
 create policy "vendor verifications owner insert"
   on storage.objects for insert to authenticated
   with check (bucket_id = 'vendor-verifications' and exists (select 1 from public.vendor_profiles vp where vp.id::text = (storage.foldername(name))[1] and vp.user_id = auth.uid()));
 
+drop policy if exists "vendor verifications owner read" on storage.objects;
 create policy "vendor verifications owner read"
   on storage.objects for select to authenticated
   using (bucket_id = 'vendor-verifications' and (
@@ -11,11 +13,12 @@ create policy "vendor verifications owner read"
     or exists (select 1 from public.profiles ur where ur.id = auth.uid() and ur.role = 'admin')
   ));
 
+drop policy if exists "vendor verifications owner delete" on storage.objects;
 create policy "vendor verifications owner delete"
   on storage.objects for delete to authenticated
   using (bucket_id = 'vendor-verifications' and exists (select 1 from public.vendor_profiles vp where vp.id::text = (storage.foldername(name))[1] and vp.user_id = auth.uid()));
 
-create table public.vendor_verifications (
+create table if not exists public.vendor_verifications (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   kind text not null check (kind in ('identity','insurance','business_license','background_check')),
@@ -29,21 +32,25 @@ create table public.vendor_verifications (
   unique (vendor_id, kind)
 );
 
-create index vendor_verifications_status_idx on public.vendor_verifications (status, submitted_at desc);
+create index if not exists vendor_verifications_status_idx on public.vendor_verifications (status, submitted_at desc);
 
 alter table public.vendor_verifications enable row level security;
 
+drop policy if exists "vendor_verifications vendor select" on public.vendor_verifications;
 create policy "vendor_verifications vendor select" on public.vendor_verifications for select to authenticated
   using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_verifications vendor upsert" on public.vendor_verifications;
 create policy "vendor_verifications vendor upsert" on public.vendor_verifications for insert to authenticated
   with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_verifications vendor update" on public.vendor_verifications;
 create policy "vendor_verifications vendor update" on public.vendor_verifications for update to authenticated
   using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_verifications admin all" on public.vendor_verifications;
 create policy "vendor_verifications admin all" on public.vendor_verifications for all to authenticated
   using (exists (select 1 from public.profiles ur where ur.id = auth.uid() and ur.role = 'admin'))
   with check (exists (select 1 from public.profiles ur where ur.id = auth.uid() and ur.role = 'admin'));
 
-create view public.vendor_public_badges with (security_invoker = true) as
+create or replace view public.vendor_public_badges with (security_invoker = true) as
   select vendor_id, array_agg(kind order by kind) as kinds
   from public.vendor_verifications
   where status = 'approved' and (expires_at is null or expires_at >= current_date)

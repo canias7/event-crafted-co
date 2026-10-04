@@ -3,6 +3,7 @@ insert into storage.buckets (id, name, public)
 values ('event-albums', 'event-albums', false)
 on conflict (id) do nothing;
 
+drop policy if exists "event albums vendor team insert" on storage.objects;
 create policy "event albums vendor team insert"
   on storage.objects for insert to authenticated
   with check (
@@ -15,6 +16,7 @@ create policy "event albums vendor team insert"
     )
   );
 
+drop policy if exists "event albums vendor team read" on storage.objects;
 create policy "event albums vendor team read"
   on storage.objects for select to authenticated
   using (
@@ -27,6 +29,7 @@ create policy "event albums vendor team read"
     )
   );
 
+drop policy if exists "event albums vendor team delete" on storage.objects;
 create policy "event albums vendor team delete"
   on storage.objects for delete to authenticated
   using (
@@ -39,7 +42,7 @@ create policy "event albums vendor team delete"
     )
   );
 
-create table public.event_albums (
+create table if not exists public.event_albums (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null,
   inquiry_id uuid,
@@ -55,19 +58,22 @@ create table public.event_albums (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index event_albums_vendor_idx on public.event_albums (vendor_id, created_at desc);
-create index event_albums_host_idx on public.event_albums (host_id, created_at desc);
-create index event_albums_token_idx on public.event_albums (share_token);
+create index if not exists event_albums_vendor_idx on public.event_albums (vendor_id, created_at desc);
+create index if not exists event_albums_host_idx on public.event_albums (host_id, created_at desc);
+create index if not exists event_albums_token_idx on public.event_albums (share_token);
 alter table public.event_albums enable row level security;
 
+drop policy if exists "event_albums vendor team all" on public.event_albums;
 create policy "event_albums vendor team all" on public.event_albums for all to authenticated
   using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
+drop policy if exists "event_albums host read" on public.event_albums;
 create policy "event_albums host read" on public.event_albums for select to authenticated
   using (auth.uid() = host_id and host_consent_given_at is not null and published_at is not null);
+drop trigger if exists event_albums_updated on public.event_albums;
 create trigger event_albums_updated before update on public.event_albums
   for each row execute function public.tg_set_updated_at();
 
-create table public.event_album_photos (
+create table if not exists public.event_album_photos (
   id uuid primary key default gen_random_uuid(),
   album_id uuid not null references public.event_albums(id) on delete cascade,
   storage_path text not null,
@@ -76,12 +82,14 @@ create table public.event_album_photos (
   display_order int not null default 0,
   created_at timestamptz not null default now()
 );
-create index event_album_photos_album_idx on public.event_album_photos (album_id, display_order, taken_at);
+create index if not exists event_album_photos_album_idx on public.event_album_photos (album_id, display_order, taken_at);
 alter table public.event_album_photos enable row level security;
 
+drop policy if exists "event_album_photos vendor all" on public.event_album_photos;
 create policy "event_album_photos vendor all" on public.event_album_photos for all to authenticated
   using (exists (select 1 from public.event_albums a where a.id = album_id and public.is_vendor_member(a.vendor_id)))
   with check (exists (select 1 from public.event_albums a where a.id = album_id and public.is_vendor_member(a.vendor_id)));
+drop policy if exists "event_album_photos host read" on public.event_album_photos;
 create policy "event_album_photos host read" on public.event_album_photos for select to authenticated
   using (exists (select 1 from public.event_albums a where a.id = album_id and a.host_id = auth.uid() and a.host_consent_given_at is not null and a.published_at is not null));
 
@@ -98,6 +106,7 @@ begin
   return new;
 end$$;
 
+drop trigger if exists event_albums_notify_host on public.event_albums;
 create trigger event_albums_notify_host after insert or update of published_at on public.event_albums
   for each row execute function public.notify_host_album_published();
 
@@ -120,6 +129,7 @@ end$$;
 revoke execute on function public.get_album_by_token(text) from public;
 grant execute on function public.get_album_by_token(text) to anon, authenticated;
 
+drop policy if exists "event albums published read" on storage.objects;
 create policy "event albums published read" on storage.objects for select
   using (bucket_id = 'event-albums' and exists (
     select 1 from public.event_album_photos p join public.event_albums a on a.id = p.album_id

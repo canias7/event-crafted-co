@@ -1,5 +1,5 @@
 -- Appointments
-create table public.appointments (
+create table if not exists public.appointments (
   id uuid primary key default gen_random_uuid(),
   inquiry_id uuid references public.inquiries(id) on delete set null,
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
@@ -14,19 +14,25 @@ create table public.appointments (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index appointments_host_idx on public.appointments (host_id, scheduled_at desc);
-create index appointments_vendor_idx on public.appointments (vendor_id, scheduled_at desc);
-create index appointments_status_idx on public.appointments (status);
+create index if not exists appointments_host_idx on public.appointments (host_id, scheduled_at desc);
+create index if not exists appointments_vendor_idx on public.appointments (vendor_id, scheduled_at desc);
+create index if not exists appointments_status_idx on public.appointments (status);
 alter table public.appointments enable row level security;
+drop policy if exists "appointments select participants" on public.appointments;
 create policy "appointments select participants" on public.appointments for select to authenticated using (auth.uid() = host_id or public.is_vendor_member(vendor_id));
+drop policy if exists "appointments host insert" on public.appointments;
 create policy "appointments host insert" on public.appointments for insert to authenticated with check (auth.uid() = host_id and proposed_by = 'host');
+drop policy if exists "appointments vendor insert" on public.appointments;
 create policy "appointments vendor insert" on public.appointments for insert to authenticated with check (public.is_vendor_member(vendor_id) and proposed_by = 'vendor');
+drop policy if exists "appointments host update" on public.appointments;
 create policy "appointments host update" on public.appointments for update to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop policy if exists "appointments vendor update" on public.appointments;
 create policy "appointments vendor update" on public.appointments for update to authenticated using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
+drop trigger if exists appointments_updated on public.appointments;
 create trigger appointments_updated before update on public.appointments for each row execute function public.tg_set_updated_at();
 
 -- Vendor packages
-create table public.vendor_packages (
+create table if not exists public.vendor_packages (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   name text not null, description text,
@@ -37,14 +43,20 @@ create table public.vendor_packages (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index vendor_packages_vendor_idx on public.vendor_packages (vendor_id, display_order, created_at);
-create index vendor_packages_active_idx on public.vendor_packages (vendor_id, is_active, price_cents) where is_active = true;
+create index if not exists vendor_packages_vendor_idx on public.vendor_packages (vendor_id, display_order, created_at);
+create index if not exists vendor_packages_active_idx on public.vendor_packages (vendor_id, is_active, price_cents) where is_active = true;
 alter table public.vendor_packages enable row level security;
+drop policy if exists "vendor_packages public read active" on public.vendor_packages;
 create policy "vendor_packages public read active" on public.vendor_packages for select using (is_active = true);
+drop policy if exists "vendor_packages member read all" on public.vendor_packages;
 create policy "vendor_packages member read all" on public.vendor_packages for select to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vendor_packages member insert" on public.vendor_packages;
 create policy "vendor_packages member insert" on public.vendor_packages for insert to authenticated with check (public.is_vendor_member(vendor_id));
+drop policy if exists "vendor_packages member update" on public.vendor_packages;
 create policy "vendor_packages member update" on public.vendor_packages for update to authenticated using (public.is_vendor_member(vendor_id));
+drop policy if exists "vendor_packages member delete" on public.vendor_packages;
 create policy "vendor_packages member delete" on public.vendor_packages for delete to authenticated using (public.is_vendor_member(vendor_id));
+drop trigger if exists vendor_packages_updated on public.vendor_packages;
 create trigger vendor_packages_updated before update on public.vendor_packages for each row execute function public.tg_set_updated_at();
 
 -- Review prompts
@@ -57,7 +69,7 @@ create index if not exists notifications_pending_digest_idx on public.notificati
 alter table public.profiles add column if not exists daily_digest_enabled boolean not null default true;
 
 -- Saved searches
-create table public.saved_searches (
+create table if not exists public.saved_searches (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
@@ -67,16 +79,21 @@ create table public.saved_searches (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index saved_searches_host_idx on public.saved_searches (host_id, created_at desc);
+create index if not exists saved_searches_host_idx on public.saved_searches (host_id, created_at desc);
 alter table public.saved_searches enable row level security;
+drop policy if exists "saved_searches owner select" on public.saved_searches;
 create policy "saved_searches owner select" on public.saved_searches for select to authenticated using (host_id = auth.uid());
+drop policy if exists "saved_searches owner insert" on public.saved_searches;
 create policy "saved_searches owner insert" on public.saved_searches for insert to authenticated with check (host_id = auth.uid());
+drop policy if exists "saved_searches owner update" on public.saved_searches;
 create policy "saved_searches owner update" on public.saved_searches for update to authenticated using (host_id = auth.uid()) with check (host_id = auth.uid());
+drop policy if exists "saved_searches owner delete" on public.saved_searches;
 create policy "saved_searches owner delete" on public.saved_searches for delete to authenticated using (host_id = auth.uid());
+drop trigger if exists saved_searches_updated on public.saved_searches;
 create trigger saved_searches_updated before update on public.saved_searches for each row execute function public.tg_set_updated_at();
 
 -- Seating
-create table public.event_tables (
+create table if not exists public.event_tables (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   name text not null,
@@ -87,8 +104,9 @@ create table public.event_tables (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index event_tables_host_idx on public.event_tables (host_id, display_order, created_at);
+create index if not exists event_tables_host_idx on public.event_tables (host_id, display_order, created_at);
 alter table public.event_tables enable row level security;
+drop trigger if exists event_tables_updated on public.event_tables;
 create trigger event_tables_updated before update on public.event_tables for each row execute function public.tg_set_updated_at();
 alter table public.event_guests
   add column if not exists table_id uuid references public.event_tables(id) on delete set null,
@@ -101,7 +119,7 @@ alter table public.vendor_profiles
 create index if not exists vendor_profiles_responder_tier_idx on public.vendor_profiles (responder_tier) where responder_tier is not null;
 
 -- Event timeline
-create table public.event_timeline_items (
+create table if not exists public.event_timeline_items (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   event_id uuid references public.host_events(id) on delete cascade,
@@ -115,13 +133,14 @@ create table public.event_timeline_items (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index event_timeline_items_event_idx on public.event_timeline_items (event_id, start_time, display_order);
-create index event_timeline_items_host_idx on public.event_timeline_items (host_id, start_time);
+create index if not exists event_timeline_items_event_idx on public.event_timeline_items (event_id, start_time, display_order);
+create index if not exists event_timeline_items_host_idx on public.event_timeline_items (host_id, start_time);
 alter table public.event_timeline_items enable row level security;
+drop trigger if exists event_timeline_items_updated on public.event_timeline_items;
 create trigger event_timeline_items_updated before update on public.event_timeline_items for each row execute function public.tg_set_updated_at();
 
 -- Planning collaborators
-create table public.planning_collaborators (
+create table if not exists public.planning_collaborators (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references auth.users(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -129,8 +148,8 @@ create table public.planning_collaborators (
   created_at timestamptz not null default now(),
   unique (host_id, user_id)
 );
-create index planning_collaborators_user_idx on public.planning_collaborators (user_id);
-create index planning_collaborators_host_idx on public.planning_collaborators (host_id);
+create index if not exists planning_collaborators_user_idx on public.planning_collaborators (user_id);
+create index if not exists planning_collaborators_host_idx on public.planning_collaborators (host_id);
 alter table public.planning_collaborators enable row level security;
 
 create or replace function public.is_planning_collaborator(_host_id uuid)
@@ -144,12 +163,14 @@ $$;
 grant execute on function public.is_planning_collaborator(uuid) to authenticated;
 grant execute on function public.is_planning_editor(uuid) to authenticated;
 
+drop policy if exists "planning_collaborators select teammates" on public.planning_collaborators;
 create policy "planning_collaborators select teammates" on public.planning_collaborators for select to authenticated
   using (user_id = auth.uid() or public.is_planning_collaborator(host_id));
+drop policy if exists "planning_collaborators host delete" on public.planning_collaborators;
 create policy "planning_collaborators host delete" on public.planning_collaborators for delete to authenticated
   using (host_id = auth.uid() and role <> 'owner');
 
-create table public.planning_invites (
+create table if not exists public.planning_invites (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references auth.users(id) on delete cascade,
   email text not null,
@@ -160,10 +181,13 @@ create table public.planning_invites (
   accepted_at timestamptz,
   created_at timestamptz not null default now()
 );
-create index planning_invites_host_idx on public.planning_invites (host_id, accepted_at);
+create index if not exists planning_invites_host_idx on public.planning_invites (host_id, accepted_at);
 alter table public.planning_invites enable row level security;
+drop policy if exists "planning_invites host select" on public.planning_invites;
 create policy "planning_invites host select" on public.planning_invites for select to authenticated using (host_id = auth.uid());
+drop policy if exists "planning_invites host insert" on public.planning_invites;
 create policy "planning_invites host insert" on public.planning_invites for insert to authenticated with check (host_id = auth.uid() and invited_by = auth.uid());
+drop policy if exists "planning_invites host delete" on public.planning_invites;
 create policy "planning_invites host delete" on public.planning_invites for delete to authenticated using (host_id = auth.uid());
 
 create or replace function public.accept_planning_invite(p_token text)
@@ -204,39 +228,67 @@ do $$ begin
   drop policy if exists "event_tasks host all" on public.event_tasks;
 end $$;
 
+drop policy if exists "host_events collaborator select" on public.host_events;
 create policy "host_events collaborator select" on public.host_events for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "host_events editor insert" on public.host_events;
 create policy "host_events editor insert" on public.host_events for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "host_events editor update" on public.host_events;
 create policy "host_events editor update" on public.host_events for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "host_events host delete" on public.host_events;
 create policy "host_events host delete" on public.host_events for delete to authenticated using (host_id = auth.uid());
 
+drop policy if exists "event_guests collaborator select" on public.event_guests;
 create policy "event_guests collaborator select" on public.event_guests for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "event_guests editor insert" on public.event_guests;
 create policy "event_guests editor insert" on public.event_guests for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "event_guests editor update" on public.event_guests;
 create policy "event_guests editor update" on public.event_guests for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "event_guests editor delete" on public.event_guests;
 create policy "event_guests editor delete" on public.event_guests for delete to authenticated using (public.is_planning_editor(host_id));
 
+drop policy if exists "event_tables collaborator select" on public.event_tables;
 create policy "event_tables collaborator select" on public.event_tables for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "event_tables editor insert" on public.event_tables;
 create policy "event_tables editor insert" on public.event_tables for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "event_tables editor update" on public.event_tables;
 create policy "event_tables editor update" on public.event_tables for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "event_tables editor delete" on public.event_tables;
 create policy "event_tables editor delete" on public.event_tables for delete to authenticated using (public.is_planning_editor(host_id));
 
+drop policy if exists "event_timeline_items collaborator select" on public.event_timeline_items;
 create policy "event_timeline_items collaborator select" on public.event_timeline_items for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "event_timeline_items editor insert" on public.event_timeline_items;
 create policy "event_timeline_items editor insert" on public.event_timeline_items for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "event_timeline_items editor update" on public.event_timeline_items;
 create policy "event_timeline_items editor update" on public.event_timeline_items for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "event_timeline_items editor delete" on public.event_timeline_items;
 create policy "event_timeline_items editor delete" on public.event_timeline_items for delete to authenticated using (public.is_planning_editor(host_id));
 
+drop policy if exists "checklist_items collaborator select" on public.checklist_items;
 create policy "checklist_items collaborator select" on public.checklist_items for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "checklist_items editor insert" on public.checklist_items;
 create policy "checklist_items editor insert" on public.checklist_items for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "checklist_items editor update" on public.checklist_items;
 create policy "checklist_items editor update" on public.checklist_items for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "checklist_items editor delete" on public.checklist_items;
 create policy "checklist_items editor delete" on public.checklist_items for delete to authenticated using (public.is_planning_editor(host_id));
 
+drop policy if exists "budget_items collaborator select" on public.budget_items;
 create policy "budget_items collaborator select" on public.budget_items for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "budget_items editor insert" on public.budget_items;
 create policy "budget_items editor insert" on public.budget_items for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "budget_items editor update" on public.budget_items;
 create policy "budget_items editor update" on public.budget_items for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "budget_items editor delete" on public.budget_items;
 create policy "budget_items editor delete" on public.budget_items for delete to authenticated using (public.is_planning_editor(host_id));
 
+drop policy if exists "event_tasks collaborator select" on public.event_tasks;
 create policy "event_tasks collaborator select" on public.event_tasks for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "event_tasks editor insert" on public.event_tasks;
 create policy "event_tasks editor insert" on public.event_tasks for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "event_tasks editor update" on public.event_tasks;
 create policy "event_tasks editor update" on public.event_tasks for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "event_tasks editor delete" on public.event_tasks;
 create policy "event_tasks editor delete" on public.event_tasks for delete to authenticated using (public.is_planning_editor(host_id));
 
 do $$ begin
@@ -250,16 +302,24 @@ do $$ begin
   drop policy if exists "mood_board_items owner delete" on public.mood_board_items;
 end $$;
 
+drop policy if exists "mood_boards collaborator select" on public.mood_boards;
 create policy "mood_boards collaborator select" on public.mood_boards for select to authenticated using (public.is_planning_collaborator(host_id));
+drop policy if exists "mood_boards editor insert" on public.mood_boards;
 create policy "mood_boards editor insert" on public.mood_boards for insert to authenticated with check (public.is_planning_editor(host_id));
+drop policy if exists "mood_boards editor update" on public.mood_boards;
 create policy "mood_boards editor update" on public.mood_boards for update to authenticated using (public.is_planning_editor(host_id));
+drop policy if exists "mood_boards host delete" on public.mood_boards;
 create policy "mood_boards host delete" on public.mood_boards for delete to authenticated using (host_id = auth.uid());
 
+drop policy if exists "mood_board_items collaborator select" on public.mood_board_items;
 create policy "mood_board_items collaborator select" on public.mood_board_items for select to authenticated
   using (exists (select 1 from public.mood_boards b where b.id = board_id and public.is_planning_collaborator(b.host_id)));
+drop policy if exists "mood_board_items editor insert" on public.mood_board_items;
 create policy "mood_board_items editor insert" on public.mood_board_items for insert to authenticated
   with check (exists (select 1 from public.mood_boards b where b.id = board_id and public.is_planning_editor(b.host_id)));
+drop policy if exists "mood_board_items editor update" on public.mood_board_items;
 create policy "mood_board_items editor update" on public.mood_board_items for update to authenticated
   using (exists (select 1 from public.mood_boards b where b.id = board_id and public.is_planning_editor(b.host_id)));
+drop policy if exists "mood_board_items editor delete" on public.mood_board_items;
 create policy "mood_board_items editor delete" on public.mood_board_items for delete to authenticated
   using (exists (select 1 from public.mood_boards b where b.id = board_id and public.is_planning_editor(b.host_id)));

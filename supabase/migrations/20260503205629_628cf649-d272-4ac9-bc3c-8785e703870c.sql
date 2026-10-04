@@ -1,5 +1,5 @@
 -- Guests + RSVP
-create table public.event_guests (
+create table if not exists public.event_guests (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   name text not null, email text, phone text,
@@ -12,9 +12,11 @@ create table public.event_guests (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index event_guests_host_idx on public.event_guests (host_id, created_at desc);
+create index if not exists event_guests_host_idx on public.event_guests (host_id, created_at desc);
 alter table public.event_guests enable row level security;
+drop policy if exists "event_guests host all" on public.event_guests;
 create policy "event_guests host all" on public.event_guests for all to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop trigger if exists event_guests_updated on public.event_guests;
 create trigger event_guests_updated before update on public.event_guests for each row execute function public.tg_set_updated_at();
 
 create or replace function public.get_guest_by_token(p_token text)
@@ -39,22 +41,24 @@ end$$;
 grant execute on function public.submit_rsvp(text, text, boolean, text, text) to anon, authenticated;
 
 -- Vendor message templates
-create table public.vendor_message_templates (
+create table if not exists public.vendor_message_templates (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   name text not null, body text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index vendor_message_templates_vendor_idx on public.vendor_message_templates (vendor_id, name);
+create index if not exists vendor_message_templates_vendor_idx on public.vendor_message_templates (vendor_id, name);
 alter table public.vendor_message_templates enable row level security;
+drop policy if exists "vendor_message_templates owner all" on public.vendor_message_templates;
 create policy "vendor_message_templates owner all" on public.vendor_message_templates for all to authenticated
   using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()))
   with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop trigger if exists vendor_message_templates_updated on public.vendor_message_templates;
 create trigger vendor_message_templates_updated before update on public.vendor_message_templates for each row execute function public.tg_set_updated_at();
 
 -- Multi-event
-create table public.host_events (
+create table if not exists public.host_events (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   name text,
@@ -65,11 +69,13 @@ create table public.host_events (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index host_events_host_idx on public.host_events (host_id, archived_at, created_at desc);
+create index if not exists host_events_host_idx on public.host_events (host_id, archived_at, created_at desc);
 alter table public.host_events enable row level security;
+drop policy if exists "host_events host all" on public.host_events;
 create policy "host_events host all" on public.host_events for all to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop trigger if exists host_events_updated on public.host_events;
 create trigger host_events_updated before update on public.host_events for each row execute function public.tg_set_updated_at();
-alter table public.profiles add column active_event_id uuid references public.host_events(id) on delete set null;
+alter table public.profiles add column if not exists active_event_id uuid references public.host_events(id) on delete set null;
 
 with new_events as (
   insert into public.host_events (host_id, event_type, event_date, event_location, budget_min_cents, budget_max_cents, event_notes, created_at, updated_at)
@@ -81,7 +87,7 @@ with new_events as (
 update public.profiles p set active_event_id = ne.id from new_events ne where p.id = ne.host_id;
 
 -- Featured events CMS
-create table public.featured_events (
+create table if not exists public.featured_events (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique, title text not null,
   event_type text not null, event_type_label text,
@@ -92,8 +98,11 @@ create table public.featured_events (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index featured_events_published_idx on public.featured_events (published_at desc) where published_at is not null;
+create index if not exists featured_events_published_idx on public.featured_events (published_at desc) where published_at is not null;
 alter table public.featured_events enable row level security;
+drop policy if exists "featured_events public read" on public.featured_events;
 create policy "featured_events public read" on public.featured_events for select using (published_at is not null);
+drop policy if exists "featured_events admin all" on public.featured_events;
 create policy "featured_events admin all" on public.featured_events for all to authenticated using (public.is_admin()) with check (public.is_admin());
+drop trigger if exists featured_events_updated on public.featured_events;
 create trigger featured_events_updated before update on public.featured_events for each row execute function public.tg_set_updated_at();

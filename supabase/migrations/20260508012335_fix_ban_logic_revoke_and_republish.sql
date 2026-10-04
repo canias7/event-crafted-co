@@ -1,3 +1,6 @@
+-- Backfill for fresh replays: production has this but no earlier migration created it.
+alter table public.profiles add column if not exists suspended_at timestamptz;
+
 -- BUG 1: tg_vendor_profiles_role_promote re-banned the vendor on
 -- approved -> pending, but a vendor's OWN re-publish flips status
 -- from approved to pending. Only ban on explicit rejection.

@@ -82,9 +82,7 @@ const gatedRoutes = [
   "/vendor/edit-profile",
   "/vendor/inbox",
   "/vendor/overview",
-  "/vendor/workspace",
   "/vendor/partners",
-  "/vendor/ai-superagents",
   "/vendor/integrations",
   "/vendor/subscription",
   "/vendor/usage",
@@ -114,9 +112,12 @@ test("Cmd-K opens the command palette from the landing page", async ({
     timeout: 10_000,
   });
   await page.keyboard.press("Meta+K");
+  // The first press lazy-loads the palette chunk. Against the CI dev server
+  // that chunk is compiled on demand, which can take well over 5s on a cold
+  // runner (on production it opens in under a second).
   await expect(
     page.getByPlaceholder("Search vendors, pages…"),
-  ).toBeVisible({ timeout: 5_000 });
+  ).toBeVisible({ timeout: 20_000 });
 });
 
 // 404 fallback renders for unknown routes.

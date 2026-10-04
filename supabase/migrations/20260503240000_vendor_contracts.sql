@@ -10,7 +10,7 @@
 --                                (frozen so editing the template later
 --                                doesn't mutate accepted proposals)
 
-create table public.vendor_contract_templates (
+create table if not exists public.vendor_contract_templates (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   name text not null,
@@ -20,34 +20,39 @@ create table public.vendor_contract_templates (
   updated_at timestamptz not null default now()
 );
 
-create index vendor_contract_templates_vendor_idx
+create index if not exists vendor_contract_templates_vendor_idx
   on public.vendor_contract_templates (vendor_id, name);
 
 -- Only one default per vendor — partial unique index so flipping the
 -- default is "set the new one, the old auto-undefaults via UI logic"
 -- without needing a transaction.
-create unique index vendor_contract_templates_one_default
+create unique index if not exists vendor_contract_templates_one_default
   on public.vendor_contract_templates (vendor_id)
   where is_default = true;
 
 alter table public.vendor_contract_templates enable row level security;
 
+drop policy if exists "vendor_contract_templates member select" on public.vendor_contract_templates;
 create policy "vendor_contract_templates member select"
   on public.vendor_contract_templates for select to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_contract_templates member insert" on public.vendor_contract_templates;
 create policy "vendor_contract_templates member insert"
   on public.vendor_contract_templates for insert to authenticated
   with check (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_contract_templates member update" on public.vendor_contract_templates;
 create policy "vendor_contract_templates member update"
   on public.vendor_contract_templates for update to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop policy if exists "vendor_contract_templates member delete" on public.vendor_contract_templates;
 create policy "vendor_contract_templates member delete"
   on public.vendor_contract_templates for delete to authenticated
   using (public.is_vendor_member(vendor_id));
 
+drop trigger if exists vendor_contract_templates_updated on public.vendor_contract_templates;
 create trigger vendor_contract_templates_updated
   before update on public.vendor_contract_templates
   for each row execute function public.tg_set_updated_at();

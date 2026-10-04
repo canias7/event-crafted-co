@@ -58,6 +58,18 @@ export interface PlanningMembership {
   role: "owner" | "editor" | "viewer";
 }
 
+export type ProfileStatus = "idle" | "loading" | "ready" | "missing" | "error";
+
+// A PostgREST rejection of the token itself (expired, revoked, tampered)
+// rather than a network or server problem. The session is unusable, so
+// the right response is to sign out, not to keep retrying.
+function isAuthRejection(status: number, error: { code?: string; message?: string } | null): boolean {
+  if (status === 401) return true;
+  if (!error) return false;
+  if (error.code && /^PGRST30\d$/.test(error.code)) return true;
+  return /\bJWT\b|invalid token|token is expired/i.test(error.message ?? "");
+}
+
 interface AuthCtx {
   session: Session | null;
   user: User | null;
@@ -79,6 +91,11 @@ interface AuthCtx {
   // profile row but never touch the host side.
   hasHostAccess: boolean;
   loading: boolean;
+  // Where the profile fetch for the current session stands. "missing" =
+  // signed in but no profiles row; "error" = the fetch failed for a
+  // non-auth reason (network, 5xx). Lets guards stop spinning and offer
+  // a retry instead of showing "Loading…" forever.
+  profileStatus: ProfileStatus;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -95,6 +112,7 @@ const Ctx = createContext<AuthCtx>({
   hasVendorAccess: false,
   hasHostAccess: false,
   loading: true,
+  profileStatus: "idle",
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -112,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     PlanningMembership[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
 
   // Tracks the latest in-flight loadProfile invocation. Each call
   // captures a generation number and bails out (without setState)
@@ -124,7 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const myGen = ++loadGenRef.current;
     const isStale = () => loadGenRef.current !== myGen;
 
-    const { data } = await supabase
+    setProfileStatus((s) => (s === "ready" ? s : "loading"));
+    const { data, error, status } = await supabase
       .from("profiles")
       .select(
         "id, role, display_name, business_name, logo_url, onboarded_at, application_status",
@@ -132,7 +152,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("id", userId)
       .maybeSingle();
     if (isStale()) return;
+    if (error) {
+      if (isAuthRejection(status, error)) {
+        // Expired / revoked / tampered token: drop the session so guards
+        // send the user to sign in instead of spinning.
+        console.warn("[auth] profile fetch rejected the session; signing out");
+        await supabase.auth.signOut();
+        return;
+      }
+      // Transient failure: keep whatever profile we already had.
+      console.error("[auth] profile fetch failed", error.message);
+      setProfileStatus("error");
+      return;
+    }
     if (!data) {
+      setProfileStatus("missing");
       setProfile(null);
       setActiveEvent(null);
       setOwnListing(null);
@@ -141,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const p = data as unknown as Profile;
     setProfile(p);
+    setProfileStatus("ready");
     // host_events removed — multi-event planner workspace is no
     // longer in the host portal. ActiveEvent always null.
     setActiveEvent(null);
@@ -214,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // could resolve and rewrite the just-cleared state.
         loadGenRef.current++;
         setProfile(null);
+        setProfileStatus("idle");
         setActiveEvent(null);
         setOwnListing(null);
         setVendorMemberships([]);
@@ -235,10 +271,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
 
-  // Catch admin-deleted accounts. Supabase invalidates refresh tokens
-  // on delete but the cached access token stays valid for ~1h. Poll
-  // getUser() every 30s so a deleted user is signed out within 30s
-  // instead of an hour. getUser() hits the auth server (not the cache).
+  // Catch admin-deleted accounts and bad tokens. Supabase invalidates
+  // refresh tokens on delete but the cached access token stays valid for
+  // ~1h. Check getUser() as soon as a session appears, then every 30s, so
+  // a deleted user or a tampered token is signed out right away rather
+  // than after the first 30s interval. getUser() hits the auth server.
   useEffect(() => {
     if (!session?.user) return;
     let cancelled = false;
@@ -259,6 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut();
       }
     };
+    void tick();
     const id = setInterval(tick, 30_000);
     return () => {
       cancelled = true;
@@ -274,6 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     loadGenRef.current++;
     setProfile(null);
+    setProfileStatus("idle");
     setActiveEvent(null);
     setOwnListing(null);
     setVendorMemberships([]);
@@ -315,6 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasVendorAccess,
         hasHostAccess,
         loading,
+        profileStatus,
         signOut,
         refreshProfile,
       }}

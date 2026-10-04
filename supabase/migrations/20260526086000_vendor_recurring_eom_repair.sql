@@ -24,16 +24,24 @@
 -- day is genuinely 31 are skipped (no drift possible — 31 is only
 -- preserved by months that have a 31st).
 
-update public.vendor_recurring_invoices
-set day_of_month = 31
-where interval in ('monthly', 'quarterly', 'yearly')
-  and day_of_month is not null
-  and day_of_month between 28 and 30
-  -- The rule's next_run_at falls on the LAST day of a short month
-  and (
-    extract(day from next_run_at at time zone 'UTC') =
-      extract(day from (date_trunc('month', next_run_at at time zone 'UTC') + interval '1 month - 1 day'))
-  )
-  -- Only when that "last day" is shorter than 31 — Mar/May/Jul/
-  -- Aug/Oct/Dec/Jan have 31 days and an anchor there isn't drifted.
-  and extract(day from (date_trunc('month', next_run_at at time zone 'UTC') + interval '1 month - 1 day')) < 31;
+-- Fresh replays: this file sorts before 20260526090000, which creates the
+-- table, so skip when it doesn't exist yet (the feature was dropped later).
+do $guard$
+begin
+  if to_regclass('public.vendor_recurring_invoices') is null then
+    return;
+  end if;
+  update public.vendor_recurring_invoices
+  set day_of_month = 31
+  where interval in ('monthly', 'quarterly', 'yearly')
+    and day_of_month is not null
+    and day_of_month between 28 and 30
+    -- The rule's next_run_at falls on the LAST day of a short month
+    and (
+      extract(day from next_run_at at time zone 'UTC') =
+        extract(day from (date_trunc('month', next_run_at at time zone 'UTC') + interval '1 month - 1 day'))
+    )
+    -- Only when that "last day" is shorter than 31 — Mar/May/Jul/
+    -- Aug/Oct/Dec/Jan have 31 days and an anchor there isn't drifted.
+    and extract(day from (date_trunc('month', next_run_at at time zone 'UTC') + interval '1 month - 1 day')) < 31;
+end $guard$;

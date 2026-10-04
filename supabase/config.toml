@@ -15,8 +15,6 @@ project_id = "pahpjjubhbcbwqjpamwv"
   # false or the gateway 401s every push before the handler runs.
   [functions.send-push]
     verify_jwt = false
-  [functions.axion-generate]
-    verify_jwt = true
   [functions.ai-site-generate]
     verify_jwt = false
   [functions.ai-site-rsvp-submit]
@@ -111,20 +109,4 @@ project_id = "pahpjjubhbcbwqjpamwv"
   [functions.sitemap-xml]
     verify_jwt = false
   [functions.vendor-signup]
-    verify_jwt = false
-  [functions.my-space-chat]
-    verify_jwt = true
-  [functions.my-space-action-worker]
-    verify_jwt = false
-  [functions.my-space-archive-cold]
-    verify_jwt = false
-  [functions.my-space-daily-summary]
-    verify_jwt = false
-  [functions.my-space-follow-up]
-    verify_jwt = false
-  [functions.my-space-preview-prompt]
-    verify_jwt = true
-  [functions.my-space-proactive]
-    verify_jwt = false
-  [functions.my-space-respond]
     verify_jwt = false

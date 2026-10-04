@@ -74,7 +74,7 @@ export function DashboardSidebar({
   const subLabel = isVendorSide ? TIER_LABEL[tier] : title;
   // Live credit balance shown as a small chip on the right of the
   // Usage nav row. Subscribes to vendor_credit_balances UPDATEs so
-  // it ticks down as the vendor uses HILUX/Axion and ticks up on
+  // it ticks down as the vendor spends credits and ticks up on
   // top-ups, without a refresh.
   const { balance: liveBalance, initialized: balanceReady } =
     useLiveVendorBalance(isVendorSide ? user?.id ?? null : null);

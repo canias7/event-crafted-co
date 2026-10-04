@@ -6,7 +6,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_net SCHEMA extensions;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-    CREATE EXTENSION pg_cron;
+    create extension if not exists pg_cron;
   END IF;
 END $$;
 CREATE EXTENSION IF NOT EXISTS supabase_vault;
@@ -38,21 +38,24 @@ CREATE TABLE IF NOT EXISTS public.email_send_log (
 ALTER TABLE public.email_send_log ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read send log"
+  drop policy if exists "Service role can read send log" on public.email_send_log;
+CREATE POLICY "Service role can read send log"
     ON public.email_send_log FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert send log"
+  drop policy if exists "Service role can insert send log" on public.email_send_log;
+CREATE POLICY "Service role can insert send log"
     ON public.email_send_log FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can update send log"
+  drop policy if exists "Service role can update send log" on public.email_send_log;
+CREATE POLICY "Service role can update send log"
     ON public.email_send_log FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
@@ -64,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_email_send_log_recipient ON public.email_send_log
 
 -- Backfill: add message_id column to existing tables that predate this migration
 DO $$ BEGIN
-  ALTER TABLE public.email_send_log ADD COLUMN message_id TEXT;
+  ALTER TABLE public.email_send_log add column if not exists message_id TEXT;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
@@ -79,8 +82,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_email_send_log_message_sent_unique
 -- Backfill: update status CHECK constraint for existing tables that predate new statuses
 DO $$ BEGIN
   ALTER TABLE public.email_send_log DROP CONSTRAINT IF EXISTS email_send_log_status_check;
-  ALTER TABLE public.email_send_log ADD CONSTRAINT email_send_log_status_check
-    CHECK (status IN ('pending', 'sent', 'suppressed', 'failed', 'bounced', 'complained', 'dlq'));
+  do $con$ begin alter table public.email_send_log add constraint email_send_log_status_check CHECK (status IN ('pending', 'sent', 'suppressed', 'failed', 'bounced', 'complained', 'dlq')); exception when duplicate_object or duplicate_table then null; end $con$;
 END $$;
 
 -- Rate-limit state and queue config (single row, tracks Retry-After cooldown + throughput settings)
@@ -98,26 +100,27 @@ INSERT INTO public.email_send_state (id) VALUES (1) ON CONFLICT DO NOTHING;
 
 -- Backfill: add config columns to existing tables that predate this migration
 DO $$ BEGIN
-  ALTER TABLE public.email_send_state ADD COLUMN batch_size INTEGER NOT NULL DEFAULT 10;
+  ALTER TABLE public.email_send_state add column if not exists batch_size INTEGER NOT NULL DEFAULT 10;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 DO $$ BEGIN
-  ALTER TABLE public.email_send_state ADD COLUMN send_delay_ms INTEGER NOT NULL DEFAULT 200;
+  ALTER TABLE public.email_send_state add column if not exists send_delay_ms INTEGER NOT NULL DEFAULT 200;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 DO $$ BEGIN
-  ALTER TABLE public.email_send_state ADD COLUMN auth_email_ttl_minutes INTEGER NOT NULL DEFAULT 15;
+  ALTER TABLE public.email_send_state add column if not exists auth_email_ttl_minutes INTEGER NOT NULL DEFAULT 15;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 DO $$ BEGIN
-  ALTER TABLE public.email_send_state ADD COLUMN transactional_email_ttl_minutes INTEGER NOT NULL DEFAULT 60;
+  ALTER TABLE public.email_send_state add column if not exists transactional_email_ttl_minutes INTEGER NOT NULL DEFAULT 60;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
 ALTER TABLE public.email_send_state ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can manage send state"
+  drop policy if exists "Service role can manage send state" on public.email_send_state;
+CREATE POLICY "Service role can manage send state"
     ON public.email_send_state FOR ALL
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
@@ -218,14 +221,16 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
 ALTER TABLE public.suppressed_emails ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read suppressed emails"
+  drop policy if exists "Service role can read suppressed emails" on public.suppressed_emails;
+CREATE POLICY "Service role can read suppressed emails"
     ON public.suppressed_emails FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert suppressed emails"
+  drop policy if exists "Service role can insert suppressed emails" on public.suppressed_emails;
+CREATE POLICY "Service role can insert suppressed emails"
     ON public.suppressed_emails FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -246,21 +251,24 @@ CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
 ALTER TABLE public.email_unsubscribe_tokens ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read tokens"
+  drop policy if exists "Service role can read tokens" on public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can read tokens"
     ON public.email_unsubscribe_tokens FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert tokens"
+  drop policy if exists "Service role can insert tokens" on public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can insert tokens"
     ON public.email_unsubscribe_tokens FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can mark tokens as used"
+  drop policy if exists "Service role can mark tokens as used" on public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can mark tokens as used"
     ON public.email_unsubscribe_tokens FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');

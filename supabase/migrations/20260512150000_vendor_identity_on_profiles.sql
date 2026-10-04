@@ -1,3 +1,6 @@
+-- Backfill for fresh replays: production has this but no earlier migration created it.
+alter table public.vendor_profiles add column if not exists logo_url text;
+
 -- Split vendor identity from per-listing data. Until now the Profile
 -- tab read business_name / category / location / bio / logo_url from
 -- the user's earliest vendor_profiles row, which meant:

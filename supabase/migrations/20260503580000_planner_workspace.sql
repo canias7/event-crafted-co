@@ -64,10 +64,10 @@ begin
             case when e.event_date is null then null
                  else (e.event_date - current_date) end
           )
-        ) order by e.event_date nulls last, e.created_at desc), '[]'::jsonb)
+        ) order by e.event_date nulls last, e.created_at desc)
         from public.host_events e
         where e.host_id = pc.host_id
-      )
+      ), '[]'::jsonb)
     ) as host_block
     from public.planning_collaborators pc
     left join public.profiles p on p.id = pc.host_id

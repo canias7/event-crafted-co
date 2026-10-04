@@ -14,6 +14,7 @@ values ('vendor-verifications', 'vendor-verifications', false)
 on conflict (id) do nothing;
 
 -- Owners write to their own folder.
+drop policy if exists "vendor verifications owner insert" on storage.objects;
 create policy "vendor verifications owner insert"
   on storage.objects for insert to authenticated
   with check (
@@ -26,6 +27,7 @@ create policy "vendor verifications owner insert"
   );
 
 -- Owners read their own folder; admins read everything in the bucket.
+drop policy if exists "vendor verifications owner read" on storage.objects;
 create policy "vendor verifications owner read"
   on storage.objects for select to authenticated
   using (
@@ -44,6 +46,7 @@ create policy "vendor verifications owner read"
   );
 
 -- Owners delete their own files.
+drop policy if exists "vendor verifications owner delete" on storage.objects;
 create policy "vendor verifications owner delete"
   on storage.objects for delete to authenticated
   using (
@@ -58,7 +61,7 @@ create policy "vendor verifications owner delete"
 -- Verification records. One row per (vendor, kind). A vendor can re-upload
 -- after rejection — the upsert overwrites the document_path and resets
 -- status to 'pending' (handled in the manager UI).
-create table public.vendor_verifications (
+create table if not exists public.vendor_verifications (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   kind text not null check (kind in ('identity','insurance','business_license')),
@@ -72,12 +75,13 @@ create table public.vendor_verifications (
   unique (vendor_id, kind)
 );
 
-create index vendor_verifications_status_idx
+create index if not exists vendor_verifications_status_idx
   on public.vendor_verifications (status, submitted_at desc);
 
 alter table public.vendor_verifications enable row level security;
 
 -- Vendor reads their own rows.
+drop policy if exists "vendor_verifications vendor select" on public.vendor_verifications;
 create policy "vendor_verifications vendor select"
   on public.vendor_verifications for select to authenticated
   using (
@@ -87,6 +91,7 @@ create policy "vendor_verifications vendor select"
     )
   );
 
+drop policy if exists "vendor_verifications vendor upsert" on public.vendor_verifications;
 create policy "vendor_verifications vendor upsert"
   on public.vendor_verifications for insert to authenticated
   with check (
@@ -96,6 +101,7 @@ create policy "vendor_verifications vendor upsert"
     )
   );
 
+drop policy if exists "vendor_verifications vendor update" on public.vendor_verifications;
 create policy "vendor_verifications vendor update"
   on public.vendor_verifications for update to authenticated
   using (
@@ -106,6 +112,7 @@ create policy "vendor_verifications vendor update"
   );
 
 -- Admin reads + writes everything (status flips happen here).
+drop policy if exists "vendor_verifications admin all" on public.vendor_verifications;
 create policy "vendor_verifications admin all"
   on public.vendor_verifications for all to authenticated
   using (
@@ -123,7 +130,7 @@ create policy "vendor_verifications admin all"
 
 -- Public-readable badge view. Surfaces only the *kinds* approved, no
 -- document path, no expiry, no notes. Safe to expose to anyone.
-create view public.vendor_public_badges
+create or replace view public.vendor_public_badges
 with (security_invoker = true)
 as
   select vendor_id, array_agg(kind order by kind) as kinds

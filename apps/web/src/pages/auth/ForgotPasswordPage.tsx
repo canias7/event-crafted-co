@@ -5,38 +5,34 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
-import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
+import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState("");
-  const [captchaKey, setCaptchaKey] = useState(0);
-
-  // Turnstile tokens are single-use and expire — re-challenge for a fresh
-  // one after a failure / on expiry, else a retry is "timeout-or-duplicate".
-  const resetCaptcha = () => {
-    setCaptchaToken("");
-    setCaptchaKey((k) => k + 1);
-  };
+  // No bot-check by default; only shown if the server still demands one.
+  const captcha = useCaptchaFallback();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!captchaToken) {
+    if (captcha.blocked) {
       toast.error("Please complete the bot-check below.");
       return;
     }
     setSubmitting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
-      captchaToken,
+      ...captcha.options,
     });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
-      resetCaptcha();
+      if (captcha.handleError(error)) {
+        toast.error("Please complete the bot-check below, then try again.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
     setSent(true);
@@ -125,16 +121,14 @@ export default function ForgotPasswordPage() {
               placeholder="you@example.com"
             />
           </div>
-          <div className="flex justify-center pt-1">
-            <TurnstileWidget
-              onVerify={setCaptchaToken}
-              onExpire={resetCaptcha}
-              resetKey={captchaKey}
-            />
-          </div>
+          {captcha.required ? (
+            <div className="flex justify-center pt-1">
+              <TurnstileWidget {...captcha.widgetProps} />
+            </div>
+          ) : null}
           <button
             type="submit"
-            disabled={submitting || !captchaToken}
+            disabled={submitting || captcha.blocked}
             className="auth-submit mt-2"
           >
             {submitting ? (

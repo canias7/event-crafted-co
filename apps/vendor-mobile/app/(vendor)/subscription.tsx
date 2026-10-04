@@ -62,7 +62,6 @@ const COMPARISON: { label: string; free: boolean; pro: boolean; premium: boolean
   { label: "Vendora CRM & V2V messaging", free: false, pro: true, premium: true },
   { label: "Automated replies & reminders", free: false, pro: false, premium: true },
   { label: "Follow-ups & review requests", free: false, pro: false, premium: true },
-  { label: "AI employee (HILUX)", free: false, pro: false, premium: true },
   { label: "Fill Your Calendar alerts", free: false, pro: false, premium: true },
 ];
 

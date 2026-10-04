@@ -6,7 +6,6 @@ import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
-import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 
 interface LoginPageProps {
   // When set, the form is themed for that role and the success redirect
@@ -41,23 +40,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
-  // Turnstile token for the final signInWithPassword call. Required
-  // because Supabase Auth has Captcha protection enabled, which gates
-  // every GoTrue endpoint server-side (signUp, signIn, reset, etc.).
-  // Step 1 + the OTP verify hit our `signin-2fa` edge function with
-  // service-role auth (bypasses captcha); Step 2's final signIn does
-  // not, so the token gets attached there.
-  const [captchaToken, setCaptchaToken] = useState("");
-  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
-
-  // Turnstile tokens are single-use and expire — clearing the token isn't
-  // enough; the widget must re-challenge for a fresh one, or a retry is
-  // rejected as "timeout-or-duplicate".
-  const resetCaptcha = () => {
-    setCaptchaToken("");
-    setCaptchaKey((k) => k + 1);
-  };
   // Client-side cooldown for Resend code so a rapid-fire button-mash
   // doesn't burn through Resend quota / annoy the user with duplicates.
   // Counts down from 30s on every successful resend.
@@ -124,19 +107,15 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     }
     toast.success("We emailed you a 6-digit code.");
     setCode("");
-    resetCaptcha();
     setStep("code");
   }
 
   async function onSubmitCode(e: React.FormEvent) {
     e.preventDefault();
-    if (!captchaToken) {
-      toast.error("Please complete the bot-check below.");
-      return;
-    }
     setLoading(true);
-    // Step 2: verify the code, then call signInWithPassword to actually
-    // establish the session.
+    // Step 2: verify the code. signin-2fa mints the session server-side
+    // and returns its tokens (the same path the apps use), so sign-in
+    // needs no bot-check: password + emailed code are the protection.
     const { data, error } = await supabase.functions.invoke("signin-2fa", {
       body: { action: "verify", email: email.trim(), code: code.trim() },
     });
@@ -150,7 +129,12 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       toast.error(error.message);
       return;
     }
-    const r = data as { ok?: boolean; reason?: string } | null;
+    const r = data as {
+      ok?: boolean;
+      reason?: string;
+      access_token?: string;
+      refresh_token?: string;
+    } | null;
     if (!r?.ok) {
       setLoading(false);
       const reason = r?.reason ?? "unknown";
@@ -168,19 +152,25 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       }
       return;
     }
-    // Code verified — now actually sign in with password.
+    // Code verified — install the session signin-2fa minted.
+    if (!r.access_token || !r.refresh_token) {
+      setLoading(false);
+      Sentry.captureMessage("signin-2fa verify returned no session", {
+        level: "error",
+        tags: { area: "auth", step: "verify" },
+        extra: { role: role ?? "unknown" },
+      });
+      toast.error("Couldn't sign you in. Please try again.");
+      return;
+    }
     const { data: signInData, error: signInError } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-        options: { captchaToken },
+      await supabase.auth.setSession({
+        access_token: r.access_token,
+        refresh_token: r.refresh_token,
       });
     setLoading(false);
-    if (signInError) {
-      // Captcha tokens are single-use; on any failure clear the token
-      // so the widget can re-issue a fresh one without a manual reset.
-      resetCaptcha();
-      toast.error(signInError.message);
+    if (signInError || !signInData.user) {
+      toast.error(signInError?.message ?? "Couldn't sign you in. Please try again.");
       return;
     }
 
@@ -297,9 +287,6 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       return;
     }
     setResendCooldown(30);
-    // Discard any previously-verified token; the user will solve the
-    // widget once before clicking Sign in with the new code.
-    resetCaptcha();
     toast.success("We sent a new code.");
   }
 
@@ -339,16 +326,9 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
               autoFocus
             />
           </div>
-          <div className="flex justify-center">
-            <TurnstileWidget
-              onVerify={setCaptchaToken}
-              onExpire={resetCaptcha}
-              resetKey={captchaKey}
-            />
-          </div>
           <button
             type="submit"
-            disabled={loading || code.length !== 6 || !captchaToken}
+            disabled={loading || code.length !== 6}
             className="auth-submit"
           >
             {loading ? (

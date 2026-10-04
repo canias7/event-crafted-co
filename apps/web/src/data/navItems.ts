@@ -1,6 +1,5 @@
 import {
   BadgeCheck,
-  Briefcase,
   CalendarDays,
   Compass,
   Crown,
@@ -96,7 +95,6 @@ export const vendorNavItems: NavItem[] = [
     icon: LayoutDashboard,
     children: [
       { labelKey: "sidebar.vendor.overview", path: "/vendor/overview", icon: LayoutDashboard },
-      { labelKey: "sidebar.vendor.workspace", path: "/vendor/workspace", icon: Briefcase },
       { labelKey: "sidebar.vendor.usage", path: "/vendor/usage", icon: Gauge },
     ],
   },

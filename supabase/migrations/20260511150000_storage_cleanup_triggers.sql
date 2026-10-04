@@ -1,3 +1,6 @@
+-- Backfill for fresh replays: production has this but no earlier migration created it.
+create table if not exists public.vendor_posts (id uuid primary key default gen_random_uuid(), vendor_id uuid references public.vendor_profiles(id) on delete cascade, user_id uuid, image_url text, caption text, created_at timestamptz not null default now()); create table if not exists public.vendor_reels (id uuid primary key default gen_random_uuid(), vendor_id uuid references public.vendor_profiles(id) on delete cascade, user_id uuid, video_url text, thumbnail_url text, caption text, duration_seconds integer, created_at timestamptz not null default now());
+
 -- Delete the underlying storage object whenever a vendor portfolio image,
 -- post, or reel row is removed. Without these triggers every "delete this
 -- photo / clip" call leaks the bytes in storage forever, growing the bill

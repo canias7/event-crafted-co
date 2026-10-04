@@ -1,9 +1,7 @@
 import { lazy, Suspense } from "react";
-import { useLocation } from "react-router-dom";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
-import { UnderConstruction } from "@/components/shared/UnderConstruction";
 import { vendorNavItems } from "@/data/navItems";
 
 // My Vendora is the vendor's operations dashboard. After the
@@ -18,29 +16,17 @@ const VendorPaymentsPage = lazy(
   () => import("@/pages/vendor/VendorPaymentsPage"),
 );
 
-// Serves two routes off the same dashboard component:
-//   /vendor/overview  → Overview (KPIs)
-//   /vendor/workspace → Workspace (calendar/payments/files/contacts/settings)
+// Serves /vendor/overview. The old /vendor/workspace route (payments,
+// invoices, pay links, files, contacts) was removed and now redirects here.
 export default function MyVendoraPage() {
-  const { pathname } = useLocation();
-  const view = pathname === "/vendor/workspace" ? "workspace" : "overview";
   return (
     <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
       <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/" />
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Workspace is temporarily under construction (front-end only —
-            VendorPaymentsPage + its backend stay intact). Overview still
-            renders the real dashboard. */}
-        {view === "workspace" ? (
-          <UnderConstruction title="Workspace" />
-        ) : (
-          <Suspense fallback={<TabLoadingFallback />}>
-            <VendorPaymentsPage embedded view={view} />
-          </Suspense>
-        )}
+        <Suspense fallback={<TabLoadingFallback />}>
+          <VendorPaymentsPage embedded />
+        </Suspense>
       </div>
-      {/* The floating My Space launcher is mounted app-wide for vendor
-          pages via <VendorMySpaceMount /> in App.tsx. */}
       <MobileNav items={vendorNavItems} />
     </div>
   );

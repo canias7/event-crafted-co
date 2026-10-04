@@ -1,0 +1,4 @@
+# My Space removal (owner approved dropping the tables).
+20261004120000_remove_my_space.sql
+# Advisor: pin search_path on trigger helpers.
+20261004130000_pin_function_search_path.sql

@@ -28,7 +28,7 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 //   Free    — 100 MB gallery storage, 1 listing.
 //   Pro     — 1 GB gallery storage, 4 listings, verified profile,
 //             V2V messaging, Vendora CRM. 800 AI credits/mo.
-//   Premium — 5 GB gallery storage, 10 listings, AI employee (HILUX).
+//   Premium — 5 GB gallery storage, 10 listings.
 //             2,500 AI credits/mo.
 //
 // Premium keeps the legacy 'studio' tier slug internally (Stripe
@@ -36,7 +36,7 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 // copy says Premium. Starter is retired: catalog rows deactivated,
 // existing subscribers grandfathered.
 //
-// AI credits buy HILUX replies (2 cr), Axion images (10 cr), Mux
+// AI credits buy AI features and Mux
 // minutes (1 cr/min). 1 credit ≈ $0.025 retail. Top-up packs
 // available to anyone — vendors don't need a subscription to buy
 // credits.

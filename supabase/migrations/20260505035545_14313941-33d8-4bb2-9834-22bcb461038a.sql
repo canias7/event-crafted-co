@@ -68,10 +68,12 @@ create table if not exists public.vendor_availability_recurring (
 alter table public.vendor_availability_recurring enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='vendor_availability_recurring' and policyname='Public read recurring availability') then
-    create policy "Public read recurring availability" on public.vendor_availability_recurring for select using (true);
+    drop policy if exists "Public read recurring availability" on public.vendor_availability_recurring;
+create policy "Public read recurring availability" on public.vendor_availability_recurring for select using (true);
   end if;
   if not exists (select 1 from pg_policies where tablename='vendor_availability_recurring' and policyname='Vendor team manages recurring availability') then
-    create policy "Vendor team manages recurring availability" on public.vendor_availability_recurring
+    drop policy if exists "Vendor team manages recurring availability" on public.vendor_availability_recurring;
+create policy "Vendor team manages recurring availability" on public.vendor_availability_recurring
       for all using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
   end if;
 end $$;
@@ -106,10 +108,12 @@ create table if not exists public.editorial_articles (
 alter table public.editorial_articles enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='editorial_articles' and policyname='Public reads published articles') then
-    create policy "Public reads published articles" on public.editorial_articles for select using (published_at is not null);
+    drop policy if exists "Public reads published articles" on public.editorial_articles;
+create policy "Public reads published articles" on public.editorial_articles for select using (published_at is not null);
   end if;
   if not exists (select 1 from pg_policies where tablename='editorial_articles' and policyname='Admins manage articles') then
-    create policy "Admins manage articles" on public.editorial_articles for all using (public.is_admin()) with check (public.is_admin());
+    drop policy if exists "Admins manage articles" on public.editorial_articles;
+create policy "Admins manage articles" on public.editorial_articles for all using (public.is_admin()) with check (public.is_admin());
   end if;
 end $$;
 drop trigger if exists trg_editorial_articles_updated on public.editorial_articles;
@@ -120,16 +124,20 @@ insert into storage.buckets (id, name, public)
   values ('editorial-images','editorial-images', true) on conflict (id) do nothing;
 do $$ begin
   if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Editorial images public read') then
-    create policy "Editorial images public read" on storage.objects for select using (bucket_id='editorial-images');
+    drop policy if exists "Editorial images public read" on storage.objects;
+create policy "Editorial images public read" on storage.objects for select using (bucket_id='editorial-images');
   end if;
   if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Editorial images admin write') then
-    create policy "Editorial images admin write" on storage.objects for insert with check (bucket_id='editorial-images' and public.is_admin());
+    drop policy if exists "Editorial images admin write" on storage.objects;
+create policy "Editorial images admin write" on storage.objects for insert with check (bucket_id='editorial-images' and public.is_admin());
   end if;
   if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Editorial images admin update') then
-    create policy "Editorial images admin update" on storage.objects for update using (bucket_id='editorial-images' and public.is_admin());
+    drop policy if exists "Editorial images admin update" on storage.objects;
+create policy "Editorial images admin update" on storage.objects for update using (bucket_id='editorial-images' and public.is_admin());
   end if;
   if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Editorial images admin delete') then
-    create policy "Editorial images admin delete" on storage.objects for delete using (bucket_id='editorial-images' and public.is_admin());
+    drop policy if exists "Editorial images admin delete" on storage.objects;
+create policy "Editorial images admin delete" on storage.objects for delete using (bucket_id='editorial-images' and public.is_admin());
   end if;
 end $$;
 
@@ -148,7 +156,8 @@ create table if not exists public.vendor_claim_listings (
 alter table public.vendor_claim_listings enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='vendor_claim_listings' and policyname='Admins manage claim invites') then
-    create policy "Admins manage claim invites" on public.vendor_claim_listings for all using (public.is_admin()) with check (public.is_admin());
+    drop policy if exists "Admins manage claim invites" on public.vendor_claim_listings;
+create policy "Admins manage claim invites" on public.vendor_claim_listings for all using (public.is_admin()) with check (public.is_admin());
   end if;
 end $$;
 
@@ -196,10 +205,12 @@ create table if not exists public.vendor_profile_extras (
 alter table public.vendor_profile_extras enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='vendor_profile_extras' and policyname='Public read profile extras') then
-    create policy "Public read profile extras" on public.vendor_profile_extras for select using (true);
+    drop policy if exists "Public read profile extras" on public.vendor_profile_extras;
+create policy "Public read profile extras" on public.vendor_profile_extras for select using (true);
   end if;
   if not exists (select 1 from pg_policies where tablename='vendor_profile_extras' and policyname='Vendor team manages extras') then
-    create policy "Vendor team manages extras" on public.vendor_profile_extras for all
+    drop policy if exists "Vendor team manages extras" on public.vendor_profile_extras;
+create policy "Vendor team manages extras" on public.vendor_profile_extras for all
       using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
   end if;
 end $$;
@@ -220,7 +231,8 @@ create table if not exists public.vendor_lead_rules (
 alter table public.vendor_lead_rules enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='vendor_lead_rules' and policyname='Vendor team manages lead rules') then
-    create policy "Vendor team manages lead rules" on public.vendor_lead_rules for all
+    drop policy if exists "Vendor team manages lead rules" on public.vendor_lead_rules;
+create policy "Vendor team manages lead rules" on public.vendor_lead_rules for all
       using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
   end if;
 end $$;
@@ -248,10 +260,12 @@ create table if not exists public.group_channels (
 alter table public.group_channels enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='group_channels' and policyname='Public read open channels') then
-    create policy "Public read open channels" on public.group_channels for select using (not is_private or created_by = auth.uid());
+    drop policy if exists "Public read open channels" on public.group_channels;
+create policy "Public read open channels" on public.group_channels for select using (not is_private or created_by = auth.uid());
   end if;
   if not exists (select 1 from pg_policies where tablename='group_channels' and policyname='Authenticated create channels') then
-    create policy "Authenticated create channels" on public.group_channels for insert with check (auth.uid() = created_by);
+    drop policy if exists "Authenticated create channels" on public.group_channels;
+create policy "Authenticated create channels" on public.group_channels for insert with check (auth.uid() = created_by);
   end if;
 end $$;
 
@@ -264,10 +278,12 @@ create table if not exists public.group_channel_members (
 alter table public.group_channel_members enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='group_channel_members' and policyname='Members read membership') then
-    create policy "Members read membership" on public.group_channel_members for select using (user_id = auth.uid() or exists (select 1 from public.group_channels c where c.id=channel_id and c.created_by=auth.uid()));
+    drop policy if exists "Members read membership" on public.group_channel_members;
+create policy "Members read membership" on public.group_channel_members for select using (user_id = auth.uid() or exists (select 1 from public.group_channels c where c.id=channel_id and c.created_by=auth.uid()));
   end if;
   if not exists (select 1 from pg_policies where tablename='group_channel_members' and policyname='Self join channel') then
-    create policy "Self join channel" on public.group_channel_members for insert with check (user_id = auth.uid());
+    drop policy if exists "Self join channel" on public.group_channel_members;
+create policy "Self join channel" on public.group_channel_members for insert with check (user_id = auth.uid());
   end if;
 end $$;
 
@@ -284,10 +300,12 @@ create table if not exists public.blog_bundles (
 alter table public.blog_bundles enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='blog_bundles' and policyname='Public read published bundles') then
-    create policy "Public read published bundles" on public.blog_bundles for select using (published_at is not null);
+    drop policy if exists "Public read published bundles" on public.blog_bundles;
+create policy "Public read published bundles" on public.blog_bundles for select using (published_at is not null);
   end if;
   if not exists (select 1 from pg_policies where tablename='blog_bundles' and policyname='Admins manage bundles') then
-    create policy "Admins manage bundles" on public.blog_bundles for all using (public.is_admin()) with check (public.is_admin());
+    drop policy if exists "Admins manage bundles" on public.blog_bundles;
+create policy "Admins manage bundles" on public.blog_bundles for all using (public.is_admin()) with check (public.is_admin());
   end if;
 end $$;
 
@@ -312,7 +330,8 @@ create table if not exists public.microsite_rsvps (
 alter table public.microsite_rsvps enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='microsite_rsvps' and policyname='Host views own microsite rsvps') then
-    create policy "Host views own microsite rsvps" on public.microsite_rsvps for select
+    drop policy if exists "Host views own microsite rsvps" on public.microsite_rsvps;
+create policy "Host views own microsite rsvps" on public.microsite_rsvps for select
       using (exists (select 1 from public.host_events e where e.id = event_id and e.host_id = auth.uid()));
   end if;
 end $$;
@@ -330,6 +349,8 @@ begin
     'enabled', coalesce(v_event.microsite_show_rsvp, false));
 end$$;
 
+-- Return type changed: drop the old version so a fresh replay can recreate it.
+drop function if exists public.submit_microsite_rsvp;
 create or replace function public.submit_microsite_rsvp(
   p_token text, p_guest_name text, p_guest_email text, p_attending boolean,
   p_party_size int, p_dietary text, p_answers jsonb)
@@ -380,13 +401,16 @@ create table if not exists public.content_reports (
 alter table public.content_reports enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='content_reports' and policyname='Authenticated submit reports') then
-    create policy "Authenticated submit reports" on public.content_reports for insert with check (auth.uid() = reporter_id);
+    drop policy if exists "Authenticated submit reports" on public.content_reports;
+create policy "Authenticated submit reports" on public.content_reports for insert with check (auth.uid() = reporter_id);
   end if;
   if not exists (select 1 from pg_policies where tablename='content_reports' and policyname='Admins read reports') then
-    create policy "Admins read reports" on public.content_reports for select using (public.is_admin() or reporter_id = auth.uid());
+    drop policy if exists "Admins read reports" on public.content_reports;
+create policy "Admins read reports" on public.content_reports for select using (public.is_admin() or reporter_id = auth.uid());
   end if;
   if not exists (select 1 from pg_policies where tablename='content_reports' and policyname='Admins update reports') then
-    create policy "Admins update reports" on public.content_reports for update using (public.is_admin()) with check (public.is_admin());
+    drop policy if exists "Admins update reports" on public.content_reports;
+create policy "Admins update reports" on public.content_reports for update using (public.is_admin()) with check (public.is_admin());
   end if;
 end $$;
 
@@ -406,14 +430,20 @@ create table if not exists public.review_requests (
 alter table public.review_requests enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='review_requests' and policyname='Vendor team manages review requests') then
-    create policy "Vendor team manages review requests" on public.review_requests for all
+    drop policy if exists "Vendor team manages review requests" on public.review_requests;
+create policy "Vendor team manages review requests" on public.review_requests for all
       using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
   end if;
-  if not exists (select 1 from pg_policies where tablename='review_requests' and policyname='Host can read own review requests') then
-    create policy "Host can read own review requests" on public.review_requests for select using (host_id = auth.uid());
+  -- review_requests may already exist from 20260504150000 without host_id.
+  if not exists (select 1 from pg_policies where tablename='review_requests' and policyname='Host can read own review requests')
+     and exists (select 1 from information_schema.columns where table_schema='public' and table_name='review_requests' and column_name='host_id') then
+    drop policy if exists "Host can read own review requests" on public.review_requests;
+create policy "Host can read own review requests" on public.review_requests for select using (host_id = auth.uid());
   end if;
 end $$;
 
+-- Return type changed: drop the old version so a fresh replay can recreate it.
+drop function if exists public.send_review_request;
 create or replace function public.send_review_request(p_inquiry_id uuid, p_vendor_id uuid, p_host_email text, p_message text)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_host_id uuid; v_id uuid; v_token text;
@@ -438,6 +468,8 @@ begin
     'vendor_name', v_vendor, 'submitted_at', v_req.submitted_at, 'message', v_req.message);
 end$$;
 
+-- Return type changed: drop the old version so a fresh replay can recreate it.
+drop function if exists public.submit_review_via_token;
 create or replace function public.submit_review_via_token(p_token text, p_rating int, p_title text, p_body text)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_req public.review_requests; v_review_id uuid;
@@ -467,7 +499,8 @@ create table if not exists public.host_inquiry_templates (
 alter table public.host_inquiry_templates enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='host_inquiry_templates' and policyname='Host manages own inquiry templates') then
-    create policy "Host manages own inquiry templates" on public.host_inquiry_templates for all
+    drop policy if exists "Host manages own inquiry templates" on public.host_inquiry_templates;
+create policy "Host manages own inquiry templates" on public.host_inquiry_templates for all
       using (host_id = auth.uid()) with check (host_id = auth.uid());
   end if;
 end $$;
@@ -506,7 +539,8 @@ create table if not exists public.proposal_templates (
 alter table public.proposal_templates enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='proposal_templates' and policyname='Vendor team manages proposal templates') then
-    create policy "Vendor team manages proposal templates" on public.proposal_templates for all
+    drop policy if exists "Vendor team manages proposal templates" on public.proposal_templates;
+create policy "Vendor team manages proposal templates" on public.proposal_templates for all
       using (public.is_vendor_member(vendor_id)) with check (public.is_vendor_member(vendor_id));
   end if;
 end $$;
@@ -527,6 +561,8 @@ alter table public.proposals
   add column if not exists share_token text unique,
   add column if not exists share_enabled boolean not null default false;
 
+-- Return type changed: drop the old version so a fresh replay can recreate it.
+drop function if exists public.toggle_proposal_share;
 create or replace function public.toggle_proposal_share(p_proposal_id uuid, p_enabled boolean)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_vendor uuid; v_token text;

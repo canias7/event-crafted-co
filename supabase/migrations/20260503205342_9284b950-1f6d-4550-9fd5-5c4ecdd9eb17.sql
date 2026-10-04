@@ -1,22 +1,29 @@
 insert into storage.buckets (id, name, public) values ('vendor-portfolios', 'vendor-portfolios', true) on conflict (id) do nothing;
+drop policy if exists "vendor portfolios public read" on storage.objects;
 create policy "vendor portfolios public read" on storage.objects for select using (bucket_id = 'vendor-portfolios');
+drop policy if exists "vendor portfolios owner insert" on storage.objects;
 create policy "vendor portfolios owner insert" on storage.objects for insert to authenticated with check (bucket_id = 'vendor-portfolios' and exists (select 1 from public.vendor_profiles vp where vp.id::text = (storage.foldername(name))[1] and vp.user_id = auth.uid()));
+drop policy if exists "vendor portfolios owner delete" on storage.objects;
 create policy "vendor portfolios owner delete" on storage.objects for delete to authenticated using (bucket_id = 'vendor-portfolios' and exists (select 1 from public.vendor_profiles vp where vp.id::text = (storage.foldername(name))[1] and vp.user_id = auth.uid()));
 
-create table public.vendor_portfolio_images (
+create table if not exists public.vendor_portfolio_images (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   storage_path text not null, caption text, display_order int not null default 0,
   created_at timestamptz not null default now()
 );
-create index vendor_portfolio_images_vendor_idx on public.vendor_portfolio_images (vendor_id, display_order, created_at);
+create index if not exists vendor_portfolio_images_vendor_idx on public.vendor_portfolio_images (vendor_id, display_order, created_at);
 alter table public.vendor_portfolio_images enable row level security;
+drop policy if exists "vendor_portfolio_images public read" on public.vendor_portfolio_images;
 create policy "vendor_portfolio_images public read" on public.vendor_portfolio_images for select using (true);
+drop policy if exists "vendor_portfolio_images owner insert" on public.vendor_portfolio_images;
 create policy "vendor_portfolio_images owner insert" on public.vendor_portfolio_images for insert to authenticated with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_portfolio_images owner update" on public.vendor_portfolio_images;
 create policy "vendor_portfolio_images owner update" on public.vendor_portfolio_images for update to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_portfolio_images owner delete" on public.vendor_portfolio_images;
 create policy "vendor_portfolio_images owner delete" on public.vendor_portfolio_images for delete to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
 
-create table public.reviews (
+create table if not exists public.reviews (
   id uuid primary key default gen_random_uuid(),
   inquiry_id uuid not null unique references public.inquiries(id) on delete cascade,
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
@@ -24,63 +31,80 @@ create table public.reviews (
   rating int not null check (rating between 1 and 5), body text,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index reviews_vendor_idx on public.reviews (vendor_id, created_at desc);
-create index reviews_host_idx on public.reviews (host_id);
+create index if not exists reviews_vendor_idx on public.reviews (vendor_id, created_at desc);
+create index if not exists reviews_host_idx on public.reviews (host_id);
 alter table public.reviews enable row level security;
+drop policy if exists "reviews host insert" on public.reviews;
 create policy "reviews host insert" on public.reviews for insert to authenticated with check (auth.uid() = host_id and exists (select 1 from public.inquiries i where i.id = inquiry_id and i.host_id = auth.uid() and i.status = 'won'));
+drop policy if exists "reviews host update own" on public.reviews;
 create policy "reviews host update own" on public.reviews for update to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop policy if exists "reviews host delete own" on public.reviews;
 create policy "reviews host delete own" on public.reviews for delete to authenticated using (auth.uid() = host_id);
+drop trigger if exists reviews_updated on public.reviews;
 create trigger reviews_updated before update on public.reviews for each row execute function public.tg_set_updated_at();
 
-create table public.review_responses (
+create table if not exists public.review_responses (
   review_id uuid primary key references public.reviews(id) on delete cascade,
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   body text not null,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 alter table public.review_responses enable row level security;
+drop policy if exists "review_responses public read" on public.review_responses;
 create policy "review_responses public read" on public.review_responses for select using (true);
+drop policy if exists "review_responses vendor insert" on public.review_responses;
 create policy "review_responses vendor insert" on public.review_responses for insert to authenticated with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "review_responses vendor update" on public.review_responses;
 create policy "review_responses vendor update" on public.review_responses for update to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "review_responses vendor delete" on public.review_responses;
 create policy "review_responses vendor delete" on public.review_responses for delete to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop trigger if exists review_responses_updated on public.review_responses;
 create trigger review_responses_updated before update on public.review_responses for each row execute function public.tg_set_updated_at();
 
-create table public.vendor_unavailable_dates (
+create table if not exists public.vendor_unavailable_dates (
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   date date not null, reason text, created_at timestamptz not null default now(),
   primary key (vendor_id, date)
 );
-create index vendor_unavailable_dates_vendor_idx on public.vendor_unavailable_dates (vendor_id, date);
+create index if not exists vendor_unavailable_dates_vendor_idx on public.vendor_unavailable_dates (vendor_id, date);
 alter table public.vendor_unavailable_dates enable row level security;
+drop policy if exists "vendor_unavailable_dates public read" on public.vendor_unavailable_dates;
 create policy "vendor_unavailable_dates public read" on public.vendor_unavailable_dates for select using (true);
+drop policy if exists "vendor_unavailable_dates owner insert" on public.vendor_unavailable_dates;
 create policy "vendor_unavailable_dates owner insert" on public.vendor_unavailable_dates for insert to authenticated with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_unavailable_dates owner delete" on public.vendor_unavailable_dates;
 create policy "vendor_unavailable_dates owner delete" on public.vendor_unavailable_dates for delete to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "vendor_unavailable_dates owner update" on public.vendor_unavailable_dates;
 create policy "vendor_unavailable_dates owner update" on public.vendor_unavailable_dates for update to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
 
-create table public.vendor_profile_views (
+create table if not exists public.vendor_profile_views (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
   viewer_id uuid references public.profiles(id) on delete set null,
   viewed_at timestamptz not null default now()
 );
-create index vendor_profile_views_vendor_idx on public.vendor_profile_views (vendor_id, viewed_at desc);
+create index if not exists vendor_profile_views_vendor_idx on public.vendor_profile_views (vendor_id, viewed_at desc);
 alter table public.vendor_profile_views enable row level security;
+drop policy if exists "vendor_profile_views public insert" on public.vendor_profile_views;
 create policy "vendor_profile_views public insert" on public.vendor_profile_views for insert to anon, authenticated with check (true);
+drop policy if exists "vendor_profile_views vendor select" on public.vendor_profile_views;
 create policy "vendor_profile_views vendor select" on public.vendor_profile_views for select to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
 
-create table public.checklist_items (
+create table if not exists public.checklist_items (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   name text not null, category text, completed boolean not null default false,
   display_order int not null default 0,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index checklist_items_host_idx on public.checklist_items (host_id, display_order, created_at);
+create index if not exists checklist_items_host_idx on public.checklist_items (host_id, display_order, created_at);
 alter table public.checklist_items enable row level security;
+drop policy if exists "checklist_items host all" on public.checklist_items;
 create policy "checklist_items host all" on public.checklist_items for all to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop trigger if exists checklist_items_updated on public.checklist_items;
 create trigger checklist_items_updated before update on public.checklist_items for each row execute function public.tg_set_updated_at();
 
-create table public.budget_items (
+create table if not exists public.budget_items (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   vendor_id uuid references public.vendor_profiles(id) on delete set null,
@@ -88,24 +112,29 @@ create table public.budget_items (
   paid_cents integer not null default 0, due_date date, paid_at timestamptz, notes text,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index budget_items_host_idx on public.budget_items (host_id, due_date, created_at);
+create index if not exists budget_items_host_idx on public.budget_items (host_id, due_date, created_at);
 alter table public.budget_items enable row level security;
+drop policy if exists "budget_items host all" on public.budget_items;
 create policy "budget_items host all" on public.budget_items for all to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop trigger if exists budget_items_updated on public.budget_items;
 create trigger budget_items_updated before update on public.budget_items for each row execute function public.tg_set_updated_at();
 
-create table public.notifications (
+create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   type text not null, title text not null, body text, link text, read_at timestamptz,
   created_at timestamptz not null default now()
 );
-create index notifications_user_idx on public.notifications (user_id, created_at desc);
-create index notifications_unread_idx on public.notifications (user_id) where read_at is null;
+create index if not exists notifications_user_idx on public.notifications (user_id, created_at desc);
+create index if not exists notifications_unread_idx on public.notifications (user_id) where read_at is null;
 alter table public.notifications enable row level security;
+drop policy if exists "notifications user select" on public.notifications;
 create policy "notifications user select" on public.notifications for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "notifications user update" on public.notifications;
 create policy "notifications user update" on public.notifications for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "notifications user delete" on public.notifications;
 create policy "notifications user delete" on public.notifications for delete to authenticated using (auth.uid() = user_id);
-alter publication supabase_realtime add table public.notifications;
+do $pub$ begin alter publication supabase_realtime add table public.notifications; exception when duplicate_object then null; end $pub$;
 
 create or replace function public.notify_inquiry_created() returns trigger language plpgsql security definer set search_path = public as $$
 declare v_vendor_user uuid; v_host_name text;
@@ -118,6 +147,7 @@ begin
   end if;
   return new;
 end$$;
+drop trigger if exists inquiries_notify_created on public.inquiries;
 create trigger inquiries_notify_created after insert on public.inquiries for each row execute function public.notify_inquiry_created();
 
 create or replace function public.notify_inquiry_status() returns trigger language plpgsql security definer set search_path = public as $$
@@ -132,6 +162,7 @@ begin
   insert into public.notifications (user_id, type, title, body, link) values (new.host_id, 'inquiry_status', v_title, v_body, '/customer/inquiries/' || new.id::text);
   return new;
 end$$;
+drop trigger if exists inquiries_notify_status on public.inquiries;
 create trigger inquiries_notify_status after update of status on public.inquiries for each row execute function public.notify_inquiry_status();
 
 create or replace function public.notify_new_message() returns trigger language plpgsql security definer set search_path = public as $$
@@ -154,6 +185,7 @@ begin
   end if;
   return new;
 end$$;
+drop trigger if exists messages_notify_new on public.messages;
 create trigger messages_notify_new after insert on public.messages for each row execute function public.notify_new_message();
 
 create or replace function public.notify_review_posted() returns trigger language plpgsql security definer set search_path = public as $$
@@ -166,6 +198,7 @@ begin
   end if;
   return new;
 end$$;
+drop trigger if exists reviews_notify_posted on public.reviews;
 create trigger reviews_notify_posted after insert on public.reviews for each row execute function public.notify_review_posted();
 
 create or replace function public.notify_review_response() returns trigger language plpgsql security definer set search_path = public as $$
@@ -177,6 +210,7 @@ begin
   insert into public.notifications (user_id, type, title, body, link) values (v_review.host_id, 'review_response', v_vendor_nm || ' responded to your review', left(new.body, 140), '/customer/inquiries/' || v_review.inquiry_id::text);
   return new;
 end$$;
+drop trigger if exists review_responses_notify on public.review_responses;
 create trigger review_responses_notify after insert on public.review_responses for each row execute function public.notify_review_response();
 
 revoke execute on function public.notify_inquiry_created() from public, anon, authenticated;
@@ -185,7 +219,7 @@ revoke execute on function public.notify_new_message() from public, anon, authen
 revoke execute on function public.notify_review_posted() from public, anon, authenticated;
 revoke execute on function public.notify_review_response() from public, anon, authenticated;
 
-create table public.event_tasks (
+create table if not exists public.event_tasks (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   title text not null, category text,
@@ -194,9 +228,11 @@ create table public.event_tasks (
   due_date date, notes text,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index event_tasks_host_idx on public.event_tasks (host_id, due_date, created_at);
+create index if not exists event_tasks_host_idx on public.event_tasks (host_id, due_date, created_at);
 alter table public.event_tasks enable row level security;
+drop policy if exists "event_tasks host all" on public.event_tasks;
 create policy "event_tasks host all" on public.event_tasks for all to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop trigger if exists event_tasks_updated on public.event_tasks;
 create trigger event_tasks_updated before update on public.event_tasks for each row execute function public.tg_set_updated_at();
 
 create or replace function public.request_account_deletion() returns void language plpgsql security definer set search_path = public as $$
@@ -212,13 +248,18 @@ create or replace function public.is_admin() returns boolean language sql stable
 $$;
 grant execute on function public.is_admin() to authenticated;
 
+drop policy if exists "profiles admin select" on public.profiles;
 create policy "profiles admin select" on public.profiles for select to authenticated using (public.is_admin());
+drop policy if exists "inquiries admin select" on public.inquiries;
 create policy "inquiries admin select" on public.inquiries for select to authenticated using (public.is_admin());
+drop policy if exists "messages admin select" on public.messages;
 create policy "messages admin select" on public.messages for select to authenticated using (public.is_admin());
+drop policy if exists "reviews admin select" on public.reviews;
 create policy "reviews admin select" on public.reviews for select to authenticated using (public.is_admin());
+drop policy if exists "vendor_profiles admin update" on public.vendor_profiles;
 create policy "vendor_profiles admin update" on public.vendor_profiles for update to authenticated using (public.is_admin()) with check (public.is_admin());
 
-create table public.proposals (
+create table if not exists public.proposals (
   id uuid primary key default gen_random_uuid(),
   inquiry_id uuid not null references public.inquiries(id) on delete cascade,
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
@@ -229,13 +270,18 @@ create table public.proposals (
   sent_at timestamptz default now(), responded_at timestamptz,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index proposals_inquiry_idx on public.proposals (inquiry_id, created_at desc);
-create index proposals_vendor_idx on public.proposals (vendor_id, status);
+create index if not exists proposals_inquiry_idx on public.proposals (inquiry_id, created_at desc);
+create index if not exists proposals_vendor_idx on public.proposals (vendor_id, status);
 alter table public.proposals enable row level security;
+drop policy if exists "proposals participants select" on public.proposals;
 create policy "proposals participants select" on public.proposals for select to authenticated using (auth.uid() = host_id or exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "proposals vendor insert" on public.proposals;
 create policy "proposals vendor insert" on public.proposals for insert to authenticated with check (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "proposals vendor update" on public.proposals;
 create policy "proposals vendor update" on public.proposals for update to authenticated using (exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "proposals host update" on public.proposals;
 create policy "proposals host update" on public.proposals for update to authenticated using (auth.uid() = host_id) with check (auth.uid() = host_id);
+drop trigger if exists proposals_updated on public.proposals;
 create trigger proposals_updated before update on public.proposals for each row execute function public.tg_set_updated_at();
 
 create or replace function public.notify_proposal_sent() returns trigger language plpgsql security definer set search_path = public as $$
@@ -245,6 +291,7 @@ begin
   insert into public.notifications (user_id, type, title, body, link) values (new.host_id, 'proposal_sent', v_vendor_name || ' sent a proposal', 'Tap to review and accept or counter.', '/customer/inquiries/' || new.inquiry_id::text);
   return new;
 end$$;
+drop trigger if exists proposals_notify_sent on public.proposals;
 create trigger proposals_notify_sent after insert on public.proposals for each row execute function public.notify_proposal_sent();
 
 create or replace function public.accept_proposal_side_effects() returns trigger language plpgsql security definer set search_path = public as $$
@@ -264,16 +311,22 @@ begin
   end if;
   return new;
 end$$;
+drop trigger if exists proposals_status_side_effects on public.proposals;
 create trigger proposals_status_side_effects after update of status on public.proposals for each row execute function public.accept_proposal_side_effects();
 revoke execute on function public.notify_proposal_sent() from public, anon, authenticated;
 revoke execute on function public.accept_proposal_side_effects() from public, anon, authenticated;
 
 insert into storage.buckets (id, name, public) values ('message-attachments', 'message-attachments', true) on conflict (id) do nothing;
+drop policy if exists "message attachments public read" on storage.objects;
 create policy "message attachments public read" on storage.objects for select using (bucket_id = 'message-attachments');
+drop policy if exists "message attachments authenticated insert" on storage.objects;
 create policy "message attachments authenticated insert" on storage.objects for insert to authenticated with check (bucket_id = 'message-attachments');
+drop policy if exists "message attachments authenticated delete" on storage.objects;
 create policy "message attachments authenticated delete" on storage.objects for delete to authenticated using (bucket_id = 'message-attachments');
-alter table public.messages add column attachments jsonb not null default '[]'::jsonb;
+alter table public.messages add column if not exists attachments jsonb not null default '[]'::jsonb;
 
-alter table public.reviews add column hidden_at timestamptz, add column hidden_reason text;
+alter table public.reviews add column if not exists hidden_at timestamptz, add column if not exists hidden_reason text;
+drop policy if exists "reviews public read" on public.reviews;
 create policy "reviews public read" on public.reviews for select using (hidden_at is null or auth.uid() = host_id or exists (select 1 from public.vendor_profiles vp where vp.id = vendor_id and vp.user_id = auth.uid()));
+drop policy if exists "reviews admin update" on public.reviews;
 create policy "reviews admin update" on public.reviews for update to authenticated using (public.is_admin()) with check (public.is_admin());

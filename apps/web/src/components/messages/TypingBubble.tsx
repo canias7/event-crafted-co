@@ -9,7 +9,7 @@ interface Props {
    *  side). Vendor side leaves the spacer off and the bubble
    *  starts at the gutter. */
   withAvatarSpacer?: boolean;
-  /** Optional caption above the dots (e.g., "HILUX is typing").
+  /** Optional caption above the dots (e.g., "Alex is typing").
    *  Omitted = plain three-dot bubble. */
   label?: string;
 }

@@ -79,8 +79,6 @@ export const StatusPage = lazyWithReload(importStatus);
 const importPress = () => import("@/pages/PressPage");
 export const PressPage = lazyWithReload(importPress);
 
-const importSuperAgents = () => import("@/pages/SuperAgentsPage");
-export const SuperAgentsPage = lazyWithReload(importSuperAgents);
 
 const importWebsiteBuilder = () => import("@/pages/WebsiteBuilderPage");
 export const WebsiteBuilderPage = lazyWithReload(importWebsiteBuilder);
@@ -154,16 +152,11 @@ export const VendorAppointmentsPage = lazyWithReload(importVendorAppointments);
 const importVendorPartners = () => import("@/pages/vendor/VendorPartnersPage");
 export const VendorPartnersPage = lazyWithReload(importVendorPartners);
 
-const importVendorAiSuperagents = () =>
-  import("@/pages/vendor/VendorAiSuperagentsPage");
-export const VendorAiSuperagentsPage = lazyWithReload(importVendorAiSuperagents);
 
 const importVendorIntegrations = () =>
   import("@/pages/vendor/VendorIntegrationsPage");
 export const VendorIntegrationsPage = lazyWithReload(importVendorIntegrations);
 
-const importVendorPayments = () => import("@/pages/vendor/VendorPaymentsPage");
-export const VendorPaymentsPage = lazyWithReload(importVendorPayments);
 
 const importMyVendora = () => import("@/pages/vendor/MyVendoraPage");
 export const MyVendoraPage = lazyWithReload(importMyVendora);
@@ -210,7 +203,6 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/changelog", importer: importChangelog },
   { pattern: "/status", importer: importStatus },
   { pattern: "/press", importer: importPress },
-  { pattern: "/super-agents", importer: importSuperAgents },
   { pattern: "/website-builder", importer: importWebsiteBuilder },
   { pattern: "/flatlay-builder", importer: importFlatLayBuilder },
   { pattern: "/my-sites", importer: importMySites },
@@ -247,11 +239,8 @@ const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown>
   { pattern: "/vendor/inbox", importer: importVendorInbox },
   { pattern: "/vendor/appointments", importer: importVendorAppointments },
   { pattern: "/vendor/partners", importer: importVendorPartners },
-  { pattern: "/vendor/ai-superagents", importer: importVendorAiSuperagents },
   { pattern: "/vendor/integrations", importer: importVendorIntegrations },
-  { pattern: "/vendor/payments", importer: importVendorPayments },
   { pattern: "/vendor/overview", importer: importMyVendora },
-  { pattern: "/vendor/workspace", importer: importMyVendora },
   { pattern: "/vendor/subscription", importer: importVendorSubscription },
   { pattern: "/vendor/usage", importer: importVendorUsage },
   { pattern: "/vendor/gallery", importer: importVendorGallery },

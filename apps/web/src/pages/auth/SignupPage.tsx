@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
-import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
+import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
 // `role` decides what the user is signing up as. Default "host" keeps
@@ -25,17 +25,9 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [adult, setAdult] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState("");
-  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
-
-  // Turnstile tokens are single-use and expire (~5 min). After any failed
-  // submit — or on expiry — drop the stale token and re-challenge for a
-  // fresh one, otherwise a retry is rejected as "timeout-or-duplicate".
-  const resetCaptcha = () => {
-    setCaptchaToken("");
-    setCaptchaKey((k) => k + 1);
-  };
+  // No bot-check by default; only shown if the server still demands one.
+  const captcha = useCaptchaFallback();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +35,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       toast.error("You must confirm you're 18 or older to sign up.");
       return;
     }
-    if (!captchaToken) {
+    if (captcha.blocked) {
       toast.error("Please complete the bot-check below.");
       return;
     }
@@ -53,7 +45,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        captchaToken,
+        ...captcha.options,
         // For vendors the "name" field IS their business name — pass it
         // through as vendor_business_name so handle_new_user can seed
         // profiles.business_name on the spot. display_name still gets
@@ -67,8 +59,11 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
-      resetCaptcha(); // single-use token is now spent — get a fresh one
+      if (captcha.handleError(error)) {
+        toast.error("Please complete the bot-check below, then try again.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
 
@@ -80,7 +75,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       toast.error(
         "This email already has an account. Sign in instead — or use Forgot password if you can't get in.",
       );
-      resetCaptcha();
+      captcha.reset();
       return;
     }
 
@@ -272,16 +267,14 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             .
           </span>
         </div>
-        <div className="flex justify-center pt-1">
-          <TurnstileWidget
-            onVerify={setCaptchaToken}
-            onExpire={resetCaptcha}
-            resetKey={captchaKey}
-          />
-        </div>
+        {captcha.required ? (
+          <div className="flex justify-center pt-1">
+            <TurnstileWidget {...captcha.widgetProps} />
+          </div>
+        ) : null}
         <button
           type="submit"
-          disabled={loading || !adult || !captchaToken}
+          disabled={loading || !adult || captcha.blocked}
           className="auth-submit mt-2"
         >
           {loading ? (

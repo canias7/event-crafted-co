@@ -45,7 +45,7 @@ export async function handleInsufficientCredits(
       : "Out of credits.",
     {
       description:
-        "Top up a credit pack or upgrade your plan to keep using HILUX and Axion.",
+        "Top up a credit pack or upgrade your plan to keep using AI features.",
       action: {
         label: "Top up",
         onClick: () => navigate("/vendor/subscription"),

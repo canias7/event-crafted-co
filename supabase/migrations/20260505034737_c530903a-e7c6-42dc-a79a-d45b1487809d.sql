@@ -1,4 +1,4 @@
-create table public.email_events (
+create table if not exists public.email_events (
   id uuid primary key default gen_random_uuid(),
   resend_event_id text unique,
   resend_email_id text,
@@ -11,11 +11,12 @@ create table public.email_events (
   occurred_at timestamptz not null,
   created_at timestamptz not null default now()
 );
-create index email_events_occurred_idx on public.email_events (occurred_at desc);
-create index email_events_type_idx on public.email_events (event_type, occurred_at desc);
-create index email_events_recipient_idx on public.email_events (recipient_email, occurred_at desc);
-create index email_events_email_id_idx on public.email_events (resend_email_id) where resend_email_id is not null;
+create index if not exists email_events_occurred_idx on public.email_events (occurred_at desc);
+create index if not exists email_events_type_idx on public.email_events (event_type, occurred_at desc);
+create index if not exists email_events_recipient_idx on public.email_events (recipient_email, occurred_at desc);
+create index if not exists email_events_email_id_idx on public.email_events (resend_email_id) where resend_email_id is not null;
 alter table public.email_events enable row level security;
+drop policy if exists "email_events admin select" on public.email_events;
 create policy "email_events admin select" on public.email_events for select to authenticated using (public.is_admin());
 
 create or replace function public.get_email_deliverability_summary(p_window_days int default 30)

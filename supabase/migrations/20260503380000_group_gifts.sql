@@ -7,7 +7,7 @@
 -- without auth. Pledges are write-anonymous for guests (their email +
 -- name + amount, no auth required) — same trust model as RSVPs.
 
-create table public.gift_wishes (
+create table if not exists public.gift_wishes (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references public.profiles(id) on delete cascade,
   title text not null,
@@ -21,34 +21,39 @@ create table public.gift_wishes (
   updated_at timestamptz not null default now()
 );
 
-create index gift_wishes_host_idx
+create index if not exists gift_wishes_host_idx
   on public.gift_wishes (host_id, created_at desc);
 
-create index gift_wishes_token_idx
+create index if not exists gift_wishes_token_idx
   on public.gift_wishes (share_token);
 
 alter table public.gift_wishes enable row level security;
 
+drop policy if exists "gift_wishes public read" on public.gift_wishes;
 create policy "gift_wishes public read"
   on public.gift_wishes for select using (true);
 
+drop policy if exists "gift_wishes host insert" on public.gift_wishes;
 create policy "gift_wishes host insert"
   on public.gift_wishes for insert to authenticated
   with check (auth.uid() = host_id);
 
+drop policy if exists "gift_wishes host update" on public.gift_wishes;
 create policy "gift_wishes host update"
   on public.gift_wishes for update to authenticated
   using (auth.uid() = host_id);
 
+drop policy if exists "gift_wishes host delete" on public.gift_wishes;
 create policy "gift_wishes host delete"
   on public.gift_wishes for delete to authenticated
   using (auth.uid() = host_id);
 
+drop trigger if exists gift_wishes_updated on public.gift_wishes;
 create trigger gift_wishes_updated
   before update on public.gift_wishes
   for each row execute function public.tg_set_updated_at();
 
-create table public.gift_pledges (
+create table if not exists public.gift_pledges (
   id uuid primary key default gen_random_uuid(),
   wish_id uuid not null references public.gift_wishes(id) on delete cascade,
   contributor_name text not null,
@@ -58,7 +63,7 @@ create table public.gift_pledges (
   created_at timestamptz not null default now()
 );
 
-create index gift_pledges_wish_idx
+create index if not exists gift_pledges_wish_idx
   on public.gift_pledges (wish_id, created_at desc);
 
 alter table public.gift_pledges enable row level security;
@@ -66,6 +71,7 @@ alter table public.gift_pledges enable row level security;
 -- Public insert via SECURITY DEFINER RPC below — bypasses RLS so
 -- anonymous contributors don't need auth.
 -- Host (and only host) reads pledges on their own wishes.
+drop policy if exists "gift_pledges host select" on public.gift_pledges;
 create policy "gift_pledges host select"
   on public.gift_pledges for select to authenticated
   using (
@@ -75,6 +81,7 @@ create policy "gift_pledges host select"
     )
   );
 
+drop policy if exists "gift_pledges host delete" on public.gift_pledges;
 create policy "gift_pledges host delete"
   on public.gift_pledges for delete to authenticated
   using (

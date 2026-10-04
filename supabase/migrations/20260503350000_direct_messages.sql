@@ -7,7 +7,7 @@
 -- table scoped to threads. Mirrors the inquiry/messages shape so the
 -- frontend can reuse most of the patterns.
 
-create table public.direct_threads (
+create table if not exists public.direct_threads (
   id uuid primary key default gen_random_uuid(),
   host_id uuid not null references auth.users(id) on delete cascade,
   vendor_id uuid not null references public.vendor_profiles(id) on delete cascade,
@@ -19,14 +19,15 @@ create table public.direct_threads (
   unique (host_id, vendor_id)
 );
 
-create index direct_threads_host_idx
+create index if not exists direct_threads_host_idx
   on public.direct_threads (host_id, last_message_at desc);
 
-create index direct_threads_vendor_idx
+create index if not exists direct_threads_vendor_idx
   on public.direct_threads (vendor_id, last_message_at desc);
 
 alter table public.direct_threads enable row level security;
 
+drop policy if exists "direct_threads participants select" on public.direct_threads;
 create policy "direct_threads participants select"
   on public.direct_threads for select to authenticated
   using (
@@ -34,10 +35,12 @@ create policy "direct_threads participants select"
     or public.is_vendor_member(vendor_id)
   );
 
+drop policy if exists "direct_threads host insert" on public.direct_threads;
 create policy "direct_threads host insert"
   on public.direct_threads for insert to authenticated
   with check (auth.uid() = host_id);
 
+drop policy if exists "direct_threads update participants" on public.direct_threads;
 create policy "direct_threads update participants"
   on public.direct_threads for update to authenticated
   using (
@@ -45,7 +48,7 @@ create policy "direct_threads update participants"
     or public.is_vendor_member(vendor_id)
   );
 
-create table public.direct_messages (
+create table if not exists public.direct_messages (
   id uuid primary key default gen_random_uuid(),
   thread_id uuid not null references public.direct_threads(id) on delete cascade,
   sender_id uuid not null references auth.users(id) on delete cascade,
@@ -58,11 +61,12 @@ create table public.direct_messages (
   created_at timestamptz not null default now()
 );
 
-create index direct_messages_thread_created_idx
+create index if not exists direct_messages_thread_created_idx
   on public.direct_messages (thread_id, created_at);
 
 alter table public.direct_messages enable row level security;
 
+drop policy if exists "direct_messages participants select" on public.direct_messages;
 create policy "direct_messages participants select"
   on public.direct_messages for select to authenticated
   using (
@@ -73,6 +77,7 @@ create policy "direct_messages participants select"
     )
   );
 
+drop policy if exists "direct_messages participants insert" on public.direct_messages;
 create policy "direct_messages participants insert"
   on public.direct_messages for insert to authenticated
   with check (
@@ -101,6 +106,7 @@ begin
   return new;
 end$$;
 
+drop trigger if exists direct_messages_bump_thread on public.direct_messages;
 create trigger direct_messages_bump_thread
   after insert on public.direct_messages
   for each row execute function public.tg_bump_direct_thread_last_message();
@@ -149,6 +155,7 @@ begin
   return new;
 end$$;
 
+drop trigger if exists direct_messages_notify on public.direct_messages;
 create trigger direct_messages_notify
   after insert on public.direct_messages
   for each row execute function public.notify_direct_message();

@@ -32,6 +32,7 @@ alter table public.vendor_profiles
 -- (regardless of status), and admins see everything.
 drop policy if exists "vendor_profiles public read" on public.vendor_profiles;
 
+drop policy if exists "vendor_profiles public read approved" on public.vendor_profiles;
 create policy "vendor_profiles public read approved"
   on public.vendor_profiles for select
   using (

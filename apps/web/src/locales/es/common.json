@@ -184,10 +184,8 @@
       "inbox": "Bandeja",
       "my_vendora": "My Vendora",
       "overview": "Resumen",
-      "workspace": "Espacio de trabajo",
       "calendar": "Calendario",
       "my_profile": "Mi Perfil",
-      "my_space": "Mi espacio",
       "gallery": "Galería",
       "subscription": "Suscripción",
       "usage": "Uso",
@@ -420,13 +418,6 @@
     "generate": "Generar",
     "generating": "Generando…",
     "not_wired": "La edición de imágenes aún no está conectada — conecta un proveedor de modelos (Replicate, Stability, OpenAI Edit) para activarlo."
-  },
-  "ai_agent": {
-    "title": "Agente IA",
-    "subtitle": "Respuestas automáticas, calificación de leads y asistente de precios",
-    "placeholder_title": "Tu Agente IA vivirá aquí",
-    "placeholder_body": "Configura cómo el agente redacta respuestas, califica consultas y propone precios. Próximamente.",
-    "in_development": "En desarrollo"
   },
   "studio_placeholder": {
     "title": "Tu Estudio vivirá aquí",

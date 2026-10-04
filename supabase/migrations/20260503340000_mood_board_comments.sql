@@ -3,7 +3,7 @@
 -- ("loved this palette, here's how I'd execute"). Auth-required to
 -- comment, but public read so anyone with the share token can see.
 
-create table public.mood_board_comments (
+create table if not exists public.mood_board_comments (
   id uuid primary key default gen_random_uuid(),
   board_id uuid not null references public.mood_boards(id) on delete cascade,
   -- Optional: when an item_id is set, the comment is pinned to a specific
@@ -16,10 +16,10 @@ create table public.mood_board_comments (
   created_at timestamptz not null default now()
 );
 
-create index mood_board_comments_board_idx
+create index if not exists mood_board_comments_board_idx
   on public.mood_board_comments (board_id, created_at desc);
 
-create index mood_board_comments_item_idx
+create index if not exists mood_board_comments_item_idx
   on public.mood_board_comments (item_id)
   where item_id is not null;
 
@@ -27,23 +27,28 @@ alter table public.mood_board_comments enable row level security;
 
 -- Public read so the share page renders comments without auth — same
 -- trust model as the board itself (anyone with the share token).
+drop policy if exists "mood_board_comments public read" on public.mood_board_comments;
 create policy "mood_board_comments public read"
   on public.mood_board_comments for select using (true);
 
 -- Auth required to comment. Authors can edit/delete only their own.
+drop policy if exists "mood_board_comments author insert" on public.mood_board_comments;
 create policy "mood_board_comments author insert"
   on public.mood_board_comments for insert to authenticated
   with check (author_id = auth.uid());
 
+drop policy if exists "mood_board_comments author update" on public.mood_board_comments;
 create policy "mood_board_comments author update"
   on public.mood_board_comments for update to authenticated
   using (author_id = auth.uid());
 
+drop policy if exists "mood_board_comments author delete" on public.mood_board_comments;
 create policy "mood_board_comments author delete"
   on public.mood_board_comments for delete to authenticated
   using (author_id = auth.uid());
 
 -- Board owner can also delete any comment on their board (moderation).
+drop policy if exists "mood_board_comments owner delete" on public.mood_board_comments;
 create policy "mood_board_comments owner delete"
   on public.mood_board_comments for delete to authenticated
   using (
@@ -79,6 +84,7 @@ begin
   return new;
 end$$;
 
+drop trigger if exists mood_board_comments_notify on public.mood_board_comments;
 create trigger mood_board_comments_notify
   after insert on public.mood_board_comments
   for each row execute function public.notify_mood_board_comment();

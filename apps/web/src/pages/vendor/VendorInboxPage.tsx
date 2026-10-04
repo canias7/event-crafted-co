@@ -35,11 +35,10 @@ interface InquiryRow {
   vendor_read_at: string | null;
   lead_score: "hot" | "warm" | "cold" | "unknown" | null;
   lead_score_reason: string | null;
-  hilux_paused: boolean;
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
-// Map HILUX-classified temperatures to a pip color + label.
+// Map lead temperatures to a pip color + label.
 const LEAD_SCORE_STYLE: Record<
   "hot" | "warm" | "cold",
   { dot: string; text: string; label: string }
@@ -114,17 +113,12 @@ export default function VendorInboxPage() {
   // reloads the same paginated window instead of snapping back to page 1.
   const loadedCountRef = useRef(0);
   const [search, setSearch] = useState("");
-  // HILUX master state lives on profiles (per-user, not per-listing
-  // anymore). We fetch it once for the logged-in user; the sparkle
-  // pip on every inbox row reflects that single value.
-  const [hiluxEnabled, setHiluxEnabled] = useState(false);
   // Lead-temperature filter pills. "all" = no filter.
   const [leadFilter, setLeadFilter] = useState<"all" | "hot" | "warm" | "cold">(
     "all",
   );
 
-  // Fetch one page of inquiries (range-based) plus the per-row lead score
-  // + HILUX pause state. Returns the scored rows and whether the page came
+  // Fetch one page of inquiries (range-based) plus the per-row lead score. Returns the scored rows and whether the page came
   // back full (i.e. there may be more).
   async function fetchInquiryPage(
     vids: string[],
@@ -146,17 +140,11 @@ export default function VendorInboxPage() {
     // merge in client-side. RLS gates to vendor team members only.
     const ids = baseRows.map((r) => r.id);
     if (ids.length === 0) return { rows: baseRows, full };
-    const [{ data: scores }, { data: threads }] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from("inquiry_scores")
-        .select("inquiry_id, lead_score, lead_score_reason")
-        .in("inquiry_id", ids),
-      supabase
-        .from("direct_threads")
-        .select("inquiry_id, hilux_paused")
-        .in("inquiry_id", ids),
-    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: scores } = await (supabase as any)
+      .from("inquiry_scores")
+      .select("inquiry_id, lead_score, lead_score_reason")
+      .in("inquiry_id", ids);
     const byId = new Map<string, { lead_score: string | null; lead_score_reason: string | null }>();
     for (const s of (scores ?? []) as Array<{
       inquiry_id: string;
@@ -165,20 +153,10 @@ export default function VendorInboxPage() {
     }>) {
       byId.set(s.inquiry_id, { lead_score: s.lead_score, lead_score_reason: s.lead_score_reason });
     }
-    // Per-thread HILUX pause state — the inbox sparkle pip should
-    // only show where HILUX is actually answering.
-    const pausedById = new Map<string, boolean>();
-    for (const t of (threads ?? []) as Array<{
-      inquiry_id: string | null;
-      hilux_paused: boolean | null;
-    }>) {
-      if (t.inquiry_id) pausedById.set(t.inquiry_id, t.hilux_paused === true);
-    }
     const scored = baseRows.map((r) => ({
       ...r,
       lead_score: (byId.get(r.id)?.lead_score ?? null) as InquiryRow["lead_score"],
       lead_score_reason: byId.get(r.id)?.lead_score_reason ?? null,
-      hilux_paused: pausedById.get(r.id) ?? false,
     }));
     return { rows: scored, full };
   }
@@ -238,43 +216,6 @@ export default function VendorInboxPage() {
     load(vendorIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, vendorIdsKey]);
-
-  // Load the HILUX master flag from the owner profile once. The
-  // sparkle pip on every row reflects this single boolean. RLS
-  // restricts the read to the caller's own row.
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("hilux_enabled")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      setHiluxEnabled(
-        ((data as { hilux_enabled?: boolean } | null)?.hilux_enabled) === true,
-      );
-    })();
-    // Audit #9: subscribe to profile updates so flipping HILUX from
-    // the AI Super Agents page reflects in the inbox chip without a
-    // manual refresh.
-    const channel = supabase
-      .channel(`profile-hilux-toggle:${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-        (payload) => {
-          const next = (payload.new as { hilux_enabled?: boolean } | null)?.hilux_enabled;
-          if (typeof next === "boolean") setHiluxEnabled(next);
-        },
-      )
-      .subscribe();
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
 
   // Re-render every minute so relativeTime() decays — "3h" rolls over
   // to "4h" without requiring a manual refresh. Bumping a no-op state
@@ -457,7 +398,6 @@ export default function VendorInboxPage() {
                   key={r.id}
                   row={r}
                   isFirst={i === 0}
-                  hiluxEnabled={hiluxEnabled}
                 />
               ))}
             </ul>
@@ -492,11 +432,9 @@ export default function VendorInboxPage() {
 function ConversationRow({
   row,
   isFirst,
-  hiluxEnabled,
 }: {
   row: InquiryRow;
   isFirst: boolean;
-  hiluxEnabled: boolean;
 }) {
   const name = row.host?.display_name?.trim() || "Host";
   const initial = name.charAt(0).toUpperCase();
@@ -560,15 +498,6 @@ function ConversationRow({
             >
               {name}
             </span>
-            {hiluxEnabled && !row.hilux_paused ? (
-              <span
-                className="shrink-0 inline-flex items-center"
-                title="My Space is answering for you"
-                aria-label="My Space is answering for you"
-              >
-                <Sparkles className="w-3 h-3 text-accent" />
-              </span>
-            ) : null}
             {row.lead_score && row.lead_score !== "unknown" ? (
               (() => {
                 const style = LEAD_SCORE_STYLE[row.lead_score];

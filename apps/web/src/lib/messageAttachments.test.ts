@@ -2,8 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 // messageAttachments imports the supabase client (for attachmentUrl), which
 // reads env at module load. The guards under test are pure, so stub the
-// client rather than requiring real credentials — same approach as
-// MySpaceChat.initialload.test.tsx.
+// client rather than requiring real credentials.
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: () => ({ getPublicUrl: () => ({ data: { publicUrl: "" } }) }) } },
 }));
