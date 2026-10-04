@@ -551,7 +551,7 @@ export default function VendorDetailPage() {
           straight into the brand card. Small back-to-directory link
           above the body keeps the escape one tap away. */}
       <section className={isPreview ? "pt-8 pb-16 md:pt-10 md:pb-24" : "pt-28 pb-16 md:pt-32 md:pb-24"}>
-        <div className="container mx-auto px-6 md:px-8">
+        <div className="container mx-auto px-5 md:px-8">
           {!isPreview && (
             <Link
               to="/vendors"
@@ -731,7 +731,7 @@ export default function VendorDetailPage() {
                     <button
                       type="button"
                       onClick={() => setLightboxIndex(0)}
-                      className="absolute bottom-3 right-3 md:bottom-4 md:right-4 inline-flex items-center gap-1.5 rounded-full bg-white text-foreground px-3.5 py-2 md:px-4 md:py-2.5 text-sm font-medium shadow-lg ring-1 ring-foreground/10 hover:bg-white/90 transition-colors"
+                      className="absolute bottom-3 right-3 md:bottom-4 md:right-4 inline-flex items-center gap-1.5 rounded-full bg-white text-foreground px-4 py-2 md:px-4 md:py-2.5 text-sm font-bold shadow-soft ring-1 ring-foreground/10 hover:bg-white/90 transition-colors"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       See all ({portfolioItems.length})
@@ -917,7 +917,7 @@ export default function VendorDetailPage() {
             {/* Sticky inquiry sidebar */}
             <aside className="lg:col-span-1">
               <div className="lg:sticky lg:top-24 space-y-4">
-                <div className="bg-card border border-border rounded-sm p-6 card-shadow">
+                <div className="bg-card border border-border rounded-2xl p-6">
                   <p className="font-label text-muted-foreground mb-2">Pricing</p>
                   <p className="font-editorial text-4xl mb-1 tnum">
                     {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
@@ -951,7 +951,7 @@ export default function VendorDetailPage() {
                         <Button
                           onClick={() => handleInquiryClick()}
                           disabled={authLoading}
-                          className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                          className="w-full h-[52px]"
                         >
                           <Mail className="w-4 h-4 mr-2" />
                           Send Inquiry
@@ -1042,7 +1042,7 @@ export default function VendorDetailPage() {
       {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away.
           Hidden for vendors (inquiries are host → vendor only). */}
       {!isPreview && !isApprovedVendor && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.08)]">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
               Price
@@ -1054,7 +1054,6 @@ export default function VendorDetailPage() {
           <Button
             onClick={() => handleInquiryClick()}
             disabled={authLoading}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
           >
             <Mail className="w-4 h-4 mr-2" />
             Send Inquiry
@@ -1064,7 +1063,7 @@ export default function VendorDetailPage() {
 
       {/* Logged-out: prompt to sign in/up before inquiring */}
       <Dialog open={signinPromptOpen} onOpenChange={setSigninPromptOpen}>
-        <DialogContent className="sm:max-w-md rounded-sm">
+        <DialogContent className="sm:max-w-md rounded-3xl">
           <DialogHeader>
             <DialogTitle className="font-editorial text-3xl">
               Send an inquiry to {vendor.name}
@@ -1076,7 +1075,7 @@ export default function VendorDetailPage() {
           </DialogHeader>
           <div className="space-y-3 pt-2">
             <Link to="/signup" className="block">
-              <Button className="w-full h-11 rounded-full bg-foreground text-background hover:bg-foreground/90">
+              <Button className="w-full">
                 Create a free host account
               </Button>
             </Link>
@@ -1132,11 +1131,11 @@ function VendorDetailSkeleton({ preview = false }: { preview?: boolean }) {
       <section className="relative h-[80svh] min-h-[560px] w-full overflow-hidden bg-muted/40">
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/5 to-foreground/15" />
         <div className="relative z-10 h-full flex flex-col">
-          <div className="container mx-auto px-6 md:px-8 pt-24">
+          <div className="container mx-auto px-5 md:px-8 pt-24">
             <Skeleton className="h-3 w-36" />
           </div>
           <div className="flex-1 flex items-end pb-12 md:pb-16">
-            <div className="container mx-auto px-6 md:px-8">
+            <div className="container mx-auto px-5 md:px-8">
               <Skeleton className="h-3 w-24 mb-5" />
               <Skeleton className="h-12 md:h-16 w-3/4 max-w-2xl mb-3" />
               <Skeleton className="h-12 md:h-16 w-1/2 max-w-xl mb-6" />
@@ -1151,7 +1150,7 @@ function VendorDetailSkeleton({ preview = false }: { preview?: boolean }) {
       </section>
 
       <section className="py-16 md:py-24">
-        <div className="container mx-auto px-6 md:px-8">
+        <div className="container mx-auto px-5 md:px-8">
           <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
             <div className="lg:col-span-2 space-y-16">
               <div>

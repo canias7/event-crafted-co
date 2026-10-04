@@ -377,7 +377,7 @@ export default function HostEventsPage() {
         backPath="/customer/explore"
       />
       <main id="main-content" className="flex-1 pb-24 md:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-editorial text-3xl">Events</h1>
             <p className="text-sm text-muted-foreground">
@@ -391,7 +391,7 @@ export default function HostEventsPage() {
           {events === null ? (
             <div className="space-y-4">
               <Skeleton className="h-20 w-full rounded-2xl" />
-              <Skeleton className="h-44 w-full rounded-3xl" />
+              <Skeleton className="h-44 w-full rounded-2xl" />
               <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
           ) : events.length === 0 ? (
@@ -477,7 +477,7 @@ export default function HostEventsPage() {
               <div className="pt-4 flex justify-center">
                 <Button
                   onClick={() => setCreating(true)}
-                  className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-6 h-11"
+                  className="px-6"
                 >
                   <Plus className="w-4 h-4 mr-1.5" />
                   New event
@@ -510,7 +510,7 @@ export default function HostEventsPage() {
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
       >
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-3xl">
               Delete event?
@@ -542,10 +542,8 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     <div
       className="rounded-2xl p-10 md:p-14 text-center"
       style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div
@@ -563,7 +561,6 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       </p>
       <Button
         onClick={onCreate}
-        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
       >
         <Plus className="w-4 h-4 mr-1.5" />
         New event
@@ -593,12 +590,10 @@ function MonthCalendar({
   const today = todayYmd();
   return (
     <div
-      className="rounded-3xl p-4 md:p-5"
+      className="rounded-2xl p-4 md:p-5"
       style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div className="flex items-center justify-between mb-3">
@@ -688,8 +683,8 @@ function CalendarCell({
             : selected
               ? "bg-foreground text-background"
               : isToday
-                ? "bg-white/70 ring-1 ring-foreground/30 hover:bg-white text-foreground"
-                : `hover:bg-white/60 ${!inMonth ? "text-muted-foreground/50" : "text-foreground"}`
+                ? "bg-white ring-1 ring-foreground/30 hover:bg-muted text-foreground"
+                : `hover:bg-muted ${!inMonth ? "text-muted-foreground/50" : "text-foreground"}`
         }`}
       >
         {day}
@@ -731,10 +726,10 @@ function UpNextHero({
   const hasRecordings = (liveData?.recordingsCount ?? 0) > 0;
   return (
     <div
-      className="rounded-3xl p-6 md:p-8 relative overflow-hidden"
+      className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
       style={{
-        background:
-          "linear-gradient(135deg, rgba(244,244,245,1) 0%, rgba(228,228,231,1) 100%)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -797,7 +792,7 @@ function UpNextHero({
         <button
           type="button"
           onClick={() => setLiveOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 px-4 py-2 text-sm font-medium transition"
+          className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground hover:bg-gold-hover px-4 text-sm font-bold transition h-9"
         >
           <Radio className="w-3.5 h-3.5" />
           {isLive ? "Manage live" : "Go live"}
@@ -862,10 +857,8 @@ function EventCard({
     <div
       className="rounded-2xl p-4 md:p-5"
       style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -934,7 +927,7 @@ function EventCard({
             <button
               type="button"
               onClick={() => setLiveOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90 px-3 py-1.5 text-xs font-medium transition"
+              className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground hover:bg-gold-hover px-4 text-xs font-bold transition h-9"
             >
               <Radio className="w-3.5 h-3.5" />
               {isLive ? "Manage live" : "Go live"}
@@ -1117,7 +1110,7 @@ function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">
             {editing ? "Edit event" : "New event"}
@@ -1231,7 +1224,6 @@ function EventFormDialog({
             <Button
               type="submit"
               disabled={saving}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {saving
                 ? editing

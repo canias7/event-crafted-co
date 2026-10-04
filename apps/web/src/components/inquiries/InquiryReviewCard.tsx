@@ -119,7 +119,7 @@ export function InquiryReviewCard({
   }
 
   return (
-    <div className="bg-card border border-border rounded-sm p-6">
+    <div className="bg-card border border-border rounded-2xl p-6">
       <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
         <div className="flex items-center gap-2">
           <p className="font-label text-muted-foreground">{incomingLabel}</p>
@@ -212,7 +212,6 @@ export function InquiryReviewCard({
                 size="sm"
                 onClick={save}
                 disabled={saving || !draft.trim()}
-                className="rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
                 {saving ? (
                   <>

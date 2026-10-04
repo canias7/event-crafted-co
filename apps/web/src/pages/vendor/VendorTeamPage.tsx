@@ -189,7 +189,7 @@ export default function VendorTeamPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
-          className="px-4 md:px-8 pt-8 pb-6"
+          className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
@@ -351,7 +351,7 @@ export default function VendorTeamPage() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
+                      className="inline-flex justify-center items-center rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover disabled:bg-gold-muted h-11"
                     >
                       {saving ? "Saving…" : "Save member"}
                     </button>

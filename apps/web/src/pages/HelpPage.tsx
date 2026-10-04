@@ -76,7 +76,7 @@ export default function HelpPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      <main className="pt-32 pb-24 container mx-auto px-6 md:px-8 max-w-2xl">
+      <main className="pt-32 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
         <p className="font-label text-accent mb-3">— HELP</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           How can we help?
@@ -88,7 +88,7 @@ export default function HelpPage() {
         {/* Primary contact card */}
         <a
           href={`mailto:${SUPPORT_EMAIL}?subject=Vendora%20support%20request`}
-          className="block rounded-2xl border border-foreground/15 bg-card hover:bg-secondary/40 p-5 mb-10 transition-colors"
+          className="block rounded-2xl border border-border bg-card hover:bg-secondary/40 p-5 mb-10 transition-colors"
         >
           <div className="flex items-center gap-4">
             <span className="w-11 h-11 rounded-xl bg-accent/15 text-accent inline-flex items-center justify-center shrink-0">

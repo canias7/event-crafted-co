@@ -68,6 +68,7 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { SHADOW } from "@/lib/ui";
 
 // Small palette inserted via the smile button. Tap one to append it
 // to the current draft. Designed for confirmations + emotional
@@ -454,7 +455,7 @@ export default function ThreadScreen() {
         >
           <ScrollView
             ref={scrollRef}
-            contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: 16 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 }}
             onContentSizeChange={() =>
               scrollRef.current?.scrollToEnd({ animated: false })
             }
@@ -528,9 +529,10 @@ function EmojiPickerModal({
             backgroundColor: "#fbf9f4",
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
+            // Sheet padding 24; the top keeps 12 for the grab handle.
             paddingTop: 12,
             paddingBottom: 32,
-            paddingHorizontal: 16,
+            paddingHorizontal: 24,
           }}
         >
           <View
@@ -604,7 +606,7 @@ function Header({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: "#e6e1d5",
@@ -751,7 +753,7 @@ function MessageRow({
                       style={{
                         width: 220,
                         height: 220,
-                        borderRadius: 18,
+                        borderRadius: 20,
                         marginBottom:
                           m.body || idx < m.attachments!.length - 1 ? 6 : 0,
                         backgroundColor: CREAM_DEEP,
@@ -771,7 +773,7 @@ function MessageRow({
                       gap: 8,
                       paddingHorizontal: 12,
                       paddingVertical: 10,
-                      borderRadius: 18,
+                      borderRadius: 20,
                       backgroundColor: CREAM_DEEP,
                       marginBottom:
                         m.body || idx < m.attachments!.length - 1 ? 6 : 0,
@@ -801,11 +803,11 @@ function MessageRow({
                     : CREAM_DEEP,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
-                borderRadius: 22,
-                borderTopRightRadius: isMine && m.isFirstInGroup ? 22 : 22,
-                borderBottomRightRadius: isMine && !m.isLastInGroup ? 8 : 22,
-                borderTopLeftRadius: !isMine && m.isFirstInGroup ? 22 : 22,
-                borderBottomLeftRadius: !isMine && !m.isLastInGroup ? 8 : 22,
+                borderRadius: 20,
+                borderTopRightRadius: isMine && m.isFirstInGroup ? 20 : 20,
+                borderBottomRightRadius: isMine && !m.isLastInGroup ? 8 : 20,
+                borderTopLeftRadius: !isMine && m.isFirstInGroup ? 20 : 20,
+                borderBottomLeftRadius: !isMine && !m.isLastInGroup ? 8 : 20,
                 opacity: m.deleted_at ? 0.7 : 1,
               }}
             >
@@ -821,7 +823,7 @@ function MessageRow({
                     marginBottom: 6,
                     paddingHorizontal: 8,
                     paddingVertical: 6,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     backgroundColor: isMine
                       ? "rgba(255,255,255,0.12)"
                       : "rgba(0,0,0,0.05)",
@@ -957,21 +959,18 @@ function Composer({
 }) {
   const enabled = value.trim().length > 0 && !sending;
   return (
-    <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 }}>
+    <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: "#fbf9f4",
           borderRadius: 999,
-          paddingLeft: 14,
+          paddingLeft: 16,
           paddingRight: 6,
           paddingVertical: 6,
-          shadowColor: INK,
-          shadowOpacity: 0.10,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 2,
+          // Floating composer bar.
+          ...SHADOW.soft,
         }}
       >
         <Pressable onPress={onAttach} hitSlop={6} style={{ paddingRight: 10 }}>

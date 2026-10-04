@@ -540,7 +540,7 @@ export function EditListingModal({
       className="fixed inset-0 z-50 flex flex-col vendor-canvas"
       style={{ background: "hsl(var(--background))" }}
     >
-      <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+      <header className="flex items-center justify-between border-b border-border px-5 py-4">
         <button
           onClick={attemptClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-accent"
@@ -671,7 +671,7 @@ export function EditListingModal({
                     id="edit-category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                   >
                     <option value="">Pick a category</option>
                     {CATEGORY_GROUPS.map((g) => (
@@ -710,7 +710,7 @@ export function EditListingModal({
                         return (
                           <button type="button" key={m}
                             onClick={() => setPricingModels((cur) => cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m])}
-                            className={`rounded-full border px-3.5 py-2 text-sm font-medium ${active ? "border-foreground bg-foreground text-background" : "border-input bg-background"}`}>
+                            className={`rounded-full border px-4 py-2 text-sm font-medium ${active ? "border-foreground bg-foreground text-background" : "border-border bg-background"}`}>
                             {PRICING_MODEL_LABELS[m as PricingModel]}
                           </button>
                         );
@@ -837,7 +837,7 @@ export function EditListingModal({
         )}
       </main>
 
-      <footer className="border-t border-border/60 bg-background/95 backdrop-blur">
+      <footer className="border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-2xl flex items-center justify-between gap-3 px-5 py-4">
           <div className="flex-1 text-xs text-muted-foreground">
             {loading ? (

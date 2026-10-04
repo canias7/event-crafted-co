@@ -52,6 +52,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
+import { SHADOW } from "@/lib/ui";
 
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
@@ -1303,10 +1304,10 @@ export default function CalendarScreen() {
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={{
-            paddingHorizontal: 18,
+            paddingHorizontal: 20,
             paddingTop: 8,
             // Room for the block bar too while it's up.
-            paddingBottom: selectMode ? 230 : 140,
+            paddingBottom: selectMode ? 232 : 140,
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -1325,7 +1326,7 @@ export default function CalendarScreen() {
                 backgroundColor: "#fef2f2",
                 borderWidth: 1,
                 borderColor: "#fecaca",
-                paddingHorizontal: 14,
+                paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
             >
@@ -1342,7 +1343,7 @@ export default function CalendarScreen() {
           <Wordmark />
           <View
             style={{
-              marginTop: 14,
+              marginTop: 16,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1399,13 +1400,10 @@ export default function CalendarScreen() {
               marginTop: 16,
               flexDirection: "row",
               backgroundColor: "#ffffff",
-              borderRadius: 26,
+              borderRadius: 999,
               padding: 4,
-              shadowColor: INK,
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 1,
+              borderWidth: 1,
+              borderColor: BORDER,
             }}
           >
             <ModeTab label="View bookings" active={!selectMode} onPress={exitSelectMode} />
@@ -1426,23 +1424,18 @@ export default function CalendarScreen() {
           <>
           {/* Calendar card. Gold outline while blocking, so the mode shows
               on the thing being tapped, not only on the switch above it.
-              The border is always 2pt (white when off) so turning the
+              The border is always 1pt (hairline when off) so turning the
               mode on doesn't nudge the grid. */}
           <View
             style={{
-              marginTop: 14,
-              backgroundColor: "#ffffff",
-              borderRadius: 24,
-              borderWidth: 2,
-              borderColor: selectMode ? GOLD : "#ffffff",
-              paddingHorizontal: 12,
-              paddingTop: 10,
-              paddingBottom: 12,
-              shadowColor: INK,
-              shadowOpacity: 0.1,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 2,
+              marginTop: 16,
+              backgroundColor: CARD,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: selectMode ? GOLD : BORDER,
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: 16,
             }}
           >
             {/* Month nav lives in the card it pages, not on a row of its
@@ -1494,7 +1487,7 @@ export default function CalendarScreen() {
               </View>
             ) : null}
             {loading ? (
-              <View style={{ paddingVertical: 70, alignItems: "center" }}>
+              <View style={{ paddingVertical: 72, alignItems: "center" }}>
                 <ActivityIndicator color={INK} />
               </View>
             ) : (
@@ -1523,12 +1516,12 @@ export default function CalendarScreen() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      backgroundColor: CARD,
+                      backgroundColor: "#ffffff",
                       borderWidth: 1,
                       borderColor: BORDER,
                       height: 36,
-                      paddingHorizontal: 14,
-                      borderRadius: 18,
+                      paddingHorizontal: 16,
+                      borderRadius: 999,
                       opacity: pressed ? 0.6 : 1,
                     }}
                   >
@@ -1547,7 +1540,7 @@ export default function CalendarScreen() {
                 marginTop: 12,
                 flexDirection: "row",
                 justifyContent: "center",
-                gap: 18,
+                gap: 20,
               }}
             >
               {showListingColors ? (
@@ -1599,7 +1592,7 @@ export default function CalendarScreen() {
           {!selectMode && selectedYmd ? (
             <View
               style={{
-                marginTop: 18,
+                marginTop: 20,
                 flexDirection: stackDayHeader ? "column" : "row",
                 alignItems: stackDayHeader ? "flex-start" : "center",
                 gap: stackDayHeader ? 10 : 0,
@@ -1638,10 +1631,11 @@ export default function CalendarScreen() {
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
+                        backgroundColor: "#ffffff",
                         borderWidth: 1,
                         borderColor: BORDER,
                         paddingHorizontal: 12,
-                        paddingVertical: 9,
+                        height: 36,
                         borderRadius: 999,
                         opacity: pressed ? 0.6 : 1,
                       }}
@@ -1666,8 +1660,8 @@ export default function CalendarScreen() {
                           blocking || (isSelectedBooked && !isSelectedBlocked)
                             ? GOLD_MUTED
                             : GOLD,
-                        paddingHorizontal: 14,
-                        paddingVertical: 9,
+                        paddingHorizontal: 16,
+                        height: 36,
                         borderRadius: 999,
                         opacity: pressed ? 0.7 : 1,
                       }}
@@ -1737,9 +1731,11 @@ export default function CalendarScreen() {
               {selectedItems.length === 0 ? (
                 <View
                   style={{
-                    backgroundColor: "#ffffff",
+                    backgroundColor: CARD,
+                    borderWidth: 1,
+                    borderColor: BORDER,
                     borderRadius: 20,
-                    paddingVertical: 34,
+                    paddingVertical: 36,
                     paddingHorizontal: 20,
                     alignItems: "center",
                   }}
@@ -1835,15 +1831,11 @@ export default function CalendarScreen() {
               flexDirection: "row",
               alignItems: "center",
               backgroundColor: INK,
-              borderRadius: 22,
+              borderRadius: 20,
               paddingVertical: 12,
-              paddingLeft: 18,
+              paddingLeft: 20,
               paddingRight: 12,
-              shadowColor: "#000",
-              shadowOpacity: 0.25,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 10,
+              ...SHADOW.soft,
             }}
           >
             <View style={{ flex: 1, paddingRight: 10 }}>
@@ -1883,15 +1875,15 @@ export default function CalendarScreen() {
               {({ pressed }) => (
                 <View
                   style={{
-                    height: 42,
+                    height: 44,
                     // Exact half-height, not 999: Android doesn't always
                     // clamp an oversized radius on a view whose fill changes.
-                    borderRadius: 21,
+                    borderRadius: 22,
                     paddingHorizontal: 16,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: blocking || pickedDates.length === 0 ? "#3a3c41" : GOLD,
+                    backgroundColor: blocking || pickedDates.length === 0 ? GOLD_MUTED : GOLD,
                     opacity: pressed ? 0.75 : 1,
                   }}
                 >
@@ -1899,7 +1891,7 @@ export default function CalendarScreen() {
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 14,
-                      color: blocking || pickedDates.length === 0 ? "#8d8a83" : INK,
+                      color: INK,
                     }}
                   >
                     {blocking
@@ -1952,11 +1944,11 @@ export default function CalendarScreen() {
           returnKeyType="done"
           onSubmitEditing={commitBlock}
           style={{ fontFamily: SERIF,
-            marginTop: 14,
+            marginTop: 16,
             borderWidth: 1,
             borderColor: BORDER,
             borderRadius: 12,
-            paddingHorizontal: 14,
+            paddingHorizontal: 16,
             paddingVertical: 12,
             fontSize: 15,
             color: INK,
@@ -2043,7 +2035,7 @@ export default function CalendarScreen() {
                       <Text
                         style={{
                           fontFamily: SERIF_BOLD,
-                          color: active ? CREAM : INK,
+                          color: active ? "#ffffff" : INK,
                           fontSize: 12,
                         }}
                       >
@@ -2084,7 +2076,7 @@ export default function CalendarScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: aTitle === t ? CREAM : INK, fontSize: 12}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: aTitle === t ? "#ffffff" : INK, fontSize: 12}}>
                   {t}
                 </Text>
               </Pressable>
@@ -2119,7 +2111,7 @@ export default function CalendarScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: aTime === t ? CREAM : INK, fontSize: 12}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: aTime === t ? "#ffffff" : INK, fontSize: 12}}>
                   {t}
                 </Text>
               </Pressable>
@@ -2148,7 +2140,7 @@ export default function CalendarScreen() {
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: aDuration === d.value ? CREAM : INK,
+                    color: aDuration === d.value ? "#ffffff" : INK,
                     fontSize: 12,
                   }}
                 >
@@ -2359,7 +2351,7 @@ function TargetChip({
           }}
         />
       ) : null}
-      <Text style={{ fontFamily: SERIF_BOLD, color: active ? CREAM : INK, fontSize: 12}}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: active ? "#ffffff" : INK, fontSize: 12}}>{label}</Text>
     </Pressable>
   );
 }
@@ -2573,7 +2565,7 @@ function DayCell({
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
-          borderWidth: selected && state !== "available" ? 2 : 0,
+          borderWidth: selected && state !== "available" ? 1 : 0,
           borderColor: accent,
         }}
       >
@@ -2625,17 +2617,15 @@ function BlockedDayCard({ title, onPress }: { title: string; onPress: () => void
       {({ pressed }) => (
         <View
           style={{
-            backgroundColor: "#ffffff",
-            borderRadius: 18,
+            backgroundColor: CARD,
+            borderRadius: 20,
             flexDirection: "row",
             alignItems: "center",
-            marginBottom: 10,
-            paddingVertical: 14,
-            paddingHorizontal: 14,
-            shadowColor: INK,
-            shadowOpacity: 0.1,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: 4 },
+            marginBottom: 12,
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            borderWidth: 1,
+            borderColor: BORDER,
             opacity: pressed ? 0.85 : 1,
           }}
         >
@@ -2678,22 +2668,20 @@ function BookingRow({
       {({ pressed }) => (
         <View
           style={{
-            backgroundColor: "#ffffff",
-            borderRadius: 18,
+            backgroundColor: CARD,
+            borderRadius: 20,
             flexDirection: "row",
             alignItems: "center",
-            marginBottom: 10,
+            marginBottom: 12,
             overflow: "hidden",
-            shadowColor: INK,
-            shadowOpacity: 0.1,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: 4 },
+            borderWidth: 1,
+            borderColor: BORDER,
             opacity: pressed && tappable ? 0.85 : 1,
           }}
         >
           <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accentColor }} />
           {item.timeLabel && item.timeLabel !== "All day" ? (
-            <View style={{ paddingHorizontal: 12, paddingVertical: 14, alignItems: "center", width: 70 }}>
+            <View style={{ paddingHorizontal: 12, paddingVertical: 16, alignItems: "center", width: 70 }}>
               <Text style={{ color: INK, fontSize: 14, fontFamily: SERIF_BOLD }} numberOfLines={1}>
                 {item.timeLabel}
               </Text>
@@ -2701,7 +2689,7 @@ function BookingRow({
           ) : (
             <View style={{ width: 12 }} />
           )}
-          <View style={{ flex: 1, paddingVertical: 14, paddingRight: 14 }}>
+          <View style={{ flex: 1, paddingVertical: 16, paddingRight: 16 }}>
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}} numberOfLines={1}>
               {item.title}
             </Text>
@@ -2711,12 +2699,12 @@ function BookingRow({
           </View>
           {item.amountCents != null ? (
             <Text
-              style={{ color: INK, fontSize: 15, marginRight: 14, fontFamily: SERIF_BOLD }}
+              style={{ color: INK, fontSize: 15, marginRight: 16, fontFamily: SERIF_BOLD }}
             >
               {fmtMoneyShort(item.amountCents)}
             </Text>
           ) : item.timeLabel === "All day" ? (
-            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginRight: 14 }}>All day</Text>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginRight: 16 }}>All day</Text>
           ) : null}
         </View>
       )}
@@ -2738,13 +2726,11 @@ function RecurringBlocksSection({
     <View
       style={{
         marginTop: 24,
-        backgroundColor: "#ffffff",
-        borderRadius: 18,
+        backgroundColor: CARD,
+        borderRadius: 20,
         padding: 16,
-        shadowColor: INK,
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
+        borderWidth: 1,
+        borderColor: BORDER,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -2784,9 +2770,9 @@ function RecurringBlocksSection({
               accessibilityLabel={`${DAY_FULL[dow]} ${isOff ? "off" : "on"}`}
             >
               {saving ? (
-                <ActivityIndicator size="small" color={isOff ? CREAM : INK} />
+                <ActivityIndicator size="small" color={isOff ? "#ffffff" : INK} />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: isOff ? CREAM : INK_DIM, fontSize: 13}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: isOff ? "#ffffff" : INK_DIM, fontSize: 13}}>
                   {short}
                 </Text>
               )}
@@ -2872,7 +2858,7 @@ function AppointmentsSection({
                 alignItems: "center",
                 backgroundColor: GOLD,
                 paddingHorizontal: 12,
-                paddingVertical: 8,
+                height: 36,
                 borderRadius: 999,
                 opacity: pressed ? 0.6 : 1,
               }}
@@ -2887,8 +2873,10 @@ function AppointmentsSection({
       {appointments.length === 0 ? (
         <View
           style={{
-            backgroundColor: "#ffffff",
-            borderRadius: 18,
+            backgroundColor: CARD,
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 20,
             paddingVertical: 24,
             paddingHorizontal: 16,
             alignItems: "center",
@@ -2921,7 +2909,7 @@ function AppointmentsSection({
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: filter === opt.value ? CREAM : INK_DIM,
+                    color: filter === opt.value ? "#ffffff" : INK_DIM,
                     fontSize: 12,
                   }}
                 >
@@ -3003,14 +2991,12 @@ function AppointmentCard({
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
-        borderRadius: 18,
+        backgroundColor: CARD,
+        borderRadius: 20,
         padding: 16,
-        marginBottom: 10,
-        shadowColor: INK,
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: BORDER,
       }}
     >
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -3041,7 +3027,7 @@ function AppointmentCard({
         </View>
       </View>
 
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 10 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 10 }}>
         <Meta icon="calendar" text={when.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} />
         <Meta icon="clock" text={`${fmtApptTime(appt.scheduled_at)} · ${appt.duration_minutes} min`} />
         {appt.location ? <Meta icon="map-pin" text={appt.location} /> : null}
@@ -3055,7 +3041,7 @@ function AppointmentCard({
             fontSize: 13,
             color: "rgba(20,22,26,0.8)",
             lineHeight: 18,
-            borderLeftWidth: 2,
+            borderLeftWidth: 1,
             borderLeftColor: BORDER,
             paddingLeft: 10,
           }}
@@ -3132,17 +3118,17 @@ function ActionBtn({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        height: 32,
+        height: 36,
         paddingHorizontal: 12,
         borderRadius: 999,
+        // Non-primary actions (muted included) are the secondary pill:
+        // white fill, hairline border.
         backgroundColor: primary
           ? disabled
             ? GOLD_MUTED
             : GOLD
-          : muted
-            ? "transparent"
-            : CREAM_DEEP,
-        borderWidth: muted ? 1 : 0,
+          : "#ffffff",
+        borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
       }}
     >
@@ -3168,10 +3154,10 @@ function SmallBtn({
       onPress={onPress}
       disabled={disabled}
       style={{
-        paddingHorizontal: 18,
-        height: 42,
+        paddingHorizontal: 20,
+        height: 44,
         borderRadius: 999,
-        backgroundColor: primary ? (disabled ? GOLD_MUTED : GOLD) : CREAM,
+        backgroundColor: primary ? (disabled ? GOLD_MUTED : GOLD) : "#ffffff",
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
@@ -3203,7 +3189,7 @@ const inputStyle = {
   borderWidth: 1,
   borderColor: BORDER,
   borderRadius: 12,
-  paddingHorizontal: 14,
+  paddingHorizontal: 16,
   paddingVertical: 11,
   fontSize: 15,
   color: INK,
@@ -3230,7 +3216,7 @@ function CenterModal({
           onPress={onClose}
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }}
         />
-        <View style={{ backgroundColor: CREAM, borderRadius: 20, padding: 20, maxHeight: "82%" }}>
+        <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 24, maxHeight: "82%" }}>
           <Text style={{ fontFamily: SERIF, fontSize: 20, color: INK }}>{title}</Text>
           {children}
         </View>

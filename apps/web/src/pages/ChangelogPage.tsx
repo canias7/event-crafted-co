@@ -68,7 +68,7 @@ export default function ChangelogPage() {
       <PublicNav />
 
       <section className="border-b border-border pt-32 pb-12 md:pb-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-4xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — CHANGELOG
           </p>
@@ -85,7 +85,7 @@ export default function ChangelogPage() {
       </section>
 
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-4xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <div className="space-y-12">
             {grouped.map(([month, entries], gi) => (
               <motion.section

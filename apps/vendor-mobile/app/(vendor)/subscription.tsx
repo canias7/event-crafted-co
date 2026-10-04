@@ -446,13 +446,13 @@ export default function SubscriptionScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
         showsVerticalScrollIndicator={false}
       >
         <Wordmark />
         <Text
           style={{
-            marginTop: 14,
+            marginTop: 16,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
             letterSpacing: -0.5,
@@ -470,7 +470,7 @@ export default function SubscriptionScreen() {
           style={{
             backgroundColor: INK,
             borderRadius: 20,
-            padding: 20,
+            padding: 16,
           }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, color: "rgba(255,255,255,0.6)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2}}>
@@ -508,7 +508,7 @@ export default function SubscriptionScreen() {
                     : "rgba(255,255,255,0.12)",
                 borderRadius: 999,
                 paddingHorizontal: 16,
-                paddingVertical: 9,
+                height: 36,
               }}
             >
               {acting === "portal" ? (
@@ -537,7 +537,7 @@ export default function SubscriptionScreen() {
               borderWidth: 1,
               borderColor: BORDER,
               borderRadius: 20,
-              padding: 18,
+              padding: 16,
               marginTop: 28,
             }}
           >
@@ -554,7 +554,7 @@ export default function SubscriptionScreen() {
 
         {/* Plan list. Purchase controls are web + Android only; iOS renders
             the same cards without price or button. */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 32, marginBottom: 12 }}>
           <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF }}>
             {isIOS ? "What each plan includes" : "Choose a plan"}
           </Text>
@@ -573,7 +573,7 @@ export default function SubscriptionScreen() {
                   onPress={() => setBillingInterval(iv)}
                   style={{
                     borderRadius: 999,
-                    paddingHorizontal: 13,
+                    paddingHorizontal: 12,
                     paddingVertical: 6,
                     backgroundColor: billingInterval === iv ? INK : "transparent",
                   }}
@@ -617,9 +617,9 @@ export default function SubscriptionScreen() {
               style={{
                 backgroundColor: CARD,
                 borderRadius: 20,
-                padding: 18,
+                padding: 16,
                 marginBottom: 12,
-                borderWidth: isCurrent || isPremiumTier ? 1.5 : 1,
+                borderWidth: 1,
                 borderColor: isCurrent ? INK : isPremiumTier ? GOLD : BORDER,
               }}
             >
@@ -698,7 +698,8 @@ export default function SubscriptionScreen() {
                   style={{
                     marginTop: 16,
                     borderRadius: 999,
-                    paddingVertical: 12,
+                    height: 44,
+                    justifyContent: "center",
                     alignItems: "center",
                     backgroundColor:
                       isCurrent || !tier.priceId
@@ -736,7 +737,7 @@ export default function SubscriptionScreen() {
         {/* Top-up packs — a purchase surface, so web + Android only. */}
         {!isIOS && topups.length > 0 ? (
           <>
-            <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF, marginTop: 20 }}>
+            <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF, marginTop: 24 }}>
               Top up credits
             </Text>
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, marginTop: 4, marginBottom: 12 }}>
@@ -753,7 +754,7 @@ export default function SubscriptionScreen() {
                     borderColor: BORDER,
                     borderRadius: 20,
                     padding: 16,
-                    marginBottom: 10,
+                    marginBottom: 12,
                     flexDirection: "row",
                     alignItems: "center",
                   }}
@@ -773,7 +774,8 @@ export default function SubscriptionScreen() {
                     style={{
                       borderRadius: 999,
                       paddingHorizontal: 16,
-                      paddingVertical: 9,
+                      height: 36,
+                      justifyContent: "center",
                       backgroundColor:
                         acting !== null && !isActing ? GOLD_MUTED : GOLD,
                       minWidth: 64,

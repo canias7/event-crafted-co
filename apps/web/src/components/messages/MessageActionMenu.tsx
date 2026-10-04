@@ -50,7 +50,7 @@ export function MessageActionMenu({
           <button
             type="button"
             aria-label="React"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-sm hover:bg-secondary"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-soft hover:bg-secondary"
           >
             <Smile className="w-3.5 h-3.5 text-foreground" />
           </button>
@@ -82,7 +82,7 @@ export function MessageActionMenu({
             <button
               type="button"
               aria-label="More"
-              className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-sm hover:bg-secondary"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-soft hover:bg-secondary"
             >
               <MoreHorizontal className="w-3.5 h-3.5 text-foreground" />
             </button>

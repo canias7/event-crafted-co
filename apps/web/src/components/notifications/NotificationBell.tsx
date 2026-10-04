@@ -175,7 +175,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-80 p-0 rounded-sm overflow-hidden"
+        className="w-80 p-0 overflow-hidden"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <p className="font-display text-sm">Notifications</p>

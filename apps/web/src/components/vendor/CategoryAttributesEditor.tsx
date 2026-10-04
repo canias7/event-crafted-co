@@ -121,7 +121,6 @@ export function CategoryAttributesEditor({
             <Button
               type="submit"
               disabled={saving}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save details
@@ -319,7 +318,7 @@ function FieldEditor({
                 key={opt}
                 type="button"
                 onClick={() => onToggleTag(opt)}
-                className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
+                className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
                 style={
                   active
                     ? {
@@ -346,7 +345,7 @@ function FieldEditor({
               key={opt}
               type="button"
               onClick={() => onToggleTag(opt)}
-              className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
+              className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
               style={{
                 background: "rgba(0,0,0,0.08)",
                 color: "#14161a",
@@ -429,7 +428,7 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
           setEditing(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="text-[13px] rounded-full px-3.5 py-1.5 transition-colors inline-flex items-center gap-1.5"
+        className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
         style={{
           background: "transparent",
           color: "rgba(26,22,18,0.55)",

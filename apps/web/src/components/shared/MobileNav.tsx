@@ -88,7 +88,7 @@ export function MobileNav({ items }: MobileNavProps) {
       className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 pointer-events-none"
       aria-label="Mobile primary"
     >
-      <div className="pointer-events-auto mx-auto max-w-md flex items-center justify-between h-16 px-2 rounded-full bg-card/95 backdrop-blur shadow-[0_8px_24px_-8px_rgba(26,20,16,0.25)] border border-border/40">
+      <div className="pointer-events-auto mx-auto max-w-md flex items-center justify-between h-16 px-2 rounded-full bg-card/95 backdrop-blur shadow-soft border border-border">
         {primaryItems.map((item) => {
           const isActive = item.exact
             ? location.pathname + location.search === item.path
@@ -125,7 +125,7 @@ export function MobileNav({ items }: MobileNavProps) {
           </SheetTrigger>
           <SheetContent
             side="bottom"
-            className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]"
+            className="rounded-t-3xl max-h-[85vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]"
           >
             <SheetHeader className="text-left mb-2">
               <SheetTitle className="font-display text-lg">More</SheetTitle>

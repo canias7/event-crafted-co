@@ -74,7 +74,7 @@ function JsFatalScreen({
 }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f1ea" }}>
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 24 }}>
         <Text
           style={{
             fontFamily: "LibreBaskerville-Bold",
@@ -93,7 +93,7 @@ function JsFatalScreen({
             marginTop: 16,
             backgroundColor: "#fbf9f4",
             borderRadius: 12,
-            padding: 14,
+            padding: 16,
           }}
         >
           <Text

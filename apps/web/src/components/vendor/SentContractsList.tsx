@@ -160,7 +160,7 @@ export function SentContractsList({
       className="rounded-2xl overflow-hidden"
       style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(0,0,0,0.08)" }}
     >
-      <div className="px-4 pt-3 pb-2 border-b border-foreground/5">
+      <div className="px-4 pt-3 pb-2 border-b border-border">
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
           Sent for signature
         </span>
@@ -177,7 +177,7 @@ export function SentContractsList({
             const signed = c.status === "signed";
             const open = c.status === "sent";
             return (
-              <div key={c.id} className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}>
+              <div key={c.id} className={`p-4 ${idx > 0 ? "border-t border-border" : ""}`}>
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -195,7 +195,7 @@ export function SentContractsList({
                   <button
                     type="button"
                     onClick={() => window.open(`${ORIGIN}/sign/${c.sign_token}`, "_blank")}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
@@ -203,7 +203,7 @@ export function SentContractsList({
                   <button
                     type="button"
                     onClick={() => downloadPdf(c)}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <Download className="w-3.5 h-3.5" />
                     PDF
@@ -212,7 +212,7 @@ export function SentContractsList({
                     <button
                       type="button"
                       onClick={() => copyLink(c.sign_token)}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       Link

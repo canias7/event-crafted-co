@@ -341,23 +341,14 @@ function ViewTab({
       onPress={onPress}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
-        // Card cream, not pure white — the border + shadow carry the
-        // "raised / active" read, same as every other card in the app.
+        // Selected tile: card cream with a 1px ink border — selection
+        // reads in ink, and tiles carry no shadow.
         backgroundColor: active ? "#fbf9f4" : "transparent",
-        borderRadius: active ? 14 : 0,
+        borderRadius: active ? 12 : 0,
         borderWidth: active ? 1 : 0,
-        borderColor: "#e6e1d5",
+        borderColor: "#14161a",
         marginHorizontal: active ? 4 : 0,
         marginVertical: active ? 4 : 0,
-        ...(active
-          ? {
-              shadowColor: "#000",
-              shadowOpacity: 0.10,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            }
-          : null),
       }}
     >
       <Feather name={iconName} size={22} color={active ? "#14161a" : "#6f6a60"} />
@@ -400,22 +391,19 @@ function FeedAuthorHeader({ vendor }: { vendor: Author }) {
 
 function PostGrid({ posts }: { posts: PostRow[] }) {
   return (
-    <View className="gap-4">
+    <View className="gap-3">
       {posts.map((p) => (
         <View key={p.id} className="px-5">
           <View
             style={{
-              borderRadius: 16,
+              borderRadius: 20,
               overflow: "hidden",
               backgroundColor: "#fbf9f4",
-              shadowColor: "#000",
-              shadowOpacity: 0.10,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: 3,
+              borderWidth: 1,
+              borderColor: "#e6e1d5",
             }}
           >
-            <View className="bg-background">
+            <View>
               <FeedAuthorHeader vendor={p.vendor} />
             </View>
             <Image
@@ -424,7 +412,7 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
               resizeMode="cover"
             />
             {p.caption ? (
-              <View className="px-4 py-3 bg-background">
+              <View className="px-4 py-3">
                 <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{p.caption}</Text>
                 <Text style={{ fontFamily: SERIF }} className="mt-1 text-xs text-muted-foreground">
                   {new Date(p.created_at).toLocaleString()}
@@ -440,22 +428,19 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
 
 function ReelGrid({ reels }: { reels: ReelRow[] }) {
   return (
-    <View className="gap-4">
+    <View className="gap-3">
       {reels.map((r) => (
         <View key={r.id} className="px-5">
           <View
             style={{
-              borderRadius: 16,
+              borderRadius: 20,
               overflow: "hidden",
               backgroundColor: "#fbf9f4",
-              shadowColor: "#000",
-              shadowOpacity: 0.12,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: 3,
+              borderWidth: 1,
+              borderColor: "#e6e1d5",
             }}
           >
-            <View className="bg-background">
+            <View>
               <FeedAuthorHeader vendor={r.vendor} />
             </View>
             <View
@@ -490,7 +475,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
               </View>
             </View>
             {r.caption ? (
-              <View className="px-4 py-3 bg-background">
+              <View className="px-4 py-3">
                 <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{r.caption}</Text>
               </View>
             ) : null}
@@ -505,9 +490,10 @@ function BuzzList({ items }: { items: BuzzRow[] }) {
   return (
     <View className="gap-3 px-5">
       {items.map((b) => (
+        // Card: p-1 plus the rows' own 12px inset = the standard 16.
         <View
           key={b.id}
-          className="rounded-xl border border-border bg-background p-2"
+          className="rounded-[20px] border border-border bg-[#fbf9f4] p-1"
         >
           <FeedAuthorHeader vendor={b.vendor} />
           <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
@@ -567,7 +553,7 @@ function ListingFeed({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4 gap-2 pb-4"
+        contentContainerClassName="px-5 gap-2 pb-4"
       >
         <CategoryChip
           label="All"
@@ -584,7 +570,7 @@ function ListingFeed({
         ))}
       </ScrollView>
 
-      <View className="gap-10">
+      <View className="gap-8">
         {visibleGroups.map((groupName) => {
           const subs = byGroup.get(groupName);
           if (!subs) return null;
@@ -615,7 +601,7 @@ function ListingFeed({
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerClassName="px-4 gap-3"
+                        contentContainerClassName="px-5 gap-3"
                       >
                         {rows.map((l) => (
                           <ListingCard
@@ -669,7 +655,7 @@ function ListingCard({
     >
       <View
         style={{
-          borderRadius: 18,
+          borderRadius: 20,
           overflow: "hidden",
           backgroundColor: "#14161a",
           aspectRatio: 1,
@@ -765,7 +751,7 @@ function CategoryChip({
     >
       <Text style={{ fontFamily: SERIF_BOLD }}
         className={`text-xs ${
-          active ? "text-background" : "text-foreground"
+          active ? "text-white" : "text-foreground"
         }`}
       >
         {label}

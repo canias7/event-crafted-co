@@ -125,7 +125,7 @@ export function HostReputationCard({
 
   if (loading) {
     return (
-      <div className="rounded-sm border border-border p-4 bg-card">
+      <div className="rounded-2xl border border-border p-4 bg-card">
         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
       </div>
     );
@@ -283,7 +283,7 @@ function FlagDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">
             Flag this host
@@ -338,7 +338,6 @@ function FlagDialog({
             <Button
               type="submit"
               disabled={saving}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

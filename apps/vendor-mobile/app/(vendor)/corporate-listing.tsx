@@ -479,7 +479,7 @@ export default function CorporateListingScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingVertical: 10,
           }}
         >
@@ -502,11 +502,12 @@ export default function CorporateListingScreen() {
             style={{
               borderWidth: 1,
               borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
+              paddingHorizontal: 16,
+              height: 36,
+              justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f3f1ec" : "#ffffff",
-              borderColor: busy ? "#ece9e1" : BORDER,
+              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              borderColor: BORDER,
             }}
           >
             <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>

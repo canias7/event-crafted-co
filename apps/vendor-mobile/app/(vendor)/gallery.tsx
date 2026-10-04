@@ -59,7 +59,6 @@ const INK = "#14161a";
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
 const PLACEHOLDER = "#746a58";
-const ACCENT = "#1b3654";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const ERROR = "#b23a34";
@@ -541,7 +540,7 @@ export default function GalleryScreen() {
             enter occasionally, not a peer of the primary action. */}
         <View
           style={{
-            marginTop: 14,
+            marginTop: 16,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
@@ -563,7 +562,7 @@ export default function GalleryScreen() {
           <Pressable
             onPress={uploadImages}
             disabled={uploading}
-            style={[pillStyle(true), { opacity: uploading ? 0.6 : 1 }]}
+            style={[pillStyle(true), { backgroundColor: uploading ? "#e0d2b0" : GOLD }]}
           >
             {uploading ? (
               <ActivityIndicator size="small" color={INK} />
@@ -584,7 +583,7 @@ export default function GalleryScreen() {
         {/* Three tabs instead of two scrolling chip rows. Albums and Trash
             are places, not filters — they were sharing a strip with smart
             collections, which are filters, and neither row fit on screen. */}
-        <View style={{ marginTop: 18 }}>
+        <View style={{ marginTop: 20 }}>
           <UnderlineTabs
             value={tab}
             onChange={(k) => setTab(k as GalleryTab)}
@@ -616,7 +615,7 @@ export default function GalleryScreen() {
                 behind an icon that did the same thing. */}
             <View
               style={{
-                marginTop: 14,
+                marginTop: 16,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -651,7 +650,7 @@ export default function GalleryScreen() {
             albums are somewhere photos live, and the count is the thing
             you actually want to see before opening one. */}
         {tab === "albums" ? (
-          <View style={{ marginTop: 18 }}>
+          <View style={{ marginTop: 20 }}>
             <AlbumRow
               icon="image"
               name="All photos"
@@ -696,7 +695,7 @@ export default function GalleryScreen() {
                 justifyContent: "center",
                 gap: 8,
                 height: 52,
-                borderRadius: 16,
+                borderRadius: 20,
                 borderWidth: 1,
                 borderColor: BORDER,
                 borderStyle: "dashed",
@@ -720,7 +719,7 @@ export default function GalleryScreen() {
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
-              borderRadius: 22,
+              borderRadius: 20,
               paddingVertical: 44,
               paddingHorizontal: 24,
               alignItems: "center",
@@ -739,7 +738,7 @@ export default function GalleryScreen() {
             </View>
             <Text
               style={{
-                marginTop: 18,
+                marginTop: 20,
                 fontFamily: SERIF_BOLD,
                 fontSize: 24,
                 color: INK,
@@ -763,11 +762,11 @@ export default function GalleryScreen() {
               <Pressable
                 onPress={uploadImages}
                 style={{
-                  marginTop: 22,
+                  marginTop: 24,
                   backgroundColor: GOLD,
                   borderRadius: 999,
                   paddingHorizontal: 24,
-                  height: 50,
+                  height: 52,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 8,
@@ -817,7 +816,7 @@ export default function GalleryScreen() {
                   <View
                     style={
                       listView
-                        ? { width: 56, height: 56, borderRadius: 10, overflow: "hidden", backgroundColor: SURFACE }
+                        ? { width: 56, height: 56, borderRadius: 8, overflow: "hidden", backgroundColor: SURFACE }
                         : { width: "100%", height: "100%", borderRadius: 12, overflow: "hidden", backgroundColor: SURFACE, opacity: isSel ? 0.6 : 1 }
                     }
                   >
@@ -843,9 +842,9 @@ export default function GalleryScreen() {
                         width: 22,
                         height: 22,
                         borderRadius: 999,
-                        backgroundColor: isSel ? ACCENT : "rgba(255,255,255,0.85)",
-                        borderWidth: 1.5,
-                        borderColor: isSel ? ACCENT : BORDER,
+                        backgroundColor: isSel ? INK : "rgba(255,255,255,0.85)",
+                        borderWidth: 1,
+                        borderColor: isSel ? INK : BORDER,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
@@ -879,13 +878,13 @@ export default function GalleryScreen() {
               })
             }
             style={{
-              marginTop: 18,
+              marginTop: 20,
               backgroundColor: "#efe9dc",
               borderRadius: 20,
               padding: 16,
               flexDirection: "row",
               alignItems: "center",
-              gap: 14,
+              gap: 16,
             }}
           >
             <View
@@ -927,12 +926,12 @@ export default function GalleryScreen() {
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: PAGE,
-              borderTopLeftRadius: 26,
-              borderTopRightRadius: 26,
-              paddingHorizontal: 20,
+              backgroundColor: CARD,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 24,
               paddingTop: 10,
-              paddingBottom: 34,
+              paddingBottom: 36,
             }}
           >
             <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 999, backgroundColor: BORDER }} />
@@ -963,7 +962,7 @@ export default function GalleryScreen() {
               ))}
             </View>
 
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, marginTop: 22 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, marginTop: 24 }}>
               LAYOUT
             </Text>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
@@ -981,7 +980,9 @@ export default function GalleryScreen() {
                 marginTop: 24,
                 height: 52,
                 borderRadius: 999,
-                backgroundColor: selectMode ? SURFACE : GOLD,
+                backgroundColor: selectMode ? WHITE : GOLD,
+                borderWidth: selectMode ? 1 : 0,
+                borderColor: BORDER,
                 alignItems: "center",
                 justifyContent: "center",
                 flexDirection: "row",
@@ -1008,7 +1009,7 @@ export default function GalleryScreen() {
             right: 16,
             bottom: 28,
             backgroundColor: INK,
-            borderRadius: 18,
+            borderRadius: 20,
             paddingVertical: 12,
             paddingHorizontal: 16,
             flexDirection: "row",
@@ -1017,7 +1018,7 @@ export default function GalleryScreen() {
           }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, color: WHITE}}>{selected.size} selected</Text>
-          <View style={{ flexDirection: "row", gap: 18 }}>
+          <View style={{ flexDirection: "row", gap: 20 }}>
             {tab === "trash" ? (
               <BarAction icon="rotate-ccw" label="Restore" onPress={async () => { await restore([...selected]); exitSelect(); }} />
             ) : (
@@ -1042,7 +1043,7 @@ export default function GalleryScreen() {
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 }}>
                   <Image source={{ uri: lightbox.image_url }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="contain" />
                 </View>
-                <View style={{ paddingHorizontal: 18, paddingTop: 10 }}>
+                <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
                   {editingCaption ? (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <TextInput
@@ -1109,7 +1110,7 @@ export default function GalleryScreen() {
           placeholder="Album name"
           placeholderTextColor={PLACEHOLDER}
           autoFocus
-          style={{ fontFamily: SERIF, marginTop: 14, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
+          style={{ fontFamily: SERIF, marginTop: 16, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
         />
         <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
           <SmallBtn label="Cancel" onPress={() => setNewAlbumOpen(false)} />
@@ -1136,12 +1137,12 @@ function pillStyle(filled: boolean) {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    // 38/14 rather than 44/18: at the old size "Select" + "Upload" left
+    // 36/12 rather than 44/18: at the old size "Select" + "Upload" left
     // the 38pt "Gallery" title under 372pt and it wrapped to "Galler/y".
-    height: 38,
+    height: 36,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: filled ? GOLD : CARD,
+    backgroundColor: filled ? GOLD : WHITE,
     borderWidth: filled ? 0 : 1,
     borderColor: BORDER,
   };
@@ -1166,10 +1167,10 @@ function SegBtn({
         height: 40,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: active ? SURFACE : "transparent",
+        backgroundColor: active ? INK : "transparent",
       }}
     >
-      <Feather name={icon} size={17} color={INK} />
+      <Feather name={icon} size={17} color={active ? WHITE : INK} />
     </Pressable>
   );
 }
@@ -1193,14 +1194,14 @@ function AlbumRow({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 14,
+        gap: 16,
         backgroundColor: CARD,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 16,
+        borderRadius: 20,
         paddingHorizontal: 16,
         height: 66,
-        marginBottom: 8,
+        marginBottom: 12,
       }}
     >
       <View
@@ -1250,15 +1251,9 @@ function Chip({
         flexDirection: "row",
         alignItems: "center",
         height: small ? 38 : 46,
-        paddingHorizontal: small ? 14 : 16,
+        paddingHorizontal: 16,
         borderRadius: 999,
-        backgroundColor: active
-          ? small
-            ? "#eadfc6"
-            : INK
-          : small
-            ? SURFACE
-            : CARD,
+        backgroundColor: active ? INK : small ? SURFACE : CARD,
         borderWidth: small ? 0 : 1,
         borderColor: active && !small ? INK : BORDER,
       }}
@@ -1267,13 +1262,13 @@ function Chip({
         <Feather
           name={icon}
           size={14}
-          color={active && !small ? WHITE : INK}
+          color={active ? WHITE : INK}
           style={{ marginRight: 6 }}
         />
       ) : null}
       <Text
         style={{
-          color: active && !small ? WHITE : INK,
+          color: active ? WHITE : INK,
           fontSize: small ? 13.5 : 15,
           fontWeight: "600",
           ...(small ? {} : { fontFamily: SERIF }),
@@ -1310,7 +1305,7 @@ function CenterModal({ visible, onClose, title, children }: { visible: boolean; 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", paddingHorizontal: 24 }}
       >
-        <View style={{ backgroundColor: WHITE, borderRadius: 20, padding: 20, maxHeight: "70%" }}>
+        <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 24, maxHeight: "70%" }}>
           <Text style={{ fontFamily: SERIF_BOLD, fontSize: 18, color: INK }}>{title}</Text>
           {children}
         </View>
@@ -1324,8 +1319,8 @@ function SmallBtn({ label, onPress, primary }: { label: string; onPress: () => v
     <Pressable
       onPress={onPress}
       style={{
-        paddingHorizontal: 18,
-        height: 42,
+        paddingHorizontal: 20,
+        height: 44,
         borderRadius: 999,
         backgroundColor: primary ? GOLD : WHITE,
         borderWidth: primary ? 0 : 1,

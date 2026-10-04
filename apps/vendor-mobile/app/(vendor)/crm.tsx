@@ -163,13 +163,13 @@ export default function CrmScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
           showsVerticalScrollIndicator={false}
         >
           <Wordmark />
           <Text
             style={{
-              marginTop: 26,
+              marginTop: 28,
               fontFamily: SERIF_BOLD,
               fontSize: 38,
               letterSpacing: -0.5,
@@ -183,7 +183,7 @@ export default function CrmScreen() {
             you've worked with, their events, your notes, and follow-up
             reminders so no lead goes cold.
           </Text>
-          <View style={{ marginTop: 24, gap: 14 }}>
+          <View style={{ marginTop: 24, gap: 12 }}>
             {[
               { icon: "users", text: "Every client in one place, built from your inquiries" },
               { icon: "file-text", text: "Private notes on each client — only you see them" },
@@ -198,9 +198,9 @@ export default function CrmScreen() {
                   backgroundColor: CARD,
                   borderWidth: 1,
                   borderColor: BORDER,
-                  borderRadius: 16,
+                  borderRadius: 20,
                   paddingHorizontal: 16,
-                  paddingVertical: 14,
+                  paddingVertical: 16,
                 }}
               >
                 <View
@@ -224,10 +224,11 @@ export default function CrmScreen() {
           <Pressable
             onPress={() => router.push("/(vendor)/subscription" as never)}
             style={{
-              marginTop: 26,
+              marginTop: 28,
               backgroundColor: GOLD,
               borderRadius: 999,
-              paddingVertical: 15,
+              height: 52,
+              justifyContent: "center",
               alignItems: "center",
             }}
           >
@@ -247,7 +248,7 @@ export default function CrmScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -273,7 +274,7 @@ export default function CrmScreen() {
 
         <Text
           style={{
-            marginTop: 14,
+            marginTop: 16,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
             letterSpacing: -0.5,
@@ -289,7 +290,7 @@ export default function CrmScreen() {
         {/* Search */}
         <View
           style={{
-            marginTop: 18,
+            marginTop: 20,
             flexDirection: "row",
             alignItems: "center",
             backgroundColor: CARD,
@@ -317,7 +318,7 @@ export default function CrmScreen() {
         {filtered.length === 0 ? (
           <View
             style={{
-              marginTop: 22,
+              marginTop: 24,
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
@@ -346,7 +347,7 @@ export default function CrmScreen() {
             </Text>
           </View>
         ) : (
-          <View style={{ marginTop: 18, gap: 12 }}>
+          <View style={{ marginTop: 20, gap: 12 }}>
             {filtered.map((c) => {
               const followSoon =
                 c.follow_up_at && new Date(c.follow_up_at).getTime() < Date.now() + 86400_000;
@@ -385,7 +386,7 @@ export default function CrmScreen() {
                       </Text>
                     </View>
                   )}
-                  <View style={{ flex: 1, marginLeft: 13 }}>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
                       {c.host_name}
                     </Text>
@@ -614,7 +615,7 @@ function ClientSheet({
                 </Text>
               </View>
             )}
-            <View style={{ flex: 1, marginLeft: 13 }}>
+            <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontFamily: SERIF_BOLD, fontSize: 24, color: INK }}>
                 {client.host_name}
               </Text>
@@ -650,7 +651,7 @@ function ClientSheet({
               gap: 8,
               backgroundColor: GOLD,
               borderRadius: 999,
-              paddingVertical: 13,
+              height: 44,
             }}
           >
             <Feather name="message-circle" size={15} color={INK} />
@@ -667,8 +668,8 @@ function ClientSheet({
                 backgroundColor: "#f3ecdd",
                 borderWidth: 1,
                 borderColor: GOLD_SOFT,
-                borderRadius: 16,
-                padding: 14,
+                borderRadius: 20,
+                padding: 16,
                 flexDirection: "row",
                 alignItems: "center",
               }}
@@ -689,7 +690,7 @@ function ClientSheet({
                   onPress={() => void setFollowUp(f.days)}
                   disabled={savingFollow}
                   style={{
-                    paddingHorizontal: 14,
+                    paddingHorizontal: 16,
                     paddingVertical: 9,
                     borderRadius: 999,
                     backgroundColor: SURFACE,
@@ -711,8 +712,8 @@ function ClientSheet({
               backgroundColor: CARD,
               borderWidth: 1,
               borderColor: BORDER,
-              borderRadius: 16,
-              padding: 12,
+              borderRadius: 20,
+              padding: 16,
             }}
           >
             <TextInput
@@ -729,10 +730,11 @@ function ClientSheet({
               style={{
                 marginTop: 8,
                 alignSelf: "flex-end",
-                backgroundColor: noteText.trim() ? GOLD : SURFACE,
+                backgroundColor: noteText.trim() ? GOLD : "#e0d2b0",
                 borderRadius: 999,
                 paddingHorizontal: 16,
-                paddingVertical: 9,
+                height: 36,
+                justifyContent: "center",
               }}
             >
               {savingNote ? (
@@ -754,12 +756,12 @@ function ClientSheet({
             <View
               key={n.id}
               style={{
-                marginTop: 10,
+                marginTop: 12,
                 backgroundColor: CARD,
                 borderWidth: 1,
                 borderColor: BORDER,
-                borderRadius: 16,
-                padding: 14,
+                borderRadius: 20,
+                padding: 16,
               }}
             >
               <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14, lineHeight: 20 }}>{n.body}</Text>
@@ -793,12 +795,12 @@ function ClientSheet({
                 <View
                   key={e.id}
                   style={{
-                    marginBottom: 10,
+                    marginBottom: 12,
                     backgroundColor: CARD,
                     borderWidth: 1,
                     borderColor: BORDER,
-                    borderRadius: 16,
-                    padding: 14,
+                    borderRadius: 20,
+                    padding: 16,
                   }}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -852,7 +854,7 @@ function ClientSheet({
 }
 
 const sectionTitleStyle = {
-  marginTop: 26,
+  marginTop: 24,
   marginBottom: 10,
   fontFamily: SERIF_BOLD,
   fontSize: 20,

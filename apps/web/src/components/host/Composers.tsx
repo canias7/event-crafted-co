@@ -27,7 +27,7 @@ export function ModalShell({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-lg bg-card shadow-xl"
+        className="w-full max-w-lg rounded-3xl bg-card shadow-lifted"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">

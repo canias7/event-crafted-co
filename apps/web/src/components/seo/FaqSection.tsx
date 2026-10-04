@@ -20,7 +20,7 @@ export function FaqSection({
 
   return (
     <section className="py-16 md:py-20 border-t border-border">
-      <div className="container mx-auto px-6 md:px-8 max-w-3xl">
+      <div className="container mx-auto px-5 md:px-8 max-w-3xl">
         <p className="font-label text-accent mb-3 tracking-[0.4em]">
           — {eyebrow}
         </p>

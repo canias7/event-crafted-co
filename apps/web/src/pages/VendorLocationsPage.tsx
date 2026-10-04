@@ -92,7 +92,7 @@ export default function VendorLocationsPage() {
       <PublicNav />
 
       <section className="pt-32 pb-10">
-        <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — VENDORS BY LOCATION
           </p>
@@ -113,11 +113,8 @@ export default function VendorLocationsPage() {
                   type="button"
                   className="w-full flex items-center justify-between gap-3 rounded-full px-5 py-3 text-left transition-colors"
                   style={{
-                    background: "rgba(255,255,255,0.6)",
-                    border: "0.5px solid rgba(0,0,0,0.08)",
-                    backdropFilter: "blur(10px)",
-                    WebkitBackdropFilter: "blur(10px)",
-                    boxShadow: "0 8px 24px -16px rgba(0,0,0,0.18)",
+                    background: "#ffffff",
+                    border: "1px solid hsl(var(--border))",
                   }}
                 >
                   <span className="flex items-center gap-2.5 min-w-0">
@@ -137,12 +134,6 @@ export default function VendorLocationsPage() {
               <PopoverContent
                 className="w-[--radix-popover-trigger-width] p-0 overflow-hidden"
                 align="start"
-                style={{
-                  background: "rgba(255,255,255,0.95)",
-                  border: "0.5px solid rgba(0,0,0,0.08)",
-                  backdropFilter: "blur(14px)",
-                  WebkitBackdropFilter: "blur(14px)",
-                }}
               >
                 <Command>
                   <CommandInput placeholder="Search a city…" className="h-11" />
@@ -198,7 +189,7 @@ export default function VendorLocationsPage() {
       </section>
 
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-6 md:px-8">
+        <div className="container mx-auto px-5 md:px-8">
           {loading && vendors.length === 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {[0, 1, 2, 3, 4].map((i) => (

@@ -358,10 +358,8 @@ export function FaqCardList({
           open={i === 0 ? true : undefined}
           className="group rounded-lg transition-colors"
           style={{
-            background: "rgba(255,255,255,0.55)",
-            border: "0.5px solid rgba(0,0,0,0.08)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
           }}
         >
           <summary
@@ -393,7 +391,6 @@ export function FaqCardList({
               className="shrink-0 hidden group-open:grid place-items-center w-7 h-7 rounded-full"
               style={{
                 background: "#14161a",
-                boxShadow: "0 6px 18px -8px rgba(0,0,0,0.6)",
               }}
               aria-hidden
             >

@@ -65,14 +65,14 @@ export function editorRouteFor(category: string | null | undefined): string {
   return wizardRouteFor(category) ?? "listing";
 }
 
-export const CREAM = "#fdfcfa";
+export const CREAM = "#fbf9f4";
 export const INK = "#14161a";
 export // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
 const PLACEHOLDER = "#746a58";
-export const BORDER = "#e5e2dc";
+export const BORDER = "#e6e1d5";
 export const GOLD = "#c9a86a";
 // Disabled fill for the gold pill. Same rule as the auth buttons: give
 // the state its own solid colour rather than fading fill and label
@@ -106,7 +106,7 @@ export const lightPill = {
   borderColor: BORDER,
   backgroundColor: "#ffffff",
   borderRadius: 999,
-  height: 54,
+  height: 52,
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
@@ -123,8 +123,8 @@ export const lightPillText = {
 export const darkPillDisabled = { ...darkPill, backgroundColor: GOLD_MUTED };
 export const lightPillDisabled = {
   ...lightPill,
-  backgroundColor: "#f3f1ec",
-  borderColor: "#ece9e1",
+  backgroundColor: "#f4f1ea",
+  borderColor: BORDER,
 };
 export function darkPillFor(disabled: boolean) {
   return disabled ? darkPillDisabled : darkPill;
@@ -147,7 +147,7 @@ export function StepRail({
       style={{
         flexDirection: "row",
         alignItems: "flex-start",
-        paddingHorizontal: 18,
+        paddingHorizontal: 20,
         paddingTop: 4,
         paddingBottom: 8,
       }}
@@ -166,7 +166,7 @@ export function StepRail({
                   flex: 1,
                   height: 1.5,
                   backgroundColor: done || current ? INK : BORDER,
-                  marginTop: 14,
+                  marginTop: 16,
                 }}
               />
             ) : null}
@@ -179,7 +179,7 @@ export function StepRail({
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: done ? INK : current ? GOLD : "transparent",
-                  borderWidth: done || current ? 0 : 1.5,
+                  borderWidth: done || current ? 0 : 1,
                   borderColor: BORDER,
                 }}
               >
@@ -225,7 +225,7 @@ export function StepTitle({
   topGap?: boolean;
 }) {
   return (
-    <View style={{ marginTop: topGap ? 30 : 6, marginBottom: 6 }}>
+    <View style={{ marginTop: topGap ? 32 : 6, marginBottom: 6 }}>
       <Text
         style={{
           fontFamily: SERIF_BOLD,
@@ -272,7 +272,7 @@ export function Input(props: ComponentProps<typeof TextInput>) {
         borderWidth: 1,
         borderColor: BORDER,
         borderRadius: 12,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 15,
         color: INK,
@@ -321,11 +321,11 @@ export function ChipMulti({
             activeOpacity={0.7}
             style={{
               borderRadius: 999,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? GOLD : "#ffffff",
+              backgroundColor: on ? INK : "#ffffff",
               borderWidth: 1,
-              borderColor: on ? GOLD : BORDER,
+              borderColor: on ? INK : BORDER,
             }}
           >
             <Text
@@ -352,7 +352,7 @@ export function ChipMulti({
             placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF,
               borderRadius: 999,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 9,
               backgroundColor: GOLD_SOFT,
               borderWidth: 1,
@@ -368,7 +368,7 @@ export function ChipMulti({
             activeOpacity={0.7}
             style={{
               borderRadius: 999,
-              paddingHorizontal: 14,
+              paddingHorizontal: 16,
               paddingVertical: 9,
               backgroundColor: "#ffffff",
               borderWidth: 1,
@@ -411,9 +411,9 @@ export function ChipSingle({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? GOLD : "#ffffff",
+              backgroundColor: on ? INK : "#ffffff",
               borderWidth: 1,
-              borderColor: on ? GOLD : BORDER,
+              borderColor: on ? INK : BORDER,
             }}
           >
             <Text
@@ -548,8 +548,8 @@ function BrandDialogView({
             backgroundColor: CREAM,
             borderRadius: 24,
             paddingHorizontal: 24,
-            paddingTop: 28,
-            paddingBottom: 22,
+            paddingTop: 24,
+            paddingBottom: 24,
             alignItems: "center",
             borderWidth: 1,
             borderColor: BORDER,
@@ -565,7 +565,7 @@ function BrandDialogView({
               borderColor: GOLD,
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
             <Feather name={spec?.icon ?? "check"} size={24} color={INK} />
@@ -602,7 +602,7 @@ function BrandDialogView({
               alignSelf: "stretch",
               backgroundColor: isConfirm && spec?.destructive ? "#b23a34" : GOLD,
               borderRadius: 999,
-              height: 48,
+              height: 44,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -630,7 +630,7 @@ function BrandDialogView({
                 borderWidth: 1,
                 borderColor: BORDER,
                 borderRadius: 999,
-                height: 48,
+                height: 44,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -697,11 +697,11 @@ export function CustomFieldsEditor({
           // no internal state beyond the controlled inputs.
           key={i}
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: CREAM,
             borderWidth: 1,
             borderColor: BORDER,
-            borderRadius: 14,
-            padding: 12,
+            borderRadius: 20,
+            padding: 16,
             gap: 8,
           }}
         >
@@ -748,11 +748,11 @@ export function CustomFieldsEditor({
         onPress={() => onChange([...fields, { label: "", value: "" }])}
         activeOpacity={0.7}
         style={{
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: GOLD,
           borderStyle: "dashed",
-          borderRadius: 14,
-          paddingVertical: 14,
+          borderRadius: 20,
+          paddingVertical: 16,
           alignItems: "center",
           flexDirection: "row",
           justifyContent: "center",
@@ -795,7 +795,7 @@ export function CategoryField({
           borderWidth: 1,
           borderColor: BORDER,
           borderRadius: 12,
-          paddingHorizontal: 14,
+          paddingHorizontal: 16,
           paddingVertical: 12,
           flexDirection: "row",
           alignItems: "center",
@@ -839,7 +839,7 @@ export function CategoryPickerModal({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingVertical: 12,
             borderBottomWidth: 1,
             borderColor: BORDER,
@@ -861,11 +861,11 @@ export function CategoryPickerModal({
         </View>
         <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
           {CATEGORY_GROUPS.map((group) => (
-            <View key={group.slug} style={{ marginTop: 18 }}>
+            <View key={group.slug} style={{ marginTop: 20 }}>
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  paddingHorizontal: 24,
+                  paddingHorizontal: 28,
                   paddingBottom: 8,
                   fontSize: 12,
                   letterSpacing: 1.4,
@@ -876,9 +876,9 @@ export function CategoryPickerModal({
               </Text>
               <View
                 style={{
-                  marginHorizontal: 16,
-                  backgroundColor: "#ffffff",
-                  borderRadius: 14,
+                  marginHorizontal: 20,
+                  backgroundColor: CREAM,
+                  borderRadius: 20,
                   borderWidth: 1,
                   borderColor: BORDER,
                   overflow: "hidden",
@@ -892,7 +892,7 @@ export function CategoryPickerModal({
                       <View
                         style={{
                           paddingHorizontal: 16,
-                          paddingVertical: 14,
+                          paddingVertical: 16,
                           flexDirection: "row",
                           alignItems: "center",
                           justifyContent: "space-between",
@@ -903,7 +903,7 @@ export function CategoryPickerModal({
                       >
                         <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK }}>{sub}</Text>
                         {active ? (
-                          <Feather name="check" size={18} color={GOLD} />
+                          <Feather name="check" size={18} color={INK} />
                         ) : null}
                       </View>
                     </Pressable>
@@ -927,8 +927,8 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
           alignItems: "center",
           gap: 10,
           backgroundColor: GOLD_SOFT,
-          borderRadius: 14,
-          padding: 14,
+          borderRadius: 20,
+          padding: 16,
         }}
       >
         <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
@@ -941,11 +941,11 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: CREAM,
         borderWidth: 1,
         borderColor: BORDER,
-        borderRadius: 14,
-        padding: 14,
+        borderRadius: 20,
+        padding: 16,
       }}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
@@ -1158,9 +1158,9 @@ export function ListingPhotosGrid({
           style={{
             width: "31%",
             aspectRatio: 1,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderStyle: "dashed",
-            borderColor: "rgba(20,22,26,0.25)",
+            borderColor: BORDER,
             borderRadius: 12,
             alignItems: "center",
             justifyContent: "center",

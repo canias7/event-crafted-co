@@ -185,7 +185,6 @@ export function ReferralManager({
                   <Button
                     type="submit"
                     disabled={sending}
-                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                   >
                     {sending && (
                       <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />

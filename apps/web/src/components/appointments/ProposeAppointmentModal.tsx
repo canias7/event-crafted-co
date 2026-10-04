@@ -163,7 +163,7 @@ export function ProposeAppointmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             Propose a meeting
@@ -252,7 +252,6 @@ export function ProposeAppointmentModal({
             <Button
               type="submit"
               disabled={submitting}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Send proposal

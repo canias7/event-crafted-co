@@ -67,7 +67,7 @@ export function PublicNav() {
       }}
       aria-label="Public"
     >
-      <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-8">
+      <div className="container mx-auto flex items-center justify-between h-16 px-5 md:px-8">
         <Link to="/" aria-label="Vendora — Events, simplified">
           <VendoraLogo size="md" color="#000" />
         </Link>

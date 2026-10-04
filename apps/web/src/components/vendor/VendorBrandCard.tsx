@@ -100,14 +100,12 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
               src={logoUrl}
               alt={businessName}
               className="w-[110px] h-[110px] rounded-[20px] object-cover bg-foreground"
-              style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             />
           ) : (
             // Neutral person silhouette when no logo is set — soft gray
             // placeholder (Google/Twitter style) instead of an initial.
             <div
               className="w-[110px] h-[110px] rounded-[20px] bg-muted flex items-center justify-center"
-              style={{ boxShadow: "0 6px 18px -6px rgba(26,20,16,0.3)" }}
             >
               <User className="w-14 h-14" strokeWidth={1.5} style={{ color: "#9b948a" }} aria-hidden />
             </div>
@@ -126,7 +124,6 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           {studioVerified ? (
             <div
               className="absolute -right-2 -top-2 rounded-full bg-white p-[2px]"
-              style={{ boxShadow: "0 4px 10px -2px rgba(29,109,222,0.35)" }}
               aria-hidden
             >
               <StudioVerifiedBadge />
@@ -144,7 +141,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 rounded-2xl bg-white/55 backdrop-blur-sm border border-white/40 px-3 py-3 divide-x divide-border">
+      <div className="mt-6 grid grid-cols-2 rounded-2xl bg-card border border-border px-3 py-3 divide-x divide-border">
         <StatCell
           label="Rating"
           value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}

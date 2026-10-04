@@ -291,7 +291,7 @@ export default function InboxScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 130 }}
+        contentContainerStyle={{ paddingBottom: 132 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
@@ -309,7 +309,7 @@ export default function InboxScreen() {
         </View>
 
         {/* Title */}
-        <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
           <Text
             style={{
               fontFamily: SERIF_BOLD,
@@ -327,7 +327,7 @@ export default function InboxScreen() {
         </View>
 
         {/* Section tabs — the same underlined tabs Gallery uses. */}
-        <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
           <UnderlineTabs
             value={tab}
             onChange={(k) => setTab(k as Tab)}
@@ -346,7 +346,7 @@ export default function InboxScreen() {
           style={{
             paddingHorizontal: 20,
             marginTop: 16,
-            marginBottom: 14,
+            marginBottom: 16,
             flexDirection: "row",
             alignItems: "center",
             gap: 10,
@@ -483,7 +483,7 @@ export default function InboxScreen() {
             style={{
               marginHorizontal: 20,
               marginBottom: 12,
-              borderRadius: 14,
+              borderRadius: 12,
               backgroundColor: "#fdf0ee",
               borderWidth: 1,
               borderColor: "#f3cdc6",
@@ -536,9 +536,12 @@ export default function InboxScreen() {
                   style={{
                     marginTop: 12,
                     borderRadius: 999,
-                    backgroundColor: TRACK,
-                    paddingHorizontal: 18,
-                    paddingVertical: 9,
+                    backgroundColor: "#ffffff",
+                    borderWidth: 1,
+                    borderColor: BORDER,
+                    paddingHorizontal: 20,
+                    height: 36,
+                    justifyContent: "center",
                   }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
@@ -553,8 +556,9 @@ export default function InboxScreen() {
                   marginTop: 12,
                   borderRadius: 999,
                   backgroundColor: GOLD,
-                  paddingHorizontal: 22,
-                  paddingVertical: 11,
+                  paddingHorizontal: 24,
+                  height: 44,
+                  justifyContent: "center",
                 }}
               >
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
@@ -583,7 +587,7 @@ export default function InboxScreen() {
             activeOpacity={0.85}
             style={{
               marginHorizontal: 20,
-              marginTop: 18,
+              marginTop: 20,
               backgroundColor: "#efe9dc",
               borderRadius: 20,
               padding: 16,
@@ -597,14 +601,14 @@ export default function InboxScreen() {
                   width: 46,
                   height: 46,
                   borderRadius: 999,
-                  backgroundColor: "#f7f3e9",
+                  backgroundColor: "#fbf9f4",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
                 <MaterialCommunityIcons name={nudge.icon} size={24} color={GOLD} />
               </View>
-              <View style={{ flex: 1, marginLeft: 14 }}>
+              <View style={{ flex: 1, marginLeft: 16 }}>
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
@@ -623,12 +627,12 @@ export default function InboxScreen() {
               style={{
                 alignSelf: "flex-start",
                 marginTop: 12,
-                backgroundColor: CARD,
+                backgroundColor: "#ffffff",
                 borderWidth: 1,
                 borderColor: BORDER,
                 borderRadius: 999,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
+                paddingHorizontal: 16,
+                height: 36,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 5,
@@ -708,7 +712,7 @@ function EmptyState({
     <View
       style={{
         marginHorizontal: 20,
-        borderRadius: 22,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: BORDER,
         backgroundColor: CARD,
@@ -726,7 +730,7 @@ function EmptyState({
       </View>
       <Text
         style={{
-          marginTop: 18,
+          marginTop: 20,
           fontFamily: SERIF_BOLD,
           fontSize: 24,
           color: INK,
@@ -743,11 +747,11 @@ function EmptyState({
           onPress={onTips}
           activeOpacity={0.85}
           style={{
-            marginTop: 22,
+            marginTop: 24,
             backgroundColor: GOLD,
             borderRadius: 999,
             paddingHorizontal: 24,
-            height: 50,
+            height: 52,
             flexDirection: "row",
             alignItems: "center",
             gap: 8,

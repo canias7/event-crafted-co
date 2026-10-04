@@ -1143,7 +1143,7 @@ export default function VendorAppointmentsPage({
     <>
       <Shell id={embedded ? undefined : "main-content"} className="flex-1 pb-24 lg:pb-0">
         {!embedded && (
-          <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+          <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="font-editorial text-3xl">Calendar</h1>
@@ -1236,7 +1236,7 @@ export default function VendorAppointmentsPage({
             open={dayModalOpen && !!selectedYmd}
             onOpenChange={setDayModalOpen}
           >
-            <DialogContent className="rounded-2xl max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogContent className="rounded-3xl max-w-md max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-editorial text-2xl text-left">
                   {selectedYmd ? prettyDay(selectedYmd) : ""}
@@ -1271,7 +1271,7 @@ export default function VendorAppointmentsPage({
                       setAListingId(selectedListingId);
                       setAddOpen(true);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-foreground/15 text-foreground px-3.5 py-2 text-xs font-bold disabled:opacity-60 hover:bg-secondary/50"
+                    className="inline-flex items-center gap-1 rounded-full border border-border text-foreground px-4 py-2 text-xs font-bold disabled:opacity-60 hover:bg-secondary/50"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Add
@@ -1288,7 +1288,7 @@ export default function VendorAppointmentsPage({
                         ? "Already booked — unavailable to hosts"
                         : undefined
                     }
-                    className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold disabled:opacity-60"
+                    className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-foreground px-4 text-xs font-bold disabled:bg-gold-muted h-9 hover:bg-gold-hover"
                   >
                     {isSelectedBlocked ? (
                       <XIcon className="h-3.5 w-3.5" />
@@ -1355,7 +1355,7 @@ export default function VendorAppointmentsPage({
                     setAListingId(selectedListingId);
                     setAddOpen(true);
                   }}
-                  className="inline-flex items-center gap-1 rounded-full bg-foreground text-background px-3.5 py-2 text-xs font-bold hover:bg-foreground/90"
+                  className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-foreground px-4 text-xs font-bold hover:bg-gold-hover h-9"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add appointment
@@ -1390,7 +1390,7 @@ export default function VendorAppointmentsPage({
           if (!open) setBlockTitle("");
         }}
       >
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-3xl">
               {isSelectedBlocked ? "Re-open this date?" : "Block this date?"}
@@ -1461,7 +1461,6 @@ export default function VendorAppointmentsPage({
                 commitSelectedDayBlock();
               }}
               disabled={blocking}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {isSelectedBlocked ? "Unblock" : "Block"}
             </AlertDialogAction>
@@ -1471,7 +1470,7 @@ export default function VendorAppointmentsPage({
 
       {/* Manual "add appointment" form — vendor-side calendar entry. */}
       <AlertDialog open={addOpen} onOpenChange={setAddOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-2xl">
               Add personal entry
@@ -1489,7 +1488,7 @@ export default function VendorAppointmentsPage({
                 <select
                   value={aListingId ?? ""}
                   onChange={(e) => setAListingId(e.target.value || null)}
-                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >
                   {listings.map((l) => (
                     <option key={l.id} value={l.id}>
@@ -1537,7 +1536,7 @@ export default function VendorAppointmentsPage({
                 <select
                   value={aDuration}
                   onChange={(e) => setADuration(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >
                   <option value="30">30 min</option>
                   <option value="45">45 min</option>
@@ -1570,7 +1569,7 @@ export default function VendorAppointmentsPage({
                 value={aNotes}
                 onChange={(e) => setANotes(e.target.value)}
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm resize-none"
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none"
               />
             </label>
           </div>
@@ -1584,7 +1583,6 @@ export default function VendorAppointmentsPage({
                 void addManualAppointment();
               }}
               disabled={addSaving || addIsPast}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {addSaving ? "Adding…" : "Add"}
             </AlertDialogAction>

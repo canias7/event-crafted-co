@@ -62,7 +62,7 @@ export function PinLocationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-2xl sm:max-w-md">
+      <DialogContent className="rounded-3xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl inline-flex items-center gap-2">
             <MapPin className="w-5 h-5 text-accent" />

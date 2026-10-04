@@ -58,7 +58,7 @@ const INK_DIM = "#14161a";
 const SUBTLE = "#746a58";
 const BORDER = "#e6e1d5";
 const FIELD_BG = "#fbf9f4";
-const FIELD_BORDER = "#d9d1bf";
+const FIELD_BORDER = "#e6e1d5";
 const ERROR = "#b23a34";
 
 const SERIF = "LibreBaskerville";
@@ -206,7 +206,7 @@ export default function VendorSignupScreen() {
       >
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: 24,
+            paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: 48,
             flexGrow: 1,
@@ -315,7 +315,7 @@ function StarDivider() {
         flexDirection: "row",
         alignItems: "center",
         marginTop: 28,
-        gap: 14,
+        gap: 16,
       }}
     >
       <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
@@ -596,7 +596,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
   return (
     <View style={{ marginTop: 80, alignItems: "center" }}>
       <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
-      <Text style={{ ...eyebrowLabel, marginTop: 14 }}>
+      <Text style={{ ...eyebrowLabel, marginTop: 16 }}>
         APPLICATION RECEIVED
       </Text>
       <Text
@@ -749,7 +749,7 @@ function CategoryPicker({
               fontSize: 20,
               color: INK,
               letterSpacing: -0.5,
-              paddingHorizontal: 20,
+              paddingHorizontal: 24,
               marginBottom: 12,
             }}
           >
@@ -761,7 +761,7 @@ function CategoryPicker({
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    paddingHorizontal: 20,
+                    paddingHorizontal: 24,
                     paddingVertical: 8,
                     fontSize: 11,
                     color: BRONZE,
@@ -777,8 +777,8 @@ function CategoryPicker({
                       key={sub}
                       onPress={() => onSelect(sub)}
                       style={{
-                        paddingHorizontal: 20,
-                        paddingVertical: 14,
+                        paddingHorizontal: 24,
+                        paddingVertical: 16,
                         backgroundColor: isSelected ? SURFACE : "transparent",
                         flexDirection: "row",
                         justifyContent: "space-between",
@@ -833,7 +833,7 @@ const inputRow = {
   backgroundColor: FIELD_BG,
   borderColor: FIELD_BORDER,
   borderWidth: 1,
-  borderRadius: 16,
+  borderRadius: 12,
   paddingHorizontal: 16,
   minHeight: 60,
 };

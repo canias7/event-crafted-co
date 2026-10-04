@@ -227,7 +227,7 @@ export default function StatusPage() {
       <PublicNav />
 
       <section className="border-b border-border pt-32 pb-12 md:pb-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-4xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — STATUS
           </p>
@@ -277,7 +277,7 @@ export default function StatusPage() {
       </section>
 
       <section className="py-10 md:py-14">
-        <div className="container mx-auto px-6 md:px-8 max-w-4xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <ul className="space-y-3">
             {SERVICES.map((s) => {
               const r = results[s.id];

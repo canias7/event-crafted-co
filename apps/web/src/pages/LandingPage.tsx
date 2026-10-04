@@ -179,7 +179,7 @@ export default function LandingPage() {
         />
 
         {/* NAV (overlaid) */}
-        <header className="relative z-20 flex items-center justify-between px-6 py-5 md:px-12 md:py-7">
+        <header className="relative z-20 flex items-center justify-between px-5 py-5 md:px-8 md:py-7">
           <Link to="/" aria-label="Vendora">
             <VendoraLogo size="md" color={CREAM} withTagline />
           </Link>
@@ -209,12 +209,11 @@ export default function LandingPage() {
               </span>
             </Link>
           </nav>
-          <div className="flex items-center gap-3 text-[13px]">
+          <div className="flex items-center gap-2 text-[13px] sm:gap-3">
             {session && portalPath ? (
               <Link
                 to={portalPath}
-                className="rounded-full px-5 py-2.5 font-medium transition-opacity hover:opacity-90"
-                style={{ backgroundColor: CREAM, color: INK }}
+                className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-3 font-bold text-foreground transition-colors hover:bg-gold-hover sm:px-4"
               >
                 Open dashboard
               </Link>
@@ -222,7 +221,9 @@ export default function LandingPage() {
               <>
                 <Link
                   to="/login"
-                  className="rounded-full px-4 py-2 transition-colors hover:bg-white/10"
+                  // Hidden on the narrowest phones (under 360px) so the header never
+                  // clips; Sign up links on to log in.
+                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 font-bold transition-colors hover:bg-white/10 max-[359px]:hidden sm:px-4"
                   style={{
                     color: CREAM,
                     border: "1px solid rgba(244,241,234,0.35)",
@@ -232,8 +233,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   to="/signup"
-                  className="rounded-full px-5 py-2.5 font-medium transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: CREAM, color: INK }}
+                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-3 font-bold text-foreground transition-colors hover:bg-gold-hover sm:px-4"
                 >
                   Sign up
                 </Link>
@@ -243,7 +243,7 @@ export default function LandingPage() {
         </header>
 
         {/* HERO CONTENT */}
-        <div className="relative z-10 mx-auto max-w-6xl px-6 pt-10 pb-16 md:px-10 md:pt-16 md:pb-24">
+        <div className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24">
           <div className="grid items-center gap-10 lg:grid-cols-[1fr_300px]">
             <div className="text-center lg:text-left lg:pr-6">
               <h1
@@ -377,8 +377,7 @@ export default function LandingPage() {
                 </div>
                 <button
                   type="submit"
-                  className="rounded-full px-7 py-3 text-[14px] font-semibold transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: INK, color: CREAM }}
+                  className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
                 >
                   Search
                 </button>
@@ -419,7 +418,7 @@ export default function LandingPage() {
                   className="overflow-hidden rounded-3xl"
                   style={{
                     backgroundColor: "rgba(244,241,234,0.97)",
-                    boxShadow: "0 30px 80px -20px rgba(0,0,0,0.6)",
+                    boxShadow: "0 24px 48px -18px hsl(220 14% 9% / 0.35)",
                   }}
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">
@@ -468,7 +467,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ FOR HOSTS — ivory journey ═══════════════ */}
-      <section id="how-it-works" className="px-6 py-20 md:px-10 md:py-28">
+      <section id="how-it-works" className="px-5 py-20 md:px-8 md:py-28">
         <div className="mx-auto max-w-6xl">
           <p className="font-label text-center" style={{ color: BRONZE }}>
             For hosts
@@ -523,7 +522,7 @@ export default function LandingPage() {
 
             {/* Every event, every type */}
             <div
-              className="self-start rounded-3xl p-6"
+              className="self-start rounded-2xl p-6"
               style={{
                 backgroundColor: "#fbf9f4",
                 border: "1px solid #e6e1d5",
@@ -551,7 +550,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ FOR VENDORS — charcoal journey ═══════════════ */}
-      <section className="px-6 py-20 md:px-10 md:py-28" style={{ backgroundColor: INK }}>
+      <section className="px-5 py-20 md:px-8 md:py-28" style={{ backgroundColor: INK }}>
         <div className="mx-auto max-w-6xl">
           <p className="font-label text-center" style={{ color: GOLD }}>
             For vendors
@@ -571,7 +570,7 @@ export default function LandingPage() {
             {VENDOR_STEPS.map((s) => (
               <div
                 key={s.n}
-                className="rounded-3xl p-6"
+                className="rounded-2xl p-6"
                 style={{
                   backgroundColor: "rgba(244,241,234,0.05)",
                   border: "1px solid rgba(201,168,106,0.25)",
@@ -599,8 +598,7 @@ export default function LandingPage() {
           <div className="mt-10 text-center">
             <Link
               to="/signup/vendor"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-[14px] font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: GOLD, color: INK }}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
             >
               List your business — free <ArrowRight className="h-4 w-4" />
             </Link>
@@ -645,7 +643,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ TOOLS — everything you need ═══════════════ */}
-      <section className="px-6 py-20 md:px-10 md:py-28">
+      <section className="px-5 py-20 md:px-8 md:py-28">
         <div className="mx-auto max-w-6xl">
           <p className="font-label text-center" style={{ color: BRONZE }}>
             Everything you need, all in one place
@@ -685,7 +683,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ CLOSING CTA — dark ═══════════════ */}
-      <section className="px-6 py-20 md:px-10 md:py-24" style={{ backgroundColor: INK }}>
+      <section className="px-5 py-20 md:px-8 md:py-24" style={{ backgroundColor: INK }}>
         <div className="mx-auto max-w-4xl text-center">
           <p className="font-label" style={{ color: GOLD }}>
             Ready to make magic?
@@ -703,14 +701,13 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/vendors"
-              className="rounded-full px-7 py-3 text-[14px] font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: GOLD, color: INK }}
+              className="inline-flex h-11 items-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
             >
               Plan your event
             </Link>
             <Link
               to="/signup/vendor"
-              className="rounded-full px-7 py-3 text-[14px] font-semibold transition-colors hover:bg-white/10"
+              className="inline-flex h-11 items-center whitespace-nowrap rounded-full px-7 text-[14px] font-bold transition-colors hover:bg-white/10"
               style={{ color: CREAM, border: "1px solid rgba(244,241,234,0.35)" }}
             >
               List your business
@@ -728,7 +725,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ FOOTER — premium dark ═══════════════ */}
       <footer
-        className="px-6 pt-16 pb-8 md:px-10"
+        className="px-5 pt-16 pb-8 md:px-8"
         style={{ backgroundColor: "#14161a", borderTop: "1px solid rgba(201,168,106,0.2)" }}
       >
         <div className="mx-auto mb-12 grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">

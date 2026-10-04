@@ -29,6 +29,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
+import { SHADOW } from "@/lib/ui";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
@@ -152,11 +153,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           height: 74,
           width: "100%",
           maxWidth: 420,
-          shadowColor: "#000",
-          shadowOpacity: 0.10,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: 8,
+          ...SHADOW.soft,
         }}
       >
         {visible.map((route) => {
@@ -241,7 +238,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       // Ring in the bar's own cream so the badge reads as
                       // sitting on top of the icon rather than merging
                       // with it when the tab is active and dark.
-                      borderWidth: 1.5,
+                      borderWidth: 1,
                       borderColor: "#fbf9f4",
                       alignItems: "center",
                       justifyContent: "center",

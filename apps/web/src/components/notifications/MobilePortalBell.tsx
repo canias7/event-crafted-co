@@ -31,7 +31,7 @@ export function MobilePortalBell() {
       <Link
         to={inboxPath}
         aria-label="Open inbox"
-        className="w-10 h-10 rounded-full bg-background/85 backdrop-blur-sm border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-accent transition-colors"
+        className="w-10 h-10 rounded-full bg-background/85 backdrop-blur-sm border border-border shadow-soft flex items-center justify-center text-muted-foreground hover:text-accent transition-colors"
       >
         <MessageSquare className="w-4 h-4" />
       </Link>

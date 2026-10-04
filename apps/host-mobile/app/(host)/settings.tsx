@@ -153,7 +153,7 @@ export default function SettingsScreen() {
           </View>
 
           <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
             showsVerticalScrollIndicator={false}
           >
             {loading ? (
@@ -189,11 +189,13 @@ export default function SettingsScreen() {
                   {({ pressed }) => (
                     <View
                       style={{
+                        // Full-width primary: gold pill at 52.
                         marginTop: 12,
                         backgroundColor: dirty ? GOLD : GOLD_MUTED,
-                        paddingVertical: 14,
-                        borderRadius: 16,
+                        height: 52,
+                        borderRadius: 999,
                         alignItems: "center",
+                        justifyContent: "center",
                         opacity: pressed ? 0.85 : 1,
                       }}
                     >
@@ -221,7 +223,9 @@ export default function SettingsScreen() {
                         backgroundColor: "#fbf9f4",
                         paddingVertical: 16,
                         paddingHorizontal: 16,
-                        borderRadius: 18,
+                        borderRadius: 20,
+                        borderWidth: 1,
+                        borderColor: BORDER,
                         flexDirection: "row",
                         alignItems: "center",
                         opacity: pressed ? 0.85 : 1,
@@ -252,7 +256,7 @@ export default function SettingsScreen() {
                         backgroundColor: "#fbf9f4",
                         paddingVertical: 16,
                         paddingHorizontal: 16,
-                        borderRadius: 18,
+                        borderRadius: 20,
                         flexDirection: "row",
                         alignItems: "center",
                         borderWidth: 1,
@@ -307,13 +311,14 @@ function SectionLabel({
   );
 }
 
+// Settings group card: cream fill, hairline border, radius 20, padding 16.
 const field = {
   marginTop: 12,
   backgroundColor: "#fbf9f4",
-  borderRadius: 18,
-  paddingHorizontal: 16,
-  paddingTop: 12,
-  paddingBottom: 14,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: BORDER,
+  padding: 16,
 } as const;
 
 const fieldLabel = { fontFamily: SERIF_BOLD,

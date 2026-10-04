@@ -34,11 +34,8 @@ export function UnderConstruction({ title }: { title?: string }) {
         <div
           className="text-center max-w-sm rounded-2xl px-8 py-10"
           style={{
-            background: "rgba(255,255,255,0.72)",
-            border: "0.5px solid rgba(0,0,0,0.08)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            boxShadow: "0 10px 40px -16px rgba(0,0,0,0.25)",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
           }}
         >
           <div className="w-12 h-12 mx-auto rounded-full bg-foreground/10 flex items-center justify-center mb-4">

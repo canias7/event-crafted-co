@@ -41,7 +41,7 @@ const INK_DIM = "#14161a";
 const SUBTLE = "#746a58";
 const BORDER = "#e6e1d5";
 const FIELD_BG = "#fbf9f4";
-const FIELD_BORDER = "#d9d1bf";
+const FIELD_BORDER = "#e6e1d5";
 const ERROR = "#b23a34";
 
 const SERIF = "LibreBaskerville";
@@ -204,7 +204,7 @@ export default function LoginScreen() {
       >
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: 24,
+            paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: 48,
             flexGrow: 1,
@@ -373,8 +373,8 @@ export default function LoginScreen() {
                       backgroundColor: FIELD_BG,
                       borderColor: FIELD_BORDER,
                       borderWidth: 1,
-                      borderRadius: 16,
-                      paddingVertical: 18,
+                      borderRadius: 12,
+                      paddingVertical: 20,
                       fontSize: 30,
                       textAlign: "center",
                       letterSpacing: 12,
@@ -443,7 +443,7 @@ function StarDivider() {
         flexDirection: "row",
         alignItems: "center",
         marginTop: 28,
-        gap: 14,
+        gap: 16,
       }}
     >
       <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
@@ -501,7 +501,7 @@ const inputRow = {
   backgroundColor: FIELD_BG,
   borderColor: FIELD_BORDER,
   borderWidth: 1,
-  borderRadius: 16,
+  borderRadius: 12,
   paddingHorizontal: 16,
   minHeight: 60,
 };

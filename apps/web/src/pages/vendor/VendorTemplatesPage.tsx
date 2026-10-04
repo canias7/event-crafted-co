@@ -248,7 +248,7 @@ export default function VendorTemplatesPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-24 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="font-editorial text-3xl">Templates</h1>
             <p className="text-sm text-muted-foreground">
@@ -376,7 +376,7 @@ export default function VendorTemplatesPage() {
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
       >
-        <DialogContent className="rounded-2xl sm:max-w-lg">
+        <DialogContent className="rounded-3xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-editorial text-2xl">
               {editing === "new" ? "New template" : "Edit template"}
@@ -438,7 +438,7 @@ export default function VendorTemplatesPage() {
         open={confirmDel !== null}
         onOpenChange={(open) => !open && setConfirmDel(null)}
       >
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-2xl">
               Delete this template?

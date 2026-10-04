@@ -17,7 +17,6 @@ import {
   Pressable,
   ScrollView,
   Share,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -46,7 +45,7 @@ const INK = "#14161a";
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
-const BORDER = "rgba(20,22,26,0.10)";
+const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
@@ -325,7 +324,7 @@ export default function ProfileScreen() {
           <Wordmark />
           <Text
             style={{
-              marginTop: 14,
+              marginTop: 16,
               fontFamily: SERIF_BOLD,
               fontSize: 38,
               lineHeight: 46,
@@ -367,7 +366,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* New listing + listings grid. */}
-          <View style={{ marginTop: 22 }}>
+          <View style={{ marginTop: 24 }}>
             <ListingTab
               loading={loading}
               listings={listings}
@@ -440,7 +439,7 @@ function BrandCard({
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: SURFACE,
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: 1,
           borderColor: BORDER,
           borderRadius: 999,
           paddingHorizontal: 10,
@@ -466,7 +465,7 @@ function BrandCard({
       </Pressable>
 
       {flipped ? (
-        <View style={{ padding: 22, paddingTop: 54 }}>
+        <View style={{ padding: 16, paddingTop: 56 }}>
           <Text
             style={{
               fontFamily: SERIF_BOLD,
@@ -490,7 +489,7 @@ function BrandCard({
           </Text>
         </View>
       ) : (
-        <View style={{ padding: 20 }}>
+        <View style={{ padding: 16 }}>
           {/* Avatar + name/verification, side by side. */}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View>
@@ -506,9 +505,9 @@ function BrandCard({
 
             {/* Right padding keeps a long name clear of the BIO chip; it
                 used to run underneath it. The chip is ~66pt wide and sits
-                14pt in from the card edge; the card has 20pt of padding,
-                so the name needs 60pt of clearance, plus a gap. */}
-            <View style={{ flex: 1, marginLeft: 16, paddingRight: 70 }}>
+                14pt in from the card edge; the card has 16pt of padding,
+                so the name needs 64pt of clearance, plus a gap. */}
+            <View style={{ flex: 1, marginLeft: 16, paddingRight: 72 }}>
               <Text
                 numberOfLines={2}
                 style={{
@@ -574,7 +573,7 @@ function BrandCard({
             </View>
           </View>
 
-          <View style={{ marginTop: 18, flexDirection: "row", gap: 12 }}>
+          <View style={{ marginTop: 20, flexDirection: "row", gap: 12 }}>
             <OutlineBtn
               icon="share-variant-outline"
               label="Share profile"
@@ -640,7 +639,8 @@ function OutlineBtn({
         borderWidth: 1,
         borderColor: BORDER,
         borderRadius: 999,
-        paddingVertical: 12,
+        height: 44,
+        backgroundColor: WHITE,
       }}
     >
       <MaterialCommunityIcons name={icon} size={15} color={GOLD} />
@@ -718,8 +718,8 @@ function EmptyState({
     <View
       style={{
         alignItems: "center",
-        borderWidth: 1.5,
-        borderColor: "rgba(20,22,26,0.18)",
+        borderWidth: 1,
+        borderColor: BORDER,
         borderStyle: "dashed",
         borderRadius: 20,
         paddingVertical: 36,
@@ -732,7 +732,7 @@ function EmptyState({
           height: 64,
           borderRadius: 32,
           borderWidth: 1,
-          borderColor: "rgba(20,22,26,0.15)",
+          borderColor: BORDER,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -741,7 +741,7 @@ function EmptyState({
       </View>
       <Text
         style={{
-          marginTop: 18,
+          marginTop: 20,
           fontFamily: SERIF_BOLD,
           fontSize: 24,
           color: INK,
@@ -769,8 +769,9 @@ function EmptyState({
             marginTop: 20,
             backgroundColor: GOLD,
             borderRadius: 999,
-            paddingHorizontal: 26,
-            paddingVertical: 13,
+            paddingHorizontal: 28,
+            height: 44,
+            justifyContent: "center",
           }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
@@ -822,7 +823,7 @@ function ListingTab({
   }
   const underCap = listingCap === null || listings.length < listingCap;
   return (
-    <View style={{ gap: 18 }}>
+    <View style={{ gap: 20 }}>
       {/* Plan-based listing caps: Free 1 / Pro 4 / Premium 10. The
           "New listing" button shows while the account is under its
           cap (enforced server-side too via trg_enforce_listing_cap). */}
@@ -847,7 +848,8 @@ function ListingTab({
               backgroundColor: GOLD,
               borderRadius: 999,
               paddingHorizontal: 16,
-              paddingVertical: 8,
+              height: 36,
+              justifyContent: "center",
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
@@ -994,7 +996,7 @@ function ListingCard({
     <Pressable onPress={onEdit} className="active:opacity-90">
       <View
         style={{
-          borderRadius: 18,
+          borderRadius: 20,
           overflow: "hidden",
           backgroundColor: "#1a1a1a",
           aspectRatio: 4 / 3,
@@ -1164,11 +1166,11 @@ function SetupRow({
       style={{
         marginTop: 16,
         backgroundColor: CARD,
-        borderRadius: 16,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: BORDER,
         paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingVertical: 16,
         flexDirection: "row",
         alignItems: "center",
         gap: 12,

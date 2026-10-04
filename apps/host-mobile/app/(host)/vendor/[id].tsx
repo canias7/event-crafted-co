@@ -79,13 +79,10 @@ const statValueStyle = {
   fontFamily: SERIF_BOLD,
 } as const;
 
-// Shared shadow style for white cards floating on the cream backdrop.
-const CARD_SHADOW = {
-  shadowColor: "#14161a",
-  shadowOpacity: 0.10,
-  shadowRadius: 20,
-  shadowOffset: { width: 0, height: 6 },
-  elevation: 2,
+// Cards carry a 1px hairline instead of a shadow (component standard).
+const CARD_BORDER = {
+  borderWidth: 1,
+  borderColor: "#e6e1d5",
 } as const;
 
 type VendorRow = {
@@ -348,7 +345,7 @@ export default function VendorDetailScreen() {
   if (!vendor) {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-        <View className="flex-row items-center px-4 py-3">
+        <View className="flex-row items-center px-5 py-3">
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
@@ -402,8 +399,8 @@ export default function VendorDetailScreen() {
           style={{
             width: screenWidth,
             height: galleryHeight,
-            borderBottomLeftRadius: 28,
-            borderBottomRightRadius: 28,
+            borderBottomLeftRadius: 24,
+            borderBottomRightRadius: 24,
             overflow: "hidden",
           }}
           className="bg-muted"
@@ -462,7 +459,7 @@ export default function VendorDetailScreen() {
         >
           <View
             pointerEvents="box-none"
-            className="flex-row items-center justify-between px-4 pt-2"
+            className="flex-row items-center justify-between px-5 pt-2"
           >
             <RoundButton onPress={() => router.back()} icon="chevron-left" />
             <View className="flex-row gap-2">
@@ -601,11 +598,11 @@ export default function VendorDetailScreen() {
           <View
             style={{
               marginHorizontal: 20,
-              marginTop: 18,
+              marginTop: 20,
               backgroundColor: "#fbf9f4",
-              borderRadius: 18,
+              borderRadius: 20,
               flexDirection: "row",
-              ...CARD_SHADOW,
+              ...CARD_BORDER,
             }}
           >
             <StatCell
@@ -630,23 +627,19 @@ export default function VendorDetailScreen() {
 
           {/* Host section — own header + card with chevron */}
           {owner ? (
-            <View style={{ marginTop: 26 }}>
+            <View style={{ marginTop: 24 }}>
               <Text style={sectionHeaderStyle}>Host</Text>
               <View
                 style={{
                   marginHorizontal: 20,
                   marginTop: 10,
                   backgroundColor: "#fbf9f4",
-                  borderRadius: 18,
-                  paddingVertical: 14,
-                  paddingHorizontal: 14,
+                  borderRadius: 20,
+                  paddingVertical: 16,
+                  paddingHorizontal: 16,
                   flexDirection: "row",
                   alignItems: "center",
-                  shadowColor: "#14161a",
-                  shadowOpacity: 0.10,
-                  shadowRadius: 12,
-                  shadowOffset: { width: 0, height: 4 },
-                  elevation: 2,
+                  ...CARD_BORDER,
                 }}
               >
                 <View
@@ -700,7 +693,7 @@ export default function VendorDetailScreen() {
 
           {/* About — bio paragraph, sits directly on cream */}
           {vendor.bio ? (
-            <View style={{ marginTop: 26 }}>
+            <View style={{ marginTop: 24 }}>
               <Text style={sectionHeaderStyle}>About</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 <Text style={{ fontFamily: SERIF, color: INK, fontSize: 15, lineHeight: 22 }}>
@@ -727,10 +720,10 @@ export default function VendorDetailScreen() {
                     key={p.id}
                     style={{
                       backgroundColor: "#fbf9f4",
-                      borderRadius: 18,
+                      borderRadius: 20,
                       padding: 16,
                       marginBottom: 12,
-                      ...CARD_SHADOW,
+                      ...CARD_BORDER,
                     }}
                   >
                     <View
@@ -794,7 +787,7 @@ export default function VendorDetailScreen() {
 
           {/* Team — white cards on cream backdrop, avatar + OWNER pill */}
           {team.length > 0 ? (
-            <View style={{ marginTop: 14 }}>
+            <View style={{ marginTop: 12 }}>
               <Text style={sectionHeaderStyle}>Team</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {team.map((m) => (
@@ -802,10 +795,10 @@ export default function VendorDetailScreen() {
                     key={m.id}
                     style={{
                       backgroundColor: "#fbf9f4",
-                      borderRadius: 18,
+                      borderRadius: 20,
                       padding: 16,
                       marginBottom: 12,
-                      ...CARD_SHADOW,
+                      ...CARD_BORDER,
                     }}
                   >
                     <View
@@ -861,7 +854,7 @@ export default function VendorDetailScreen() {
                                 backgroundColor: "#e6e1d5",
                                 paddingHorizontal: 8,
                                 paddingVertical: 2,
-                                borderRadius: 6,
+                                borderRadius: 8,
                               }}
                             >
                               <Text
@@ -895,7 +888,7 @@ export default function VendorDetailScreen() {
                         <View
                           style={{
                             height: 1,
-                            backgroundColor: "#efe5d2",
+                            backgroundColor: "#e6e1d5",
                             marginTop: 12,
                             marginBottom: 12,
                           }}
@@ -919,7 +912,7 @@ export default function VendorDetailScreen() {
 
           {/* FAQ — collapsible cream cards */}
           {faqs.length > 0 ? (
-            <View style={{ marginTop: 14 }}>
+            <View style={{ marginTop: 12 }}>
               <Text style={sectionHeaderStyle}>FAQ</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {faqs.map((f) => (
@@ -935,7 +928,7 @@ export default function VendorDetailScreen() {
             policy.cancellation_policy ||
             policy.reschedule_window_days != null ||
             policy.policy_notes) ? (
-            <View style={{ marginTop: 14 }}>
+            <View style={{ marginTop: 12 }}>
               <Text style={sectionHeaderStyle}>Policies</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {policy.cancellation_policy ? (
@@ -1021,7 +1014,7 @@ export default function VendorDetailScreen() {
                   style={{
                     alignSelf: "flex-start",
                     marginTop: 2,
-                    borderBottomWidth: 2,
+                    borderBottomWidth: 1,
                     borderBottomColor: INK,
                     paddingBottom: 2,
                   }}
@@ -1080,9 +1073,10 @@ export default function VendorDetailScreen() {
             {({ pressed }) => (
               <View
                 style={{
+                  // Primary CTA: gold pill at 52, ink label.
                   backgroundColor: GOLD,
-                  paddingHorizontal: 22,
-                  paddingVertical: 14,
+                  paddingHorizontal: 24,
+                  height: 52,
                   borderRadius: 999,
                   flexDirection: "row",
                   alignItems: "center",
@@ -1179,7 +1173,7 @@ function StatCell({
   bottom: string;
 }) {
   return (
-    <View style={{ flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 14 }}>
+    <View style={{ flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 16 }}>
       {top}
       <Text
         style={{ fontFamily: SERIF_BOLD,
@@ -1196,7 +1190,7 @@ function StatCell({
 }
 
 function Divider() {
-  return <View style={{ width: 1, backgroundColor: "#ece4d4", marginVertical: 12 }} />;
+  return <View style={{ width: 1, backgroundColor: "#e6e1d5", marginVertical: 12 }} />;
 }
 
 // Collapsible FAQ card — white surface on cream backdrop, question +
@@ -1208,11 +1202,11 @@ function FaqCard({ question, answer }: { question: string; answer: string }) {
       onPress={() => setOpen((v) => !v)}
       style={{
         backgroundColor: "#fbf9f4",
-        borderRadius: 18,
+        borderRadius: 20,
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        marginBottom: 10,
-        ...CARD_SHADOW,
+        paddingVertical: 16,
+        marginBottom: 12,
+        ...CARD_BORDER,
       }}
     >
       <View
@@ -1261,13 +1255,13 @@ function PolicyCard({ label, value }: { label: string; value: string }) {
     <View
       style={{
         backgroundColor: "#fbf9f4",
-        borderRadius: 18,
+        borderRadius: 20,
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        marginBottom: 10,
+        paddingVertical: 16,
+        marginBottom: 12,
         flexDirection: "row",
         alignItems: "center",
-        ...CARD_SHADOW,
+        ...CARD_BORDER,
       }}
     >
       <Text
@@ -1314,7 +1308,7 @@ function CategoryDetails({
   if (populatedSections.length === 0) return null;
 
   return (
-    <View style={{ marginTop: 26 }}>
+    <View style={{ marginTop: 24 }}>
       <Text style={sectionHeaderStyle}>Details</Text>
       <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
         {populatedSections.map((section) => (
@@ -1340,7 +1334,7 @@ function CategoryDetailSection({
   if (populated.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={{ marginBottom: 16 }}>
       <Text
         style={{ fontFamily: SERIF_BOLD,
           color: INK_DIM,
@@ -1354,10 +1348,10 @@ function CategoryDetailSection({
       <View
         style={{
           backgroundColor: "#fbf9f4",
-          borderRadius: 18,
+          borderRadius: 20,
           paddingHorizontal: 16,
           paddingVertical: 4,
-          ...CARD_SHADOW,
+          ...CARD_BORDER,
         }}
       >
         {populated.map((field, idx) => (
@@ -1387,7 +1381,7 @@ function CategoryDetailRow({
       style={{
         paddingVertical: 12,
         borderBottomWidth: divider ? 1 : 0,
-        borderBottomColor: "#efe5d2",
+        borderBottomColor: "#e6e1d5",
       }}
     >
       <CategoryDetailValue field={field} value={value} />
@@ -1545,19 +1539,15 @@ function VendorBusinessCard({
     <Pressable onPress={onPress} hitSlop={4}>
       <View
         style={{
-          marginHorizontal: 18,
-          marginTop: 14,
+          marginHorizontal: 20,
+          marginTop: 16,
           backgroundColor: "#fbf9f4",
-          borderRadius: 18,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          borderRadius: 20,
+          paddingVertical: 16,
+          paddingHorizontal: 16,
           flexDirection: "row",
           alignItems: "center",
-          shadowColor: INK,
-          shadowOpacity: 0.10,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 2,
+          ...CARD_BORDER,
         }}
       >
         <CreamOceanAvatar
@@ -1565,7 +1555,7 @@ function VendorBusinessCard({
           logoUrl={vendor.logo_url ?? fallbackLogoUrl}
           initial={initial}
           fontSize={22}
-          radius={14}
+          radius={12}
         />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text
@@ -1794,7 +1784,7 @@ function VendorProfileSheet({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingVertical: 12,
           }}
         >
@@ -1824,7 +1814,7 @@ function VendorProfileSheet({
 
           {/* Owner bio (was sourced from vendor_team_bios; table dropped, render guarded by empty `team` state). */}
           {owner?.bio ? (
-            <View style={{ marginTop: 22, paddingHorizontal: 22 }}>
+            <View style={{ marginTop: 24, paddingHorizontal: 20 }}>
               <Text
                 style={{ fontFamily: SERIF_BOLD,
                   fontSize: 11,
@@ -1851,11 +1841,11 @@ function VendorProfileSheet({
           {/* Feed tabs — mirrors the vendor's own profile (Posts /
               Reels / Buzz / Listings) read-only. No edit buttons,
               no Create CTAs. */}
-          <View style={{ marginTop: 28 }}>
+          <View style={{ marginTop: 32 }}>
             <View
               style={{
                 flexDirection: "row",
-                paddingHorizontal: 16,
+                paddingHorizontal: 20,
                 gap: 8,
                 flexWrap: "wrap",
               }}
@@ -1886,7 +1876,7 @@ function VendorProfileSheet({
               />
             </View>
 
-            <View style={{ paddingHorizontal: 12, paddingTop: 14 }}>
+            <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
               {tab === "posts" ? (
                 posts.length === 0 ? (
                   <SheetEmpty body="No posts yet." />
@@ -1950,7 +1940,7 @@ function SheetTabPill({
     <Pressable onPress={onPress} hitSlop={4}>
       <View
         style={{
-          paddingHorizontal: 14,
+          paddingHorizontal: 16,
           paddingVertical: 8,
           borderRadius: 999,
           backgroundColor: active ? INK : "#ffffff",
@@ -2082,15 +2072,16 @@ function SheetReelGrid({ reels }: { reels: SheetReelRow[] }) {
 
 function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
   return (
-    <View style={{ gap: 10, paddingTop: 4 }}>
+    <View style={{ gap: 12, paddingTop: 4 }}>
       {items.map((b) => (
         <View
           key={b.id}
           style={{
             backgroundColor: "#fbf9f4",
-            borderRadius: 14,
-            padding: 14,
+            borderRadius: 20,
+            padding: 16,
             marginHorizontal: 4,
+            ...CARD_BORDER,
           }}
         >
           <Text
@@ -2122,7 +2113,7 @@ function SheetListingsList({
   onPress: (id: string) => void;
 }) {
   return (
-    <View style={{ gap: 10, paddingTop: 4 }}>
+    <View style={{ gap: 12, paddingTop: 4 }}>
       {listings.map((l) => {
         const isCurrent = l.id === currentId;
         return (
@@ -2130,14 +2121,15 @@ function SheetListingsList({
             <View
               style={{
                 backgroundColor: "#fbf9f4",
-                borderRadius: 14,
-                padding: 12,
+                borderRadius: 20,
+                padding: 16,
                 marginHorizontal: 4,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 12,
-                borderWidth: isCurrent ? 1.5 : 0,
-                borderColor: isCurrent ? INK : "transparent",
+                // Card hairline; the listing being viewed is selected (ink).
+                borderWidth: 1,
+                borderColor: isCurrent ? INK : "#e6e1d5",
               }}
             >
               {l.logo_url ? (
@@ -2229,7 +2221,7 @@ function SheetListingsList({
 
 function ProfileSheetStat({ label, value }: { label: string; value: string }) {
   return (
-    <View style={{ flex: 1, paddingHorizontal: 14, alignItems: "center" }}>
+    <View style={{ flex: 1, paddingHorizontal: 16, alignItems: "center" }}>
       <Text
         style={{ fontFamily: SERIF_BOLD,
           fontSize: 10,
@@ -2270,7 +2262,7 @@ function CreamOceanCard({
   initial: string;
   fallbackLogoUrl: string | null;
 }) {
-  const CARD_W = Dimensions.get("window").width - 36;
+  const CARD_W = Dimensions.get("window").width - 40;
   const CARD_H = 230;
 
   // Flip animation that mirrors the HTML reference pattern: ONE parent
@@ -2318,7 +2310,7 @@ function CreamOceanCard({
     <Pressable
       onPress={toggleFlip}
       style={{
-        marginHorizontal: 18,
+        marginHorizontal: 20,
         marginTop: 12,
         height: CARD_H,
       }}
@@ -2347,16 +2339,11 @@ function CreamOceanCard({
               left: 0,
               right: 0,
               bottom: 0,
-              borderRadius: 22,
+              borderRadius: 20,
               backgroundColor: "#fbf9f4",
               borderWidth: 1,
-              borderColor: "#ebe1ce",
+              borderColor: "#e6e1d5",
               overflow: "hidden",
-              shadowColor: INK,
-              shadowOpacity: 0.1,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 12 },
-              elevation: 4,
             },
             frontAnimatedStyle,
           ]}
@@ -2382,16 +2369,11 @@ function CreamOceanCard({
               left: 0,
               right: 0,
               bottom: 0,
-              borderRadius: 22,
+              borderRadius: 20,
               backgroundColor: "#fbf9f4",
               borderWidth: 1,
-              borderColor: "#ebe1ce",
+              borderColor: "#e6e1d5",
               overflow: "hidden",
-              shadowColor: INK,
-              shadowOpacity: 0.1,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 12 },
-              elevation: 4,
               transform: [{ rotateY: "180deg" }],
             },
             backAnimatedStyle,
@@ -2467,24 +2449,16 @@ function CreamOceanFront({
         />
       </Svg>
 
-      <View style={{ padding: 18 }}>
+      <View style={{ padding: 16 }}>
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            gap: 18,
-            marginBottom: 18,
+            gap: 20,
+            marginBottom: 20,
           }}
         >
-          <View
-            style={{
-              shadowColor: INK,
-              shadowOpacity: 0.3,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 4,
-            }}
-          >
+          <View>
             <CreamOceanAvatar
               size={110}
               logoUrl={vendor.logo_url ?? fallbackLogoUrl}
@@ -2552,23 +2526,18 @@ function CreamOceanFront({
             flexDirection: "row",
             backgroundColor: "rgba(255, 251, 242, 0.65)",
             borderWidth: 1,
-            borderColor: "rgba(235, 225, 206, 0.7)",
-            borderRadius: 14,
+            borderColor: "#e6e1d5",
+            borderRadius: 12,
             paddingVertical: 12,
-            shadowColor: INK,
-            shadowOpacity: 0.10,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 1,
           }}
         >
           <CreamOceanStat label="Bookings" value="0" />
           <View
-            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
+            style={{ width: 1, backgroundColor: "#e6e1d5" }}
           />
           <CreamOceanStat label="Rating" value="—" italic />
           <View
-            style={{ width: 1, backgroundColor: "rgba(235, 225, 206, 0.7)" }}
+            style={{ width: 1, backgroundColor: "#e6e1d5" }}
           />
           <CreamOceanStat
             label="Joined"
@@ -2593,7 +2562,7 @@ function CreamOceanFront({
           borderRadius: 16,
           backgroundColor: "rgba(255, 251, 242, 0.85)",
           borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
+          borderColor: "#e6e1d5",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -2654,7 +2623,7 @@ function CreamOceanBack({
 
       {/* Bio on the back — mirrors the front face's plain-View pattern
           (no flex/no position:absolute) for cross-iOS rendering parity. */}
-      <View style={{ padding: 22, paddingTop: 60 }}>
+      <View style={{ padding: 16, paddingTop: 60 }}>
         <Text
           style={{
             fontFamily: SERIF_ITALIC,
@@ -2683,7 +2652,7 @@ function CreamOceanBack({
           borderRadius: 16,
           backgroundColor: "rgba(255, 251, 242, 0.85)",
           borderWidth: 1,
-          borderColor: "rgba(235, 225, 206, 0.7)",
+          borderColor: "#e6e1d5",
           alignItems: "center",
           justifyContent: "center",
         }}

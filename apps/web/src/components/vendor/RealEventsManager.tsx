@@ -416,7 +416,7 @@ function Editor({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             {isLive ? "Edit live event" : "Edit draft"}
@@ -655,7 +655,6 @@ function Editor({
               type="button"
               onClick={publish}
               disabled={publishing || saving}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {publishing && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
               <Globe className="w-3.5 h-3.5 mr-1.5" />

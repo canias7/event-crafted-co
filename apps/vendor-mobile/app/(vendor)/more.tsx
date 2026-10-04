@@ -107,13 +107,13 @@ export default function MoreScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 130 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
         showsVerticalScrollIndicator={false}
       >
         <Wordmark />
         <Text
           style={{
-            marginTop: 14,
+            marginTop: 16,
             fontFamily: SERIF_BOLD,
             fontSize: 38,
             letterSpacing: -0.5,
@@ -221,7 +221,7 @@ export default function MoreScreen() {
           style={[
             cardStyle,
             {
-              marginTop: 22,
+              marginTop: 24,
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
@@ -230,7 +230,7 @@ export default function MoreScreen() {
           ]}
         >
           <MaterialCommunityIcons name="heart-outline" size={26} color={GOLD} />
-          <View style={{ flex: 1, marginLeft: 13 }}>
+          <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>
               Love Vendora?
             </Text>
@@ -245,11 +245,12 @@ export default function MoreScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 5,
+              backgroundColor: "#ffffff",
               borderWidth: 1,
-              borderColor: INK,
+              borderColor: BORDER,
               borderRadius: 999,
-              paddingHorizontal: 14,
-              paddingVertical: 9,
+              paddingHorizontal: 16,
+              height: 36,
             }}
           >
             <Feather name="star" size={13} color={INK} />
@@ -263,7 +264,7 @@ export default function MoreScreen() {
           <Text
             style={{
               fontFamily: SERIF,
-              marginTop: 22,
+              marginTop: 24,
               textAlign: "center",
               color: INK_DIM,
               fontSize: 12,
@@ -304,7 +305,7 @@ function MenuSection({
   children: ReactNode;
 }) {
   return (
-    <View style={{ marginTop: first ? 0 : 22 }}>
+    <View style={{ marginTop: first ? 0 : 24 }}>
       <Text
         style={{
           fontFamily: SERIF_BOLD,
@@ -344,22 +345,23 @@ function GroupRow({
   return (
     <Pressable onPress={onPress}>
       {divider ? (
-        // 16 padding + 38 icon + 13 gap = where the text starts.
-        <View style={{ height: 1, backgroundColor: BORDER, marginLeft: 67 }} />
+        // 16 padding + 38 icon + 12 gap = 66, where the text starts;
+        // 68 is the nearest value on the 4pt spacing grid.
+        <View style={{ height: 1, backgroundColor: BORDER, marginLeft: 68 }} />
       ) : null}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           paddingHorizontal: 16,
-          paddingVertical: 13,
+          paddingVertical: 12,
         }}
       >
         <View
           style={{
             width: 38,
             height: 38,
-            borderRadius: 11,
+            borderRadius: 12,
             backgroundColor: SURFACE,
             alignItems: "center",
             justifyContent: "center",
@@ -367,7 +369,7 @@ function GroupRow({
         >
           {icon}
         </View>
-        <View style={{ flex: 1, marginLeft: 13 }}>
+        <View style={{ flex: 1, marginLeft: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Text
               numberOfLines={1}
@@ -379,7 +381,7 @@ function GroupRow({
               <View
                 style={{
                   backgroundColor: GOLD_SOFT,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingHorizontal: 8,
                   paddingVertical: 2,
                 }}

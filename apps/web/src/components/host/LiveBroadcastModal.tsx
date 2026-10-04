@@ -330,7 +330,7 @@ export function LiveBroadcastModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl rounded-sm">
+      <DialogContent className="max-w-2xl rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl flex items-center gap-2">
             <Radio
@@ -486,7 +486,7 @@ export function LiveBroadcastModal({
                 <Button
                   type="button"
                   onClick={goLive}
-                  className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  className="w-full"
                 >
                   <Radio className="w-4 h-4 mr-2" />
                   Start broadcasting
@@ -605,7 +605,7 @@ export function LiveBroadcastModal({
 
             {phase === "ended" && (
               <div className="space-y-3">
-                <div className="rounded-sm border border-border bg-card p-4 text-center">
+                <div className="rounded-2xl border border-border bg-card p-4 text-center">
                   <p className="font-medium mb-1">Stream ended</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Your recording is being processed. It'll be available
@@ -627,7 +627,6 @@ export function LiveBroadcastModal({
                     type="button"
                     size="sm"
                     onClick={() => onOpenChange(false)}
-                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                   >
                     Close
                   </Button>

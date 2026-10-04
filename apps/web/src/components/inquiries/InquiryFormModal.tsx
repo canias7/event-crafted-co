@@ -403,7 +403,7 @@ export function InquiryFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-sm">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">Send an inquiry</DialogTitle>
           <DialogDescription className="flex items-center gap-1.5 text-xs leading-relaxed pt-1">
@@ -514,7 +514,7 @@ export function InquiryFormModal({
                     id="event-date"
                     type="button"
                     className={cn(
-                      "h-10 w-full inline-flex items-center justify-between gap-2 px-3 rounded-md border border-input bg-background text-sm font-normal text-left",
+                      "h-10 w-full inline-flex items-center justify-between gap-2 px-3 rounded-md border border-border bg-background text-sm font-normal text-left",
                       !eventDate && "text-muted-foreground",
                     )}
                     disabled={!vendorId}
@@ -710,7 +710,7 @@ export function InquiryFormModal({
                         }))
                       }
                       required={q.required}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
                     >
                       <option value="">Choose…</option>
                       {(q.options ?? []).map((o) => (
@@ -783,7 +783,6 @@ export function InquiryFormModal({
             <Button
               type="submit"
               disabled={submitting || vendorsLoading || !vendorId}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting ? (
                 <>

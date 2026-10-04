@@ -146,9 +146,8 @@ function StatusTile({
     <div
       className="rounded-2xl px-4 py-3"
       style={{
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(8px)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div className="flex items-start gap-3">

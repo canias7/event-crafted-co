@@ -5,29 +5,33 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  // `backdrop-blur` + slightly translucent fills give buttons the same
-  // glassy quality as the cards — whatever's behind softly shows through.
-  "relative overflow-hidden inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-bold ring-offset-background backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  // The one button standard shared with both apps: a pill with a bold
+  // label in three heights (36 / 44 / 52). Gold is the primary action.
+  // Ink is for selection and status (active chips, done pills), never
+  // for buttons.
+  "relative overflow-hidden inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        // Glassy ink: ~90% opaque fill + an inset top highlight so the
-        // dark button reads as frosted glass rather than flat paint.
+        // Primary: champagne fill, ink label. Disabled is solid muted
+        // gold with the label still ink, not a faded button.
         default:
-          "bg-primary/90 text-primary-foreground hover:bg-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]",
+          "bg-gold text-foreground hover:bg-gold-hover disabled:bg-gold-muted disabled:opacity-100",
         destructive:
-          "bg-destructive/90 text-destructive-foreground hover:bg-destructive shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        // Secondary: white pill with the hairline border.
         outline:
-          "border border-input bg-background/50 hover:bg-accent/80 hover:text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+          "border border-border bg-white text-foreground hover:bg-muted",
         secondary:
-          "bg-secondary/70 text-secondary-foreground hover:bg-secondary",
-        ghost: "hover:bg-accent/70 hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline backdrop-blur-none",
+          "border border-border bg-white text-foreground hover:bg-muted",
+        // Quiet: the label alone.
+        ghost: "text-foreground hover:bg-muted",
+        link: "text-foreground underline-offset-4 hover:text-accent hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        default: "h-11 px-5",
+        sm: "h-9 px-4 text-[13px]",
+        lg: "h-[52px] px-7 text-[15px]",
         icon: "h-10 w-10",
       },
     },

@@ -106,7 +106,7 @@ function ShareKitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-sm max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl inline-flex items-center gap-2">
             <QrCode className="w-5 h-5" />
@@ -122,7 +122,7 @@ function ShareKitDialog({
         <div className="space-y-5 pt-2">
           <div
             ref={qrRef}
-            className="flex items-center justify-center bg-card border border-border rounded-sm p-6"
+            className="flex items-center justify-center bg-card border border-border rounded-2xl p-6"
           >
             <QRCodeSVG
               value={url}

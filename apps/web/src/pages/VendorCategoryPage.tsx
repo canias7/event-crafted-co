@@ -143,7 +143,7 @@ export default function VendorCategoryPage() {
       <div className="min-h-screen bg-background">
         <PublicNav />
         <section className="pt-32 pb-16 md:pt-40 md:pb-24 border-b border-border">
-          <div className="container mx-auto px-6 md:px-8 max-w-3xl text-center">
+          <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
               {config.display.toUpperCase()}
             </p>
@@ -177,7 +177,7 @@ export default function VendorCategoryPage() {
           every /vendors/category/:slug page opens straight at the
           sub-category filter chips and grid. */}
       <section className="pt-28 md:pt-32 pb-16 md:pb-24">
-        <div className="container mx-auto px-6 md:px-8">
+        <div className="container mx-auto px-5 md:px-8">
           {/* Sub-category filter chips. Empty selection = show every
               vendor in the group; toggling chips narrows to the
               selected subs. */}

@@ -31,6 +31,8 @@ const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
+// Primary button fill — gold pill, ink label.
+const GOLD = "#c9a86a";
 const GREEN = "#22c55e";
 const PENDING_FG = "#8a6f3e";
 const PENDING_BG = "#f2e7cb";
@@ -364,8 +366,8 @@ export default function EventsScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 18,
+              paddingHorizontal: 20,
+              paddingTop: 20,
               paddingBottom: 4,
               gap: 8,
             }}
@@ -388,7 +390,7 @@ export default function EventsScreen() {
 
           {/* Selected-day list (shown when a day is picked) */}
           {filteredByDay !== null ? (
-            <View style={{ paddingHorizontal: 18, marginTop: 18 }}>
+            <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
@@ -411,7 +413,7 @@ export default function EventsScreen() {
                   <View
                     style={{
                       paddingHorizontal: 20,
-                      marginTop: 22,
+                      marginTop: 24,
                       marginBottom: 8,
                       flexDirection: "row",
                       alignItems: "center",
@@ -442,7 +444,7 @@ export default function EventsScreen() {
 
               {/* This month */}
               {thisMonthList.length > 0 ? (
-                <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
+                <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
                   <View
                     style={{
                       flexDirection: "row",
@@ -485,7 +487,7 @@ export default function EventsScreen() {
                     backgroundColor: "#f7ece9",
                     borderWidth: 1,
                     borderColor: "#e6c9c2",
-                    paddingHorizontal: 14,
+                    paddingHorizontal: 16,
                     paddingVertical: 12,
                   }}
                 >
@@ -559,14 +561,14 @@ function DayPill({
         width: 64,
         paddingVertical: 12,
         paddingHorizontal: 8,
-        borderRadius: 18,
+        borderRadius: 20,
         backgroundColor: isSelected ? INK : CREAM_DEEP,
         alignItems: "center",
       }}
     >
       <Text
         style={{ fontFamily: SERIF_BOLD,
-          color: isSelected ? CREAM : INK_DIM,
+          color: isSelected ? "#ffffff" : INK_DIM,
           fontSize: 11,
           letterSpacing: 0.6,
         }}
@@ -576,7 +578,7 @@ function DayPill({
       <Text
         style={{
           marginTop: 2,
-          color: isSelected ? CREAM : INK,
+          color: isSelected ? "#ffffff" : INK,
           fontSize: 22,
           fontFamily: SERIF_BOLD,
         }}
@@ -700,11 +702,10 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
     <View style={{ paddingHorizontal: 20 }}>
       <View
         style={{
+          // Dark summary card: stays ink; card radius and padding.
           backgroundColor: INK,
-          borderRadius: 28,
-          paddingHorizontal: 20,
-          paddingTop: 20,
-          paddingBottom: 18,
+          borderRadius: 20,
+          padding: 16,
         }}
       >
         <View
@@ -744,7 +745,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
 
         <Text
           style={{
-            marginTop: 18,
+            marginTop: 20,
             color: CREAM,
             fontFamily: SERIF_BOLD,
             fontSize: 28,
@@ -771,8 +772,8 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
           style={{
             height: 1,
             backgroundColor: "rgba(250,245,236,0.15)",
-            marginTop: 18,
-            marginBottom: 14,
+            marginTop: 20,
+            marginBottom: 16,
           }}
         />
 
@@ -808,10 +809,11 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
             {({ pressed }) => (
               <View
                 style={{
-                  backgroundColor: CREAM_DEEP,
+                  // Primary button, small: gold pill, ink label.
+                  backgroundColor: GOLD,
                   borderRadius: 999,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  height: 36,
                   flexDirection: "row",
                   alignItems: "center",
                   opacity: pressed ? 0.85 : 1,
@@ -852,15 +854,12 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
         style={{
           backgroundColor: "#fbf9f4",
           borderRadius: 20,
+          borderWidth: 1,
+          borderColor: BORDER,
           flexDirection: "row",
           alignItems: "center",
-          padding: 12,
-          marginBottom: 10,
-          shadowColor: INK,
-          shadowOpacity: 0.10,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 1,
+          padding: 16,
+          marginBottom: 12,
           opacity: pressed ? 0.85 : 1,
         }}
       >
@@ -869,7 +868,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
         style={{
           width: 64,
           paddingVertical: 12,
-          borderRadius: 14,
+          borderRadius: 12,
           backgroundColor: CREAM_DEEP,
           alignItems: "center",
         }}

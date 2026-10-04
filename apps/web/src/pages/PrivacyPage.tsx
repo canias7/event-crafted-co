@@ -14,7 +14,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      <article className="pt-32 pb-24 container mx-auto px-6 md:px-8 max-w-2xl">
+      <article className="pt-32 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
         <p className="font-label text-accent mb-3">— LEGAL</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           Privacy policy

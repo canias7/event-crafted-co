@@ -328,7 +328,7 @@ export default function VendorInboxPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main id="main-content" className="flex-1 min-w-0 pb-24 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">
@@ -408,17 +408,15 @@ export default function VendorInboxPage() {
             <ul
               className="rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.6)",
-                border: "0.5px solid rgba(0,0,0,0.08)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               {Array.from({ length: 8 }).map((_, i) => (
                 <li
                   key={i}
-                  className={`flex items-center gap-3 px-4 py-3.5 ${
-                    i > 0 ? "border-t border-black/5" : ""
+                  className={`flex items-center gap-3 px-4 py-4 ${
+                    i > 0 ? "border-t border-border" : ""
                   }`}
                 >
                   <div className="w-9 h-9 rounded-full bg-foreground/10 animate-pulse shrink-0" />
@@ -450,10 +448,8 @@ export default function VendorInboxPage() {
             <ul
               className="rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.6)",
-                border: "0.5px solid rgba(0,0,0,0.08)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               {filteredRows.map((r, i) => (
@@ -472,7 +468,7 @@ export default function VendorInboxPage() {
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex items-center gap-2 text-sm font-medium rounded-full px-4 py-2 text-muted-foreground hover:text-accent border border-foreground/10 hover:bg-secondary/40 transition-colors disabled:opacity-60"
+                className="inline-flex items-center gap-2 text-sm font-medium rounded-full px-4 py-2 text-muted-foreground hover:text-accent border border-border hover:bg-secondary/40 transition-colors disabled:opacity-60"
               >
                 {loadingMore ? (
                   <>
@@ -517,8 +513,8 @@ function ConversationRow({
     <li>
       <Link
         to={`/vendor/inbox/${row.id}`}
-        className={`flex items-stretch gap-3 px-4 py-3 transition-colors hover:bg-white/40 ${
-          isFirst ? "" : "border-t border-foreground/[0.06]"
+        className={`flex items-stretch gap-3 px-4 py-3 transition-colors hover:bg-muted/60 ${
+          isFirst ? "" : "border-t border-border"
         }`}
       >
         {/* Unread indicator — blue dot only when unread, otherwise a

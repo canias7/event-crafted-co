@@ -86,7 +86,7 @@ export default function PressPage() {
 
       {/* Hero */}
       <section className="border-b border-border pt-32 pb-12 md:pb-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <p className="font-label text-accent tracking-[0.4em] mb-4">
             — PRESS KIT
           </p>
@@ -103,7 +103,6 @@ export default function PressPage() {
             <Button
               type="button"
               onClick={copyEmail}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {copied ? (
                 <Check className="w-3.5 h-3.5 mr-1.5" />
@@ -126,7 +125,7 @@ export default function PressPage() {
 
       {/* Stats */}
       <section className="py-12 border-b border-border">
-        <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <div className="grid grid-cols-3 gap-4">
             {STATS.map((s, i) => (
               <motion.div
@@ -151,7 +150,7 @@ export default function PressPage() {
 
       {/* Quick facts */}
       <section className="py-14 md:py-20">
-        <div className="container mx-auto px-6 md:px-8 max-w-3xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-3xl">
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — QUICK FACTS
           </p>
@@ -175,7 +174,7 @@ export default function PressPage() {
 
       {/* Logo + brand */}
       <section className="py-14 md:py-20 border-t border-border">
-        <div className="container mx-auto px-6 md:px-8 max-w-3xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-3xl">
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — BRAND
           </p>
@@ -246,7 +245,7 @@ export default function PressPage() {
 
       {/* Screenshots */}
       <section className="py-14 md:py-20 border-t border-border">
-        <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — SCREENSHOTS
           </p>
@@ -283,7 +282,7 @@ export default function PressPage() {
 
       {/* Contact */}
       <section className="py-14 md:py-20 border-t border-border bg-card/40">
-        <div className="container mx-auto px-6 md:px-8 max-w-3xl text-center">
+        <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
           <p className="font-label text-accent mb-3 tracking-[0.4em]">
             — CONTACT
           </p>
@@ -297,7 +296,6 @@ export default function PressPage() {
           <Button
             type="button"
             onClick={copyEmail}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
           >
             {copied ? (
               <Check className="w-3.5 h-3.5 mr-1.5" />

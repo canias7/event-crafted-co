@@ -182,7 +182,7 @@ export function VendorBundlesManager({
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogContent className="rounded-3xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-editorial text-3xl">
                           Delete bundle?
@@ -366,7 +366,7 @@ function BundleEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             {bundle ? "Edit bundle" : "New bundle"}
@@ -439,7 +439,6 @@ function BundleEditor({
             <Button
               type="submit"
               disabled={submitting}
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save bundle

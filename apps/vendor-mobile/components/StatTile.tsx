@@ -14,14 +14,11 @@ export function StatTile({ label, value, hint }: StatTileProps) {
     <View
       style={{
         flex: 1,
-        borderRadius: 24,
-        backgroundColor: "#ffffff",
-        padding: 18,
-        shadowColor: "#14161a",
-        shadowOpacity: 0.10,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 2,
+        borderRadius: 20,
+        backgroundColor: "#fbf9f4",
+        borderWidth: 1,
+        borderColor: "#e6e1d5",
+        padding: 16,
       }}
     >
       <Text className="text-[11px] uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>

@@ -61,14 +61,30 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - `.font-editorial` is a custom utility, emitted after Tailwind's core utilities. It beats `not-italic`/`font-normal` on the same element, so don't combine them expecting the core class to win.
 - The logo wordmark (`VendoraLogo`) is italic regular. Leave it.
 
+**Components** (same standard on the website and in both apps; app tokens live in each app's `lib/ui.ts`)
+
+- **Buttons are pills** with a bold label, 36 / 44 / 52 tall (web `size="sm"` / default / `"lg"`; apps `BUTTON_HEIGHT`).
+  - Primary: champagne fill, ink label. Hover is a step darker (`gold-hover`). Disabled is solid `#e0d2b0` (`gold-muted` / `GOLD_MUTED`) with the label still ink; never fade a button with opacity.
+  - Secondary: white, 1px hairline, ink label. Quiet: the label alone. Danger: red fill, white label, for confirming a destructive action; entry points such as "Delete account" stay quiet with a red label.
+  - Ink is never a button fill. It means selected (active tab, chip, day or segment: ink fill, white label; selected tile: 1px ink border) or done, and it stays on avatars, outgoing bubbles, tooltips, dark summary cards and icon-only buttons (send, play).
+- **Cards are flat:** cream fill, 1px hairline, 20px corners, no shadow, padding 16 on phones and 24 on desktop. Clickable cards darken their border on hover; nothing lifts. No glass or backdrop blur on cards (blur is only for sticky headers and overlays).
+- **Corners:** 8 tags, 12 inputs/tiles/menus, 20 cards, 24 modals and sheets, full pill for buttons, chips and status pills. Web: `rounded-md`, `rounded-lg`/`xl`, `rounded-2xl`, `rounded-3xl`, `rounded-full`; apps: `RADIUS`. Leave circles as circles.
+- **Borders** are 1px: the one hairline (`border-border` / `BORDER`), ink for selected, white at 15% on dark.
+- **Two shadows only:** soft for menus, popovers, toasts and sticky or floating bars; lifted for modals and sheets (web `shadow-soft` / `shadow-lifted`, apps `...SHADOW.soft` / `...SHADOW.lifted`).
+- **Spacing:** anything 12 or more sits on the 4px grid. Page edge is 20px on phones and 32px from tablet up (web `px-5 md:px-8`; `.container` defaults to the same). 12 between stacked cards, 24 to 32 between sections.
+- **Inputs:** white, 1px hairline, 12px corners, 44px tall on the web.
+
 **Deliberately different (don't "fix")**
 
 - The Stripe-style pay-link creator and its outlined status pills (`PayLinksTab` in `VendorPaymentsPage`), by owner request.
 - The website builder, the AI-site pages (`MySites`, `SiteRsvps`, `PublicAiSite`) and the MySpace AI screens (`components/super-agents`).
 - Sign-in area colours (`GlassyAuthShell`, `pages/auth`), pending a redesign.
 - Proposal and invoice document palettes, media players' black backgrounds, and avatar colour palettes.
+- The vendor app's calendar block mode marks picked days in gold, not ink, so they don't read as booked.
 
 **When changing UI:** keep text at 4.5:1 contrast or better. Baskerville is wider than a sans, so check phone width (390px) for sideways overflow.
+
+**Typechecking the apps:** `npx tsc --noEmit -p .` stops at the TS5101 `baseUrl` deprecation and never checks types. Run `npx tsc --noEmit -p . --ignoreDeprecations 6.0` and compare the error list with `main` (Oct 2026: vendor-mobile 47, host-mobile 19 existing errors, mostly unresolved `@expo/vector-icons` types).
 
 ## Mobile apps (host-mobile + vendor-mobile)
 

@@ -124,10 +124,8 @@ export default function PublicEventRsvpPage() {
         <div
           className="rounded-2xl p-10 text-center max-w-md w-full"
           style={{
-            background: "rgba(255,255,255,0.6)",
-            border: "0.5px solid rgba(0,0,0,0.2)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
           }}
         >
           <p className="font-label text-muted-foreground mb-2">404</p>
@@ -156,12 +154,10 @@ export default function PublicEventRsvpPage() {
         </div>
 
         <div
-          className="rounded-3xl p-6 md:p-8 mb-6"
+          className="rounded-2xl p-6 md:p-8 mb-6"
           style={{
-            background: "rgba(255,255,255,0.85)",
-            border: "0.5px solid rgba(0,0,0,0.08)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
           }}
         >
           <p className="font-editorial text-2xl">{fmtDate(event.event_date)}</p>
@@ -179,7 +175,7 @@ export default function PublicEventRsvpPage() {
               {event.notes}
             </p>
           ) : null}
-          <div className="mt-5 pt-5 border-t border-foreground/10 flex items-center gap-6 text-sm">
+          <div className="mt-5 pt-5 border-t border-border flex items-center gap-6 text-sm">
             <div>
               <span className="font-editorial text-2xl tnum">
                 {event.going_count}
@@ -259,7 +255,7 @@ export default function PublicEventRsvpPage() {
                     className={`rounded-full py-2.5 text-sm font-medium transition ${
                       status === s
                         ? "bg-foreground text-background"
-                        : "bg-white/60 text-foreground hover:bg-white/80"
+                        : "bg-white border border-border text-foreground hover:bg-muted"
                     }`}
                     style={
                       status === s

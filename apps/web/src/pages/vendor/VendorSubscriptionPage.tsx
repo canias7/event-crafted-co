@@ -563,7 +563,7 @@ export default function VendorSubscriptionPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-24 lg:pb-0 relative">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">Subscription</h1>
           <p className="text-sm text-muted-foreground">
             Pick a plan or top up credits. Track usage on the Usage tab.
@@ -581,10 +581,7 @@ export default function VendorSubscriptionPage() {
             <div
               className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
               style={{
-                background:
-                  "linear-gradient(135deg, #14161a 0%, #27272a 45%, #3f3f46 100%)",
-                border: "1px solid rgba(0,0,0,0.35)",
-                boxShadow: "0 12px 40px -16px rgba(0,0,0,0.35)",
+                background: "hsl(var(--foreground))",
               }}
             >
               {/* Soft glow accent in the top-right so the dark block
@@ -692,17 +689,12 @@ export default function VendorSubscriptionPage() {
                     key={tier.id}
                     className="rounded-2xl p-5 flex flex-col"
                     style={{
-                      background: isCurrent
-                        ? "linear-gradient(135deg, rgba(0,0,0,0.035), rgba(0,0,0,0.025))"
-                        : "rgba(255,255,255,0.6)",
+                      // The standard card; the current plan is "selected",
+                      // so it gets the ink border.
+                      background: "hsl(var(--card))",
                       border: isCurrent
-                        ? "1px solid rgba(0,0,0,0.45)"
-                        : "0.5px solid rgba(0,0,0,0.08)",
-                      backdropFilter: "blur(10px)",
-                      WebkitBackdropFilter: "blur(10px)",
-                      boxShadow: isCurrent
-                        ? "0 8px 28px -12px rgba(0,0,0,0.25)"
-                        : "0 4px 18px -8px rgba(0,0,0,0.06)",
+                        ? "1px solid hsl(var(--foreground))"
+                        : "1px solid hsl(var(--border))",
                     }}
                   >
                     <div className="flex items-center justify-between">
@@ -776,7 +768,7 @@ export default function VendorSubscriptionPage() {
                           onClick={() => upgradeTo(tier)}
                           disabled={actingId !== null || isCurrent}
                           size="sm"
-                          className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90"
+                          className="w-full"
                         >
                           {isAct ? (
                             <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -812,7 +804,7 @@ export default function VendorSubscriptionPage() {
             !tiers.some(
               (t) => t.id !== "free" && t.billingInterval === "year",
             ) ? (
-              <div className="mt-3 rounded-2xl border border-dashed border-foreground/15 bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
+              <div className="mt-3 rounded-2xl border border-dashed border-border bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
                 Yearly plans coming soon — switch back to monthly to pick a
                 plan today.
               </div>
@@ -847,11 +839,8 @@ export default function VendorSubscriptionPage() {
                     key={pack.id}
                     className="rounded-2xl p-5 flex flex-col"
                     style={{
-                      background: "rgba(255,255,255,0.6)",
-                      border: "0.5px solid rgba(0,0,0,0.08)",
-                      backdropFilter: "blur(10px)",
-                      WebkitBackdropFilter: "blur(10px)",
-                      boxShadow: "0 4px 18px -8px rgba(0,0,0,0.06)",
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
                     }}
                   >
                     <p className="font-medium">{pack.name}</p>
@@ -936,7 +925,6 @@ export default function VendorSubscriptionPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmTierSwitch}
-              className="bg-foreground text-background hover:bg-foreground/90"
             >
               Confirm switch
             </AlertDialogAction>
@@ -1027,11 +1015,8 @@ function BillingPanel({
     <div
       className="w-full lg:w-[360px] shrink-0 rounded-2xl p-5 md:p-6 flex flex-col"
       style={{
-        background: "rgba(255,255,255,0.72)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 6px 24px -12px rgba(0,0,0,0.08)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <h3 className="text-base font-semibold tracking-tight font-sans">
@@ -1054,7 +1039,7 @@ function BillingPanel({
               type="button"
               onClick={() => openPortal("update")}
               disabled={actingId !== null}
-              className="text-xs font-medium text-foreground hover:text-accent rounded-full px-2.5 py-1 border border-foreground/15 hover:border-foreground/40 transition-colors disabled:opacity-50"
+              className="text-xs font-medium text-foreground hover:text-accent rounded-full px-2.5 py-1 border border-border hover:border-foreground/40 transition-colors disabled:opacity-50"
             >
               Update
             </button>
@@ -1233,7 +1218,7 @@ function BillingIntervalToggle({
   onChange: (next: "month" | "year") => void;
 }) {
   const cls = (active: boolean) =>
-    `rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors ${
+    `rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-colors ${
       active
         ? "bg-foreground text-background"
         : "text-foreground hover:text-accent"

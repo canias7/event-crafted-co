@@ -155,7 +155,7 @@ export default function LoginScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}
+        style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
       >
         <Pressable
           onPress={() => (step === "credentials" ? router.back() : setStep("credentials"))}
@@ -226,9 +226,9 @@ export default function LoginScreen() {
                       backgroundColor: INPUT_BG,
                       borderColor: INK_BORDER,
                       borderWidth: 1,
-                      borderRadius: 14,
-                      paddingHorizontal: 14,
-                      paddingVertical: 14,
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      paddingVertical: 16,
                       paddingRight: 64,
                       fontSize: 16,
                       color: INK,
@@ -352,8 +352,8 @@ export default function LoginScreen() {
                     backgroundColor: INPUT_BG,
                     borderColor: INK_BORDER,
                     borderWidth: 1,
-                    borderRadius: 14,
-                    paddingVertical: 18,
+                    borderRadius: 12,
+                    paddingVertical: 20,
                     fontSize: 28,
                     textAlign: "center",
                     letterSpacing: 12,
@@ -446,9 +446,9 @@ function Field({
           backgroundColor: INPUT_BG,
           borderColor: INK_BORDER,
           borderWidth: 1,
-          borderRadius: 14,
-          paddingHorizontal: 14,
-          paddingVertical: 14,
+          borderRadius: 12,
+          paddingHorizontal: 16,
+          paddingVertical: 16,
           fontSize: 16,
           color: INK,
         }}

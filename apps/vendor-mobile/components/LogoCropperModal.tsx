@@ -50,9 +50,9 @@ export function LogoCropperModal({
         style={{
           width: "100%",
           maxWidth: 420,
-          backgroundColor: "#fff",
+          backgroundColor: "#fbf9f4",
           borderRadius: 24,
-          padding: 22,
+          padding: 24,
         }}
       >
         <Text
@@ -60,7 +60,7 @@ export function LogoCropperModal({
         >
           Your logo
         </Text>
-        <Text style={{ fontFamily: "LibreBaskerville", marginTop: 4, marginBottom: 18, fontSize: 13, color: INK_DIM }}>
+        <Text style={{ fontFamily: "LibreBaskerville", marginTop: 4, marginBottom: 20, fontSize: 13, color: INK_DIM }}>
           We fit your whole logo on a clean background — nothing gets cropped.
         </Text>
 
@@ -74,7 +74,7 @@ export function LogoCropperModal({
               left: 0,
               width: viewport,
               height: viewport,
-              borderRadius: 16,
+              borderRadius: 12,
               overflow: "hidden",
               backgroundColor: "#fff",
             }}
@@ -104,7 +104,7 @@ export function LogoCropperModal({
 
         <View
           style={{
-            marginTop: 22,
+            marginTop: 24,
             flexDirection: "row",
             justifyContent: "flex-end",
             gap: 10,
@@ -114,10 +114,11 @@ export function LogoCropperModal({
             onPress={onCancel}
             style={{
               paddingHorizontal: 20,
-              height: 46,
+              height: 44,
               borderRadius: 999,
+              backgroundColor: "#ffffff",
               borderWidth: 1,
-              borderColor: "rgba(10,10,10,0.15)",
+              borderColor: "#e6e1d5",
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -128,7 +129,7 @@ export function LogoCropperModal({
             onPress={onApply}
             style={{
               paddingHorizontal: 24,
-              height: 46,
+              height: 44,
               borderRadius: 999,
               backgroundColor: "#c9a86a",
               alignItems: "center",

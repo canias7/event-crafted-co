@@ -259,7 +259,7 @@ function RecommendPicker({
 
   return (
     <Dialog open={true} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             Recommend a vendor
@@ -358,7 +358,6 @@ function RecommendPicker({
             type="button"
             onClick={add}
             disabled={!picked || submitting}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90"
           >
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Add recommendation

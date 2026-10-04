@@ -134,7 +134,6 @@ export default function PublicReviewPage() {
           {ctx.vendor_slug && (
             <Button
               asChild
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               <Link to={`/v/${ctx.vendor_slug}`}>View profile</Link>
             </Button>
@@ -250,7 +249,7 @@ export default function PublicReviewPage() {
             <Button
               type="submit"
               disabled={submitting || rating < 1}
-              className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90"
+              className="w-full"
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Submit review

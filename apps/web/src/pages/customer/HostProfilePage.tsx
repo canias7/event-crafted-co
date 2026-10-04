@@ -209,7 +209,7 @@ export default function HostProfilePage() {
         backPath="/customer/explore"
       />
       <main className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-editorial text-3xl">Profile</h1>
             <p className="text-sm text-muted-foreground">
@@ -300,7 +300,7 @@ function HeroCard({
   fileInputRef: React.RefObject<HTMLInputElement>;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-[0_8px_24px_-12px_rgba(26,20,16,0.18)] p-8 flex flex-col items-center bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]">
+    <div className="relative overflow-hidden rounded-2xl border border-border p-8 flex flex-col items-center bg-card">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden
@@ -421,7 +421,7 @@ function ActionCard({
   subtitle?: string;
 }) {
   const inner = (
-    <div className="rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] p-4 flex items-center gap-3 hover:bg-secondary/40 transition">
+    <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3 hover:bg-secondary/40 transition">
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}
       >

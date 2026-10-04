@@ -7,7 +7,8 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      // Page edge: 20px on phones, 32px from tablet up (the brand standard).
+      padding: { DEFAULT: "1.25rem", md: "2rem" },
       screens: {
         "2xl": "1400px",
       },
@@ -26,7 +27,12 @@ export default {
         foreground: "hsl(var(--foreground))",
         placeholder: "hsl(var(--placeholder))",
         pending: "hsl(var(--pending))",
-        gold: "hsl(var(--gold))",
+        // Champagne: the primary button fill (ink label), plus ornament.
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          hover: "hsl(var(--gold-hover))",
+          muted: "hsl(var(--gold-muted))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -66,11 +72,21 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      // Corner scale shared with the apps: sm 4 (checkboxes), md 8 (tags),
+      // lg/xl 12 (inputs, tiles, menus), 2xl 20 (cards), 3xl 24 (sheets,
+      // modals), full (buttons, chips, status pills).
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
         "2xl": "20px",
+      },
+      // Two shadows only. Cards are flat (hairline border, no shadow).
+      boxShadow: {
+        // Floating things: menus, popovers, toasts, sticky bars.
+        soft: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
+        // Modals and sheets.
+        lifted: "0 24px 48px -18px hsl(220 14% 9% / 0.35)",
       },
       keyframes: {
         "accordion-down": {

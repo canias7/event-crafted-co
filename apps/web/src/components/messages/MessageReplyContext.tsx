@@ -31,7 +31,7 @@ export function MessageReplyContext({
   // since it isn't anchored to any bubble.
   const containerClasses = isBubble
     ? "flex items-start gap-2.5 pl-2 mb-1.5 -mt-0.5"
-    : "flex items-start gap-2.5 rounded-2xl px-3 py-2 mb-2 bg-white/55 backdrop-blur-md border border-white/65";
+    : "flex items-start gap-2.5 rounded-2xl px-3 py-2 mb-2 bg-card border border-border";
   const accentColor = {
     color: "hsl(var(--accent-foreground))",
   } as React.CSSProperties;

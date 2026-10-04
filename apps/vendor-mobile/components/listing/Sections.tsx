@@ -46,7 +46,7 @@ function SectionHeader({
         <Pressable
           onPress={onAdd}
           hitSlop={6}
-          className="rounded-full border border-border px-3 py-1.5 active:opacity-70"
+          className="rounded-full border border-border bg-white px-3 h-9 justify-center active:opacity-70"
         >
           <Text className="text-xs text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>+ Add</Text>
         </Pressable>
@@ -205,7 +205,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
         items.map((p) => (
           <View
             key={p.id}
-            className="rounded-lg border border-border bg-background p-3"
+            className="rounded-[20px] border border-border bg-[#fbf9f4] p-4"
           >
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-3">
@@ -302,7 +302,7 @@ function PackEditorModal({
     >
       {draft ? (
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={onClose} hitSlop={8}>
               <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
             </Pressable>
@@ -317,7 +317,7 @@ function PackEditorModal({
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
-            contentContainerClassName="px-4 py-4 gap-4 pb-24"
+            contentContainerClassName="px-5 py-4 gap-4 pb-24"
           >
             <View>
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
@@ -328,7 +328,7 @@ function PackEditorModal({
                 onChangeText={(v) => onChange({ ...draft, name: v })}
                 placeholder="Standard package"
                 placeholderTextColor={PLACEHOLDER}
-                className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
             <View>
@@ -343,7 +343,7 @@ function PackEditorModal({
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                className="mt-2 min-h-[80px] rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 min-h-[80px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
             <View>
@@ -356,7 +356,7 @@ function PackEditorModal({
                 placeholder="0"
                 placeholderTextColor={PLACEHOLDER}
                 keyboardType="decimal-pad"
-                className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
             <View>
@@ -374,7 +374,7 @@ function PackEditorModal({
                 multiline
                 numberOfLines={5}
                 textAlignVertical="top"
-                className="mt-2 min-h-[120px] rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 min-h-[120px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
             <View className="flex-row items-center justify-between">
@@ -515,7 +515,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
         items.map((f) => (
           <View
             key={f.id}
-            className="rounded-lg border border-border bg-background p-3"
+            className="rounded-[20px] border border-border bg-[#fbf9f4] p-4"
           >
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-3">
@@ -563,7 +563,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
             className="flex-1 bg-background"
             edges={["top", "bottom"]}
           >
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
+            <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
               <Pressable onPress={() => setEditing(null)} hitSlop={8}>
                 <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
               </Pressable>
@@ -578,7 +578,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
             </View>
             <ScrollView
               keyboardShouldPersistTaps="handled"
-              contentContainerClassName="px-4 py-4 gap-4 pb-24"
+              contentContainerClassName="px-5 py-4 gap-4 pb-24"
             >
               <View>
                 <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
@@ -591,7 +591,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   }
                   placeholder="Do you travel for events?"
                   placeholderTextColor={PLACEHOLDER}
-                  className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                  className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
                 />
               </View>
               <View>
@@ -606,7 +606,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
-                  className="mt-2 min-h-[120px] rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                  className="mt-2 min-h-[120px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
                 />
               </View>
             </ScrollView>
@@ -725,7 +725,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           placeholder="25"
           placeholderTextColor={PLACEHOLDER}
           keyboardType="number-pad"
-          className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+          className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
         />
       </View>
       <View>
@@ -734,7 +734,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         </Text>
         <Pressable
           onPress={() => setPickerOpen(true)}
-          className="mt-2 rounded-lg border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
+          className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
         >
           <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             {cancellationLabel}
@@ -752,7 +752,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           placeholder="14"
           placeholderTextColor={PLACEHOLDER}
           keyboardType="number-pad"
-          className="mt-2 rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+          className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
         />
       </View>
       <View>
@@ -765,13 +765,13 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           multiline
           numberOfLines={3}
           textAlignVertical="top"
-          className="mt-2 min-h-[80px] rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+          className="mt-2 min-h-[80px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
         />
       </View>
       <Pressable
         onPress={save}
         disabled={busy}
-        className="rounded-full border border-border bg-background py-3 items-center active:opacity-80"
+        className="rounded-full border border-border bg-white h-11 items-center justify-center active:opacity-80"
       >
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
           {busy ? "Saving…" : "Save policies"}
@@ -785,7 +785,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         onRequestClose={() => setPickerOpen(false)}
       >
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={8}>
               <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
             </Pressable>
