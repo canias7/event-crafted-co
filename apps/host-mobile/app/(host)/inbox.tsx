@@ -372,7 +372,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           {isUnread ? (
             <View
               className="mt-2 self-start rounded-full px-2 py-0.5"
-              style={{ backgroundColor: "#f0e6d2" }}
+              style={{ backgroundColor: "#f2e7cb" }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: "#8a6f3e" }} className="text-[10px] uppercase tracking-wide">
                 Replied

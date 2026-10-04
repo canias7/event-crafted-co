@@ -5,7 +5,7 @@
 // Design: cream backdrop, white cards grouped by section (TODAY /
 // EARLIER) with thin internal dividers. Each row has a rounded-square
 // icon tile (green check for bookings, letter avatar for messages,
-// bell for system pushes), relative time on the right, red unread
+// bell for system pushes), relative time on the right, champagne unread
 // dot. "You're all caught up." footer in italic serif.
 
 import { Fragment, useCallback, useEffect, useState } from "react";
@@ -30,7 +30,8 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 const INK = "#14161a";
 const INK_DIM = "#14161a";
 const CREAM = "#f4f1ea";
-const RED = "#b23a34";
+// Unread markers are champagne, per the brand (numbers in ink).
+const GOLD = "#c9a86a";
 
 // Cards carry a 1px hairline instead of a shadow (component standard).
 const CARD_BORDER = {
@@ -105,8 +106,8 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /booking|accepted|confirmed/.test(type) || /booked|confirmed/i.test(title);
   if (isBooking) {
     return (
-      <View style={{ ...box, backgroundColor: "#d4ead8" }}>
-        <Feather name="check" size={22} color="#2f7a40" />
+      <View style={{ ...box, backgroundColor: INK }}>
+        <Feather name="check" size={22} color="#ffffff" />
       </View>
     );
   }
@@ -126,7 +127,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /replied/i.test(title);
   if (isPerson && row.actor_image_url) {
     return (
-      <View style={{ ...box, backgroundColor: "#f5e7da", overflow: "hidden" }}>
+      <View style={{ ...box, backgroundColor: "#ece7db", overflow: "hidden" }}>
         <Image
           source={{ uri: row.actor_image_url }}
           style={{ width: 44, height: 44 }}
@@ -138,7 +139,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
   if (isPerson) {
     const initial = (title.trim()[0] ?? "?").toUpperCase();
     return (
-      <View style={{ ...box, backgroundColor: "#f5e7da" }}>
+      <View style={{ ...box, backgroundColor: "#ece7db" }}>
         <Text
           style={{
             color: INK,
@@ -156,7 +157,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /system|push|test/.test(type) || /push test|claude/i.test(title);
   if (isSystem) {
     return (
-      <View style={{ ...box, backgroundColor: "#e8e3da" }}>
+      <View style={{ ...box, backgroundColor: "#ece7db" }}>
         <Feather name="bell" size={20} color={INK_DIM} />
       </View>
     );
@@ -164,7 +165,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
 
   const initial = (title.trim()[0] ?? "?").toUpperCase();
   return (
-    <View style={{ ...box, backgroundColor: "#f5e7da" }}>
+    <View style={{ ...box, backgroundColor: "#ece7db" }}>
       <Text
         style={{
           color: INK,
@@ -235,7 +236,7 @@ function NotificationItem({
                       width: 7,
                       height: 7,
                       borderRadius: 999,
-                      backgroundColor: RED,
+                      backgroundColor: GOLD,
                       marginLeft: 6,
                     }}
                   />
@@ -418,14 +419,14 @@ export function NotificationsBell({
                 minWidth: 16,
                 height: 16,
                 borderRadius: 999,
-                backgroundColor: RED,
+                backgroundColor: GOLD,
                 paddingHorizontal: 4,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <Text
-                style={{ fontFamily: SERIF_BOLD, color: "#fff", fontSize: 10,}}
+                style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 10,}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -475,7 +476,7 @@ export function NotificationsBell({
             >
               <Text
                 style={{ fontFamily: SERIF_BOLD,
-                  color: unread > 0 ? INK : "#a89b8a",
+                  color: unread > 0 ? INK : "#746a58",
                   fontSize: 15,
                 }}
               >

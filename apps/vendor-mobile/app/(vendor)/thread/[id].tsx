@@ -776,7 +776,7 @@ function Header({
             flexDirection: "row",
             alignItems: "center",
             gap: 4,
-            backgroundColor: hiluxPaused ? "rgba(0,0,0,0.06)" : "rgba(255,138,76,0.15)",
+            backgroundColor: hiluxPaused ? "#ece7db" : "#f2e7cb",
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 999,
@@ -786,12 +786,12 @@ function Header({
           <Feather
             name={hiluxPaused ? "pause" : "zap"}
             size={11}
-            color={hiluxPaused ? "rgba(0,0,0,0.55)" : "#c4541e"}
+            color={hiluxPaused ? "#14161a" : "#8a6f3e"}
           />
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              color: hiluxPaused ? "rgba(0,0,0,0.55)" : "#c4541e",
+              color: hiluxPaused ? "#14161a" : "#8a6f3e",
               fontSize: 10,
               textTransform: "uppercase",
               letterSpacing: 0.5,

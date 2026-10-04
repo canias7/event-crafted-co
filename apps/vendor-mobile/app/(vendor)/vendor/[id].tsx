@@ -253,7 +253,7 @@ export default function VendorDetailScreen() {
               style={{ width: screenWidth, height: galleryHeight }}
               className="items-center justify-center"
             >
-              <Feather name="image" size={36} color="#a1a1aa" />
+              <Feather name="image" size={36} color="#746a58" />
               <Text className="mt-2 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
                 No listing photos yet
               </Text>

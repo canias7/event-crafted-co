@@ -670,7 +670,7 @@ function Avatar({
         height: 72,
         borderRadius: 36,
         overflow: "hidden",
-        backgroundColor: logoUrl ? WHITE : "#e9e4da",
+        backgroundColor: logoUrl ? WHITE : "#ece7db",
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -998,7 +998,7 @@ function ListingCard({
         style={{
           borderRadius: 20,
           overflow: "hidden",
-          backgroundColor: "#1a1a1a",
+          backgroundColor: "#14161a",
           aspectRatio: 4 / 3,
           width: "100%",
         }}
@@ -1015,7 +1015,7 @@ function ListingCard({
             className="flex-1 items-center justify-center px-6"
             style={{ backgroundColor: SURFACE }}
           >
-            <Feather name="image" size={28} color="#a1a1aa" />
+            <Feather name="image" size={28} color="#746a58" />
             <Text className="mt-2 text-center text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
               No listing photos yet
             </Text>

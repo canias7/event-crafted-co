@@ -139,7 +139,7 @@ export function InquiryComposer({
             <Pressable onPress={submit} hitSlop={8} disabled={!canSubmit}>
               <Text
                 className="text-sm"
-                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? "#14161a" : "#a89b8a" }}
+                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? "#14161a" : "#746a58" }}
               >
                 {submitting ? "Sending…" : "Send"}
               </Text>

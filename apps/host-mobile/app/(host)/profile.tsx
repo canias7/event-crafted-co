@@ -30,6 +30,8 @@ const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
 const BRONZE = "#8a6f3e";
+// Gold tint: the "waiting" fill (bronze on gold tint).
+const PENDING_BG = "#f2e7cb";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -287,8 +289,8 @@ export default function ProfileScreen() {
             />
           ) : state?.verifStatus === "pending" ? (
             <ActionCard
-              iconBgColor={GOLD}
-              iconColor={CREAM}
+              iconBgColor={PENDING_BG}
+              iconColor={BRONZE}
               icon="clock"
               title="Verification pending"
               subtitle="We'll reach out within 48 hours."
@@ -332,7 +334,7 @@ export default function ProfileScreen() {
                   marginTop: 12,
                   height: 52,
                   borderRadius: 999,
-                  backgroundColor: pressed ? "#efe6d6" : "transparent",
+                  backgroundColor: pressed ? CREAM_DEEP : "transparent",
                   alignItems: "center",
                   justifyContent: "center",
                 }}

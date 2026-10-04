@@ -33,7 +33,6 @@ const INK_DIM = "#14161a";
 const BORDER = "#e6e1d5";
 // Primary button fill — gold pill, ink label.
 const GOLD = "#c9a86a";
-const GREEN = "#22c55e";
 const PENDING_FG = "#8a6f3e";
 const PENDING_BG = "#f2e7cb";
 const ERROR = "#b23a34";
@@ -424,7 +423,7 @@ export default function EventsScreen() {
                         width: 8,
                         height: 8,
                         borderRadius: 999,
-                        backgroundColor: GREEN,
+                        backgroundColor: GOLD,
                         marginRight: 8,
                       }}
                     />
@@ -727,7 +726,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                   width: 6,
                   height: 6,
                   borderRadius: 999,
-                  backgroundColor: GREEN,
+                  backgroundColor: GOLD,
                   marginRight: 6,
                 }}
               />

@@ -283,7 +283,7 @@ export default function TeamScreen() {
 
             {members.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 24 }}>
-                <MaterialCommunityIcons name="account-group-outline" size={52} color="#d9c9a6" />
+                <MaterialCommunityIcons name="account-group-outline" size={52} color="#c9a86a" />
                 <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 14, color: INK_DIM, textAlign: "center" }}>
                   The people behind the details — add your first team member.
                 </Text>

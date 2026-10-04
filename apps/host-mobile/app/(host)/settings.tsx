@@ -260,7 +260,7 @@ export default function SettingsScreen() {
                         flexDirection: "row",
                         alignItems: "center",
                         borderWidth: 1,
-                        borderColor: "#f5d5d2",
+                        borderColor: "#e6c9c2",
                         opacity: pressed ? 0.85 : 1,
                       }}
                     >

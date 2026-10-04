@@ -73,14 +73,12 @@ const HATCH = "#d6d1c6";
 const HATCH_BG = "#ece7db";
 // Champagne bronze — gold deep enough to stay legible as small text.
 const BRONZE = "#8a6f3e";
-// Solid stand-in for INK on a disabled control.
-const INK_MUTED = "#7b7973";
+// Solid stand-in for INK on a disabled control (the warm subtle tone).
+const INK_MUTED = "#746a58";
 const CARD = "#fbf9f4";
 // Pale gold behind the block-mode hint: warmer than the page, lighter
 // than the pending-day fill so the two don't read as related.
 const HINT_BG = "#f7efdc";
-const GREEN = "#16a34a";
-const AMBER = "#d97706";
 // Status dots for the multi-listing account view (match web STATUS_DOT).
 const DOT_BOOKED = "#14161a";
 const DOT_PENDING = "#c9a86a";
@@ -1323,9 +1321,9 @@ export default function CalendarScreen() {
               style={{
                 marginBottom: 12,
                 borderRadius: 12,
-                backgroundColor: "#fef2f2",
+                backgroundColor: "#f7ece9",
                 borderWidth: 1,
-                borderColor: "#fecaca",
+                borderColor: "#e6c9c2",
                 paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
@@ -1743,7 +1741,7 @@ export default function CalendarScreen() {
                   <MaterialCommunityIcons
                     name="calendar-check-outline"
                     size={48}
-                    color="#d9c9a6"
+                    color="#c9a86a"
                   />
                   <Text
                     style={{
@@ -1847,7 +1845,7 @@ export default function CalendarScreen() {
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
                 <Text
                   numberOfLines={1}
-                  style={{ flexShrink: 1, fontFamily: SERIF, fontSize: 12, color: "#d9d4c8" }}
+                  style={{ flexShrink: 1, fontFamily: SERIF, fontSize: 12, color: "rgba(244,241,234,0.75)" }}
                 >
                   {pickedDates.length === 0
                     ? "Tap dates on the calendar"
@@ -2029,7 +2027,7 @@ export default function CalendarScreen() {
                         paddingHorizontal: 12,
                         height: 32,
                         borderRadius: 999,
-                        backgroundColor: active ? INK : "#eadfc6",
+                        backgroundColor: active ? INK : "#ece7db",
                       }}
                     >
                       <Text
@@ -2504,7 +2502,7 @@ function DayCell({
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              color: selected ? onAccent : inMonth ? INK : "#c9c4b6",
+              color: selected ? onAccent : inMonth ? INK : "#746a58",
               fontSize: 14,
             }}
           >
@@ -2545,7 +2543,7 @@ function DayCell({
     selected && state === "available"
       ? onAccent
       : !inMonth
-        ? "#c9c4b6"
+        ? "#746a58"
         : state === "booked"
           ? CREAM
           : state === "pending"
@@ -2762,7 +2760,7 @@ function RecurringBlocksSection({
                   savingDow !== null && !saving
                     ? isOff
                       ? INK_MUTED
-                      : "#f0ede4"
+                      : "#ece7db"
                     : isOff
                       ? INK
                       : CREAM_DEEP,
@@ -3039,7 +3037,7 @@ function AppointmentCard({
             fontFamily: SERIF,
             marginTop: 10,
             fontSize: 13,
-            color: "rgba(20,22,26,0.8)",
+            color: INK,
             lineHeight: 18,
             borderLeftWidth: 1,
             borderLeftColor: BORDER,
