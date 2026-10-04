@@ -53,6 +53,7 @@ import {
   AccountDeletionPage,
   TermsPage,
   HelpPage,
+  HowItWorksPage,
   ChangelogPage,
   StatusPage,
   PressPage,
@@ -149,6 +150,7 @@ const App = () => (
               <Route path="/account-deletion" element={<AccountDeletionPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
               <Route path="/pay/invoice/:slug" element={<InvoiceCheckoutPage />} />
               {/* Stripe redirect target for purchases started in the

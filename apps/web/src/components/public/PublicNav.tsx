@@ -38,8 +38,14 @@ const CREAM = "#f4f1ea";
 // `tone="overlay"` sits the nav on a dark photo hero (vendors page),
 // matching the landing page header: in flow instead of fixed, no glass,
 // cream links with a gold underline on the current page, gold Sign up.
-export function PublicNav({ tone = "light" }: { tone?: "light" | "overlay" } = {}) {
-  const overlay = tone === "overlay";
+// `tone="dark"` is the same look as a sticky solid ink bar, for the dark
+// pages (Explore, How it works).
+export function PublicNav({
+  tone = "light",
+}: { tone?: "light" | "overlay" | "dark" } = {}) {
+  const dark = tone === "dark";
+  // Cream-on-dark styling, shared by the overlay and dark tones.
+  const overlay = tone !== "light";
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
@@ -78,9 +84,11 @@ export function PublicNav({ tone = "light" }: { tone?: "light" | "overlay" } = {
   return (
     <nav
       className={
-        overlay
-          ? "relative z-20"
-          : "fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
+        dark
+          ? "sticky top-0 z-50 border-b border-white/10 bg-[#14161a]/95 backdrop-blur-md"
+          : overlay
+            ? "relative z-20"
+            : "fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
       }
       style={
         overlay
@@ -94,14 +102,14 @@ export function PublicNav({ tone = "light" }: { tone?: "light" | "overlay" } = {
     >
       <div
         className={`container mx-auto flex items-center justify-between px-5 md:px-8 ${
-          overlay ? "h-20 md:h-24" : "h-16"
+          dark ? "h-16" : overlay ? "h-20 md:h-24" : "h-16"
         }`}
       >
         <Link to="/" aria-label="Vendora — Events, simplified">
           <VendoraLogo
             size="md"
             color={overlay ? CREAM : "#000"}
-            withTagline={overlay}
+            withTagline={overlay && !dark}
           />
         </Link>
 
@@ -190,19 +198,14 @@ export function PublicNav({ tone = "light" }: { tone?: "light" | "overlay" } = {
           >
             Explore
           </Link>
-          <a
-            href="/#how-it-works"
-            className={`hidden lg:inline text-sm font-medium ${linkClass(false)}`}
+          <Link
+            to="/how-it-works"
+            className={`text-sm font-medium ${linkClass(
+              location.pathname === "/how-it-works",
+            )}`}
+            aria-current={location.pathname === "/how-it-works" ? "page" : undefined}
           >
             How it works
-          </a>
-          <Link
-            to="/website-builder"
-            className={`hidden lg:inline text-sm font-medium ${linkClass(
-              location.pathname === "/website-builder",
-            )}`}
-          >
-            Website builder
           </Link>
         </div>
 
@@ -411,19 +414,12 @@ export function PublicNav({ tone = "light" }: { tone?: "light" | "overlay" } = {
           >
             Explore
           </Link>
-          <a
-            href="/#how-it-works"
+          <Link
+            to="/how-it-works"
             onClick={() => setMobileOpen(false)}
             className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
           >
             How it works
-          </a>
-          <Link
-            to="/website-builder"
-            onClick={() => setMobileOpen(false)}
-            className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
-          >
-            Website builder
           </Link>
           {session && profile ? (
             <>
