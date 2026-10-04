@@ -35,6 +35,7 @@ import {
   ALL_SUBS,
   groupOfSub,
 } from "@/data/categoryTaxonomy";
+import { BROWSE_CATEGORIES } from "@/data/browseCategories";
 
 // Sub-name → group-slug. Used to deep-link from a single-sub filter to
 // the parent group page (e.g. "Photography" → "/vendors/category/media").
@@ -63,20 +64,18 @@ const INK = "#14161a";
 const CREAM = "#f4f1ea";
 const GOLD = "#c9a86a";
 
-// Category photo tiles under the hero. Each one is a set of
-// sub-categories (the DB stores sub names); "More filters" opens the
-// full list.
-const subsOf = (slug: string) =>
-  CATEGORY_GROUPS.find((g) => g.slug === slug)?.subs ?? [];
-const TILES: { label: string; subs: string[]; image: PictureSource }[] = [
-  { label: "Photography", subs: subsOf("media"), image: tilePhotography },
-  { label: "Venues", subs: subsOf("venues"), image: tileVenues },
-  { label: "Catering", subs: subsOf("food-beverage"), image: tileCatering },
-  { label: "Beauty", subs: ["Beauty", "Grooming Services"], image: tileBeauty },
-  { label: "Planning", subs: ["Event Coordinators"], image: tilePlanning },
-  { label: "Decor & florals", subs: ["Florists", "Decor Rentals"], image: tileDecor },
-  { label: "Entertainment", subs: subsOf("entertainment"), image: tileEntertainment },
-];
+// Category photo tiles under the hero (the same seven categories as
+// Explore's menu); "More filters" opens the full list.
+const TILE_IMAGES: Record<string, PictureSource> = {
+  Photography: tilePhotography,
+  Venues: tileVenues,
+  Catering: tileCatering,
+  Beauty: tileBeauty,
+  Planning: tilePlanning,
+  "Decor & florals": tileDecor,
+  Entertainment: tileEntertainment,
+};
+const TILES = BROWSE_CATEGORIES.map((c) => ({ ...c, image: TILE_IMAGES[c.label] }));
 const sameSet = (a: Set<string>, b: string[]) =>
   a.size === b.length && b.every((x) => a.has(x));
 
