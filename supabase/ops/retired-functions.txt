@@ -19,3 +19,26 @@ tmp-myspace-chat-test
 axion-generate
 axion-generate-pathtest
 vendor-stripe-mcp-connect
+
+# Website builder / AI sites / flat-lay builder (removed Oct 2026). The
+# ai_site* tables and the ai-site-images bucket are kept (owner's call).
+ai-site-compose
+ai-site-generate
+ai-site-guests
+ai-site-ics
+ai-site-image-generate
+ai-site-image-upload
+ai-site-messages
+ai-site-photos
+ai-site-render
+ai-site-revert
+ai-site-rsvp-submit
+ai-site-rsvps-export
+ai-site-versions
+flatlay-generate
+frame-gen
+# Builder-era throwaways, already stubbed to return 410.
+tmp-set-html
+tmp-html-update
+tmp-asset-upload
+tmp-img-render

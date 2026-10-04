@@ -7,9 +7,3 @@
 # Hashed build assets are immutable — cache them forever.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
-
-# Rendered event pages. The /s/<slug> Function also sets this itself; this
-# more-specific rule ensures the `/*` no-store default never wins here even
-# if _headers is applied to the Function response.
-/s/*
-  Cache-Control: public, max-age=60, s-maxage=60, stale-while-revalidate=300

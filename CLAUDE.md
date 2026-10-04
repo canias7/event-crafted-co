@@ -2,7 +2,7 @@
 
 ## Live URLs
 
-- **Public site:** https://eventvendora.com (and https://app.eventvendora.com) — both serve the same **Cloudflare Pages** deployment of `apps/web`, deployed by `.github/workflows/cloudflare-pages.yml` on push to `main`. Routing and cache headers live in `apps/web/public/_redirects` / `_headers`; `/s/<slug>` is the Pages Function in `apps/web/functions/s/`.
+- **Public site:** https://eventvendora.com (and https://app.eventvendora.com) — both serve the same **Cloudflare Pages** deployment of `apps/web`, deployed by `.github/workflows/cloudflare-pages.yml` on push to `main`. Routing and cache headers live in `apps/web/public/_redirects` / `_headers`.
 - **Admin:** https://admin.eventvendora.com — PIN-gated (`9236`) admin panel from `apps/admin`, also on Cloudflare Pages via the same workflow (headers in `apps/admin/public/_headers`).
 - https://vendora-admin-henna.vercel.app still answers from an older Vercel project. The `vercel.json` files only apply to those leftover Vercel projects, not to the live sites.
 
@@ -79,7 +79,6 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 
 **Deliberately different (don't "fix")**
 
-- The website builder and the AI-site pages (`MySites`, `SiteRsvps`, `PublicAiSite`).
 - Sign-in area colours (`GlassyAuthShell`, `pages/auth`), pending a redesign.
 - Proposal and invoice document palettes, media players' black backgrounds, and avatar colour palettes.
 - The vendor app's calendar block mode marks picked days in gold, not ink, so they don't read as booked.

@@ -1,24 +1,11 @@
 {
   "rewrites": [
     { "source": "/preview/:path*", "destination": "/preview/:path*" },
-    {
-      "source": "/s/:slug",
-      "destination": "/api/render?slug=:slug"
-    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
-      "source": "/s/:slug",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=60, s-maxage=60, stale-while-revalidate=300"
-        }
-      ]
-    },
-    {
-      "source": "/((?!assets/|s/).*)",
+      "source": "/((?!assets/).*)",
       "headers": [
         {
           "key": "Cache-Control",
