@@ -1,4 +1,5 @@
-# My Space / HILUX / Axion (removed Oct 2026)
+# My Space / HILUX / Axion (removed Oct 2026). Re-run 2026-10-04: five
+# still listed after the first delete.
 my-space-action-worker
 my-space-archive-cold
 my-space-chat
