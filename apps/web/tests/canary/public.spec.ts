@@ -27,14 +27,14 @@ test.describe("public site", () => {
     await expectSettled(page);
     await expectNoHorizontalOverflow(page, "/");
 
-    // The hero's popular-search chips are real links into the directory on
-    // every viewport (the header nav collapses on phones).
-    const photographers = page.locator('a[href="/vendors?q=photographer"]').first();
-    await expect(photographers).toBeVisible();
-    await photographers.click();
+    // The hero search sends visitors into the directory with their query.
+    const heroSearch = page.getByPlaceholder("What are you planning?");
+    await expect(heroSearch).toBeVisible();
+    await heroSearch.fill("photographer");
+    await heroSearch.press("Enter");
     await expect(page).toHaveURL(/\/vendors\?q=photographer/);
-    const search = page.getByPlaceholder(/Search vendors, categories, or keywords/i);
-    await expect(search, "search box pre-filled from the chip").toHaveValue(/photographer/i, { timeout: 15_000 });
+    const search = page.getByPlaceholder(/Search vendors or services/i);
+    await expect(search, "directory search pre-filled from the hero").toHaveValue(/photographer/i, { timeout: 15_000 });
     testInfo.annotations.push({ type: "viewport", description: testInfo.project.name });
   });
 
@@ -72,7 +72,7 @@ test.describe("public site", () => {
     const api = await approvedVendors();
     const target = api.find((v) => v.business_name.trim().length > 3)!;
     await page.goto("/vendors", { waitUntil: "domcontentloaded" });
-    const search = page.getByPlaceholder(/Search vendors, categories, or keywords/i);
+    const search = page.getByPlaceholder(/Search vendors or services/i);
     await expect(search).toBeVisible({ timeout: 20_000 });
 
     const word = target.business_name.split(/\s+/).find((w) => w.length > 3) ?? target.business_name;
