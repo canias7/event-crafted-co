@@ -33,7 +33,13 @@ function dashboardLabel(t?: (key: string) => string) {
   return t ? t("nav.dashboard") : "My dashboard";
 }
 
-export function PublicNav() {
+const CREAM = "#f4f1ea";
+
+// `tone="overlay"` sits the nav on a dark photo hero (vendors page),
+// matching the landing page header: in flow instead of fixed, no glass,
+// cream links with a gold underline on the current page, gold Sign up.
+export function PublicNav({ tone = "light" }: { tone?: "light" | "overlay" } = {}) {
+  const overlay = tone === "overlay";
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
@@ -58,18 +64,45 @@ export function PublicNav() {
   const dashLabel = dashboardLabel(t);
   const dashPath = hasVendorAccess ? "/vendor/me" : "/customer/explore";
 
+  const linkClass = (active: boolean) =>
+    overlay
+      ? `relative transition-colors duration-200 ${
+          active
+            ? "text-white after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-gold"
+            : "text-[#f4f1ea]/85 hover:text-white"
+        }`
+      : `transition-colors duration-200 ${
+          active ? "text-foreground" : "text-muted-foreground hover:text-accent"
+        }`;
+
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
-      style={{
-        background: "rgba(255,255,255,0.6)",
-        borderBottom: "0.5px solid rgba(0,0,0,0.12)",
-      }}
+      className={
+        overlay
+          ? "relative z-20"
+          : "fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
+      }
+      style={
+        overlay
+          ? undefined
+          : {
+              background: "rgba(255,255,255,0.6)",
+              borderBottom: "0.5px solid rgba(0,0,0,0.12)",
+            }
+      }
       aria-label="Public"
     >
-      <div className="container mx-auto flex items-center justify-between h-16 px-5 md:px-8">
+      <div
+        className={`container mx-auto flex items-center justify-between px-5 md:px-8 ${
+          overlay ? "h-20 md:h-24" : "h-16"
+        }`}
+      >
         <Link to="/" aria-label="Vendora — Events, simplified">
-          <VendoraLogo size="md" color="#000" />
+          <VendoraLogo
+            size="md"
+            color={overlay ? CREAM : "#000"}
+            withTagline={overlay}
+          />
         </Link>
 
         {/* Desktop nav */}
@@ -78,11 +111,9 @@ export function PublicNav() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`inline-flex items-center gap-1 text-sm font-medium transition-colors duration-200 outline-none ${
-                  location.pathname.startsWith("/vendors")
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-accent"
-                }`}
+                className={`inline-flex items-center gap-1 text-sm font-medium outline-none ${linkClass(
+                  location.pathname.startsWith("/vendors"),
+                )}`}
                 aria-current={
                   location.pathname.startsWith("/vendors") ? "page" : undefined
                 }
@@ -154,21 +185,31 @@ export function PublicNav() {
               vendor activity. */}
           <Link
             to="/explore"
-            className={`text-sm font-medium transition-colors duration-200 ${
-              location.pathname === "/explore"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-accent"
-            }`}
+            className={`text-sm font-medium ${linkClass(location.pathname === "/explore")}`}
             aria-current={location.pathname === "/explore" ? "page" : undefined}
           >
             Explore
+          </Link>
+          <a
+            href="/#how-it-works"
+            className={`hidden lg:inline text-sm font-medium ${linkClass(false)}`}
+          >
+            How it works
+          </a>
+          <Link
+            to="/website-builder"
+            className={`hidden lg:inline text-sm font-medium ${linkClass(
+              location.pathname === "/website-builder",
+            )}`}
+          >
+            Website builder
           </Link>
         </div>
 
         <div className="hidden md:flex items-center gap-1">
           {session && profile ? (
             <>
-              <NotificationBell variant="light" />
+              <NotificationBell variant={overlay ? "dark" : "light"} />
               {(() => {
                 // Vendor identity lives on `profiles` (business_name +
                 // logo_url) — it survives whether the listing is
@@ -184,7 +225,13 @@ export function PublicNav() {
                 return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="ml-2 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
+                  <button
+                    className={`ml-2 flex items-center gap-2 text-sm font-medium transition-colors ${
+                      overlay
+                        ? "text-[#f4f1ea]/85 hover:text-white"
+                        : "text-muted-foreground hover:text-accent"
+                    }`}
+                  >
                     {navLogo ? (
                       <img
                         src={navLogo}
@@ -223,6 +270,22 @@ export function PublicNav() {
                 );
               })()}
             </>
+          ) : overlay ? (
+            <div className="flex items-center gap-3 text-[13px]">
+              <Link
+                to="/login"
+                className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 font-bold transition-colors hover:bg-white/10"
+                style={{ color: CREAM, border: "1px solid rgba(244,241,234,0.35)" }}
+              >
+                {t("nav.login")}
+              </Link>
+              <Link
+                to="/signup"
+                className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-4 font-bold text-foreground transition-colors hover:bg-gold-hover"
+              >
+                {t("nav.signup")}
+              </Link>
+            </div>
           ) : (
             <>
               <Link to="/login">
@@ -241,12 +304,14 @@ export function PublicNav() {
               </Link>
             </>
           )}
-          <LanguageSwitcher tone="light" />
+          <span className={overlay ? "ml-3" : undefined}>
+            <LanguageSwitcher tone={overlay ? "dark" : "light"} />
+          </span>
         </div>
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden p-2 text-foreground"
+          className={`md:hidden p-2 ${overlay ? "text-[#f4f1ea]" : "text-foreground"}`}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
           aria-expanded={mobileOpen}
@@ -266,7 +331,11 @@ export function PublicNav() {
           id="public-mobile-menu"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-background border-b border-border px-4 pb-4"
+          className={
+            overlay
+              ? "md:hidden mx-5 mb-4 rounded-3xl bg-background px-4 pb-4 shadow-lifted"
+              : "md:hidden bg-background border-b border-border px-4 pb-4"
+          }
         >
           {/* Vendors expandable section */}
           <button
@@ -341,6 +410,20 @@ export function PublicNav() {
             className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
           >
             Explore
+          </Link>
+          <a
+            href="/#how-it-works"
+            onClick={() => setMobileOpen(false)}
+            className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
+          >
+            How it works
+          </a>
+          <Link
+            to="/website-builder"
+            onClick={() => setMobileOpen(false)}
+            className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
+          >
+            Website builder
           </Link>
           {session && profile ? (
             <>

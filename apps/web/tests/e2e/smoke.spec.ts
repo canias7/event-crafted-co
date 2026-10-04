@@ -137,9 +137,7 @@ test("vendor search box renders and accepts input", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/vendors", { waitUntil: "domcontentloaded" });
-  const searchBox = page.getByPlaceholder(
-    /Search vendors, categories, or keywords/i,
-  );
+  const searchBox = page.getByPlaceholder(/Search vendors or services/i);
   await expect(searchBox).toBeVisible({ timeout: 10_000 });
   await searchBox.fill("photographer");
   await expect(searchBox).toHaveValue("photographer");

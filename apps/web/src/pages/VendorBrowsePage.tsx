@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Store, X, ArrowRight, ChevronDown } from "lucide-react";
+import { Search, Store, X, ArrowRight, ChevronDown, MapPin, CalendarDays, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
@@ -16,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
+import { Picture } from "@/components/shared/Picture";
+import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
@@ -50,6 +50,24 @@ const sortOptions: Record<string, (a: Vendor, b: Vendor) => number> = {
 };
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
+
+const INK = "#14161a";
+const CREAM = "#f4f1ea";
+const GOLD = "#c9a86a";
+
+// Quick-pick chips under the hero. Each one is a set of sub-categories
+// (the DB stores sub names); "More filters" opens the full list.
+const subsOf = (slug: string) =>
+  CATEGORY_GROUPS.find((g) => g.slug === slug)?.subs ?? [];
+const QUICK_CHIPS: { label: string; subs: string[] }[] = [
+  { label: "Photography", subs: subsOf("media") },
+  { label: "Venues", subs: subsOf("venues") },
+  { label: "Beauty", subs: ["Beauty", "Grooming Services"] },
+  { label: "Planning", subs: ["Event Coordinators"] },
+  { label: "Catering", subs: subsOf("food-beverage") },
+];
+const sameSet = (a: Set<string>, b: string[]) =>
+  a.size === b.length && b.every((x) => a.has(x));
 
 export default function VendorBrowsePage() {
   const { vendors, loading } = useVendors();
@@ -98,6 +116,7 @@ export default function VendorBrowsePage() {
   );
   const [sort, setSort] = useState<keyof typeof sortOptions>("popular");
   const [dateFilter, setDateFilter] = useState<string>("");
+  const [dateFocused, setDateFocused] = useState(false);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
 
   function toggleCategory(cat: string) {
@@ -188,55 +207,211 @@ export default function VendorBrowsePage() {
       ? vendors.filter((v) => unavailableIds.has(v.id)).length
       : 0;
 
+  const activeChip = QUICK_CHIPS.find((c) => sameSet(activeCategories, c.subs));
+  const chipClass = (selected: boolean) =>
+    `inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-full px-5 text-[14px] font-bold transition-colors ${
+      selected
+        ? "bg-primary text-primary-foreground"
+        : "border border-border bg-white text-foreground hover:border-foreground/30"
+    }`;
+
+  function scrollToResults(e: React.FormEvent) {
+    e.preventDefault();
+    document.getElementById("vendor-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
-    <div className="min-h-screen public-canvas">
-      <PublicNav />
+    <div className="min-h-screen" style={{ backgroundColor: CREAM }}>
+      {/* ═══════ HERO — photo, matching the landing page ═══════ */}
+      <section className="relative overflow-hidden" style={{ backgroundColor: INK }}>
+        <div className="absolute inset-0">
+          <Picture
+            source={heroGala}
+            alt=""
+            sizes="100vw"
+            loading="eager"
+            fetchPriority="high"
+            className="h-full w-full object-cover"
+          />
+        </div>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(10,11,14,0.62) 0%, rgba(10,11,14,0.4) 40%, rgba(10,11,14,0.55) 75%, rgba(16,14,10,0.85) 100%)",
+          }}
+        />
 
-      {/* Hero removed — page opens straight into filters + vendor grid. */}
+        <PublicNav tone="overlay" />
 
-      {/* Filters — glassy translucent surface so the warm wash shows
-          through; backdrop blur keeps the controls legible when content
-          scrolls underneath the sticky bar. */}
-      <section
-        className="sticky top-16 z-30 backdrop-blur-md"
-        style={{
-          background: "rgba(255,255,255,0.45)",
-          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
-        }}
-      >
-        <div className="container mx-auto px-5 md:px-8 py-4">
-          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search vendors, categories, or keywords…"
+        <div className="container relative z-10 mx-auto px-5 pb-10 pt-4 md:px-8 md:pb-14 md:pt-8">
+          <div className="text-center lg:text-left">
+            <h1
+              className="hero-headline m-0 mx-auto max-w-3xl lg:mx-0"
+              style={{
+                color: CREAM,
+                fontSize: "clamp(40px, 6.4vw, 72px)",
+                lineHeight: 1.04,
+                letterSpacing: "-1.5px",
+              }}
+            >
+              Find your
+              <br />
+              <span style={{ color: GOLD }}>unforgettable.</span>
+            </h1>
+            <p
+              className="hero-intro mx-auto mt-4 max-w-lg text-[15px] leading-relaxed md:text-lg lg:mx-0"
+              style={{ color: "rgba(244,241,234,0.85)" }}
+            >
+              Meet the vendors who bring your vision to life.
+            </p>
+          </div>
+
+          {/* Search card */}
+          <form
+            onSubmit={scrollToResults}
+            className="mt-8 flex flex-col gap-2 rounded-2xl p-2 md:flex-row md:items-center"
+            style={{ backgroundColor: "rgba(251,249,244,0.97)" }}
+          >
+            <label className="flex h-12 flex-1 items-center gap-2.5 px-3 md:h-11">
+              <Search className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+              <span className="sr-only">Search vendors or services</span>
+              <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 rounded-full bg-secondary/80 border-none focus-visible:ring-1 focus-visible:ring-accent"
+                placeholder="Search vendors or services"
+                className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
+                style={{ color: INK }}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                  className="text-foreground hover:text-accent"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </label>
+            <label className="flex h-12 items-center gap-2.5 border-t border-border px-3 md:h-11 md:w-56 md:border-l md:border-t-0">
+              <MapPin className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+              <span className="sr-only">Location</span>
+              <input
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                placeholder="Location"
+                className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
+                style={{ color: INK }}
+              />
+              {locationFilter && (
+                <button
+                  type="button"
+                  onClick={() => setLocationFilter("")}
+                  aria-label="Clear location filter"
+                  className="text-foreground hover:text-accent"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </label>
+            <label
+              htmlFor="date-filter"
+              className="flex h-12 items-center gap-2.5 border-t border-border px-3 md:h-11 md:w-56 md:border-l md:border-t-0"
+            >
+              <CalendarDays className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+              <span className="sr-only">Event date</span>
+              {/* Text until used, so it reads "Event date" rather than the
+                  browser's mm/dd/yyyy; becomes a date picker on focus. */}
+              <input
+                id="date-filter"
+                type={dateFilter || dateFocused ? "date" : "text"}
+                value={dateFilter}
+                placeholder="Event date"
+                onFocus={(e) => {
+                  setDateFocused(true);
+                  const el = e.currentTarget;
+                  requestAnimationFrame(() => {
+                    try {
+                      el.showPicker?.();
+                    } catch {
+                      /* not allowed without a click on some browsers */
+                    }
+                  });
+                }}
+                onBlur={() => setDateFocused(false)}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
+                style={{ color: INK }}
+              />
+              {dateFilter && (
+                <button
+                  type="button"
+                  onClick={() => setDateFilter("")}
+                  aria-label="Clear date filter"
+                  className="text-foreground hover:text-accent"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </label>
+            <Button type="submit" size="lg" className="shrink-0 gap-2">
+              Find vendors
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
+      </section>
+
+      {/* ═══════ FILTERS + RESULTS ═══════ */}
+      <section id="vendor-results" className="scroll-mt-4 py-8 md:py-10">
+        <div className="container mx-auto px-5 md:px-8">
+          {/* Category chips + More filters */}
+          <div className="flex items-center gap-3">
+            <div className="no-scrollbar -ml-5 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pl-5 md:ml-0 md:pl-0">
+              <button
+                type="button"
+                onClick={() => setActiveCategories(new Set())}
+                className={chipClass(activeCategories.size === 0)}
+                aria-pressed={activeCategories.size === 0}
+              >
+                All vendors
+              </button>
+              {QUICK_CHIPS.map((c) => {
+                const selected = activeChip?.label === c.label;
+                return (
+                  <button
+                    key={c.label}
+                    type="button"
+                    onClick={() => setActiveCategories(new Set(c.subs))}
+                    className={chipClass(selected)}
+                    aria-pressed={selected}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
             </div>
-            {/* Category multi-select. Replaces an old single-select +
-                horizontal pill row with one consistent dropdown — same
-                pattern as the public-nav Vendors menu. Shows count when
-                multiple are picked, single name when one. */}
+            <span className="hidden h-8 w-px shrink-0 bg-border md:block" aria-hidden />
+            {/* Full category list, multi-select. */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="w-full md:w-44 h-11 rounded-full bg-secondary/80 px-4 inline-flex items-center justify-between text-sm font-medium hover:bg-secondary transition-colors"
+                  aria-label="More filters"
+                  className={`${chipClass(false)} gap-2 !px-4 md:!px-5`}
                 >
-                  <span className="truncate">
-                    {activeCategories.size === 0
-                      ? "All categories"
-                      : activeCategories.size === 1
-                        ? Array.from(activeCategories)[0]
-                        : `${activeCategories.size} categories`}
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                  <span className="hidden md:inline">
+                    {activeCategories.size > 0 && !activeChip
+                      ? `${activeCategories.size} selected`
+                      : "More filters"}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 ml-2 shrink-0" aria-hidden />
+                  <ChevronDown className="hidden h-3.5 w-3.5 md:block" aria-hidden />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                align="start"
+                align="end"
                 className="w-64 max-h-[70vh] overflow-y-auto"
               >
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -274,122 +449,87 @@ export default function VendorBrowsePage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="relative w-full md:w-44">
-              <Label htmlFor="date-filter" className="sr-only">
-                Event date
-              </Label>
-              <Input
-                id="date-filter"
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                placeholder="Event date"
-                className="h-11 rounded-full bg-secondary/80 border-none focus-visible:ring-1 focus-visible:ring-accent pr-9"
-              />
-              {dateFilter && (
-                <button
-                  type="button"
-                  onClick={() => setDateFilter("")}
-                  aria-label="Clear date filter"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-            <Select value={sort} onValueChange={(v) => setSort(v as keyof typeof sortOptions)}>
-              <SelectTrigger className="w-full md:w-44 h-11 rounded-full bg-secondary/80 border-none">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popular">Most reviewed</SelectItem>
-                <SelectItem value="rating">Highest rated</SelectItem>
-                <SelectItem value="price-low">Price: low to high</SelectItem>
-                <SelectItem value="price-high">Price: high to low</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          {locationFilter && (
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-xs text-muted-foreground">Location:</span>
-              <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-foreground text-background text-xs font-medium">
-                {locationFilter}
-                <button
-                  type="button"
-                  onClick={() => setLocationFilter("")}
-                  aria-label="Clear location filter"
-                  className="hover:opacity-70"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            </div>
-          )}
-
-          {/* Active-category chips for visibility when multiple are
-              picked. Click X to remove individual filters. */}
-          {activeCategories.size > 0 && (
-            <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+          {/* Picks from "More filters" that aren't a quick chip. */}
+          {activeCategories.size > 0 && !activeChip && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
               {Array.from(activeCategories).map((cat) => (
                 <span
                   key={cat}
-                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-foreground text-background text-xs font-medium"
+                  className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary px-2.5 text-xs font-bold text-primary-foreground"
                 >
                   {cat}
                   <button
                     type="button"
                     onClick={() => toggleCategory(cat)}
                     aria-label={`Remove ${cat} filter`}
-                    className="hover:opacity-70"
+                    className="hover:text-gold"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="h-3 w-3" />
                   </button>
                 </span>
               ))}
             </div>
           )}
-        </div>
-      </section>
 
-      {/* Results */}
-      <section className="py-12 md:py-16">
-        <div className="container mx-auto px-5 md:px-8">
-          <div className="flex items-end justify-between mb-10 flex-wrap gap-3">
+          {/* Heading + sort */}
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-3 md:mt-10">
             <div>
+              <h2 className="m-0 font-editorial text-[32px] leading-tight md:text-[44px]">
+                Discover vendors
+              </h2>
               {hiddenByDate > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {hiddenByDate}{" "}
                   {hiddenByDate === 1 ? "vendor" : "vendors"} hidden because
                   they're booked that day.
                 </p>
               )}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
               {category !== "All" && slugByCategory[category] && (
                 <Link
                   to={`/vendors/category/${slugByCategory[category]}`}
-                  className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
                 >
                   View {groupOfSub(category) ?? category} page
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               )}
             </div>
+            <div className="flex items-center gap-2">
+              <Select value={sort} onValueChange={(v) => setSort(v as keyof typeof sortOptions)}>
+                <SelectTrigger
+                  aria-label="Sort vendors"
+                  className="h-11 w-44 rounded-full border-border bg-white px-4"
+                >
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popular">Most reviewed</SelectItem>
+                  <SelectItem value="rating">Highest rated</SelectItem>
+                  <SelectItem value="price-low">Price: low to high</SelectItem>
+                  <SelectItem value="price-high">Price: high to low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
+          <div className="mt-6">
           {vendors.length === 0 && loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i}>
-                  <Skeleton className="aspect-[4/3] w-full rounded-sm mb-3" />
-                  <Skeleton className="h-5 w-2/3 mb-2" />
-                  <Skeleton className="h-4 w-full" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-border bg-card p-2">
+                  <Skeleton className="aspect-[4/3] w-full rounded-xl" />
+                  <div className="space-y-2 px-3 pb-3 pt-4">
+                    <Skeleton className="h-3 w-1/3" />
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
                 </div>
               ))}
             </div>
           ) : filtered.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {filtered.map((vendor, i) => (
                 <motion.div
                   key={vendor.id}
@@ -397,7 +537,7 @@ export default function VendorBrowsePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...spring, delay: Math.min(i * 0.05, 0.4) }}
                 >
-                  <VendorCard vendor={vendor} eager={i < 6} />
+                  <VendorCard vendor={vendor} eager={i < 4} />
                 </motion.div>
               ))}
             </div>
@@ -410,9 +550,11 @@ export default function VendorBrowsePage() {
               </p>
               <Button
                 variant="outline"
-                className="mt-6 rounded-full"
+                className="mt-6"
                 onClick={() => {
                   setSearch("");
+                  setLocationFilter("");
+                  setDateFilter("");
                   setCategory("All");
                 }}
               >
@@ -420,6 +562,7 @@ export default function VendorBrowsePage() {
               </Button>
             </div>
           )}
+          </div>
         </div>
       </section>
 

@@ -223,7 +223,7 @@ export default function LandingPage() {
         <div className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24">
           <div className="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
             <h1
-              className="m-0 landing-fadeup landing-headline"
+              className="m-0 landing-fadeup hero-headline"
               style={{
                 color: CREAM,
                 fontSize: "clamp(42px, 7vw, 76px)",
@@ -250,7 +250,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p
-              className="mx-auto lg:mx-0 mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup landing-intro"
+              className="mx-auto lg:mx-0 mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup hero-intro"
               style={{ color: "rgba(244,241,234,0.75)", animationDelay: "120ms" }}
             >
               The all-in-one marketplace and planning experience for hosts and
@@ -737,25 +737,6 @@ export default function LandingPage() {
         @keyframes landingFadeUp {
           from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-        /* The headline and intro cross the bright sunset and candles in the
-           photo. A soft dark halo behind the headline and a gentle shadow on
-           the letters keep them readable, gold word included. */
-        .landing-headline {
-          position: relative;
-          isolation: isolate;
-          text-shadow: 0 2px 28px rgba(10,11,14,0.7), 0 1px 3px rgba(10,11,14,0.4);
-        }
-        .landing-headline::before {
-          content: "";
-          position: absolute;
-          inset: -56px -96px;
-          z-index: -1;
-          pointer-events: none;
-          background: radial-gradient(closest-side, rgba(10,11,14,0.62), rgba(10,11,14,0.42) 55%, rgba(10,11,14,0));
-        }
-        .landing-intro {
-          text-shadow: 0 1px 12px rgba(10,11,14,0.8), 0 1px 2px rgba(10,11,14,0.5);
         }
         @media (prefers-reduced-motion: reduce) {
           .landing-kenburns { animation: none !important; }

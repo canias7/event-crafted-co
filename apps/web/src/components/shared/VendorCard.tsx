@@ -1,10 +1,9 @@
-import { motion } from "framer-motion";
 import {
   MapPin,
   Heart,
   ImageIcon,
 } from "lucide-react";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { formatListingPrice } from "@vendora/core";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
@@ -95,86 +94,74 @@ export function VendorCard({ vendor, eager = false }: VendorCardProps) {
   const { isSaved, toggle } = useSavedVendors();
   const saved = isSaved(vendor.id);
 
+  // Flat card (brand standard): cream fill, hairline border that darkens
+  // on hover, nothing lifts. Photo inset with its own corners, then the
+  // category in small bronze capitals, the name, and location | price.
   return (
-    <Link to={`/vendors/${vendor.id}`} className="group block">
-      <motion.div
-        whileHover={{ y: -3 }}
-        transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-      >
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl mb-3 bg-muted">
-          {vendor.heroImageUrl ? (
-            <img
-              src={vendor.heroImageUrl}
-              alt={vendor.name}
-              loading={eager ? "eager" : "lazy"}
-              fetchPriority={eager ? "high" : "auto"}
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-            />
-          ) : (
-            // No portfolio photo on the listing → neutral placeholder.
-            // We never substitute stock category art / posts / logos:
-            // the marketplace card only shows what the vendor put
-            // into their listing.
-            <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
-              <ImageIcon className="w-6 h-6" aria-hidden="true" />
-              <span className="text-xs">No listing photos yet</span>
-            </div>
+    <Link
+      to={`/vendors/${vendor.id}`}
+      className="group flex h-full flex-col rounded-2xl border border-border bg-card p-2 transition-colors hover:border-foreground/30"
+    >
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+        {vendor.heroImageUrl ? (
+          <img
+            src={vendor.heroImageUrl}
+            alt={vendor.name}
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={eager ? "high" : "auto"}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+          />
+        ) : (
+          // No portfolio photo on the listing → neutral placeholder.
+          // We never substitute stock category art / posts / logos:
+          // the marketplace card only shows what the vendor put
+          // into their listing.
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+            <ImageIcon className="w-6 h-6" aria-hidden="true" />
+            <span className="text-xs">No listing photos yet</span>
+          </div>
+        )}
+        {/* Only the save button sits on the photo. */}
+        <button
+          aria-label={saved ? "Remove from saved" : "Save vendor"}
+          onClick={(e) => {
+            e.preventDefault();
+            toggle(vendor.id, { isReal: vendor.isReal });
+          }}
+          className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 transition-colors hover:bg-white"
+        >
+          <Heart
+            className={`w-4 h-4 transition-colors ${
+              saved ? "fill-accent text-accent" : "text-foreground"
+            }`}
+          />
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col px-3 pb-3 pt-4">
+        <p className="m-0 truncate text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
+          {vendor.category}
+        </p>
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <h3 className="m-0 truncate font-editorial text-[19px] leading-tight transition-colors group-hover:text-accent">
+            {vendor.name}
+          </h3>
+          {vendor.studioVerified && <StudioVerifiedBadge />}
+          {vendor.verifiedKinds && vendor.verifiedKinds.length > 0 && (
+            <VerificationBadges kinds={vendor.verifiedKinds} size="compact" />
           )}
-          <div className="absolute top-2 right-2">
-            <button
-              aria-label={saved ? "Remove from saved" : "Save vendor"}
-              onClick={(e) => {
-                e.preventDefault();
-                toggle(vendor.id, { isReal: vendor.isReal });
-              }}
-              className="w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
-            >
-              <Heart
-                className={`w-3.5 h-3.5 transition-colors ${
-                  saved ? "fill-accent text-accent" : "text-foreground"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Nothing overlays the photo on purpose — only the save
-              button in the top-right corner sits on top of the image.
-              Category, rating, and availability surface in the text
-              block below instead. */}
         </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-editorial text-lg leading-tight transition-colors group-hover:text-accent">
-              {vendor.name}
-            </h3>
-            {vendor.studioVerified && <StudioVerifiedBadge />}
-            {vendor.verifiedKinds && vendor.verifiedKinds.length > 0 && (
-              <VerificationBadges
-                kinds={vendor.verifiedKinds}
-                size="compact"
-              />
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground line-clamp-1 leading-snug">
-            {vendor.description}
+        <div className="mt-auto flex items-center gap-3 pt-4 text-[13px]">
+          <p className="m-0 flex min-w-0 flex-1 items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+            <span className="truncate">{vendor.location ?? vendor.distance}</span>
           </p>
-          <div className="flex items-center justify-between pt-0.5">
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <MapPin className="w-2.5 h-2.5" />
-              {vendor.location ?? vendor.distance}
-            </p>
-            <p className="text-xs tnum font-medium">
-              {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
-            </p>
-          </div>
-          {pricingModelsLabel(vendor.pricingModels) ? (
-            <p className="text-[10px] text-muted-foreground truncate pt-0.5">
-              {pricingModelsLabel(vendor.pricingModels)}
-            </p>
-          ) : null}
+          <span className="h-5 w-px shrink-0 bg-border" aria-hidden />
+          <p className="m-0 shrink-0 tnum">
+            {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
+          </p>
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
 }
