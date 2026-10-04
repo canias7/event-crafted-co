@@ -71,14 +71,14 @@ export default function ForgotPasswordScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
         </View>
 
         {!sent ? (
-          <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
+          <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
@@ -124,10 +124,10 @@ export default function ForgotPasswordScreen() {
                 style={{ fontFamily: SERIF,
                   marginTop: 6,
                   backgroundColor: INPUT_BG,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   borderWidth: 1,
                   borderColor: INK_BORDER,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 16,
                   paddingVertical: 12,
                   color: INK,
                   fontSize: 16,
@@ -151,7 +151,7 @@ export default function ForgotPasswordScreen() {
               onPress={onSubmit}
               disabled={submitting || !email.trim()}
               style={{
-                marginTop: 18,
+                marginTop: 20,
                 backgroundColor: submitting || !email.trim() ? GOLD_MUTED : GOLD,
                 borderRadius: 999,
                 height: 52,
@@ -165,7 +165,7 @@ export default function ForgotPasswordScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
+          <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
             <Text
               style={{
                 fontFamily: SERIF_BOLD,

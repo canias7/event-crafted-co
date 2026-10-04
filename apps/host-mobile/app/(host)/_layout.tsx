@@ -1,6 +1,6 @@
 // Host mobile tab layout — 4 tabs with a custom floating pill tab
 // bar (same shape as vendor-mobile's). Pill floats ~16px above the
-// bottom safe area, white bg, soft shadow. Inactive tabs are line
+// bottom safe area, cream bg, SHADOW.soft. Inactive tabs are line
 // icons (Feather), active tab is a solid black circle with a white
 // icon. No text labels.
 
@@ -11,6 +11,7 @@ import { Feather } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
+import { SHADOW } from "@/lib/ui";
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   explore: "search",
@@ -61,11 +62,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           height: 64,
           width: "100%",
           maxWidth: 420,
-          shadowColor: "#000",
-          shadowOpacity: 0.10,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: 8,
+          ...SHADOW.soft,
         }}
       >
         {visible.map((route) => {

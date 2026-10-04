@@ -284,7 +284,7 @@ function Chip({
     >
       <Text style={{ fontFamily: SERIF_BOLD }}
         className={`text-sm ${
-          active ? "text-background" : "text-foreground"
+          active ? "text-white" : "text-foreground"
         }`}
       >
         {label}
@@ -334,7 +334,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
   return (
     <Pressable
       onPress={open}
-      className="rounded-2xl border border-border bg-background px-4 py-4 active:opacity-70"
+      className="rounded-[20px] border border-border bg-[#fbf9f4] px-4 py-4 active:opacity-70"
     >
       <View className="flex-row gap-3">
         <Avatar seed={vendorName} label={initials(vendorName)} />

@@ -224,12 +224,12 @@ export default function ResetPasswordScreen() {
   if (state === "error") {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
-        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
           <Pressable onPress={() => router.replace("/(auth)/login")} hitSlop={8}>
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
         </View>
-        <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
           <Text
             style={{
               fontFamily: SERIF_BOLD,
@@ -268,7 +268,7 @@ export default function ResetPasswordScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
           <Text
             style={{
               fontFamily: SERIF_BOLD,
@@ -320,7 +320,7 @@ export default function ResetPasswordScreen() {
                     flexDirection: "row",
                     alignItems: "center",
                     backgroundColor: INPUT_BG,
-                    borderRadius: 14,
+                    borderRadius: 12,
                     borderWidth: 1,
                     borderColor: INK_BORDER,
                     paddingRight: 8,
@@ -335,7 +335,7 @@ export default function ResetPasswordScreen() {
                     placeholderTextColor={PLACEHOLDER}
                     style={{ fontFamily: SERIF,
                       flex: 1,
-                      paddingHorizontal: 14,
+                      paddingHorizontal: 16,
                       paddingVertical: 12,
                       color: INK,
                       fontSize: 16,
@@ -365,7 +365,7 @@ export default function ResetPasswordScreen() {
                 onPress={onSubmit}
                 disabled={state === "submitting" || password.length < 8}
                 style={{
-                  marginTop: 18,
+                  marginTop: 20,
                   backgroundColor: state === "submitting" || password.length < 8 ? GOLD_MUTED : GOLD,
                   borderRadius: 999,
                   height: 52,

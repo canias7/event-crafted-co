@@ -32,12 +32,10 @@ const INK_DIM = "#14161a";
 const CREAM = "#f4f1ea";
 const RED = "#b23a34";
 
-const CARD_SHADOW = {
-  shadowColor: "#14161a",
-  shadowOpacity: 0.10,
-  shadowRadius: 20,
-  shadowOffset: { width: 0, height: 6 },
-  elevation: 2,
+// Cards carry a 1px hairline instead of a shadow (component standard).
+const CARD_BORDER = {
+  borderWidth: 1,
+  borderColor: "#e6e1d5",
 } as const;
 
 function routeFromLink(link: string | null | undefined): string | null {
@@ -193,8 +191,8 @@ function NotificationItem({
       {({ pressed }) => (
         <View
           style={{
-            paddingHorizontal: 14,
-            paddingVertical: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 16,
             flexDirection: "row",
             alignItems: "flex-start",
             opacity: pressed ? 0.7 : 1,
@@ -278,7 +276,7 @@ function Section({
     <>
       <Text
         style={{ fontFamily: SERIF_BOLD,
-          marginTop: 22,
+          marginTop: 24,
           marginBottom: 10,
           paddingHorizontal: 4,
           color: INK_DIM,
@@ -291,9 +289,9 @@ function Section({
       <View
         style={{
           backgroundColor: "#fbf9f4",
-          borderRadius: 18,
+          borderRadius: 20,
           overflow: "hidden",
-          ...CARD_SHADOW,
+          ...CARD_BORDER,
         }}
       >
         {rows.map((r, i) => (
@@ -303,8 +301,8 @@ function Section({
               <View
                 style={{
                   height: 1,
-                  backgroundColor: "#efe5d2",
-                  marginLeft: 70,
+                  backgroundColor: "#e6e1d5",
+                  marginLeft: 72,
                 }}
               />
             ) : null}
@@ -455,7 +453,7 @@ export function NotificationsBell({
               justifyContent: "space-between",
               paddingHorizontal: 20,
               paddingTop: 8,
-              paddingBottom: 14,
+              paddingBottom: 16,
             }}
           >
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
@@ -488,7 +486,7 @@ export function NotificationsBell({
 
           <ScrollView
             contentContainerStyle={{
-              paddingHorizontal: 16,
+              paddingHorizontal: 20,
               paddingBottom: 32,
             }}
             showsVerticalScrollIndicator={false}
@@ -504,7 +502,7 @@ export function NotificationsBell({
                 <Feather name="bell-off" size={32} color={INK_DIM} />
                 <Text
                   style={{ fontFamily: SERIF,
-                    marginTop: 14,
+                    marginTop: 16,
                     color: INK_DIM,
                     fontSize: 14,
                     textAlign: "center",

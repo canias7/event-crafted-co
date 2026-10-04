@@ -23,7 +23,6 @@ const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
 const INK = "#14161a";
 const GOLD = "#c9a86a";
-const CARD = "#fbf9f4";
 const INK_DIM = "#14161a";
 const INK_BORDER = "#e6e1d5";
 
@@ -326,7 +325,7 @@ export default function WelcomeScreen() {
                 width: "100%",
                 maxWidth: 420,
                 alignItems: "center",
-                gap: 14,
+                gap: 16,
               }}
             >
               {PHRASES.slice(0, phrasesShown).map((phrase, i) => (
@@ -402,7 +401,7 @@ export default function WelcomeScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          paddingHorizontal: 22,
+          paddingHorizontal: 20,
           paddingTop: 8,
           paddingBottom: Math.max(insets.bottom + 56, 64),
           alignItems: "center",
@@ -442,10 +441,10 @@ export default function WelcomeScreen() {
             maxWidth: 320,
             height: 52,
             borderRadius: 999,
-            // Secondary: card fill with a hairline, matching vendor's
-            // Sign in. No shadow anywhere in this palette.
-            backgroundColor: CARD,
-            borderWidth: 1.5,
+            // Secondary: white fill with a 1px hairline — the standard
+            // secondary pill. No shadow anywhere in this palette.
+            backgroundColor: "#ffffff",
+            borderWidth: 1,
             borderColor: INK_BORDER,
             alignItems: "center",
             justifyContent: "center",

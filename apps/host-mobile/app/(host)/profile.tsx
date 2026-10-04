@@ -203,7 +203,7 @@ export default function ProfileScreen() {
     <View style={{ flex: 1, backgroundColor: CREAM }}>
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 120 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Header row: title + bell */}
@@ -215,7 +215,7 @@ export default function ProfileScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 18,
+              marginBottom: 20,
             }}
           >
             <Text style={PAGE_TITLE}>Profile</Text>
@@ -247,7 +247,7 @@ export default function ProfileScreen() {
           />
 
           {/* Two square shortcut tiles */}
-          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
             <ShortcutTile
               icon="inbox"
               title="Inbox"
@@ -328,11 +328,13 @@ export default function ProfileScreen() {
             {({ pressed }) => (
               <View
                 style={{
+                  // Quiet button: label only, full-width pill at 52.
                   marginTop: 12,
-                  paddingVertical: 16,
-                  borderRadius: 18,
+                  height: 52,
+                  borderRadius: 999,
                   backgroundColor: pressed ? "#efe6d6" : "transparent",
                   alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 <Text
@@ -366,16 +368,11 @@ function HeroCard({
     <View
       style={{
         backgroundColor: "#fbf9f4",
-        borderRadius: 28,
-        paddingTop: 28,
-        paddingBottom: 22,
-        paddingHorizontal: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: BORDER,
+        padding: 16,
         alignItems: "center",
-        shadowColor: INK,
-        shadowOpacity: 0.10,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 3,
       }}
     >
       <View style={{ position: "relative" }}>
@@ -420,7 +417,7 @@ function HeroCard({
 
       <Text
         style={{
-          marginTop: 14,
+          marginTop: 16,
           color: INK,
           fontFamily: SERIF_BOLD,
           fontSize: 26,
@@ -438,7 +435,7 @@ function HeroCard({
           height: 1,
           backgroundColor: BORDER,
           alignSelf: "stretch",
-          marginTop: 18,
+          marginTop: 20,
           marginBottom: 16,
         }}
       />
@@ -515,14 +512,11 @@ function ShortcutTile({
         <View
           style={{
             backgroundColor: "#fbf9f4",
-            borderRadius: 22,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: BORDER,
             padding: 16,
             opacity: pressed ? 0.85 : 1,
-            shadowColor: INK,
-            shadowOpacity: 0.10,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 2,
           }}
         >
           <View
@@ -561,7 +555,7 @@ function ShortcutTile({
           </View>
           <Text
             style={{
-              marginTop: 14,
+              marginTop: 16,
               color: INK,
               fontFamily: SERIF_BOLD,
               fontSize: 18,
@@ -601,16 +595,13 @@ function ActionCard({
             marginTop: 12,
             backgroundColor: "#fbf9f4",
             borderRadius: 20,
+            borderWidth: 1,
+            borderColor: BORDER,
             paddingVertical: 16,
             paddingHorizontal: 16,
             flexDirection: "row",
             alignItems: "center",
             opacity: pressed ? 0.85 : 1,
-            shadowColor: INK,
-            shadowOpacity: 0.10,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 2,
           }}
         >
           <View
@@ -625,7 +616,7 @@ function ActionCard({
           >
             <Feather name={icon} size={20} color={iconColor} />
           </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
+          <View style={{ flex: 1, marginLeft: 16 }}>
             <Text
               style={{ fontFamily: SERIF_BOLD,
                 color: INK,

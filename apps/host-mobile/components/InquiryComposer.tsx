@@ -129,7 +129,7 @@ export function InquiryComposer({
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
         >
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={onClose} hitSlop={8}>
               <Feather name="x" size={22} color="#14161a" />
             </Pressable>
@@ -180,7 +180,7 @@ export function InquiryComposer({
                     >
                       <Text style={{ fontFamily: SERIF_BOLD }}
                         className={`text-sm ${
-                          active ? "text-background" : "text-foreground"
+                          active ? "text-white" : "text-foreground"
                         }`}
                       >
                         {t.label}
@@ -244,7 +244,7 @@ export function InquiryComposer({
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
-                className="min-h-[140px] rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="min-h-[140px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
           </ScrollView>
@@ -279,7 +279,7 @@ function Field({
         placeholderTextColor={PLACEHOLDER}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        className="rounded-lg border border-border bg-background px-4 py-3 text-base text-foreground"
+        className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
       />
     </View>
   );
