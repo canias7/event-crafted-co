@@ -1056,7 +1056,7 @@ export default function VendorGalleryPage() {
         backPath="/vendor/me"
       />
       <main className="flex-1 min-w-0 pb-24 md:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">Gallery</h1>
@@ -1792,7 +1792,7 @@ function AlbumTab({
       className={`shrink-0 inline-flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 text-xs font-medium transition-colors ${
         active
           ? "bg-foreground text-background"
-          : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-accent"
+          : "bg-white border border-border text-foreground hover:bg-muted"
       }`}
     >
       {coverUrl ? (
@@ -1937,7 +1937,7 @@ function SortableTile({
           type="button"
           onClick={onToggleSelect}
           aria-label={selected ? "Deselect" : "Select"}
-          className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-sm"
+          className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-soft"
         >
           {selected ? (
             <Check className="w-3.5 h-3.5" />
@@ -2150,7 +2150,7 @@ function CalendarView({
                         type="button"
                         onClick={() => onToggleSelect(r.id)}
                         aria-label={selected.has(r.id) ? "Deselect" : "Select"}
-                        className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-sm"
+                        className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-soft"
                       >
                         {selected.has(r.id) ? (
                           <Check className="w-3.5 h-3.5" />

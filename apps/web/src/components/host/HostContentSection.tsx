@@ -113,7 +113,7 @@ export function HostContentSection({ userId }: { userId: string }) {
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                   active
                     ? "bg-foreground text-background"
-                    : "bg-white/40 border border-white/55 text-muted-foreground hover:bg-white/70 hover:text-accent"
+                    : "bg-white border border-border text-foreground hover:bg-muted"
                 }`}
               >
                 <Icon className="h-4 w-4" />

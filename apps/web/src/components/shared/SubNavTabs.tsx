@@ -30,7 +30,7 @@ export function SubNavTabs({
 
   return (
     <div
-      className={`flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:-mx-8 md:px-8 ${className}`}
+      className={`flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-5 px-5 md:-mx-8 md:px-8 ${className}`}
       role="tablist"
     >
       {tabs.map((t) => {

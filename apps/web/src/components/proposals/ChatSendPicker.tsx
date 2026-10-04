@@ -358,7 +358,7 @@ export function ChatSendPicker({
     <>
       {/* Only the "+" logo opens the menu — the "Send" text is a plain
           label and intentionally not part of the trigger's hit target. */}
-      <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full pl-1.5 pr-3 py-1.5">
+      <div className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full pl-1.5 pr-3 py-1.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -393,7 +393,7 @@ export function ChatSendPicker({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto rounded-sm">
+        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
             <DialogTitle>
               {editing
@@ -427,7 +427,7 @@ export function ChatSendPicker({
                   setEditing((ed) => (ed ? { ...ed, body: e.target.value } : ed))
                 }
                 rows={12}
-                className="w-full text-[13px] leading-relaxed rounded-md border border-input bg-background px-3 py-2 resize-y"
+                className="w-full text-[13px] leading-relaxed rounded-md border border-border bg-background px-3 py-2 resize-y"
               />
               {/\[[^\]]+\]/.test(editing.body) ? (
                 <p className="text-[11px] text-accent">
@@ -451,7 +451,7 @@ export function ChatSendPicker({
                       : void sendProposal()
                   }
                   disabled={sendingDoc}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium rounded-full bg-foreground text-background px-4 py-2 disabled:opacity-60"
+                  className="inline-flex justify-center items-center gap-1.5 text-sm font-bold rounded-full bg-gold text-foreground px-4 disabled:bg-gold-muted h-9 hover:bg-gold-hover"
                 >
                   {sendingDoc ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -477,7 +477,7 @@ export function ChatSendPicker({
                   : `No saved ${kind === "contract" ? "contracts" : "proposals"}. Create one in Files → ${kind === "contract" ? "Contracts" : "Proposals"}.`}
             </p>
           ) : (
-            <div className="divide-y divide-border/50 -mx-2">
+            <div className="divide-y divide-border -mx-2">
               {rows.map((row) => (
                 <button
                   key={row.id}

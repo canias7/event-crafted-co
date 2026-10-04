@@ -129,7 +129,7 @@ export default function NotificationSettingsPage() {
       <DashboardSidebar items={navItems} title={sidebarTitle} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <button
             type="button"
             onClick={() => navigate("/settings")}
@@ -151,10 +151,8 @@ export default function NotificationSettingsPage() {
             <div
               className="rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.6)",
-                border: "0.5px solid rgba(0,0,0,0.08)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               {PREFS.map((p, i) => (

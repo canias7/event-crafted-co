@@ -181,7 +181,7 @@ export default function ClaimVendorPage() {
             <Link
               to={`/signup?ref=claim:${token}&email=${encodeURIComponent(data.invite.email)}`}
             >
-              <Button className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 h-11">
+              <Button className="w-full">
                 Sign up to claim
               </Button>
             </Link>
@@ -195,7 +195,7 @@ export default function ClaimVendorPage() {
           <Button
             onClick={claim}
             disabled={claiming}
-            className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 h-11"
+            className="w-full"
           >
             {claiming && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Claim this listing

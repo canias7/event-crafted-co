@@ -200,7 +200,7 @@ export default function VendorVerificationPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
-          className="px-4 md:px-8 pt-8 pb-6"
+          className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
@@ -227,7 +227,7 @@ export default function VendorVerificationPage() {
               </p>
               <Link
                 to="/vendor/subscription"
-                className="mt-6 inline-block rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+                className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
               >
                 ✦ Upgrade to apply
               </Link>
@@ -327,7 +327,7 @@ export default function VendorVerificationPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-full bg-foreground py-3.5 text-[15px] font-semibold text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
               >
                 {submitting ? "Submitting…" : "Submit for review"}
               </button>
@@ -436,7 +436,7 @@ function StatusCard({ request, onEdit }: { request: RequestRow; onEdit: () => vo
       {s === "needs_info" || s === "rejected" ? (
         <button
           onClick={onEdit}
-          className="mt-6 rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+          className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
         >
           Update & resubmit
         </button>

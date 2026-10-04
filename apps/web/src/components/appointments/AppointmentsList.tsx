@@ -297,7 +297,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                           size="sm"
                           disabled={pendingId === appt.id}
                           onClick={() => setStatus(appt, "accepted")}
-                          className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-8 text-xs"
+                          className="h-9 text-xs"
                         >
                           <Check className="w-3 h-3 mr-1" />
                           Accept

@@ -85,7 +85,7 @@ export default function VendorCityPage() {
       <div className="min-h-screen public-canvas">
         <PublicNav />
         <section className="pt-32 pb-20">
-          <div className="container mx-auto px-6 md:px-8 max-w-2xl text-center">
+          <div className="container mx-auto px-5 md:px-8 max-w-2xl text-center">
             <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
               <MapPin className="w-5 h-5 text-muted-foreground" />
             </div>
@@ -114,7 +114,7 @@ export default function VendorCityPage() {
 
       {/* Editorial hero */}
       <section className="border-b border-border pt-32 pb-12 md:pb-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <Link
             to="/vendors/locations"
             className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-accent transition-colors mb-8"
@@ -181,7 +181,7 @@ export default function VendorCityPage() {
 
       {/* Vendor grid */}
       <section className="py-16 md:py-20">
-        <div className="container mx-auto px-6 md:px-8">
+        <div className="container mx-auto px-5 md:px-8">
           <div className="flex items-end justify-between mb-8 max-w-5xl mx-auto">
             <p className="font-label text-muted-foreground">
               {inCity.length}{" "}
@@ -214,7 +214,7 @@ export default function VendorCityPage() {
       {/* Related cities for crawl + browse */}
       {nearbyCities.length > 0 && (
         <section className="py-16 border-t border-border">
-          <div className="container mx-auto px-6 md:px-8 max-w-5xl">
+          <div className="container mx-auto px-5 md:px-8 max-w-5xl">
             <p className="font-label text-accent mb-3 tracking-[0.4em]">
               — OTHER CITIES
             </p>

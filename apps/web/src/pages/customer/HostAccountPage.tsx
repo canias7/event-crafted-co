@@ -89,7 +89,7 @@ export default function HostAccountPage() {
         backPath="/customer/profile"
       />
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-editorial text-3xl">Account</h1>
             <p className="text-sm text-muted-foreground">
@@ -121,10 +121,8 @@ export default function HostAccountPage() {
               <div
                 className="rounded-2xl p-10 text-center"
                 style={{
-                  background: "rgba(255,255,255,0.6)",
-                  border: "0.5px solid rgba(0,0,0,0.08)",
-                  backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)",
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
                 }}
               >
                 <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
@@ -137,7 +135,7 @@ export default function HostAccountPage() {
                 </p>
                 <Link
                   to="/customer/explore"
-                  className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+                  className="inline-flex justify-center items-center gap-2 rounded-full bg-gold text-foreground px-5 text-sm font-bold hover:bg-gold-hover transition-colors h-11"
                 >
                   Browse vendors
                 </Link>
@@ -171,10 +169,8 @@ export default function HostAccountPage() {
             <div
               className="rounded-2xl p-8 text-center"
               style={{
-                background: "rgba(255,255,255,0.6)",
-                border: "0.5px solid rgba(0,0,0,0.08)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
@@ -265,7 +261,7 @@ function ActionCard({
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className="w-full text-left rounded-3xl bg-card border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] p-4 flex items-center gap-3 hover:bg-secondary/40 transition disabled:opacity-70 disabled:cursor-default"
+      className="w-full text-left rounded-2xl bg-card border border-border p-4 flex items-center gap-3 hover:bg-secondary/40 transition disabled:opacity-70 disabled:cursor-default"
     >
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}

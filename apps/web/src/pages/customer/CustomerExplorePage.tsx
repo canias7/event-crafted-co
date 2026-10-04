@@ -159,7 +159,7 @@ export default function CustomerExplorePage() {
         backPath="/customer/explore"
       />
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 space-y-3">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">Explore</h1>
@@ -346,7 +346,7 @@ function CategoryChip({
   return (
     <button
       onClick={onPress}
-      className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+      className={`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition ${
         active
           ? "bg-foreground text-background"
           : "bg-secondary/60 text-muted-foreground hover:text-accent"
@@ -370,7 +370,7 @@ function ListingCard({
     <div className="relative w-64 shrink-0">
       <Link
         to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-        className="group block overflow-hidden card-soft transition hover:shadow-md"
+        className="group block overflow-hidden card-soft"
       >
         <div className="aspect-[4/3] bg-secondary/40 overflow-hidden">
           {l.hero_url ? (
@@ -414,7 +414,7 @@ function ListingCard({
           onToggleSave();
         }}
         aria-label={saved ? "Remove from favorites" : "Save vendor"}
-        className="absolute top-2 right-2 rounded-full bg-background/90 backdrop-blur p-1.5 shadow-sm hover:bg-background"
+        className="absolute top-2 right-2 rounded-full bg-background/90 backdrop-blur p-1.5 shadow-soft hover:bg-background"
       >
         <Heart
           className={`h-4 w-4 ${saved ? "fill-accent text-accent" : "text-foreground"}`}
@@ -457,7 +457,7 @@ function PostsFeed({ posts }: { posts: PostRow[] }) {
       {posts.map((p) => (
         <article
           key={p.id}
-          className="overflow-hidden rounded-xl bg-card border border-border shadow-sm"
+          className="overflow-hidden rounded-2xl bg-card border border-border"
         >
           <FeedAuthorHeader author={p.author} />
           <div className="aspect-[4/5] bg-secondary/40">
@@ -493,7 +493,7 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
       {reels.map((r) => (
         <div
           key={r.id}
-          className="block overflow-hidden rounded-xl bg-card border border-border shadow-sm"
+          className="block overflow-hidden rounded-2xl bg-card border border-border"
         >
           <FeedAuthorHeader author={r.author} />
           <div className="relative aspect-[4/5] bg-black">

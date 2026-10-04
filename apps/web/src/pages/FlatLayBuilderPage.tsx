@@ -249,7 +249,7 @@ export default function FlatLayBuilderPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-black">
-      <header className="flex items-center justify-between px-6 py-5 md:px-10 md:py-6 border-b border-black/10">
+      <header className="flex items-center justify-between px-5 py-5 md:px-8 md:py-6 border-b border-border">
         <Link to="/" className="flex items-center gap-3">
           <VendoraLogo size="sm" color="#000" />
           <span className="text-[12px] uppercase tracking-[2px] text-black/50">Create a wedding site</span>
@@ -257,13 +257,13 @@ export default function FlatLayBuilderPage() {
         <Link to="/my-sites" className="text-[13px] text-black/60 hover:text-black transition-colors">My sites</Link>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 md:px-10 py-10">
+      <main className="max-w-2xl mx-auto px-5 md:px-8 py-10">
         {result ? (
           <div className="text-center py-6">
             <div className="text-[22px] font-medium mb-1">Your site is live ✦</div>
             <div className="text-[14px] text-black/60 mb-5">{result.title}</div>
             <div
-              className="mx-auto mb-6 overflow-hidden rounded-2xl border border-black/10"
+              className="mx-auto mb-6 overflow-hidden rounded-2xl border border-border"
               style={{ width: "100%", maxWidth: 380, aspectRatio: "9 / 16" }}
             >
               <iframe title="Preview" src={result.url} className="w-full h-full" />
@@ -274,7 +274,7 @@ export default function FlatLayBuilderPage() {
                 Open site
               </a>
               <button onClick={() => setResult(null)}
-                 className="rounded-full px-6 py-3 text-[13px] border border-black/15 hover:bg-black/5 transition-colors">
+                 className="rounded-full px-6 py-3 text-[13px] border border-border hover:bg-black/5 transition-colors">
                 Create another
               </button>
             </div>
@@ -289,10 +289,10 @@ export default function FlatLayBuilderPage() {
             )}
 
             {/* AI shortcut */}
-            <section className="mb-9 rounded-2xl border border-black/10 bg-white p-5">
+            <section className="mb-9 rounded-2xl border border-border bg-white p-5">
               <div className="text-[12px] uppercase tracking-[1.5px] text-black/45 mb-2">Describe it (AI)</div>
               <textarea
-                className="w-full resize-none rounded-xl border border-black/15 px-3.5 py-3 text-[14px] outline-none focus:border-black/40"
+                className="w-full resize-none rounded-xl border border-border px-4 py-3 text-[14px] outline-none focus:border-black/40"
                 rows={2}
                 placeholder="e.g. Wedding for Mia & Noah, Aug 22 2026 at Stonebridge Vineyard in Napa, cocktail attire, they met hiking…"
                 value={aiPrompt}
@@ -384,7 +384,7 @@ export default function FlatLayBuilderPage() {
               <Field label="Closing line" value={f.signoffPre} onChange={set("signoffPre")} />
             </Section>
 
-            <div className="sticky bottom-0 -mx-6 md:-mx-10 px-6 md:px-10 py-4 bg-[#fafafa]/90 backdrop-blur border-t border-black/10 flex items-center justify-end gap-3">
+            <div className="sticky bottom-0 -mx-5 md:-mx-8 px-5 md:px-8 py-4 bg-[#fafafa]/90 backdrop-blur border-t border-border flex items-center justify-end gap-3">
               <span className="text-[12px] text-black/40 mr-auto">
                 {uploadingCount > 0 ? "Uploading photos…" : "Photos & colors use elegant defaults — swap any you like."}
               </span>
@@ -436,7 +436,7 @@ function Field({
   type?: string;
 }) {
   const cls =
-    "w-full rounded-xl border border-black/15 bg-white px-3.5 py-2.5 text-[14px] outline-none focus:border-black/40";
+    "w-full rounded-xl border border-border bg-white px-4 py-2.5 text-[14px] outline-none focus:border-black/40";
   return (
     <label className="block">
       {label && <span className="block text-[12px] text-black/50 mb-1.5">{label}</span>}
@@ -484,7 +484,7 @@ function PhotoUploader({
   return (
     <div className="flex flex-wrap gap-2.5">
       {photos.map((p, i) => (
-        <div key={p + i} className="relative w-[88px] h-[88px] rounded-xl overflow-hidden border border-black/10">
+        <div key={p + i} className="relative w-[88px] h-[88px] rounded-xl overflow-hidden border border-border">
           <img src={p} alt="" className="w-full h-full object-cover" />
           {heroBadge && i === 0 && (
             <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[9px] text-center py-0.5 tracking-wide">HERO</span>

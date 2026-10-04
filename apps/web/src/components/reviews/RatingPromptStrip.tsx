@@ -212,13 +212,8 @@ function PromptCard({
       onClick={onClick}
       className="w-full text-left rounded-2xl px-4 py-3 transition-colors my-3"
       style={{
-        background: isEvent
-          ? "linear-gradient(135deg, rgba(0,0,0,0.06), rgba(0,0,0,0.025))"
-          : "rgba(255,255,255,0.6)",
-        border: isEvent
-          ? "0.5px solid rgba(0,0,0,0.08)"
-          : "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(8px)",
+        background: isEvent ? "hsl(var(--muted))" : "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div className="flex items-center gap-3">

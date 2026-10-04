@@ -773,7 +773,7 @@ export default function VendorPaymentsPage(
   const body = (
     <main className="flex-1 pb-24 lg:pb-0">
         <div
-          className={`backdrop-blur-md px-4 md:px-8 sticky top-0 z-40 border-b border-foreground/[0.06] ${
+          className={`backdrop-blur-md px-5 md:px-8 sticky top-0 z-40 border-b border-border ${
             embedded ? "pt-5 pb-3" : "py-5"
           }`}
         >
@@ -1270,7 +1270,7 @@ function OverviewTab({
               <button
                 type="button"
                 onClick={onViewActivity}
-                className="text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+                className="text-xs text-muted-foreground hover:text-accent border border-border rounded-md px-2.5 py-1 shrink-0"
               >
                 View all →
               </button>
@@ -1370,7 +1370,7 @@ function OverviewUpcomingAppointments({
         <button
           type="button"
           onClick={onViewAll}
-          className="text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+          className="text-xs text-muted-foreground hover:text-accent border border-border rounded-md px-2.5 py-1 shrink-0"
         >
           View all →
         </button>
@@ -1496,14 +1496,8 @@ function OverviewRevenueChart({
     <div
       className="rounded-2xl px-7 pt-6 pb-5"
       style={{
-        // Match the other Overview cards: same glassy translucent fill,
-        // amber hairline border, blur, and soft shadow.
-        background: "rgba(255,255,255,0.6)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(20px) saturate(140%)",
-        WebkitBackdropFilter: "blur(20px) saturate(140%)",
-        boxShadow:
-          "0 1px 2px rgba(0,0,0, 0.05), 0 8px 24px -10px rgba(0,0,0, 0.14)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div className="flex items-end justify-between mb-4">
@@ -1664,7 +1658,7 @@ function OverviewRevenueChart({
                   transform: "translate(-50%, calc(-100% - 12px))",
                   background: "#14161a",
                   color: "#fff",
-                  boxShadow: "0 6px 16px -6px rgba(0,0,0,0.4)",
+                  boxShadow: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
                 }}
               >
                 {formatMoney(series[hoverIdx as number], currency)}
@@ -1705,11 +1699,8 @@ function OverviewRevenueChart({
                 <div
                   className="text-xs italic rounded-full px-3 py-1.5"
                   style={{
-                    color: "hsl(var(--muted-foreground))",
-                    background: "rgba(253,240,234,0.7)",
-                    border: "0.5px solid rgba(0, 0, 0,0.22)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
+                    color: "hsl(var(--foreground))",
+                    background: "hsl(var(--muted))",
                   }}
                 >
                   No paid invoices in the last 30 days
@@ -1923,7 +1914,7 @@ function OverviewExpensesCard({
           <button
             type="button"
             onClick={onViewAll}
-            className="text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-md px-2.5 py-1 shrink-0"
+            className="text-xs text-muted-foreground hover:text-accent border border-border rounded-md px-2.5 py-1 shrink-0"
           >
             View all →
           </button>
@@ -2101,7 +2092,7 @@ function parseAmountToCents(input: string, factor = 100): number {
 // numeral treatment as the Expenses tab tiles so the two read as siblings.
 function SummaryCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+    <div className="rounded-xl px-4 py-3 bg-white border border-border">
       <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
         {label}
       </div>
@@ -2256,13 +2247,13 @@ function TransactionsTab({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search description, type, amount…"
-            className="w-full rounded-full border border-foreground/10 bg-background pl-9 pr-3 py-2 text-sm outline-none focus:border-foreground/30"
+            className="w-full rounded-full border border-border bg-background pl-9 pr-3 py-2 text-sm outline-none focus:border-foreground/30"
           />
         </div>
         <select
           value={range}
           onChange={(e) => setRange(e.target.value as typeof range)}
-          className="rounded-full border border-foreground/10 bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30"
+          className="rounded-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30"
         >
           <option value="all">All time</option>
           <option value="12m">Last 12 months</option>
@@ -2282,7 +2273,7 @@ function TransactionsTab({
           No income matches your filters.
         </div>
       ) : (
-        <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+        <div className="rounded-xl border border-border bg-white overflow-x-auto">
           <table className="w-full min-w-[640px]">
             <thead>
               <tr className="bg-foreground/[0.03]">
@@ -2312,7 +2303,7 @@ function TransactionsTab({
               // not-yet-resolved) can't be refunded either.
               const canRefund = t.kind === "charge" && t.amount_cents > 0 && Boolean(t.payment_intent_id);
               return (
-                <tr key={t.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
+                <tr key={t.id} className="border-t border-border hover:bg-foreground/[0.02]">
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium truncate max-w-[280px]">{t.description ?? meta.label}</div>
                   </td>
@@ -2363,7 +2354,7 @@ function TransactionsTab({
                                   -{formatMoney(t.fee_cents, t.currency)}
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between gap-3 pt-1.5 border-t border-foreground/10">
+                              <div className="flex items-center justify-between gap-3 pt-1.5 border-t border-border">
                                 <span className="font-semibold">Net to your bank</span>
                                 <span className="tabular-nums font-semibold text-accent">
                                   {formatMoney(t.net_cents, t.currency)}
@@ -2504,7 +2495,7 @@ function RefundModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-background p-6 shadow-2xl"
+        className="w-full max-w-md rounded-3xl bg-card p-6 shadow-lifted"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold">Refund payment</h3>
@@ -2706,7 +2697,7 @@ function PayoutsTab({
   return (
     <div className="space-y-4">
       <section>
-        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+        <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-border">
           Payout schedule
         </h2>
         <Card>
@@ -2732,7 +2723,7 @@ function PayoutsTab({
       </section>
 
       <section>
-        <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-foreground/[0.06]">
+        <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-border">
           <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
             Recent payouts
           </h2>
@@ -2756,7 +2747,7 @@ function PayoutsTab({
               return (
                 <div
                   key={p.id}
-                  className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+                  className={`p-5 ${idx > 0 ? "border-t border-border" : ""}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-muted text-foreground">
@@ -3191,7 +3182,7 @@ function InvoiceCanvas({
   return (
     <div className="w-full">
     <Card>
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-foreground/5 flex-wrap">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3 border-b border-border flex-wrap">
         <p className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
           New invoice
         </p>
@@ -3819,7 +3810,7 @@ function DocumentCanvas({
     <div className="grid lg:grid-cols-[3fr_2fr] gap-4 items-start">
       {/* LEFT: document composer */}
       <Card>
-        <div className="px-4 pt-3 pb-2 border-b border-foreground/5 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 pt-3 pb-2 border-b border-border flex items-center justify-between gap-3 flex-wrap">
           {/* Multi-listing accounts pick which listing's templates to
               manage (renders nothing when there's ≤1 listing). */}
           <ListingPickerField
@@ -3864,7 +3855,7 @@ function DocumentCanvas({
             </div>
           </header>
 
-          <hr className="my-6 border-foreground/10" />
+          <hr className="my-6 border-border" />
 
           <div className="space-y-5">
             <input
@@ -3961,7 +3952,7 @@ function DocumentCanvas({
 
         {/* Saved templates library */}
         <Card>
-          <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between border-b border-foreground/5">
+          <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between border-b border-border">
             <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
               Saved {kindLabel.toLowerCase()}s
             </span>
@@ -3974,7 +3965,7 @@ function DocumentCanvas({
               <Plus className="w-3 h-3" /> New
             </button>
           </div>
-          <div className="max-h-[420px] overflow-y-auto scrollbar-hide divide-y divide-black/5">
+          <div className="max-h-[420px] overflow-y-auto scrollbar-hide divide-y divide-border">
             {!loaded ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -4337,7 +4328,7 @@ function SenderDomainCard({ vendorId }: { vendorId: string | null }) {
                 <div className="px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-foreground/[0.03]">
                   Add these DNS records at your domain registrar
                 </div>
-                <div className="divide-y divide-foreground/5">
+                <div className="divide-y divide-border">
                   {row.dns_records.map((r, i) => (
                     <div key={i} className="px-3 py-2.5 text-xs space-y-1">
                       <div className="flex items-center gap-3 flex-wrap">
@@ -4678,7 +4669,7 @@ function InvoicesTab({
               invoice history scrolls instead of pushing the page down. */}
           <div className="max-h-[560px] overflow-y-auto scrollbar-hide">
           {invoices.map((inv, idx) => (
-            <div key={inv.id} className={`p-5 ${idx > 0 ? "border-t border-foreground/5" : ""}`}>
+            <div key={inv.id} className={`p-5 ${idx > 0 ? "border-t border-border" : ""}`}>
               <div className="flex items-start gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -5489,11 +5480,11 @@ function CustomersTab({
               placeholder="Search name, email, phone, company…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm focus:outline-none focus:border-accent"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:border-accent"
             />
           </div>
           {selectedIds.size > 0 ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-foreground/10 bg-white px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-white px-4 py-2.5">
               <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
               <div className="flex items-center gap-2">
                 <Button
@@ -5515,7 +5506,7 @@ function CustomersTab({
           {sortedRows.length === 0 ? (
             <EmptyCard>No contacts match "{searchTerm.trim()}".</EmptyCard>
           ) : (
-          <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+          <div className="rounded-xl border border-border bg-white overflow-x-auto">
             <table className="w-full min-w-[820px]">
               <thead>
                 <tr className="bg-foreground/[0.03]">
@@ -5572,7 +5563,7 @@ function CustomersTab({
                     c.billing_country ||
                     "—";
                   return (
-                    <tr key={c.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
+                    <tr key={c.id} className="border-t border-border hover:bg-foreground/[0.02]">
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
@@ -5589,7 +5580,7 @@ function CustomersTab({
                           {isBilledRow(c.id) ? (
                             <span
                               title="Billed via an invoice but not saved as a contact yet — click Save to keep them."
-                              className="text-[9px] uppercase tracking-wide rounded-full border border-foreground/15 text-muted-foreground px-1.5 py-0.5 shrink-0 font-medium"
+                              className="text-[9px] uppercase tracking-wide rounded-full border border-border text-muted-foreground px-1.5 py-0.5 shrink-0 font-medium"
                             >
                               Billed
                             </span>
@@ -5658,7 +5649,7 @@ function CustomersTab({
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t border-foreground/10">
+                <tr className="border-t border-border">
                   <td colSpan={8} className="px-4 py-3">
                     <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                       <span>
@@ -5671,7 +5662,7 @@ function CustomersTab({
                             type="button"
                             onClick={() => setPage(Math.max(1, safePage - 1))}
                             disabled={safePage === 1}
-                            className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                            className="w-7 h-7 rounded-md border border-border disabled:opacity-30 hover:border-accent"
                           >
                             ‹
                           </button>
@@ -5683,7 +5674,7 @@ function CustomersTab({
                                 key={p}
                                 type="button"
                                 onClick={() => setPage(p)}
-                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-foreground text-white border-foreground" : "border-foreground/10 hover:border-accent"}`}
+                                className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-foreground text-white border-foreground" : "border-border hover:border-accent"}`}
                               >
                                 {p}
                               </button>
@@ -5694,7 +5685,7 @@ function CustomersTab({
                             type="button"
                             onClick={() => setPage(Math.min(totalPages, safePage + 1))}
                             disabled={safePage === totalPages}
-                            className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                            className="w-7 h-7 rounded-md border border-border disabled:opacity-30 hover:border-accent"
                           >
                             ›
                           </button>
@@ -6523,7 +6514,7 @@ function ExpensesTab({
           treatment; nothing is "primary" so no tile should hijack
           attention with a different background. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+        <div className="rounded-xl px-4 py-3 bg-white border border-border">
           <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
             YTD spend
           </div>
@@ -6540,7 +6531,7 @@ function ExpensesTab({
             ) : null}
           </div>
         </div>
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+        <div className="rounded-xl px-4 py-3 bg-white border border-border">
           <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
             This month
           </div>
@@ -6554,7 +6545,7 @@ function ExpensesTab({
             {new Date().toLocaleDateString("en-US", { month: "long" })} · {kpis.monthCount} transaction{kpis.monthCount === 1 ? "" : "s"}
           </div>
         </div>
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+        <div className="rounded-xl px-4 py-3 bg-white border border-border">
           <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
             Last 30 days
           </div>
@@ -6568,7 +6559,7 @@ function ExpensesTab({
             {kpis.thirtyDayCount} transaction{kpis.thirtyDayCount === 1 ? "" : "s"}
           </div>
         </div>
-        <div className="rounded-xl px-4 py-3 bg-white border border-foreground/10">
+        <div className="rounded-xl px-4 py-3 bg-white border border-border">
           <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
             Top item
           </div>
@@ -6594,13 +6585,13 @@ function ExpensesTab({
             placeholder="Search item, payee, description, amount…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm focus:outline-none focus:border-accent"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:border-accent"
           />
         </div>
         <select
           value={rangePreset}
           onChange={(e) => setRangePreset(e.target.value as typeof rangePreset)}
-          className="px-3 py-2 rounded-lg border border-foreground/10 bg-white text-sm min-w-[150px]"
+          className="px-3 py-2 rounded-lg border border-border bg-white text-sm min-w-[150px]"
         >
           <option value="last_12m">Last 12 months</option>
           <option value="ytd">Year to date</option>
@@ -6781,7 +6772,7 @@ function ExpensesTab({
           No expenses match the current search or filter. Adjust the controls above or clear them to see everything again.
         </EmptyCard>
       ) : (
-        <div className="rounded-xl border border-foreground/10 bg-white overflow-x-auto">
+        <div className="rounded-xl border border-border bg-white overflow-x-auto">
           <table className="w-full min-w-[640px]">
             <thead>
               <tr className="bg-foreground/[0.03]">
@@ -6829,7 +6820,7 @@ function ExpensesTab({
             </thead>
             <tbody>
               {pageRows.map((e) => (
-                <tr key={e.id} className="border-t border-foreground/5 hover:bg-foreground/[0.02]">
+                <tr key={e.id} className="border-t border-border hover:bg-foreground/[0.02]">
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"
@@ -6897,7 +6888,7 @@ function ExpensesTab({
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-foreground/10">
+              <tr className="border-t border-border">
                 <td colSpan={8} className="px-4 py-3">
                   <div className="flex justify-between items-center gap-3 flex-wrap text-xs text-muted-foreground">
                     <span>
@@ -6916,7 +6907,7 @@ function ExpensesTab({
                           type="button"
                           onClick={() => setPage(Math.max(1, safePage - 1))}
                           disabled={safePage === 1}
-                          className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                          className="w-7 h-7 rounded-md border border-border disabled:opacity-30 hover:border-accent"
                         >
                           ‹
                         </button>
@@ -6928,7 +6919,7 @@ function ExpensesTab({
                               key={p}
                               type="button"
                               onClick={() => setPage(p)}
-                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-foreground text-white border-foreground" : "border-foreground/10 hover:border-accent"}`}
+                              className={`min-w-[28px] h-7 px-2 rounded-md text-xs border ${active ? "bg-foreground text-white border-foreground" : "border-border hover:border-accent"}`}
                             >
                               {p}
                             </button>
@@ -6939,7 +6930,7 @@ function ExpensesTab({
                           type="button"
                           onClick={() => setPage(Math.min(totalPages, safePage + 1))}
                           disabled={safePage === totalPages}
-                          className="w-7 h-7 rounded-md border border-foreground/10 disabled:opacity-30 hover:border-accent"
+                          className="w-7 h-7 rounded-md border border-border disabled:opacity-30 hover:border-accent"
                         >
                           ›
                         </button>
@@ -7289,7 +7280,7 @@ function SendInvoiceDialog({
               <Plus className="w-3.5 h-3.5 mr-1" />
               Add line item
             </Button>
-            <div className="border-t border-foreground/5 pt-3 space-y-1 text-sm">
+            <div className="border-t border-border pt-3 space-y-1 text-sm">
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>Subtotal</span>
                 <span className="tabular-nums">{formatMoney(subtotalCents)}</span>
@@ -7310,7 +7301,7 @@ function SendInvoiceDialog({
                 </span>
                 <span className="tabular-nums">{formatMoney(taxCents)}</span>
               </div>
-              <div className="flex items-center justify-between font-semibold pt-1 border-t border-foreground/5">
+              <div className="flex items-center justify-between font-semibold pt-1 border-t border-border">
                 <span>Total</span>
                 <span className="tabular-nums">{formatMoney(totalCents)}</span>
               </div>
@@ -7496,7 +7487,7 @@ function DisputesTab({ accountVendorIds }: { accountVendorIds: string[] }) {
             return (
               <div
                 key={d.id}
-                className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}
+                className={`p-4 ${idx > 0 ? "border-t border-border" : ""}`}
               >
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
@@ -8380,19 +8371,10 @@ function Card({ children }: { children: React.ReactNode }) {
 function GlassCard({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="rounded-3xl overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{
-        // Layered backgrounds: a diagonal light sheen on top of a very
-        // transparent frosted fill (26% → 4%) so the ambient backdrop
-        // reads clearly through the glass. Rim highlight + hairline keep
-        // the edges defined and text legible.
-        background:
-          "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 36%), linear-gradient(135deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.1) 48%, rgba(255,255,255,0.04) 100%)",
-        border: "1px solid rgba(255,255,255,0.55)",
-        backdropFilter: "blur(52px) saturate(190%)",
-        WebkitBackdropFilter: "blur(52px) saturate(190%)",
-        boxShadow:
-          "0 26px 64px -22px rgba(0,0,0,0.30), 0 4px 14px -8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 0 0 0.5px rgba(0,0,0,0.03)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       {children}
@@ -8482,7 +8464,7 @@ function ListingPickerField({
     <select
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
-      className="text-sm rounded-lg border border-foreground/10 bg-background px-2 py-1.5 max-w-full"
+      className="text-sm rounded-lg border border-border bg-background px-2 py-1.5 max-w-full"
     >
       {options.map((o) => (
         <option key={o.id} value={o.id}>
@@ -8516,7 +8498,7 @@ function TransactionRow({ tx, showBorder }: { tx: Transaction; showBorder: boole
       ? "text-accent bg-pending"
       : "text-foreground bg-muted";
   return (
-    <div className={`flex items-center gap-3 p-4 md:p-5 ${showBorder ? "border-t border-foreground/5" : ""}`}>
+    <div className={`flex items-center gap-3 p-4 md:p-5 ${showBorder ? "border-t border-border" : ""}`}>
       <div className={`shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center ${iconTone}`}>
         <Icon className="w-4 h-4" />
       </div>

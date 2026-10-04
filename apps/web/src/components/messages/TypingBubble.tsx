@@ -25,7 +25,7 @@ export function TypingBubble({ withAvatarSpacer, label }: Props) {
           </span>
         ) : null}
         <div
-          className="bg-background/95 border border-border/40 shadow-sm px-3.5 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
+          className="bg-muted border border-transparent px-4 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
           aria-label={label ?? "Typing"}
         >
           <span

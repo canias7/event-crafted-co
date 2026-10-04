@@ -135,7 +135,7 @@ export default function VendorCityCategoryPage() {
           sizes="100vw"
           className="absolute inset-0 w-full h-full object-cover opacity-15"
         />
-        <div className="container mx-auto px-6 md:px-8 max-w-4xl relative">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl relative">
           <Link
             to={`/vendors/category/${categorySlug}`}
             className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent transition-colors mb-6"
@@ -160,7 +160,7 @@ export default function VendorCityCategoryPage() {
 
       {/* Listings */}
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-6xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
               {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -183,7 +183,7 @@ export default function VendorCityCategoryPage() {
                 events.
               </p>
               <Link to={`/vendors/category/${categorySlug}`}>
-                <Button className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+                <Button>
                   All {config.display}
                 </Button>
               </Link>
@@ -219,7 +219,7 @@ export default function VendorCityCategoryPage() {
       {/* Cross-link rails */}
       {(otherCities.length > 0 || otherCategoriesInCity.length > 0) && (
         <section className="py-12 md:py-16 border-t border-border bg-secondary/20">
-          <div className="container mx-auto px-6 md:px-8 max-w-6xl space-y-12">
+          <div className="container mx-auto px-5 md:px-8 max-w-6xl space-y-12">
             {otherCities.length > 0 && (
               <div>
                 <p className="font-label text-accent mb-4">Also serving</p>

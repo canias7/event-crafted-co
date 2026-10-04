@@ -34,10 +34,8 @@ export function VendorComingSoonShell({
           <div
             className="rounded-2xl p-10 md:p-14 text-center"
             style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "0.5px solid rgba(0,0,0,0.08)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
             }}
           >
             <div

@@ -244,7 +244,7 @@ export default function VendorMyProfilePage() {
         backPath="/vendor/me"
       />
       <main className="flex-1 pb-24 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">My Profile</h1>
@@ -612,7 +612,7 @@ function ListingPreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[min(1100px,95vw)] w-[95vw] rounded-sm p-0 overflow-hidden h-[92vh] flex flex-col">
+      <DialogContent className="max-w-[min(1100px,95vw)] w-[95vw] rounded-3xl p-0 overflow-hidden h-[92vh] flex flex-col">
         {/* Slim header bar so the status + name stay visible above
             the iframe; everything else lives inside the public page. */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card shrink-0">

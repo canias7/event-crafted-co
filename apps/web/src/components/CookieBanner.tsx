@@ -39,7 +39,7 @@ export function CookieBanner() {
           transition={{ duration: 0.3 }}
           className="fixed bottom-4 left-4 right-4 md:left-6 md:right-auto md:max-w-md z-50"
         >
-          <div className="bg-foreground text-background rounded-sm shadow-2xl p-5 relative">
+          <div className="bg-foreground text-background rounded-2xl shadow-lifted p-5 relative">
             <button
               onClick={() => decide("essential")}
               aria-label="Dismiss"
@@ -65,7 +65,7 @@ export function CookieBanner() {
               <Button
                 size="sm"
                 onClick={() => decide("all")}
-                className="rounded-full bg-background text-foreground hover:bg-background/90 flex-1"
+                className="flex-1"
               >
                 Accept all
               </Button>
@@ -73,7 +73,7 @@ export function CookieBanner() {
                 size="sm"
                 variant="ghost"
                 onClick={() => decide("essential")}
-                className="rounded-full text-background hover:bg-background/10 hover:text-background flex-1"
+                className="text-background hover:bg-background/10 hover:text-background flex-1"
               >
                 Essential only
               </Button>

@@ -284,7 +284,7 @@ export default function VendorSchedulingPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
-          className="px-4 md:px-8 pt-8 pb-6"
+          className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
@@ -362,7 +362,7 @@ export default function VendorSchedulingPage() {
                   <button
                     onClick={() => void addType()}
                     disabled={addingType}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold px-4 text-sm font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-9"
                   >
                     <Plus className="h-4 w-4" /> Add
                   </button>
@@ -575,7 +575,7 @@ export default function VendorSchedulingPage() {
                           <div className="mt-3 flex gap-2">
                             <button
                               onClick={() => void decideSuggestion(sug, "approved")}
-                              className="rounded-full bg-foreground px-5 py-2 text-sm font-semibold text-background hover:opacity-90"
+                              className="inline-flex justify-center items-center rounded-full bg-gold px-5 text-sm font-bold text-foreground hover:bg-gold-hover h-9"
                             >
                               Promote openings
                             </button>
@@ -600,7 +600,7 @@ export default function VendorSchedulingPage() {
                       </p>
                       <Link
                         to="/vendor/subscription"
-                        className="mt-4 inline-block rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+                        className="inline-flex justify-center items-center mt-4 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
                       >
                         ✦ Upgrade to Premium
                       </Link>
@@ -610,7 +610,7 @@ export default function VendorSchedulingPage() {
                   <button
                     onClick={() => void save()}
                     disabled={saving}
-                    className="w-full rounded-full bg-foreground py-3.5 text-[15px] font-semibold text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
                   >
                     {saving ? "Saving…" : "Save scheduling setup"}
                   </button>
@@ -627,7 +627,7 @@ export default function VendorSchedulingPage() {
                   </p>
                   <Link
                     to="/vendor/subscription"
-                    className="mt-6 inline-block rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+                    className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
                   >
                     ✦ See plans
                   </Link>

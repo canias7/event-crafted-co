@@ -147,7 +147,7 @@ export default function PublicExplorePage() {
     <div className="min-h-screen public-canvas">
       <PublicNav />
       <main id="main-content" className="pb-20">
-        <div className="px-4 md:px-8 py-6 max-w-6xl mx-auto">
+        <div className="px-5 md:px-8 py-6 max-w-6xl mx-auto">
           <div className="mb-6">
             <h1 className="font-editorial text-4xl">Explore</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -313,7 +313,7 @@ function CategoryChip({
   return (
     <button
       onClick={onPress}
-      className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+      className={`whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold transition ${
         active
           ? "bg-foreground text-background"
           : "bg-secondary/60 text-muted-foreground hover:text-accent"
@@ -328,7 +328,7 @@ function ListingCard({ listing: l }: { listing: ListingRow }) {
   return (
     <Link
       to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-      className="group block w-64 shrink-0 overflow-hidden card-soft transition hover:shadow-md"
+      className="group block w-64 shrink-0 overflow-hidden card-soft"
     >
       <div className="aspect-[4/3] bg-secondary/40 overflow-hidden">
         {l.hero_url ? (
@@ -396,7 +396,7 @@ function PostsFeed({ posts }: { posts: PostRow[] }) {
       {posts.map((p) => (
         <article
           key={p.id}
-          className="overflow-hidden rounded-xl bg-card border border-border shadow-sm"
+          className="overflow-hidden rounded-2xl bg-card border border-border"
         >
           <FeedAuthorHeader author={p.author} />
           <div className="aspect-[4/5] bg-secondary/40">
@@ -430,7 +430,7 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
       {reels.map((r) => (
         <div
           key={r.id}
-          className="block overflow-hidden rounded-xl bg-card border border-border shadow-sm"
+          className="block overflow-hidden rounded-2xl bg-card border border-border"
         >
           <FeedAuthorHeader author={r.author} />
           <div className="relative aspect-[4/5] bg-black">

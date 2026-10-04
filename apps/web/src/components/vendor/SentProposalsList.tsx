@@ -154,7 +154,7 @@ export function SentProposalsList({
       className="rounded-2xl overflow-hidden"
       style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(0,0,0,0.08)" }}
     >
-      <div className="px-4 pt-3 pb-2 border-b border-foreground/5">
+      <div className="px-4 pt-3 pb-2 border-b border-border">
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
           Sent proposals
         </span>
@@ -171,7 +171,7 @@ export function SentProposalsList({
             const accepted = p.status === "accepted";
             const open = p.status === "sent";
             return (
-              <div key={p.id} className={`p-4 ${idx > 0 ? "border-t border-foreground/5" : ""}`}>
+              <div key={p.id} className={`p-4 ${idx > 0 ? "border-t border-border" : ""}`}>
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -189,7 +189,7 @@ export function SentProposalsList({
                   <button
                     type="button"
                     onClick={() => window.open(`${ORIGIN}/proposal/${p.view_token}`, "_blank")}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
@@ -197,7 +197,7 @@ export function SentProposalsList({
                   <button
                     type="button"
                     onClick={() => downloadPdf(p)}
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <Download className="w-3.5 h-3.5" />
                     PDF
@@ -206,7 +206,7 @@ export function SentProposalsList({
                     <button
                       type="button"
                       onClick={() => copyLink(p.view_token)}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-foreground/10 rounded-full px-2.5 py-1"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       Link

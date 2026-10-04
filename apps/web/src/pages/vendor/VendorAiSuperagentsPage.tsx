@@ -19,7 +19,7 @@ export default function VendorAiSuperagentsPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main id="main-content" className="flex-1 min-w-0 pb-24 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-4">
           <div>
             <h1 className="font-editorial text-3xl">My Space</h1>
             <p className="text-sm text-muted-foreground">

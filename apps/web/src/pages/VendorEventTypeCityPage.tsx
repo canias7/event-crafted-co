@@ -150,7 +150,7 @@ export default function VendorEventTypeCityPage() {
       <PublicNav />
 
       <section className="pt-32 pb-12 md:pt-36 md:pb-16 border-b border-border">
-        <div className="container mx-auto px-6 md:px-8 max-w-4xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <Link
             to="/vendors"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent transition-colors mb-6"
@@ -174,7 +174,7 @@ export default function VendorEventTypeCityPage() {
       </section>
 
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-6 md:px-8 max-w-6xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
               {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -196,7 +196,7 @@ export default function VendorEventTypeCityPage() {
                 Vendora — many travel.
               </p>
               <Link to={`/vendors/in/${citySlug}`}>
-                <Button className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+                <Button>
                   All vendors in {cityLabel}
                 </Button>
               </Link>
@@ -229,7 +229,7 @@ export default function VendorEventTypeCityPage() {
 
       {/* Cross-link rail to specific categories for this event type */}
       <section className="py-12 md:py-16 border-t border-border bg-secondary/20">
-        <div className="container mx-auto px-6 md:px-8 max-w-6xl">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
           <p className="font-label text-accent mb-4">Browse by category</p>
           <h2 className="font-editorial text-3xl md:text-3xl mb-6">
             What you might need for {config.noun}

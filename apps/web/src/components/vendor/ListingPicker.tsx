@@ -86,11 +86,8 @@ export function ListingPicker({
             type="button"
             className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition-colors"
             style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "0.5px solid rgba(0,0,0,0.08)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              boxShadow: "0 8px 24px -16px rgba(0,0,0,0.18)",
+              background: "#ffffff",
+              border: "1px solid hsl(var(--border))",
             }}
           >
             <span className="flex items-center gap-3 min-w-0 flex-1">
@@ -141,12 +138,6 @@ export function ListingPicker({
         <PopoverContent
           className="w-[--radix-popover-trigger-width] p-0 overflow-hidden"
           align="start"
-          style={{
-            background: "rgba(255,255,255,0.97)",
-            border: "0.5px solid rgba(0,0,0,0.08)",
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
-          }}
         >
           <Command>
             <CommandInput placeholder="Search your listings…" className="h-11" />

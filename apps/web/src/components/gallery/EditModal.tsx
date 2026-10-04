@@ -461,7 +461,7 @@ export function EditModal({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="rounded-2xl sm:max-w-2xl"
+        className="rounded-3xl sm:max-w-2xl"
         onClick={(e) => {
           // React events bubble through the COMPONENT tree, not the DOM
           // tree. Even though DialogContent is portaled outside the

@@ -56,7 +56,7 @@ export default function SettingsPage() {
       <DashboardSidebar items={navItems} title={sidebarTitle} backPath="/" />
 
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">Settings</h1>
           <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
@@ -71,10 +71,8 @@ export default function SettingsPage() {
             <div
               className="rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.6)",
-                border: "0.5px solid rgba(0,0,0,0.08)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               <SettingRow
@@ -192,7 +190,7 @@ export default function SettingsPage() {
                         Delete
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogContent className="rounded-3xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-editorial text-3xl">
                           Delete account?
@@ -258,8 +256,8 @@ function SettingRow({
         className="shrink-0 w-10 h-10 rounded-xl inline-flex items-center justify-center"
         style={{
           background: destructive
-            ? "rgba(220,38,38,0.10)"
-            : "rgba(0,0,0,0.14)",
+            ? "hsl(var(--destructive) / 0.1)"
+            : "hsl(var(--muted))",
           color: destructive ? "#b23a34" : "#14161a",
         }}
         aria-hidden

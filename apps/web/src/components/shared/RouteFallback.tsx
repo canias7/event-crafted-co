@@ -23,10 +23,10 @@ export function RouteFallback() {
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="border-b border-border h-16 md:h-20 px-6 md:px-8 flex items-center">
+      <div className="border-b border-border h-16 md:h-20 px-5 md:px-8 flex items-center">
         <div className="h-5 w-24 bg-muted/70 rounded-sm animate-pulse" />
       </div>
-      <div className="container mx-auto px-6 md:px-8 py-12 md:py-16 max-w-5xl">
+      <div className="container mx-auto px-5 md:px-8 py-12 md:py-16 max-w-5xl">
         <div className="h-3 w-24 bg-muted/60 rounded-sm animate-pulse mb-6" />
         <div className="h-10 md:h-14 w-3/4 bg-muted/70 rounded-sm animate-pulse mb-4" />
         <div className="h-4 w-1/2 bg-muted/60 rounded-sm animate-pulse mb-12" />

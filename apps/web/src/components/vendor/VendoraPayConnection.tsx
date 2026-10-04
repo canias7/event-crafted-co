@@ -29,15 +29,10 @@ interface PayStatus {
 function GlassCard({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="rounded-3xl overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{
-        background:
-          "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 36%), linear-gradient(135deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.1) 48%, rgba(255,255,255,0.04) 100%)",
-        border: "1px solid rgba(255,255,255,0.55)",
-        backdropFilter: "blur(52px) saturate(190%)",
-        WebkitBackdropFilter: "blur(52px) saturate(190%)",
-        boxShadow:
-          "0 26px 64px -22px rgba(0,0,0,0.30), 0 4px 14px -8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 0 0 0.5px rgba(0,0,0,0.03)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       {children}
@@ -155,15 +150,15 @@ export function VendoraPayConnection() {
 
   return (
     <section>
-      <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-foreground/[0.06]">
+      <h2 className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-3 pb-2 border-b border-border">
         VendoraPay
       </h2>
       {!loaded ? (
         // Skeleton until the first status load resolves, so the cards
         // don't flash the wrong (not-connected) state first.
         <div className="space-y-3">
-          <div className="h-28 rounded-3xl bg-foreground/5 animate-pulse" />
-          <div className="h-28 rounded-3xl bg-foreground/5 animate-pulse" />
+          <div className="h-28 rounded-2xl bg-foreground/5 animate-pulse" />
+          <div className="h-28 rounded-2xl bg-foreground/5 animate-pulse" />
         </div>
       ) : (
       <div className="space-y-3">
@@ -202,9 +197,8 @@ export function VendoraPayConnection() {
             <div
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
+                background: "hsl(var(--muted))",
                 color: "#14161a",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
               }}
               aria-hidden
             >
@@ -267,9 +261,8 @@ export function VendoraPayConnection() {
             <div
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(0,0,0,0.05))",
+                background: "hsl(var(--muted))",
                 color: "#14161a",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 0 0.5px rgba(0,0,0,0.06)",
               }}
               aria-hidden
             >

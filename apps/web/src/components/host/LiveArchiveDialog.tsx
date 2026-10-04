@@ -103,7 +103,7 @@ export function LiveArchiveDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl rounded-sm">
+      <DialogContent className="max-w-xl rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl flex items-center gap-2">
             <Radio className="w-5 h-5 text-accent" />
@@ -153,7 +153,7 @@ export function LiveArchiveDialog({
                   type="button"
                   size="sm"
                   onClick={() => window.open(replayUrl(r.id), "_blank")}
-                  className="rounded-full shrink-0 bg-foreground text-background hover:bg-foreground/90"
+                  className="shrink-0"
                 >
                   <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                   Watch

@@ -204,7 +204,7 @@ export default function VendorBrowsePage() {
           borderBottom: "0.5px solid rgba(0,0,0,0.08)",
         }}
       >
-        <div className="container mx-auto px-6 md:px-8 py-4">
+        <div className="container mx-auto px-5 md:px-8 py-4">
           <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -354,7 +354,7 @@ export default function VendorBrowsePage() {
 
       {/* Results */}
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-6 md:px-8">
+        <div className="container mx-auto px-5 md:px-8">
           <div className="flex items-end justify-between mb-10 flex-wrap gap-3">
             <div>
               {hiddenByDate > 0 && (

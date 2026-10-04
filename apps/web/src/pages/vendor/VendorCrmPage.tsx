@@ -124,7 +124,7 @@ export default function VendorCrmPage() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
-          className="px-4 md:px-8 pt-8 pb-6"
+          className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
@@ -151,7 +151,7 @@ export default function VendorCrmPage() {
               </p>
               <Link
                 to="/vendor/subscription"
-                className="mt-6 inline-block rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background hover:opacity-90 transition-opacity"
+                className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover transition-colors h-11"
               >
                 ✦ Upgrade to Pro
               </Link>
@@ -362,7 +362,7 @@ function ClientRecord({
         </div>
         <Link
           to="/vendor/inbox"
-          className="rounded-full bg-foreground px-5 py-2 text-sm font-semibold text-background hover:opacity-90 transition-opacity"
+          className="inline-flex justify-center items-center rounded-full bg-gold px-5 text-sm font-bold text-foreground hover:bg-gold-hover transition-colors h-9"
         >
           Open inbox
         </Link>
@@ -416,7 +416,7 @@ function ClientRecord({
             <button
               onClick={() => void addNote()}
               disabled={!noteText.trim() || savingNote}
-              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background disabled:opacity-40 hover:opacity-90 transition-opacity"
+              className="inline-flex justify-center items-center rounded-full bg-gold px-4 text-xs font-bold text-foreground disabled:bg-gold-muted hover:bg-gold-hover transition-colors h-9"
             >
               {savingNote ? "Saving…" : "Save note"}
             </button>

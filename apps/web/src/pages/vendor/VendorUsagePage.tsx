@@ -321,7 +321,7 @@ export function VendorUsagePageImpl() {
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
-          className="px-4 md:px-8 pt-8 pb-6"
+          className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-sans">Usage</h1>
@@ -456,7 +456,7 @@ export function VendorUsagePageImpl() {
                 </div>
                 {hoveredBarIdx !== null && dailyTotals[hoveredBarIdx] ? (
                   <div
-                    className="pointer-events-none absolute -top-2 -translate-y-full rounded-lg bg-foreground text-background px-2.5 py-1.5 text-[11px] shadow-lg whitespace-nowrap z-10"
+                    className="pointer-events-none absolute -top-2 -translate-y-full rounded-lg bg-foreground text-background px-2.5 py-1.5 text-[11px] shadow-soft whitespace-nowrap z-10"
                     style={{
                       left: `${(hoveredBarIdx / 29) * 100}%`,
                       transform: `translate(${hoveredBarIdx <= 2 ? "0" : hoveredBarIdx >= 27 ? "-100%" : "-50%"}, -100%)`,
@@ -584,7 +584,7 @@ export function VendorUsagePageImpl() {
                 {Object.keys(ACTION_LABEL).map((action) => {
                   const cost = ACTION_COST[action] ?? 0;
                   return (
-                    <li key={action} className="flex items-center justify-between gap-3 py-1.5 border-b border-foreground/5 last:border-0">
+                    <li key={action} className="flex items-center justify-between gap-3 py-1.5 border-b border-border last:border-0">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: colorFor(action) }} />
                         <span className="text-sm truncate">{formatActionType(action)}</span>
@@ -692,11 +692,8 @@ function Card({
     <div
       className={`relative overflow-hidden rounded-2xl p-5 md:p-6 ${className}`}
       style={{
-        background: "rgba(255,255,255,0.72)",
-        border: "0.5px solid rgba(0,0,0,0.08)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 6px 24px -12px rgba(0,0,0,0.08)",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       {children}

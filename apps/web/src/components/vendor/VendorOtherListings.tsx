@@ -99,7 +99,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
             type="button"
             onClick={() => scrollByCards(-1)}
             aria-label="Scroll to previous listings"
-            className="absolute -left-3 top-[38%] -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-background border border-border shadow-md hover:bg-secondary transition-colors"
+            className="absolute -left-3 top-[38%] -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-background border border-border shadow-soft hover:bg-secondary transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -119,7 +119,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
               <Link
                 key={l.id}
                 to={l.slug ? `/vendors/${l.slug}` : `/vendors/${l.id}`}
-                className="group w-64 shrink-0 snap-start overflow-hidden card-soft transition hover:shadow-md"
+                className="group w-64 shrink-0 snap-start overflow-hidden card-soft"
               >
                 <div className="aspect-[4/3] bg-secondary/40 overflow-hidden flex items-center justify-center">
                   {cover ? (
@@ -158,7 +158,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
             type="button"
             onClick={() => scrollByCards(1)}
             aria-label="Scroll to more listings"
-            className="absolute -right-3 top-[38%] -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-background border border-border shadow-md hover:bg-secondary transition-colors"
+            className="absolute -right-3 top-[38%] -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-background border border-border shadow-soft hover:bg-secondary transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

@@ -144,7 +144,7 @@ function ReportDialog({
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="sm:max-w-md rounded-sm">
+      <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl inline-flex items-center gap-2">
             <Flag className="w-5 h-5" />
@@ -220,7 +220,6 @@ function ReportDialog({
               <Button
                 type="submit"
                 disabled={submitting || !reason}
-                className="rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Submit report

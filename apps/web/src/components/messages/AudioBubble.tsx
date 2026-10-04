@@ -129,7 +129,7 @@ export function AudioBubble({ src, filename }: Props) {
   const shownTime = playing || currentTime > 0 ? currentTime : duration;
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-full bg-white/55 backdrop-blur-md border border-white/65 shadow-sm w-[280px] max-w-full">
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-full bg-card border border-border w-[280px] max-w-full">
       <audio ref={audioRef} src={src} preload="metadata" aria-label={filename} />
       <button
         type="button"

@@ -23,14 +23,14 @@ const TIER_LABEL: Record<VendorTier, string> = {
   studio: "Premium plan",
 };
 
-// Per-tier accent colors for the chip + glow. Red for the top tier
-// (Studio) so it pops; orange for Pro (matches the brand-thread);
-// amber for Starter; soft slate for Free.
+// Per-tier chip colours, from the brand palette: Free and Starter are
+// neutral, Pro is bronze on the gold tint, Premium (studio) is champagne.
+// Chips are flat, so there is no glow.
 const TIER_CHIP: Record<VendorTier, { bg: string; ring: string; text: string; shadow: string }> = {
-  free:    { bg: "rgba(100,116,139,0.12)", ring: "rgba(100,116,139,0.35)", text: "rgb(71,85,105)",    shadow: "0 0 8px rgba(100,116,139,0.25)" },
-  starter: { bg: "rgba(0,0,0,0.06)",       ring: "rgba(0,0,0,0.25)",       text: "rgb(63,63,70)",     shadow: "0 0 8px rgba(0,0,0,0.18)" },
-  pro:     { bg: "rgba(0,0,0,0.08)",       ring: "rgba(0,0,0,0.5)",        text: "rgb(24,24,27)",     shadow: "0 0 10px rgba(0,0,0,0.3)" },
-  studio:  { bg: "rgba(220,38,38,0.15)",   ring: "rgba(220,38,38,0.5)",    text: "rgb(185,28,28)",    shadow: "0 0 12px rgba(220,38,38,0.55)" },
+  free:    { bg: "hsl(var(--muted))",   ring: "hsl(var(--border))", text: "hsl(var(--foreground))", shadow: "none" },
+  starter: { bg: "hsl(var(--muted))",   ring: "hsl(var(--border))", text: "hsl(var(--foreground))", shadow: "none" },
+  pro:     { bg: "hsl(var(--pending))", ring: "hsl(var(--gold))",   text: "hsl(var(--accent))",     shadow: "none" },
+  studio:  { bg: "hsl(var(--gold))",    ring: "hsl(var(--gold))",   text: "hsl(var(--foreground))", shadow: "none" },
 };
 const TIER_NAME: Record<VendorTier, string> = {
   free: "Free", starter: "Starter", pro: "Pro", studio: "Premium",
@@ -205,7 +205,7 @@ export function DashboardSidebar({
           </Link>
         )}
         {showChildren ? (
-          <div className="mt-0.5 ml-3 pl-3 border-l border-foreground/10 flex flex-col gap-0.5">
+          <div className="mt-0.5 ml-3 pl-3 border-l border-border flex flex-col gap-0.5">
             {item.children!.map((child) => {
               const childActive = child.path ? isPathActive(child.path) : false;
               return (

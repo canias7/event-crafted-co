@@ -34,9 +34,8 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
         aria-label={flipped ? "Show profile front" : "Show bio on back"}
         className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground hover:text-accent transition-colors"
         style={{
-          background: "rgba(255,255,255,0.7)",
-          border: "0.5px solid rgba(0,0,0,0.28)",
-          backdropFilter: "blur(8px)",
+          background: "#ffffff",
+          border: "1px solid hsl(var(--border))",
         }}
       >
         {flipped ? (
@@ -60,7 +59,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
       >
         {/* FRONT — sets the card's natural height */}
         <div
-          className={`relative ${SHELL_OUTER_CLASSES} bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)]`}
+          className={`relative ${SHELL_OUTER_CLASSES} bg-card`}
           style={{
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
@@ -72,7 +71,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
 
         {/* BACK — bio. Overlay the front so card height matches. */}
         <div
-          className={`${SHELL_OUTER_CLASSES} bg-[linear-gradient(135deg,#ffffff_0%,#f3f4f6_100%)] flex flex-col`}
+          className={`${SHELL_OUTER_CLASSES} bg-card flex flex-col`}
           style={{
             position: "absolute",
             inset: 0,
@@ -110,13 +109,14 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
   );
 }
 
-// One source of truth for the warm shell — border, shadow, rounding,
-// padding. Both faces share it so any tweak applies symmetrically.
+// One source of truth for the shell — the standard flat card (hairline,
+// 20px corners, no shadow) plus padding. Both faces share it so any
+// tweak applies symmetrically.
 // `relative` deliberately omitted: the back face needs `position:
 // absolute` to overlay the front and Tailwind's `relative` utility
 // would otherwise win the cascade and stack the back below.
 const SHELL_OUTER_CLASSES =
-  "overflow-hidden rounded-3xl border border-border shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)] px-6 py-7 sm:px-8 sm:py-8";
+  "overflow-hidden rounded-2xl border border-border px-6 py-7 sm:px-8 sm:py-8";
 
 // Radial sun + four horizontal cream ripple lines used on the front
 // face. Decorative; sits behind every other content.

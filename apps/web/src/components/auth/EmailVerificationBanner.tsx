@@ -58,7 +58,7 @@ export function EmailVerificationBanner() {
       className="bg-accent/10 border-b border-accent/30 text-sm relative z-40"
       role="status"
     >
-      <div className="container mx-auto px-4 md:px-6 py-2.5 flex items-center gap-3 flex-wrap">
+      <div className="container mx-auto px-5 md:px-6 py-2.5 flex items-center gap-3 flex-wrap">
         <Mail className="w-4 h-4 text-accent shrink-0" aria-hidden />
         <p className="flex-1 leading-relaxed">
           <span className="font-medium">Confirm your email.</span>{" "}

@@ -64,7 +64,7 @@ export default function MobileCheckoutReturnPage() {
         <p className="text-sm text-muted-foreground">{body}</p>
         <a
           href={deepLink}
-          className="inline-flex items-center justify-center rounded-full bg-foreground text-background text-sm font-medium px-6 py-2.5 hover:bg-foreground/90"
+          className="inline-flex items-center justify-center rounded-full bg-gold text-foreground text-sm font-bold px-6 hover:bg-gold-hover h-11"
         >
           Open the app
         </a>

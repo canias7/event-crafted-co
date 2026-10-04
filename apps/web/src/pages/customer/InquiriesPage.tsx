@@ -221,7 +221,7 @@ export default function InquiriesPage() {
       <DashboardSidebar items={navItems} title="Customer" backPath="/" />
 
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <div className="backdrop-blur-sm px-4 md:px-8 py-5 sticky top-0 z-40">
+        <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h1 className="font-editorial text-3xl">Inbox</h1>
@@ -233,7 +233,6 @@ export default function InquiriesPage() {
               <NotificationBell variant="light" />
               <Button
                 onClick={() => setModalOpen(true)}
-                className="rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New inquiry
@@ -287,7 +286,7 @@ export default function InquiriesPage() {
           </div>
 
           {/* List */}
-          <div className="bg-card rounded-3xl border border-border/60 shadow-[0_8px_24px_-16px_rgba(26,20,16,0.16)] overflow-hidden">
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
             {loading ? (
               <div className="p-6 space-y-4">
                 {[0, 1, 2].map((i) => (
@@ -321,7 +320,6 @@ export default function InquiriesPage() {
                       </Link>
                       <Button
                         onClick={() => setModalOpen(true)}
-                        className="rounded-full bg-foreground text-background hover:bg-foreground/90"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         New inquiry

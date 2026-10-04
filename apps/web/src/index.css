@@ -47,14 +47,18 @@
        waiting = bronze on this gold tint (#f2e7cb), problem = destructive. */
     --pending: 43 60% 87%;
 
-    /* Champagne (#c9a86a), for ornament and fills such as unread dots. */
+    /* Champagne (#c9a86a): the primary button fill (with an ink label),
+       plus ornament and fills such as unread dots. Hover is a step darker;
+       disabled is solid muted gold (#e0d2b0) with the label still ink. */
     --gold: 39 47% 60%;
+    --gold-hover: 39 47% 55%;
+    --gold-muted: 42 44% 78%;
 
     --border: 35 25% 25% / 0.12;
     --input: 42 31% 91%;
     --ring: 39 38% 39% / 0.6;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --shadow-sm: 220 14% 9% / 0.03;
     --shadow-md: 220 14% 9% / 0.06;
@@ -294,78 +298,20 @@
     font-size: var(--font-size-h2);
   }
 
-  .card-shadow {
-    box-shadow:
-      0 0 0 1px hsl(var(--border)),
-      0 1px 2px -1px hsl(var(--shadow-sm)),
-      0 2px 4px hsl(var(--shadow-md));
-  }
-
-  .card-shadow-hover {
-    box-shadow:
-      0 0 0 1px hsl(var(--border)),
-      0 4px 6px -1px hsl(var(--shadow-sm)),
-      0 8px 15px hsl(var(--shadow-md));
-  }
-
-  /* White-on-white card — clean, modern, no glass blur (which was
-     invisible on the new pure-white background anyway). Solid white
-     surface, hairline border, and a soft layered drop shadow do
-     the lifting. Pair with rounded-3xl-ish radius. */
+  /* The standard card, shared with the apps: cream fill, hairline
+     border, 20px corners, no shadow. Cards that are links or buttons
+     darken their border on hover instead of lifting. (Cards used to be
+     frosted glass with a deep shadow; flat won when the brand was locked.) */
   .card-soft {
-    background-image: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.5) 0%,
-      rgba(255, 255, 255, 0.28) 100%
-    );
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    border-radius: 1.5rem;
-    backdrop-filter: blur(28px) saturate(150%);
-    -webkit-backdrop-filter: blur(28px) saturate(150%);
-    box-shadow:
-      0 1px 2px -1px hsl(220 14% 9% / 0.05),
-      0 16px 40px -18px hsl(220 14% 9% / 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
-    transition: box-shadow 240ms ease, transform 240ms ease,
-      border-color 240ms ease;
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 1.25rem;
+    transition: border-color 160ms ease;
   }
-  .card-soft:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.8);
-    box-shadow:
-      0 2px 6px -2px hsl(220 14% 9% / 0.08),
-      0 28px 60px -22px hsl(35 35% 28% / 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  }
-
-  /*
-   * Glassify the platform — make the common opaque card surfaces
-   * (card-soft, bg-card, bg-white containers) translucent + frosted on
-   * the app/marketing canvases so the moving ambient backdrop reads
-   * through them. Scoped to .vendor-canvas / .public-canvas so it never
-   * touches dialogs, popovers, inputs, or off-canvas chrome. ~58% white
-   * fill keeps text crisp while the glass + motion show through.
-   */
-  .vendor-canvas :is(.bg-card, .bg-white),
-  .public-canvas :is(.bg-card, .bg-white) {
-    background-color: rgba(255, 255, 255, 0.42) !important;
-    backdrop-filter: blur(28px) saturate(150%);
-    -webkit-backdrop-filter: blur(28px) saturate(150%);
-    box-shadow:
-      0 1px 2px -1px hsl(220 14% 9% / 0.05),
-      0 16px 40px -18px hsl(220 14% 9% / 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: box-shadow 240ms ease, transform 240ms ease;
-  }
-  /* Glassy lift on hover — a deeper navy-tinted shadow as the cursor
-     passes over a card surface. */
-  .vendor-canvas :is(.bg-card, .bg-white):hover,
-  .public-canvas :is(.bg-card, .bg-white):hover {
-    transform: translateY(-3px);
-    box-shadow:
-      0 2px 6px -2px hsl(220 14% 9% / 0.08),
-      0 28px 60px -22px hsl(35 35% 28% / 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  a.card-soft:hover,
+  button.card-soft:hover,
+  [role="button"].card-soft:hover {
+    border-color: hsl(var(--foreground) / 0.3);
   }
 
   /* Full-screen page wrappers that paint an opaque app background hide
@@ -377,34 +323,11 @@
     background-color: transparent !important;
   }
 
-  /* Glassy card — translucent frosted white over the near-white
-     canvas, hairline-black border. The look used by the My Vendora
-     Overview cards, reused across Inbox / Partners / Settings / Usage
-     so those surfaces read as one cohesive set. */
+  /* Older name for the standard card (see .card-soft). */
   .glass-card {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.7) 0%,
-      rgba(255, 255, 255, 0.4) 100%
-    );
-    border: 0.5px solid rgba(255,255,255,0.75);
-    border-radius: 1rem;
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    box-shadow:
-      0 1px 1px rgba(0, 0, 0, 0.03),
-      0 18px 44px -16px rgba(0,0,0,0.26),
-      inset 0 1px 0 rgba(255,255,255,0.9),
-      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
-  }
-
-  /* Dark mode: dark surface card with a soft glow shadow. */
-  .dark .card-soft {
-    background-color: hsl(220 14% 11%);
-    border-color: hsl(220 14% 18%);
-    box-shadow:
-      0 1px 2px -1px hsl(0 0% 0% / 0.30),
-      0 12px 32px -16px hsl(0 0% 0% / 0.55);
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 1.25rem;
   }
 
   .tnum {
@@ -493,117 +416,89 @@
   }
 
   /*
-   * My Vendora cockpit — scoped glass-on-warm-canvas redesign for
-   * the vendor accounting surface (Overview, Payments × 5 sub-tabs,
-   * Files × 4 sub-tabs, Customers, Settings). Sits on top of the
-   * shared `.vendor-canvas` warm-orange radial; cards become
-   * translucent frosted glass over that backdrop instead of opaque
-   * paper cards. Borders are warm-orange hairlines, shadows are
-   * orange-tinted. The serif still carries
-   * the KPI display + chart titles for editorial feel.
-   *
-   * Token palette:
-   *   --c-card    rgba(255, 255, 255, 0.6)        glassy card fill
-   *   --c-line    rgba(0, 0, 0, 0.08)        warm hairline border
-   *   --c-tint    rgba(0, 0, 0, 0.035)        table-row warm tint
-   *   --c-shadow  rgba(0, 0, 0,0.14)         warm shadow
-   *   --c-ink     #1a1a1a                      primary text
-   *   --c-soft    #4a4a4a                      secondary text
-   *   --c-muted   #71717a                      tertiary / labels
-   *   --c-accent  #1a1a1a                      crimson (revenue line, CTA)
-   *   --c-good    #1a1a1a  --c-warn #1a1a1a  --c-bad #71717a
+   * My Vendora cockpit — the vendor accounting surface (Overview,
+   * Payments, Files, Customers, Settings). Uses the shared standard:
+   * flat cream cards with a hairline border and 20px corners, no glass,
+   * no card shadows, ink text (no grey), bold labels, pill status tags.
    *
    * Apply by adding `my-vendora-cockpit` on the page root (alongside
-   * `vendor-canvas` so the radial shows through the glass).
+   * `vendor-canvas`).
    */
   .my-vendora-cockpit {
-    color: #1a1a1a;
+    color: hsl(var(--foreground));
   }
 
   /* Override the local Card component when nested inside the cockpit. */
   .my-vendora-cockpit [data-cockpit-card],
   .my-vendora-cockpit .cockpit-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22)) !important;
-    border: 0.5px solid rgba(255,255,255,0.75) !important;
-    border-radius: 14px !important;
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    box-shadow:
-      0 18px 44px -16px rgba(0,0,0,0.26),
-      inset 0 1px 0 rgba(255,255,255,0.9),
-      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04) !important;
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
   }
 
   /* Section heading bar — editorial eyebrow with warm hairline. */
   .my-vendora-cockpit .cockpit-section-head {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #71717a;
+    color: hsl(var(--foreground));
     padding-bottom: 10px;
     margin-bottom: 14px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid hsl(var(--border));
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
   }
 
-  /* StatCard — glassy KPI tile with serif display value. */
+  /* StatCard — KPI tile with serif display value. */
   .my-vendora-cockpit .cockpit-stat {
-    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22)) !important;
-    border: 0.5px solid rgba(255,255,255,0.75) !important;
-    border-radius: 14px !important;
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 20px !important;
     padding: 18px 20px !important;
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    box-shadow:
-      0 18px 44px -16px rgba(0,0,0,0.26),
-      inset 0 1px 0 rgba(255,255,255,0.9),
-      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: none !important;
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
   .my-vendora-cockpit .cockpit-stat:hover {
-    box-shadow:
-      0 16px 40px -14px rgba(0, 0, 0, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-      inset 0 0 0 0.5px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: none !important;
   }
   .my-vendora-cockpit .cockpit-stat-label {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #71717a;
+    color: hsl(var(--foreground));
   }
   .my-vendora-cockpit .cockpit-stat-value {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     font-size: 32px;
-    font-weight: 500;
-    color: #1a1a1a;
+    font-weight: 700;
+    color: hsl(var(--foreground));
     line-height: 1;
     letter-spacing: -0.5px;
   }
   .my-vendora-cockpit .cockpit-stat-sub {
     font-size: 12px;
-    color: #71717a;
+    color: hsl(var(--foreground));
     margin-top: 2px;
   }
-  .my-vendora-cockpit .cockpit-stat-value--negative { color: #71717a; }
-  .my-vendora-cockpit .cockpit-stat-value--positive { color: #1a1a1a; }
+  .my-vendora-cockpit .cockpit-stat-value--negative { color: hsl(var(--foreground)); }
+  .my-vendora-cockpit .cockpit-stat-value--positive { color: hsl(var(--foreground)); }
 
   /* Tab strip — underline-on-active, warm muted resting state. */
   .my-vendora-cockpit .cockpit-tabs {
     display: flex;
     gap: 4px;
     overflow-x: auto;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
-    margin: 0 -16px 20px;
-    padding: 0 16px;
+    border-bottom: 1px solid hsl(var(--border));
+    margin: 0 -20px 20px;
+    padding: 0 20px;
     scrollbar-width: none;
   }
   .my-vendora-cockpit .cockpit-tabs::-webkit-scrollbar { display: none; }
@@ -614,7 +509,7 @@
     padding: 12px 14px;
     font-size: 14px;
     font-weight: 400;
-    color: #71717a;
+    color: hsl(var(--foreground));
     cursor: pointer;
     white-space: nowrap;
     display: inline-flex;
@@ -623,23 +518,22 @@
     margin-bottom: -1px;
     transition: color 120ms ease, border-color 120ms ease;
   }
-  .my-vendora-cockpit .cockpit-tab:hover { color: #1a1a1a; }
+  .my-vendora-cockpit .cockpit-tab:hover { color: hsl(var(--foreground)); }
   .my-vendora-cockpit .cockpit-tab--active {
-    color: #1a1a1a;
-    border-bottom-color: #1a1a1a;
-    font-weight: 500;
+    color: hsl(var(--foreground));
+    border-bottom-color: hsl(var(--foreground));
+    font-weight: 700;
   }
 
-  /* Status pills — warm semantic colors, kept opaque so they read
-     over the glassy backdrop. */
+  /* Status pills — the shared status language. */
   .my-vendora-cockpit .cockpit-pill {
     display: inline-flex;
     align-items: center;
     padding: 3px 9px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.04em;
-    border-radius: 4px;
+    border-radius: 999px;
     border: 1px solid transparent;
     line-height: 1.4;
   }
@@ -659,7 +553,7 @@
     background: hsl(var(--muted)) !important; color: hsl(var(--foreground)) !important; border-color: transparent !important;
   }
 
-  /* Dense data table — glassy surface, warm-tinted hover rows. */
+  /* Dense data table — warm-tinted hover rows. */
   .my-vendora-cockpit .cockpit-table {
     width: 100%;
     border-collapse: collapse;
@@ -669,25 +563,25 @@
   .my-vendora-cockpit .cockpit-table thead th {
     position: sticky;
     top: 0;
-    background: rgba(0, 0, 0, 0.035);
-    color: #71717a;
+    background: hsl(var(--muted) / 0.5);
+    color: hsl(var(--foreground));
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     text-align: left;
     padding: 10px 12px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid hsl(var(--border));
     white-space: nowrap;
   }
   .my-vendora-cockpit .cockpit-table tbody td {
     padding: 14px 12px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.14);
+    border-bottom: 1px solid hsl(var(--border));
     vertical-align: middle;
-    color: #1a1a1a;
+    color: hsl(var(--foreground));
   }
   .my-vendora-cockpit .cockpit-table tbody tr:hover td {
-    background: rgba(0, 0, 0, 0.035);
+    background: hsl(var(--muted) / 0.5);
   }
   .my-vendora-cockpit .cockpit-table .num {
     text-align: right;
@@ -696,17 +590,17 @@
   }
   .my-vendora-cockpit .cockpit-table tfoot td {
     padding: 12px;
-    border-top: 0.5px solid rgba(0, 0, 0, 0.08);
-    font-weight: 500;
-    background: rgba(0, 0, 0, 0.025);
+    border-top: 1px solid hsl(var(--border));
+    font-weight: 700;
+    background: hsl(var(--muted) / 0.35);
   }
 
   /* Tabular money: the brand serif with tabular figures. */
   .my-vendora-cockpit .cockpit-money {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-variant-numeric: lining-nums tabular-nums;
-    font-weight: 500;
-    color: #1a1a1a;
+    font-weight: 700;
+    color: hsl(var(--foreground));
   }
   /* Hero KPI figure — same crisp sans as .cockpit-money, just larger
      and bolder. (Previously a display serif, but its old-style
@@ -718,19 +612,19 @@
     font-weight: 700;
     letter-spacing: -0.25px;
   }
-  .my-vendora-cockpit .cockpit-money--negative { color: #71717a; }
+  .my-vendora-cockpit .cockpit-money--negative { color: hsl(var(--foreground)); }
 
   /* Headings inside the cockpit — display serif. */
   .my-vendora-cockpit h1,
   .my-vendora-cockpit h2,
   .my-vendora-cockpit h3 {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
-    color: #1a1a1a;
+    color: hsl(var(--foreground));
     letter-spacing: -0.3px;
-    font-weight: 500;
+    font-weight: 700;
   }
 
-  /* Toolbar — glassy page toolbar surface. */
+  /* Toolbar — page toolbar surface. */
   .my-vendora-cockpit .cockpit-toolbar {
     display: flex;
     align-items: center;
@@ -738,31 +632,26 @@
     gap: 12px;
     flex-wrap: wrap;
     padding: 12px 14px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22));
-    border: 0.5px solid rgba(255,255,255,0.75);
-    box-shadow:
-      0 18px 44px -16px rgba(0,0,0,0.26),
-      inset 0 1px 0 rgba(255,255,255,0.9),
-      inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
-    border-radius: 14px;
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: none;
+    border-radius: 12px;
     margin-bottom: 16px;
   }
   .my-vendora-cockpit .cockpit-toolbar-meta {
     font-size: 12px;
-    color: #4a4a4a;
+    color: hsl(var(--foreground));
     display: inline-flex;
     align-items: center;
     gap: 8px;
   }
   .my-vendora-cockpit .cockpit-count-chip {
-    background: rgba(0, 0, 0, 0.12);
-    color: #4a4a4a;
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
     padding: 3px 9px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
@@ -773,43 +662,41 @@
     font-style: normal;
     font-feature-settings: "tnum" 1, "lnum" 1;
     letter-spacing: -0.3px;
-    font-weight: 500;
+    font-weight: 700;
   }
 
-  /* Charts — glassy card, crimson line + soft area gradient. */
+  /* Charts — card with an ink line and a soft area gradient. */
   .my-vendora-cockpit .cockpit-chart {
-    background: rgba(255, 255, 255, 0.6);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
-    border-radius: 14px;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 20px;
     padding: 16px 18px;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
+    box-shadow: none;
   }
   .my-vendora-cockpit .cockpit-chart-title {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-size: 20px;
-    font-weight: 600;
-    color: #1a1a1a;
+    font-weight: 700;
+    color: hsl(var(--foreground));
     letter-spacing: -0.2px;
   }
   .my-vendora-cockpit .cockpit-chart-sub {
     font-size: 12px;
-    color: #71717a;
+    color: hsl(var(--foreground));
     margin-top: 2px;
   }
   .my-vendora-cockpit .cockpit-chart-grid {
-    stroke: rgba(0, 0, 0, 0.08);
+    stroke: hsl(var(--border));
     stroke-width: 1;
   }
   .my-vendora-cockpit .cockpit-chart-axis {
     font-size: 10px;
-    fill: #71717a;
+    fill: hsl(var(--foreground));
     font-variant-numeric: tabular-nums;
   }
   .my-vendora-cockpit .cockpit-chart-line {
     fill: none;
-    stroke: #1a1a1a;
+    stroke: hsl(var(--foreground));
     stroke-width: 2;
   }
   .my-vendora-cockpit .cockpit-chart-area {
@@ -817,13 +704,13 @@
     opacity: 1;
   }
   .my-vendora-cockpit .cockpit-chart-bar {
-    fill: #1a1a1a;
+    fill: hsl(var(--foreground));
   }
-  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: #1a1a1a; }
-  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: #71717a; }
+  .my-vendora-cockpit .cockpit-chart-bar--positive { fill: hsl(var(--foreground)); }
+  .my-vendora-cockpit .cockpit-chart-bar--negative { fill: hsl(var(--gold)); }
   .my-vendora-cockpit .cockpit-chart-dot {
     fill: #ffffff;
-    stroke: #1a1a1a;
+    stroke: hsl(var(--foreground));
     stroke-width: 1.75;
   }
 
@@ -833,19 +720,19 @@
     align-items: center;
     gap: 3px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin-left: 6px;
   }
-  .my-vendora-cockpit .cockpit-delta--up { color: #1a1a1a; }
-  .my-vendora-cockpit .cockpit-delta--down { color: #71717a; }
-  .my-vendora-cockpit .cockpit-delta--flat { color: #71717a; }
+  .my-vendora-cockpit .cockpit-delta--up { color: hsl(var(--foreground)); }
+  .my-vendora-cockpit .cockpit-delta--down { color: hsl(var(--foreground)); }
+  .my-vendora-cockpit .cockpit-delta--flat { color: hsl(var(--foreground)); }
 
   /* In-cell bar visualization — accent-tinted magnitude bar. */
   .my-vendora-cockpit .cockpit-inline-bar {
     display: inline-block;
     height: 4px;
-    background: #1a1a1a;
+    background: hsl(var(--foreground));
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -854,7 +741,7 @@
     display: inline-block;
     width: 80px;
     height: 4px;
-    background: rgba(0, 0, 0, 0.12);
+    background: hsl(var(--muted));
     border-radius: 2px;
     vertical-align: middle;
     margin-right: 8px;
@@ -863,16 +750,16 @@
   .my-vendora-cockpit .cockpit-inline-bar-track > span {
     display: block;
     height: 100%;
-    background: #1a1a1a;
+    background: hsl(var(--foreground));
     border-radius: 2px;
   }
 
-  /* Page header — glassy chrome (still defined; the Overview tab no
+  /* Page header (still defined; the Overview tab no
      longer uses it but other tabs can). */
   .my-vendora-cockpit .cockpit-page-header {
-    background: rgba(255, 255, 255, 0.6);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
-    border-radius: 14px;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 20px;
     padding: 22px 24px;
     margin-bottom: 20px;
     display: flex;
@@ -880,37 +767,35 @@
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
+    box-shadow: none;
   }
   .my-vendora-cockpit .cockpit-breadcrumb {
     font-size: 11px;
-    color: #71717a;
+    color: hsl(var(--foreground));
     margin-bottom: 6px;
     letter-spacing: 0.04em;
   }
   .my-vendora-cockpit .cockpit-breadcrumb span + span::before {
     content: "/";
     margin: 0 6px;
-    color: rgba(0, 0, 0, 0.4);
+    color: hsl(var(--foreground));
   }
   .my-vendora-cockpit .cockpit-page-title {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-size: 32px;
-    font-weight: 500;
-    color: #1a1a1a;
+    font-weight: 700;
+    color: hsl(var(--foreground));
     letter-spacing: -0.3px;
     line-height: 1.05;
   }
   .my-vendora-cockpit .cockpit-page-sub {
     font-size: 13px;
-    color: #71717a;
+    color: hsl(var(--foreground));
     margin-top: 6px;
     font-style: italic;
   }
 
-  /* KPI row — two glassy serif tiles, 50/50 on desktop, stacks on
+  /* KPI row — two serif tiles, 50/50 on desktop, stacks on
      narrow viewports. */
   .my-vendora-cockpit .cockpit-kpi-row {
     display: grid;
@@ -924,41 +809,39 @@
     }
   }
   .my-vendora-cockpit .cockpit-kpi-tile {
-    background: rgba(255, 255, 255, 0.6);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
-    border-radius: 14px;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 20px;
     padding: 14px 18px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
+    box-shadow: none;
     transition: box-shadow 160ms ease, transform 160ms ease;
   }
   .my-vendora-cockpit .cockpit-kpi-tile:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 14px 32px -10px rgba(0, 0, 0, 0.2);
+    box-shadow: none;
   }
   .my-vendora-cockpit .cockpit-kpi-label {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #71717a;
+    color: hsl(var(--foreground));
     margin-bottom: 4px;
   }
   .my-vendora-cockpit .cockpit-kpi-value {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     font-size: 30px;
-    font-weight: 500;
-    color: #1a1a1a;
+    font-weight: 700;
+    color: hsl(var(--foreground));
     letter-spacing: -0.4px;
     line-height: 1;
   }
   .my-vendora-cockpit .cockpit-kpi-sub {
     font-size: 12px;
-    color: #71717a;
+    color: hsl(var(--foreground));
     display: flex;
     align-items: center;
     gap: 6px;
@@ -988,15 +871,15 @@
   .my-vendora-cockpit table.cockpit-data-table thead th {
     position: sticky;
     top: 0;
-    background: rgba(0, 0, 0, 0.035);
-    color: #71717a;
+    background: hsl(var(--muted) / 0.5);
+    color: hsl(var(--foreground));
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     text-align: left;
     padding: 12px 14px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid hsl(var(--border));
     white-space: nowrap;
     z-index: 1;
   }
@@ -1005,8 +888,8 @@
   }
   .my-vendora-cockpit table.cockpit-data-table tbody td {
     padding: 14px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.14);
-    color: #1a1a1a;
+    border-bottom: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
     vertical-align: middle;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody td.num {
@@ -1015,24 +898,22 @@
     white-space: nowrap;
   }
   .my-vendora-cockpit table.cockpit-data-table tbody tr:hover td {
-    background: rgba(0, 0, 0, 0.035);
+    background: hsl(var(--muted) / 0.5);
   }
   .my-vendora-cockpit table.cockpit-data-table tbody tr:last-child td {
     border-bottom: 0;
   }
-  /* Data-table card wrapper — glassy frosted surface. */
+  /* Data-table card wrapper. */
   .my-vendora-cockpit .cockpit-data-card {
-    background: rgba(255, 255, 255, 0.6);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
-    border-radius: 14px;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 20px;
     overflow: hidden;
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px -10px rgba(0, 0, 0, 0.14);
+    box-shadow: none;
   }
   .my-vendora-cockpit .cockpit-data-card-header {
     padding: 16px 18px;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid hsl(var(--border));
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1042,7 +923,7 @@
   .my-vendora-cockpit .cockpit-data-card-header h3 {
     font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
     font-size: 22px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.2px;
   }
 }

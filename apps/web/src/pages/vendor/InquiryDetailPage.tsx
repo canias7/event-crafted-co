@@ -902,7 +902,7 @@ export default function InquiryDetailPage() {
           + pill-shaped info button on the right. Info button opens the
           actions dropdown (View inquiry / Close-or-Reopen). */}
       <div
-        className="sticky top-0 z-40 px-4 md:px-6 py-3 backdrop-blur-md"
+        className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.85)",
           borderBottom: "0.5px solid rgba(0,0,0,0.08)",
@@ -912,7 +912,7 @@ export default function InquiryDetailPage() {
           <Link
             to="/vendor/inbox"
             aria-label="Back to inbox"
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -974,7 +974,7 @@ export default function InquiryDetailPage() {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Inquiry details"
-                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/95 shadow-sm border border-border/40 text-foreground hover:bg-white"
+                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -1033,7 +1033,7 @@ export default function InquiryDetailPage() {
           wasAtBottomRef.current =
             el.scrollHeight - el.scrollTop - el.clientHeight < 80;
         }}
-        className="flex-1 overflow-y-auto px-4 md:px-6 py-5"
+        className="flex-1 overflow-y-auto px-5 md:px-6 py-5"
       >
         <div className="max-w-3xl mx-auto space-y-1.5">
           {/* HILUX activity in this thread — null when the action log
@@ -1078,7 +1078,7 @@ export default function InquiryDetailPage() {
                     key={it.key}
                     className="flex items-center justify-center py-3"
                   >
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border/40 shadow-sm">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
                       {it.label}
                     </span>
                   </div>
@@ -1142,14 +1142,14 @@ export default function InquiryDetailPage() {
                   ) : null}
                   <div className="flex flex-col">
                     <div
-                      className={`max-w-md px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-2xl backdrop-blur-md shadow-sm ${
+                      className={`max-w-md px-4 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-2xl ${
                         isDeleted
-                          ? "bg-background/60 text-muted-foreground italic border border-border/40"
+                          ? "bg-transparent text-foreground italic border border-border"
                           : it.isMe
-                            ? `bg-white/65 text-foreground border border-white/70 ${
+                            ? `bg-card text-foreground border border-border ${
                                 it.showTail ? "rounded-br-sm" : ""
                               }`
-                            : `bg-white/45 text-foreground border border-white/55 ${
+                            : `bg-muted text-foreground border border-transparent ${
                                 it.showTail ? "rounded-bl-sm" : ""
                               }`
                       }`}
@@ -1216,7 +1216,7 @@ export default function InquiryDetailPage() {
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
-                                  className="text-[11px] font-medium rounded-full px-3 py-1 bg-foreground text-background hover:opacity-90"
+                                  className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
                                 >
                                   Save
                                 </button>
@@ -1329,7 +1329,7 @@ export default function InquiryDetailPage() {
           inquiry.status === "expired" ||
           inquiry.status === "cancelled" ? (
             <div className="flex items-center justify-center py-4">
-              <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border/40 shadow-sm">
+              <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
                 Conversation ended
               </span>
             </div>
@@ -1344,7 +1344,7 @@ export default function InquiryDetailPage() {
       inquiry.status === "expired" ||
       inquiry.status === "cancelled" ? (
         <div
-          className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
+          className="sticky bottom-0 px-5 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
             background: "rgba(255,255,255,0.92)",
             borderTop: "0.5px solid rgba(0,0,0,0.08)",
@@ -1358,7 +1358,7 @@ export default function InquiryDetailPage() {
         </div>
       ) : (
       <div
-        className="sticky bottom-0 px-4 md:px-6 py-3 backdrop-blur-md"
+        className="sticky bottom-0 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.92)",
           borderTop: "0.5px solid rgba(0,0,0,0.08)",
@@ -1389,7 +1389,7 @@ export default function InquiryDetailPage() {
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium bg-background/95 border border-border/40 shadow-sm rounded-full px-3 py-1.5 hover:bg-background"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <MapPin className="w-3.5 h-3.5 text-accent" />
               Pin location
@@ -1425,7 +1425,7 @@ export default function InquiryDetailPage() {
                 {pendingFiles.map((f, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-2 px-3 py-1 bg-background/90 border border-border/40 rounded-full text-xs"
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-background/90 border border-border rounded-full text-xs"
                   >
                     {f.name}
                     <button
@@ -1449,7 +1449,7 @@ export default function InquiryDetailPage() {
                 on the left, textarea fills the middle, dark circular
                 send button on the right. All inside one rounded
                 container with a soft shadow. */}
-            <div className="flex items-end gap-1 bg-background/95 border border-border/40 shadow-sm rounded-3xl pl-2 pr-1.5 py-1.5">
+            <div className="flex items-end gap-1 bg-background/95 border border-border shadow-soft rounded-3xl pl-2 pr-1.5 py-1.5">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -1558,7 +1558,7 @@ export default function InquiryDetailPage() {
                   (!composer.trim() && pendingFiles.length === 0)
                 }
                 aria-label="Send"
-                className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0"
+                className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0 disabled:bg-muted"
               >
                 {sending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1644,7 +1644,7 @@ function InquiryIntakeCard({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-background/90 backdrop-blur-sm border border-border/40 text-foreground rounded-full px-2.5 py-1 shadow-sm">
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-white border border-border text-foreground rounded-full px-2.5 py-1">
           <Sparkles className="w-3 h-3 text-accent" />
           New inquiry
         </span>
@@ -1670,7 +1670,7 @@ function InquiryIntakeCard({
           </span>
         )}
         <div
-          className="flex-1 max-w-xl rounded-2xl rounded-bl-sm p-4 bg-white/55 backdrop-blur-md text-foreground border border-white/60 shadow-sm space-y-3"
+          className="flex-1 max-w-xl rounded-2xl rounded-bl-sm p-4 bg-muted text-foreground border border-transparent space-y-3"
         >
           <div>
             <p className="font-semibold text-base leading-tight">
@@ -1820,10 +1820,10 @@ function InquiryPreviewSheet({
       </button>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl rounded-2xl p-7 md:p-9 shadow-2xl"
+        className="w-full max-w-xl rounded-3xl p-7 md:p-9 shadow-lifted"
         style={{
-          background: "rgba(255,255,255,0.97)",
-          border: "0.5px solid rgba(0,0,0,0.08)",
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
         }}
       >
         <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-accent mb-2">
