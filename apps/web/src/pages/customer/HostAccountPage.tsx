@@ -112,7 +112,7 @@ export default function HostAccountPage() {
             </div>
 
             {listingsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {[0, 1, 2].map((i) => (
                   <Skeleton key={i} className="aspect-[4/3] rounded-2xl" />
                 ))}
@@ -141,7 +141,7 @@ export default function HostAccountPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {savedVendors.map((v) => (
                   <VendorCard key={v.id} vendor={v} />
                 ))}

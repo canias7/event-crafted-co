@@ -229,7 +229,7 @@ export default function VendorCategoryPage() {
           </div>
 
           {loading && filtered.length === 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[0, 1, 2].map((i) => (
                 <div key={i}>
                   <Skeleton className="aspect-[4/3] w-full rounded-sm mb-3" />
@@ -254,7 +254,7 @@ export default function VendorCategoryPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {filtered.map((v, i) => (
                 <VendorCard key={v.id} vendor={v} eager={i < 6} />
               ))}

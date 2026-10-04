@@ -128,6 +128,27 @@
   }
 }
 
+/* Photo heroes (landing, vendors). Headlines and intros cross bright
+   parts of the photos (sunsets, candles, chandeliers). A soft dark halo
+   behind the headline and a gentle shadow on the letters keep them
+   readable, gold words included. */
+.hero-headline {
+  position: relative;
+  isolation: isolate;
+  text-shadow: 0 2px 28px rgba(10, 11, 14, 0.7), 0 1px 3px rgba(10, 11, 14, 0.4);
+}
+.hero-headline::before {
+  content: "";
+  position: absolute;
+  inset: -56px -96px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(10, 11, 14, 0.62), rgba(10, 11, 14, 0.42) 55%, rgba(10, 11, 14, 0));
+}
+.hero-intro {
+  text-shadow: 0 1px 12px rgba(10, 11, 14, 0.8), 0 1px 2px rgba(10, 11, 14, 0.5);
+}
+
 /* Hide the native scrollbar but keep scroll behavior. Used on
    marketing chat demos / showcase scrollers where the scroll IS
    intentional (animated content) but the bar reads as a UI seam. */
