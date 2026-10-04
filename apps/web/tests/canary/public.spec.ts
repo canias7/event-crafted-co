@@ -129,7 +129,7 @@ test.describe("public site", () => {
     await expect(email).toBeVisible();
     await expect(password).toBeVisible();
     // Submitting an empty form must not leave the page or call auth. We do NOT
-    // attempt a real sign-in: production requires Turnstile + an emailed code.
+    // attempt a real sign-in: production requires an emailed 6-digit code.
     let authCalls = 0;
     page.on("request", (r) => {
       if (/\/auth\/v1\/(token|otp)|signin-2fa/.test(r.url())) authCalls++;
@@ -183,7 +183,6 @@ const GATED = [
   "/vendor/inbox/00000000-0000-0000-0000-000000000000",
   "/vendor/appointments",
   "/vendor/overview",
-  "/vendor/workspace",
   "/vendor/gallery",
   "/vendor/crm",
   "/vendor/scheduling",

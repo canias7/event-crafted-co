@@ -139,18 +139,15 @@ test.describe("vendor journeys (seeded session)", () => {
     await expectNoHorizontalOverflow(page, "/vendor/appointments");
   });
 
-  test("payments: workspace (invoices / payment links) state", async ({ page }) => {
-    // The invoice + payment-link screens live in the Workspace, which is
-    // currently switched off in MyVendoraPage.tsx. Record that honestly
-    // rather than reporting invoice UI coverage that doesn't exist.
-    const invoices = await rest(`invoices?select=id&vendor_id=in.(${vendorIds.join(",")})&limit=1`, me.token);
-    const links = await rest(`payment_links?select=id&vendor_id=in.(${vendorIds.join(",")})&limit=1`, me.token);
-    test.info().annotations.push({
-      type: "untested",
-      description: `invoice/payment-link vendor UI is "under construction" on web; API shows ${invoices.count} invoice(s), ${links.count} link(s)`,
-    });
-    await page.goto("/vendor/workspace", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: /Workspace — under construction/ })).toBeVisible({ timeout: 20_000 });
+  test("retired Workspace / My Space links land on Overview", async ({ page }) => {
+    // The Workspace (invoices, pay links, files, contacts) and My Space
+    // screens were removed; old bookmarks redirect to the Overview.
+    for (const path of ["/vendor/workspace", "/vendor/payments", "/vendor/ai-superagents"]) {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(page, path).toHaveURL(/\/vendor\/overview$/, { timeout: 20_000 });
+    }
+    await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 20_000 });
+    await expectNoHorizontalOverflow(page, "/vendor/overview");
   });
 
   for (const path of [

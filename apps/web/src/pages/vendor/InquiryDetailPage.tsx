@@ -10,7 +10,6 @@ import {
 import { MessageReplyContext } from "@/components/messages/MessageReplyContext";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { PinLocationDialog } from "@/components/messages/PinLocationDialog";
-import { HiluxThreadActivity } from "@/components/super-agents/HiluxThreadActivity";
 import { MessageBody } from "@/components/messages/MessageBody";
 import { TypingBubble } from "@/components/messages/TypingBubble";
 import { RatingPromptStrip } from "@/components/reviews/RatingPromptStrip";
@@ -137,8 +136,6 @@ export default function InquiryDetailPage() {
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
-  const [hiluxPaused, setHiluxPaused] = useState(false);
-  const [hiluxToggling, setHiluxToggling] = useState(false);
   const [composer, setComposer] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -333,14 +330,6 @@ export default function InquiryDetailPage() {
     const thread = (threadRes.data as string | null) ?? null;
     setThreadId(thread);
     if (thread) {
-      supabase
-        .from("direct_threads")
-        .select("hilux_paused")
-        .eq("id", thread)
-        .maybeSingle()
-        .then(({ data }) => {
-          setHiluxPaused(((data as { hilux_paused?: boolean } | null)?.hilux_paused) ?? false);
-        });
       // Latest 200 messages — descending under LIMIT to slice from
       // the newest end, then reversed to render oldest-first.
       const { data: msgs } = await supabase
@@ -479,7 +468,7 @@ export default function InquiryDetailPage() {
   useRealtime(inquiryConfig, debouncedLoad);
 
   // Lead score / booking intent live on inquiry_scores now; subscribe
-  // so the chip refreshes when HILUX flips us hot or detects intent.
+  // so the chip refreshes when the score or booking intent changes.
   const inquiryScoreConfig = useMemo(
     () =>
       inquiryId
@@ -635,23 +624,6 @@ export default function InquiryDetailPage() {
       // realtime tick will re-attempt. Log so we'd notice in Sentry.
       console.error("[InquiryDetail] transitionToReplied failed", error.message);
     }
-  }
-
-  async function toggleHiluxPause() {
-    if (!threadId || hiluxToggling) return;
-    const next = !hiluxPaused;
-    setHiluxToggling(true);
-    const { error } = await supabase
-      .from("direct_threads")
-      .update({ hilux_paused: next })
-      .eq("id", threadId);
-    setHiluxToggling(false);
-    if (error) {
-      toast.error("Couldn't update HILUX for this thread.");
-      return;
-    }
-    setHiluxPaused(next);
-    toast.success(next ? "HILUX paused for this thread" : "HILUX is answering again");
   }
 
   async function setStatus(next: "won" | "lost" | "replied") {
@@ -987,16 +959,6 @@ export default function InquiryDetailPage() {
                 <Eye className="w-4 h-4 mr-2" />
                 View inquiry
               </DropdownMenuItem>
-              {threadId ? (
-                <DropdownMenuItem
-                  disabled={hiluxToggling}
-                  onClick={toggleHiluxPause}
-                  className="cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {hiluxPaused ? "Resume HILUX here" : "Pause HILUX here"}
-                </DropdownMenuItem>
-              ) : null}
               <DropdownMenuSeparator />
               {isClosed ? (
                 <DropdownMenuItem
@@ -1036,10 +998,6 @@ export default function InquiryDetailPage() {
         className="flex-1 overflow-y-auto px-5 md:px-6 py-5"
       >
         <div className="max-w-3xl mx-auto space-y-1.5">
-          {/* HILUX activity in this thread — null when the action log
-              is empty, so legacy inquiries stay clean. */}
-          <HiluxThreadActivity inquiryId={inquiry.id} />
-
           {/* Pinned inquiry intake card. ALWAYS rendered so a vendor
               opening a fresh inquiry sees the event details (type,
               date, guests, location, budget) before they see the
@@ -1182,7 +1140,7 @@ export default function InquiryDetailPage() {
                           {isAi ? (
                             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
                               <Sparkles className="w-3 h-3" />
-                              Sent by HILUX 2.7
+                              Sent automatically
                             </span>
                           ) : null}
                           {editingMessageId === m.id ? (

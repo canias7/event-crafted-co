@@ -1074,104 +1074,6 @@ export type Database = {
         }
         Relationships: []
       }
-      hilux_action_log: {
-        Row: {
-          action: string
-          cache_creation_tokens: number | null
-          cache_read_tokens: number | null
-          created_at: string
-          detail: string | null
-          id: string
-          input_tokens: number | null
-          inquiry_id: string | null
-          message_id: string | null
-          output_tokens: number | null
-          thread_id: string | null
-          user_id: string
-          vendor_id: string | null
-        }
-        Insert: {
-          action: string
-          cache_creation_tokens?: number | null
-          cache_read_tokens?: number | null
-          created_at?: string
-          detail?: string | null
-          id?: string
-          input_tokens?: number | null
-          inquiry_id?: string | null
-          message_id?: string | null
-          output_tokens?: number | null
-          thread_id?: string | null
-          user_id: string
-          vendor_id?: string | null
-        }
-        Update: {
-          action?: string
-          cache_creation_tokens?: number | null
-          cache_read_tokens?: number | null
-          created_at?: string
-          detail?: string | null
-          id?: string
-          input_tokens?: number | null
-          inquiry_id?: string | null
-          message_id?: string | null
-          output_tokens?: number | null
-          thread_id?: string | null
-          user_id?: string
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hilux_action_log_inquiry_id_fkey"
-            columns: ["inquiry_id"]
-            isOneToOne: false
-            referencedRelation: "inquiries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hilux_action_log_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "direct_messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hilux_action_log_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "direct_threads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hilux_action_log_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      hilux_private_config: {
-        Row: {
-          hilux_instructions: string | null
-          hilux_voice_samples: string[]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          hilux_instructions?: string | null
-          hilux_voice_samples?: string[]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          hilux_instructions?: string | null
-          hilux_voice_samples?: string[]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       host_event_live_recordings: {
         Row: {
           created_at: string
@@ -1944,284 +1846,6 @@ export type Database = {
         }
         Relationships: []
       }
-      my_space_action_audit: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          input: Json | null
-          result: Json | null
-          success: boolean
-          thread_id: string | null
-          tool_name: string
-          user_id: string
-          vendor_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          input?: Json | null
-          result?: Json | null
-          success?: boolean
-          thread_id?: string | null
-          tool_name: string
-          user_id: string
-          vendor_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          input?: Json | null
-          result?: Json | null
-          success?: boolean
-          thread_id?: string | null
-          tool_name?: string
-          user_id?: string
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "my_space_action_audit_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "my_space_threads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "my_space_action_audit_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_space_custom_tools: {
-        Row: {
-          created_at: string
-          description: string
-          headers_json: Json | null
-          id: string
-          input_schema: Json | null
-          is_active: boolean
-          method: string
-          name: string
-          updated_at: string
-          url: string
-          user_id: string
-          vendor_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          headers_json?: Json | null
-          id?: string
-          input_schema?: Json | null
-          is_active?: boolean
-          method?: string
-          name: string
-          updated_at?: string
-          url: string
-          user_id: string
-          vendor_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          headers_json?: Json | null
-          id?: string
-          input_schema?: Json | null
-          is_active?: boolean
-          method?: string
-          name?: string
-          updated_at?: string
-          url?: string
-          user_id?: string
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "my_space_custom_tools_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_space_knowledge: {
-        Row: {
-          category: string
-          content: string
-          created_at: string
-          id: string
-          is_active: boolean
-          title: string
-          updated_at: string
-          user_id: string
-          vendor_id: string | null
-        }
-        Insert: {
-          category: string
-          content: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          title: string
-          updated_at?: string
-          user_id: string
-          vendor_id?: string | null
-        }
-        Update: {
-          category?: string
-          content?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          title?: string
-          updated_at?: string
-          user_id?: string
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "my_space_knowledge_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_space_messages: {
-        Row: {
-          attachments: Json | null
-          content: string | null
-          created_at: string
-          id: string
-          image_prompt: string | null
-          image_url: string | null
-          role: string
-          thread_id: string
-          tool_calls: Json | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          attachments?: Json | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          image_prompt?: string | null
-          image_url?: string | null
-          role: string
-          thread_id: string
-          tool_calls?: Json | null
-          type?: string
-          user_id: string
-        }
-        Update: {
-          attachments?: Json | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          image_prompt?: string | null
-          image_url?: string | null
-          role?: string
-          thread_id?: string
-          tool_calls?: Json | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "my_space_messages_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "my_space_threads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_space_scheduled_actions: {
-        Row: {
-          args: Json
-          created_at: string
-          error_message: string | null
-          executed_at: string | null
-          id: string
-          kind: string
-          result: Json | null
-          run_at: string
-          status: string
-          updated_at: string
-          user_id: string
-          vendor_id: string | null
-        }
-        Insert: {
-          args?: Json
-          created_at?: string
-          error_message?: string | null
-          executed_at?: string | null
-          id?: string
-          kind: string
-          result?: Json | null
-          run_at: string
-          status?: string
-          updated_at?: string
-          user_id: string
-          vendor_id?: string | null
-        }
-        Update: {
-          args?: Json
-          created_at?: string
-          error_message?: string | null
-          executed_at?: string | null
-          id?: string
-          kind?: string
-          result?: Json | null
-          run_at?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "my_space_scheduled_actions_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      my_space_threads: {
-        Row: {
-          created_at: string
-          id: string
-          title: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          title?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          title?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       notifications: {
         Row: {
           actor_image_url: string | null
@@ -2514,21 +2138,11 @@ export type Database = {
         Row: {
           application_status: string
           avatar_url: string | null
-          axion_autosave: boolean
           bio: string | null
           business_name: string | null
           category: string | null
           created_at: string
           display_name: string | null
-          hilux_action_cap_replies_per_inquiry: boolean
-          hilux_action_daily_summary: boolean
-          hilux_action_decline_negotiation: boolean
-          hilux_action_detect_frustration: boolean
-          hilux_action_notify_on_hot_lead: boolean
-          hilux_action_notify_on_reply: boolean
-          hilux_action_offer_call: boolean
-          hilux_action_use_calendar: boolean
-          hilux_action_use_first_name: boolean
           hilux_enabled: boolean
           id: string
           location: string | null
@@ -2554,21 +2168,11 @@ export type Database = {
         Insert: {
           application_status?: string
           avatar_url?: string | null
-          axion_autosave?: boolean
           bio?: string | null
           business_name?: string | null
           category?: string | null
           created_at?: string
           display_name?: string | null
-          hilux_action_cap_replies_per_inquiry?: boolean
-          hilux_action_daily_summary?: boolean
-          hilux_action_decline_negotiation?: boolean
-          hilux_action_detect_frustration?: boolean
-          hilux_action_notify_on_hot_lead?: boolean
-          hilux_action_notify_on_reply?: boolean
-          hilux_action_offer_call?: boolean
-          hilux_action_use_calendar?: boolean
-          hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
           id: string
           location?: string | null
@@ -2594,21 +2198,11 @@ export type Database = {
         Update: {
           application_status?: string
           avatar_url?: string | null
-          axion_autosave?: boolean
           bio?: string | null
           business_name?: string | null
           category?: string | null
           created_at?: string
           display_name?: string | null
-          hilux_action_cap_replies_per_inquiry?: boolean
-          hilux_action_daily_summary?: boolean
-          hilux_action_decline_negotiation?: boolean
-          hilux_action_detect_frustration?: boolean
-          hilux_action_notify_on_hot_lead?: boolean
-          hilux_action_notify_on_reply?: boolean
-          hilux_action_offer_call?: boolean
-          hilux_action_use_calendar?: boolean
-          hilux_action_use_first_name?: boolean
           hilux_enabled?: boolean
           id?: string
           location?: string | null
@@ -5169,7 +4763,6 @@ export type Database = {
           location: string | null
           logo_url: string | null
           longitude: number | null
-          my_space_preferences: string | null
           onboarding_nudge_sent_at: string | null
           policy_notes: string | null
           portfolio_summary: string | null
@@ -5220,7 +4813,6 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           longitude?: number | null
-          my_space_preferences?: string | null
           onboarding_nudge_sent_at?: string | null
           policy_notes?: string | null
           portfolio_summary?: string | null
@@ -5271,7 +4863,6 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           longitude?: number | null
-          my_space_preferences?: string | null
           onboarding_nudge_sent_at?: string | null
           policy_notes?: string | null
           portfolio_summary?: string | null
@@ -6038,7 +5629,6 @@ export type Database = {
           location: string | null
           logo_url: string | null
           longitude: number | null
-          my_space_preferences: string | null
           onboarding_nudge_sent_at: string | null
           policy_notes: string | null
           portfolio_summary: string | null

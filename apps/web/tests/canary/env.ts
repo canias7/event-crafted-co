@@ -50,7 +50,7 @@ export const REQUIRED_AUTH_VARS: EnvVar[] = [
   {
     name: "E2E_SUPABASE_SERVICE_ROLE_KEY",
     purpose:
-      "Mints a session for the dedicated test accounts via the admin OTP API. Production enforces Turnstile CAPTCHA + emailed 2FA on the login form, so this is the only CAPTCHA-free path that doesn't weaken production auth.",
+      "Mints a session for the dedicated test accounts via the admin OTP API. Production requires an emailed 6-digit code on the login form, so this is the path that doesn't weaken production auth.",
     requiredFor: "every authenticated check (seeded session)",
   },
 ];

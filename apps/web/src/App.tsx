@@ -17,11 +17,6 @@ import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
-// My Space is temporarily deactivated (under construction). The launcher
-// mount + its full page are kept in the repo; re-enable by restoring the
-// <VendorMySpaceMount /> render below and the /vendor/ai-superagents route.
-// import { VendorMySpaceMount } from "@/components/super-agents/VendorMySpaceMount";
-import { UnderConstructionPage } from "@/components/shared/UnderConstruction";
 import { SkipLink } from "./components/SkipLink";
 import { AmbientBackground } from "./components/AmbientBackground";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
@@ -61,7 +56,6 @@ import {
   ChangelogPage,
   StatusPage,
   PressPage,
-  SuperAgentsPage,
   WebsiteBuilderPage,
   FlatLayBuilderPage,
   PublicAiSitePage,
@@ -163,7 +157,8 @@ const App = () => (
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
-              <Route path="/super-agents" element={<SuperAgentsPage />} />
+              {/* My Space (AI super-agents) was removed; old links go home. */}
+              <Route path="/super-agents" element={<Navigate to="/" replace />} />
               <Route path="/website-builder" element={<WebsiteBuilderPage />} />
               <Route path="/flatlay-builder" element={<FlatLayBuilderPage />} />
               <Route path="/my-sites" element={<MySitesPage />} />
@@ -257,27 +252,26 @@ const App = () => (
               <Route path="/vendor/edit-profile" element={<RequireRole role="vendor"><VendorEditProfilePage /></RequireRole>} />
               <Route path="/vendor/inbox" element={<RequireRole role="vendor"><VendorInboxPage /></RequireRole>} />
               <Route path="/vendor/inbox/:inquiryId" element={<RequireRole role="vendor"><InquiryDetailPage /></RequireRole>} />
-              {/* The vendor dashboard is two routes: /vendor/overview
-                  (KPIs) and /vendor/workspace (calendar, payments, files,
-                  contacts, settings). /vendor/leads is no longer a tab —
+              {/* The vendor dashboard is /vendor/overview. The Workspace
+                  screen (payments, invoices, pay links, files, contacts)
+                  was removed; /vendor/workspace and /vendor/payments
+                  redirect to Overview. /vendor/leads is no longer a tab —
                   inquiries are triaged in /vendor/inbox, the canonical
                   hub for prospect conversations — so it redirects there. */}
               <Route path="/vendor/leads" element={<Navigate to="/vendor/inbox" replace />} />
               {/* Calendar is its own dedicated tab again (standalone
                   VendorAppointmentsPage = month grid + availability +
-                  the upcoming-appointments list). It also still renders
-                  embedded in the Workspace cockpit's left rail. */}
+                  the upcoming-appointments list). */}
               <Route path="/vendor/appointments" element={<RequireRole role="vendor"><VendorAppointmentsPage /></RequireRole>} />
-              <Route path="/vendor/payments" element={<Navigate to="/vendor/workspace" replace />} />
+              <Route path="/vendor/payments" element={<Navigate to="/vendor/overview" replace />} />
               <Route path="/vendor/partners" element={<RequireRole role="vendor"><VendorPartnersPage /></RequireRole>} />
-              {/* My Space (AI Superagents) temporarily under construction.
-                  The VendorAiSuperagentsPage component stays in the repo. */}
-              <Route path="/vendor/ai-superagents" element={<RequireRole role="vendor"><UnderConstructionPage title="My Space" /></RequireRole>} />
+              {/* My Space (AI super-agents) was removed. */}
+              <Route path="/vendor/ai-superagents" element={<Navigate to="/vendor/overview" replace />} />
               <Route path="/vendor/integrations" element={<RequireRole role="vendor"><VendorIntegrationsPage /></RequireRole>} />
               <Route path="/vendor/overview" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
               {/* Back-compat: old /vendor/my-vendora now redirects to Overview. */}
               <Route path="/vendor/my-vendora" element={<Navigate to="/vendor/overview" replace />} />
-              <Route path="/vendor/workspace" element={<RequireRole role="vendor"><MyVendoraPage /></RequireRole>} />
+              <Route path="/vendor/workspace" element={<Navigate to="/vendor/overview" replace />} />
               <Route path="/vendor/subscription" element={<RequireRole role="vendor"><VendorSubscriptionPage /></RequireRole>} />
               <Route path="/vendor/usage" element={<RequireRole role="vendor"><VendorUsagePage /></RequireRole>} />
               <Route path="/vendor/gallery" element={<RequireRole role="vendor"><VendorGalleryPage /></RequireRole>} />
@@ -287,10 +281,8 @@ const App = () => (
               <Route path="/vendor/scheduling" element={<RequireRole role="vendor"><VendorSchedulingPage /></RequireRole>} />
               <Route path="/vendor/verification" element={<RequireRole role="vendor"><VendorVerificationPage /></RequireRole>} />
               <Route path="/vendor/team" element={<RequireRole role="vendor"><VendorTeamPage /></RequireRole>} />
-              {/* /vendor/studio retired — the three tools that lived under
-                  it (AI Superagents, Vendora Pay, Gallery) now have their
-                  own sidebar entries + routes above. */}
-              <Route path="/vendor/studio" element={<Navigate to="/vendor/ai-superagents" replace />} />
+              {/* /vendor/studio retired. */}
+              <Route path="/vendor/studio" element={<Navigate to="/vendor/overview" replace />} />
 
 
               <Route path="*" element={<NotFound />} />
@@ -301,9 +293,6 @@ const App = () => (
               wasn't pulling its weight. We'll bring back a leaner
               walkthrough later. */}
           <CommandPaletteLauncher />
-          {/* Floating My Space assistant — temporarily deactivated (under
-              construction). Re-enable by restoring the import + this mount. */}
-          {/* <VendorMySpaceMount /> */}
           <Suspense fallback={null}>
             <CookieBanner />
           </Suspense>

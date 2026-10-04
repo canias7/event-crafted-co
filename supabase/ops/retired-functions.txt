@@ -1,0 +1,20 @@
+# My Space / HILUX / Axion (removed Oct 2026)
+my-space-action-worker
+my-space-archive-cold
+my-space-chat
+my-space-daily-summary
+my-space-follow-up
+my-space-preview-prompt
+my-space-proactive
+my-space-respond
+hilux-daily-summary
+hilux-draft-reply
+hilux-follow-up
+hilux-preview-prompt
+hilux-regenerate
+hilux-respond
+hilux-sandbox
+tmp-myspace-chat-test
+axion-generate
+axion-generate-pathtest
+vendor-stripe-mcp-connect

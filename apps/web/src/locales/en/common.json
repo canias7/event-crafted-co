@@ -184,10 +184,8 @@
       "inbox": "Inbox",
       "my_vendora": "My Vendora",
       "overview": "Overview",
-      "workspace": "Workspace",
       "calendar": "Calendar",
       "my_profile": "My Profile",
-      "my_space": "My Space",
       "gallery": "Gallery",
       "subscription": "Subscription",
       "usage": "Usage",
@@ -420,13 +418,6 @@
     "generate": "Generate",
     "generating": "Generating…",
     "not_wired": "Image editing isn't wired yet — connect a model provider (Replicate, Stability, OpenAI Edit) to enable this."
-  },
-  "ai_agent": {
-    "title": "AI Agent",
-    "subtitle": "Auto-reply, lead qualification, and pricing assistant",
-    "placeholder_title": "Your AI Agent will live here",
-    "placeholder_body": "Configure how the agent drafts replies, qualifies inquiries, and prices packages. Coming online soon.",
-    "in_development": "In development"
   },
   "studio_placeholder": {
     "title": "Your Studio will live here",

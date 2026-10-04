@@ -12,7 +12,7 @@ Pages (`https://eventvendora.com`, plus `app.` and `admin.`), run by
 | `preflight` | — | — | Inventories required secrets (names only). **Fails** if any is missing. |
 | `public-desktop` / `public-mobile` | Desktop Chrome / Pixel 7 | no | Landing → directory, directory vs API (approved listings only), search + empty state, vendor detail, test-data leakage, login chooser + vendor form (no real sign-in), 404, legal, public pay-link / invoice checkout render, signed-out redirects for every gated route, `app.` host, `admin.` PIN gate |
 | `setup` | — | yes | Seeds one session per dedicated test account |
-| `vendor-desktop` / `vendor-mobile` | Desktop Chrome / Pixel 7 | yes | Overview dashboard, My Profile (shows the vendor's own business), edit form pre-filled (never saved), gallery, inbox total == API count, open a thread, inbox search, calendar month grid + navigation, workspace (payments) state, secondary pages; session reload, client-side sign-out, expired + tampered tokens, host blocked from vendor pages |
+| `vendor-desktop` / `vendor-mobile` | Desktop Chrome / Pixel 7 | yes | Overview dashboard, My Profile (shows the vendor's own business), edit form pre-filled (never saved), gallery, inbox total == API count, open a thread, inbox search, calendar month grid + navigation, retired Workspace/My Space links redirect to Overview, secondary pages; session reload, client-side sign-out, expired + tampered tokens, host blocked from vendor pages |
 | `isolation-api` | — | yes | Read-only RLS: vendor/host/anon inquiry visibility, cross-vendor reads of inquiries/invoices/payment links, non-approved listing hidden from anon, analytics RPC scoped to caller |
 
 Every browser test also fails on uncaught page errors, unexpected
@@ -31,8 +31,8 @@ Authenticated checks use a **seeded session**: the service-role admin API
 mints a one-time OTP for the dedicated test account and verifies it, which
 yields an ordinary user session. Every assertion then runs as that ordinary
 user. This tests "a signed-in vendor can use X". It does **not** test the
-login form end to end. Production login requires Cloudflare Turnstile plus
-an emailed 6-digit code, and the canary does not weaken either. The login UI
+login form end to end. Production login requires the password plus an
+emailed 6-digit code, and the canary does not weaken that. The login UI
 is checked only up to the point where a real credential would be submitted.
 
 ### Read-only

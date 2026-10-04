@@ -17,12 +17,10 @@ const HAS_CREDS = Boolean(
 // The current vendor dashboard routes (mirror App.tsx / smoke.spec.ts).
 const VENDOR_ROUTES = [
   "/vendor/overview",
-  "/vendor/workspace",
   "/vendor/inbox",
   "/vendor/me",
   "/vendor/edit-profile",
   "/vendor/partners",
-  "/vendor/ai-superagents",
   "/vendor/integrations",
   "/vendor/subscription",
   "/vendor/usage",

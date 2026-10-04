@@ -77,6 +77,13 @@ jobs:
               FUNCTIONS=$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' -printf '%f\n' | sort | tr '\n' ' ')
             fi
           fi
+          # Drop functions whose folder no longer exists (deleted in this
+          # push); retired functions are removed by supabase-ops.yml.
+          EXISTING=""
+          for fn in $FUNCTIONS; do
+            if [ -f "supabase/functions/$fn/index.ts" ]; then EXISTING="$EXISTING $fn"; fi
+          done
+          FUNCTIONS="${EXISTING# }"
           echo "Functions to deploy: $FUNCTIONS"
           echo "functions=$FUNCTIONS" >> "$GITHUB_OUTPUT"
 

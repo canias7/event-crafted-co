@@ -130,14 +130,4 @@ test.describe("write flows (local stack)", () => {
       expect((r.data as unknown[]).length, `vendor B read vendor A's ${t}`).toBe(0);
     }
   });
-
-  test("host reply: My Space's send_host_reply confirmation gate", async ({}, testInfo) => {
-    // The gate lives in supabase/functions/my-space-chat (first identical call
-    // returns confirmation_required and sends nothing). Exercising it needs
-    // the functions runtime plus a stubbed Anthropic endpoint; the function
-    // calls api.anthropic.com directly, so there's no override to point at a
-    // stub without changing application code.
-    testInfo.annotations.push({ type: "untested", description: "send_host_reply confirmation gate (needs an LLM base-URL override in my-space-chat)" });
-    test.skip(true, "BLOCKED: my-space-chat has no configurable LLM endpoint to stub; gate not exercised");
-  });
 });

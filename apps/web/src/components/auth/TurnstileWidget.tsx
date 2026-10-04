@@ -150,3 +150,39 @@ export function TurnstileWidget({
   }
   return <div ref={containerRef} style={{ display: "inline-block" }} />;
 }
+
+// The bot-check is OFF for sign-up and password reset. This keeps those
+// forms working if Supabase Auth still has CAPTCHA enforced (for example
+// before the project setting is switched off): the widget stays hidden
+// until the server rejects a request for a missing CAPTCHA token, then it
+// appears and the next submit carries a token.
+export function isCaptchaError(err: { message?: string } | null | undefined): boolean {
+  return /captcha/i.test(err?.message ?? "");
+}
+
+export function useCaptchaFallback() {
+  const [required, setRequired] = useState(false);
+  const [token, setToken] = useState("");
+  const [resetKey, setResetKey] = useState(0);
+  const reset = () => {
+    setToken("");
+    setResetKey((k) => k + 1);
+  };
+  return {
+    required,
+    token,
+    /** Options fragment to spread into a supabase.auth call. */
+    options: token ? { captchaToken: token } : {},
+    /** True when the form must wait for the widget before submitting. */
+    blocked: required && !token,
+    /** Call with an auth error; returns true if it was a CAPTCHA demand. */
+    handleError(err: { message?: string } | null | undefined): boolean {
+      if (token) reset(); // tokens are single-use
+      if (!isCaptchaError(err)) return false;
+      setRequired(true);
+      return true;
+    },
+    reset,
+    widgetProps: { onVerify: setToken, onExpire: reset, resetKey },
+  };
+}
