@@ -60,7 +60,6 @@ export const OPTIONAL_VARS: EnvVar[] = [
   { name: "E2E_SUPABASE_URL", purpose: "Supabase project URL (defaults to production)", requiredFor: "-" },
   { name: "E2E_SUPABASE_ANON_KEY", purpose: "Publishable key (defaults to production)", requiredFor: "-" },
   { name: "E2E_HOST_EMAIL", purpose: "Dedicated host account (defaults to e2e-host-1@eventvendora.test)", requiredFor: "role-isolation checks" },
-  { name: "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID", purpose: "Read the live Pages deployment id + commit for the report", requiredFor: "deployment identity" },
 ];
 
 export function missingAuthVars(): string[] {

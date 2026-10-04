@@ -125,8 +125,17 @@ test.describe("RLS data isolation", () => {
       return res.json();
     };
 
+    // The RPC counts leads (distinct vendor+host pairs) from the LAST 30 DAYS
+    // on owned listings. The seeded inbox is older than that, so "> 0" rotted;
+    // compare against the caller's own recent rows instead.
+    const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const recent = await rest(
+      `inquiries?select=vendor_id,host_id&vendor_id=eq.${listingId}&created_at=gte.${since}`,
+      vendor.token,
+    );
+    const expected = new Set(recent.map((r) => `${r.vendor_id}:${r.host_id}`)).size;
     const vendorRes = await callRpc(vendor.token);
-    expect(vendorRes?.leads?.total, "vendor should get their own non-zero leads").toBeGreaterThan(0);
+    expect(vendorRes?.leads?.total, "vendor gets exactly their own 30-day leads").toBe(expected);
 
     // A host owns no listings, so the same RPC returns an empty pipeline —
     // it never leaks the vendor's numbers.

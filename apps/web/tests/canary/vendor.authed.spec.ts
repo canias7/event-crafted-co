@@ -51,12 +51,21 @@ test.describe("vendor journeys (seeded session)", () => {
   });
 
   test("profile: edit form is pre-filled with the saved data (not saved)", async ({ page }) => {
+    // The edit page reads the brand from `profiles` (a trigger mirrors it onto
+    // listings), so that row — not the listing — is the source of truth here.
+    const prof = await rest<{ business_name: string | null }>(`profiles?select=business_name&id=eq.${me.uid}`, me.token);
+    const saved = prof.rows[0]?.business_name ?? "";
+    if (!saved) {
+      test.info().annotations.push({
+        type: "data",
+        description: "fixture: profiles.business_name is empty for the test vendor (listing has a name) — form is expected to be empty",
+      });
+    }
     await page.goto("/vendor/edit-profile", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { level: 1, name: "Edit profile" })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByPlaceholder("Your brand"), "brand field shows the saved business name").toHaveValue(
-      listing.business_name,
-      { timeout: 20_000 },
-    );
+    const field = page.getByRole("textbox", { name: "Business name" });
+    await expect(field).toBeVisible({ timeout: 20_000 });
+    await expect(field, "Business name field shows the saved profile value").toHaveValue(saved, { timeout: 20_000 });
     await expectNoHorizontalOverflow(page, "/vendor/edit-profile");
   });
 
@@ -85,9 +94,20 @@ test.describe("vendor journeys (seeded session)", () => {
     const owned = await rest(`inquiries?select=id&id=eq.${id}&vendor_id=in.(${vendorIds.join(",")})`, me.token);
     expect(owned.rows.length, "the first row must be one of this vendor's inquiries").toBe(1);
 
+    const hostRes = await rest<{ host: { display_name: string | null } | null }>(
+      `inquiries?select=host:profiles!inquiries_host_id_fkey(display_name)&id=eq.${id}`,
+      me.token,
+    );
+    const hostName = hostRes.rows[0]?.host?.display_name ?? "";
+
     await rows.first().click();
     await expect(page).toHaveURL(new RegExp(`/vendor/inbox/${id}$`));
-    await expect(page.getByRole("heading", { level: 2 }).first(), "thread header (host name)").not.toBeEmpty({ timeout: 20_000 });
+    await expect(page.getByRole("link", { name: "Back to inbox" })).toBeVisible({ timeout: 20_000 });
+    if (hostName) {
+      await expect(page.getByText(hostName, { exact: true }).first(), "thread header names the host from the API").toBeVisible();
+    }
+    // The reply composer is present (we never type into it or send).
+    await expect(page.getByRole("textbox", { name: /^Message / })).toBeVisible();
     await expectSettled(page);
     await expectNoHorizontalOverflow(page, "inquiry thread");
   });

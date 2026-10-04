@@ -128,6 +128,22 @@ such conflicts later in the 444-migration chain.
 
 The validation workflow is now `workflow_dispatch`-only so it doesn't auto-fail.
 
+### Re-checked 2026-10-04 (485 migrations): still failing, same place
+`write-flow-tests.yml` (local-stack job) replays the chain on every run that
+touches the write tests, and reports the failing migration instead of hiding
+it. On 2026-10-04 it stopped at the same file with the same error:
+
+```
+20260503205144_eb966d2e-e2fe-4cb1-a978-9d02b09e87e7.sql
+ERROR: column "event_type" of relation "profiles" already exists (SQLSTATE 42701)
+At statement: 2 — alter table public.profiles add column event_type text …
+```
+
+Everything in `apps/web/tests/write/db/` is therefore reported BLOCKED until
+the chain replays. The webhook contract tests (`apps/web/tests/write/webhooks.spec.ts`)
+don't need the stack and run regardless. Later migrations past this point
+have not been reached, so further conflicts are still unknown.
+
 ## Operator decisions needed
 - **Which option** (A recommended).
 - For A: confirm CI can run Docker (`supabase start` needs it) on the runner.

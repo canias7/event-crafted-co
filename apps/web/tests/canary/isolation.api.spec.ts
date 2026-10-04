@@ -70,9 +70,22 @@ test.describe("read isolation (production, ordinary user tokens)", () => {
   });
 
   test("vendor_overview_analytics is scoped to the caller", async () => {
+    // The RPC counts LEADS (distinct vendor+host pairs) created in the last 30
+    // days on listings the caller OWNS. Recompute that from the vendor's own
+    // readable rows and require an exact match, then require 0 for a host.
+    const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const owned = await rest<{ id: string }>(`vendor_profiles?select=id&user_id=eq.${vendor.uid}`, vendor.token);
+    const recent = owned.rows.length
+      ? await rest<{ vendor_id: string; host_id: string }>(
+          `inquiries?select=vendor_id,host_id&vendor_id=in.(${owned.rows.map((r) => r.id).join(",")})&created_at=gte.${since}`,
+          vendor.token,
+        )
+      : { rows: [] as { vendor_id: string; host_id: string }[] };
+    const expected = new Set(recent.rows.map((r) => `${r.vendor_id}:${r.host_id}`)).size;
     const mine = await rpc<{ leads?: { total?: number } }>("vendor_overview_analytics", vendor.token);
-    expect(mine?.leads?.total, "vendor gets their own leads").toBeGreaterThan(0);
+    expect(mine?.leads?.total, "RPC lead total must equal the caller's own 30-day leads").toBe(expected);
     const hosts = await rpc<{ leads?: { total?: number } }>("vendor_overview_analytics", host.token);
     expect(hosts?.leads?.total ?? 0, "a host must not see the vendor's leads").toBe(0);
+    test.info().annotations.push({ type: "data", description: `30-day leads for the test vendor: ${expected}` });
   });
 });
