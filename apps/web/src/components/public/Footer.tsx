@@ -2,18 +2,24 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
-export function Footer() {
+// `tone="dark"` for the dark pages (Explore, How it works): cream text
+// on ink, champagne labels, white-at-15% hairlines.
+export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
   const { t } = useTranslation();
+  const dark = tone === "dark";
+  const link = `block text-sm transition-colors ${dark ? "hover:text-gold" : "hover:text-accent"}`;
   return (
     <footer
-      className="text-foreground py-16 md:py-24"
+      className={`py-16 md:py-24 ${dark ? "text-[#f4f1ea]" : "text-foreground"}`}
       style={{
         // Transparent so the page's warm wash bleeds through; soft
         // amber-tinted hairline instead of the hard grey border so
         // the footer feels like a continuation of the canvas instead
         // of a fenced-off white block.
-        background: "transparent",
-        borderTop: "0.5px solid rgba(0,0,0,0.16)",
+        background: dark ? "#14161a" : "transparent",
+        borderTop: dark
+          ? "1px solid rgba(255,255,255,0.15)"
+          : "0.5px solid rgba(0,0,0,0.16)",
       }}
     >
       <div className="container mx-auto px-5 md:px-8">
@@ -25,34 +31,39 @@ export function Footer() {
             </p>
           </div>
           <div>
-            <p className="font-label mb-4 text-accent">{t("footer.vendors")}</p>
+            <p className={`font-label mb-4 ${dark ? "text-gold" : "text-accent"}`}>{t("footer.vendors")}</p>
             <div className="space-y-3">
-              <Link to="/vendors" className="block text-sm transition-colors hover:text-accent">{t("footer.browse")}</Link>
-              <Link to="/vendors/locations" className="block text-sm transition-colors hover:text-accent">{t("footer.by_location")}</Link>
-              <Link to="/explore" className="block text-sm transition-colors hover:text-accent">Explore</Link>
+              <Link to="/vendors" className={link}>{t("footer.browse")}</Link>
+              <Link to="/vendors/locations" className={link}>{t("footer.by_location")}</Link>
+              <Link to="/explore" className={link}>Explore</Link>
+              <Link to="/how-it-works" className={link}>How it works</Link>
             </div>
           </div>
           <div>
-            <p className="font-label mb-4 text-accent">{t("footer.legal")}</p>
+            <p className={`font-label mb-4 ${dark ? "text-gold" : "text-accent"}`}>{t("footer.legal")}</p>
             <div className="space-y-3">
-              <Link to="/privacy" className="block text-sm transition-colors hover:text-accent">
+              <Link to="/privacy" className={link}>
                 {t("footer.privacy")}
               </Link>
-              <Link to="/terms" className="block text-sm transition-colors hover:text-accent">
+              <Link to="/terms" className={link}>
                 {t("footer.terms")}
               </Link>
               <a
                 href="mailto:hello@eventvendora.com"
-                className="block text-sm transition-colors hover:text-accent [overflow-wrap:anywhere]"
+                className={`${link} [overflow-wrap:anywhere]`}
               >
                 hello@eventvendora.com
               </a>
             </div>
           </div>
         </div>
-        <div className="mt-16 pt-8 border-t border-border flex items-center justify-between gap-3 text-sm flex-wrap">
+        <div
+          className={`mt-16 pt-8 border-t flex items-center justify-between gap-3 text-sm flex-wrap ${
+            dark ? "border-white/15" : "border-border"
+          }`}
+        >
           <p>© {new Date().getFullYear()} Vendora. {t("footer.rights")}</p>
-          <LanguageSwitcher tone="light" />
+          <LanguageSwitcher tone={dark ? "dark" : "light"} />
         </div>
       </div>
     </footer>

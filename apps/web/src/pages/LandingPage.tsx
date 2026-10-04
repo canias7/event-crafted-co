@@ -47,7 +47,7 @@ const HOST_STEPS = [
   {
     n: "3",
     title: "Plan",
-    body: "Keep every event's details, dates and budget in one place.",
+    body: "Keep each event's date, guests and notes in one place.",
     image: designDecor,
   },
   {
@@ -170,20 +170,8 @@ export default function LandingPage() {
             <Link to="/explore" className="hover:text-white transition-colors">
               Explore
             </Link>
-            <a href="#how-it-works" className="hover:text-white transition-colors">
+            <Link to="/how-it-works" className="hover:text-white transition-colors">
               How it works
-            </a>
-            <Link
-              to="/website-builder"
-              className="inline-flex items-center gap-1.5 hover:text-white transition-colors"
-            >
-              Website builder
-              <span
-                className="text-[9px] tracking-widest rounded-full px-1.5 py-px"
-                style={{ color: GOLD, border: `0.5px solid ${GOLD}` }}
-              >
-                NEW
-              </span>
             </Link>
           </nav>
           <div className="flex items-center gap-2 text-[13px] sm:gap-3">
@@ -221,7 +209,7 @@ export default function LandingPage() {
 
         {/* HERO CONTENT */}
         <div className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24">
-          <div className="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
+          <div className="mx-auto max-w-3xl text-center">
             <h1
               className="m-0 landing-fadeup hero-headline"
               style={{
@@ -250,7 +238,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p
-              className="mx-auto lg:mx-0 mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup hero-intro"
+              className="mx-auto mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup hero-intro"
               style={{ color: "rgba(244,241,234,0.75)", animationDelay: "120ms" }}
             >
               The all-in-one marketplace and planning experience for hosts and
@@ -645,7 +633,7 @@ export default function LandingPage() {
               title: "For vendors",
               links: [
                 { label: "List your business", to: "/signup/vendor" },
-                { label: "Website builder", to: "/website-builder" },
+                { label: "How it works", to: "/how-it-works" },
                 { label: "Changelog", to: "/changelog" },
               ],
             },
