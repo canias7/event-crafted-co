@@ -536,7 +536,7 @@ export default function VendorDetailScreen() {
             {vendor.category ? (
               <View
                 style={{
-                  backgroundColor: "#efe5d2",
+                  backgroundColor: "#ece7db",
                   borderRadius: 999,
                   paddingHorizontal: 12,
                   paddingVertical: 5,
@@ -1450,7 +1450,7 @@ function CategoryDetailValue({
             <View
               key={t}
               style={{
-                backgroundColor: "#efe5d2",
+                backgroundColor: "#ece7db",
                 borderRadius: 999,
                 paddingHorizontal: 10,
                 paddingVertical: 4,
@@ -2000,7 +2000,7 @@ function SheetPostGrid({ posts }: { posts: SheetPostRow[] }) {
               flex: 1,
               borderRadius: 12,
               overflow: "hidden",
-              backgroundColor: "#efe5d2",
+              backgroundColor: "#ece7db",
             }}
           >
             <Image

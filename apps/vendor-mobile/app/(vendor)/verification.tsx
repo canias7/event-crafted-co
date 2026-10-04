@@ -40,7 +40,7 @@ const INK = "#14161a";
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
-const GOLD_SOFT = "#eadfc6";
+const GOLD_SOFT = "#f2e7cb";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -307,7 +307,7 @@ export default function VerificationScreen() {
         >
           <Header title="Verification" onBack={() => router.back()} />
           <View style={{ alignItems: "center", marginTop: 28 }}>
-            <MaterialCommunityIcons name="shield-check-outline" size={70} color="#d9c9a6" />
+            <MaterialCommunityIcons name="shield-check-outline" size={70} color="#c9a86a" />
           </View>
           <Text
             style={{
@@ -353,7 +353,7 @@ export default function VerificationScreen() {
     const s = request.status;
     const icon =
       s === "approved" ? "check-circle" : s === "needs_info" ? "alert-circle" : "clock";
-    const iconColor = s === "approved" ? "#2e7d4f" : s === "needs_info" ? "#b3722a" : "#8a6f3e";
+    const iconColor = s === "approved" ? "#14161a" : s === "needs_info" ? "#b23a34" : "#8a6f3e";
     const title =
       s === "approved"
         ? "You're verified!"
@@ -384,7 +384,7 @@ export default function VerificationScreen() {
               marginTop: 24,
               backgroundColor: CARD,
               borderWidth: 1,
-              borderColor: s === "approved" ? "#bcd8c5" : BORDER,
+              borderColor: BORDER,
               borderRadius: 20,
               padding: 16,
               alignItems: "center",
@@ -472,7 +472,7 @@ export default function VerificationScreen() {
           <>
             <Header title="Verification" onBack={() => router.back()} />
             <View style={{ alignItems: "center", marginTop: 20 }}>
-              <MaterialCommunityIcons name="shield-check" size={76} color="#d9c9a6" />
+              <MaterialCommunityIcons name="shield-check" size={76} color="#c9a86a" />
             </View>
             <Text
               style={{
@@ -781,9 +781,9 @@ export default function VerificationScreen() {
             <View
               style={{
                 marginTop: 6,
-                backgroundColor: "#f3ecdd",
+                backgroundColor: "#f2e7cb",
                 borderWidth: 1,
-                borderColor: GOLD_SOFT,
+                borderColor: GOLD,
                 borderRadius: 20,
                 padding: 16,
               }}

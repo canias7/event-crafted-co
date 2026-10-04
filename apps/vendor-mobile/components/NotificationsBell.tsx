@@ -158,14 +158,15 @@ export function NotificationsBell({
                 minWidth: 16,
                 height: 16,
                 borderRadius: 999,
-                backgroundColor: "#b23a34",
+                // Unread count: champagne with an ink number, per the brand.
+                backgroundColor: "#c9a86a",
                 paddingHorizontal: 4,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <Text
-                style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff", fontSize: 10}}
+                style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a", fontSize: 10}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -198,7 +199,7 @@ export function NotificationsBell({
             >
               <Text
                 className="text-sm"
-                style={{ fontFamily: "LibreBaskerville", color: unread > 0 ? "#14161a" : "#a89b8a" }}
+                style={{ fontFamily: "LibreBaskerville", color: unread > 0 ? "#14161a" : "#746a58" }}
               >
                 Mark read
               </Text>
@@ -233,7 +234,7 @@ export function NotificationsBell({
                           width: 8,
                           height: 8,
                           borderRadius: 999,
-                          backgroundColor: "#b23a34",
+                          backgroundColor: "#c9a86a",
                           marginTop: 7,
                         }}
                       />
@@ -245,7 +246,7 @@ export function NotificationsBell({
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          backgroundColor: "#f5e7da",
+                          backgroundColor: "#ece7db",
                         }}
                         accessibilityIgnoresInvertColors
                       />

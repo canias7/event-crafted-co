@@ -39,7 +39,7 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const PLACEHOLDER = "#746a58";
 const GOLD = "#c9a86a";
-const GOLD_SOFT = "#eadfc6";
+const GOLD_SOFT = "#f2e7cb";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -665,9 +665,9 @@ function ClientSheet({
           {followUpAt ? (
             <View
               style={{
-                backgroundColor: "#f3ecdd",
+                backgroundColor: "#f2e7cb",
                 borderWidth: 1,
-                borderColor: GOLD_SOFT,
+                borderColor: GOLD,
                 borderRadius: 20,
                 padding: 16,
                 flexDirection: "row",

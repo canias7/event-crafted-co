@@ -31,7 +31,7 @@ const INK = "#14161a";
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
 const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
-const GOLD_SOFT = "#eadfc6";
+const GOLD_SOFT = "#f2e7cb";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";

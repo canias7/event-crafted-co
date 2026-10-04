@@ -34,7 +34,7 @@ const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded, so "unavailable"
 // never reads as "broken".
 const GOLD_MUTED = "#e0d2b0";
-const GOLD_SOFT = "#eadfc6";
+const GOLD_SOFT = "#f2e7cb";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";

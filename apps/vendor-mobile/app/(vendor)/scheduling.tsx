@@ -45,9 +45,9 @@ const INK = "#14161a";
 const INK_DIM = "#14161a";
 const GOLD = "#c9a86a";
 // Plan tags and quiet counts.
-const GOLD_TAG = "#eadfc6";
+const GOLD_TAG = "#f2e7cb";
 const BRONZE = "#8a6f3e";
-const MUTED = "#7b7973";
+const MUTED = "#746a58";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -623,7 +623,7 @@ export default function SchedulingScreen() {
                 key={sug.id}
                 style={{
                   marginTop: 12,
-                  backgroundColor: "#f3ecdd",
+                  backgroundColor: "#f2e7cb",
                   borderWidth: 1,
                   borderColor: GOLD,
                   borderRadius: 20,
@@ -1203,7 +1203,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
     <View
       style={{
         marginTop: 28,
-        backgroundColor: "#f3ecdd",
+        backgroundColor: "#f2e7cb",
         borderWidth: 1,
         borderColor: GOLD,
         borderRadius: 20,

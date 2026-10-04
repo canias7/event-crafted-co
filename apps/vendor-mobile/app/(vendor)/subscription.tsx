@@ -46,7 +46,7 @@ const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded, so
 // "unavailable" never reads as "broken".
 const GOLD_MUTED = "#e0d2b0";
-const GOLD_SOFT = "#eadfc6";
+const GOLD_SOFT = "#f2e7cb";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -816,7 +816,7 @@ export default function SubscriptionScreen() {
               alignItems: "center",
               paddingHorizontal: 16,
               paddingVertical: 12,
-              backgroundColor: "#f3ecdd",
+              backgroundColor: "#f2e7cb",
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, flex: 1, color: INK_DIM, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 }}>
@@ -851,7 +851,7 @@ export default function SubscriptionScreen() {
                   {on ? (
                     <Feather name="check" size={15} color={j === 2 ? GOLD : INK} />
                   ) : (
-                    <Text style={{ fontFamily: SERIF, color: "#c9c4b6", fontSize: 13 }}>—</Text>
+                    <Text style={{ fontFamily: SERIF, color: "#746a58", fontSize: 13 }}>—</Text>
                   )}
                 </View>
               ))}

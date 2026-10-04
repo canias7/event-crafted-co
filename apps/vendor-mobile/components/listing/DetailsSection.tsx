@@ -350,7 +350,7 @@ function TagsField({
                 fontSize: 13,
                 minWidth: 96,
                 paddingVertical: 6,
-                color: "#18181b",
+                color: "#14161a",
               }}
             />
             <Pressable
@@ -456,7 +456,7 @@ function SelectField({
         <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
           {value || "— pick one —"}
         </Text>
-        <Feather name="chevron-down" size={18} color="#737373" />
+        <Feather name="chevron-down" size={18} color="#746a58" />
       </Pressable>
       <Modal
         visible={open}

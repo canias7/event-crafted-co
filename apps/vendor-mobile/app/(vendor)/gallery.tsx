@@ -61,6 +61,8 @@ const INK_DIM = "#14161a";
 const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
 const GOLD = "#c9a86a";
+// Gold as text on a light surface is bronze (champagne is too faint to read).
+const BRONZE = "#8a6f3e";
 const ERROR = "#b23a34";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -733,7 +735,7 @@ export default function GalleryScreen() {
                     : "image-multiple-outline"
                 }
                 size={64}
-                color="#d9c9a6"
+                color="#c9a86a"
               />
             </View>
             <Text
@@ -879,7 +881,7 @@ export default function GalleryScreen() {
             }
             style={{
               marginTop: 20,
-              backgroundColor: "#efe9dc",
+              backgroundColor: "#ece7db",
               borderRadius: 20,
               padding: 16,
               flexDirection: "row",
@@ -902,7 +904,7 @@ export default function GalleryScreen() {
               <Feather name="zap" size={18} color={GOLD} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: GOLD }}>Pro tip</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: BRONZE }}>Pro tip</Text>
               <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 19, color: INK }}>
                 {hasAnyPhotos
                   ? "Create albums to keep your photos organized by event type, client, or service."
@@ -1055,7 +1057,7 @@ export default function GalleryScreen() {
                         style={{ fontFamily: SERIF, flex: 1, color: WHITE, fontSize: 15, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingVertical: 6 }}
                       />
                       <Pressable onPress={() => saveCaption(lightbox)} hitSlop={8}>
-                        <Text style={{ fontFamily: SERIF_BOLD, color: "#d9bd82"}}>Save</Text>
+                        <Text style={{ fontFamily: SERIF_BOLD, color: "#c9a86a"}}>Save</Text>
                       </Pressable>
                     </View>
                   ) : (

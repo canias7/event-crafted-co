@@ -52,7 +52,6 @@ const GOLD = "#c9a86a";
 const INK_DIM = "#14161a";
 const PLACEHOLDER = "#746a58";
 const BORDER = "#e6e1d5";
-const ACCENT = "#1B3654";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -1366,7 +1365,7 @@ function FieldLabel({
       </Text>
       {required ? (
         <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#c0533a" }}
+          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#b23a34" }}
         />
       ) : null}
     </View>
@@ -1560,8 +1559,10 @@ function BannerCard({
   title: string;
   body: string;
 }) {
-  const accentBg = tone === "accent" ? "#f4ecdc" : "#e3efe0";
-  const accentBorder = tone === "accent" ? "#d6bf94" : "#bcd5b3";
+  // "accent" is the waiting look (gold tint, champagne edge); "good" is a
+  // plain card, since green is kept for live signals.
+  const accentBg = tone === "accent" ? "#f2e7cb" : "#fbf9f4";
+  const accentBorder = tone === "accent" ? "#c9a86a" : "#e6e1d5";
   return (
     <View
       style={{

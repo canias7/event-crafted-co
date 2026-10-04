@@ -234,7 +234,8 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       // the indicator above — 999 risks a square badge.
                       borderRadius: 9,
                       paddingHorizontal: 5,
-                      backgroundColor: "#b23a34",
+                      // Champagne with an ink number: the brand's unread colour.
+                      backgroundColor: "#c9a86a",
                       // Ring in the bar's own cream so the badge reads as
                       // sitting on top of the icon rather than merging
                       // with it when the tab is active and dark.
@@ -249,7 +250,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                         fontFamily: "LibreBaskerville-Bold",
                         fontSize: 9,
                         lineHeight: 12,
-                        color: "#ffffff",
+                        color: "#14161a",
                       }}
                     >
                       {newInquiries > 99 ? "99+" : newInquiries}
@@ -263,7 +264,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                   fontFamily: isFocused ? "LibreBaskerville-Bold" : "LibreBaskerville",
                   fontSize: 10,
                   marginTop: 2,
-                  color: isFocused ? "#14161a" : "#6f6a60",
+                  color: isFocused ? "#14161a" : "#746a58",
                 }}
               >
                 {LABELS[route.name] ?? route.name}

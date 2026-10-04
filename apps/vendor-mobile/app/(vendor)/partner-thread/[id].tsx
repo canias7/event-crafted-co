@@ -415,7 +415,7 @@ export default function PartnerThreadScreen() {
                       width: 36,
                       height: 36,
                       borderRadius: 999,
-                      backgroundColor: draft.trim() ? INK : "#e5dbc8",
+                      backgroundColor: draft.trim() ? INK : "#e6e1d5",
                       alignItems: "center",
                       justifyContent: "center",
                       marginLeft: 6,

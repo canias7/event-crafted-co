@@ -255,7 +255,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="edit-2" size={18} color="#525252" />
+                  <Feather name="edit-2" size={18} color="#746a58" />
                 </Pressable>
                 <Pressable
                   onPress={() => remove(p.id)}
@@ -538,7 +538,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="edit-2" size={18} color="#525252" />
+                  <Feather name="edit-2" size={18} color="#746a58" />
                 </Pressable>
                 <Pressable
                   onPress={() => remove(f.id)}
@@ -739,7 +739,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
             {cancellationLabel}
           </Text>
-          <Feather name="chevron-down" size={18} color="#737373" />
+          <Feather name="chevron-down" size={18} color="#746a58" />
         </Pressable>
       </View>
       <View>

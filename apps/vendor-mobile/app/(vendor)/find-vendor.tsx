@@ -181,7 +181,7 @@ export default function FindVendorScreen() {
       {/* Search */}
       <View className="px-5 mb-3">
         <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-          <Feather name="search" size={16} color="#737373" />
+          <Feather name="search" size={16} color="#746a58" />
           <TextInput style={{ fontFamily: "LibreBaskerville" }}
             value={query}
             onChangeText={setQuery}
@@ -200,7 +200,7 @@ export default function FindVendorScreen() {
               accessibilityRole="button"
               accessibilityLabel="Clear search"
             >
-              <Feather name="x" size={16} color="#737373" />
+              <Feather name="x" size={16} color="#746a58" />
             </Pressable>
           ) : null}
         </View>
@@ -274,7 +274,7 @@ export default function FindVendorScreen() {
                   {isStarting ? (
                     <ActivityIndicator size="small" color="#14161a" />
                   ) : (
-                    <Feather name="message-circle" size={18} color="#737373" />
+                    <Feather name="message-circle" size={18} color="#746a58" />
                   )}
                 </Pressable>
               );

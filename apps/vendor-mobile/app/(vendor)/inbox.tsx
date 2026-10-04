@@ -44,7 +44,7 @@ const PHOTO_NUDGE_BELOW = 5;
 // wizards' near-white CREAM).
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
-const TRACK = "#ebe6db";
+const TRACK = "#ece7db";
 const BORDER = "#e6e1d5";
 const INK = "#14161a";
 // Secondary text is the same black as headings; hierarchy comes from
@@ -484,9 +484,9 @@ export default function InboxScreen() {
               marginHorizontal: 20,
               marginBottom: 12,
               borderRadius: 12,
-              backgroundColor: "#fdf0ee",
+              backgroundColor: "#f7ece9",
               borderWidth: 1,
-              borderColor: "#f3cdc6",
+              borderColor: "#e6c9c2",
               paddingHorizontal: 16,
               paddingVertical: 12,
             }}
@@ -588,7 +588,7 @@ export default function InboxScreen() {
             style={{
               marginHorizontal: 20,
               marginTop: 20,
-              backgroundColor: "#efe9dc",
+              backgroundColor: "#ece7db",
               borderRadius: 20,
               padding: 16,
             }}
@@ -725,7 +725,7 @@ function EmptyState({
         <MaterialCommunityIcons
           name="email-open-outline"
           size={64}
-          color="#d9c9a6"
+          color="#c9a86a"
         />
       </View>
       <Text

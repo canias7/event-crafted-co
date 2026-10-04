@@ -517,7 +517,7 @@ function ConversationRow({
           isFirst ? "" : "border-t border-border"
         }`}
       >
-        {/* Unread indicator — blue dot only when unread, otherwise a
+        {/* Unread indicator — champagne dot only when unread, otherwise a
             transparent spacer so rows stay aligned. */}
         <span
           className="self-center shrink-0 w-2 h-2 rounded-full"
