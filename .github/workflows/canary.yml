@@ -1,0 +1,177 @@
+name: Canary (deployed site)
+
+# Read-only production canary for the deployed Vendora web app on Cloudflare
+# Pages. Drives the LIVE site with Playwright (apps/web/playwright.canary.config.ts
+# — no local Vite server) as a signed-out visitor and as dedicated synthetic
+# test accounts. It never creates, edits, sends or deletes anything; write
+# flows are tested only against an isolated local Supabase stack
+# (.github/workflows/write-flow-tests.yml).
+#
+# Triggers
+#   - schedule: hourly at :23 (scheduled runs use the default branch)
+#   - workflow_run: after a successful production "Deploy to Cloudflare Pages" on main
+#   - workflow_dispatch: manual, optional base URL override
+#   - pull_request: when the canary itself changes, so changes are proven
+#     before merge
+#
+# Credentials (dedicated test accounts) are only passed to TRUSTED code:
+# default-branch runs (schedule, workflow_run, dispatch on main) and pull
+# requests from branches of THIS repository. Fork PRs never receive them
+# (GitHub withholds secrets from forks; the expressions below make that
+# explicit). Anyone who can push a branch here can already edit workflows
+# that read secrets, so same-repo branches are the practical trust boundary.
+#
+# Required secrets — see apps/web/tests/canary/README.md:
+#   E2E_VENDOR_EMAIL, E2E_SUPABASE_SERVICE_ROLE_KEY
+# Optional: E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY, E2E_HOST_EMAIL,
+#   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID (deployment identity)
+# Missing required secrets make the run FAIL (preflight) — authenticated
+# coverage is reported as BLOCKED, never as a silent skip.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_run:
+    workflows: ["Deploy to Cloudflare Pages"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Site to test"
+        required: false
+        default: "https://eventvendora.com"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/canary.yml"
+      - "apps/web/playwright.canary.config.ts"
+      - "apps/web/tests/canary/**"
+      - "apps/web/tests/e2e/session.ts"
+      - "scripts/canary/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  # One production canary at a time (queue, don't cancel a run in progress);
+  # PR runs supersede each other.
+  group: canary-${{ github.event_name == 'pull_request' && github.head_ref || 'production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Trusted = not a pull request, or a pull request from this repository.
+  TRUSTED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+jobs:
+  canary:
+    name: Deployed-site canary
+    # After a deploy, only react to a successful push/dispatch deploy of main.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      CANARY_BASE_URL: ${{ inputs.base_url || 'https://eventvendora.com' }}
+      CANARY_DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      CANARY_DEPLOY_RUN_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+      - run: bun install --frozen-lockfile
+      - name: Install Chromium
+        working-directory: apps/web
+        run: bunx playwright install --with-deps chromium
+
+      - name: Record what is being tested
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.TRUSTED == 'true' && (secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN) || '' }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.TRUSTED == 'true' && (secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUNT_ID) || '' }}
+        run: node scripts/canary/metadata.mjs apps/web/canary-results/metadata.json
+
+      - name: Run canary (Playwright, desktop + mobile viewports)
+        id: playwright
+        working-directory: apps/web
+        continue-on-error: true
+        env:
+          E2E_VENDOR_EMAIL: ${{ env.TRUSTED == 'true' && secrets.E2E_VENDOR_EMAIL || '' }}
+          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ env.TRUSTED == 'true' && secrets.E2E_SUPABASE_SERVICE_ROLE_KEY || '' }}
+          E2E_SUPABASE_URL: ${{ env.TRUSTED == 'true' && secrets.E2E_SUPABASE_URL || '' }}
+          E2E_SUPABASE_ANON_KEY: ${{ env.TRUSTED == 'true' && secrets.E2E_SUPABASE_ANON_KEY || '' }}
+          E2E_HOST_EMAIL: ${{ env.TRUSTED == 'true' && secrets.E2E_HOST_EMAIL || '' }}
+        run: bunx playwright test -c playwright.canary.config.ts
+
+      - name: Remove session state before anything is uploaded
+        if: always()
+        run: rm -rf apps/web/tests/canary/.auth
+
+      - name: Summarize
+        id: summary
+        if: always()
+        run: >-
+          node scripts/canary/summarize.mjs
+          --title "Deployed-site canary"
+          --results apps/web/canary-results/results.json
+          --meta apps/web/canary-results/metadata.json
+          --preflight apps/web/canary-results/preflight.json
+          --out apps/web/canary-results
+
+      - name: Sanitize artifacts
+        if: always()
+        env:
+          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ env.TRUSTED == 'true' && secrets.E2E_SUPABASE_SERVICE_ROLE_KEY || '' }}
+          CLOUDFLARE_API_TOKEN: ${{ env.TRUSTED == 'true' && (secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN) || '' }}
+        run: node scripts/canary/sanitize.mjs apps/web/canary-results
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/web/canary-results
+          retention-days: 14
+          if-no-files-found: warn
+
+  native-static:
+    # The canary's "mobile" project is a phone-sized BROWSER viewport on the
+    # web app. The native apps (apps/vendor-mobile, apps/host-mobile) are NOT
+    # exercised at runtime by anything here; this job only type-checks them.
+    name: Native apps — static type check only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+      - run: bun install --frozen-lockfile
+      - name: Type-check vendor-mobile and host-mobile
+        id: tsc
+        run: |
+          set +e
+          bun run --cwd apps/vendor-mobile typecheck; v=$?
+          bun run --cwd apps/host-mobile typecheck; h=$?
+          {
+            echo "## Native apps — static type check only"
+            echo ""
+            echo "| App | tsc |"
+            echo "|---|---|"
+            echo "| vendor-mobile | $([ $v -eq 0 ] && echo '✅ pass' || echo '❌ fail') |"
+            echo "| host-mobile | $([ $h -eq 0 ] && echo '✅ pass' || echo '❌ fail') |"
+            echo ""
+            echo "> No native runtime coverage: no simulator/emulator or device tests ran. The canary's mobile project is a browser viewport on the web app."
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ $v -eq 0 ] && [ $h -eq 0 ]

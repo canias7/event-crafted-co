@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { sessionViaServiceRole } from "./session";
 
 // RLS / data-isolation checks. These run as real authenticated actors
 // (tokens minted via the service-role admin API, captcha-free) and as anon,
@@ -20,29 +21,13 @@ const HOST_EMAIL = "e2e-host-1@eventvendora.test";
 const HAS_CREDS = Boolean(SUPABASE_URL && ANON && SERVICE_ROLE && VENDOR_EMAIL);
 
 // Mint a real session for `email` (admin OTP → verify); returns the access
-// token + the user's id, captcha-free.
+// token + the user's id, captcha-free. See session.ts.
 async function actor(email: string): Promise<{ token: string; uid: string }> {
-  const linkRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
-    method: "POST",
-    headers: {
-      apikey: SERVICE_ROLE,
-      authorization: `Bearer ${SERVICE_ROLE}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ type: "magiclink", email }),
-  });
-  if (!linkRes.ok) throw new Error(`generate_link ${linkRes.status}: ${await linkRes.text()}`);
-  const link = await linkRes.json();
-  const otp: string | undefined = link?.email_otp ?? link?.properties?.email_otp;
-  if (!otp) throw new Error(`no email_otp for ${email}`);
-  const vr = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
-    method: "POST",
-    headers: { apikey: ANON, "content-type": "application/json" },
-    body: JSON.stringify({ type: "email", email, token: otp }),
-  });
-  if (!vr.ok) throw new Error(`verify ${vr.status}: ${await vr.text()}`);
-  const s = await vr.json();
-  if (!s?.access_token || !s?.user?.id) throw new Error(`no session for ${email}`);
+  const s = await sessionViaServiceRole(
+    { supabaseUrl: SUPABASE_URL, anonKey: ANON, serviceRoleKey: SERVICE_ROLE },
+    email,
+  );
+  if (!s?.user?.id) throw new Error("no user on minted session");
   return { token: s.access_token, uid: s.user.id };
 }
 
@@ -73,8 +58,14 @@ test.describe("RLS data isolation", () => {
     if (!HAS_CREDS) return;
     vendor = await actor(VENDOR_EMAIL);
     host = await actor(HOST_EMAIL);
-    // Derive the vendor's own listing id (owner can read own profile).
-    const listings = await rest("vendor_profiles?select=id&limit=1", vendor.token);
+    // Derive the vendor's OWN listing id. Filter by owner: a signed-in user can
+    // also read every approved public listing, so an unfiltered `limit=1`
+    // returned someone else's listing (and an inbox of 0) once production had
+    // approved vendors whose ids sort first.
+    const listings = await rest(
+      `vendor_profiles?select=id&user_id=eq.${vendor.uid}&limit=1`,
+      vendor.token,
+    );
     expect(listings.length, "test vendor should own a listing").toBeGreaterThan(0);
     listingId = listings[0].id;
   });

@@ -48,3 +48,8 @@ supabase/.temp/
 
 # Playwright authenticated storage state (contains session tokens)
 apps/web/tests/e2e/.auth/
+apps/web/tests/canary/.auth/
+
+# Canary run output (reports, screenshots)
+apps/web/canary-results/
+apps/web/write-results/
