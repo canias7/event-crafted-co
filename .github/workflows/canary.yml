@@ -161,21 +161,19 @@ jobs:
         with:
           bun-version: "1.3.11"
       - run: bun install --frozen-lockfile
-      # Same invocation as CI's typecheck:all, so both resolve the same tsc.
-      - name: Type-check vendor-mobile and host-mobile
+      # Exactly CI's command (it also covers web + admin). Calling the
+      # per-app scripts directly resolved a different tsc and failed on
+      # missing module types that CI's invocation resolves.
+      - name: Type-check (bun run typecheck:all — includes vendor-mobile + host-mobile)
         id: tsc
         run: |
           set +e
-          npm run typecheck --workspace=apps/vendor-mobile; v=$?
-          npm run typecheck --workspace=apps/host-mobile; h=$?
+          bun run typecheck:all; rc=$?
           {
             echo "## Native apps — static type check only"
             echo ""
-            echo "| App | tsc |"
-            echo "|---|---|"
-            echo "| vendor-mobile | $([ $v -eq 0 ] && echo '✅ pass' || echo '❌ fail') |"
-            echo "| host-mobile | $([ $h -eq 0 ] && echo '✅ pass' || echo '❌ fail') |"
+            echo "\`bun run typecheck:all\` (web, admin, vendor-mobile, host-mobile): $([ $rc -eq 0 ] && echo '✅ pass' || echo '❌ fail')"
             echo ""
             echo "> No native runtime coverage: no simulator/emulator or device tests ran. The canary's mobile project is a browser viewport on the web app."
           } >> "$GITHUB_STEP_SUMMARY"
-          [ $v -eq 0 ] && [ $h -eq 0 ]
+          exit $rc
