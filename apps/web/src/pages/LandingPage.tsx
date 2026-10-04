@@ -1,29 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  ArrowRight,
-  CalendarDays,
-  CreditCard,
-  FileText,
-  MapPin,
-  MessageCircle,
-  Search,
-  Star,
-  Store,
-  Users,
-} from "lucide-react";
+import { ArrowRight, MapPin, Search, Store, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Footer } from "@/components/public/Footer";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
 import { Picture } from "@/components/shared/Picture";
 // vite-imagetools `?as=picture` (see vite.config.ts) → AVIF + WebP + JPG
 // at 640/1024/1600, same pattern VendorCard uses for the browse grid.
 import heroCinematic from "@/assets/vendora-hero-cinematic.jpg?as=picture";
-import heroDinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
-import heroNye from "@/assets/hero/nye.jpg?as=picture";
-import venues from "@/assets/vendor-venue.jpg?as=picture";
-import media from "@/assets/vendor-photographer.jpg?as=picture";
-import designDecor from "@/assets/vendor-florist.jpg?as=picture";
-import weddingImg from "@/assets/hero/wedding.jpg?as=picture";
 
 // ── Palette (matches the mobile apps) ──────────────────────────────
 const INK = "#14161a";
@@ -31,83 +15,21 @@ const CREAM = "#f4f1ea";
 const GOLD = "#c9a86a";
 const BRONZE = "#8a6f3e";
 
-const HOST_STEPS = [
-  {
-    n: "1",
-    title: "Discover",
-    body: "Find the perfect vendors for your unique vision.",
-    image: venues,
-  },
-  {
-    n: "2",
-    title: "Connect",
-    body: "Message, compare, and get custom quotes.",
-    image: media,
-  },
-  {
-    n: "3",
-    title: "Plan",
-    body: "Keep each event's date, guests and notes in one place.",
-    image: designDecor,
-  },
-  {
-    n: "4",
-    title: "Book",
-    body: "Secure your vendors and relax, knowing you're in good hands.",
-    image: weddingImg,
-  },
-];
-
-const EVENT_TYPES = [
-  "Weddings",
-  "Birthdays",
-  "Corporate events",
-  "Parties & celebrations",
-  "Social gatherings",
-  "and more…",
-];
-
-const VENDOR_STEPS = [
-  {
-    n: "1",
-    title: "Get discovered",
-    body: "Be seen by people actively planning events like yours.",
-  },
-  {
-    n: "2",
-    title: "Manage inquiries",
-    body: "Respond, chat, and share proposals all in one inbox.",
-  },
-  {
-    n: "3",
-    title: "Book clients",
-    body: "Secure bookings with contracts, payments, and automations.",
-  },
-  {
-    n: "4",
-    title: "Grow your business",
-    body: "Track performance, collect reviews, and build your brand.",
-  },
-];
-
-const TOOLS = [
-  { icon: Search, title: "Smart search", body: "Find the right vendors faster." },
-  { icon: MessageCircle, title: "Messaging", body: "All conversations in one place." },
-  { icon: CalendarDays, title: "Availability", body: "Real-time calendars and scheduling." },
-  { icon: FileText, title: "Quotes & proposals", body: "Compare and decide with confidence." },
-  { icon: CreditCard, title: "Contracts & payments", body: "Secure, seamless, and stress-free." },
-  { icon: Star, title: "Reviews", body: "Real feedback from real clients." },
-];
-
-// Landing page — the immersive, luxury-editorial experience per the
-// reference mock: cinematic full-bleed hero with a real search bar,
-// split host / vendor journeys (ivory then charcoal), an emotional
-// connection band, the tools grid, a dark closing CTA, and a premium
-// dark footer. Ivory / charcoal / champagne-gold throughout — shared
-// with the mobile apps. Nav and footer stay inlined so this marketing
-// surface keeps its bespoke styling.
+// Home page, kept simple on purpose: the cinematic hero (headline, the
+// two paths, search) and the footer. What Vendora does for each side
+// lives on its own page: "I'm planning an event" leads to /for-hosts and
+// "I'm a vendor" to /for-vendors. Explore and How it works have their own
+// pages too.
 export default function LandingPage() {
   const navigate = useNavigate();
+
+  // How it works used to be a section here; old /#how-it-works links go
+  // to its page.
+  useEffect(() => {
+    if (window.location.hash === "#how-it-works") {
+      navigate("/how-it-works", { replace: true });
+    }
+  }, [navigate]);
   const { session, hasVendorAccess, hasHostAccess } = useAuth();
   const [q, setQ] = useState("");
   const [loc, setLoc] = useState("");
@@ -127,7 +49,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen text-foreground" style={{ backgroundColor: CREAM }}>
+    <div className="min-h-screen text-foreground" style={{ backgroundColor: INK }}>
       {/* ═══════════════ HERO — cinematic full-bleed ═══════════════ */}
       <section className="relative overflow-hidden" style={{ backgroundColor: INK }}>
         {/* Backdrop photo + slow drift */}
@@ -229,13 +151,6 @@ export default function LandingPage() {
               </span>
               <br />
               events begin
-              <span style={{ color: GOLD }}>.</span>
-              <span
-                className="align-super text-[0.35em] ml-1"
-                style={{ color: GOLD }}
-              >
-                ✦
-              </span>
             </h1>
             <p
               className="mx-auto mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup hero-intro"
@@ -251,7 +166,7 @@ export default function LandingPage() {
               style={{ animationDelay: "220ms" }}
             >
               <Link
-                to="/vendors"
+                to="/for-hosts"
                 className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors"
                 style={{
                   backgroundColor: "rgba(244,241,234,0.94)",
@@ -278,7 +193,7 @@ export default function LandingPage() {
                 />
               </Link>
               <Link
-                to="/signup/vendor"
+                to="/for-vendors"
                 className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors hover:bg-white/10"
                 style={{
                   backgroundColor: "rgba(20,22,26,0.55)",
@@ -350,363 +265,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════ FOR HOSTS — ivory journey ═══════════════ */}
-      <section id="how-it-works" className="px-5 py-20 md:px-8 md:py-28">
-        <div className="mx-auto max-w-6xl">
-          <p className="font-label text-center" style={{ color: BRONZE }}>
-            For hosts
-          </p>
-          <h2
-            className="mx-auto mt-3 mb-12 max-w-2xl text-center text-[30px] md:text-[42px]"
-            style={{ color: INK, lineHeight: 1.1 }}
-          >
-            Plan with confidence.{" "}
-            <span className="font-editorial" style={{ color: BRONZE }}>
-              Enjoy
-            </span>{" "}
-            every moment.
-          </h2>
-
-          <div className="grid gap-8 lg:grid-cols-[1fr_250px] lg:gap-12">
-            <div className="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-4">
-              {HOST_STEPS.map((s) => (
-                <div key={s.n} className="text-center">
-                  {/* Arch-top photo, per the mock */}
-                  <div
-                    className="mx-auto aspect-[3/4] w-full max-w-[190px] overflow-hidden"
-                    style={{
-                      borderRadius: "999px 999px 22px 22px",
-                      border: "1px solid rgba(201,168,106,0.4)",
-                      padding: "6px",
-                      backgroundColor: "rgba(251,249,244,0.9)",
-                    }}
-                  >
-                    <div
-                      className="h-full w-full overflow-hidden"
-                      style={{ borderRadius: "999px 999px 18px 18px" }}
-                    >
-                      <Picture
-                        source={s.image}
-                        alt={s.title}
-                        loading="lazy"
-                        sizes="190px"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <p className="m-0 mt-4 text-[15.5px] font-semibold" style={{ color: INK }}>
-                    {s.n}. {s.title}
-                  </p>
-                  <p className="m-0 mt-1.5 text-[12.5px] leading-relaxed" style={{ color: "rgba(20,22,26,0.55)" }}>
-                    {s.body}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Every event, every type */}
-            <div
-              className="self-start rounded-2xl p-6"
-              style={{
-                backgroundColor: "#fbf9f4",
-                border: "1px solid #e6e1d5",
-              }}
-            >
-              <p className="m-0 font-editorial not-italic text-[22px] leading-snug" style={{ color: INK }}>
-                Every event.
-                <br />
-                Every type. <span style={{ color: GOLD }}>✦</span>
-              </p>
-              <ul className="m-0 mt-4 list-none space-y-2.5 p-0">
-                {EVENT_TYPES.map((t) => (
-                  <li
-                    key={t}
-                    className="border-b pb-2.5 text-[13px] last:border-0 last:pb-0"
-                    style={{ color: "rgba(20,22,26,0.7)", borderColor: "#ece7db" }}
-                  >
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════ FOR VENDORS — charcoal journey ═══════════════ */}
-      <section className="px-5 py-20 md:px-8 md:py-28" style={{ backgroundColor: INK }}>
-        <div className="mx-auto max-w-6xl">
-          <p className="font-label text-center" style={{ color: GOLD }}>
-            For vendors
-          </p>
-          <h2
-            className="mx-auto mt-3 mb-12 max-w-2xl text-center text-[30px] md:text-[42px]"
-            style={{ color: CREAM, lineHeight: 1.1 }}
-          >
-            More clients. More bookings. More{" "}
-            <span className="font-editorial" style={{ color: GOLD }}>
-              growth
-            </span>
-            .
-          </h2>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {VENDOR_STEPS.map((s) => (
-              <div
-                key={s.n}
-                className="rounded-2xl p-6"
-                style={{
-                  backgroundColor: "rgba(244,241,234,0.05)",
-                  border: "1px solid rgba(201,168,106,0.25)",
-                }}
-              >
-                <p
-                  className="m-0 font-editorial not-italic text-[30px]"
-                  style={{ color: GOLD }}
-                >
-                  {s.n}
-                </p>
-                <p className="m-0 mt-3 text-[15.5px] font-semibold" style={{ color: CREAM }}>
-                  {s.title}
-                </p>
-                <p
-                  className="m-0 mt-1.5 text-[12.5px] leading-relaxed"
-                  style={{ color: "rgba(244,241,234,0.6)" }}
-                >
-                  {s.body}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 text-center">
-            <Link
-              to="/signup/vendor"
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
-            >
-              List your business — free <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════ THE CONNECTION — emotional band ═══════════════ */}
-      <section className="grid md:grid-cols-3" style={{ backgroundColor: "#fbf9f4" }}>
-        <div className="relative hidden aspect-[4/3] md:block md:aspect-auto">
-          <Picture
-            source={heroDinner}
-            alt=""
-            loading="lazy"
-            sizes="(min-width: 768px) 33vw, 100vw"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </div>
-        <div className="flex flex-col items-center justify-center px-8 py-16 text-center md:py-20">
-          <h2 className="m-0 text-[26px] md:text-[30px]" style={{ color: INK, lineHeight: 1.2 }}>
-            Hosts dream it.
-            <br />
-            Vendors bring it to life.
-          </h2>
-          <p className="m-0 mt-4 max-w-xs text-[13.5px] leading-relaxed" style={{ color: "rgba(20,22,26,0.55)" }}>
-            Vendora connects the right people so every detail comes together
-            beautifully.
-          </p>
-          <span className="mt-5 text-[17px]" style={{ color: GOLD }}>
-            ✦
-          </span>
-        </div>
-        <div className="relative hidden aspect-[4/3] md:block md:aspect-auto">
-          <Picture
-            source={heroNye}
-            alt=""
-            loading="lazy"
-            sizes="(min-width: 768px) 33vw, 100vw"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </div>
-      </section>
-
-      {/* ═══════════════ TOOLS — everything you need ═══════════════ */}
-      <section className="px-5 py-20 md:px-8 md:py-28">
-        <div className="mx-auto max-w-6xl">
-          <p className="font-label text-center" style={{ color: BRONZE }}>
-            Everything you need, all in one place
-          </p>
-          <h2
-            className="mx-auto mt-3 mb-12 max-w-2xl text-center text-[30px] md:text-[38px]"
-            style={{ color: INK, lineHeight: 1.15 }}
-          >
-            Powerful tools.{" "}
-            <span className="font-editorial">
-              Seamless
-            </span>{" "}
-            experience.
-          </h2>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
-            {TOOLS.map((t) => (
-              <div key={t.title} className="text-center">
-                <span
-                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl"
-                  style={{
-                    backgroundColor: "rgba(201,168,106,0.14)",
-                    border: "1px solid rgba(201,168,106,0.35)",
-                  }}
-                >
-                  <t.icon className="h-5 w-5" style={{ color: BRONZE }} />
-                </span>
-                <p className="m-0 mt-3 text-[13.5px] font-semibold" style={{ color: INK }}>
-                  {t.title}
-                </p>
-                <p className="m-0 mt-1 text-[11.5px] leading-relaxed" style={{ color: "rgba(20,22,26,0.5)" }}>
-                  {t.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════ CLOSING CTA — dark ═══════════════ */}
-      <section className="px-5 py-20 md:px-8 md:py-24" style={{ backgroundColor: INK }}>
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="font-label" style={{ color: GOLD }}>
-            Ready to make magic?
-          </p>
-          <h2
-            className="mx-auto mt-3 max-w-xl text-[30px] md:text-[40px]"
-            style={{ color: CREAM, lineHeight: 1.12 }}
-          >
-            Join the hosts and vendors creating{" "}
-            <span className="font-editorial" style={{ color: GOLD }}>
-              unforgettable
-            </span>{" "}
-            events.
-          </h2>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              to="/vendors"
-              className="inline-flex h-11 items-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
-            >
-              Plan your event
-            </Link>
-            <Link
-              to="/signup/vendor"
-              className="inline-flex h-11 items-center whitespace-nowrap rounded-full px-7 text-[14px] font-bold transition-colors hover:bg-white/10"
-              style={{ color: CREAM, border: "1px solid rgba(244,241,234,0.35)" }}
-            >
-              List your business
-            </Link>
-          </div>
-          <p className="mx-auto mt-8 text-[12.5px]" style={{ color: "rgba(244,241,234,0.5)" }}>
-            <span style={{ color: GOLD }}>✦</span> Curated vendors
-            <span className="mx-2.5" style={{ color: "rgba(244,241,234,0.25)" }}>·</span>
-            Secure payments
-            <span className="mx-2.5" style={{ color: "rgba(244,241,234,0.25)" }}>·</span>
-            Support from real people
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════ FOOTER — premium dark ═══════════════ */}
-      <footer
-        className="px-5 pt-16 pb-8 md:px-8"
-        style={{ backgroundColor: "#14161a", borderTop: "1px solid rgba(201,168,106,0.2)" }}
-      >
-        <div className="mx-auto mb-12 grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
-          <div>
-            <VendoraLogo size="md" color={CREAM} withTagline />
-            <div className="mt-2.5 text-[13px] leading-relaxed" style={{ color: "rgba(244,241,234,0.55)" }}>
-              Every detail, perfectly composed.
-            </div>
-          </div>
-
-          {[
-            {
-              title: "For hosts",
-              links: [
-                { label: "Browse vendors", to: "/vendors" },
-                { label: "By location", to: "/vendors/locations" },
-                { label: "Explore", to: "/explore" },
-              ],
-            },
-            {
-              title: "For vendors",
-              links: [
-                { label: "List your business", to: "/signup/vendor" },
-                { label: "How it works", to: "/how-it-works" },
-                { label: "Changelog", to: "/changelog" },
-              ],
-            },
-            {
-              title: "Company",
-              links: [
-                { label: "Press", to: "/press" },
-                { label: "Status", to: "/status" },
-                { label: "Privacy", to: "/privacy" },
-                { label: "Terms", to: "/terms" },
-              ],
-            },
-          ].map((col) => (
-            <div key={col.title}>
-              <div
-                className="mb-4 text-[10px] font-medium uppercase"
-                style={{ color: GOLD, letterSpacing: "2px" }}
-              >
-                {col.title}
-              </div>
-              <ul className="m-0 list-none space-y-2.5 p-0 text-[13px]">
-                {col.links.map((l) => (
-                  <li key={l.label}>
-                    <Link
-                      to={l.to}
-                      className="transition-colors hover:text-white"
-                      style={{ color: "rgba(244,241,234,0.7)" }}
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-                {col.title === "Company" ? (
-                  <li>
-                    <a
-                      href="mailto:hello@eventvendora.com"
-                      className="transition-colors hover:text-white"
-                      style={{ color: "rgba(244,241,234,0.7)" }}
-                    >
-                      hello@eventvendora.com
-                    </a>
-                  </li>
-                ) : null}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div
-          className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pt-6"
-          style={{ borderTop: "1px solid rgba(244,241,234,0.12)" }}
-        >
-          <div className="text-[11px]" style={{ color: "rgba(244,241,234,0.45)" }}>
-            © 2026 Vendora. All rights reserved.
-          </div>
-          <div className="flex gap-5 text-[12px]">
-            {[
-              { label: "Instagram", href: "https://instagram.com/eventvendora" },
-            ].map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="transition-colors hover:text-white"
-                style={{ color: "rgba(244,241,234,0.6)" }}
-              >
-                {s.label}
-              </a>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <Footer tone="dark" />
 
       {/* Page-local motion. Respect reduced-motion. */}
       <style>{`

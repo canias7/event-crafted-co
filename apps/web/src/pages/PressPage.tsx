@@ -71,7 +71,7 @@ export default function PressPage() {
 
   async function copyEmail() {
     try {
-      await navigator.clipboard.writeText("press@vendora.app");
+      await navigator.clipboard.writeText("hello@eventvendora.com");
       setCopied(true);
       toast.success("Press email copied");
       setTimeout(() => setCopied(false), 1500);
@@ -109,7 +109,7 @@ export default function PressPage() {
               ) : (
                 <Mail className="w-3.5 h-3.5 mr-1.5" />
               )}
-              press@vendora.app
+              hello@eventvendora.com
               <Copy className="w-3 h-3 ml-1.5 opacity-60" />
             </Button>
             <a
@@ -302,7 +302,7 @@ export default function PressPage() {
             ) : (
               <Mail className="w-3.5 h-3.5 mr-1.5" />
             )}
-            press@vendora.app
+            hello@eventvendora.com
             <Copy className="w-3 h-3 ml-1.5 opacity-60" />
           </Button>
         </div>

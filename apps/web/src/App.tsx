@@ -17,6 +17,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { RealtimeProvider } from "./lib/realtime";
 import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
+import { ScrollToTop } from "./components/shared/ScrollToTop";
 import { SkipLink } from "./components/SkipLink";
 import { AmbientBackground } from "./components/AmbientBackground";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
@@ -54,6 +55,8 @@ import {
   TermsPage,
   HelpPage,
   HowItWorksPage,
+  ForHostsPage,
+  ForVendorsPage,
   ChangelogPage,
   StatusPage,
   PressPage,
@@ -101,6 +104,7 @@ const App = () => (
         <AuthProvider>
           <RealtimeProvider>
           <SkipLink />
+          <ScrollToTop />
           <EmailVerificationBanner />
           <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
@@ -146,6 +150,8 @@ const App = () => (
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/for-hosts" element={<ForHostsPage />} />
+              <Route path="/for-vendors" element={<ForVendorsPage />} />
               <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
               <Route path="/pay/invoice/:slug" element={<InvoiceCheckoutPage />} />
               {/* Stripe redirect target for purchases started in the

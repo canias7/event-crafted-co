@@ -16,6 +16,10 @@ const publicRoutes = [
   "/vendors",
   "/vendors/locations",
   "/vendors/category/media",
+  "/explore",
+  "/how-it-works",
+  "/for-hosts",
+  "/for-vendors",
   // Auth
   "/login",
   "/signup",
