@@ -86,10 +86,20 @@ export async function seedVendor(label: string) {
     user_id: u.id,
     business_name: `Canary Vendor ${label}`,
     category: "photography",
-    application_status: "approved",
+    application_status: "pending",
   });
   if (vp.status >= 300) throw new Error(`seed vendor_profiles ${vp.status}: ${JSON.stringify(vp.data).slice(0, 200)}`);
   const listingId = (vp.data as Json[])[0].id as string;
+  // A listing can't go live with fewer than 3 photos (enforce_listing_min_photos),
+  // so add synthetic portfolio rows first, then approve — the real path.
+  const photos = await admin.rest(
+    "POST",
+    "vendor_portfolio_images",
+    [0, 1, 2].map((i) => ({ vendor_id: listingId, storage_path: `${listingId}/canary-${i}.jpg`, display_order: i })),
+  );
+  if (photos.status >= 300) throw new Error(`seed portfolio ${photos.status}: ${JSON.stringify(photos.data).slice(0, 200)}`);
+  const approve = await admin.rest("PATCH", `vendor_profiles?id=eq.${listingId}`, { application_status: "approved" });
+  if (approve.status >= 300) throw new Error(`approve listing ${approve.status}: ${JSON.stringify(approve.data).slice(0, 200)}`);
   // Owners are team admins in this schema; make it explicit for the fixture.
   await admin.rest("POST", "vendor_team_members", { vendor_id: listingId, user_id: u.id, role: "admin" });
   return { ...u, listingId, session: await signIn(u.email, u.password) };
