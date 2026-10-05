@@ -54,9 +54,6 @@
       "usage": "Uso"
     }
   },
-  "logo": {
-    "tagline": "Eventos, simplificados"
-  },
   "config_error": {
     "eyebrow": "Vendora · Error de configuración",
     "title": "Faltan variables de entorno de Supabase",

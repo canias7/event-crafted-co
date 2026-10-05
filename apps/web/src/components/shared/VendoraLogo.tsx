@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 // The REAL brand mark — the gold calligraphic V from the brand sheet
 // (thin flick top-left, broad sweep to a sharp point, thin upstroke
@@ -67,7 +66,6 @@ export function VendoraLogo({
   withTagline?: boolean;
   className?: string;
 }) {
-  const { t } = useTranslation("portal");
   const dims = {
     sm: { mark: 20, name: "text-[19px]", tag: "text-[7px]", gap: "gap-1.5" },
     md: { mark: 26, name: "text-[24px]", tag: "text-[8.5px]", gap: "gap-2" },
@@ -99,7 +97,7 @@ export function VendoraLogo({
             className={cn("font-label mt-1", dims.tag)}
             style={{ color: "#c9a86a", letterSpacing: "0.32em" }}
           >
-            {t("logo.tagline")}
+            Events, simplified
           </span>
         ) : null}
       </span>

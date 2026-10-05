@@ -153,7 +153,9 @@ export function MobileNav({ items }: MobileNavProps) {
                       {item.icon ? (
                         <item.icon className="w-4 h-4" aria-hidden="true" />
                       ) : null}
-                      <span className="truncate">{t(item.labelKey)}</span>
+                      {/* Wraps rather than cutting off: two columns leave
+                          about 115px for a label on a 390px phone. */}
+                      <span className="min-w-0 leading-snug">{t(item.labelKey)}</span>
                     </Link>
                   );
                 })}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Circle, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Circle, Marker, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Compass } from "lucide-react";
@@ -31,7 +31,7 @@ interface CoverageRow {
 const MILES_TO_METERS = 1609.34;
 
 export function VendorServiceAreaMap({ vendorId }: { vendorId: string }) {
-  const { t } = useTranslation("vendorProfile");
+  const { t, i18n } = useTranslation("vendorProfile");
   const [data, setData] = useState<CoverageRow | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -112,7 +112,16 @@ export function VendorServiceAreaMap({ vendorId }: { vendorId: string }) {
           scrollWheelZoom={false}
           style={{ height: "100%", width: "100%" }}
           attributionControl={false}
+          zoomControl={false}
         >
+          {/* Leaflet's own zoom buttons, with their labels in the visitor's
+              language (remounted when it changes). */}
+          <ZoomControl
+            key={i18n.language}
+            position="topleft"
+            zoomInTitle={t("serviceArea.zoomIn")}
+            zoomOutTitle={t("serviceArea.zoomOut")}
+          />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
@@ -125,7 +134,7 @@ export function VendorServiceAreaMap({ vendorId }: { vendorId: string }) {
               fillOpacity: 0.12,
             }}
           />
-          <Marker position={center} icon={markerIcon} />
+          <Marker key={i18n.language} position={center} icon={markerIcon} alt={t("serviceArea.marker")} />
         </MapContainer>
       </div>
     </div>

@@ -133,7 +133,9 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
 
   return (
     <div>
-      <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
+      {/* 36px on phones: one long word ("Disponibilidad", even
+          "Availability") at 48px is wider than a 360px screen. */}
+      <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
         {t("availability.title")}
       </h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-xl leading-relaxed">

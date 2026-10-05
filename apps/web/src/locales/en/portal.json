@@ -54,9 +54,6 @@
       "usage": "Usage"
     }
   },
-  "logo": {
-    "tagline": "Events, simplified"
-  },
   "config_error": {
     "eyebrow": "Vendora · Configuration error",
     "title": "Missing Supabase environment variables",

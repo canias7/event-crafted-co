@@ -9,6 +9,7 @@ import {
 import {
   SUPPORTED_LANGUAGES,
   LANGUAGE_LABELS,
+  changeLanguage,
   type SupportedLanguage,
 } from "@/i18n";
 
@@ -44,7 +45,7 @@ export function LanguageSwitcher({
         {SUPPORTED_LANGUAGES.map((lang) => (
           <DropdownMenuItem
             key={lang}
-            onClick={() => i18n.changeLanguage(lang)}
+            onClick={() => void changeLanguage(lang)}
             className="text-sm cursor-pointer"
           >
             <span className="flex-1">{LANGUAGE_LABELS[lang]}</span>

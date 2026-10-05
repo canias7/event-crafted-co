@@ -25,7 +25,9 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("landing");
   // Log in hides where the two header buttons would cross the 20px page
-  // edge: under 360px in English, under 388px with the wider Spanish labels.
+  // edge: under 360px in English, under 388px with the wider Spanish labels
+  // (the shorter "Entrar" here, not "Iniciar sesión", is what fits a 390px
+  // phone; measured with Libre Baskerville).
   const loginHide = i18n.resolvedLanguage === "es" ? "max-[387px]:hidden" : "max-[359px]:hidden";
 
   // How it works used to be a section here; old /#how-it-works links go

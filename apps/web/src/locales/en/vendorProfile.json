@@ -190,7 +190,10 @@
     "eyebrow": "Service area",
     "title": "Where this vendor travels",
     "basedIn": "Based in {{location}}. Travels up to {{miles}} miles for events.",
-    "travels": "Travels up to {{miles}} miles for events."
+    "travels": "Travels up to {{miles}} miles for events.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "marker": "Marker"
   },
   "attributes": {
     "title": "About this vendor"

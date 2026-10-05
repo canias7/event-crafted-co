@@ -190,7 +190,10 @@
     "eyebrow": "Zona de servicio",
     "title": "Hasta dónde viaja este proveedor",
     "basedIn": "Con base en {{location}}. Viaja hasta {{miles}} millas para eventos.",
-    "travels": "Viaja hasta {{miles}} millas para eventos."
+    "travels": "Viaja hasta {{miles}} millas para eventos.",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "marker": "Ubicación del proveedor"
   },
   "attributes": {
     "title": "Sobre este proveedor"

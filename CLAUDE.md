@@ -105,6 +105,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 The whole website (`apps/web`: public pages, sign-in, host and vendor portals) is in English and Spanish (Oct 2026). Any text you add or change needs both.
 
 - Strings live in `apps/web/src/locales/en/<namespace>.json` and `locales/es/<namespace>.json`, loaded automatically by `src/i18n.ts`. Keep the two files' keys identical. Read them with `useTranslation("<namespace>")` (or `i18n.t(key, { ns })` outside components). A changelog entry needs its text in both `changelog.json` files.
+- English ships in the main bundle; Spanish is its own chunk (`src/locales/es.ts`), fetched only when someone reads the site in Spanish, and `main.tsx` renders after `i18nReady` so the first paint is already Spanish. To switch language in code, use `changeLanguage()` from `@/i18n`, which fetches the strings first.
 - Spanish is neutral Latin American with "tú". Words: vendor = proveedor, host = anfitrión, listing = anuncio, inquiry = consulta, quote = cotización, proposal = propuesta, deposit = anticipo, dashboard = panel.
 - Dates, times and numbers: pass `intlLocale()` from `@/lib/intlLocale` (US Spanish, "7:05 p.m."), never bare `i18n.language` ("es" gives "19:05" and "1234 US$").
 - Category names: `useCategoryNames()`; prices and event types: `usePriceLabels()`. Values saved to the database, URLs and filters stay English.
