@@ -86,6 +86,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - Champagne for labels, links and accents (`text-gold`, hover to white), never bronze on ink.
 - White-at-15% hairlines; cards `border-white/15 bg-white/[0.03]`.
 - `PublicNav tone="dark"` (or `"overlay"` over a photo) and `<Footer tone="dark" />`.
+- The language switcher lives only in the footer's bottom bar, never in the nav (owner's call): any public page needs the footer so it has one.
 - Pop-up menus stay light. The brand red is too faint on ink for text, so put it on a cream pill.
 - Sign-in pages and the signed-in portals keep the light style for now.
 

@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
 
 // Top-level public-nav links. The "Vendors" entry is rendered as a
@@ -307,9 +306,6 @@ export function PublicNav({
               </Link>
             </>
           )}
-          <span className={overlay ? "ml-3" : undefined}>
-            <LanguageSwitcher tone={overlay ? "dark" : "light"} />
-          </span>
         </div>
 
         {/* Mobile toggle */}

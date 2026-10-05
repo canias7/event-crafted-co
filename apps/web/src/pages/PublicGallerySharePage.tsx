@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PublicNav } from "@/components/public/PublicNav";
+import { Footer } from "@/components/public/Footer";
 import { downloadCrossOrigin } from "@/lib/downloadImage";
 
 interface ImageRow {
@@ -279,6 +280,7 @@ export default function PublicGallerySharePage() {
           />
         )}
       </main>
+      <Footer />
     </div>
   );
 }
