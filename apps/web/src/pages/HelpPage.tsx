@@ -10,9 +10,9 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, FileText, Lock, MessageCircle } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
-import { Footer } from "@/components/public/Footer";
+import { CONTACT_EMAIL, Footer } from "@/components/public/Footer";
 
-const SUPPORT_EMAIL = "support@eventvendora.com";
+const INK = "#14161a";
 
 interface FAQ {
   q: string;
@@ -73,34 +73,34 @@ export default function HelpPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNav />
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: INK }}>
+      <PublicNav tone="dark" />
 
-      <main className="pt-32 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-accent mb-3">— HELP</p>
+      <main id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
+        <p className="font-label text-gold mb-3">— HELP</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           How can we help?
         </h1>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-[#f4f1ea]/80 mb-8">
           Common questions below. Anything else, email us — we read every one.
         </p>
 
         {/* Primary contact card */}
         <a
-          href={`mailto:${SUPPORT_EMAIL}?subject=Vendora%20support%20request`}
-          className="block rounded-2xl border border-border bg-card hover:bg-secondary/40 p-5 mb-10 transition-colors"
+          href={`mailto:${CONTACT_EMAIL}?subject=Vendora%20support%20request`}
+          className="block rounded-2xl border border-white/15 bg-white/[0.03] hover:border-white/40 p-5 mb-10 transition-colors"
         >
           <div className="flex items-center gap-4">
-            <span className="w-11 h-11 rounded-xl bg-accent/15 text-accent inline-flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-xl bg-gold/15 text-gold inline-flex items-center justify-center shrink-0">
               <Mail className="w-5 h-5" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground">Email support</p>
-              <p className="text-sm text-muted-foreground">
-                {SUPPORT_EMAIL} · usually a reply within 24 hours
+              <p className="font-semibold">Email support</p>
+              <p className="text-sm text-[#f4f1ea]/80">
+                {CONTACT_EMAIL} · usually a reply within 24 hours
               </p>
             </div>
-            <span className="text-xs font-medium text-muted-foreground hover:text-accent">
+            <span className="text-xs font-bold text-gold">
               Open →
             </span>
           </div>
@@ -112,13 +112,13 @@ export default function HelpPage() {
 
         {/* Legal links — easy access from Help so vendors don't have
             to dig for the terms they agreed to on signup. */}
-        <section className="mt-10 border-t border-border pt-6">
-          <p className="font-label text-accent mb-3">— LEGAL</p>
+        <section className="mt-10 border-t border-white/15 pt-6">
+          <p className="font-label text-gold mb-3">— LEGAL</p>
           <ul className="space-y-2.5">
             <li>
               <Link
                 to="/terms"
-                className="inline-flex items-center gap-2 text-sm text-foreground hover:text-accent transition-colors"
+                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <FileText className="w-4 h-4" />
                 Terms of Service
@@ -127,7 +127,7 @@ export default function HelpPage() {
             <li>
               <Link
                 to="/privacy"
-                className="inline-flex items-center gap-2 text-sm text-foreground hover:text-accent transition-colors"
+                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <Lock className="w-4 h-4" />
                 Privacy Policy
@@ -135,8 +135,8 @@ export default function HelpPage() {
             </li>
             <li>
               <a
-                href={`mailto:${SUPPORT_EMAIL}?subject=Refund%20request`}
-                className="inline-flex items-center gap-2 text-sm text-foreground hover:text-accent transition-colors"
+                href={`mailto:${CONTACT_EMAIL}?subject=Refund%20request`}
+                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <MessageCircle className="w-4 h-4" />
                 Request a refund
@@ -146,7 +146,7 @@ export default function HelpPage() {
         </section>
       </main>
 
-      <Footer />
+      <Footer tone="dark" />
     </div>
   );
 }
@@ -158,8 +158,8 @@ function FAQSection({ title, items }: { title: string; items: FAQ[] }) {
       <ul className="space-y-4">
         {items.map((item, i) => (
           <li key={i}>
-            <p className="font-medium text-foreground mb-1">{item.q}</p>
-            <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+            <p className="font-medium mb-1">{item.q}</p>
+            <p className="text-sm text-[#f4f1ea]/80 leading-relaxed">{item.a}</p>
           </li>
         ))}
       </ul>

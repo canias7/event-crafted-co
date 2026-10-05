@@ -16,22 +16,22 @@ const CATEGORY_META: Record<
 > = {
   feature: {
     label: "New",
-    tone: "bg-accent/15 text-accent border-accent/30",
+    tone: "bg-gold/15 text-gold border-gold/40",
     Icon: Sparkles,
   },
   improvement: {
     label: "Better",
-    tone: "bg-secondary text-foreground border-border",
+    tone: "bg-white/[0.06] text-[#f4f1ea] border-white/15",
     Icon: Wrench,
   },
   fix: {
     label: "Fix",
-    tone: "bg-secondary text-muted-foreground border-border",
+    tone: "bg-white/[0.06] text-[#f4f1ea]/80 border-white/15",
     Icon: Bug,
   },
   security: {
     label: "Security",
-    tone: "bg-foreground/10 text-foreground border-foreground/30",
+    tone: "bg-white/10 text-[#f4f1ea] border-white/40",
     Icon: ShieldCheck,
   },
 };
@@ -64,27 +64,26 @@ export default function ChangelogPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNav />
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+      <PublicNav tone="dark" />
 
-      <section className="border-b border-border pt-32 pb-12 md:pb-16">
+      <section className="border-b border-white/15 pt-12 md:pt-16 pb-12 md:pb-16">
         <div className="container mx-auto px-5 md:px-8 max-w-4xl">
-          <p className="font-label text-accent tracking-[0.4em] mb-4">
+          <p className="font-label text-gold tracking-[0.4em] mb-4">
             — CHANGELOG
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
             What we've been{" "}
-            <span className="text-accent">shipping.</span>
+            <span className="text-gold">shipping.</span>
           </h1>
-          <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
-            A running log of every notable feature, improvement, and fix
-            we've shipped. Updated whenever something user-visible lands —
-            no marketing fluff, just the work.
+          <p className="text-base md:text-lg max-w-2xl leading-relaxed">
+            The features, improvements and fixes you'll notice, newest
+            first. No marketing fluff, just the work.
           </p>
         </div>
       </section>
 
-      <section className="py-12 md:py-16">
+      <section id="main-content" className="py-12 md:py-16">
         <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <div className="space-y-12">
             {grouped.map(([month, entries], gi) => (
@@ -96,14 +95,14 @@ export default function ChangelogPage() {
                 transition={{ ...spring, delay: Math.min(gi * 0.05, 0.3) }}
               >
                 <h2 className="font-editorial text-3xl mb-6">{month}</h2>
-                <ol className="space-y-6 border-l border-border pl-6 ml-1 relative">
+                <ol className="space-y-6 border-l border-white/15 pl-6 ml-1 relative">
                   {entries.map((entry, i) => {
                     const meta = CATEGORY_META[entry.category];
                     const Icon = meta.Icon;
                     return (
                       <li key={`${entry.date}-${i}`} className="relative">
                         <span
-                          className="absolute -left-[33px] w-3 h-3 rounded-full bg-background border border-border ring-4 ring-background"
+                          className="absolute -left-[33px] w-3 h-3 rounded-full bg-[#14161a] border border-gold ring-4 ring-[#14161a]"
                           style={{ top: "0.4rem" }}
                         />
                         <div className="flex items-baseline gap-2 mb-2 flex-wrap">
@@ -113,14 +112,14 @@ export default function ChangelogPage() {
                             <Icon className="w-2.5 h-2.5" />
                             {meta.label}
                           </span>
-                          <p className="text-[11px] text-muted-foreground tnum">
+                          <p className="text-[11px] text-[#f4f1ea]/80 tnum">
                             {dayLabel(entry.date)}
                           </p>
                         </div>
                         <h3 className="font-editorial text-xl leading-tight mb-1.5">
                           {entry.title}
                         </h3>
-                        <p className="text-sm text-foreground leading-relaxed max-w-2xl">
+                        <p className="text-sm leading-relaxed max-w-2xl">
                           {entry.description}
                         </p>
                       </li>
@@ -152,7 +151,7 @@ export default function ChangelogPage() {
         }}
       />
 
-      <Footer />
+      <Footer tone="dark" />
     </div>
   );
 }

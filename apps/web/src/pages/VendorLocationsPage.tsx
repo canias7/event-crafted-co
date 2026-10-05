@@ -88,19 +88,19 @@ export default function VendorLocationsPage() {
       : selected;
 
   return (
-    <div className="min-h-screen public-canvas">
-      <PublicNav />
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+      <PublicNav tone="dark" />
 
-      <section className="pt-32 pb-10">
+      <section className="pt-12 md:pt-16 pb-10">
         <div className="container mx-auto px-5 md:px-8 max-w-5xl">
-          <p className="font-label text-accent tracking-[0.4em] mb-4">
+          <p className="font-label text-gold tracking-[0.4em] mb-4">
             — VENDORS BY LOCATION
           </p>
           <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-4">
             Find your team{" "}
-            <span className="text-accent">near you.</span>
+            <span className="text-gold">near you.</span>
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed">
+          <p className="text-base md:text-lg text-[#f4f1ea]/80 max-w-2xl leading-relaxed">
             {totalLocations} {totalLocations === 1 ? "city" : "cities"} on Vendora
             today. Pick one to filter the directory.
           </p>
@@ -111,21 +111,17 @@ export default function VendorLocationsPage() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between gap-3 rounded-full px-5 py-3 text-left transition-colors"
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid hsl(var(--border))",
-                  }}
+                  className="w-full flex items-center justify-between gap-3 rounded-full border border-white/15 bg-white/[0.04] px-5 py-3 text-left transition-colors hover:border-white/40"
                 >
                   <span className="flex items-center gap-2.5 min-w-0">
-                    <MapPin className="w-4 h-4 text-accent shrink-0" />
-                    <span className="font-medium text-foreground truncate">
+                    <MapPin className="w-4 h-4 text-gold shrink-0" />
+                    <span className="font-bold truncate">
                       {triggerLabel}
                     </span>
                   </span>
                   <ChevronDown
                     className={cn(
-                      "w-4 h-4 text-muted-foreground shrink-0 transition-transform",
+                      "w-4 h-4 text-[#f4f1ea]/80 shrink-0 transition-transform",
                       open && "rotate-180",
                     )}
                   />
@@ -188,35 +184,34 @@ export default function VendorLocationsPage() {
         </div>
       </section>
 
-      <section className="py-12 md:py-16">
+      <section id="main-content" className="py-12 md:py-16">
         <div className="container mx-auto px-5 md:px-8">
           {loading && vendors.length === 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[0, 1, 2, 3, 4].map((i) => (
                 <div key={i}>
-                  <Skeleton className="aspect-[4/3] w-full rounded-sm mb-3" />
-                  <Skeleton className="h-5 w-2/3 mb-2" />
-                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="aspect-[4/3] w-full rounded-2xl mb-3 bg-white/10" />
+                  <Skeleton className="h-5 w-2/3 mb-2 bg-white/10" />
+                  <Skeleton className="h-4 w-full bg-white/10" />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 max-w-md mx-auto">
-              <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
-                <MapPin className="w-5 h-5 text-muted-foreground" />
+              <div className="w-12 h-12 mx-auto rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
+                <MapPin className="w-5 h-5 text-gold" />
               </div>
               <p className="font-editorial text-2xl mb-2">
                 {selected === ALL_CITIES ? "No vendors yet" : `No vendors in ${selected}`}
               </p>
-              <p className="text-sm text-muted-foreground">
-                Check back as the directory grows — vendors are joining
-                every week.
+              <p className="text-sm text-[#f4f1ea]/80">
+                Check back as the directory grows.
               </p>
             </div>
           ) : (
             <>
               <div className="max-w-5xl mx-auto mb-6 px-1">
-                <p className="font-label text-muted-foreground">
+                <p className="font-label text-[#f4f1ea]/80">
                   {filtered.length}{" "}
                   {filtered.length === 1 ? "vendor" : "vendors"}
                   {selected === ALL_CITIES ? "" : ` in ${selected}`}
@@ -224,7 +219,7 @@ export default function VendorLocationsPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {filtered.map((v, i) => (
-                  <VendorCard key={v.id} vendor={v} eager={i < 6} />
+                  <VendorCard key={v.id} vendor={v} eager={i < 6} tone="dark" />
                 ))}
               </div>
             </>
@@ -232,7 +227,7 @@ export default function VendorLocationsPage() {
         </div>
       </section>
 
-      <Footer />
+      <Footer tone="dark" />
     </div>
   );
 }

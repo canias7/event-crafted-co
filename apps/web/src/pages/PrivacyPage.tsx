@@ -11,19 +11,19 @@ export default function PrivacyPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNav />
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+      <PublicNav tone="dark" />
 
-      <article className="pt-32 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-accent mb-3">— LEGAL</p>
+      <article id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
+        <p className="font-label text-gold mb-3">— LEGAL</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           Privacy policy
         </h1>
-        <p className="text-sm text-muted-foreground mb-12">
+        <p className="text-sm text-[#f4f1ea]/80 mb-12">
           Last updated: May 3, 2026
         </p>
 
-        <div className="space-y-8 text-foreground leading-relaxed">
+        <div className="space-y-8 leading-relaxed">
           <p>
             Vendora is a vendor-first event marketplace. This page describes
             what we collect, how we use it, and the rights you have over your
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
               for a full export or deletion request, email{" "}
               <a
                 href="mailto:hello@eventvendora.com"
-                className="text-accent font-medium"
+                className="text-gold font-medium hover:text-white"
               >
                 hello@eventvendora.com
               </a>
@@ -134,7 +134,7 @@ export default function PrivacyPage() {
               Questions about this policy or your data: email{" "}
               <a
                 href="mailto:hello@eventvendora.com"
-                className="text-accent font-medium"
+                className="text-gold font-medium hover:text-white"
               >
                 hello@eventvendora.com
               </a>
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
         </div>
       </article>
 
-      <Footer />
+      <Footer tone="dark" />
     </div>
   );
 }
@@ -159,7 +159,7 @@ function Section({
   return (
     <section>
       <h2 className="font-editorial text-2xl mb-3">{title}</h2>
-      <div className="text-sm leading-relaxed text-foreground space-y-2">
+      <div className="text-sm leading-relaxed space-y-2">
         {children}
       </div>
     </section>

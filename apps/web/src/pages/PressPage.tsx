@@ -51,8 +51,8 @@ const QUICK_FACTS = [
 
 const PALETTE = [
   { name: "Ink", hex: "#14161A" },
-  { name: "Ivory", hex: "#F4F1EA", light: true },
-  { name: "Cream", hex: "#FBF9F4", light: true },
+  { name: "Ivory", hex: "#F4F1EA" },
+  { name: "Cream", hex: "#FBF9F4" },
   { name: "Bronze", hex: "#8A6F3E" },
   { name: "Champagne", hex: "#C9A86A" },
 ];
@@ -85,17 +85,17 @@ export default function PressPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNav />
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+      <PublicNav tone="dark" />
 
       {/* Hero */}
-      <section className="border-b border-border pb-12 pt-32 md:pb-16">
+      <section className="border-b border-white/15 pb-12 pt-12 md:pb-16 md:pt-16">
         <div className="container mx-auto max-w-5xl px-5 md:px-8">
-          <p className="mb-4 font-label text-accent">Press kit</p>
+          <p className="mb-4 font-label text-gold">Press kit</p>
           <h1 className="mb-5 font-editorial text-5xl leading-[1.0] md:text-6xl">
-            Everything you need to <span className="text-accent">write about us.</span>
+            Everything you need to <span className="text-gold">write about us.</span>
           </h1>
-          <p className="mb-8 max-w-2xl text-base leading-relaxed text-foreground md:text-lg">
+          <p className="mb-8 max-w-2xl text-base leading-relaxed md:text-lg">
             Our logo and colours, the short version of what we do, and a real
             person you can email.
           </p>
@@ -104,7 +104,7 @@ export default function PressPage() {
       </section>
 
       {/* Stats */}
-      <section className="border-b border-border py-12">
+      <section id="main-content" className="border-b border-white/15 py-12">
         <div className="container mx-auto max-w-5xl px-5 md:px-8">
           <div className="grid grid-cols-3 gap-4">
             {STATS.map((s, i) => (
@@ -117,7 +117,7 @@ export default function PressPage() {
                 className="text-center md:text-left"
               >
                 <p className="mb-1 font-editorial text-4xl tnum md:text-5xl">{s.value}</p>
-                <p className="text-xs uppercase tracking-[0.2em] text-foreground">{s.label}</p>
+                <p className="text-xs uppercase tracking-[0.2em]">{s.label}</p>
               </motion.div>
             ))}
           </div>
@@ -127,13 +127,13 @@ export default function PressPage() {
       {/* Quick facts */}
       <section className="py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 md:px-8">
-          <p className="mb-3 font-label text-accent">Quick facts</p>
+          <p className="mb-3 font-label text-gold">Quick facts</p>
           <h2 className="mb-10 font-editorial text-4xl">The 60-second version</h2>
           <dl className="space-y-6">
             {QUICK_FACTS.map((f) => (
               <div key={f.label}>
-                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-accent">{f.label}</dt>
-                <dd className="m-0 text-base leading-relaxed text-foreground">{f.body}</dd>
+                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-gold">{f.label}</dt>
+                <dd className="m-0 text-base leading-relaxed">{f.body}</dd>
               </div>
             ))}
           </dl>
@@ -141,21 +141,21 @@ export default function PressPage() {
       </section>
 
       {/* Logo + brand */}
-      <section className="border-t border-border py-14 md:py-20">
+      <section className="border-t border-white/15 py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 md:px-8">
-          <p className="mb-3 font-label text-accent">Brand</p>
+          <p className="mb-3 font-label text-gold">Brand</p>
           <h2 className="mb-8 font-editorial text-4xl">Logo and colours</h2>
 
           <div className="mb-6 grid gap-3 sm:grid-cols-2">
-            <div className="flex items-center justify-center rounded-2xl border border-border bg-foreground p-10">
+            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#14161a] p-10">
               <VendoraLogo size="md" color="#f4f1ea" withTagline />
             </div>
-            <div className="flex items-center justify-center rounded-2xl border border-border bg-background p-10">
+            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#f4f1ea] p-10">
               <VendoraLogo size="md" color="#14161a" />
             </div>
           </div>
 
-          <p className="mb-6 text-sm leading-relaxed text-foreground">
+          <p className="mb-6 text-sm leading-relaxed">
             Use the logo on Ink (#14161A) or Ivory (#F4F1EA). Don't stretch,
             recolour or rotate it, or add effects. Need a logo file? Email us.
           </p>
@@ -164,7 +164,7 @@ export default function PressPage() {
             <a
               href="/pwa-512.png"
               download
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-bold transition-colors hover:border-foreground/30"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-bold transition-colors hover:border-white/40"
             >
               <Download className="h-3 w-3" />
               App icon (512×512)
@@ -172,7 +172,7 @@ export default function PressPage() {
             <a
               href="/pwa-192.png"
               download
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-bold transition-colors hover:border-foreground/30"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-bold transition-colors hover:border-white/40"
             >
               <Download className="h-3 w-3" />
               App icon (192×192)
@@ -184,11 +184,11 @@ export default function PressPage() {
             {PALETTE.map((c) => (
               <div key={c.name}>
                 <div
-                  className={`h-16 rounded-2xl ${c.light ? "border border-border" : ""}`}
+                  className="h-16 rounded-2xl border border-white/15"
                   style={{ backgroundColor: c.hex }}
                 />
                 <p className="mt-2 text-sm font-bold">{c.name}</p>
-                <p className="m-0 text-[11px] tnum text-foreground">{c.hex}</p>
+                <p className="m-0 text-[11px] tnum text-[#f4f1ea]/80">{c.hex}</p>
               </div>
             ))}
           </div>
@@ -196,11 +196,11 @@ export default function PressPage() {
       </section>
 
       {/* Contact */}
-      <section className="border-t border-border py-14 md:py-20">
+      <section className="border-t border-white/15 py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 text-center md:px-8">
-          <p className="mb-3 font-label text-accent">Contact</p>
+          <p className="mb-3 font-label text-gold">Contact</p>
           <h2 className="mb-3 font-editorial text-4xl">Let's talk</h2>
-          <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-foreground">
+          <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed">
             Editorial requests, interviews and partnership inquiries. We read
             every message.
           </p>
@@ -208,7 +208,7 @@ export default function PressPage() {
         </div>
       </section>
 
-      <Footer />
+      <Footer tone="dark" />
     </div>
   );
 }

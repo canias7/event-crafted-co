@@ -129,27 +129,34 @@ function classify(
   return { status: "operational", label: "Operational" };
 }
 
+// On the dark page: green only for "operational" (a live signal),
+// champagne for slow, and "Down" on a cream pill so the brand red
+// stays readable against ink.
 const STATUS_META: Record<
   CheckStatus,
-  { tone: string; Icon: typeof CheckCircle2; label: string }
+  { tone: string; labelTone: string; Icon: typeof CheckCircle2; label: string }
 > = {
   checking: {
-    tone: "text-muted-foreground",
+    tone: "text-[#f4f1ea]/80",
+    labelTone: "text-[#f4f1ea]/80",
     Icon: Loader2,
     label: "Checking",
   },
   operational: {
-    tone: "text-emerald-600 dark:text-emerald-400",
+    tone: "text-emerald-400",
+    labelTone: "text-emerald-400",
     Icon: CheckCircle2,
     label: "Operational",
   },
   degraded: {
-    tone: "text-zinc-600 dark:text-zinc-600",
+    tone: "text-gold",
+    labelTone: "text-gold",
     Icon: AlertCircle,
     label: "Degraded",
   },
   down: {
     tone: "text-destructive",
+    labelTone: "rounded-full bg-[#f4f1ea] px-2 py-0.5 text-destructive",
     Icon: XCircle,
     label: "Down",
   },
@@ -223,21 +230,21 @@ export default function StatusPage() {
   const OverallIcon = overallMeta.Icon;
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNav />
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+      <PublicNav tone="dark" />
 
-      <section className="border-b border-border pt-32 pb-12 md:pb-16">
+      <section className="border-b border-white/15 pt-12 md:pt-16 pb-12 md:pb-16">
         <div className="container mx-auto px-5 md:px-8 max-w-4xl">
-          <p className="font-label text-accent tracking-[0.4em] mb-4">
+          <p className="font-label text-gold tracking-[0.4em] mb-4">
             — STATUS
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
             How the system is{" "}
-            <span className="text-accent">behaving.</span>
+            <span className="text-gold">behaving.</span>
           </h1>
 
           {/* Top-line overall */}
-          <div className="card-soft p-5 flex items-center gap-4 mb-3">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.03] p-5 flex items-center gap-4 mb-3">
             <OverallIcon
               className={`w-6 h-6 shrink-0 ${overallMeta.tone} ${
                 overall === "checking" ? "animate-spin" : ""
@@ -253,7 +260,7 @@ export default function StatusPage() {
                       ? "Service interruption"
                       : "Running checks…"}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-[#f4f1ea]/80 mt-0.5">
                 Re-checks every 60s · last refresh just now
               </p>
             </div>
@@ -276,7 +283,7 @@ export default function StatusPage() {
         </div>
       </section>
 
-      <section className="py-10 md:py-14">
+      <section id="main-content" className="py-10 md:py-14">
         <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <ul className="space-y-3">
             {SERVICES.map((s) => {
@@ -286,7 +293,7 @@ export default function StatusPage() {
               return (
                 <li
                   key={s.id}
-                  className="card-soft p-4 flex items-center gap-4"
+                  className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 flex items-center gap-4"
                 >
                   <Icon
                     className={`w-5 h-5 shrink-0 ${meta.tone} ${
@@ -299,21 +306,21 @@ export default function StatusPage() {
                         {s.label}
                       </p>
                       <p
-                        className={`text-xs font-medium ${meta.tone} tabular-nums`}
+                        className={`text-xs font-medium ${meta.labelTone} tabular-nums`}
                       >
                         {meta.label}
                         {r?.latencyMs != null && (
-                          <span className="text-muted-foreground font-normal ml-2">
+                          <span className="text-[#f4f1ea]/80 font-normal ml-2">
                             {r.latencyMs}ms
                           </span>
                         )}
                       </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-[#f4f1ea]/80 mt-1">
                       {s.description}
                     </p>
                     {r?.note && r.status !== "operational" && (
-                      <p className="text-[11px] text-destructive/85 mt-1">
+                      <p className="text-[11px] text-[#f4f1ea]/80 mt-1">
                         {r.note}
                       </p>
                     )}
@@ -323,7 +330,7 @@ export default function StatusPage() {
             })}
           </ul>
 
-          <p className="text-xs text-muted-foreground mt-8 max-w-2xl leading-relaxed">
+          <p className="text-xs text-[#f4f1ea]/80 mt-8 max-w-2xl leading-relaxed">
             Checks run from your browser, so they reflect the path between you
             and Vendora — not just our infrastructure. If you're seeing red
             here but our team's status post says green, it's likely a
@@ -332,7 +339,7 @@ export default function StatusPage() {
         </div>
       </section>
 
-      <Footer />
+      <Footer tone="dark" />
     </div>
   );
 }

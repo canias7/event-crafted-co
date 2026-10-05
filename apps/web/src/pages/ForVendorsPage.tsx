@@ -25,7 +25,7 @@ const TOOLS = [
 
 export default function ForVendorsPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PhotoHero
         photo={planner}
         eyebrow="For vendors"
@@ -42,14 +42,14 @@ export default function ForVendorsPage() {
       <main id="main-content">
         {/* Steps */}
         <section className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-          <p className="m-0 text-center font-label text-accent">How it works</p>
+          <p className="m-0 text-center font-label text-gold">How it works</p>
           <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[42px]">
             From first inquiry to booked.
           </h2>
           <ol className="m-0 mt-12 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="rounded-2xl border border-border bg-card p-4 md:p-6">
-                <p className="m-0 text-[30px] font-bold leading-none text-accent">
+              <li key={s.title} className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 md:p-6">
+                <p className="m-0 text-[30px] font-bold leading-none text-gold">
                   {String(i + 1).padStart(2, "0")}
                 </p>
                 <p className="m-0 mt-4 text-[16px] font-bold">{s.title}</p>
@@ -60,9 +60,9 @@ export default function ForVendorsPage() {
         </section>
 
         {/* Tools */}
-        <section className="border-t border-border">
+        <section className="border-t border-white/15">
           <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-            <p className="m-0 text-center font-label text-accent">Everything you need, all in one place</p>
+            <p className="m-0 text-center font-label text-gold">Everything you need, all in one place</p>
             <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
               Run your business from one place.
             </h2>
@@ -70,10 +70,10 @@ export default function ForVendorsPage() {
               {TOOLS.map((t) => (
                 <div key={t.title} className="text-center">
                   <span
-                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-pending"
+                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
                     style={{ border: "1px solid rgba(201,168,106,0.4)" }}
                   >
-                    <t.icon className="h-5 w-5 text-accent" aria-hidden />
+                    <t.icon className="h-5 w-5 text-gold" aria-hidden />
                   </span>
                   <p className="m-0 mt-3 text-[14px] font-bold">{t.title}</p>
                   <p className="m-0 mt-1 text-[13px] leading-relaxed">{t.body}</p>
@@ -83,15 +83,17 @@ export default function ForVendorsPage() {
           </div>
         </section>
 
-        <ClosingBand
-          title={
-            <>
-              Start <span className="font-editorial text-gold">free.</span>
-            </>
-          }
-          sub="The Free plan includes one listing. Upgrade whenever you're ready for more."
-          cta={{ label: "List your business — free", to: "/signup/vendor" }}
-        />
+        <div className="border-t border-white/15">
+          <ClosingBand
+            title={
+              <>
+                Start <span className="font-editorial text-gold">free.</span>
+              </>
+            }
+            sub="The Free plan includes one listing. Upgrade whenever you're ready for more."
+            cta={{ label: "List your business — free", to: "/signup/vendor" }}
+          />
+        </div>
       </main>
 
       <Footer tone="dark" />
