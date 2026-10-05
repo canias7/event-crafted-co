@@ -71,7 +71,7 @@
       "1d": "1 día",
       "7d": "7 días",
       "30d": "30 días",
-      "custom": "Fecha personalizada"
+      "custom": "Otra fecha"
     },
     "pickExpiry": "Elige una fecha de vencimiento.",
     "pickFuture": "Elige una fecha futura.",

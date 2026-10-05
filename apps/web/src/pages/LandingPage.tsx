@@ -23,7 +23,10 @@ const BRONZE = "#8a6f3e";
 // pages too.
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation("landing");
+  const { t, i18n } = useTranslation("landing");
+  // Log in hides where the two header buttons would cross the 20px page
+  // edge: under 360px in English, under 388px with the wider Spanish labels.
+  const loginHide = i18n.resolvedLanguage === "es" ? "max-[387px]:hidden" : "max-[359px]:hidden";
 
   // How it works used to be a section here; old /#how-it-works links go
   // to its page.
@@ -110,9 +113,9 @@ export default function LandingPage() {
               <>
                 <Link
                   to="/login"
-                  // Hidden on the narrowest phones (under 360px) so the header never
+                  // Hidden on the narrowest phones (see loginHide) so the header never
                   // clips; Sign up links on to log in.
-                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 font-bold transition-colors hover:bg-white/10 max-[359px]:hidden sm:px-4"
+                  className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 font-bold transition-colors hover:bg-white/10 ${loginHide} sm:px-4`}
                   style={{
                     color: CREAM,
                     border: "1px solid rgba(244,241,234,0.35)",
