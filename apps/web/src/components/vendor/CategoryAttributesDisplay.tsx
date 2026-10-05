@@ -28,8 +28,8 @@ type Attrs = Record<string, AttrValue>;
 type AttributeNames = Record<"section" | "label" | "suffix" | "option", (text: string) => string>;
 
 function useAttributeNames(): AttributeNames {
-  const { t, i18n } = useTranslation("vendorProfileParts");
-  const language = i18n.resolvedLanguage;
+  // `t` changes identity when the language changes, so the maps rebuild.
+  const { t } = useTranslation("vendorProfileParts");
   return useMemo(() => {
     const lookup = (group: string) => {
       const names = t(`attributes.${group}`, { returnObjects: true }) as unknown;
@@ -44,7 +44,7 @@ function useAttributeNames(): AttributeNames {
       suffix: lookup("suffixes"),
       option: lookup("options"),
     };
-  }, [t, language]);
+  }, [t]);
 }
 
 export function CategoryAttributesDisplay({

@@ -1,0 +1,92 @@
+{
+  "status": {
+    "new": "Awaiting reply",
+    "drafted": "Vendor drafting",
+    "replied": "Replied",
+    "won": "Booked",
+    "lost": "Closed",
+    "expired": "Expired"
+  },
+  "vendorFallback": "Vendor",
+  "list": {
+    "sidebarTitle": "Customer",
+    "title": "Inbox",
+    "subtitle": "Your inquiries to vendors — all in one place",
+    "newInquiry": "New inquiry",
+    "searchPlaceholder": "Search by vendor, event, or message",
+    "filters": {
+      "all": "All",
+      "awaiting": "Awaiting",
+      "replied": "Replied",
+      "booked": "Booked"
+    },
+    "empty": {
+      "noneTitle": "No conversations yet",
+      "noSearchTitle": "Nothing matches that search",
+      "noFilterTitle": "Nothing matches that filter",
+      "noneBody": "Reach out to a vendor from Explore — every reply lands here so the conversation stays in one place.",
+      "noSearchBody": "Try a different search term.",
+      "noFilterBody": "Try a different status filter above.",
+      "browseVendors": "Browse vendors",
+      "clearFilter": "Clear filter"
+    },
+    "unread": "Unread",
+    "guests_one": "guests",
+    "guests_other": "guests",
+    "budget": "Budget: {{min}} – {{max}}",
+    "time": {
+      "now": "now",
+      "minutes": "{{n}}m",
+      "hours": "{{n}}h",
+      "yesterday": "Yesterday",
+      "days": "{{n}}d"
+    }
+  },
+  "detail": {
+    "backToInquiries": "Back to inquiries",
+    "notFoundTitle": "Inquiry not found",
+    "notFoundBody": "This inquiry doesn't exist or you don't have access.",
+    "inquiryOfType": "{{type}} inquiry",
+    "inquiry": "Inquiry",
+    "detailsLabel": "Inquiry details",
+    "yourInquiry": "Your inquiry",
+    "noMessages": "No messages yet — the vendor will reply soon.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "messageDeleted": "Message deleted",
+    "you": "You",
+    "sentByAi": "Sent by AI",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edited": "edited",
+    "read": "Read · {{time}}",
+    "ended": {
+      "lost": "Conversation ended.",
+      "expired": "Conversation ended — inquiry expired.",
+      "cancelled": "Conversation ended — inquiry cancelled."
+    },
+    "proposeMeeting": "Propose meeting",
+    "removeAttachment": "Remove attachment",
+    "attachFiles": "Attach files",
+    "quickReactions": "Quick reactions",
+    "insertEmoji": "Insert {{emoji}}",
+    "messagePlaceholder": "Message {{name}}…",
+    "send": "Send",
+    "confirmDelete": "Delete this message? This can't be undone.",
+    "toasts": {
+      "messageEmpty": "Message can't be empty",
+      "maxAttachments": "Up to {{max}} attachments per message",
+      "uploadFailed": "Couldn't upload your attachments — message not sent.",
+      "partialUpload": "{{uploaded}} of {{total}} attachments uploaded."
+    },
+    "summary": {
+      "close": "Close",
+      "to": "To",
+      "event": "Event",
+      "guests": "Guests",
+      "budget": "Budget",
+      "location": "Location",
+      "yourNotes": "Your notes"
+    }
+  }
+}

@@ -43,7 +43,7 @@
     "reload": "Reload page",
     "home": "Back to home",
     "stack": "Stack trace (dev only)",
-    "report": "If you think this is a bug, please email <link>hello@eventvendora.com</link> with the steps you took."
+    "report": "If you think this is a bug, please email <mailLink>hello@eventvendora.com</mailLink> with the steps you took."
   },
   "route_loading": "Loading page…",
   "under_construction": {

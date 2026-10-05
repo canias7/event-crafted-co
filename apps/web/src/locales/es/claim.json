@@ -11,7 +11,7 @@
   "eyebrow": "— RECLAMA TU ANUNCIO",
   "intro": "Publicamos <name/> en Vendora con información pública del negocio. Reclama este anuncio para administrarlo — podrás editar tu perfil, definir tus precios, subir fotos a tu portafolio y empezar a recibir consultas de anfitriones.",
   "invitedVia": "Invitación enviada a {{email}}. Vendora es un mercado de eventos centrado en proveedores — sin cargos por reserva ni comisiones, solo conexiones directas con anfitriones que organizan bodas, cumpleaños, fiestas de temporada y más.",
-  "alreadyClaimed": "Este anuncio ya fue reclamado. <link>Inicia sesión</link> para acceder.",
+  "alreadyClaimed": "Este anuncio ya fue reclamado. <signInLink>Inicia sesión</signInLink> para acceder.",
   "signUp": "Regístrate para reclamarlo",
   "signIn": "¿Ya tienes cuenta? Inicia sesión",
   "claim": "Reclamar este anuncio",

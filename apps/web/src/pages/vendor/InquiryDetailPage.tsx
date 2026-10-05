@@ -1152,7 +1152,7 @@ export default function InquiryDetailPage() {
                       }`}
                     >
                       {isDeleted ? (
-                        <p>Message deleted</p>
+                        <p>{t("thread.deleted")}</p>
                       ) : (
                         <>
                           {m.reply_to_message_id ? (() => {
@@ -1164,8 +1164,8 @@ export default function InquiryDetailPage() {
                               parent.sender_role === "host"
                                 ? hostName
                                 : parent.sender_role === "vendor"
-                                  ? "You"
-                                  : "Vendora AI";
+                                  ? t("you")
+                                  : t("vendoraAi");
                             return (
                               <MessageReplyContext
                                 authorName={parentName}
@@ -1179,7 +1179,7 @@ export default function InquiryDetailPage() {
                           {isAi ? (
                             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
                               <Sparkles className="w-3 h-3" />
-                              Sent automatically
+                              {t("thread.sentAutomatically")}
                             </span>
                           ) : null}
                           {editingMessageId === m.id ? (
@@ -1208,14 +1208,14 @@ export default function InquiryDetailPage() {
                                   onClick={cancelEditing}
                                   className="text-[11px] text-muted-foreground hover:text-accent px-2 py-1"
                                 >
-                                  Cancel
+                                  {t("thread.cancel")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
                                   className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
                                 >
-                                  Save
+                                  {t("thread.save")}
                                 </button>
                               </div>
                             </div>
@@ -1229,7 +1229,7 @@ export default function InquiryDetailPage() {
                           )}
                           {isEdited ? (
                             <span className="block text-[10px] opacity-60 mt-1">
-                              edited
+                              {t("thread.edited")}
                             </span>
                           ) : null}
                         </>
@@ -1253,7 +1253,7 @@ export default function InquiryDetailPage() {
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
-                        {new Date(m.created_at).toLocaleTimeString(undefined, {
+                        {new Date(m.created_at).toLocaleTimeString(i18n.language, {
                           hour: "numeric",
                           minute: "2-digit",
                         })}

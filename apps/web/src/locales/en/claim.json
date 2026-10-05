@@ -11,7 +11,7 @@
   "eyebrow": "— CLAIM YOUR LISTING",
   "intro": "We pre-listed <name/> on Vendora using public business info. Claim this listing to take ownership — you'll be able to edit your profile, set pricing, upload portfolio photos, and start receiving host inquiries.",
   "invitedVia": "Invited via {{email}}. Vendora is a vendor-first event marketplace — no booking fees, no commissions, just direct connections to hosts planning weddings, birthdays, holidays, and more.",
-  "alreadyClaimed": "This listing has already been claimed. <link>Sign in</link> to access it.",
+  "alreadyClaimed": "This listing has already been claimed. <signInLink>Sign in</signInLink> to access it.",
   "signUp": "Sign up to claim",
   "signIn": "Already have an account? Sign in",
   "claim": "Claim this listing",
