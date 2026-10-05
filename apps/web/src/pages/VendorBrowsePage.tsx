@@ -21,7 +21,7 @@ import tilePhotography from "@/assets/categories/photography.jpg?as=picture";
 import tileVenues from "@/assets/categories/venues.jpg?as=picture";
 import tileCatering from "@/assets/categories/catering.jpg?as=picture";
 import tileBeauty from "@/assets/categories/beauty.jpg?as=picture";
-import tilePlanning from "@/assets/hero/wedding.jpg?as=picture";
+import tilePlanning from "@/assets/categories/planning.jpg?as=picture";
 import tileDecor from "@/assets/vendor-florist.jpg?as=picture";
 import tileEntertainment from "@/assets/vendor-dj.jpg?as=picture";
 import { VendorCard } from "@/components/shared/VendorCard";
