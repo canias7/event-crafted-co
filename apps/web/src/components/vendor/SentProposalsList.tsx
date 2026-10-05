@@ -117,6 +117,8 @@ export function SentProposalsList({
     return listings.find((l) => l.id === vendorId)?.business_name ?? null;
   }
 
+  // The PDF is the document itself (lib/documentPdf also dates it in
+  // en-US), so its labels stay as they are.
   function downloadPdf(p: SentProposal) {
     downloadDocumentPdf({
       title: p.title,
@@ -135,7 +137,7 @@ export function SentProposalsList({
       // Voiding is terminal: the public /proposal page and the
       // accept_proposal RPC both refuse any status other than 'sent', so a
       // cancelled proposal can never be accepted. Always confirm.
-      if (!confirm(`Void "${p.title}"? The client won't be able to accept it.`)) return;
+      if (!confirm(t("sentProposals.confirmVoid", { title: p.title }))) return;
       setCancellingId(p.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
@@ -145,13 +147,13 @@ export function SentProposalsList({
         .eq("status", "sent");
       setCancellingId(null);
       if (error) {
-        toast.error("Couldn't void the proposal", { description: error.message });
+        toast.error(t("sentProposals.toast.voidFailed"), { description: error.message });
         return;
       }
-      toast.success("Proposal voided");
+      toast.success(t("sentProposals.toast.voided"));
       await load();
     },
-    [load],
+    [load, t],
   );
 
   return (
@@ -162,14 +164,14 @@ export function SentProposalsList({
     >
       <div className="px-4 pt-3 pb-2 border-b border-border">
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-          Sent proposals
+          {t("sentProposals.title")}
         </span>
       </div>
       {loading ? (
         <div className="h-16 m-4 rounded-xl bg-foreground/5 animate-pulse" />
       ) : rows.length === 0 ? (
         <p className="px-4 py-6 text-xs text-muted-foreground">
-          No proposals sent yet. Compose one on the left and send it from the box below.
+          {t("sentProposals.empty")}
         </p>
       ) : (
         <div className="max-h-[420px] overflow-y-auto scrollbar-hide">
@@ -186,8 +188,16 @@ export function SentProposalsList({
                     </div>
                     <p className="text-xs text-muted-foreground truncate mt-1">
                       {accepted
-                        ? `Accepted by ${p.accepted_name ?? "client"} · ${fmtDate(p.accepted_at)}`
-                        : `${p.recipient_name ? `To ${p.recipient_name} · ` : ""}Sent ${fmtDate(p.created_at)}`}
+                        ? t("sentProposals.acceptedBy", {
+                            name: p.accepted_name ?? t("sentProposals.client"),
+                            date: fmtDate(p.accepted_at),
+                          })
+                        : p.recipient_name
+                          ? t("sentProposals.toSent", {
+                              name: p.recipient_name,
+                              date: fmtDate(p.created_at),
+                            })
+                          : t("sentProposals.sent", { date: fmtDate(p.created_at) })}
                     </p>
                   </div>
                 </div>
@@ -198,7 +208,7 @@ export function SentProposalsList({
                     className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    Preview
+                    {t("sentProposals.preview")}
                   </button>
                   <button
                     type="button"
@@ -206,7 +216,7 @@ export function SentProposalsList({
                     className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    PDF
+                    {t("sentProposals.pdf")}
                   </button>
                   {open ? (
                     <button
@@ -215,7 +225,7 @@ export function SentProposalsList({
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                      Link
+                      {t("sentProposals.link")}
                     </button>
                   ) : null}
                   {open ? (
@@ -228,7 +238,7 @@ export function SentProposalsList({
                       {cancellingId === p.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : null}
-                      Void
+                      {t("sentProposals.void")}
                     </button>
                   ) : null}
                 </div>

@@ -71,6 +71,6 @@
     "fileTooLarge": "{{name}}: máximo 10 MB",
     "invoiceLoadFailed": "No se pudo cargar esa factura.",
     "uploadFailed": "No se pudieron subir tus archivos adjuntos — el mensaje no se envió.",
-    "partialUpload": "Se subieron {{uploaded}} de {{total}} archivos adjuntos."
+    "partialUpload": "Archivos adjuntos subidos: {{uploaded}} de {{total}}."
   }
 }

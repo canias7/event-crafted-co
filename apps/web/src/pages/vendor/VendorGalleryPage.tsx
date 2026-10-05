@@ -17,6 +17,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CalendarDays,
   Check,
@@ -153,6 +154,7 @@ function thumbUrl(url: string, width: number): string {
 }
 
 export default function VendorGalleryPage() {
+  const { t } = useTranslation("vendorGallery");
   const { user } = useAuth();
   // Gallery is available to every vendor tier, including Free. Per-tier
   // STORAGE caps (Free 100 MB / Pro 1 GB / Premium 5 GB) are enforced
@@ -574,12 +576,12 @@ export default function VendorGalleryPage() {
     if (!files || files.length === 0 || !user?.id || uploading) return;
     const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (list.length === 0) {
-      toast.error("Pick image files only.");
+      toast.error(t("toasts.imagesOnly"));
       return;
     }
     const TOO_BIG = list.find((f) => f.size > 20 * 1024 * 1024);
     if (TOO_BIG) {
-      toast.error(`"${TOO_BIG.name}" is over 20 MB. Try a smaller version.`);
+      toast.error(t("toasts.tooBig", { name: TOO_BIG.name }));
       return;
     }
 
@@ -661,10 +663,10 @@ export default function VendorGalleryPage() {
     setUploading(false);
     if (failed > 0) {
       toast.error(
-        `${list.length - failed} uploaded, ${failed} failed. Check console.`,
+        t("toasts.uploadPartial", { uploaded: list.length - failed, failed }),
       );
     } else {
-      toast.success(`${list.length} image${list.length === 1 ? "" : "s"} added.`);
+      toast.success(t("toasts.added", { count: list.length }));
     }
     await load();
   }
@@ -672,7 +674,7 @@ export default function VendorGalleryPage() {
   // Soft-delete from anywhere except Trash, hard-delete from Trash.
   async function removeOne(id: string) {
     if (isTrashView) {
-      if (!window.confirm("Delete permanently? Can't be undone.")) return;
+      if (!window.confirm(t("confirm.deleteOne"))) return;
       // Pull the URL before deleting so we know which storage file
       // to purge. Without this, the DB row goes but the storage
       // object stays — accumulating zombies that count toward the
@@ -693,7 +695,7 @@ export default function VendorGalleryPage() {
         return;
       }
       await purgeGalleryStorageObject(row?.image_url ?? null);
-      toast.success("Deleted.");
+      toast.success(t("toasts.deleted"));
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
@@ -704,7 +706,7 @@ export default function VendorGalleryPage() {
         toast.error(error.message);
         return;
       }
-      toast.success("Moved to Trash. 30 days to restore.");
+      toast.success(t("toasts.movedToTrashSingle"));
     }
     load();
   }
@@ -713,7 +715,7 @@ export default function VendorGalleryPage() {
     if (selected.size === 0) return;
     const ids = Array.from(selected);
     if (isTrashView) {
-      if (!window.confirm(`Delete ${ids.length} permanently? Can't be undone.`)) return;
+      if (!window.confirm(t("confirm.deleteMany", { count: ids.length }))) return;
       // Fetch image_urls before delete so we can purge storage too —
       // see comment in removeOne for the why.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -734,7 +736,7 @@ export default function VendorGalleryPage() {
         .map((r: { image_url?: string }) => r.image_url ?? "")
         .filter(Boolean);
       await purgeGalleryStorageObjects(urls);
-      toast.success(`${ids.length} permanently deleted.`);
+      toast.success(t("toasts.permanentlyDeleted", { count: ids.length }));
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
@@ -745,7 +747,7 @@ export default function VendorGalleryPage() {
         toast.error(error.message);
         return;
       }
-      toast.success(`${ids.length} moved to Trash.`);
+      toast.success(t("toasts.movedToTrash", { count: ids.length }));
     }
     exitSelectMode();
     load();
@@ -763,7 +765,7 @@ export default function VendorGalleryPage() {
       toast.error(error.message);
       return;
     }
-    toast.success(`${ids.length} restored.`);
+    toast.success(t("toasts.restored", { count: ids.length }));
     exitSelectMode();
     load();
   }
@@ -781,7 +783,9 @@ export default function VendorGalleryPage() {
       return;
     }
     toast.success(
-      `${ids.length} moved to ${albumId ? "album" : "Uncategorized"}.`,
+      albumId
+        ? t("toasts.movedToAlbum", { count: ids.length })
+        : t("toasts.movedToUncategorized", { count: ids.length }),
     );
     exitSelectMode();
     load();
@@ -795,14 +799,11 @@ export default function VendorGalleryPage() {
       (r) => r.album_id === activeAlbum && r.deleted_at === null,
     );
     if (albumRows.length === 0) {
-      toast.error("This album has no images.");
+      toast.error(t("toasts.albumEmpty"));
       return;
     }
     if (albumRows.length > 50) {
-      toast.error(
-        `Album zip is capped at 50 images (album has ${albumRows.length}). ` +
-          `Use Select + Download zip in batches.`,
-      );
+      toast.error(t("toasts.albumZipCap", { size: albumRows.length }));
       return;
     }
     await zipRows(albumRows, `album-${activeAlbum.slice(0, 8)}`);
@@ -842,9 +843,9 @@ export default function VendorGalleryPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(a.href);
-      toast.success(`Downloaded ${rowsToZip.length} images.`);
+      toast.success(t("toasts.downloaded", { count: rowsToZip.length }));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Couldn't build zip.";
+      const msg = err instanceof Error ? err.message : t("toasts.zipFailed");
       toast.error(msg);
     } finally {
       setZipping(false);
@@ -860,17 +861,14 @@ export default function VendorGalleryPage() {
     // browsers will crash on. Cap the batch and tell the user to
     // download in chunks.
     if (rowsToZip.length > 50) {
-      toast.error(
-        `Zip is capped at 50 images per batch (selected ${rowsToZip.length}). ` +
-          `Download in smaller groups.`,
-      );
+      toast.error(t("toasts.zipCap", { size: rowsToZip.length }));
       return;
     }
     await zipRows(rowsToZip, "selection");
   }
 
   async function createAlbum() {
-    const name = window.prompt("New album name");
+    const name = window.prompt(t("prompt.newAlbum"));
     if (!name || !name.trim() || !user?.id) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
@@ -882,7 +880,7 @@ export default function VendorGalleryPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Album created.");
+    toast.success(t("toasts.albumCreated"));
     await load();
     if (data?.id) setActiveAlbum(data.id as string);
   }
@@ -891,7 +889,7 @@ export default function VendorGalleryPage() {
     if (!isCustomAlbumActive) return;
     const current = albums?.find((a) => a.id === activeAlbum);
     if (!current) return;
-    const name = window.prompt("Rename album", current.name);
+    const name = window.prompt(t("prompt.renameAlbum"), current.name);
     if (!name || !name.trim() || name.trim() === current.name) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
@@ -902,7 +900,7 @@ export default function VendorGalleryPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Renamed.");
+    toast.success(t("toasts.renamed"));
     load();
   }
 
@@ -911,9 +909,7 @@ export default function VendorGalleryPage() {
     const current = albums?.find((a) => a.id === activeAlbum);
     if (!current) return;
     if (
-      !window.confirm(
-        `Delete album "${current.name}"? The images stay — they move to Uncategorized.`,
-      )
+      !window.confirm(t("confirm.deleteAlbum", { name: current.name }))
     )
       return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -925,7 +921,7 @@ export default function VendorGalleryPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Album deleted.");
+    toast.success(t("toasts.albumDeleted"));
     setActiveAlbum(ALL_TAB);
     load();
   }
@@ -941,7 +937,7 @@ export default function VendorGalleryPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Cover updated.");
+    toast.success(t("toasts.coverUpdated"));
     load();
   }
 
@@ -991,7 +987,7 @@ export default function VendorGalleryPage() {
         .from("vendor_gallery_images")
         .upsert(updates, { onConflict: "id" });
       if (error) {
-        toast.error(`Reorder failed: ${error.message}`);
+        toast.error(t("toasts.reorderFailed", { message: error.message }));
         load();
       }
     } finally {
@@ -1048,6 +1044,17 @@ export default function VendorGalleryPage() {
   // paywall. Per-tier storage caps apply (Free 100 MB / Pro 1 GB /
   // Premium 5 GB); the header meter below tracks usage.
 
+  // Toolbar button labels.
+  const sortLabel = (m: SortMode) => t(`toolbar.sortShort.${m}`);
+  const aspectLabel = (a: AspectFilter) =>
+    a === "all" ? t("toolbar.any") : t(`toolbar.shapes.${a}`);
+  const dateRangeLabel = (from: string, to: string) => {
+    if (!from && !to) return t("toolbar.any");
+    if (from && to) return `${from} → ${to}`;
+    if (from) return t("toolbar.dateFrom", { date: from });
+    return t("toolbar.dateTo", { date: to });
+  };
+
   return (
     <div className="min-h-screen vendor-canvas flex">
       <DashboardSidebar
@@ -1059,18 +1066,22 @@ export default function VendorGalleryPage() {
         <div className="backdrop-blur-sm px-5 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-editorial text-3xl">Gallery</h1>
+              <h1 className="font-editorial text-3xl">{t("header.title")}</h1>
               <p className="text-sm text-muted-foreground">
-                Your media library. Upload once, reuse across listings.
+                {t("header.subtitle")}
               </p>
               {storageStatus && (
                 <div className="mt-2 w-56 max-w-full">
                   <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground mb-1">
                     <span className="tnum">
-                      {formatBytes(storageStatus.usedBytes)}
-                      {storageStatus.capBytes !== null &&
-                        ` of ${formatBytes(storageStatus.capBytes)}`}{" "}
-                      used
+                      {storageStatus.capBytes !== null
+                        ? t("header.storageUsedOf", {
+                            used: formatBytes(storageStatus.usedBytes),
+                            cap: formatBytes(storageStatus.capBytes),
+                          })
+                        : t("header.storageUsed", {
+                            used: formatBytes(storageStatus.usedBytes),
+                          })}
                     </span>
                     {storageStatus.capBytes !== null &&
                       storageStatus.usedBytes >=
@@ -1079,7 +1090,7 @@ export default function VendorGalleryPage() {
                           href="/vendor/subscription"
                           className="font-medium text-foreground underline underline-offset-2"
                         >
-                          Upgrade
+                          {t("header.upgrade")}
                         </a>
                       )}
                   </div>
@@ -1104,7 +1115,7 @@ export default function VendorGalleryPage() {
           {/* Album tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <AlbumTab
-              label="All"
+              label={t("tabs.all")}
               active={activeAlbum === ALL_TAB}
               count={rows?.filter((r) => r.deleted_at === null).length}
               onClick={() => {
@@ -1113,7 +1124,7 @@ export default function VendorGalleryPage() {
               }}
             />
             <AlbumTab
-              label="Uncategorized"
+              label={t("tabs.uncategorized")}
               active={activeAlbum === UNCATEGORIZED_TAB}
               count={
                 rows?.filter(
@@ -1156,7 +1167,7 @@ export default function VendorGalleryPage() {
               className="inline-flex items-center gap-1.5 shrink-0 rounded-full border border-dashed border-border bg-card/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-card/60 hover:text-accent transition-colors"
             >
               <FolderPlus className="w-3.5 h-3.5" />
-              New album
+              {t("tabs.newAlbum")}
             </button>
           </div>
 
@@ -1165,10 +1176,10 @@ export default function VendorGalleryPage() {
               narrows that album. Trash is part of the album axis. */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0 mr-1">
-              Smart
+              {t("tabs.smart")}
             </span>
             <AlbumTab
-              label="Last 7 days"
+              label={t("tabs.last7")}
               active={activeSmartFilter === SMART_RECENT_7}
               onClick={() => {
                 setActiveSmartFilter((curr) =>
@@ -1178,7 +1189,7 @@ export default function VendorGalleryPage() {
               }}
             />
             <AlbumTab
-              label="Last 30 days"
+              label={t("tabs.last30")}
               active={activeSmartFilter === SMART_RECENT_30}
               onClick={() => {
                 setActiveSmartFilter((curr) =>
@@ -1188,7 +1199,7 @@ export default function VendorGalleryPage() {
               }}
             />
             <AlbumTab
-              label="Portraits"
+              label={t("tabs.portraits")}
               active={activeSmartFilter === SMART_PORTRAITS}
               onClick={() => {
                 setActiveSmartFilter((curr) =>
@@ -1198,7 +1209,7 @@ export default function VendorGalleryPage() {
               }}
             />
             <AlbumTab
-              label="Landscapes"
+              label={t("tabs.landscapes")}
               active={activeSmartFilter === SMART_LANDSCAPES}
               onClick={() => {
                 setActiveSmartFilter((curr) =>
@@ -1208,7 +1219,7 @@ export default function VendorGalleryPage() {
               }}
             />
             <AlbumTab
-              label="Large (>5 MB)"
+              label={t("tabs.large")}
               active={activeSmartFilter === SMART_LARGE_FILES}
               onClick={() => {
                 setActiveSmartFilter((curr) =>
@@ -1221,7 +1232,7 @@ export default function VendorGalleryPage() {
               ·
             </span>
             <AlbumTab
-              label="Trash"
+              label={t("tabs.trash")}
               active={isTrashView}
               count={trashCount}
               onClick={() => {
@@ -1244,7 +1255,7 @@ export default function VendorGalleryPage() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search caption or filename"
+                placeholder={t("toolbar.searchPlaceholder")}
                 className="pl-9 h-9 rounded-full"
               />
             </div>
@@ -1252,16 +1263,16 @@ export default function VendorGalleryPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full">
-                  Sort: {sortLabel(sortMode)}
+                  {t("toolbar.sort", { label: sortLabel(sortMode) })}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {(
                   [
-                    ["newest", "Newest first"],
-                    ["oldest", "Oldest first"],
-                    ["name_asc", "Name A→Z"],
-                    ["name_desc", "Name Z→A"],
+                    ["newest", t("toolbar.sortOptions.newest")],
+                    ["oldest", t("toolbar.sortOptions.oldest")],
+                    ["name_asc", t("toolbar.sortOptions.name_asc")],
+                    ["name_desc", t("toolbar.sortOptions.name_desc")],
                   ] as const
                 ).map(([k, label]) => (
                   <DropdownMenuItem key={k} onClick={() => setSortMode(k)}>
@@ -1279,16 +1290,16 @@ export default function VendorGalleryPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full">
-                  Shape: {aspectLabel(aspectFilter)}
+                  {t("toolbar.shape", { label: aspectLabel(aspectFilter) })}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {(
                   [
-                    ["all", "Any shape"],
-                    ["portrait", "Portrait"],
-                    ["landscape", "Landscape"],
-                    ["square", "Square"],
+                    ["all", t("toolbar.anyShape")],
+                    ["portrait", t("toolbar.shapes.portrait")],
+                    ["landscape", t("toolbar.shapes.landscape")],
+                    ["square", t("toolbar.shapes.square")],
                   ] as const
                 ).map(([k, label]) => (
                   <DropdownMenuItem key={k} onClick={() => setAspectFilter(k)}>
@@ -1306,13 +1317,18 @@ export default function VendorGalleryPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full">
-                  Format: {formatFilter === "all" ? "Any" : formatFilter.toUpperCase()}
+                  {t("toolbar.format", {
+                    label:
+                      formatFilter === "all"
+                        ? t("toolbar.any")
+                        : formatFilter.toUpperCase(),
+                  })}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {(
                   [
-                    ["all", "Any format"],
+                    ["all", t("toolbar.anyFormat")],
                     ["jpg", "JPG / JPEG"],
                     ["png", "PNG"],
                     ["webp", "WebP"],
@@ -1335,13 +1351,13 @@ export default function VendorGalleryPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full">
-                  Dates: {dateRangeLabel(dateFrom, dateTo)}
+                  {t("toolbar.dates", { label: dateRangeLabel(dateFrom, dateTo) })}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 p-3 space-y-3">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                    From
+                    {t("toolbar.from")}
                   </label>
                   <Input
                     type="date"
@@ -1352,7 +1368,7 @@ export default function VendorGalleryPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                    To
+                    {t("toolbar.to")}
                   </label>
                   <Input
                     type="date"
@@ -1370,7 +1386,7 @@ export default function VendorGalleryPage() {
                     }}
                     className="w-full text-xs text-muted-foreground hover:text-accent"
                   >
-                    Clear
+                    {t("toolbar.clear")}
                   </button>
                 ) : null}
               </DropdownMenuContent>
@@ -1380,19 +1396,19 @@ export default function VendorGalleryPage() {
               <div className="inline-flex rounded-full border border-border overflow-hidden">
                 <ViewBtn
                   active={density === "compact"}
-                  label="Compact"
+                  label={t("toolbar.density.compact")}
                   onClick={() => setDensity("compact")}
                   icon={<Grid3x3 className="w-3.5 h-3.5" />}
                 />
                 <ViewBtn
                   active={density === "medium"}
-                  label="Medium"
+                  label={t("toolbar.density.medium")}
                   onClick={() => setDensity("medium")}
                   icon={<Grid2x2 className="w-3.5 h-3.5" />}
                 />
                 <ViewBtn
                   active={density === "large"}
-                  label="Large"
+                  label={t("toolbar.density.large")}
                   onClick={() => setDensity("large")}
                   icon={<LayoutGrid className="w-3.5 h-3.5" />}
                 />
@@ -1402,19 +1418,19 @@ export default function VendorGalleryPage() {
             <div className="inline-flex rounded-full border border-border overflow-hidden">
               <ViewBtn
                 active={viewMode === "grid"}
-                label="Grid view"
+                label={t("toolbar.view.grid")}
                 onClick={() => setViewMode("grid")}
                 icon={<LayoutGrid className="w-3.5 h-3.5" />}
               />
               <ViewBtn
                 active={viewMode === "list"}
-                label="List view"
+                label={t("toolbar.view.list")}
                 onClick={() => setViewMode("list")}
                 icon={<List className="w-3.5 h-3.5" />}
               />
               <ViewBtn
                 active={viewMode === "calendar"}
-                label="Calendar view"
+                label={t("toolbar.view.calendar")}
                 onClick={() => setViewMode("calendar")}
                 icon={<CalendarDays className="w-3.5 h-3.5" />}
               />
@@ -1441,7 +1457,7 @@ export default function VendorGalleryPage() {
               size="sm"
               disabled={!rows || rows.length === 0}
             >
-              {selecting ? "Cancel" : "Select"}
+              {selecting ? t("toolbar.cancel") : t("toolbar.select")}
             </Button>
             {!isTrashView ? (
               <Button onClick={openPicker} disabled={uploading} className="rounded-full">
@@ -1453,7 +1469,7 @@ export default function VendorGalleryPage() {
                 ) : (
                   <>
                     <ImagePlus className="h-4 w-4 mr-1.5" />
-                    Upload
+                    {t("toolbar.upload")}
                   </>
                 )}
               </Button>
@@ -1464,15 +1480,15 @@ export default function VendorGalleryPage() {
           <div className="flex items-center justify-between gap-3 text-sm">
             <p className="text-muted-foreground">
               {rows === null
-                ? "Loading…"
+                ? t("status.loading")
                 : filteredRows.length === 0
                   ? isTrashView
-                    ? "Trash is empty"
-                    : "No matches"
-                  : `${filteredRows.length} image${filteredRows.length === 1 ? "" : "s"}`}
+                    ? t("status.trashEmpty")
+                    : t("status.noMatches")
+                  : t("status.imageCount", { count: filteredRows.length })}
               {isTrashView && filteredRows.length > 0 ? (
                 <span className="ml-2 text-xs">
-                  · Items auto-delete after 30 days
+                  · {t("status.autoDelete")}
                 </span>
               ) : null}
             </p>
@@ -1487,12 +1503,15 @@ export default function VendorGalleryPage() {
                   {zipping ? (
                     <>
                       <Loader2 className="w-3 h-3 animate-spin" />
-                      Zipping {zipProgress.done}/{zipProgress.total}
+                      {t("album.zipping", {
+                        done: zipProgress.done,
+                        total: zipProgress.total,
+                      })}
                     </>
                   ) : (
                     <>
                       <Download className="w-3 h-3" />
-                      Download album
+                      {t("album.download")}
                     </>
                   )}
                 </button>
@@ -1502,7 +1521,7 @@ export default function VendorGalleryPage() {
                   className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1"
                 >
                   <Pencil className="w-3 h-3" />
-                  Rename
+                  {t("album.rename")}
                 </button>
                 <button
                   type="button"
@@ -1510,7 +1529,7 @@ export default function VendorGalleryPage() {
                   className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
                 >
                   <Trash2 className="w-3 h-3" />
-                  Delete album
+                  {t("album.delete")}
                 </button>
               </div>
             ) : null}
@@ -1521,7 +1540,7 @@ export default function VendorGalleryPage() {
             <div className="flex items-center justify-between gap-3 rounded-full bg-foreground text-background px-4 py-2">
               <p className="text-sm">
                 <CheckSquare className="inline w-4 h-4 mr-1.5 -mt-0.5" />
-                {selectedVisible.length} selected
+                {t("bulk.selected", { count: selectedVisible.length })}
               </p>
               <div className="flex items-center gap-2">
                 {isTrashView ? (
@@ -1531,7 +1550,7 @@ export default function VendorGalleryPage() {
                     className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
                   >
                     <Undo2 className="w-3.5 h-3.5" />
-                    Restore
+                    {t("bulk.restore")}
                   </button>
                 ) : (
                   <>
@@ -1542,13 +1561,13 @@ export default function VendorGalleryPage() {
                           className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
                         >
                           <MoveRight className="w-3.5 h-3.5" />
-                          Move to
+                          {t("bulk.moveTo")}
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel className="text-xs">Move to</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-xs">{t("bulk.moveTo")}</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => bulkMoveToAlbum(null)}>
-                          Uncategorized
+                          {t("tabs.uncategorized")}
                         </DropdownMenuItem>
                         {(albums ?? []).length > 0 ? <DropdownMenuSeparator /> : null}
                         {(albums ?? []).map((a) => (
@@ -1574,8 +1593,11 @@ export default function VendorGalleryPage() {
                         <Download className="w-3.5 h-3.5" />
                       )}
                       {zipping
-                        ? `Zipping ${zipProgress.done}/${zipProgress.total}…`
-                        : "Download zip"}
+                        ? `${t("album.zipping", {
+                            done: zipProgress.done,
+                            total: zipProgress.total,
+                          })}…`
+                        : t("bulk.downloadZip")}
                     </button>
                   </>
                 )}
@@ -1585,7 +1607,7 @@ export default function VendorGalleryPage() {
                   className="inline-flex items-center gap-1.5 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs px-3 py-1.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  {isTrashView ? "Delete forever" : "Delete"}
+                  {isTrashView ? t("bulk.deleteForever") : t("bulk.delete")}
                 </button>
               </div>
             </div>
@@ -1602,9 +1624,9 @@ export default function VendorGalleryPage() {
             isTrashView ? (
               <div className="w-full rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center">
                 <Trash2 className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm font-medium text-foreground">Trash is empty</p>
+                <p className="text-sm font-medium text-foreground">{t("empty.trashTitle")}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Deleted images appear here for 30 days before they're purged.
+                  {t("empty.trashBody")}
                 </p>
               </div>
             ) : (
@@ -1622,11 +1644,11 @@ export default function VendorGalleryPage() {
                   activeSmartFilter ||
                   dateFrom ||
                   dateTo
-                    ? "No images match your filters"
-                    : "Drop images here or tap to upload"}
+                    ? t("empty.noFilterMatches")
+                    : t("empty.dropHere")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  JPG, PNG, WebP. Up to 20 MB each.
+                  {t("empty.formats")}
                 </p>
               </button>
             )
@@ -1735,33 +1757,6 @@ export default function VendorGalleryPage() {
       ) : null}
     </div>
   );
-}
-
-function sortLabel(m: SortMode): string {
-  return m === "newest"
-    ? "Newest"
-    : m === "oldest"
-      ? "Oldest"
-      : m === "name_asc"
-        ? "A→Z"
-        : "Z→A";
-}
-
-function dateRangeLabel(from: string, to: string): string {
-  if (!from && !to) return "Any";
-  if (from && to) return `${from} → ${to}`;
-  if (from) return `from ${from}`;
-  return `to ${to}`;
-}
-
-function aspectLabel(a: AspectFilter): string {
-  return a === "all"
-    ? "Any"
-    : a === "portrait"
-      ? "Portrait"
-      : a === "landscape"
-        ? "Landscape"
-        : "Square";
 }
 
 function gridCols(d: Density): string {
@@ -1876,6 +1871,7 @@ function SortableTile({
   onDelete: () => void;
   onSetCover: () => void;
 }) {
+  const { t } = useTranslation("vendorGallery");
   const {
     attributes,
     listeners,
@@ -1912,7 +1908,7 @@ function SortableTile({
         <BlurhashImage
           src={thumbUrl(row.image_url, thumbWidth)}
           blurhash={row.blurhash}
-          alt={row.caption ?? "Gallery image"}
+          alt={row.caption ?? t("tile.imageAlt")}
           draggable={false}
           className={`aspect-square rounded-md bg-secondary/40 ${
             selected
@@ -1924,8 +1920,8 @@ function SortableTile({
 
       {isAlbumCover ? (
         <span
-          aria-label="Album cover"
-          title="Album cover"
+          aria-label={t("tile.albumCover")}
+          title={t("tile.albumCover")}
           className="absolute bottom-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground text-background"
         >
           <StarIcon className="w-3.5 h-3.5 fill-current" aria-hidden />
@@ -1936,7 +1932,7 @@ function SortableTile({
         <button
           type="button"
           onClick={onToggleSelect}
-          aria-label={selected ? "Deselect" : "Select"}
+          aria-label={selected ? t("tile.deselect") : t("tile.select")}
           className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-soft"
         >
           {selected ? (
@@ -1952,7 +1948,7 @@ function SortableTile({
             e.stopPropagation();
             onDelete();
           }}
-          aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
+          aria-label={isTrashView ? t("tile.deletePermanently") : t("tile.moveToTrash")}
           className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
         >
           <Trash2 className="w-3.5 h-3.5" aria-hidden />
@@ -1981,6 +1977,9 @@ function ListView({
   onOpen: (idx: number) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t, i18n } = useTranslation("vendorGallery");
+  // Spanish dates use US-Spanish formats; English keeps the browser default.
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
   const albumById = useMemo(() => {
     const m: Record<string, string> = {};
     for (const a of albums) m[a.id] = a.name;
@@ -1992,10 +1991,10 @@ function ListView({
       <div className="grid grid-cols-[40px_64px_1fr_120px_120px_100px_40px] items-center gap-3 px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground bg-secondary/40">
         <span></span>
         <span></span>
-        <span>Filename</span>
-        <span className="hidden md:inline">Album</span>
-        <span>Uploaded</span>
-        <span className="hidden md:inline">Size</span>
+        <span>{t("list.filename")}</span>
+        <span className="hidden md:inline">{t("list.album")}</span>
+        <span>{t("list.uploaded")}</span>
+        <span className="hidden md:inline">{t("list.size")}</span>
         <span></span>
       </div>
       <div className="divide-y divide-border">
@@ -2009,7 +2008,7 @@ function ListView({
               <button
                 type="button"
                 onClick={() => onToggleSelect(r.id)}
-                aria-label={selected.has(r.id) ? "Deselect" : "Select"}
+                aria-label={selected.has(r.id) ? t("tile.deselect") : t("tile.select")}
                 className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-border"
               >
                 {selected.has(r.id) ? (
@@ -2026,7 +2025,7 @@ function ListView({
                 <BlurhashImage
                   src={thumbUrl(r.image_url, 120)}
                   blurhash={r.blurhash}
-                  alt={r.caption ?? "Gallery image"}
+                  alt={r.caption ?? t("tile.imageAlt")}
                   draggable={false}
                   className="w-full h-full"
                 />
@@ -2046,10 +2045,10 @@ function ListView({
                 ) : null}
               </button>
               <span className="text-xs text-muted-foreground truncate hidden md:inline">
-                {r.album_id ? albumById[r.album_id] ?? "—" : "Uncategorized"}
+                {r.album_id ? albumById[r.album_id] ?? "—" : t("tabs.uncategorized")}
               </span>
               <span className="text-xs text-muted-foreground tnum">
-                {new Date(r.created_at).toLocaleDateString()}
+                {new Date(r.created_at).toLocaleDateString(dateLocale)}
               </span>
               <span className="text-xs text-muted-foreground hidden md:inline">
                 {ext}
@@ -2059,7 +2058,7 @@ function ListView({
               <button
                 type="button"
                 onClick={() => onDelete(r.id)}
-                aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
+                aria-label={isTrashView ? t("tile.deletePermanently") : t("tile.moveToTrash")}
                 className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-destructive"
               >
                 {isTrashView ? (
@@ -2095,6 +2094,9 @@ function CalendarView({
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t, i18n } = useTranslation("vendorGallery");
+  // Spanish dates use US-Spanish formats; English keeps the browser default.
+  const isEs = i18n.resolvedLanguage === "es";
   const groups = useMemo(() => {
     const m = new Map<string, GalleryRow[]>();
     for (const r of rows) {
@@ -2111,10 +2113,14 @@ function CalendarView({
     <div className="space-y-6">
       {groups.map(([key, items]) => {
         const [year, month] = key.split("-");
-        const label = new Date(Number(year), Number(month) - 1).toLocaleDateString(
-          undefined,
+        const monthName = new Date(Number(year), Number(month) - 1).toLocaleDateString(
+          isEs ? "es-US" : undefined,
           { month: "long", year: "numeric" },
         );
+        // Spanish month names are lowercase; capitalize the heading.
+        const label = isEs
+          ? monthName.charAt(0).toUpperCase() + monthName.slice(1)
+          : monthName;
         return (
           <div key={key}>
             <h3 className="font-editorial text-xl mb-3 sticky top-0 bg-background/30 backdrop-blur-md py-1 z-10">
@@ -2137,7 +2143,7 @@ function CalendarView({
                       <BlurhashImage
                         src={thumbUrl(r.image_url, thumbW)}
                         blurhash={r.blurhash}
-                        alt={r.caption ?? "Gallery image"}
+                        alt={r.caption ?? t("tile.imageAlt")}
                         className={`aspect-square rounded-md bg-secondary/40 ${
                           selected.has(r.id)
                             ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
@@ -2149,7 +2155,7 @@ function CalendarView({
                       <button
                         type="button"
                         onClick={() => onToggleSelect(r.id)}
-                        aria-label={selected.has(r.id) ? "Deselect" : "Select"}
+                        aria-label={selected.has(r.id) ? t("tile.deselect") : t("tile.select")}
                         className="absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/85 backdrop-blur-sm text-foreground shadow-soft"
                       >
                         {selected.has(r.id) ? (
@@ -2165,7 +2171,7 @@ function CalendarView({
                           e.stopPropagation();
                           onDelete(r.id);
                         }}
-                        aria-label={isTrashView ? "Delete permanently" : "Move to trash"}
+                        aria-label={isTrashView ? t("tile.deletePermanently") : t("tile.moveToTrash")}
                         className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
