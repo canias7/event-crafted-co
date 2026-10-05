@@ -369,7 +369,7 @@ export function ChatSendPicker({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label="Send an invoice, pay link, proposal, or contract"
+              aria-label={t("picker.trigger")}
               className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
             >
               <Plus className="w-3.5 h-3.5 text-foreground" />
@@ -381,13 +381,13 @@ export function ChatSendPicker({
               return (
                 <DropdownMenuItem key={k} onClick={() => setKind(k)}>
                   <Icon className="w-3.5 h-3.5 mr-2 text-foreground" />
-                  {KIND_META[k].label}
+                  {t(`picker.kinds.${k}.label`)}
                 </DropdownMenuItem>
               );
             })}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className="select-none text-foreground">Send</span>
+        <span className="select-none text-foreground">{t("picker.send")}</span>
       </div>
 
       <Dialog
@@ -404,24 +404,24 @@ export function ChatSendPicker({
             <DialogTitle>
               {editing
                 ? editing.mode === "contract"
-                  ? "Review & fill the contract"
-                  : "Review & fill the proposal"
+                  ? t("picker.editor.contractTitle")
+                  : t("picker.editor.proposalTitle")
                 : kind
-                  ? KIND_META[kind].title
+                  ? t(`picker.kinds.${kind}.title`)
                   : ""}
             </DialogTitle>
             <DialogDescription className="text-xs">
               {editing
                 ? editing.mode === "contract"
-                  ? "Complete any [brackets] (e.g. [Total Amount]), then send it for e-signature."
-                  : "Complete any [brackets] (e.g. [Total Amount]), then send it for the client to review and accept."
+                  ? t("picker.editor.contractHint")
+                  : t("picker.editor.proposalHint")
                 : kind === "invoice"
-                ? "Pick one to add as a PDF (with its pay link) to your message — then review and send."
+                ? t("picker.hints.invoice")
                 : kind === "link"
-                  ? "Pick one to drop its payment link into the chat."
+                  ? t("picker.hints.link")
                   : kind === "contract"
-                    ? "Pick a contract to send for e-signature — the host gets a link to review and sign."
-                    : "Pick a saved template to send into the chat. Create them in Files."}
+                    ? t("picker.hints.contract")
+                    : t("picker.hints.proposal")}
             </DialogDescription>
           </DialogHeader>
 
@@ -437,8 +437,9 @@ export function ChatSendPicker({
               />
               {/\[[^\]]+\]/.test(editing.body) ? (
                 <p className="text-[11px] text-accent">
-                  Heads up — there are still unfilled [placeholders] in the{" "}
-                  {editing.mode}.
+                  {editing.mode === "contract"
+                    ? t("picker.editor.unfilledContract")
+                    : t("picker.editor.unfilledProposal")}
                 </p>
               ) : null}
               <div className="flex items-center justify-between gap-2">
@@ -447,7 +448,7 @@ export function ChatSendPicker({
                   onClick={() => setEditing(null)}
                   className="text-sm text-muted-foreground hover:text-accent px-2 py-1.5"
                 >
-                  Back
+                  {t("picker.editor.back")}
                 </button>
                 <button
                   type="button"
@@ -466,7 +467,9 @@ export function ChatSendPicker({
                   ) : (
                     <FileText className="w-3.5 h-3.5" />
                   )}
-                  {editing.mode === "contract" ? "Send for signature" : "Send proposal"}
+                  {editing.mode === "contract"
+                    ? t("picker.editor.sendContract")
+                    : t("picker.editor.sendProposal")}
                 </button>
               </div>
             </div>
@@ -477,10 +480,12 @@ export function ChatSendPicker({
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
               {kind === "invoice"
-                ? "No unpaid invoices. Create one in Files → Invoices."
+                ? t("picker.empty.invoice")
                 : kind === "link"
-                  ? "No active pay links. Create one in Files → Pay Links."
-                  : `No saved ${kind === "contract" ? "contracts" : "proposals"}. Create one in Files → ${kind === "contract" ? "Contracts" : "Proposals"}.`}
+                  ? t("picker.empty.link")
+                  : kind === "contract"
+                    ? t("picker.empty.contract")
+                    : t("picker.empty.proposal")}
             </p>
           ) : (
             <div className="divide-y divide-border -mx-2">
