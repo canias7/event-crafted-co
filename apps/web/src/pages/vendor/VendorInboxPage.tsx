@@ -533,13 +533,13 @@ function ConversationRow({
 
           {/* Last message / inquiry preview */}
           <p className="mt-0.5 text-[13px] text-muted-foreground leading-snug truncate">
-            {previewFor(row)}
+            {previewFor(row, t, eventLabel)}
           </p>
         </div>
 
         {/* Timestamp */}
         <span className="shrink-0 text-[11px] text-muted-foreground self-start tnum">
-          {relativeTime(row.last_message_at)}
+          {relativeTime(row.last_message_at, t, i18n.language)}
         </span>
       </Link>
     </li>

@@ -1,0 +1,80 @@
+{
+  "kinds": {
+    "consultation": "Asesoría",
+    "walkthrough": "Recorrido",
+    "tasting": "Degustación",
+    "fitting": "Prueba de vestuario",
+    "phone_call": "Llamada",
+    "other": "Reunión"
+  },
+  "kindOptions": {
+    "consultation": "Asesoría",
+    "walkthrough": "Recorrido",
+    "tasting": "Degustación",
+    "fitting": "Prueba de vestuario",
+    "phone_call": "Llamada",
+    "other": "Otro"
+  },
+  "status": {
+    "proposed": "Propuesta",
+    "accepted": "Confirmada",
+    "declined": "Rechazada",
+    "cancelled": "Cancelada",
+    "completed": "Completada"
+  },
+  "statusChanged": {
+    "proposed": "Cita propuesta",
+    "accepted": "Cita aceptada",
+    "declined": "Cita rechazada",
+    "cancelled": "Cita cancelada",
+    "completed": "Cita completada"
+  },
+  "filters": {
+    "upcoming": "Próximas",
+    "needs_response": "Por responder",
+    "past": "Pasadas",
+    "all": "Todas"
+  },
+  "list": {
+    "emptyTitle": "Aún no hay citas",
+    "emptyBody": "Cuando propongas una reunión desde una consulta, aparecerá aquí en cuanto el anfitrión responda.",
+    "noMatches": "Nada coincide con ese filtro.",
+    "with": "con {{name}}",
+    "personalSubtitle": "Fuera de la plataforma · personal",
+    "proposedByYou": "Propuesta por ti",
+    "proposedByHost": "Propuesta por el anfitrión",
+    "personal": "Personal",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "markComplete": "Marcar como completada",
+    "cancel": "Cancelar",
+    "cancelTitle": "¿Cancelar esta cita?",
+    "cancelBody": "Le avisaremos a la otra parte.",
+    "keep": "Conservarla",
+    "cancelConfirm": "Cancelar cita",
+    "addToCalendar": "Agregar al calendario",
+    "openInquiry": "Abrir consulta"
+  },
+  "ics": {
+    "linkedInquiry": "Consulta vinculada: {{url}}",
+    "meetingSlug": "reunión"
+  },
+  "propose": {
+    "signInFirst": "Primero inicia sesión",
+    "pickDateTime": "Elige una fecha y hora",
+    "pickFuture": "Elige una fecha y hora futuras.",
+    "proposed": "Cita propuesta",
+    "title": "Proponer una reunión",
+    "descriptionVendor": "Sugiere un horario para reunirse: el anfitrión lo aceptará o lo rechazará.",
+    "descriptionHost": "Sugiere un horario para reunirse: el proveedor lo aceptará o lo rechazará.",
+    "kind": "Tipo",
+    "duration": "Duración (min)",
+    "when": "Cuándo",
+    "location": "Ubicación",
+    "locationPlaceholder": "Dirección, enlace de Zoom o número de teléfono",
+    "notes": "Notas (opcional)",
+    "notesPlaceholder": "Algo que preparar o llevar.",
+    "cancel": "Cancelar",
+    "send": "Enviar propuesta"
+  }
+}

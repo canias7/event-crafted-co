@@ -1,0 +1,41 @@
+{
+  "sidebarTitle": "Portal de proveedores",
+  "title": "Plantillas",
+  "subtitle": "Guarda las respuestas que envías seguido y úsalas en cualquier chat.",
+  "new": "Nueva",
+  "listing": "Anuncio",
+  "untitledListing": "Anuncio sin título",
+  "empty": {
+    "title": "Aún no tienes plantillas",
+    "body": "Guarda tus respuestas más usadas — aparecerán en el menú Plantillas dentro de cada chat de consulta.",
+    "writeFirst": "Escribe la primera",
+    "useStarters": "Usar 3 plantillas iniciales"
+  },
+  "edit": "Editar",
+  "delete": "Eliminar",
+  "dialog": {
+    "newTitle": "Nueva plantilla",
+    "editTitle": "Editar plantilla",
+    "description": "Las plantillas son privadas para este anuncio.",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej., Gracias por escribirme",
+    "body": "Texto",
+    "bodyPlaceholder": "¿Qué debe decir esta plantilla?",
+    "cancel": "Cancelar",
+    "save": "Guardar"
+  },
+  "confirmDelete": {
+    "title": "¿Eliminar esta plantilla?",
+    "body": "Siempre puedes escribir una nueva después.",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar"
+  },
+  "toast": {
+    "needListing": "Primero crea un anuncio para empezar a guardar plantillas.",
+    "required": "El nombre y el texto son obligatorios",
+    "saved": "Plantilla guardada",
+    "updated": "Plantilla actualizada",
+    "deleted": "Plantilla eliminada",
+    "starters": "Se agregaron 3 plantillas iniciales"
+  }
+}

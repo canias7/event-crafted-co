@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { es } from "date-fns/locale/es";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,20 +35,7 @@ function parseDate(s: string) {
 const HORIZON_MONTHS = 6;
 
 export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
-  const { t, i18n } = useTranslation("vendorProfile");
-  // Spanish month / weekday names for the calendar. Weeks still start on
-  // Sunday, as in English; English keeps react-day-picker's defaults.
-  const calendarLanguage =
-    i18n.resolvedLanguage === "es"
-      ? {
-          locale: es,
-          weekStartsOn: 0 as const,
-          labels: {
-            labelPrevious: () => t("calendar.previousMonth"),
-            labelNext: () => t("calendar.nextMonth"),
-          },
-        }
-      : {};
+  const { t } = useTranslation("vendorProfile");
   const [oneOffBlocks, setOneOffBlocks] = useState<string[]>([]);
   const [weeklyRules, setWeeklyRules] = useState<RecurringRule[]>([]);
   const [bookedDates, setBookedDates] = useState<string[]>([]);
@@ -163,7 +149,6 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
           disabled={{ before: today }}
           numberOfMonths={2}
           className="mx-auto"
-          {...calendarLanguage}
           modifiers={{
             blocked: blockedDateObjects,
           }}

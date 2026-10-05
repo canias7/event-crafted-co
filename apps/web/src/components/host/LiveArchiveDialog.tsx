@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Copy, ExternalLink, Loader2, PlayCircle, Radio } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -45,7 +47,7 @@ function fmtDuration(seconds: number | null): string {
 
 function fmtWhen(iso: string | null, fallbackIso: string): string {
   const target = iso ?? fallbackIso;
-  return new Date(target).toLocaleString(undefined, {
+  return new Date(target).toLocaleString(i18n.language, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -60,6 +62,7 @@ export function LiveArchiveDialog({
   shareToken,
   eventTitle,
 }: Props) {
+  const { t } = useTranslation("hostTools");
   const [recordings, setRecordings] = useState<Recording[] | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -75,7 +78,7 @@ export function LiveArchiveDialog({
       .then(({ data, error }: { data: Recording[] | null; error: unknown }) => {
         if (cancelled) return;
         if (error) {
-          toast.error("Couldn't load past broadcasts");
+          toast.error(i18n.t("archive.toasts.loadFailed", { ns: "hostTools" }));
           setRecordings([]);
           return;
         }
@@ -94,10 +97,10 @@ export function LiveArchiveDialog({
     try {
       await navigator.clipboard.writeText(replayUrl(recordingId));
       setCopiedId(recordingId);
-      toast.success("Replay link copied");
+      toast.success(t("archive.toasts.replayCopied"));
       window.setTimeout(() => setCopiedId(null), 1500);
     } catch {
-      toast.error("Couldn't copy");
+      toast.error(t("archive.toasts.copyFailed"));
     }
   }
 
@@ -107,10 +110,10 @@ export function LiveArchiveDialog({
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl flex items-center gap-2">
             <Radio className="w-5 h-5 text-accent" />
-            Past broadcasts
+            {t("archive.title")}
           </DialogTitle>
           <DialogDescription>
-            Replays from {eventTitle}. Anyone with a replay link can watch.
+            {t("archive.description", { title: eventTitle })}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,8 +123,7 @@ export function LiveArchiveDialog({
           </div>
         ) : recordings.length === 0 ? (
           <div className="py-10 text-center text-sm text-muted-foreground">
-            No past broadcasts yet. Once you end a live stream, the
-            recording shows up here.
+            {t("archive.empty")}
           </div>
         ) : (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -147,7 +149,7 @@ export function LiveArchiveDialog({
                   className="rounded-full shrink-0"
                 >
                   <Copy className="w-3.5 h-3.5 mr-1.5" />
-                  {copiedId === r.id ? "Copied" : "Copy"}
+                  {copiedId === r.id ? t("copied") : t("copy")}
                 </Button>
                 <Button
                   type="button"
@@ -156,7 +158,7 @@ export function LiveArchiveDialog({
                   className="shrink-0"
                 >
                   <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                  Watch
+                  {t("archive.watch")}
                 </Button>
               </div>
             ))}

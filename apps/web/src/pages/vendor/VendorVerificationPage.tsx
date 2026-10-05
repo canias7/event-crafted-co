@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { BadgeCheck, Clock, FileUp, Loader2, ShieldCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ interface RequestRow {
 }
 
 export default function VendorVerificationPage() {
+  const { t } = useTranslation("vendorVerification");
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
 
@@ -130,15 +132,15 @@ export default function VendorVerificationPage() {
     e.preventDefault();
     if (!userId || submitting) return;
     if (!firstName.trim() || !lastName.trim() || !bizName.trim()) {
-      toast.error("Legal name and business name are required.");
+      toast.error(t("toast.namesRequired"));
       return;
     }
     if (!idFront && !request) {
-      toast.error("A photo of the front of your government ID is required.");
+      toast.error(t("toast.idRequired"));
       return;
     }
     if (docs.length === 0 && existingDocs.length === 0) {
-      toast.error("Add at least one proof document — insurance, license, or registration.");
+      toast.error(t("toast.docRequired"));
       return;
     }
     setSubmitting(true);
@@ -185,9 +187,9 @@ export default function VendorVerificationPage() {
       setIdBack(null);
       setDocs([]);
       await load();
-      toast.success("Submitted — we'll review within 1–3 business days.");
+      toast.success(t("toast.submitted"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't submit — try again.");
+      toast.error(err instanceof Error ? err.message : t("toast.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -197,39 +199,37 @@ export default function VendorVerificationPage() {
 
   return (
     <div className="min-h-screen flex relative bg-[var(--vendor-canvas)]">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("sidebarTitle")} backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
-            Verification <span className="text-accent">✦</span>
+            {t("title")} <span className="text-accent">✦</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Earn the verified badge — reviewed by a real person, same flow as the app.
+            {t("subtitle")}
           </p>
         </div>
 
         <div className="p-4 md:p-8 max-w-[760px] space-y-5">
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
             </div>
           ) : !eligible && !request ? (
             <div className="card-soft p-8 text-center">
               <ShieldCheck className="mx-auto h-8 w-8 text-accent" />
-              <h2 className="font-editorial text-3xl mt-4">Get verified. Build trust.</h2>
+              <h2 className="font-editorial text-3xl mt-4">{t("gate.title")}</h2>
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-                The verified badge tells hosts a real person and a real business
-                are behind your profile. Applying is included with Pro and
-                Premium plans — approval is always reviewed by our team.
+                {t("gate.body")}
               </p>
               <Link
                 to="/vendor/subscription"
                 className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
               >
-                ✦ Upgrade to apply
+                {t("gate.cta")}
               </Link>
             </div>
           ) : request && !editing ? (
@@ -237,74 +237,74 @@ export default function VendorVerificationPage() {
           ) : showForm ? (
             <form onSubmit={submit} className="space-y-5">
               <section className="card-soft p-6">
-                <p className="font-label text-accent mb-1">Identity ✦</p>
+                <p className="font-label text-accent mb-1">{t("identity.title")}</p>
                 <p className="text-[12.5px] text-muted-foreground mb-4">
-                  Your legal details stay private — only used to verify your identity.
+                  {t("identity.hint")}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Legal first name" required>
-                    <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputCls} placeholder="Jessica" />
+                  <Field label={t("identity.firstName")} required>
+                    <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputCls} placeholder={t("identity.firstNamePlaceholder")} />
                   </Field>
-                  <Field label="Legal last name" required>
-                    <input value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputCls} placeholder="Brown" />
+                  <Field label={t("identity.lastName")} required>
+                    <input value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputCls} placeholder={t("identity.lastNamePlaceholder")} />
                   </Field>
                 </div>
                 <div className="mt-3">
-                  <Field label="Date of birth">
+                  <Field label={t("identity.dob")}>
                     <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className={inputCls} />
                   </Field>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <FileTile
-                    label="Front of government ID"
+                    label={t("identity.idFront")}
                     required={!request}
                     file={idFront}
                     onFile={setIdFront}
-                    existing={existingIdFront ? "On file from your last submission" : null}
+                    existing={existingIdFront ? t("identity.idFrontOnFile") : null}
                   />
-                  <FileTile label="Back of ID (optional)" file={idBack} onFile={setIdBack} />
+                  <FileTile label={t("identity.idBack")} file={idBack} onFile={setIdBack} />
                 </div>
               </section>
 
               <section className="card-soft p-6">
-                <p className="font-label text-accent mb-4">Business ✦</p>
+                <p className="font-label text-accent mb-4">{t("business.title")}</p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Business / Display name" required>
+                  <Field label={t("business.name")} required>
                     <input value={bizName} onChange={(e) => setBizName(e.target.value)} className={inputCls} />
                   </Field>
-                  <Field label="Business category">
+                  <Field label={t("business.category")}>
                     <input value={bizCategory} onChange={(e) => setBizCategory(e.target.value)} className={inputCls} />
                   </Field>
-                  <Field label="Business email">
+                  <Field label={t("business.email")}>
                     <input type="email" value={bizEmail} onChange={(e) => setBizEmail(e.target.value)} className={inputCls} />
                   </Field>
-                  <Field label="Business phone">
+                  <Field label={t("business.phone")}>
                     <input value={bizPhone} onChange={(e) => setBizPhone(e.target.value)} className={inputCls} />
                   </Field>
                 </div>
                 <div className="mt-3 grid gap-3">
-                  <Field label="Business address or service area">
+                  <Field label={t("business.address")}>
                     <input value={bizAddress} onChange={(e) => setBizAddress(e.target.value)} className={inputCls} />
                   </Field>
-                  <Field label="Website or social (optional)">
-                    <input value={website} onChange={(e) => setWebsite(e.target.value)} className={inputCls} placeholder="www.yourbusiness.com" />
+                  <Field label={t("business.website")}>
+                    <input value={website} onChange={(e) => setWebsite(e.target.value)} className={inputCls} placeholder={t("business.websitePlaceholder")} />
                   </Field>
                 </div>
                 <div className="mt-4">
-                  <p className="text-[13px] font-medium">Proof of business</p>
+                  <p className="text-[13px] font-medium">{t("business.proofTitle")}</p>
                   <p className="text-[12px] text-muted-foreground">
-                    Insurance certificate, business license, or registration — images or PDFs.
+                    {t("business.proofHint")}
                   </p>
                   {existingDocs.length > 0 ? (
                     <p className="mt-2 text-[12px] text-muted-foreground">
-                      On file: {existingDocs.map((d) => d.name).join(", ")}
+                      {t("business.onFile", { names: existingDocs.map((d) => d.name).join(", ") })}
                     </p>
                   ) : null}
                   <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-accent/60 bg-accent/5 px-4 py-3 text-sm font-medium hover:bg-accent/10 transition-colors">
                     <FileUp className="h-4 w-4 text-accent" />
                     {docs.length > 0
                       ? docs.map((d) => d.name).join(", ")
-                      : "Add documents"}
+                      : t("business.addDocuments")}
                     <input
                       type="file"
                       multiple
@@ -317,11 +317,11 @@ export default function VendorVerificationPage() {
               </section>
 
               <div className="card-soft border border-accent/40 bg-accent/5 p-5 text-[13px] leading-relaxed text-muted-foreground">
-                <strong className="text-foreground">What happens next?</strong> We'll
-                review your information within 1–3 business days. You'll be
-                notified in the app and here once a decision has been made. By
-                submitting, you agree to Vendora's Terms of Service and Privacy
-                Policy.
+                <Trans
+                  i18nKey="next"
+                  ns="vendorVerification"
+                  components={{ strong: <strong className="text-foreground" /> }}
+                />
               </div>
 
               <button
@@ -329,7 +329,7 @@ export default function VendorVerificationPage() {
                 disabled={submitting}
                 className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
               >
-                {submitting ? "Submitting…" : "Submit for review"}
+                {submitting ? t("submitting") : t("submit")}
               </button>
             </form>
           ) : null}
@@ -376,6 +376,7 @@ function FileTile({
   onFile: (f: File | null) => void;
   existing?: string | null;
 }) {
+  const { t } = useTranslation("vendorVerification");
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-accent/60 bg-accent/5 px-4 py-3 hover:bg-accent/10 transition-colors">
       <FileUp className="h-4 w-4 shrink-0 text-accent" />
@@ -385,7 +386,7 @@ function FileTile({
           {required ? <span className="text-accent"> *</span> : null}
         </span>
         <span className="block truncate text-[11.5px] text-muted-foreground">
-          {file ? file.name : existing ?? "JPG, PNG, or PDF"}
+          {file ? file.name : existing ?? t("identity.fileTypes")}
         </span>
       </span>
       <input
@@ -399,26 +400,27 @@ function FileTile({
 }
 
 function StatusCard({ request, onEdit }: { request: RequestRow; onEdit: () => void }) {
+  const { t } = useTranslation("vendorVerification");
   const s = request.status;
   const Icon = s === "approved" ? BadgeCheck : s === "needs_info" ? TriangleAlert : Clock;
   const title =
     s === "approved"
-      ? "You're verified!"
+      ? t("status.approvedTitle")
       : s === "needs_info"
-        ? "We need a little more"
+        ? t("status.needsInfoTitle")
         : s === "rejected"
-          ? "Not approved this time"
-          : "Under review";
+          ? t("status.rejectedTitle")
+          : t("status.reviewTitle");
   const body =
     s === "approved"
-      ? "Your verified badge is live on your public profile — hosts browsing Vendora see it next to your name."
+      ? t("status.approvedBody")
       : s === "needs_info"
         ? request.admin_note
-          ? `Our team says: ${request.admin_note}`
-          : "We need additional information before we can approve your request."
+          ? t("status.teamSays", { note: request.admin_note })
+          : t("status.needsInfoBody")
         : s === "rejected"
-          ? request.admin_note ?? "Reach out to support if you think this was a mistake."
-          : "Your request is being reviewed. This usually takes 1–3 business days — we'll notify you the moment a decision is made.";
+          ? request.admin_note ?? t("status.rejectedBody")
+          : t("status.reviewBody");
   return (
     <div className="card-soft p-8 text-center">
       <Icon
@@ -430,7 +432,7 @@ function StatusCard({ request, onEdit }: { request: RequestRow; onEdit: () => vo
       <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">{body}</p>
       {s === "approved" ? (
         <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent/10 border border-accent/30 px-4 py-1.5 text-[13px] font-semibold text-accent">
-          <ShieldCheck className="h-4 w-4" /> Verified vendor
+          <ShieldCheck className="h-4 w-4" /> {t("status.verifiedVendor")}
         </span>
       ) : null}
       {s === "needs_info" || s === "rejected" ? (
@@ -438,7 +440,7 @@ function StatusCard({ request, onEdit }: { request: RequestRow; onEdit: () => vo
           onClick={onEdit}
           className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
         >
-          Update & resubmit
+          {t("status.resubmit")}
         </button>
       ) : null}
     </div>

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { es } from "date-fns/locale/es";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -82,19 +81,6 @@ export function InquiryFormModal({
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("vendorProfile");
   const categoryNames = useCategoryNames();
-  // Spanish month / weekday names for the date picker. Weeks still start
-  // on Sunday, as in English; English keeps react-day-picker's defaults.
-  const calendarLanguage =
-    i18n.resolvedLanguage === "es"
-      ? {
-          locale: es,
-          weekStartsOn: 0 as const,
-          labels: {
-            labelPrevious: () => t("calendar.previousMonth"),
-            labelNext: () => t("calendar.nextMonth"),
-          },
-        }
-      : {};
 
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
@@ -573,7 +559,6 @@ export function InquiryFormModal({
                       blocked:
                         "line-through text-muted-foreground bg-muted/40",
                     }}
-                    {...calendarLanguage}
                   />
                   <div className="px-3 pb-3 pt-1 text-[11px] text-muted-foreground border-t border-border">
                     {t("inquiry.blockedNote")}

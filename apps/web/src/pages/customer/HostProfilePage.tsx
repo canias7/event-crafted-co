@@ -18,6 +18,7 @@ import {
   Star,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -39,7 +40,8 @@ interface Stats {
 }
 
 interface ProfileState {
-  name: string;
+  /** null when there's no display name or email: shows "Host". */
+  name: string | null;
   email: string;
   memberSince: string;
   unread: number;
@@ -53,6 +55,7 @@ function initialOf(name: string): string {
 }
 
 export default function HostProfilePage() {
+  const { t } = useTranslation("hostProfile");
   const { user, signOut } = useAuth();
   const [state, setState] = useState<ProfileState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,11 +119,14 @@ export default function HostProfilePage() {
       ? new Date(createdAt).getFullYear()
       : new Date().getFullYear();
     const fallback =
-      profile?.display_name ?? user.email?.split("@")[0] ?? "Host";
-    const titleCase = fallback
-      .split(/[ _-]+/)
-      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
-      .join(" ");
+      profile?.display_name ?? user.email?.split("@")[0] ?? null;
+    const titleCase =
+      fallback === null
+        ? null
+        : fallback
+            .split(/[ _-]+/)
+            .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
+            .join(" ");
 
     const rawStatus = (verifRow as { status?: string } | null)?.status;
     const status: VerifStatus =
@@ -161,7 +167,7 @@ export default function HostProfilePage() {
   async function onPickAvatar(file: File) {
     if (!user?.id || avatarUploading) return;
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Photo too large — pick a photo under 10 MB.");
+      toast.error(t("toasts.photoTooLarge"));
       return;
     }
     setAvatarUploading(true);
@@ -188,10 +194,10 @@ export default function HostProfilePage() {
       setState((prev) =>
         prev ? { ...prev, avatarUrl: pub.publicUrl } : prev,
       );
-      toast.success("Photo updated.");
+      toast.success(t("toasts.photoUpdated"));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Please try again.";
-      toast.error(`Couldn't update photo: ${msg}`);
+      const msg = e instanceof Error ? e.message : t("toasts.tryAgain");
+      toast.error(t("toasts.photoFailed", { message: msg }));
     } finally {
       setAvatarUploading(false);
     }
@@ -205,15 +211,15 @@ export default function HostProfilePage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={customerNavItems}
-        title="Profile"
+        title={t("title")}
         backPath="/customer/explore"
       />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-editorial text-3xl">Profile</h1>
+            <h1 className="font-editorial text-3xl">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Your account at a glance.
+              {t("subtitle")}
             </p>
           </div>
           <NotificationBell variant="light" />
@@ -229,8 +235,8 @@ export default function HostProfilePage() {
           ) : (
             <>
               <HeroCard
-                initial={initialOf(state.name)}
-                name={state.name}
+                initial={initialOf(state.name ?? t("hostFallback"))}
+                name={state.name ?? t("hostFallback")}
                 memberSince={state.memberSince}
                 verified={state.verifStatus === "approved"}
                 stats={state.stats}
@@ -247,7 +253,7 @@ export default function HostProfilePage() {
                 icon={SettingsIcon}
                 iconBg="bg-secondary"
                 iconColor="text-foreground"
-                title="Account settings"
+                title={t("accountSettings")}
                 subtitle={state.email}
               />
 
@@ -256,7 +262,7 @@ export default function HostProfilePage() {
                 className="w-full mt-2 py-4 rounded-2xl text-sm text-muted-foreground hover:bg-secondary/40 transition flex items-center justify-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                Log out
+                {t("logOut")}
               </button>
             </>
           )}
@@ -299,6 +305,7 @@ function HeroCard({
   onPickFile: (file: File) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
 }) {
+  const { t } = useTranslation("hostProfile");
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border p-8 flex flex-col items-center bg-card">
       <div
@@ -325,7 +332,7 @@ function HeroCard({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          aria-label="Change profile photo"
+          aria-label={t("changePhoto")}
           className="group relative w-28 h-28 rounded-full overflow-hidden bg-foreground text-background flex items-center justify-center transition disabled:opacity-70"
         >
           {avatarUrl ? (
@@ -359,20 +366,20 @@ function HeroCard({
           <Star className="w-3.5 h-3.5 fill-current" aria-hidden />
           {stats.avgRating.toFixed(2)}
           <span className="text-muted-foreground font-normal">
-            · {stats.ratings} {stats.ratings === 1 ? "rating" : "ratings"}
+            · {t("ratings", { count: stats.ratings })}
           </span>
         </p>
       ) : null}
       <p className="relative mt-1 text-sm text-muted-foreground">
-        {verified ? "Verified Host  ·  " : ""}Member since {memberSince}
+        {verified ? `${t("verifiedHost")}  ·  ` : ""}{t("memberSince", { year: memberSince })}
       </p>
       <div className="relative my-5 h-px w-full bg-border/60" />
       <div className="relative grid grid-cols-4 w-full gap-2">
-        <StatCol label="Posts" value={String(stats.posts)} />
-        <StatCol label="Reels" value={String(stats.reels)} />
-        <StatCol label="Buzz" value={String(stats.buzz)} />
+        <StatCol label={t("stats.posts")} value={String(stats.posts)} />
+        <StatCol label={t("stats.reels")} value={String(stats.reels)} />
+        <StatCol label={t("stats.buzz")} value={String(stats.buzz)} />
         <StatCol
-          label="Ratings"
+          label={t("stats.ratings")}
           value={String(stats.ratings)}
           trailing={<Star className="h-4 w-4 text-zinc-600" />}
         />

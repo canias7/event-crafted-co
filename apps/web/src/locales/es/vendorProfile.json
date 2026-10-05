@@ -186,10 +186,6 @@
     "blocked": "Reservada / bloqueada",
     "open": "Fechas libres — envía una consulta para confirmar"
   },
-  "calendar": {
-    "previousMonth": "Ir al mes anterior",
-    "nextMonth": "Ir al mes siguiente"
-  },
   "serviceArea": {
     "eyebrow": "Zona de servicio",
     "title": "Hasta dónde viaja este proveedor",

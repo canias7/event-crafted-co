@@ -1,0 +1,31 @@
+{
+  "sidebar_title": "Portal del proveedor",
+  "back_to_settings": "Configuración",
+  "title": "Integraciones",
+  "subtitle": "Conecta Vendora con las herramientas que ya usas.",
+  "categories": {
+    "payments": "Pagos"
+  },
+  "connectors": {
+    "vendorapay": {
+      "description": "Acepta pagos con tarjeta y recibe depósitos directo en tu banco. El procesador de marca blanca de Vendora se encarga de la verificación KYC y del movimiento de dinero."
+    }
+  },
+  "pending_kyc": "KYC pendiente",
+  "finish_kyc": "Completa la verificación KYC en el siguiente paso para que los anfitriones puedan pagarte aquí.",
+  "connected": "Conectado",
+  "manage": "Administrar",
+  "disconnect": "Desconectar",
+  "connect": "Conectar",
+  "toasts": {
+    "welcome_back": "Volviste de VendoraPay",
+    "refreshing": "Actualizando el estado de tu cuenta…",
+    "link_expired": "El enlace de registro venció",
+    "link_expired_body": "Haz clic en Administrar para generar uno nuevo.",
+    "try_again": "Inténtalo de nuevo en un momento.",
+    "onboarding_failed": "No se pudo abrir el registro de VendoraPay",
+    "disconnect_failed": "No se pudo desconectar",
+    "disconnected": "VendoraPay desconectado"
+  },
+  "confirm_disconnect": "¿Desconectar VendoraPay? Tu cuenta del procesador sigue abierta; Vendora solo deja de usarla. Puedes volver a conectarla cuando quieras."
+}

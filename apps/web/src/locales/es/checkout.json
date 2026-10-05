@@ -108,7 +108,7 @@
       "body": "{{vendor}} reembolsó esta factura.",
       "yourVendor": "Tu proveedor"
     },
-    "savePdf": "Guardar como PDF",
+    "savePdf": "Guardar PDF",
     "pay": "Pagar {{amount}}",
     "headsUp": "Aviso — este proveedor todavía está terminando de configurar sus pagos, así que es posible que el pago en línea aún no esté disponible. Mientras tanto, puedes revisar la factura abajo.",
     "issuedVia": "Emitida a través de VendoraPay",

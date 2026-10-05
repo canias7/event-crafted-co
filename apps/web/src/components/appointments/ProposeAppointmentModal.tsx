@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// `label` is the English word used in the chat message saved to the
+// thread (database content, so it stays English). What the picker shows
+// comes from appointments.json kindOptions.<value>.
 const KIND_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "consultation", label: "Consultation" },
   { value: "walkthrough", label: "Walkthrough" },
@@ -63,6 +67,7 @@ export function ProposeAppointmentModal({
   onSuccess,
 }: Props) {
   const { user } = useAuth();
+  const { t } = useTranslation("appointments");
   const [kind, setKind] = useState("consultation");
   const [scheduledAt, setScheduledAt] = useState(defaultDateTime());
   const [duration, setDuration] = useState("60");
@@ -83,11 +88,11 @@ export function ProposeAppointmentModal({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
-      toast.error("Sign in first");
+      toast.error(t("propose.signInFirst"));
       return;
     }
     if (!scheduledAt) {
-      toast.error("Pick a date and time");
+      toast.error(t("propose.pickDateTime"));
       return;
     }
     // Block past datetimes. The datetime-local input's min attr stops
@@ -95,7 +100,7 @@ export function ProposeAppointmentModal({
     // re-check at submit. 5 min cushion in case the user picked
     // "right now" and the page sat open.
     if (new Date(scheduledAt).getTime() < Date.now() - 5 * 60_000) {
-      toast.error("Pick a future date and time.");
+      toast.error(t("propose.pickFuture"));
       return;
     }
     setSubmitting(true);
@@ -156,7 +161,7 @@ export function ProposeAppointmentModal({
     }
 
     setSubmitting(false);
-    toast.success("Appointment proposed");
+    toast.success(t("propose.proposed"));
     onOpenChange(false);
     onSuccess?.();
   }
@@ -166,18 +171,18 @@ export function ProposeAppointmentModal({
       <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            Propose a meeting
+            {t("propose.title")}
           </DialogTitle>
           <DialogDescription className="text-sm">
             {proposedBy === "vendor"
-              ? "Suggest a time to meet — the host will accept or decline."
-              : "Suggest a time to meet — the vendor will accept or decline."}
+              ? t("propose.descriptionVendor")
+              : t("propose.descriptionHost")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="kind">Kind</Label>
+              <Label htmlFor="kind">{t("propose.kind")}</Label>
               <Select value={kind} onValueChange={setKind}>
                 <SelectTrigger id="kind">
                   <SelectValue />
@@ -185,14 +190,14 @@ export function ProposeAppointmentModal({
                 <SelectContent>
                   {KIND_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
-                      {o.label}
+                      {t(`kindOptions.${o.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="duration">Duration (min)</Label>
+              <Label htmlFor="duration">{t("propose.duration")}</Label>
               <Input
                 id="duration"
                 type="number"
@@ -204,7 +209,7 @@ export function ProposeAppointmentModal({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="when">When</Label>
+            <Label htmlFor="when">{t("propose.when")}</Label>
             <Input
               id="when"
               type="datetime-local"
@@ -221,19 +226,19 @@ export function ProposeAppointmentModal({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location">{t("propose.location")}</Label>
             <Input
               id="location"
-              placeholder="Address, Zoom link, or phone number"
+              placeholder={t("propose.locationPlaceholder")}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
+            <Label htmlFor="notes">{t("propose.notes")}</Label>
             <Textarea
               id="notes"
-              placeholder="Anything to prepare or bring."
+              placeholder={t("propose.notesPlaceholder")}
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -247,14 +252,14 @@ export function ProposeAppointmentModal({
               disabled={submitting}
               className="rounded-full"
             >
-              Cancel
+              {t("propose.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={submitting}
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Send proposal
+              {t("propose.send")}
             </Button>
           </DialogFooter>
         </form>

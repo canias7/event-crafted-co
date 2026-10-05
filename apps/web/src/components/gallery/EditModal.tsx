@@ -14,6 +14,7 @@
 // clears exif since the image is materially different.
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   FlipHorizontal,
   FlipVertical,
@@ -43,6 +44,7 @@ import { computeBlurhash } from "@/lib/galleryImage";
 import { formatBytes, loadImageViaBlob } from "@/lib/downloadImage";
 import { removeGalleryFileWithRetry } from "@/lib/galleryStorage";
 import { captureException } from "@/lib/sentry";
+import i18n from "@/i18n";
 
 interface Props {
   open: boolean;
@@ -97,6 +99,10 @@ export function EditModal({
   onSaved,
 }: Props) {
   const { user } = useAuth();
+  // `t` is the transform state below, so the translator is `tr`. Toasts
+  // fired inside effects use i18n.t instead, so a language switch doesn't
+  // re-run them (and reload the image).
+  const { t: tr } = useTranslation("galleryTools");
   // The raw source image, loaded once when the modal opens.
   const sourceRef = useRef<HTMLImageElement | null>(null);
   // The transformed display URL — what ReactCrop sees. Rebuilt
@@ -163,12 +169,12 @@ export function EditModal({
         // encode HEIC/AVIF/GIF back out, so any edit will land as JPEG
         // regardless of the original — set expectations upfront.
         if (!isCanvasNativeFormat(imageUrl)) {
-          toast.info("Edits to this image will be saved as JPEG.");
+          toast.info(i18n.t("edit.jpegNotice", { ns: "galleryTools" }));
         }
       })
       .catch(() => {
         if (cancelled) return;
-        toast.error("Couldn't load image for editing.");
+        toast.error(i18n.t("edit.loadFailed", { ns: "galleryTools" }));
         onOpenChangeRef.current(false);
       });
     return () => {
@@ -195,9 +201,7 @@ export function EditModal({
     // canvas ops would silently produce a 0×0 output. Bail out
     // explicitly so the user sees a real error.
     if (!src.naturalWidth || !src.naturalHeight) {
-      toast.error(
-        "This image's format isn't supported by your browser's editor.",
-      );
+      toast.error(i18n.t("edit.unsupported", { ns: "galleryTools" }));
       setT({ rotate: 0, flipH: false, flipV: false });
       return;
     }
@@ -237,7 +241,9 @@ export function EditModal({
       } catch (err) {
         if (cancelled) return;
         const msg = err instanceof Error ? err.message : String(err);
-        toast.error(`Couldn't apply transform: ${msg}`);
+        toast.error(
+          i18n.t("edit.transformFailed", { ns: "galleryTools", message: msg }),
+        );
         captureException(err, {
           where: "EditModal transform effect",
           rotate: t.rotate,
@@ -336,7 +342,7 @@ export function EditModal({
         cropCanvas.width = cropW;
         cropCanvas.height = cropH;
         const ctx = cropCanvas.getContext("2d");
-        if (!ctx) throw new Error("Couldn't get a 2D context.");
+        if (!ctx) throw new Error(tr("edit.noContext"));
         ctx.drawImage(baseCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
         outCanvas = cropCanvas;
       }
@@ -350,7 +356,7 @@ export function EditModal({
       const blob: Blob | null = await new Promise((resolve) =>
         outCanvas.toBlob((b) => resolve(b), fmt.mime, fmt.quality),
       );
-      if (!blob) throw new Error("Couldn't encode the edited image.");
+      if (!blob) throw new Error(tr("edit.encodeFailed"));
       checkAbort();
 
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fmt.ext}`;
@@ -414,9 +420,7 @@ export function EditModal({
         // Row vanished between open and save. Clean up the orphan
         // file we just uploaded and surface a clean error.
         await removeGalleryFileWithRetry(path);
-        throw new Error(
-          "This image was removed in another session. Your edit wasn't saved.",
-        );
+        throw new Error(tr("edit.removedElsewhere"));
       }
 
       // Old-file removal with retry — #5 from the audit. Fire-and-
@@ -427,7 +431,7 @@ export function EditModal({
         void removeGalleryFileWithRetry(oldPath);
       }
 
-      toast.success("Saved.");
+      toast.success(tr("edit.saved"));
       onSaved();
       onOpenChange(false);
     } catch (err) {
@@ -438,10 +442,10 @@ export function EditModal({
         await removeGalleryFileWithRetry(uploadedPath);
       }
       const msg = isAbort
-        ? "Save cancelled."
+        ? tr("edit.saveCancelled")
         : err instanceof Error
           ? err.message
-          : "Couldn't save edit.";
+          : tr("edit.saveFailed");
       toast[isAbort ? "info" : "error"](msg);
     } finally {
       setSaving(false);
@@ -474,7 +478,7 @@ export function EditModal({
         }}
       >
         <DialogHeader>
-          <DialogTitle className="font-editorial text-2xl">Edit image</DialogTitle>
+          <DialogTitle className="font-editorial text-2xl">{tr("edit.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -484,10 +488,15 @@ export function EditModal({
                 <Loader2 className="w-6 h-6 animate-spin" />
                 <p className="text-xs">
                   {loadProgress.total > 0
-                    ? `Loading ${formatBytes(loadProgress.received)} / ${formatBytes(loadProgress.total)}`
+                    ? tr("edit.loadingProgress", {
+                        received: formatBytes(loadProgress.received),
+                        total: formatBytes(loadProgress.total),
+                      })
                     : loadProgress.received > 0
-                      ? `Loading ${formatBytes(loadProgress.received)}`
-                      : "Loading image…"}
+                      ? tr("edit.loadingReceived", {
+                          received: formatBytes(loadProgress.received),
+                        })
+                      : tr("edit.loadingImage")}
                 </p>
               </div>
             ) : (
@@ -501,10 +510,10 @@ export function EditModal({
                   ref={cropImgRef}
                   key={displayUrl}
                   src={displayUrl}
-                  alt="Edit"
+                  alt={tr("edit.imageAlt")}
                   className="max-h-[60vh] max-w-full rounded-md"
                   onError={() => {
-                    toast.error("Preview failed to load. Try Cancel + Edit again.");
+                    toast.error(tr("edit.previewFailed"));
                     captureException(
                       new Error("EditModal preview img onError"),
                       { displayUrl: displayUrl.slice(0, 80), imageUrl },
@@ -522,7 +531,7 @@ export function EditModal({
               className="rounded-full"
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-              Rotate L
+              {tr("edit.rotateLeft")}
             </Button>
             <Button
               variant="outline"
@@ -531,7 +540,7 @@ export function EditModal({
               className="rounded-full"
             >
               <RotateCw className="w-3.5 h-3.5 mr-1.5" />
-              Rotate R
+              {tr("edit.rotateRight")}
             </Button>
             <Button
               variant="outline"
@@ -544,7 +553,7 @@ export function EditModal({
               className="rounded-full"
             >
               <FlipHorizontal className="w-3.5 h-3.5 mr-1.5" />
-              Flip H
+              {tr("edit.flipH")}
             </Button>
             <Button
               variant="outline"
@@ -557,7 +566,7 @@ export function EditModal({
               className="rounded-full"
             >
               <FlipVertical className="w-3.5 h-3.5 mr-1.5" />
-              Flip V
+              {tr("edit.flipV")}
             </Button>
             {completedCrop && completedCrop.width > 0 ? (
               <Button
@@ -567,13 +576,12 @@ export function EditModal({
                 className="rounded-full"
               >
                 <Scissors className="w-3.5 h-3.5 mr-1.5" />
-                Reset crop
+                {tr("edit.resetCrop")}
               </Button>
             ) : null}
           </div>
           <p className="text-xs text-center text-muted-foreground">
-            Drag on the image to crop. Rotate / flip refresh the crop area
-            since they change what's visible.
+            {tr("edit.hint")}
           </p>
         </div>
 
@@ -583,7 +591,7 @@ export function EditModal({
             onClick={() => handleClose(false)}
             className="rounded-full"
           >
-            {saving ? "Stop" : "Cancel"}
+            {saving ? tr("edit.stop") : tr("edit.cancel")}
           </Button>
           <Button
             onClick={save}
@@ -591,7 +599,7 @@ export function EditModal({
             className="rounded-full"
           >
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save
+            {tr("edit.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

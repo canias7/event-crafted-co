@@ -1,4 +1,20 @@
 import { toast } from "sonner";
+import i18n from "@/i18n";
+
+// Toast copy lives in locales/<lang>/vendorPlan.json ("credits").
+const tc = (key: string, options?: Record<string, unknown>): string =>
+  i18n.t(`credits.${key}`, { ns: "vendorPlan", ...options });
+
+// The send endpoints explain email_not_enabled in English; show the
+// known explanations in the vendor's language, anything else as sent.
+const EMAIL_OFF_SERVER_MESSAGES: Record<string, string> = {
+  "Enable client email sending in your Email settings to send documents.": "documents",
+  "Enable client email sending in your Email settings to send invoices.": "invoices",
+};
+function emailOffMessage(message: string): string {
+  const key = EMAIL_OFF_SERVER_MESSAGES[message];
+  return key ? tc(`emails_off_server.${key}`) : message;
+}
 
 // Shape returned by every credit-metered edge function when the
 // vendor's balance can't cover the action — matches
@@ -41,13 +57,12 @@ export async function handleInsufficientCredits(
   const cost = typeof body.cost === "number" ? body.cost : null;
   toast.error(
     cost
-      ? `Out of credits — this action needed ${cost} credit${cost === 1 ? "" : "s"}.`
-      : "Out of credits.",
+      ? tc("out_of_credits_action", { count: cost })
+      : tc("out_of_credits"),
     {
-      description:
-        "Top up a credit pack or upgrade your plan to keep using AI features.",
+      description: tc("top_up_ai"),
       action: {
-        label: "Top up",
+        label: tc("top_up"),
         onClick: () => navigate("/vendor/subscription"),
       },
       duration: 8000,
@@ -80,10 +95,9 @@ export async function handleEmailBillingError(
   }
 
   if (body?.error === "email_not_enabled") {
-    toast.error("Client emails are turned off", {
+    toast.error(tc("emails_off"), {
       description:
-        body.message ??
-        "Turn on “Send emails to clients” in the Email settings section to send this.",
+        body.message != null ? emailOffMessage(body.message) : tc("emails_off_body"),
       duration: 8000,
     });
     return true;
@@ -93,11 +107,11 @@ export async function handleEmailBillingError(
     const cost = typeof body.cost === "number" ? body.cost : null;
     toast.error(
       cost
-        ? `Out of credits — this needed ${cost} credit${cost === 1 ? "" : "s"}.`
-        : "Out of credits.",
+        ? tc("out_of_credits_send", { count: cost })
+        : tc("out_of_credits"),
       {
-        description: "Top up a credit pack or upgrade your plan to keep sending.",
-        action: { label: "Top up", onClick: () => navigate("/vendor/subscription") },
+        description: tc("top_up_send"),
+        action: { label: tc("top_up"), onClick: () => navigate("/vendor/subscription") },
         duration: 8000,
       },
     );

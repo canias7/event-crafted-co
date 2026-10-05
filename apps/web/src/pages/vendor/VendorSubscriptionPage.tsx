@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { Check, Crown, Loader2, Sparkles, Flame } from "lucide-react";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { toast } from "sonner";
@@ -97,6 +98,20 @@ const FREE_TIER: TierRow = {
   billingInterval: "month",
 };
 
+// Plan bullets (FREE_TIER above + vendor_credit_packages.highlights)
+// are Vendora's own English copy. They're translated for display only;
+// comparisons (the verified badge below) keep using the stored text,
+// and a line we don't know yet shows as stored.
+const HIGHLIGHT_KEYS: Record<string, string> = {
+  "V2V communications": "v2v",
+  "Access to Vendora CRM": "crm",
+  "Scheduling controls — hours, buffers & 5 appointment types": "scheduling_controls",
+  "AI employee": "ai_employee",
+  "Smart Scheduling & Automations": "smart_scheduling",
+  "Become verified": "become_verified",
+  "Verified profile": "verified_profile",
+};
+
 // Maps the DB display_name -> the short label used on top-up cards
 // ("Vendora Credits Boost Pack" -> "Boost"). Keeps the card title
 // punchy without forcing marketing to edit DB rows.
@@ -133,6 +148,7 @@ interface PlanState {
 }
 
 export default function VendorSubscriptionPage() {
+  const { t } = useTranslation("vendorPlan");
   const { ownListing, user } = useAuth();
   const [search, setSearch] = useSearchParams();
   const [plan, setPlan] = useState<PlanState | null>(null);
@@ -279,7 +295,11 @@ export default function VendorSubscriptionPage() {
         const result = (data ?? {}) as { synced?: boolean; granted_now?: number };
         if (result.synced) {
           if ((result.granted_now ?? 0) > 0) {
-            toast.success(`+${(result.granted_now ?? 0).toLocaleString()} credits — plan synced.`);
+            toast.success(
+              t("subscription.toasts.synced", {
+                credits: (result.granted_now ?? 0).toLocaleString(),
+              }),
+            );
           }
           await load();
           await credits.refresh();
@@ -303,13 +323,13 @@ export default function VendorSubscriptionPage() {
     const topup = search.get("topup");
     const topupCancelled = search.get("topup_cancelled");
     if (upgraded || cancelled || topup || topupCancelled) {
-      if (upgraded) toast.success("Thanks for upgrading — plan is active.");
-      if (topup) toast.success("Credits added to your balance.");
+      if (upgraded) toast.success(t("subscription.toasts.upgraded"));
+      if (topup) toast.success(t("subscription.toasts.topup_added"));
       // Audit #11: silent cancels confused vendors ("did I buy or
       // not?"). Acknowledge the abort so the page change isn't a
       // ghost interaction.
-      if (cancelled) toast("Checkout cancelled — no changes made.");
-      if (topupCancelled) toast("Top-up cancelled — no changes made.");
+      if (cancelled) toast(t("subscription.toasts.checkout_cancelled"));
+      if (topupCancelled) toast(t("subscription.toasts.topup_cancelled"));
       // On an upgrade, force a Stripe → DB reconcile BEFORE the local
       // refetch. Without it the page would re-pull stale tier state
       // while waiting on the webhook to catch up — fine when the
@@ -330,7 +350,7 @@ export default function VendorSubscriptionPage() {
       ["upgraded", "cancelled", "topup", "topup_cancelled"].forEach((k) => next.delete(k));
       setSearch(next, { replace: true });
     }
-  }, [search, setSearch, load, credits]);
+  }, [search, setSearch, load, credits, t]);
 
   async function callStripeFunction(
     functionName: string,
@@ -359,7 +379,7 @@ export default function VendorSubscriptionPage() {
     }
     const url = (data as { url?: string } | null)?.url;
     if (!url) {
-      toast.error("Couldn't open the billing portal — try again in a moment.");
+      toast.error(t("subscription.toasts.portal_failed"));
       return null;
     }
     window.location.href = url;
@@ -422,7 +442,7 @@ export default function VendorSubscriptionPage() {
     // with no listings yet still needs to subscribe. Edge functions
     // accept missing vendor_id and treat the JWT user as the admin.
     if (!user || actingId || !tier.priceId) return;
-    if (!requireVerified("upgrading your plan")) return;
+    if (!requireVerified(t("subscription.verify_action.upgrade"))) return;
     const alreadyPaid =
       (plan?.tier ?? "free") !== "free" &&
       (plan?.status === "active" || plan?.status === "trialing");
@@ -437,7 +457,7 @@ export default function VendorSubscriptionPage() {
     await callStripeFunction(
       "stripe-subscription-checkout",
       { vendor_id: vendorId ?? null, price_id: tier.priceId },
-      "Couldn't start checkout",
+      t("subscription.toasts.checkout_failed"),
     );
     setActingId(null);
   }
@@ -453,8 +473,8 @@ export default function VendorSubscriptionPage() {
         { body: { price_id: tier.priceId } },
       );
       if (error) {
-        toast.error("Couldn't switch plan", {
-          description: error.message ?? "Please try again in a moment.",
+        toast.error(t("subscription.toasts.switch_failed"), {
+          description: error.message ?? t("subscription.toasts.try_again"),
         });
         return;
       }
@@ -469,8 +489,8 @@ export default function VendorSubscriptionPage() {
       if (!result.changed) {
         toast(
           result.reason === "already_on_this_tier"
-            ? "You're already on this plan."
-            : "No changes made.",
+            ? t("subscription.toasts.already_on_plan")
+            : t("subscription.toasts.no_changes"),
         );
       } else if (result.charge_failed) {
         // Tier did swap + credits did land — but the card charge
@@ -478,11 +498,11 @@ export default function VendorSubscriptionPage() {
         // their card via "Manage billing" instead of seeing a fake
         // success.
         toast.warning(
-          `Switched to ${tier.name}, but the card charge failed.`,
+          t("subscription.toasts.charge_failed", { name: tier.name }),
           {
             description:
               result.charge_failed === "no_payment_method_on_file"
-                ? "No card on file. Open Manage billing to add one."
+                ? t("subscription.toasts.no_card")
                 : `Stripe: ${result.charge_failed}`,
           },
         );
@@ -490,15 +510,19 @@ export default function VendorSubscriptionPage() {
         const dollars = ((result.charged_now_cents ?? 0) / 100).toFixed(2);
         const credits = (result.granted_now ?? 0).toLocaleString();
         toast.success(
-          `Switched to ${tier.name} — $${dollars} charged today, +${credits} credits added.`,
+          t("subscription.toasts.switched", {
+            name: tier.name,
+            amount: `$${dollars}`,
+            credits,
+          }),
         );
       }
       await load();
       await credits.refresh();
       void refreshBilling();
     } catch (err) {
-      toast.error("Couldn't switch plan", {
-        description: err instanceof Error ? err.message : "Unknown error",
+      toast.error(t("subscription.toasts.switch_failed"), {
+        description: err instanceof Error ? err.message : t("subscription.toasts.unknown_error"),
       });
     } finally {
       setActingId(null);
@@ -507,12 +531,12 @@ export default function VendorSubscriptionPage() {
 
   async function buyTopup(pack: TopupRow) {
     if (!user || actingId) return;
-    if (!requireVerified("buying a top-up")) return;
+    if (!requireVerified(t("subscription.verify_action.topup"))) return;
     setActingId(`topup_${pack.id}`);
     await callStripeFunction(
       "stripe-topup-checkout",
       { vendor_id: vendorId ?? null, price_id: pack.priceId },
-      "Couldn't start top-up checkout",
+      t("subscription.toasts.topup_checkout_failed"),
     );
     setActingId(null);
   }
@@ -558,15 +582,28 @@ export default function VendorSubscriptionPage() {
     return pcts.length ? Math.max(...pcts) : 0;
   }, [tiers, billingInterval]);
 
+  // Free is the one tier name that's a word ("Gratis"); Starter, Pro and
+  // Premium are product names and stay as they are.
+  const tierName = (tier: TierRow) => (tier.id === "free" ? t("plans.free") : tier.name);
+  const highlightLabel = (h: string): string => {
+    const key = HIGHLIGHT_KEYS[h];
+    if (key) return t(`plans.highlights.${key}`);
+    const listings = h.match(/^(\d+) listings?$/);
+    if (listings) return t("plans.highlights.listings", { count: Number(listings[1]) });
+    const storage = h.match(/^(\d+(?:\.\d+)? [KMGT]B) of gallery storage$/);
+    if (storage) return t("plans.highlights.storage", { size: storage[1] });
+    return h;
+  };
+
   return (
     <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("sidebar_title")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-24 lg:pb-0 relative">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
-          <h1 className="font-editorial text-3xl">Subscription</h1>
+          <h1 className="font-editorial text-3xl">{t("subscription.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Pick a plan or top up credits. Track usage on the Usage tab.
+            {t("subscription.subtitle")}
           </p>
         </div>
 
@@ -605,20 +642,19 @@ export default function VendorSubscriptionPage() {
                     }}
                   >
                     <Flame className="w-3 h-3" />
-                    Launch pricing {maxSavePct}% off
+                    {t("subscription.launch.badge", { pct: maxSavePct })}
                   </span>
                   <h2
                     className="mt-4 font-editorial leading-[0.95] text-4xl md:text-5xl"
                     style={{ color: "#f4f1ea" }}
                   >
-                    Vendora Pro &amp; Premium
+                    {t("subscription.launch.title")}
                   </h2>
                   <h3 className="font-editorial leading-tight text-2xl md:text-3xl text-white/90 mt-1">
-                    Locked in at up to {maxSavePct}% off
+                    {t("subscription.launch.headline", { pct: maxSavePct })}
                   </h3>
                   <p className="text-sm text-white/55 mt-3 max-w-md">
-                    Lock in these rates before the offer ends. New rates apply on the
-                    next billing cycle after expiry.
+                    {t("subscription.launch.body")}
                   </p>
                 </div>
 
@@ -628,13 +664,13 @@ export default function VendorSubscriptionPage() {
                     style={{ color: "rgba(255,255,255,0.85)" }}
                   >
                     <Flame className="w-3 h-3" />
-                    Offer expires in
+                    {t("subscription.launch.expires_in")}
                   </p>
-                  <div className="flex items-stretch gap-2 tnum" aria-label="Time remaining">
-                    <CountdownTile n={countdown.days} label="Days" />
-                    <CountdownTile n={countdown.hours} label="Hours" pad />
-                    <CountdownTile n={countdown.minutes} label="Mins" pad />
-                    <CountdownTile n={countdown.seconds} label="Secs" pad />
+                  <div className="flex items-stretch gap-2 tnum" aria-label={t("subscription.launch.time_remaining")}>
+                    <CountdownTile n={countdown.days} label={t("subscription.launch.days")} />
+                    <CountdownTile n={countdown.hours} label={t("subscription.launch.hours")} pad />
+                    <CountdownTile n={countdown.minutes} label={t("subscription.launch.mins")} pad />
+                    <CountdownTile n={countdown.seconds} label={t("subscription.launch.secs")} pad />
                   </div>
                 </div>
               </div>
@@ -662,7 +698,7 @@ export default function VendorSubscriptionPage() {
           {/* ===== Tier grid ===== */}
           <div>
             <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-              <h3 className="font-editorial text-2xl">Choose a plan</h3>
+              <h3 className="font-editorial text-2xl">{t("subscription.choose_plan")}</h3>
               <BillingIntervalToggle
                 value={billingInterval}
                 onChange={setBillingInterval}
@@ -699,19 +735,21 @@ export default function VendorSubscriptionPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="font-medium text-foreground">{tier.name}</p>
+                        <p className="font-medium text-foreground">{tierName(tier)}</p>
                         {tier.wasMonthly && offerActive && !isCurrent && (
                           <span
                             className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
                             style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
                           >
-                            Save {Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100)}%
+                            {t("subscription.save_pct", {
+                              pct: Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100),
+                            })}
                           </span>
                         )}
                       </div>
                       {isCurrent && (
                         <span className="text-[10px] uppercase tracking-wide font-semibold text-foreground">
-                          Current
+                          {t("subscription.current")}
                         </span>
                       )}
                     </div>
@@ -729,12 +767,14 @@ export default function VendorSubscriptionPage() {
                           : tier.priceMonthly.toFixed(2)}
                       </span>
                       <span className="text-xs text-muted-foreground ml-1">
-                        / mo
+                        {t("subscription.per_month")}
                       </span>
                     </p>
                     {tier.billingInterval === "year" && tier.priceMonthly > 0 && (
                       <p className="text-[11px] text-muted-foreground mt-0.5 tnum">
-                        ${tier.priceMonthly.toFixed(2)} billed annually
+                        {t("subscription.billed_annually", {
+                          price: `$${tier.priceMonthly.toFixed(2)}`,
+                        })}
                       </p>
                     )}
                     {/* Cards show only the confirmed plan bullets —
@@ -743,7 +783,7 @@ export default function VendorSubscriptionPage() {
                         shows the balance + grant). */}
                     {tier.wasMonthly && offerActive && !isCurrent && (
                       <p className="text-[10px] text-foreground font-medium mt-0.5">
-                        Launch pricing — limited time
+                        {t("subscription.launch_limited")}
                       </p>
                     )}
 
@@ -752,7 +792,7 @@ export default function VendorSubscriptionPage() {
                         <li key={h} className="flex items-start gap-1.5 text-xs text-foreground">
                           <Check className="w-3 h-3 text-accent shrink-0 mt-[3px]" />
                           <span className="inline-flex items-center gap-1">
-                            {h}
+                            {highlightLabel(h)}
                             {(h === "Become verified" ||
                               h === "Verified profile") && (
                               <StudioVerifiedBadge />
@@ -776,10 +816,10 @@ export default function VendorSubscriptionPage() {
                             <Crown className="w-3.5 h-3.5 mr-1.5" />
                           )}
                           {isCurrent
-                            ? "Current plan"
+                            ? t("subscription.current_plan")
                             : (plan?.tier ?? "free") !== "free"
-                              ? `Switch to ${tier.name}`
-                              : `Choose ${tier.name}`}
+                              ? t("subscription.switch_to", { name: tierName(tier) })
+                              : t("subscription.choose", { name: tierName(tier) })}
                         </Button>
                       ) : (
                         <Button
@@ -788,7 +828,7 @@ export default function VendorSubscriptionPage() {
                           variant="outline"
                           className="w-full rounded-full"
                         >
-                          {isCurrent ? "Current plan" : "Free — default"}
+                          {isCurrent ? t("subscription.current_plan") : t("subscription.free_default")}
                         </Button>
                       )}
                     </div>
@@ -805,15 +845,13 @@ export default function VendorSubscriptionPage() {
               (t) => t.id !== "free" && t.billingInterval === "year",
             ) ? (
               <div className="mt-3 rounded-2xl border border-dashed border-border bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
-                Yearly plans coming soon — switch back to monthly to pick a
-                plan today.
+                {t("subscription.yearly_soon")}
               </div>
             ) : null}
             <p className="text-[11px] text-muted-foreground mt-2 px-1">
-              Switching plans charges the new tier today and starts a fresh
-              {billingInterval === "year" ? " 12-month" : " 30-day"} cycle.
-              Time you already paid for stays with you, plus the new tier's
-              credits get added to your balance.
+              {billingInterval === "year"
+                ? t("subscription.switch_note_year")
+                : t("subscription.switch_note_month")}
             </p>
           </div>
 
@@ -825,10 +863,9 @@ export default function VendorSubscriptionPage() {
               this section back. */}
           {topups.length > 0 && (
           <div>
-            <h3 className="font-editorial text-2xl mb-1">Top up credits</h3>
+            <h3 className="font-editorial text-2xl mb-1">{t("subscription.topup_title")}</h3>
             <p className="text-sm text-muted-foreground mb-3">
-              One-time purchase. Credits never expire. Bigger packs = better
-              $/credit.
+              {t("subscription.topup_body")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {topups.map((pack) => {
@@ -848,13 +885,13 @@ export default function VendorSubscriptionPage() {
                       <span className="text-2xl font-semibold tnum">
                         {pack.credits.toLocaleString()}
                       </span>
-                      <span className="text-xs text-muted-foreground ml-1">credits</span>
+                      <span className="text-xs text-muted-foreground ml-1">{t("subscription.credits")}</span>
                     </p>
                     <p className="text-sm text-foreground mt-0.5 tnum">
                       ${pack.price}
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {perCredit.toFixed(2)}¢ / credit
+                      {t("subscription.per_credit", { cents: perCredit.toFixed(2) })}
                     </p>
                     <div className="flex-1" />
                     <Button
@@ -869,7 +906,7 @@ export default function VendorSubscriptionPage() {
                       ) : (
                         <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                       )}
-                      Buy {pack.name}
+                      {t("subscription.buy", { name: pack.name })}
                     </Button>
                   </div>
                 );
@@ -879,8 +916,7 @@ export default function VendorSubscriptionPage() {
           )}
 
           <p className="text-xs text-muted-foreground px-2">
-            Billing is handled via Stripe. You'll get a receipt by email for
-            each charge.
+            {t("subscription.stripe_note")}
           </p>
         </div>
       </main>
@@ -896,37 +932,43 @@ export default function VendorSubscriptionPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Switch to {pendingTier?.name}?
+              {t("subscription.dialog.title", {
+                name: pendingTier ? tierName(pendingTier) : "",
+              })}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
-                  You'll be charged{" "}
-                  <span className="font-semibold text-foreground tnum">
-                    ${pendingTier?.priceMonthly}
-                  </span>{" "}
-                  today, then{" "}
-                  <span className="font-semibold text-foreground tnum">
-                    ${pendingTier?.priceMonthly}
-                  </span>{" "}
-                  every month after.
+                  <Trans
+                    t={t}
+                    i18nKey="subscription.dialog.charge"
+                    values={{ price: `$${pendingTier?.priceMonthly ?? ""}` }}
+                    components={{
+                      price: <span className="font-semibold text-foreground tnum" />,
+                    }}
+                  />
                 </p>
                 <p>
-                  Any unused time on your current plan stays with you, and{" "}
-                  <span className="font-semibold text-foreground tnum">
-                    +{(pendingTier?.monthlyCredits ?? 0).toLocaleString()}
-                  </span>{" "}
-                  credits get added to your balance right away.
+                  <Trans
+                    t={t}
+                    i18nKey="subscription.dialog.credits"
+                    values={{
+                      credits: (pendingTier?.monthlyCredits ?? 0).toLocaleString(),
+                    }}
+                    components={{
+                      credits: <span className="font-semibold text-foreground tnum" />,
+                    }}
+                  />
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("subscription.dialog.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmTierSwitch}
             >
-              Confirm switch
+              {t("subscription.dialog.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -981,6 +1023,7 @@ function BillingPanel({
   // no customer yet, so those controls are hidden unless this is true.
   hasBilling: boolean;
 }) {
+  const { t, i18n } = useTranslation("vendorPlan");
   const [invoicesExpanded, setInvoicesExpanded] = useState(false);
 
   async function openPortal(action: "update" | "cancel") {
@@ -992,8 +1035,8 @@ function BillingPanel({
         { body: { vendor_id: vendorId ?? null } },
       );
       if (error || !data?.url) {
-        toast.error("Couldn't open billing portal", {
-          description: error?.message ?? "Please try again in a moment.",
+        toast.error(t("billing.portal_failed"), {
+          description: error?.message ?? t("billing.try_again"),
         });
         return;
       }
@@ -1004,11 +1047,17 @@ function BillingPanel({
   }
 
   const cardLabel = billing?.card
-    ? `${(billing.card.brand ?? "card").replace(/^./, (c) => c.toUpperCase())} •••• ${billing.card.last4}`
-    : "No card on file";
+    ? `${(billing.card.brand ?? t("billing.card")).replace(/^./, (c) => c.toUpperCase())} •••• ${billing.card.last4}`
+    : t("billing.no_card");
   const cardExp = billing?.card?.exp_month && billing?.card?.exp_year
-    ? `Exp ${String(billing.card.exp_month).padStart(2, "0")}/${String(billing.card.exp_year).slice(-2)}`
+    ? t("billing.expires", {
+        date: `${String(billing.card.exp_month).padStart(2, "0")}/${String(billing.card.exp_year).slice(-2)}`,
+      })
     : null;
+  // Stripe invoice statuses stay as Stripe sends them; only the label
+  // is translated (an unknown status shows as sent).
+  const statusLabel = (status: string) =>
+    t(`billing.status.${status}`, { defaultValue: status });
   const recentInvoices = (billing?.invoices ?? []).slice(0, 5);
 
   return (
@@ -1020,12 +1069,12 @@ function BillingPanel({
       }}
     >
       <h3 className="text-base font-semibold tracking-tight font-sans">
-        Billing
+        {t("billing.title")}
       </h3>
 
       <div className="mt-4">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-          Payment method
+          {t("billing.payment_method")}
         </p>
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -1041,7 +1090,7 @@ function BillingPanel({
               disabled={actingId !== null}
               className="text-xs font-medium text-foreground hover:text-accent rounded-full px-2.5 py-1 border border-border hover:border-foreground/40 transition-colors disabled:opacity-50"
             >
-              Update
+              {t("billing.update")}
             </button>
           ) : null}
         </div>
@@ -1050,14 +1099,14 @@ function BillingPanel({
       <div className="mt-5 flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-            Invoices
+            {t("billing.invoices")}
           </p>
         </div>
         {loading ? (
-          <p className="text-xs text-muted-foreground mt-2">Loading…</p>
+          <p className="text-xs text-muted-foreground mt-2">{t("billing.loading")}</p>
         ) : recentInvoices.length === 0 ? (
           <p className="text-xs text-muted-foreground mt-2">
-            No invoices yet. Once your first month is paid, receipts land here.
+            {t("billing.no_invoices")}
           </p>
         ) : (
           (() => {
@@ -1079,7 +1128,7 @@ function BillingPanel({
                 return [{
                   key: inv.id,
                   date,
-                  description: inv.summary ?? `Invoice ${inv.id.slice(-6)}`,
+                  description: inv.summary ?? t("billing.invoice_fallback", { id: inv.id.slice(-6) }),
                   amount: inv.amount_paid || inv.amount_due,
                   status: inv.status,
                   paidStyle,
@@ -1090,7 +1139,7 @@ function BillingPanel({
               return lines.map((line, lIdx) => ({
                 key: `${inv.id}_${lIdx}`,
                 date,
-                description: line.description ?? inv.summary ?? "Line item",
+                description: line.description ?? inv.summary ?? t("billing.line_item"),
                 amount: line.amount,
                 status: inv.status,
                 paidStyle,
@@ -1111,7 +1160,7 @@ function BillingPanel({
                   }`}
                 >
                   {visible.map((row) => {
-                    const dateLabel = row.date.toLocaleDateString(undefined, {
+                    const dateLabel = row.date.toLocaleDateString(i18n.language, {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
@@ -1124,7 +1173,7 @@ function BillingPanel({
                             {row.description}
                           </p>
                           <p className={`text-[11px] capitalize tnum mt-0.5 ${row.paidStyle}`}>
-                            {row.status}
+                            {statusLabel(row.status)}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -1140,7 +1189,7 @@ function BillingPanel({
                                   rel="noopener noreferrer"
                                   className="hover:text-accent"
                                 >
-                                  View
+                                  {t("billing.view")}
                                 </a>
                               ) : null}
                               {row.hostedUrl && row.pdfUrl ? (
@@ -1155,10 +1204,10 @@ function BillingPanel({
                                   rel="noopener noreferrer"
                                   download
                                   className="hover:text-accent"
-                                  aria-label="Download PDF"
-                                  title="Download PDF"
+                                  aria-label={t("billing.download_pdf")}
+                                  title={t("billing.download_pdf")}
                                 >
-                                  PDF
+                                  {t("billing.pdf")}
                                 </a>
                               ) : null}
                             </div>
@@ -1175,8 +1224,8 @@ function BillingPanel({
                     className="mt-2 self-start text-xs font-medium text-foreground hover:text-accent"
                   >
                     {invoicesExpanded
-                      ? "Show less"
-                      : `Show all (${rows.length})`}
+                      ? t("billing.show_less")
+                      : t("billing.show_all", { count: rows.length })}
                   </button>
                 ) : null}
               </>
@@ -1188,7 +1237,7 @@ function BillingPanel({
       {hasBilling ? (
         <div className="mt-5 pt-4 border-t border-foreground/8">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-            Cancellation
+            {t("billing.cancellation")}
           </p>
           <button
             type="button"
@@ -1196,7 +1245,7 @@ function BillingPanel({
             disabled={actingId !== null}
             className="mt-1.5 text-xs font-medium text-destructive hover:text-destructive/80 disabled:opacity-50"
           >
-            Cancel plan
+            {t("billing.cancel_plan")}
           </button>
         </div>
       ) : null}
@@ -1217,6 +1266,7 @@ function BillingIntervalToggle({
   value: "month" | "year";
   onChange: (next: "month" | "year") => void;
 }) {
+  const { t } = useTranslation("vendorPlan");
   const cls = (active: boolean) =>
     `rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-colors ${
       active
@@ -1226,7 +1276,7 @@ function BillingIntervalToggle({
   return (
     <div
       role="radiogroup"
-      aria-label="Billing interval"
+      aria-label={t("subscription.interval.label")}
       className="inline-flex items-center gap-1 rounded-full p-1 border border-foreground/12 bg-secondary/40"
     >
       <button
@@ -1236,7 +1286,7 @@ function BillingIntervalToggle({
         onClick={() => onChange("month")}
         className={cls(value === "month")}
       >
-        Monthly
+        {t("subscription.interval.month")}
       </button>
       <button
         type="button"
@@ -1245,7 +1295,7 @@ function BillingIntervalToggle({
         onClick={() => onChange("year")}
         className={cls(value === "year")}
       >
-        Yearly
+        {t("subscription.interval.year")}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -27,55 +28,24 @@ interface Verification {
   submitted_at: string;
 }
 
-interface KindMeta {
-  kind: Kind;
-  label: string;
-  blurb: string;
-}
+// Label, blurb and "sent for review" toast for each kind live under
+// manager.kinds.<kind> in the vendorVerification namespace.
+const KINDS: Kind[] = ["identity", "insurance", "business_license", "background_check"];
 
-const KINDS: KindMeta[] = [
-  {
-    kind: "identity",
-    label: "Identity",
-    blurb:
-      "Government-issued photo ID. Confirms you are who you say you are. We blur the photo and store the file privately — only admin reviewers can open it.",
-  },
-  {
-    kind: "insurance",
-    label: "Liability insurance",
-    blurb:
-      "A current certificate of insurance ($1M+ general liability is standard). Required by most premium venues and a strong trust signal for hosts.",
-  },
-  {
-    kind: "business_license",
-    label: "Business license",
-    blurb:
-      "Your business registration, tax ID, or local trade license. Confirms you operate as a legitimate business.",
-  },
-  {
-    kind: "background_check",
-    label: "Background check",
-    blurb:
-      "Upload a recent background check report (Checkr, Sterling, GoodHire — anything dated within the last 12 months). Critical for vendors who work in private homes (photographers, planners, makeup artists, in-home chefs).",
-  },
-];
-
+// Label: manager.status.<status> in the vendorVerification namespace.
 const statusMeta: Record<
   Verification["status"],
-  { label: string; tone: string; Icon: typeof ShieldCheck }
+  { tone: string; Icon: typeof ShieldCheck }
 > = {
   pending: {
-    label: "Pending review",
     tone: "bg-secondary text-muted-foreground border-border",
     Icon: Clock,
   },
   approved: {
-    label: "Verified",
     tone: "bg-accent/15 text-accent border-accent/30",
     Icon: ShieldCheck,
   },
   rejected: {
-    label: "Returned",
     tone: "bg-destructive/10 text-destructive border-destructive/30",
     Icon: ShieldAlert,
   },
@@ -91,6 +61,7 @@ export function VerificationManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorVerification");
   const [rows, setRows] = useState<Verification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -113,26 +84,23 @@ export function VerificationManager({
   return (
     <div className="space-y-4">
       <div>
-        <p className="font-label text-muted-foreground">Verifications</p>
+        <p className="font-label text-muted-foreground">{t("manager.title")}</p>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-xl">
-          Optional but recommended. Verified vendors get badges on their
-          profile, rank higher in search, and unlock the hosts who filter
-          by verification level. Documents are stored privately — only
-          admin reviewers can open them.
+          {t("manager.intro")}
         </p>
       </div>
 
       {loading ? (
         <div className="text-center text-sm text-muted-foreground py-6">
-          Loading…
+          {t("manager.loading")}
         </div>
       ) : (
         <div className="space-y-3">
-          {KINDS.map((meta) => (
+          {KINDS.map((kind) => (
             <KindRow
-              key={meta.kind}
-              meta={meta}
-              row={byKind.get(meta.kind) ?? null}
+              key={kind}
+              kind={kind}
+              row={byKind.get(kind) ?? null}
               vendorId={vendorId}
               canEdit={canEdit}
               onChange={load}
@@ -145,18 +113,19 @@ export function VerificationManager({
 }
 
 function KindRow({
-  meta,
+  kind,
   row,
   vendorId,
   canEdit,
   onChange,
 }: {
-  meta: KindMeta;
+  kind: Kind;
   row: Verification | null;
   vendorId: string;
   canEdit: boolean;
   onChange: () => void;
 }) {
+  const { t } = useTranslation("vendorVerification");
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const status = row?.status ?? null;
@@ -165,16 +134,16 @@ function KindRow({
 
   async function handleFile(file: File) {
     if (!ACCEPTED.includes(file.type)) {
-      toast.error("Use JPG, PNG, WEBP, or PDF");
+      toast.error(t("manager.toast.fileType"));
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error("Max 10 MB");
+      toast.error(t("manager.toast.fileSize"));
       return;
     }
     setUploading(true);
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
-    const filename = `${meta.kind}-${crypto.randomUUID()}.${ext}`;
+    const filename = `${kind}-${crypto.randomUUID()}.${ext}`;
     const path = `${vendorId}/${filename}`;
 
     // Best-effort cleanup of old file when re-submitting.
@@ -195,7 +164,7 @@ function KindRow({
     const upsert = await verifTable().upsert(
       {
         vendor_id: vendorId,
-        kind: meta.kind,
+        kind,
         document_path: path,
         status: "pending",
         notes: null,
@@ -211,7 +180,7 @@ function KindRow({
       toast.error(upsert.error.message);
       return;
     }
-    toast.success(`${meta.label} sent for review`);
+    toast.success(t(`manager.kinds.${kind}.sent`));
     onChange();
   }
 
@@ -229,24 +198,24 @@ function KindRow({
             }`}
           />
           <div>
-            <p className="font-display text-base leading-tight">{meta.label}</p>
+            <p className="font-display text-base leading-tight">{t(`manager.kinds.${kind}.label`)}</p>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-md">
-              {meta.blurb}
+              {t(`manager.kinds.${kind}.blurb`)}
             </p>
           </div>
         </div>
-        {sm && (
+        {sm && status && (
           <span
             className={`text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 border shrink-0 ${sm.tone}`}
           >
-            {sm.label}
+            {t(`manager.status.${status}`)}
           </span>
         )}
       </div>
 
       {status === "rejected" && row?.notes && (
         <p className="text-xs bg-destructive/5 border border-destructive/20 rounded-sm p-2.5 mb-3 text-destructive/85 leading-relaxed">
-          Reviewer note: {row.notes}
+          {t("manager.reviewerNote", { note: row.notes })}
         </p>
       )}
 
@@ -279,12 +248,12 @@ function KindRow({
               <Upload className="w-3.5 h-3.5 mr-1.5" />
             )}
             {status === "approved"
-              ? "Replace document"
+              ? t("manager.replace")
               : status === "rejected"
-                ? "Resubmit"
+                ? t("manager.resubmit")
                 : status === "pending"
-                  ? "Replace document"
-                  : "Upload document"}
+                  ? t("manager.replace")
+                  : t("manager.upload")}
           </Button>
         </>
       )}

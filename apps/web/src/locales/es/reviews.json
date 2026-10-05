@@ -1,0 +1,56 @@
+{
+  "errors": {
+    "min_messages_required": "Conversa un poco más con este proveedor antes de dejar una calificación.",
+    "no_accepted_proposal": "Las reseñas del evento se habilitan cuando ambas partes confirman la reserva — o cuando se acepta una propuesta.",
+    "event_too_recent": "Espera a que pasen 3 días después del evento para que todo se asiente.",
+    "no_event_date": "Primero agrega una fecha del evento a la consulta.",
+    "not_authorized": "No tienes permiso para dejar una reseña en esta consulta.",
+    "host_mismatch": "La consulta no coincide — actualiza la página e inténtalo de nuevo.",
+    "vendor_mismatch": "La consulta no coincide — actualiza la página e inténtalo de nuevo.",
+    "edit_window_expired": "Solo se puede editar durante los primeros 10 minutos después de enviarla.",
+    "invalid_rating": "Elige entre 1 y 5 estrellas.",
+    "not_found": "No se encontró la reseña — es posible que se haya eliminado."
+  },
+  "eventPrompt": "¿Cómo te fue en tu evento con {{name}}?",
+  "conversationPrompt": "Califica la comunicación de {{name}}",
+  "modal": {
+    "editEventTitle": "Edita tu reseña del evento",
+    "editConversationTitle": "Edita tu calificación de la conversación",
+    "editDescription": "Solo se puede editar durante los primeros 10 minutos después de enviarla.",
+    "eventDescription": "Tu reseña se publica cuando ambas partes dejen la suya — o después de 14 días.",
+    "conversationDescription": "Una opinión rápida sobre cómo va esta conversación hasta ahora.",
+    "starRating": "Calificación con estrellas",
+    "stars_one": "{{count}} estrella",
+    "stars_other": "{{count}} estrellas",
+    "eventLabel": "¿Qué destacó?",
+    "conversationLabel": "¿Algo que agregar? (opcional)",
+    "eventPlaceholder": "Cuéntales a otros anfitriones qué hizo genial a este proveedor (o no).",
+    "conversationPlaceholder": "Responde rápido, es profesional, fácil de tratar...",
+    "cancel": "Cancelar",
+    "saveEdit": "Guardar cambios",
+    "submit": "Enviar",
+    "toasts": {
+      "tapStar": "Primero toca una estrella.",
+      "updated": "Reseña actualizada.",
+      "eventSubmitted": "Reseña enviada. Se publicará cuando la otra parte también deje la suya (o en 14 días).",
+      "conversationSubmitted": "Calificación enviada."
+    }
+  },
+  "prompt": {
+    "eventBody": "Deja una reseña del evento — se verá cuando ambas partes dejen la suya.",
+    "conversationBody": "Una opinión rápida sobre esta conversación.",
+    "rate": "Calificar"
+  },
+  "status": {
+    "waitingFor": "Esperando a {{name}}",
+    "bothLive": "Ambas partes opinaron · publicada",
+    "live": "Publicada",
+    "eventSubmitted": "Reseña del evento enviada",
+    "conversationSubmitted": "Calificación de la conversación enviada",
+    "editLabel_one": "Editar (queda {{count}} minuto)",
+    "editLabel_other": "Editar (quedan {{count}} minutos)",
+    "editLeft_one": "Editar (queda {{count}} min)",
+    "editLeft_other": "Editar (quedan {{count}} min)",
+    "hiddenUntil": "Oculta hasta que la otra parte también opine — o se publica en 14 días."
+  }
+}

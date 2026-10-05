@@ -1,0 +1,95 @@
+{
+  "close": "Cerrar",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "live": {
+    "titleLive": "Estás en vivo",
+    "titleSetup": "Transmitir en vivo",
+    "description": "Transmite {{title}} para cualquier persona con el enlace. La grabación se guardará automáticamente para verla después.",
+    "liveBadge": "EN VIVO",
+    "watching_one": "{{count}} persona viendo",
+    "watching_other": "{{count}} personas viendo",
+    "unmute": "Activar micrófono",
+    "mute": "Silenciar",
+    "cameraOn": "Encender cámara",
+    "cameraOff": "Apagar cámara",
+    "ending": "Finalizando…",
+    "endStream": "Finalizar transmisión",
+    "shareLabel": "Comparte este enlace con quien quieras que vea la transmisión",
+    "start": "Comenzar a transmitir",
+    "hide": "Ocultar",
+    "useEncoder": "Usar OBS / Larix en su lugar",
+    "rtmpCredentials": "Credenciales RTMP",
+    "serverUrl": "URL del servidor",
+    "copyServerUrl": "Copiar URL del servidor",
+    "streamKey": "Clave de transmisión",
+    "showStreamKey": "Mostrar clave de transmisión",
+    "hideStreamKey": "Ocultar clave de transmisión",
+    "show": "Mostrar",
+    "copyStreamKey": "Copiar clave de transmisión",
+    "encoderNote": "Pega ambos datos en tu codificador. Cualquier persona con esta clave puede transmitir en tu evento — no la compartas como compartirías el enlace para ver la transmisión.",
+    "connecting": "Conectando con Mux…",
+    "endedTitle": "Transmisión finalizada",
+    "endedBody": "Tu grabación se está procesando. Estará disponible en el enlace en uno o dos minutos.",
+    "viewWatchPage": "Ver la página de la transmisión",
+    "errors": {
+      "createFailed": "No se pudo crear la transmisión en vivo",
+      "permissionDenied": "Se negó el permiso para usar la cámara y el micrófono. Permite el acceso e inténtalo de nuevo.",
+      "sdpFailed": "No se pudo preparar la oferta SDP",
+      "whipRejected": "Mux WHIP rechazó la conexión ({{status}}): {{details}}"
+    },
+    "toasts": {
+      "serverUrlCopied": "URL del servidor copiada",
+      "streamKeyCopied": "Clave de transmisión copiada",
+      "shareLinkCopied": "Enlace para compartir copiado"
+    }
+  },
+  "archive": {
+    "title": "Transmisiones anteriores",
+    "description": "Repeticiones de {{title}}. Cualquier persona con un enlace de repetición puede verlas.",
+    "empty": "Aún no hay transmisiones anteriores. Cuando termines una transmisión en vivo, la grabación aparecerá aquí.",
+    "watch": "Ver",
+    "toasts": {
+      "loadFailed": "No se pudieron cargar las transmisiones anteriores",
+      "replayCopied": "Enlace de la repetición copiado",
+      "copyFailed": "No se pudo copiar"
+    }
+  },
+  "content": {
+    "tabs": {
+      "posts": "Fotos · {{n}}",
+      "reels": "Reels · {{n}}",
+      "buzz": "Buzz · {{n}}"
+    },
+    "newPost": "Nueva foto",
+    "newReel": "Nuevo reel",
+    "newBuzz": "Nuevo buzz",
+    "emptyPosts": "Aún no hay fotos — toca Nueva foto para publicar una.",
+    "emptyReels": "Aún no hay reels — toca Nuevo reel para subir un video.",
+    "emptyBuzz": "Aún no hay buzz — toca Nuevo buzz para compartir una idea.",
+    "postAlt": "Foto",
+    "reelLabel": "Reel",
+    "deletePost": "Eliminar foto",
+    "deleteReel": "Eliminar reel",
+    "deleteBuzz": "Eliminar buzz",
+    "confirmDelete": "¿Eliminar esto? No se puede deshacer.",
+    "deleted": "Eliminado."
+  },
+  "composer": {
+    "newBuzz": "Nuevo buzz",
+    "newPost": "Nueva foto",
+    "newReel": "Nuevo reel",
+    "buzzPlaceholder": "¿Qué está pasando?",
+    "cancel": "Cancelar",
+    "post": "Publicar",
+    "pickPhotoFirst": "Primero elige una foto",
+    "pickVideoFirst": "Primero elige un video",
+    "removePhoto": "Quitar foto",
+    "removeVideo": "Quitar video",
+    "tapToPickPhoto": "Toca para elegir una foto",
+    "tapToPickVideo": "Toca para elegir un video",
+    "captionPlaceholder": "Agrega una descripción (opcional)",
+    "postFailed": "No se pudo publicar: {{message}}",
+    "tryAgain": "Inténtalo de nuevo."
+  }
+}

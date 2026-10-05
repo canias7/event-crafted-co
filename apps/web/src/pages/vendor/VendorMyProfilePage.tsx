@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, Edit3, Loader2, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
@@ -32,7 +33,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan } from "@/hooks/useVendorPlan";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
 
 interface VendorRow {
   id: string;
@@ -60,6 +62,7 @@ interface AccountProfile {
 }
 
 export default function VendorMyProfilePage() {
+  const { t } = useTranslation("vendorHome");
   const { user } = useAuth();
   // Paid-tier verification badge on the header logo. Reads from
   // profiles.subscription_tier per the per-user subscription model
@@ -207,7 +210,9 @@ export default function VendorMyProfilePage() {
     if (!primary) return;
     const slugOrId = primary.slug ?? primary.id;
     const url = `${window.location.origin}/vendors/${slugOrId}`;
-    const text = `${primary.business_name ?? "Check out my listing"} on Vendora`;
+    const text = t("profile.shareText", {
+      name: primary.business_name ?? t("profile.shareFallback"),
+    });
     if (
       typeof navigator !== "undefined" &&
       typeof (navigator as Navigator & { share?: unknown }).share === "function"
@@ -225,7 +230,7 @@ export default function VendorMyProfilePage() {
     }
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard.");
+      toast.success(t("profile.linkCopied"));
     } catch {
       toast.info(url);
     }
@@ -240,16 +245,16 @@ export default function VendorMyProfilePage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
-        title="My Profile"
+        title={t("profile.sidebarTitle")}
         backPath="/vendor/me"
       />
       <main className="flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-editorial text-3xl">My Profile</h1>
+              <h1 className="font-editorial text-3xl">{t("profile.title")}</h1>
               <p className="text-sm text-muted-foreground">
-                Your listings — manage your marketplace presence here.
+                {t("profile.subtitle")}
               </p>
             </div>
             <NotificationBell variant="light" />
@@ -263,7 +268,7 @@ export default function VendorMyProfilePage() {
             <HeaderCard
               initials={initials}
               logoUrl={account?.logo_url ?? null}
-              businessName={account?.business_name?.trim() || "Your business"}
+              businessName={account?.business_name?.trim() || t("profile.yourBusiness")}
               bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}

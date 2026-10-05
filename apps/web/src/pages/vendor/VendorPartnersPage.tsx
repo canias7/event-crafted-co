@@ -9,6 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Archive,
   ArrowLeft,
@@ -76,6 +77,7 @@ import {
 } from "@/lib/threadFormatting";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Vendor-to-vendor partner messaging — separate from host conversations.
 // Threads are keyed on profiles.id (the user account) so a vendor with
@@ -87,6 +89,9 @@ import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
 
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 const DRAFT_KEY = (threadId: string) => `vendora.partnerDraft.${threadId}`;
+// Body stored for an attachment-only message. It stays in English in
+// the database; the UI shows it in the vendor's language.
+const ATTACHMENT_BODY = "(attachment)";
 
 // Partner identity is rendered from the profiles row. Vendors fill
 // these fields inconsistently — some have a business_name + logo_url
@@ -100,11 +105,11 @@ interface ProfileBrand {
   avatar_url: string | null;
 }
 
-function brandName(p: ProfileBrand | null): string {
+function brandName(p: ProfileBrand | null, fallback: string): string {
   return (
     p?.business_name?.trim() ||
     p?.display_name?.trim() ||
-    "Vendor"
+    fallback
   );
 }
 
@@ -123,7 +128,7 @@ interface ThreadRow {
   user_b_archived_at: string | null;
   user_a: ProfileBrand | null;
   user_b: ProfileBrand | null;
-  last_preview: { body: string; sender_user_id: string } | null;
+  last_preview: { body: string; sender_user_id: string; deleted?: boolean } | null;
 }
 
 interface PartnerMessage {
@@ -138,18 +143,20 @@ interface PartnerMessage {
   contact_info_flagged?: boolean;
 }
 
-function relativeTime(iso: string | null): string {
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+function relativeTime(iso: string | null, t: Translate, language: string): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
+  if (m < 1) return t("time.now");
+  if (m < 60) return t("time.minutes", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return t("time.hours", { n: h });
   const d = Math.floor(h / 24);
-  if (d === 1) return "Yesterday";
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, {
+  if (d === 1) return t("time.yesterday");
+  if (d < 7) return t("time.days", { n: d });
+  return new Date(iso).toLocaleDateString(language, {
     month: "short",
     day: "numeric",
   });
@@ -164,6 +171,7 @@ const reactionsTable = () =>
   (supabase as any).from("vendor_partner_message_reactions");
 
 export default function VendorPartnersPage() {
+  const { t, i18n } = useTranslation("vendorPartners");
   const { user } = useAuth();
   const myUserId = user?.id ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -228,7 +236,7 @@ export default function VendorPartnersPage() {
     // deduped client-side — quadratic with usage.
     const lastBy = new Map<
       string,
-      { body: string; sender_user_id: string }
+      { body: string; sender_user_id: string; deleted?: boolean }
     >();
     if (rows.length > 0) {
       const ids = rows.map((t) => t.id);
@@ -243,9 +251,12 @@ export default function VendorPartnersPage() {
         sender_user_id: string;
         deleted_at: string | null;
       }> | null) ?? []) {
+        // A deleted message's label is filled in at render time so it
+        // follows the language.
         lastBy.set(m.thread_id, {
-          body: m.deleted_at ? "Message deleted" : m.body,
+          body: m.deleted_at ? "" : m.body,
           sender_user_id: m.sender_user_id,
+          deleted: !!m.deleted_at,
         });
       }
     }
@@ -460,9 +471,10 @@ export default function VendorPartnersPage() {
       ? activeThread.user_b
       : activeThread.user_a;
   }, [activeThread, myUserId]);
+  const vendorFallback = t("vendor_fallback");
   const otherVendorName = useMemo(
-    () => brandName(otherProfile),
-    [otherProfile],
+    () => brandName(otherProfile, vendorFallback),
+    [otherProfile, vendorFallback],
   );
   const otherVendorLogo = useMemo(
     () => brandLogo(otherProfile),
@@ -533,7 +545,7 @@ export default function VendorPartnersPage() {
         return;
       }
       setMuted(false);
-      toast.success("Unmuted");
+      toast.success(t("toasts.unmuted"));
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
@@ -544,16 +556,14 @@ export default function VendorPartnersPage() {
         return;
       }
       setMuted(true);
-      toast.success("Muted");
+      toast.success(t("toasts.muted"));
     }
   }
 
   async function archiveThread() {
     if (!myUserId || !activeThreadId || !activeThread) return;
     const mySide = activeThread.user_a_id === myUserId ? "a" : "b";
-    const ok = window.confirm(
-      "Hide this conversation from your list? It'll come back if the other vendor messages you again.",
-    );
+    const ok = window.confirm(t("confirm.archive"));
     if (!ok) return;
     const now = new Date().toISOString();
     const { error } = await threadsTable()
@@ -563,14 +573,14 @@ export default function VendorPartnersPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Thread archived");
+    toast.success(t("toasts.archived"));
     setSearchParams({}, { replace: true });
     loadThreads();
   }
 
   async function reportThread() {
     if (!myUserId || !activeThreadId) return;
-    const reason = window.prompt("What's wrong with this conversation?");
+    const reason = window.prompt(t("confirm.report"));
     if (!reason) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
@@ -584,7 +594,7 @@ export default function VendorPartnersPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Reported — we'll review.");
+    toast.success(t("toasts.reported"));
   }
 
   // ─── Composer + send ───────────────────────────────────────────────
@@ -598,7 +608,7 @@ export default function VendorPartnersPage() {
         continue;
       }
       if (pendingFiles.length + accepted.length >= MAX_FILES) {
-        toast.error(`Up to ${MAX_FILES} attachments per message`);
+        toast.error(t("toasts.max_files", { max: MAX_FILES }));
         break;
       }
       accepted.push(f);
@@ -631,13 +641,13 @@ export default function VendorPartnersPage() {
       !composer.trim()
     ) {
       setSending(false);
-      toast.error("Couldn't upload your attachments — message not sent.");
+      toast.error(t("toasts.upload_failed"));
       return;
     }
     const { error } = await msgsTable().insert({
       thread_id: activeThreadId,
       sender_user_id: myUserId,
-      body: composer.trim() || "(attachment)",
+      body: composer.trim() || ATTACHMENT_BODY,
       attachments: uploaded,
       reply_to_message_id: replyToId,
     });
@@ -719,7 +729,7 @@ export default function VendorPartnersPage() {
   async function saveEdit(messageId: string) {
     const body = editingDraft.trim();
     if (!body) {
-      toast.error("Message can't be empty");
+      toast.error(t("toasts.empty_message"));
       return;
     }
     const before = messages.find((m) => m.id === messageId);
@@ -744,7 +754,7 @@ export default function VendorPartnersPage() {
     }
   }
   async function deleteMessage(messageId: string) {
-    const ok = window.confirm("Delete this message? This can't be undone.");
+    const ok = window.confirm(t("confirm.delete"));
     if (!ok) return;
     const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
@@ -786,13 +796,18 @@ export default function VendorPartnersPage() {
   );
 
   function authorNameOf(senderUserId: string): string {
-    if (senderUserId === myUserId) return "You";
+    if (senderUserId === myUserId) return t("you");
     return otherVendorName;
+  }
+
+  // Vendora's own placeholder bodies, shown in the vendor's language.
+  function displayBody(body: string): string {
+    return body === ATTACHMENT_BODY ? t("attachment_body") : body;
   }
 
   return (
     <div className="flex h-screen vendor-canvas overflow-hidden">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("sidebar_title")} backPath="/" />
 
       <main
         id="main-content"
@@ -806,9 +821,9 @@ export default function VendorPartnersPage() {
           <div className="backdrop-blur-sm px-5 md:px-8 py-5 space-y-3 shrink-0">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h1 className="font-editorial text-3xl">Inbox</h1>
+                <h1 className="font-editorial text-3xl">{t("header.title")}</h1>
                 <p className="text-sm text-muted-foreground">
-                  Chat with other vendors directly — no host in the loop.
+                  {t("header.subtitle")}
                 </p>
               </div>
               <NotificationBell variant="light" />
@@ -847,10 +862,9 @@ export default function VendorPartnersPage() {
                 <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                   <MessageSquare className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <p className="font-display text-lg">No partner threads yet</p>
+                <p className="font-display text-lg">{t("list.empty_title")}</p>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                  Open a vendor's profile and tap "Message vendor" to start
-                  coordinating directly.
+                  {t("list.empty_body")}
                 </p>
               </div>
             ) : (
@@ -861,39 +875,43 @@ export default function VendorPartnersPage() {
                   border: "1px solid hsl(var(--border))",
                 }}
               >
-                {threads.map((t, i) => {
-                  const isActive = t.id === activeThreadId;
+                {threads.map((th, i) => {
+                  const isActive = th.id === activeThreadId;
                   const isFirst = i === 0;
                   const other =
-                    t.user_a_id === myUserId ? t.user_b : t.user_a;
-                  const name = brandName(other);
+                    th.user_a_id === myUserId ? th.user_b : th.user_a;
+                  const name = brandName(other, vendorFallback);
                   const logo = brandLogo(other);
                   const initial = name.charAt(0).toUpperCase();
-                  const lastSenderId = t.last_preview?.sender_user_id ?? null;
+                  const lastSenderId = th.last_preview?.sender_user_id ?? null;
                   const myReadAt =
-                    t.user_a_id === myUserId
-                      ? t.user_a_read_at
-                      : t.user_b_read_at;
+                    th.user_a_id === myUserId
+                      ? th.user_a_read_at
+                      : th.user_b_read_at;
                   const isUnread =
                     lastSenderId !== null &&
                     lastSenderId !== myUserId &&
                     (!myReadAt ||
-                      new Date(t.last_message_at).getTime() >
+                      new Date(th.last_message_at).getTime() >
                         new Date(myReadAt).getTime());
-                  const preview = t.last_preview
+                  const preview = th.last_preview
                     ? `${
-                        t.last_preview.sender_user_id === myUserId
-                          ? "You: "
+                        th.last_preview.sender_user_id === myUserId
+                          ? t("list.you_prefix")
                           : ""
-                      }${t.last_preview.body}`
-                    : "No messages yet";
+                      }${
+                        th.last_preview.deleted
+                          ? t("message_deleted")
+                          : displayBody(th.last_preview.body)
+                      }`
+                    : t("list.no_messages");
                   return (
-                    <li key={t.id}>
+                    <li key={th.id}>
                       <button
                         type="button"
                         onClick={() =>
                           setSearchParams(
-                            { thread: t.id },
+                            { thread: th.id },
                             { replace: true },
                           )
                         }
@@ -903,7 +921,7 @@ export default function VendorPartnersPage() {
                       >
                         <span
                           className="self-center shrink-0 w-2 h-2 rounded-full"
-                          aria-label={isUnread ? "Unread" : undefined}
+                          aria-label={isUnread ? t("list.unread") : undefined}
                         >
                           {isUnread ? (
                             <span className="block w-2 h-2 rounded-full bg-gold" />
@@ -941,7 +959,7 @@ export default function VendorPartnersPage() {
                               {name}
                             </p>
                             <span className="shrink-0 text-[11px] text-muted-foreground tnum">
-                              {relativeTime(t.last_message_at)}
+                              {relativeTime(th.last_message_at, t, i18n.language)}
                             </span>
                           </div>
                           <p
@@ -1005,6 +1023,7 @@ export default function VendorPartnersPage() {
                 reactionsByMsg={reactionsByMsg}
                 myUserId={myUserId}
                 authorNameOf={authorNameOf}
+                displayBody={displayBody}
                 otherTyping={otherTyping}
                 broadcastTyping={broadcastTyping}
                 composer={composer}
@@ -1070,6 +1089,7 @@ function PartnerChatPane(props: {
   reactionsByMsg: Record<string, MessageReaction[]>;
   myUserId: string | null;
   authorNameOf: (id: string) => string;
+  displayBody: (body: string) => string;
   otherTyping: boolean;
   broadcastTyping: () => void;
   composer: string;
@@ -1117,6 +1137,7 @@ function PartnerChatPane(props: {
     reactionsByMsg,
     myUserId,
     authorNameOf,
+    displayBody,
     otherTyping,
     broadcastTyping,
     composer,
@@ -1145,6 +1166,7 @@ function PartnerChatPane(props: {
     saveEdit,
     deleteMessage,
   } = props;
+  const { t } = useTranslation("vendorPartners");
 
   const initial = (otherVendorName?.trim()?.charAt(0) ?? "V").toUpperCase();
 
@@ -1165,7 +1187,7 @@ function PartnerChatPane(props: {
           <button
             type="button"
             onClick={onBack}
-            aria-label="Back to threads"
+            aria-label={t("chat.back")}
             className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -1209,17 +1231,17 @@ function PartnerChatPane(props: {
                   color: "rgb(67,56,202)",
                 }}
               >
-                Partner
+                {t("chat.partner")}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
-              {activeNow ? "Active now" : "Vendor-to-vendor chat"}
+              {activeNow ? t("chat.active_now") : t("chat.v2v_chat")}
             </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                aria-label="Thread actions"
+                aria-label={t("chat.actions")}
                 className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
               >
                 <Info className="w-4 h-4" />
@@ -1232,11 +1254,11 @@ function PartnerChatPane(props: {
                 ) : (
                   <BellOff className="w-4 h-4 mr-2" />
                 )}
-                {muted ? "Unmute thread" : "Mute thread"}
+                {muted ? t("chat.unmute") : t("chat.mute")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onArchive} className="cursor-pointer">
                 <Archive className="w-4 h-4 mr-2" />
-                Archive thread
+                {t("chat.archive")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -1244,7 +1266,7 @@ function PartnerChatPane(props: {
                 className="cursor-pointer text-destructive focus:text-destructive"
               >
                 <Flag className="w-4 h-4 mr-2" />
-                Report
+                {t("chat.report")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1264,7 +1286,7 @@ function PartnerChatPane(props: {
         <div className="max-w-3xl mx-auto space-y-1.5">
           {groupedItems.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">
-              No messages yet. Say hi.
+              {t("chat.empty")}
             </p>
           ) : (
             groupedItems.map((it) => {
@@ -1342,7 +1364,7 @@ function PartnerChatPane(props: {
                       }`}
                     >
                       {isDeleted ? (
-                        <p>Message deleted</p>
+                        <p>{t("message_deleted")}</p>
                       ) : (
                         <>
                           {m.reply_to_message_id ? (() => {
@@ -1353,7 +1375,7 @@ function PartnerChatPane(props: {
                             return (
                               <MessageReplyContext
                                 authorName={authorNameOf(parent.sender_user_id)}
-                                body={parent.deleted_at ? "" : parent.body}
+                                body={parent.deleted_at ? "" : displayBody(parent.body)}
                                 tone="bubble"
                               />
                             );
@@ -1384,20 +1406,20 @@ function PartnerChatPane(props: {
                                   onClick={cancelEditing}
                                   className="text-[11px] text-muted-foreground hover:text-accent px-2 py-1"
                                 >
-                                  Cancel
+                                  {t("chat.cancel")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
                                   className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
                                 >
-                                  Save
+                                  {t("chat.save")}
                                 </button>
                               </div>
                             </div>
                           ) : (
                             <p>
-                              <MessageBody body={m.body} />
+                              <MessageBody body={displayBody(m.body)} />
                             </p>
                           )}
                           {m.attachments && m.attachments.length > 0 && (
@@ -1405,7 +1427,7 @@ function PartnerChatPane(props: {
                           )}
                           {isEdited ? (
                             <span className="block text-[10px] opacity-60 mt-1">
-                              edited
+                              {t("chat.edited")}
                             </span>
                           ) : null}
                         </>
@@ -1426,7 +1448,7 @@ function PartnerChatPane(props: {
                         }`}
                       >
                         <span aria-hidden>⚠</span>
-                        Looks like contact info — kept on Vendora.
+                        {t("chat.contact_flag")}
                       </p>
                     ) : null}
                     {it.showTail && !isDeleted ? (
@@ -1435,7 +1457,7 @@ function PartnerChatPane(props: {
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
-                        {new Date(m.created_at).toLocaleTimeString(undefined, {
+                        {new Date(m.created_at).toLocaleTimeString(i18n.language, {
                           hour: "numeric",
                           minute: "2-digit",
                         })}
@@ -1495,7 +1517,7 @@ function PartnerChatPane(props: {
               className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <MapPin className="w-3.5 h-3.5 text-accent" />
-              Pin location
+              {t("chat.pin_location")}
             </button>
           </div>
 
@@ -1509,7 +1531,7 @@ function PartnerChatPane(props: {
             {replyTarget ? (
               <MessageReplyContext
                 authorName={authorNameOf(replyTarget.sender_user_id)}
-                body={replyTarget.deleted_at ? "" : replyTarget.body}
+                body={replyTarget.deleted_at ? "" : displayBody(replyTarget.body)}
                 tone="composer"
                 onCancel={() => setReplyToId(null)}
               />
@@ -1529,7 +1551,7 @@ function PartnerChatPane(props: {
                           prev.filter((_, j) => j !== i),
                         )
                       }
-                      aria-label="Remove attachment"
+                      aria-label={t("chat.remove_attachment")}
                       className="text-muted-foreground hover:text-accent"
                     >
                       <X className="w-3 h-3" />
@@ -1544,7 +1566,7 @@ function PartnerChatPane(props: {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || pendingFiles.length >= MAX_FILES}
-                aria-label="Attach files"
+                aria-label={t("chat.attach_files")}
                 className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
               >
                 <Paperclip className="w-4 h-4" />
@@ -1562,7 +1584,7 @@ function PartnerChatPane(props: {
                   <button
                     type="button"
                     disabled={sending}
-                    aria-label="Quick reactions"
+                    aria-label={t("chat.quick_reactions")}
                     className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
                   >
                     <Smile className="w-4 h-4" />
@@ -1574,7 +1596,7 @@ function PartnerChatPane(props: {
                       <button
                         key={e}
                         type="button"
-                        aria-label={`Insert ${e}`}
+                        aria-label={t("chat.insert_emoji", { emoji: e })}
                         onClick={() => {
                           setComposer(`${composer}${e}`);
                           setEmojiOpen(false);
@@ -1622,7 +1644,7 @@ function PartnerChatPane(props: {
                   }
                 }}
                 rows={1}
-                placeholder={`Message ${otherVendorName}…`}
+                placeholder={t("chat.placeholder", { name: otherVendorName })}
                 className="resize-none min-h-[36px] max-h-32 rounded-2xl border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
               />
               <input
@@ -1642,7 +1664,7 @@ function PartnerChatPane(props: {
                   sending ||
                   (!composer.trim() && pendingFiles.length === 0)
                 }
-                aria-label="Send"
+                aria-label={t("chat.send")}
                 className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0 disabled:bg-muted"
               >
                 {sending ? (
@@ -1679,6 +1701,8 @@ interface VendorSearchResult {
 }
 
 function FindVendorPanel({ meId }: { meId: string | null }) {
+  const { t } = useTranslation("vendorPartners");
+  const categoryNames = useCategoryNames();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<VendorSearchResult[]>([]);
@@ -1731,11 +1755,10 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
       // RPC raises 'v2v_requires_pro' for Free vendors. Replying in
       // existing threads stays open to everyone.
       if (error?.message?.includes("v2v_requires_pro")) {
-        toast.error("Vendor-to-vendor messaging is a Pro feature.", {
-          description:
-            "Upgrade to Pro or Premium to start conversations with other vendors.",
+        toast.error(t("toasts.v2v_pro_title"), {
+          description: t("toasts.v2v_pro_body"),
           action: {
-            label: "Upgrade",
+            label: t("toasts.upgrade"),
             onClick: () => {
               window.location.href = "/vendor/subscription";
             },
@@ -1744,7 +1767,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
         });
         return;
       }
-      toast.error(error?.message ?? "Couldn't start the thread.");
+      toast.error(error?.message ?? t("toasts.start_failed"));
       return;
     }
     navigate(`/vendor/partners?thread=${data}`);
@@ -1761,9 +1784,9 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
       }}
     >
       <div>
-        <p className="text-sm font-semibold text-foreground">Find a vendor</p>
+        <p className="text-sm font-semibold text-foreground">{t("find.title")}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Search any approved vendor by business name to start a chat.
+          {t("find.subtitle")}
         </p>
       </div>
       <div className="relative">
@@ -1783,8 +1806,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
               void startThread(results[0]);
             }
           }}
-          placeholder="Search vendors…"
-          aria-label="Search vendors by business name"
+          placeholder={t("find.placeholder")}
+          aria-label={t("find.aria")}
           className="pl-9 rounded-full"
         />
       </div>
@@ -1801,17 +1824,19 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
           </div>
         ) : showEmpty ? (
           <p className="text-xs text-muted-foreground py-4 px-2">
-            No vendors match "{query.trim()}".
+            {t("find.no_match", { query: query.trim() })}
           </p>
         ) : results.length === 0 ? (
           <p className="text-xs text-muted-foreground py-4 px-2 leading-relaxed">
-            Start typing — results show up after 2 characters.
+            {t("find.hint")}
           </p>
         ) : (
           <ul className="space-y-1.5">
             {results.map((r) => {
-              const label = r.business_name?.trim() || "Unnamed vendor";
-              const sub = [r.category, r.location].filter(Boolean).join(" · ");
+              const label = r.business_name?.trim() || t("find.unnamed");
+              const sub = [r.category ? categoryNames.sub(r.category) : null, r.location]
+                .filter(Boolean)
+                .join(" · ");
               const initial = (label[0] ?? "?").toUpperCase();
               const isStarting = starting === r.id;
               return (

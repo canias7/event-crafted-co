@@ -12,6 +12,8 @@
 // stay byte-identical to the mobile listing builder.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Crown, GripVertical, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,10 +41,12 @@ import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributes
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
-import { PRICING_MODELS, PRICING_MODEL_LABELS, type PricingModel } from "@vendora/core";
+import { PRICING_MODELS } from "@vendora/core";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
 import {
   UploadCancelledError,
-  describeRejected,
+  type FileValidationResult,
   uploadListingPhotos,
   validateListingPhotos,
 } from "@/lib/listingPhotoUpload";
@@ -92,6 +96,23 @@ interface PickedPhoto {
   file: File;
 }
 
+// describeRejected() from @/lib/listingPhotoUpload, in the vendor's
+// language: "Skipped 2 over 10 MB; 1 not images."
+function describeRejectedPhotos(
+  t: TFunction,
+  rejected: FileValidationResult["rejected"],
+): string | null {
+  if (rejected.length === 0) return null;
+  const tooBig = rejected.filter((r) => r.reason === "size").length;
+  const wrongType = rejected.filter((r) => r.reason === "type").length;
+  const heic = rejected.filter((r) => r.reason === "heic").length;
+  const parts: string[] = [];
+  if (tooBig > 0) parts.push(t("photos.skippedSize", { count: tooBig }));
+  if (wrongType > 0) parts.push(t("photos.skippedType", { count: wrongType }));
+  if (heic > 0) parts.push(t("photos.skippedHeic", { count: heic }));
+  return t("photos.skipped", { list: parts.join("; ") });
+}
+
 export function ListingWizardModal({
   userId,
   onClose,
@@ -101,6 +122,9 @@ export function ListingWizardModal({
   onClose: () => void;
   onPublished: () => void;
 }) {
+  const { t } = useTranslation("listingEditor");
+  const categoryNames = useCategoryNames();
+  const priceLabels = usePriceLabels();
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [category, setCategory] = useState<string>("");
   const [location, setLocation] = useState<string>("");
@@ -151,8 +175,8 @@ export function ListingWizardModal({
       const ageMin = Math.round((Date.now() - (draft.savedAt ?? 0)) / 60000);
       toast(
         ageMin < 60
-          ? "Restored your draft from earlier."
-          : `Restored your draft from ${Math.round(ageMin / 60)}h ago.`,
+          ? t("wizard.restored")
+          : t("wizard.restoredHoursAgo", { hours: Math.round(ageMin / 60) }),
       );
     } catch {
       // Ignore corrupt drafts — fall through to a fresh form.
@@ -205,11 +229,7 @@ export function ListingWizardModal({
 
   function attemptClose() {
     if (submitting) {
-      if (
-        !window.confirm(
-          "Photos are still uploading. Cancel and discard this listing?",
-        )
-      ) {
+      if (!window.confirm(t("wizard.confirmClose"))) {
         return;
       }
       cancelledRef.current = true;
@@ -247,20 +267,22 @@ export function ListingWizardModal({
     const errs: string[] = [];
     if (photos.length < MIN_PHOTOS)
       errs.push(
-        `Add ${MIN_PHOTOS - photos.length} more photo${
-          MIN_PHOTOS - photos.length === 1 ? "" : "s"
-        } (${MIN_PHOTOS}–${MAX_PHOTOS} total).`,
+        t("validation.addPhotos", {
+          count: MIN_PHOTOS - photos.length,
+          min: MIN_PHOTOS,
+          max: MAX_PHOTOS,
+        }),
       );
-    if (!category) errs.push("Pick a category.");
-    if (!trimmedLocation) errs.push("Add a city + state.");
+    if (!category) errs.push(t("validation.pickCategory"));
+    if (!trimmedLocation) errs.push(t("validation.addLocation"));
     // Custom pricing needs no number; otherwise require a minimum.
-    if (pricingModels.length === 0) errs.push("Pick at least one pricing model.");
+    if (pricingModels.length === 0) errs.push(t("validation.pickPricingModel"));
     if (!customPricing && (!minCents || minCents <= 0))
-      errs.push("Set a minimum price (or turn on Custom pricing).");
+      errs.push(t("validation.setMinPrice"));
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
-      errs.push("Every FAQ needs both a question and an answer.");
+      errs.push(t("validation.faqIncomplete"));
     return errs;
-  }, [photos.length, category, trimmedLocation, pricingModels, priceMin, priceMax, customPricing, minCents, faqs]);
+  }, [photos.length, category, trimmedLocation, pricingModels, priceMin, priceMax, customPricing, minCents, faqs, t]);
 
   const canSubmit = validation.length === 0 && !submitting;
 
@@ -279,7 +301,7 @@ export function ListingWizardModal({
       }));
       setPhotos((prev) => [...prev, ...wrapped].slice(0, MAX_PHOTOS));
     }
-    const skip = describeRejected(rejected);
+    const skip = describeRejectedPhotos(t, rejected);
     if (skip) toast.warning(skip);
   }
 
@@ -351,7 +373,7 @@ export function ListingWizardModal({
         .select("id")
         .single();
       if (vpErr || !vp?.id) {
-        throw vpErr ?? new Error("Couldn't create listing");
+        throw vpErr ?? new Error(t("wizard.createFailed"));
       }
       const vendorId = vp.id as string;
       createdVendorId = vendorId;
@@ -399,7 +421,7 @@ export function ListingWizardModal({
         } catch {
           // ignore localStorage failures
         }
-        toast.success("Draft saved. Finish it any time from My Vendora.");
+        toast.success(t("wizard.draftSaved"));
         onPublished();
         return;
       }
@@ -439,11 +461,11 @@ export function ListingWizardModal({
         // ignore localStorage failures
       }
 
-      toast.success("Listing submitted for review.");
+      toast.success(t("wizard.submitted"));
       onPublished();
     } catch (err) {
       const cancelled = err instanceof UploadCancelledError;
-      const msg = (err as { message?: string })?.message ?? "Try again.";
+      const msg = (err as { message?: string })?.message ?? t("common.tryAgain");
       // Rollback any partial state so retry starts from a clean slate
       // instead of stacking duplicates. Deleting the vendor_profile
       // cascades vendor_portfolio_images + vendor_faqs (verified in DB
@@ -476,10 +498,12 @@ export function ListingWizardModal({
         }
       }
       if (cancelled) {
-        toast("Upload cancelled — nothing saved.");
+        toast(t("wizard.cancelled"));
       } else {
         toast.error(
-          publish ? `Submit failed: ${msg}` : `Couldn't save draft: ${msg}`,
+          publish
+            ? t("wizard.submitFailed", { message: msg })
+            : t("wizard.draftFailed", { message: msg }),
         );
       }
       setSubmitting(false);
@@ -500,12 +524,12 @@ export function ListingWizardModal({
         <button
           onClick={attemptClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-accent"
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <X className="h-5 w-5" />
         </button>
         <div className="text-center">
-          <h2 className="font-editorial text-xl">New listing</h2>
+          <h2 className="font-editorial text-xl">{t("wizard.title")}</h2>
         </div>
         <div className="w-7" />
       </header>
@@ -514,17 +538,16 @@ export function ListingWizardModal({
         <div className="mx-auto max-w-2xl px-5 py-8 space-y-12">
           {/* STEP 1 — IDENTITY */}
           <section>
-            <StepLabel n={1} kind="IDENTITY" />
-            <h3 className="font-editorial text-4xl mt-3">Introduce yourself.</h3>
+            <StepLabel n={1} kind="identity" />
+            <h3 className="font-editorial text-4xl mt-3">{t("wizard.introTitle")}</h3>
             <p className="mt-2 text-muted-foreground italic">
-              Photos and a few sentences are usually enough to make a host
-              stop scrolling.
+              {t("wizard.introBody")}
             </p>
 
             <div className="mt-6">
-              <Label className="font-semibold">Listing photos</Label>
+              <Label className="font-semibold">{t("common.listingPhotos")}</Label>
               <p className="text-sm text-muted-foreground italic mb-3">
-                {MIN_PHOTOS}&ndash;{MAX_PHOTOS} photos. Your first becomes the cover.
+                {t("wizard.photosHint", { min: MIN_PHOTOS, max: MAX_PHOTOS })}
               </p>
 
               <input
@@ -582,7 +605,7 @@ export function ListingWizardModal({
                       >
                         <Upload className="h-5 w-5" />
                         <span className="text-xs">
-                          {photos.length === 0 ? "Add cover" : "Add photo"}
+                          {photos.length === 0 ? t("photos.addCover") : t("photos.addPhoto")}
                         </span>
                       </button>
                     ) : null}
@@ -590,19 +613,19 @@ export function ListingWizardModal({
                 </SortableContext>
               </DndContext>
               <p className="mt-2 text-xs text-muted-foreground">
-                Bright, recent photos work best. Drag tiles to reorder.
+                {t("wizard.photosTip")}
               </p>
             </div>
 
-            <h4 className="mt-8 font-editorial text-2xl">The basics</h4>
+            <h4 className="mt-8 font-editorial text-2xl">{t("common.basics")}</h4>
             <p className="text-sm text-muted-foreground italic">
-              Where you work and where you start.
+              {t("wizard.basicsHint")}
             </p>
 
             <div className="mt-4 space-y-4">
               <div>
                 <Label htmlFor="category" className="font-semibold">
-                  Category <span className="text-destructive">•</span>
+                  {t("common.category")} <span className="text-destructive">•</span>
                 </Label>
                 <select
                   id="category"
@@ -610,12 +633,12 @@ export function ListingWizardModal({
                   onChange={(e) => setCategory(e.target.value)}
                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Pick a category</option>
+                  <option value="">{t("common.pickCategory")}</option>
                   {CATEGORY_GROUPS.map((g) => (
-                    <optgroup key={g.slug} label={g.name}>
+                    <optgroup key={g.slug} label={categoryNames.group(g.slug, g.name)}>
                       {g.subs.map((s) => (
                         <option key={s} value={s}>
-                          {s}
+                          {categoryNames.sub(s)}
                         </option>
                       ))}
                     </optgroup>
@@ -626,23 +649,23 @@ export function ListingWizardModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="location" className="font-semibold">
-                    Location <span className="text-destructive">•</span>
+                    {t("common.location")} <span className="text-destructive">•</span>
                   </Label>
                   <Input
                     id="location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="City, State"
+                    placeholder={t("common.locationPlaceholder")}
                     className="mt-1"
                   />
                 </div>
               </div>
               <div>
                 <Label className="font-semibold">
-                  Pricing model <span className="text-destructive">•</span>
+                  {t("common.pricingModel")} <span className="text-destructive">•</span>
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Pick all that apply.
+                  {t("common.pickAllThatApply")}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {PRICING_MODELS.map((m) => {
@@ -660,7 +683,7 @@ export function ListingWizardModal({
                         }
                         className={`rounded-full border px-4 py-2 text-sm font-medium ${active ? "border-foreground bg-foreground text-background" : "border-border bg-background"}`}
                       >
-                        {PRICING_MODEL_LABELS[m as PricingModel]}
+                        {priceLabels.pricingModels([m])}
                       </button>
                     );
                   })}
@@ -669,7 +692,7 @@ export function ListingWizardModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="price-min" className="font-semibold">
-                    Typical min <span className="text-destructive">•</span>
+                    {t("common.typicalMin")} <span className="text-destructive">•</span>
                   </Label>
                   <div className="relative mt-1">
                     <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
@@ -677,7 +700,7 @@ export function ListingWizardModal({
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="price-max" className="font-semibold">Typical max</Label>
+                  <Label htmlFor="price-max" className="font-semibold">{t("common.typicalMax")}</Label>
                   <div className="relative mt-1">
                     <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
                     <Input id="price-max" value={priceMax} onChange={(e) => setPriceMax(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="—" inputMode="decimal" className="pl-7" />
@@ -686,23 +709,22 @@ export function ListingWizardModal({
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={customPricing} onChange={(e) => setCustomPricing(e.target.checked)} />
-                <span>Custom pricing — final pricing may vary by event details</span>
+                <span>{t("common.customPricing")}</span>
               </label>
               <p className="text-sm text-muted-foreground italic">
-                Set your business name + bio once from your profile — they
-                sync to every listing automatically.
+                {t("wizard.profileHint")}
               </p>
             </div>
           </section>
 
           {/* STEP 2 — DETAILS */}
           <section>
-            <StepLabel n={2} kind="DETAILS" />
-            <h3 className="font-editorial text-4xl mt-3">The fine print.</h3>
+            <StepLabel n={2} kind="details" />
+            <h3 className="font-editorial text-4xl mt-3">{t("common.finePrint")}</h3>
             <p className="mt-2 text-muted-foreground italic">
               {category
-                ? `Structured fields hosts use to filter and compare. Specific to ${category}.`
-                : "Pick a category above to unlock structured details."}
+                ? t("common.structuredHint", { category: categoryNames.sub(category) })
+                : t("common.pickCategoryFirst")}
             </p>
             {category && hasDetailsSchema ? (
               <div className="mt-6 space-y-6">
@@ -714,22 +736,21 @@ export function ListingWizardModal({
               </div>
             ) : category && !hasDetailsSchema ? (
               <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
-                No structured details for {category} yet.
+                {t("common.noStructured", { category: categoryNames.sub(category) })}
               </div>
             ) : (
               <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
-                Pick a category above to unlock structured details.
+                {t("common.pickCategoryFirst")}
               </div>
             )}
           </section>
 
           {/* STEP 3 — FAQs */}
           <section>
-            <StepLabel n={3} kind="FAQs" />
-            <h3 className="font-editorial text-4xl mt-3">Common questions.</h3>
+            <StepLabel n={3} kind="faqs" />
+            <h3 className="font-editorial text-4xl mt-3">{t("common.commonQuestions")}</h3>
             <p className="mt-2 text-muted-foreground italic">
-              Answer the first three or four hosts will ask — saves you
-              typing later.
+              {t("wizard.faqHint")}
             </p>
 
             <div className="mt-4 space-y-3">
@@ -740,14 +761,14 @@ export function ListingWizardModal({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      FAQ {i + 1}
+                      {t("faq.label", { n: i + 1 })}
                     </p>
                     <button
                       onClick={() =>
                         setFaqs((prev) => prev.filter((_, j) => j !== i))
                       }
                       className="text-muted-foreground hover:text-accent"
-                      aria-label="Remove FAQ"
+                      aria-label={t("faq.remove")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -761,7 +782,7 @@ export function ListingWizardModal({
                         ),
                       )
                     }
-                    placeholder="Question"
+                    placeholder={t("faq.question")}
                     className="mt-3"
                   />
                   <Textarea
@@ -773,7 +794,7 @@ export function ListingWizardModal({
                         ),
                       )
                     }
-                    placeholder="Answer"
+                    placeholder={t("faq.answer")}
                     rows={2}
                     className="mt-2 resize-none"
                   />
@@ -788,7 +809,7 @@ export function ListingWizardModal({
                 }
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
-                Add FAQ
+                {t("faq.add")}
               </Button>
             </div>
           </section>
@@ -800,13 +821,13 @@ export function ListingWizardModal({
           <div className="flex-1 text-xs text-muted-foreground">
             {validation.length > 0 ? (
               <span>
-                {validation[0]}
-                {hasDraftContent ? " — or save a draft and finish later." : ""}
+                {hasDraftContent
+                  ? t("wizard.withDraftHint", { error: validation[0] })
+                  : validation[0]}
               </span>
             ) : (
               <span>
-                Submitting sends this to review. Once approved, it goes
-                public — no further edits.
+                {t("wizard.submitHint")}
               </span>
             )}
           </div>
@@ -815,18 +836,21 @@ export function ListingWizardModal({
             onClick={handleSaveDraft}
             disabled={submitting || !hasDraftContent}
           >
-            Save draft
+            {t("common.saveDraft")}
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 {uploadProgress && uploadProgress.total > 0
-                  ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
-                  : "Submitting…"}
+                  ? t("common.uploadingProgress", {
+                      done: uploadProgress.done,
+                      total: uploadProgress.total,
+                    })
+                  : t("wizard.submitting")}
               </>
             ) : (
-              "Submit for review"
+              t("wizard.submit")
             )}
           </Button>
         </div>
@@ -835,10 +859,11 @@ export function ListingWizardModal({
   );
 }
 
-function StepLabel({ n, kind }: { n: number; kind: string }) {
+function StepLabel({ n, kind }: { n: number; kind: "identity" | "details" | "faqs" }) {
+  const { t } = useTranslation("listingEditor");
   return (
     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-      Step {n} · {kind}
+      {t("wizard.step", { n, kind: t(`wizard.steps.${kind}`) })}
     </p>
   );
 }
@@ -886,6 +911,7 @@ function PhotoTile({
   onMakeCover?: () => void;
   dragHandle?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners };
 }) {
+  const { t } = useTranslation("listingEditor");
   // Revoke the object URL on unmount / file change. The previous
   // useMemo created the URL once and held it forever — with 100
   // photos at ~3 MB each, that pinned ~300 MB of blob data in the
@@ -908,7 +934,7 @@ function PhotoTile({
       />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
-          Cover
+          {t("photos.cover")}
         </span>
       ) : null}
       {dragHandle ? (
@@ -917,7 +943,7 @@ function PhotoTile({
           {...dragHandle.attributes}
           {...dragHandle.listeners}
           className="absolute left-1 bottom-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-          aria-label="Drag to reorder"
+          aria-label={t("photos.dragToReorder")}
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
@@ -925,7 +951,7 @@ function PhotoTile({
       <button
         onClick={onRemove}
         className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-        aria-label="Remove photo"
+        aria-label={t("photos.remove")}
       >
         <X className="h-3 w-3" />
       </button>
@@ -934,10 +960,10 @@ function PhotoTile({
           type="button"
           onClick={onMakeCover}
           className="absolute right-1 bottom-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
-          aria-label="Make cover photo"
+          aria-label={t("photos.makeCover")}
         >
           <Crown className="h-2.5 w-2.5" />
-          Cover
+          {t("photos.cover")}
         </button>
       ) : null}
     </div>

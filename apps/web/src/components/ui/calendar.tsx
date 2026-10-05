@@ -1,6 +1,8 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, type DayPickerBase } from "react-day-picker";
+import { es } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -8,6 +10,22 @@ import { buttonVariants } from "@/components/ui/button";
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+  const { t, i18n } = useTranslation("ui");
+  // Month and weekday names follow the site language. English keeps
+  // DayPicker's own defaults; Spanish keeps the same Sunday-first week.
+  // A caller's own locale or labels still win (spread after).
+  const languageProps: Pick<DayPickerBase, "locale" | "weekStartsOn" | "labels"> = (
+    i18n.resolvedLanguage ?? i18n.language ?? "en"
+  ).startsWith("es")
+    ? {
+        locale: es,
+        weekStartsOn: 0,
+        labels: {
+          labelPrevious: () => t("calendar.previous_month"),
+          labelNext: () => t("calendar.next_month"),
+        },
+      }
+    : {};
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -45,6 +63,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
       }}
+      {...languageProps}
       {...props}
     />
   );

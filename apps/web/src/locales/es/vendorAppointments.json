@@ -1,0 +1,135 @@
+{
+  "weekdaysNarrow": ["D", "L", "M", "M", "J", "V", "S"],
+  "weekdaysShort": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+  "inquiryStatus": {
+    "won": "Confirmada",
+    "new": "Esperando respuesta",
+    "replied": "Respondida",
+    "drafted": "Redactando respuesta",
+    "lost": "Perdida",
+    "expired": "Vencida"
+  },
+  "kinds": {
+    "consultation": "Asesoría",
+    "walkthrough": "Recorrido",
+    "tasting": "Degustación",
+    "fitting": "Prueba de vestuario",
+    "phone_call": "Llamada",
+    "other": "Reunión"
+  },
+  "apptStatus": {
+    "accepted": "Confirmada",
+    "completed": "Completada",
+    "proposed": "Propuesta"
+  },
+  "header": {
+    "title": "Calendario",
+    "subtitle": "Administra tus reservas y tu disponibilidad"
+  },
+  "nav": {
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
+  },
+  "legend": {
+    "booked": "Reservado",
+    "pending": "Pendiente",
+    "blocked": "Bloqueado"
+  },
+  "day": {
+    "blockAppliesTo": "El bloqueo aplica a",
+    "allListings": "Todos los anuncios",
+    "listingFallback": "Anuncio",
+    "add": "Agregar",
+    "alreadyBookedTitle": "Ya reservado: no disponible para anfitriones",
+    "saving": "Guardando…",
+    "block": "Bloquear",
+    "unblock": "Desbloquear",
+    "alreadyBookedNote": "Ya está reservado: este día aparece automáticamente como no disponible para los anfitriones.",
+    "empty": "No hay nada agendado para este día.",
+    "booking": "Reserva",
+    "host": "Anfitrión",
+    "client": "Cliente",
+    "offPlatform": "Fuera de la plataforma · personal",
+    "blocked": "Bloqueado",
+    "markedUnavailable": "Marcado como no disponible",
+    "allDay": "Todo el día",
+    "editTitle": "Editar título",
+    "blockedPlaceholder": "Cumpleaños de Christian…"
+  },
+  "recurring": {
+    "title": "Bloqueos recurrentes",
+    "weekly": "{{n}}× por semana",
+    "repeat": "Los días libres se repiten cada semana",
+    "body": "Toca un día para marcarlo como no disponible todas las semanas de aquí en adelante. Los anfitriones no te verán disponible ese día de la semana.",
+    "dayOff": "{{day}}: no disponible",
+    "dayOn": "{{day}}: disponible"
+  },
+  "appointments": {
+    "title": "Citas",
+    "add": "Agregar cita",
+    "empty": "Aún no hay citas. Aquí aparecerán las llamadas, asesorías y degustaciones que agendes."
+  },
+  "blockDialog": {
+    "reopenTitle": "¿Volver a abrir esta fecha?",
+    "blockTitle": "¿Bloquear esta fecha?",
+    "reopenAccount": "Todos los anuncios de tu cuenta ({{listings}}) volverán a estar disponibles para reservar el {{day}}.",
+    "blockAccount": "Los anfitriones no verán ninguno de tus anuncios ({{listings}}) disponible para reservar el {{day}}.",
+    "reopenListing": "Se podrá volver a reservar {{listing}} el {{day}}.",
+    "blockListing": "Los anfitriones no verán {{listing}} disponible para reservar el {{day}}.",
+    "thisListing": "este anuncio",
+    "whatIsIt": "¿Qué es?",
+    "optional": "(opcional)",
+    "placeholder": "Cumpleaños de Christian, vacaciones…",
+    "privateNote": "Solo tú lo ves. Los anfitriones solo verán el día como no disponible.",
+    "cancel": "Cancelar",
+    "block": "Bloquear",
+    "unblock": "Desbloquear"
+  },
+  "addDialog": {
+    "title": "Agregar entrada personal",
+    "description": "{{day}} · bloquea tiempo fuera de la plataforma: vacaciones, una reserva externa, una cita personal. Solo tú lo ves; no participa ningún anfitrión.",
+    "listing": "Anuncio",
+    "type": "Tipo",
+    "typePlaceholder": "Escribe o elige; p. ej., Vacaciones, Sesión externa",
+    "suggestions": [
+      "Personal",
+      "Vacaciones",
+      "Sesión externa",
+      "Asesoría",
+      "Recorrido",
+      "Degustación",
+      "Prueba de vestuario",
+      "Llamada",
+      "Diligencia",
+      "Otro"
+    ],
+    "time": "Hora",
+    "duration": "Duración",
+    "durations": {
+      "m30": "30 min",
+      "m45": "45 min",
+      "h1": "1 hora",
+      "h90": "1.5 horas",
+      "h2": "2 horas",
+      "halfDay": "Medio día",
+      "fullDay": "Día completo"
+    },
+    "pastWarning": "Esa fecha y hora ya pasaron. Elige hoy o una fecha y hora futuras.",
+    "location": "Ubicación (opcional)",
+    "locationPlaceholder": "p. ej., dirección, Zoom",
+    "notes": "Notas (opcional)",
+    "cancel": "Cancelar",
+    "adding": "Agregando…",
+    "add": "Agregar"
+  },
+  "toasts": {
+    "updateFailed": "No se pudo actualizar: {{message}}",
+    "pastTitle": "No puedes agregar una cita en el pasado",
+    "pastDescription": "Elige hoy o una fecha y hora futuras.",
+    "addFailed": "No se pudo agregar al calendario",
+    "added": "Se agregó a tu calendario",
+    "blockFailed": "No se pudo bloquear: {{message}}",
+    "unblockFailed": "No se pudo desbloquear: {{message}}",
+    "titleFailed": "No se pudo actualizar el título: {{message}}"
+  }
+}

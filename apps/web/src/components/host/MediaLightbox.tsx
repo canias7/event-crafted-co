@@ -4,6 +4,8 @@
 
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 type LightboxItem =
   | {
@@ -26,6 +28,7 @@ export function MediaLightbox({
   item: LightboxItem | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("hostTools");
   // Escape key closes the lightbox.
   useEffect(() => {
     if (!item) return;
@@ -50,7 +53,7 @@ export function MediaLightbox({
     >
       <button
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("close")}
         className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-foreground flex items-center justify-center hover:bg-white/25"
       >
         <X className="h-5 w-5" />
@@ -81,7 +84,7 @@ export function MediaLightbox({
               textShadow: "0 1px 6px rgba(0,0,0,0.5)",
             }}
           >
-            {new Date(item.created_at).toLocaleString()}
+            {new Date(item.created_at).toLocaleString(i18n.language)}
           </p>
         </aside>
 
@@ -90,7 +93,7 @@ export function MediaLightbox({
           {item.kind === "post" ? (
             <img
               src={item.image_url}
-              alt={item.caption ?? "Post"}
+              alt={item.caption ?? t("content.postAlt")}
               className="max-h-[80vh] max-w-full w-auto object-contain rounded-2xl shadow-2xl"
             />
           ) : (

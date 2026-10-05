@@ -1,0 +1,95 @@
+{
+  "close": "Close",
+  "copy": "Copy",
+  "copied": "Copied",
+  "live": {
+    "titleLive": "You're live",
+    "titleSetup": "Go live",
+    "description": "Broadcast {{title}} to anyone with the share link. The recording will be saved automatically for replay.",
+    "liveBadge": "LIVE",
+    "watching_one": "{{count}} watching",
+    "watching_other": "{{count}} watching",
+    "unmute": "Unmute",
+    "mute": "Mute",
+    "cameraOn": "Camera on",
+    "cameraOff": "Camera off",
+    "ending": "Ending…",
+    "endStream": "End stream",
+    "shareLabel": "Share this link with anyone you want to watch",
+    "start": "Start broadcasting",
+    "hide": "Hide",
+    "useEncoder": "Use OBS / Larix instead",
+    "rtmpCredentials": "RTMP credentials",
+    "serverUrl": "Server URL",
+    "copyServerUrl": "Copy server URL",
+    "streamKey": "Stream key",
+    "showStreamKey": "Show stream key",
+    "hideStreamKey": "Hide stream key",
+    "show": "Show",
+    "copyStreamKey": "Copy stream key",
+    "encoderNote": "Paste both into your encoder. Anyone with this stream key can broadcast to your event — don't share it like you'd share the watch link.",
+    "connecting": "Connecting to Mux…",
+    "endedTitle": "Stream ended",
+    "endedBody": "Your recording is being processed. It'll be available at the share link within a minute or two.",
+    "viewWatchPage": "View watch page",
+    "errors": {
+      "createFailed": "Couldn't create live stream",
+      "permissionDenied": "Camera and microphone permission was denied. Allow access and try again.",
+      "sdpFailed": "Failed to assemble SDP offer",
+      "whipRejected": "Mux WHIP rejected ({{status}}): {{details}}"
+    },
+    "toasts": {
+      "serverUrlCopied": "Server URL copied",
+      "streamKeyCopied": "Stream key copied",
+      "shareLinkCopied": "Share link copied"
+    }
+  },
+  "archive": {
+    "title": "Past broadcasts",
+    "description": "Replays from {{title}}. Anyone with a replay link can watch.",
+    "empty": "No past broadcasts yet. Once you end a live stream, the recording shows up here.",
+    "watch": "Watch",
+    "toasts": {
+      "loadFailed": "Couldn't load past broadcasts",
+      "replayCopied": "Replay link copied",
+      "copyFailed": "Couldn't copy"
+    }
+  },
+  "content": {
+    "tabs": {
+      "posts": "Posts · {{n}}",
+      "reels": "Reels · {{n}}",
+      "buzz": "Buzz · {{n}}"
+    },
+    "newPost": "New post",
+    "newReel": "New reel",
+    "newBuzz": "New buzz",
+    "emptyPosts": "No posts yet — tap New post to create one.",
+    "emptyReels": "No reels yet — tap New reel to upload a video.",
+    "emptyBuzz": "No buzz yet — tap New buzz to share a thought.",
+    "postAlt": "Post",
+    "reelLabel": "Reel",
+    "deletePost": "Delete post",
+    "deleteReel": "Delete reel",
+    "deleteBuzz": "Delete buzz",
+    "confirmDelete": "Delete this? Can't be undone.",
+    "deleted": "Deleted."
+  },
+  "composer": {
+    "newBuzz": "New buzz",
+    "newPost": "New post",
+    "newReel": "New reel",
+    "buzzPlaceholder": "What's happening?",
+    "cancel": "Cancel",
+    "post": "Post",
+    "pickPhotoFirst": "Pick a photo first",
+    "pickVideoFirst": "Pick a video first",
+    "removePhoto": "Remove photo",
+    "removeVideo": "Remove video",
+    "tapToPickPhoto": "Tap to pick a photo",
+    "tapToPickVideo": "Tap to pick a video",
+    "captionPlaceholder": "Add a caption (optional)",
+    "postFailed": "Couldn't post: {{message}}",
+    "tryAgain": "Try again."
+  }
+}

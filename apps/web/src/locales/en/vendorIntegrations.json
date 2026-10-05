@@ -1,0 +1,31 @@
+{
+  "sidebar_title": "Vendor Portal",
+  "back_to_settings": "Settings",
+  "title": "Integrations",
+  "subtitle": "Connect Vendora to the tools you already use.",
+  "categories": {
+    "payments": "Payments"
+  },
+  "connectors": {
+    "vendorapay": {
+      "description": "Accept card payments and payouts straight to your bank. Vendora's white-label processor handles KYC and money movement."
+    }
+  },
+  "pending_kyc": "Pending KYC",
+  "finish_kyc": "Finish KYC on the next step before hosts can pay you here.",
+  "connected": "Connected",
+  "manage": "Manage",
+  "disconnect": "Disconnect",
+  "connect": "Connect",
+  "toasts": {
+    "welcome_back": "Welcome back from VendoraPay",
+    "refreshing": "Refreshing your account status…",
+    "link_expired": "Onboarding link expired",
+    "link_expired_body": "Click Manage to generate a fresh one.",
+    "try_again": "Try again in a moment.",
+    "onboarding_failed": "Couldn't open VendoraPay onboarding",
+    "disconnect_failed": "Couldn't disconnect",
+    "disconnected": "VendoraPay disconnected"
+  },
+  "confirm_disconnect": "Disconnect VendoraPay? Your processor account stays open — Vendora just stops referencing it. You can re-connect anytime."
+}

@@ -8,6 +8,7 @@
 import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ export function ModalShell({
   children: React.ReactNode;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("hostTools");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -35,7 +37,7 @@ export function ModalShell({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("close")}
             className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-accent"
           >
             <X className="h-4 w-4" />
@@ -56,6 +58,7 @@ export function BuzzComposerModal({
   onClose: () => void;
   onPosted: () => void;
 }) {
+  const { t } = useTranslation("hostTools");
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const trimmed = text.trim();
@@ -71,7 +74,7 @@ export function BuzzComposerModal({
     });
     if (error) {
       setPosting(false);
-      toast.error(`Couldn't post: ${error.message}`);
+      toast.error(t("composer.postFailed", { message: error.message }));
       return;
     }
     setText("");
@@ -79,11 +82,11 @@ export function BuzzComposerModal({
   }
 
   return (
-    <ModalShell onClose={onClose} title="New buzz">
+    <ModalShell onClose={onClose} title={t("composer.newBuzz")}>
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="What's happening?"
+        placeholder={t("composer.buzzPlaceholder")}
         maxLength={MAX}
         rows={5}
         className="resize-none"
@@ -96,10 +99,10 @@ export function BuzzComposerModal({
       </div>
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose} disabled={posting}>
-          Cancel
+          {t("composer.cancel")}
         </Button>
         <Button onClick={handlePost} disabled={!canPost}>
-          {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+          {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("composer.post")}
         </Button>
       </div>
     </ModalShell>
@@ -117,6 +120,7 @@ export function MediaComposerModal({
   onClose: () => void;
   onPosted: () => void;
 }) {
+  const { t } = useTranslation("hostTools");
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [posting, setPosting] = useState(false);
@@ -124,11 +128,11 @@ export function MediaComposerModal({
   const previewUrl = file ? URL.createObjectURL(file) : null;
   const accept = kind === "post" ? "image/*" : "video/*";
   const bucket = kind === "post" ? "vendor-posts" : "vendor-reels";
-  const noun = kind === "post" ? "photo" : "video";
+  const isPhoto = kind === "post";
 
   async function handlePost() {
     if (!file) {
-      toast.error(`Pick a ${noun} first`);
+      toast.error(isPhoto ? t("composer.pickPhotoFirst") : t("composer.pickVideoFirst"));
       return;
     }
     setPosting(true);
@@ -197,15 +201,15 @@ export function MediaComposerModal({
       onPosted();
     } catch (err) {
       setPosting(false);
-      const msg = (err as { message?: string })?.message ?? "Try again.";
-      toast.error(`Couldn't post: ${msg}`);
+      const msg = (err as { message?: string })?.message ?? t("composer.tryAgain");
+      toast.error(t("composer.postFailed", { message: msg }));
     }
   }
 
   return (
     <ModalShell
       onClose={onClose}
-      title={kind === "post" ? "New post" : "New reel"}
+      title={kind === "post" ? t("composer.newPost") : t("composer.newReel")}
     >
       <input
         ref={inputRef}
@@ -228,7 +232,7 @@ export function MediaComposerModal({
           <button
             type="button"
             onClick={() => setFile(null)}
-            aria-label={`Remove ${noun}`}
+            aria-label={isPhoto ? t("composer.removePhoto") : t("composer.removeVideo")}
             className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
           >
             <X className="h-4 w-4" />
@@ -240,22 +244,24 @@ export function MediaComposerModal({
           className="flex w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border bg-card/40 p-12 text-muted-foreground hover:bg-card"
         >
           <ImagePlus className="h-8 w-8" />
-          <span className="text-sm">Tap to pick a {noun}</span>
+          <span className="text-sm">
+            {isPhoto ? t("composer.tapToPickPhoto") : t("composer.tapToPickVideo")}
+          </span>
         </button>
       )}
       <Textarea
         value={caption}
         onChange={(e) => setCaption(e.target.value)}
-        placeholder="Add a caption (optional)"
+        placeholder={t("composer.captionPlaceholder")}
         rows={3}
         className="mt-3 resize-none"
       />
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose} disabled={posting}>
-          Cancel
+          {t("composer.cancel")}
         </Button>
         <Button onClick={handlePost} disabled={!file || posting}>
-          {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+          {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("composer.post")}
         </Button>
       </div>
     </ModalShell>

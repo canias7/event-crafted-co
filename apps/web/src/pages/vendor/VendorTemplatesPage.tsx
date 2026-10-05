@@ -7,6 +7,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 import {
   ChevronDown,
   Loader2,
@@ -64,6 +67,8 @@ interface Template {
   updated_at: string;
 }
 
+// Inserted into the vendor's own templates (and sent to hosts from
+// there), so they stay as written rather than following the UI language.
 const STARTER_TEMPLATES: Array<{ name: string; body: string }> = [
   {
     name: "Thanks for reaching out",
@@ -80,6 +85,8 @@ const STARTER_TEMPLATES: Array<{ name: string; body: string }> = [
 ];
 
 export default function VendorTemplatesPage() {
+  const { t } = useTranslation("vendorTemplates");
+  const categoryNames = useCategoryNames();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -110,7 +117,7 @@ export default function VendorTemplatesPage() {
         const opts = (data as VendorOption[]) ?? [];
         setVendorOpts(opts);
         if (opts.length === 0) {
-          toast.info("Create a listing first to start saving templates.");
+          toast.info(i18n.t("toast.needListing", { ns: "vendorTemplates" }));
           navigate("/vendor/me");
           return;
         }
@@ -162,7 +169,7 @@ export default function VendorTemplatesPage() {
     const trimmedName = name.trim();
     const trimmedBody = body.trim();
     if (!trimmedName || !trimmedBody) {
-      toast.error("Name and body are both required");
+      toast.error(t("toast.required"));
       return;
     }
     setSaving(true);
@@ -182,7 +189,7 @@ export default function VendorTemplatesPage() {
         return;
       }
       setTemplates((prev) => [data as Template, ...(prev ?? [])]);
-      toast.success("Template saved");
+      toast.success(t("toast.saved"));
     } else if (editing) {
       const { data, error } = await supabase
         .from("vendor_message_templates")
@@ -198,7 +205,7 @@ export default function VendorTemplatesPage() {
       setTemplates((prev) =>
         (prev ?? []).map((t) => (t.id === editing.id ? (data as Template) : t)),
       );
-      toast.success("Template updated");
+      toast.success(t("toast.updated"));
     }
     setEditing(null);
   }
@@ -217,7 +224,7 @@ export default function VendorTemplatesPage() {
     }
     setTemplates((prev) => (prev ?? []).filter((t) => t.id !== confirmDel.id));
     setConfirmDel(null);
-    toast.success("Template deleted");
+    toast.success(t("toast.deleted"));
   }
 
   async function seedStarters() {
@@ -238,21 +245,21 @@ export default function VendorTemplatesPage() {
       return;
     }
     setTemplates((prev) => [...(data as Template[]), ...(prev ?? [])]);
-    toast.success("Added 3 starter templates");
+    toast.success(t("toast.starters"));
   }
 
   const multi = (vendorOpts?.length ?? 0) > 1;
 
   return (
     <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("sidebarTitle")} backPath="/" />
 
       <main id="main-content" className="flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="font-editorial text-3xl">Templates</h1>
+            <h1 className="font-editorial text-3xl">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Save replies you send often, then drop them into any chat.
+              {t("subtitle")}
             </p>
           </div>
           <Button
@@ -261,7 +268,7 @@ export default function VendorTemplatesPage() {
             className="rounded-full shrink-0"
           >
             <Plus className="w-4 h-4 mr-1.5" />
-            New
+            {t("new")}
           </Button>
         </div>
 
@@ -274,7 +281,7 @@ export default function VendorTemplatesPage() {
                   className="rounded-full font-normal"
                 >
                   <span className="truncate max-w-[20ch]">
-                    {activeVendor.business_name ?? "Listing"}
+                    {activeVendor.business_name ?? t("listing")}
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 ml-1.5 opacity-60" />
                 </Button>
@@ -286,10 +293,10 @@ export default function VendorTemplatesPage() {
                     onClick={() => setActiveVendorId(v.id)}
                     className="cursor-pointer"
                   >
-                    {v.business_name ?? "Untitled listing"}
+                    {v.business_name ?? t("untitledListing")}
                     {v.category ? (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {v.category}
+                        {categoryNames.sub(v.category)}
                       </span>
                     ) : null}
                   </DropdownMenuItem>
@@ -309,16 +316,15 @@ export default function VendorTemplatesPage() {
                 <FileText className="w-5 h-5" />
               </div>
               <h2 className="font-editorial text-2xl mb-1">
-                No templates yet
+                {t("empty.title")}
               </h2>
               <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                Save your most-used replies — they'll appear in the
-                Templates menu inside every inquiry chat.
+                {t("empty.body")}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <Button onClick={openNew} className="rounded-full">
                   <Plus className="w-4 h-4 mr-1.5" />
-                  Write your first
+                  {t("empty.writeFirst")}
                 </Button>
                 <Button
                   variant="outline"
@@ -326,29 +332,29 @@ export default function VendorTemplatesPage() {
                   disabled={saving}
                   className="rounded-full"
                 >
-                  Use 3 starter templates
+                  {t("empty.useStarters")}
                 </Button>
               </div>
             </div>
           ) : (
             <ul className="space-y-2">
-              {templates.map((t) => (
+              {templates.map((tpl) => (
                 <li
-                  key={t.id}
+                  key={tpl.id}
                   className="rounded-2xl bg-background/60 border border-border p-4 flex items-start gap-3"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{t.name}</p>
+                    <p className="text-sm font-semibold truncate">{tpl.name}</p>
                     <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-3">
-                      {t.body}
+                      {tpl.body}
                     </p>
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => openEdit(t)}
-                      aria-label="Edit"
+                      onClick={() => openEdit(tpl)}
+                      aria-label={t("edit")}
                       className="rounded-full"
                     >
                       <Pencil className="w-4 h-4" />
@@ -356,8 +362,8 @@ export default function VendorTemplatesPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setConfirmDel(t)}
-                      aria-label="Delete"
+                      onClick={() => setConfirmDel(tpl)}
+                      aria-label={t("delete")}
                       className="rounded-full text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -379,33 +385,33 @@ export default function VendorTemplatesPage() {
         <DialogContent className="rounded-3xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-editorial text-2xl">
-              {editing === "new" ? "New template" : "Edit template"}
+              {editing === "new" ? t("dialog.newTitle") : t("dialog.editTitle")}
             </DialogTitle>
             <DialogDescription>
-              Templates are private to this listing.
+              {t("dialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-1">
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                Name
+                {t("dialog.name")}
               </label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Thanks for reaching out"
+                placeholder={t("dialog.namePlaceholder")}
                 maxLength={80}
                 className="mt-1"
               />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                Body
+                {t("dialog.body")}
               </label>
               <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="What should this template say?"
+                placeholder={t("dialog.bodyPlaceholder")}
                 rows={6}
                 className="mt-1"
               />
@@ -418,7 +424,7 @@ export default function VendorTemplatesPage() {
               className="rounded-full"
               disabled={saving}
             >
-              Cancel
+              {t("dialog.cancel")}
             </Button>
             <Button
               onClick={save}
@@ -428,7 +434,7 @@ export default function VendorTemplatesPage() {
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
-              Save
+              {t("dialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -441,15 +447,15 @@ export default function VendorTemplatesPage() {
         <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-2xl">
-              Delete this template?
+              {t("confirmDelete.title")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              You can always write a new one later.
+              {t("confirmDelete.body")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel disabled={deleting} className="rounded-full">
-              Cancel
+              {t("confirmDelete.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
@@ -462,7 +468,7 @@ export default function VendorTemplatesPage() {
               {deleting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
-              Delete
+              {t("confirmDelete.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

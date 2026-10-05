@@ -6,6 +6,8 @@
 // untouched, so an already-live listing stays live.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Crown, GripVertical, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -33,11 +35,13 @@ import { CategoryAttributesFields } from "@/components/vendor/CategoryAttributes
 import { CATEGORY_GROUPS } from "@/data/categoryTaxonomy";
 import { getCategorySchema } from "@/data/categoryAttributes";
 import { supabase } from "@/integrations/supabase/client";
-import { PRICING_MODELS, PRICING_MODEL_LABELS, type PricingModel } from "@vendora/core";
+import { PRICING_MODELS } from "@vendora/core";
 import { vendorImageUrl } from "@/lib/storage";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
 import {
   UploadCancelledError,
-  describeRejected,
+  type FileValidationResult,
   uploadListingPhotos,
   validateListingPhotos,
 } from "@/lib/listingPhotoUpload";
@@ -68,6 +72,23 @@ type ExistingPhoto = { kind: "existing"; id: string; path: string; url: string }
 type NewPhoto = { kind: "new"; id: string; file: File; url: string };
 type PhotoItem = ExistingPhoto | NewPhoto;
 
+// describeRejected() from @/lib/listingPhotoUpload, in the vendor's
+// language: "Skipped 2 over 10 MB; 1 not images."
+function describeRejectedPhotos(
+  t: TFunction,
+  rejected: FileValidationResult["rejected"],
+): string | null {
+  if (rejected.length === 0) return null;
+  const tooBig = rejected.filter((r) => r.reason === "size").length;
+  const wrongType = rejected.filter((r) => r.reason === "type").length;
+  const heic = rejected.filter((r) => r.reason === "heic").length;
+  const parts: string[] = [];
+  if (tooBig > 0) parts.push(t("photos.skippedSize", { count: tooBig }));
+  if (wrongType > 0) parts.push(t("photos.skippedType", { count: wrongType }));
+  if (heic > 0) parts.push(t("photos.skippedHeic", { count: heic }));
+  return t("photos.skipped", { list: parts.join("; ") });
+}
+
 export function EditListingModal({
   vendorId,
   onClose,
@@ -77,8 +98,11 @@ export function EditListingModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("listingEditor");
+  const categoryNames = useCategoryNames();
+  const priceLabels = usePriceLabels();
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [pricingModels, setPricingModels] = useState<string[]>([]);
@@ -111,11 +135,7 @@ export function EditListingModal({
 
   function attemptClose() {
     if (saving) {
-      if (
-        !window.confirm(
-          "Photos are still uploading. Cancel and discard your changes?",
-        )
-      ) {
+      if (!window.confirm(t("edit.confirmClose"))) {
         return;
       }
       cancelledRef.current = true;
@@ -170,7 +190,7 @@ export function EditListingModal({
     let cancelled = false;
     (async () => {
       setLoading(true);
-      setLoadError(null);
+      setLoadError(false);
       const [vpRes, faqRes, photoRes] = await Promise.all([
         supabase
           .from("vendor_profiles")
@@ -193,7 +213,7 @@ export function EditListingModal({
       ]);
       if (cancelled) return;
       if (vpRes.error || !vpRes.data) {
-        setLoadError("Couldn't load this listing. Close and try again.");
+        setLoadError(true);
         setLoading(false);
         return;
       }
@@ -276,19 +296,21 @@ export function EditListingModal({
     const errs: string[] = [];
     if (photos.length < MIN_PHOTOS)
       errs.push(
-        `Add ${MIN_PHOTOS - photos.length} more photo${
-          MIN_PHOTOS - photos.length === 1 ? "" : "s"
-        } (${MIN_PHOTOS}–${MAX_PHOTOS} total).`,
+        t("validation.addPhotos", {
+          count: MIN_PHOTOS - photos.length,
+          min: MIN_PHOTOS,
+          max: MAX_PHOTOS,
+        }),
       );
-    if (!category) errs.push("Pick a category.");
-    if (!trimmedLocation) errs.push("Add a city + state.");
-    if (pricingModels.length === 0) errs.push("Pick at least one pricing model.");
+    if (!category) errs.push(t("validation.pickCategory"));
+    if (!trimmedLocation) errs.push(t("validation.addLocation"));
+    if (pricingModels.length === 0) errs.push(t("validation.pickPricingModel"));
     if (!customPricing && (!minCents || minCents <= 0))
-      errs.push("Set a minimum price (or turn on Custom pricing).");
+      errs.push(t("validation.setMinPrice"));
     if (faqs.some((f) => !f.question.trim() || !f.answer.trim()))
-      errs.push("Every FAQ needs both a question and an answer.");
+      errs.push(t("validation.faqIncomplete"));
     return errs;
-  }, [photos.length, category, trimmedLocation, pricingModels, priceMin, priceMax, customPricing, minCents, faqs]);
+  }, [photos.length, category, trimmedLocation, pricingModels, priceMin, priceMax, customPricing, minCents, faqs, t]);
 
   const canSave = validation.length === 0 && !saving && !loading;
 
@@ -309,7 +331,7 @@ export function EditListingModal({
       }));
       setPhotos((prev) => [...prev, ...wrapped].slice(0, MAX_PHOTOS));
     }
-    const skip = describeRejected(rejected);
+    const skip = describeRejectedPhotos(t, rejected);
     if (skip) toast.warning(skip);
   }
 
@@ -330,9 +352,7 @@ export function EditListingModal({
     const publishingDraft = publish && originalStatusRef.current === "draft";
     const triggerReview = (categoryChanged && wasApproved) || publishingDraft;
     if (triggerReview && !publishingDraft) {
-      const ok = window.confirm(
-        "Changing the category on an approved listing sends it back to admin review. Your listing will be temporarily hidden from hosts until re-approved. Continue?",
-      );
+      const ok = window.confirm(t("edit.confirmCategoryChange"));
       if (!ok) return;
     }
     setSaving(true);
@@ -511,22 +531,22 @@ export function EditListingModal({
 
       toast.success(
         publishingDraft
-          ? "Listing submitted for review."
+          ? t("edit.submitted")
           : triggerReview
-            ? "Listing updated — sent back to admin review (category change)."
-            : "Listing updated.",
+            ? t("edit.reReview")
+            : t("edit.updated"),
       );
       onSaved();
     } catch (err) {
       const cancelled = err instanceof UploadCancelledError;
-      const msg = (err as { message?: string })?.message ?? "Try again.";
+      const msg = (err as { message?: string })?.message ?? t("common.tryAgain");
       if (uploadedPaths.length > 0) {
         await supabase.storage.from("vendor-portfolios").remove(uploadedPaths);
       }
       if (cancelled) {
-        toast("Save cancelled — changes discarded.");
+        toast(t("edit.cancelled"));
       } else {
-        toast.error(`Save failed: ${msg}`);
+        toast.error(t("edit.failed", { message: msg }));
       }
       setSaving(false);
       setUploadProgress(null);
@@ -544,11 +564,11 @@ export function EditListingModal({
         <button
           onClick={attemptClose}
           className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-accent"
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <X className="h-5 w-5" />
         </button>
-        <h2 className="font-editorial text-xl">Edit listing</h2>
+        <h2 className="font-editorial text-xl">{t("edit.title")}</h2>
         <div className="w-7" />
       </header>
 
@@ -559,15 +579,15 @@ export function EditListingModal({
           </div>
         ) : loadError ? (
           <div className="mx-auto max-w-2xl px-5 py-16 text-center">
-            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <p className="text-sm text-muted-foreground">{t("edit.loadError")}</p>
           </div>
         ) : (
           <div className="mx-auto max-w-2xl px-5 py-8 space-y-10">
             {/* PHOTOS */}
             <section>
-              <h3 className="font-editorial text-2xl">Listing photos</h3>
+              <h3 className="font-editorial text-2xl">{t("common.listingPhotos")}</h3>
               <p className="text-sm text-muted-foreground italic mb-3">
-                {MIN_PHOTOS}–{MAX_PHOTOS} photos. Your first is the cover.
+                {t("edit.photosHint", { min: MIN_PHOTOS, max: MAX_PHOTOS })}
               </p>
               <input
                 ref={fileRef}
@@ -634,7 +654,7 @@ export function EditListingModal({
                               className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border bg-card/40 text-muted-foreground hover:bg-card hover:text-accent"
                             >
                               <Upload className="h-5 w-5" />
-                              <span className="text-xs">Add photo</span>
+                              <span className="text-xs">{t("photos.addPhoto")}</span>
                             </button>
                           ) : null}
                         </div>
@@ -647,12 +667,12 @@ export function EditListingModal({
                         className="mt-3 text-xs font-medium text-foreground hover:text-accent"
                       >
                         {photosExpanded
-                          ? `Show first ${PHOTO_GRID_CAP}`
-                          : `Show all ${photos.length} photos`}
+                          ? t("edit.showFirst", { n: PHOTO_GRID_CAP })
+                          : t("edit.showAll", { total: photos.length })}
                       </button>
                     ) : null}
                     <p className="mt-2 text-xs text-muted-foreground italic">
-                      Drag tiles to reorder. The first photo is your cover.
+                      {t("edit.dragHint")}
                     </p>
                   </>
                 );
@@ -661,11 +681,11 @@ export function EditListingModal({
 
             {/* BASICS */}
             <section>
-              <h3 className="font-editorial text-2xl">The basics</h3>
+              <h3 className="font-editorial text-2xl">{t("common.basics")}</h3>
               <div className="mt-4 space-y-4">
                 <div>
                   <Label htmlFor="edit-category" className="font-semibold">
-                    Category <span className="text-destructive">•</span>
+                    {t("common.category")} <span className="text-destructive">•</span>
                   </Label>
                   <select
                     id="edit-category"
@@ -673,12 +693,12 @@ export function EditListingModal({
                     onChange={(e) => setCategory(e.target.value)}
                     className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">Pick a category</option>
+                    <option value="">{t("common.pickCategory")}</option>
                     {CATEGORY_GROUPS.map((g) => (
-                      <optgroup key={g.slug} label={g.name}>
+                      <optgroup key={g.slug} label={categoryNames.group(g.slug, g.name)}>
                         {g.subs.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {categoryNames.sub(s)}
                           </option>
                         ))}
                       </optgroup>
@@ -688,22 +708,22 @@ export function EditListingModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-location" className="font-semibold">
-                      Location <span className="text-destructive">•</span>
+                      {t("common.location")} <span className="text-destructive">•</span>
                     </Label>
                     <Input
                       id="edit-location"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      placeholder="City, State"
+                      placeholder={t("common.locationPlaceholder")}
                       className="mt-1"
                     />
                   </div>
                 </div>
                 <div>
                     <Label className="font-semibold">
-                      Pricing model <span className="text-destructive">•</span>
+                      {t("common.pricingModel")} <span className="text-destructive">•</span>
                     </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">Pick all that apply.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("common.pickAllThatApply")}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {PRICING_MODELS.map((m) => {
                         const active = pricingModels.includes(m);
@@ -711,7 +731,7 @@ export function EditListingModal({
                           <button type="button" key={m}
                             onClick={() => setPricingModels((cur) => cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m])}
                             className={`rounded-full border px-4 py-2 text-sm font-medium ${active ? "border-foreground bg-foreground text-background" : "border-border bg-background"}`}>
-                            {PRICING_MODEL_LABELS[m as PricingModel]}
+                            {priceLabels.pricingModels([m])}
                           </button>
                         );
                       })}
@@ -719,14 +739,14 @@ export function EditListingModal({
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="edit-price-min" className="font-semibold">Typical min <span className="text-destructive">•</span></Label>
+                      <Label htmlFor="edit-price-min" className="font-semibold">{t("common.typicalMin")} <span className="text-destructive">•</span></Label>
                       <div className="relative mt-1">
                         <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
                         <Input id="edit-price-min" value={priceMin} onChange={(e) => setPriceMin(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0" inputMode="decimal" className="pl-7" />
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="edit-price-max" className="font-semibold">Typical max</Label>
+                      <Label htmlFor="edit-price-max" className="font-semibold">{t("common.typicalMax")}</Label>
                       <div className="relative mt-1">
                         <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">$</span>
                         <Input id="edit-price-max" value={priceMax} onChange={(e) => setPriceMax(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="—" inputMode="decimal" className="pl-7" />
@@ -735,18 +755,18 @@ export function EditListingModal({
                   </div>
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={customPricing} onChange={(e) => setCustomPricing(e.target.checked)} />
-                    <span>Custom pricing — final pricing may vary by event details</span>
+                    <span>{t("common.customPricing")}</span>
                   </label>
               </div>
             </section>
 
             {/* DETAILS */}
             <section>
-              <h3 className="font-editorial text-2xl">The fine print.</h3>
+              <h3 className="font-editorial text-2xl">{t("common.finePrint")}</h3>
               <p className="mt-1 text-sm text-muted-foreground italic">
                 {category
-                  ? `Structured fields hosts use to filter and compare. Specific to ${category}.`
-                  : "Pick a category above to unlock structured details."}
+                  ? t("common.structuredHint", { category: categoryNames.sub(category) })
+                  : t("common.pickCategoryFirst")}
               </p>
               {category && hasDetailsSchema ? (
                 <div className="mt-6 space-y-6">
@@ -758,16 +778,16 @@ export function EditListingModal({
                 </div>
               ) : category && !hasDetailsSchema ? (
                 <div className="mt-4 rounded-md border border-dashed border-border bg-card/30 p-6 text-center text-sm text-muted-foreground italic">
-                  No structured details for {category} yet.
+                  {t("common.noStructured", { category: categoryNames.sub(category) })}
                 </div>
               ) : null}
             </section>
 
             {/* FAQs */}
             <section>
-              <h3 className="font-editorial text-2xl">Common questions.</h3>
+              <h3 className="font-editorial text-2xl">{t("common.commonQuestions")}</h3>
               <p className="mt-1 text-sm text-muted-foreground italic">
-                Answer what hosts ask most — saves you typing later.
+                {t("edit.faqHint")}
               </p>
               <div className="mt-4 space-y-3">
                 {faqs.map((f, i) => (
@@ -777,7 +797,7 @@ export function EditListingModal({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        FAQ {i + 1}
+                        {t("faq.label", { n: i + 1 })}
                       </p>
                       <button
                         type="button"
@@ -785,7 +805,7 @@ export function EditListingModal({
                           setFaqs((prev) => prev.filter((_, j) => j !== i))
                         }
                         className="text-muted-foreground hover:text-accent"
-                        aria-label="Remove FAQ"
+                        aria-label={t("faq.remove")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -799,7 +819,7 @@ export function EditListingModal({
                           ),
                         )
                       }
-                      placeholder="Question"
+                      placeholder={t("faq.question")}
                       className="mt-3"
                     />
                     <Textarea
@@ -811,7 +831,7 @@ export function EditListingModal({
                           ),
                         )
                       }
-                      placeholder="Answer"
+                      placeholder={t("faq.answer")}
                       rows={2}
                       className="mt-2 resize-none"
                     />
@@ -829,7 +849,7 @@ export function EditListingModal({
                   }
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add FAQ
+                  {t("faq.add")}
                 </Button>
               </div>
             </section>
@@ -841,15 +861,15 @@ export function EditListingModal({
         <div className="mx-auto max-w-2xl flex items-center justify-between gap-3 px-5 py-4">
           <div className="flex-1 text-xs text-muted-foreground">
             {loading ? (
-              <span>Loading…</span>
+              <span>{t("common.loading")}</span>
             ) : validation.length > 0 ? (
               <span>{validation[0]}</span>
             ) : isDraft ? (
               <span>
-                Saving keeps this a draft — Publish sends it to review.
+                {t("edit.draftHint")}
               </span>
             ) : (
-              <span>Changes go live as soon as you save.</span>
+              <span>{t("edit.liveHint")}</span>
             )}
           </div>
           {isDraft ? (
@@ -858,7 +878,7 @@ export function EditListingModal({
               onClick={() => void handleSave({ publish: true })}
               disabled={!canSave}
             >
-              Publish
+              {t("edit.publish")}
             </Button>
           ) : null}
           <Button onClick={() => void handleSave()} disabled={!canSave}>
@@ -866,11 +886,14 @@ export function EditListingModal({
               <>
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 {uploadProgress && uploadProgress.total > 0
-                  ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
-                  : "Saving…"}
+                  ? t("common.uploadingProgress", {
+                      done: uploadProgress.done,
+                      total: uploadProgress.total,
+                    })
+                  : t("edit.saving")}
               </>
             ) : (
-              isDraft ? "Save draft" : "Save changes"
+              isDraft ? t("common.saveDraft") : t("edit.saveChanges")
             )}
           </Button>
         </div>
@@ -931,6 +954,7 @@ function PhotoTile({
   onMakeCover?: () => void;
   dragHandle?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners };
 }) {
+  const { t } = useTranslation("listingEditor");
   return (
     <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40 group">
       <img
@@ -942,7 +966,7 @@ function PhotoTile({
       />
       {isCover ? (
         <span className="absolute left-1 top-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background">
-          Cover
+          {t("photos.cover")}
         </span>
       ) : null}
       {dragHandle ? (
@@ -951,7 +975,7 @@ function PhotoTile({
           {...dragHandle.attributes}
           {...dragHandle.listeners}
           className="absolute left-1 bottom-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-          aria-label="Drag to reorder"
+          aria-label={t("photos.dragToReorder")}
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
@@ -960,7 +984,7 @@ function PhotoTile({
         type="button"
         onClick={onRemove}
         className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-        aria-label="Remove photo"
+        aria-label={t("photos.remove")}
       >
         <X className="h-3 w-3" />
       </button>
@@ -969,10 +993,10 @@ function PhotoTile({
           type="button"
           onClick={onMakeCover}
           className="absolute right-1 bottom-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
-          aria-label="Make cover photo"
+          aria-label={t("photos.makeCover")}
         >
           <Crown className="h-2.5 w-2.5" />
-          Cover
+          {t("photos.cover")}
         </button>
       ) : null}
     </div>

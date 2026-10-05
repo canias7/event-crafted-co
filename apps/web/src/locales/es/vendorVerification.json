@@ -1,0 +1,101 @@
+{
+  "sidebarTitle": "Portal de proveedores",
+  "title": "Verificación",
+  "subtitle": "Obtén la insignia de verificado — la revisa una persona real, con el mismo proceso que en la app.",
+  "loading": "Cargando…",
+  "gate": {
+    "title": "Verifícate. Genera confianza.",
+    "body": "La insignia de verificado les muestra a los anfitriones que detrás de tu perfil hay una persona y un negocio reales. Solicitarla está incluido en los planes Pro y Premium — nuestro equipo siempre revisa cada aprobación.",
+    "cta": "✦ Mejora tu plan para solicitarla"
+  },
+  "identity": {
+    "title": "Identidad ✦",
+    "hint": "Tus datos legales son privados — solo se usan para verificar tu identidad.",
+    "firstName": "Nombre legal",
+    "firstNamePlaceholder": "María",
+    "lastName": "Apellido legal",
+    "lastNamePlaceholder": "García",
+    "dob": "Fecha de nacimiento",
+    "idFront": "Frente de tu identificación oficial",
+    "idFrontOnFile": "Ya la tenemos de tu último envío",
+    "idBack": "Reverso de la identificación (opcional)",
+    "fileTypes": "JPG, PNG o PDF"
+  },
+  "business": {
+    "title": "Negocio ✦",
+    "name": "Nombre del negocio o nombre público",
+    "category": "Categoría del negocio",
+    "email": "Correo del negocio",
+    "phone": "Teléfono del negocio",
+    "address": "Dirección del negocio o zona de servicio",
+    "website": "Sitio web o red social (opcional)",
+    "websitePlaceholder": "www.tunegocio.com",
+    "proofTitle": "Comprobante del negocio",
+    "proofHint": "Certificado de seguro, licencia comercial o registro — imágenes o PDF.",
+    "onFile": "Ya enviados: {{names}}",
+    "addDocuments": "Agregar documentos"
+  },
+  "next": "<strong>¿Qué sigue?</strong> Revisaremos tu información en un plazo de 1 a 3 días hábiles. Te avisaremos en la app y aquí cuando se tome una decisión. Al enviar, aceptas los Términos del servicio y la Política de privacidad de Vendora.",
+  "submitting": "Enviando…",
+  "submit": "Enviar para revisión",
+  "status": {
+    "approvedTitle": "¡Verificación aprobada!",
+    "needsInfoTitle": "Necesitamos un poco más",
+    "rejectedTitle": "Esta vez no se aprobó",
+    "reviewTitle": "En revisión",
+    "approvedBody": "Tu insignia de verificado ya aparece en tu perfil público — los anfitriones que exploran Vendora la ven junto a tu nombre.",
+    "teamSays": "Nuestro equipo dice: {{note}}",
+    "needsInfoBody": "Necesitamos información adicional antes de poder aprobar tu solicitud.",
+    "rejectedBody": "Comunícate con soporte si crees que se trata de un error.",
+    "reviewBody": "Estamos revisando tu solicitud. Esto suele tardar de 1 a 3 días hábiles — te avisaremos en cuanto se tome una decisión.",
+    "verifiedVendor": "Proveedor verificado",
+    "resubmit": "Actualizar y reenviar"
+  },
+  "toast": {
+    "namesRequired": "El nombre legal y el nombre del negocio son obligatorios.",
+    "idRequired": "Se requiere una foto del frente de tu identificación oficial.",
+    "docRequired": "Agrega al menos un documento comprobatorio — seguro, licencia o registro.",
+    "submitted": "Enviado — lo revisaremos en un plazo de 1 a 3 días hábiles.",
+    "submitFailed": "No se pudo enviar — intenta de nuevo."
+  },
+  "manager": {
+    "title": "Verificaciones",
+    "intro": "Opcional, pero recomendado. Los proveedores verificados reciben insignias en su perfil, aparecen más arriba en las búsquedas y llegan a los anfitriones que filtran por nivel de verificación. Los documentos se guardan de forma privada — solo los revisores del equipo de Vendora pueden abrirlos.",
+    "loading": "Cargando…",
+    "kinds": {
+      "identity": {
+        "label": "Identidad",
+        "blurb": "Identificación oficial con foto. Confirma que eres quien dices ser. Difuminamos la foto y guardamos el archivo de forma privada — solo los revisores del equipo de Vendora pueden abrirlo.",
+        "sent": "Identidad enviada a revisión"
+      },
+      "insurance": {
+        "label": "Seguro de responsabilidad civil",
+        "blurb": "Un certificado de seguro vigente (lo habitual es una cobertura de responsabilidad civil general de $1M o más). Lo exigen la mayoría de los lugares para eventos de alto nivel y genera mucha confianza en los anfitriones.",
+        "sent": "Seguro de responsabilidad civil enviado a revisión"
+      },
+      "business_license": {
+        "label": "Licencia comercial",
+        "blurb": "Tu registro comercial, número de identificación fiscal o licencia comercial local. Confirma que operas como un negocio legítimo.",
+        "sent": "Licencia comercial enviada a revisión"
+      },
+      "background_check": {
+        "label": "Verificación de antecedentes",
+        "blurb": "Sube un informe reciente de verificación de antecedentes (Checkr, Sterling, GoodHire — cualquiera con fecha de los últimos 12 meses). Es clave para los proveedores que trabajan en casas particulares (fotógrafos, organizadores, maquillistas, chefs a domicilio).",
+        "sent": "Verificación de antecedentes enviada a revisión"
+      }
+    },
+    "status": {
+      "pending": "Pendiente de revisión",
+      "approved": "Verificado",
+      "rejected": "Devuelto"
+    },
+    "reviewerNote": "Nota del revisor: {{note}}",
+    "replace": "Reemplazar documento",
+    "resubmit": "Reenviar",
+    "upload": "Subir documento",
+    "toast": {
+      "fileType": "Usa JPG, PNG, WEBP o PDF",
+      "fileSize": "Máximo 10 MB"
+    }
+  }
+}

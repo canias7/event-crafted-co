@@ -186,10 +186,6 @@
     "blocked": "Booked / blocked",
     "open": "Open dates — send an inquiry to confirm"
   },
-  "calendar": {
-    "previousMonth": "Go to previous month",
-    "nextMonth": "Go to next month"
-  },
   "serviceArea": {
     "eyebrow": "Service area",
     "title": "Where {{category}}s travel",
