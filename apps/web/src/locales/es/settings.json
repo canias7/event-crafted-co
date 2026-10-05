@@ -4,7 +4,7 @@
     "subtitle": "Administra tu cuenta"
   },
   "email": {
-    "title": "Correo electrónico",
+    "title": "Correo",
     "subtitle": "El correo registrado en esta cuenta",
     "change_hint": "Escribe a hello@eventvendora.com para cambiar tu correo"
   },

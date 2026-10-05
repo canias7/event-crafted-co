@@ -40,9 +40,9 @@
     "eyebrow": "— Algo salió mal",
     "title": "Esta página tuvo un problema.",
     "body": "Registramos el error para poder corregirlo. Primero intenta recargar; si sigue pasando, vuelve al inicio y te llevaremos a un lugar estable.",
-    "reload": "Recargar página",
+    "reload": "Recargar",
     "home": "Volver al inicio",
-    "stack": "Detalle técnico (solo para desarrollo)",
+    "stack": "Detalles para desarrolladores",
     "report": "Si crees que es un error de la plataforma, escribe a <mailLink>hello@eventvendora.com</mailLink> con los pasos que seguiste."
   },
   "route_loading": "Cargando página…",
