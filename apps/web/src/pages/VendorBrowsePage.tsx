@@ -18,7 +18,7 @@ import { ClosingBand } from "@/components/public/PhotoHero";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
 import tilePhotography from "@/assets/categories/photography.jpg?as=picture";
-import tileVenues from "@/assets/vendor-venue.jpg?as=picture";
+import tileVenues from "@/assets/categories/venues.jpg?as=picture";
 import tileCatering from "@/assets/vendor-catering.jpg?as=picture";
 import tileBeauty from "@/assets/vendor-makeup.jpg?as=picture";
 import tilePlanning from "@/assets/hero/wedding.jpg?as=picture";
