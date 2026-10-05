@@ -1,0 +1,135 @@
+{
+  "hero": {
+    "eyebrow": "Cómo funciona Vendora",
+    "title": "Tu visión.<br/>Las personas indicadas.<br/>Un evento <gold>inolvidable</gold>.",
+    "intro": "Descubre proveedores, conoce su trabajo e inicia una conversación. Luego planea y contrata todo en un solo lugar.",
+    "explore_vendors": "Explorar proveedores",
+    "im_a_vendor": "Soy proveedor",
+    "image_alt": "Una mesa de cena a la luz de las velas, decorada con rosas"
+  },
+  "jump": {
+    "planning": "Estoy organizando un evento",
+    "vendor": "Soy proveedor",
+    "questions": "Preguntas"
+  },
+  "hosts": {
+    "eyebrow": "Para anfitriones",
+    "title": "De la inspiración a la reserva, paso a paso.",
+    "intro": "¿Organizas una boda, un cumpleaños o un evento corporativo? Así funciona, desde la primera idea hasta el gran día.",
+    "cta": "Empieza a explorar proveedores",
+    "steps": {
+      "inspiration": {
+        "title": "Encuentra inspiración",
+        "body": "Empieza por las ideas. Recorre las publicaciones de Explorar para ver trabajos reales de proveedores en Vendora.",
+        "points": [
+          "Mira las fotos del portafolio de los proveedores",
+          "Filtra por categoría, desde fotografía hasta banquetes",
+          "Guarda a los proveedores que te encantan con el corazón"
+        ]
+      },
+      "meet": {
+        "title": "Conoce a tus proveedores",
+        "body": "Acota tu búsqueda. Busca por lo que necesitas, dónde será tu evento y tu fecha.",
+        "points": [
+          "Busca por servicio y ubicación",
+          "Elige tu fecha para ocultar a los proveedores que ya están reservados",
+          "Compara portafolios, precios y paquetes"
+        ]
+      },
+      "conversation": {
+        "title": "Inicia la conversación",
+        "body": "Abre el perfil de un proveedor y envía una consulta con tu fecha y algunos detalles.",
+        "points": [
+          "Cuéntale sobre tu evento en un solo mensaje",
+          "Las respuestas llegan a tu bandeja de entrada",
+          "Haz preguntas y recibe una cotización personalizada"
+        ]
+      },
+      "plan": {
+        "title": "Planea todo en un solo lugar",
+        "body": "Lleva el control de cada evento que planeas, junto a tus conversaciones con proveedores.",
+        "points": [
+          "Agrega cada evento con su fecha y número de invitados",
+          "Guarda juntas la ubicación y tus notas",
+          "Cada consulta y respuesta en una sola bandeja de entrada"
+        ]
+      },
+      "book": {
+        "title": "Contrata con confianza",
+        "body": "Cuando llegue el momento, tu proveedor te envía una propuesta. Revísala, fírmala y paga en línea de forma segura.",
+        "points": [
+          "Propuestas y contratos que puedes firmar en línea",
+          "Pagos seguros en línea",
+          "Deja una reseña después de tu evento"
+        ]
+      }
+    }
+  },
+  "vendors": {
+    "eyebrow": "Para proveedores",
+    "title": "Convierte tu talento en reservas.",
+    "intro": "Fotógrafos, organizadores, servicios de banquetes, floristas, salones y más. Así pasas del registro a tus primeras reservas.",
+    "image_alt": "Una sesión de maquillaje profesional",
+    "cta": "Únete como proveedor",
+    "steps": {
+      "profile": {
+        "title": "Crea tu perfil",
+        "body": "Regístrate como proveedor y presenta tu negocio: categoría, ubicación, precios y servicios. El plan Gratis incluye un anuncio."
+      },
+      "showcase": {
+        "title": "Muestra tu trabajo",
+        "body": "Agrega fotos a tu portafolio para que los anfitriones vean lo que haces."
+      },
+      "approved": {
+        "title": "Obtén tu aprobación y haz que te descubran",
+        "body": "Cada anuncio se revisa antes de publicarse. Después, los anfitriones te encuentran en las búsquedas, en Explorar y en las páginas de categorías."
+      },
+      "inquiries": {
+        "title": "Responde consultas",
+        "body": "Los anfitriones te escriben con su fecha y los detalles. Responde, chatea y envía propuestas desde una sola bandeja de entrada."
+      },
+      "paid": {
+        "title": "Cierra reservas y cobra",
+        "body": "Convierte conversaciones en reservas con contratos y pagos en línea."
+      },
+      "grow": {
+        "title": "Haz crecer tu negocio",
+        "body": "Reúne reseñas, mide el rendimiento de tu anuncio y sigue construyendo tu marca."
+      }
+    }
+  },
+  "faq": {
+    "eyebrow": "Preguntas frecuentes",
+    "title": "Algunas cosas que quizá te preguntes.",
+    "items": {
+      "find": {
+        "q": "¿Cómo encuentro al proveedor indicado?",
+        "a": "Busca en <vendors>Proveedores</vendors> por servicio, ubicación y fecha, o recorre <explore>Explorar</explore> para inspirarte. Abre cualquier perfil para ver su trabajo, sus precios y paquetes, y guarda los que te gusten."
+      },
+      "contact": {
+        "q": "¿Cómo contacto a un proveedor?",
+        "a": "Abre el perfil del proveedor y toca Enviar consulta. Agrega tu fecha y algunos detalles de tu evento. Su respuesta llega a tu bandeja de entrada, donde puedes continuar la conversación."
+      },
+      "checked": {
+        "q": "¿Cómo se verifica a los proveedores?",
+        "a": "El equipo de Vendora revisa cada anuncio antes de que aparezca. Los proveedores que además verifican sus documentos muestran una insignia de verificado en su perfil."
+      },
+      "booking": {
+        "q": "¿Cómo funcionan las reservas y los pagos?",
+        "a": "Tu proveedor te envía una propuesta. Puedes revisarla y firmarla en línea, y luego pagar de forma segura a través de Vendora."
+      },
+      "join": {
+        "q": "¿Puedo unirme como proveedor?",
+        "a": "Sí. <signup>Regístrate como proveedor</signup>, crea tu anuncio y agrega tu trabajo. El plan Gratis incluye un anuncio, que se publica en cuanto se aprueba."
+      },
+      "other": {
+        "q": "Tengo otra pregunta.",
+        "a": "Visita el <help>Centro de ayuda</help> o escribe a <email>hello@eventvendora.com</email>. Cada mensaje lo lee una persona real."
+      }
+    }
+  },
+  "closing": {
+    "title": "Hagamos algo <gold>inolvidable.</gold>",
+    "cta": "Explorar proveedores"
+  }
+}

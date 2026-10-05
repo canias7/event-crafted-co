@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Download, Loader2, Lock, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,15 +42,17 @@ interface SharePayload {
 
 const PAGE_SIZE = 200;
 
+// The password error and the album's fallback name are resolved to text
+// at render time, so they follow a language switch.
 type State =
   | { status: "loading" }
-  | { status: "needs_password"; error?: string }
+  | { status: "needs_password"; error?: "bad_password" }
   | { status: "not_found" }
   | { status: "expired" }
   | { status: "image"; image: ImageRow }
   | {
       status: "album";
-      album_name: string;
+      album_name: string | null;
       images: ImageRow[];
       total: number;
       hasMore: boolean;
@@ -57,6 +60,7 @@ type State =
 
 export default function PublicGallerySharePage() {
   const { token } = useParams<{ token: string }>();
+  const { t } = useTranslation("gallery");
   const [state, setState] = useState<State>({ status: "loading" });
   const [passwordInput, setPasswordInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -83,7 +87,7 @@ export default function PublicGallerySharePage() {
         else if (msg.includes("expired")) setState({ status: "expired" });
         else if (msg.includes("needs_password")) setState({ status: "needs_password" });
         else if (msg.includes("bad_password"))
-          setState({ status: "needs_password", error: "Wrong password" });
+          setState({ status: "needs_password", error: "bad_password" });
         else setState({ status: "not_found" });
         return;
       }
@@ -103,7 +107,7 @@ export default function PublicGallerySharePage() {
       } else {
         setState({
           status: "album",
-          album_name: payload.album_name ?? "Album",
+          album_name: payload.album_name,
           images: payload.images,
           total: payload.total,
           hasMore: payload.has_more,
@@ -153,13 +157,13 @@ export default function PublicGallerySharePage() {
     const preview =
       state.status === "image"
         ? {
-            title: state.image.caption ?? "Shared photo",
+            title: state.image.caption ?? t("meta.sharedPhoto"),
             description: "",
             image: state.image.image_url,
           }
         : {
-            title: state.album_name,
-            description: `${state.total} photo${state.total === 1 ? "" : "s"}`,
+            title: state.album_name ?? t("album.fallbackName"),
+            description: t("meta.photos", { count: state.total }),
             image: state.images[0]?.image_url ?? "",
           };
     const prevTitle = document.title;
@@ -196,7 +200,7 @@ export default function PublicGallerySharePage() {
       // (e.g. the app shell's defaults) alone.
       for (const el of created) el.remove();
     };
-  }, [state]);
+  }, [state, t]);
 
   async function submitPassword() {
     if (!passwordInput.trim() || submitting) return;
@@ -220,13 +224,13 @@ export default function PublicGallerySharePage() {
             <div className="rounded-2xl border border-border bg-card p-6">
               <div className="flex items-center gap-2 mb-3">
                 <Lock className="w-5 h-5 text-muted-foreground" />
-                <h1 className="font-editorial text-xl">Password required</h1>
+                <h1 className="font-editorial text-xl">{t("password.title")}</h1>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                This share is password-protected.
+                {t("password.body")}
               </p>
               <Label htmlFor="share-pw" className="text-xs font-medium text-muted-foreground">
-                Password
+                {t("password.label")}
               </Label>
               <Input
                 id="share-pw"
@@ -240,36 +244,36 @@ export default function PublicGallerySharePage() {
                 className="mt-1"
               />
               {state.error ? (
-                <p className="text-xs text-destructive mt-2">{state.error}</p>
+                <p className="text-xs text-destructive mt-2">{t("password.wrong")}</p>
               ) : null}
               <Button
                 onClick={submitPassword}
                 disabled={submitting || !passwordInput.trim()}
                 className="mt-4 w-full rounded-full"
               >
-                Unlock
+                {t("password.unlock")}
               </Button>
             </div>
           </div>
         ) : state.status === "not_found" ? (
           <div className="text-center py-20">
-            <h1 className="font-editorial text-3xl mb-2">Not found</h1>
+            <h1 className="font-editorial text-3xl mb-2">{t("notFound.title")}</h1>
             <p className="text-sm text-muted-foreground">
-              This share link doesn't exist — it may have been revoked.
+              {t("notFound.body")}
             </p>
           </div>
         ) : state.status === "expired" ? (
           <div className="text-center py-20">
-            <h1 className="font-editorial text-3xl mb-2">Link expired</h1>
+            <h1 className="font-editorial text-3xl mb-2">{t("expired.title")}</h1>
             <p className="text-sm text-muted-foreground">
-              The vendor set an expiry on this share and it's passed.
+              {t("expired.body")}
             </p>
           </div>
         ) : state.status === "image" ? (
           <SingleImageView image={state.image} />
         ) : (
           <AlbumView
-            albumName={state.album_name}
+            albumName={state.album_name ?? t("album.fallbackName")}
             images={state.images}
             total={state.total}
             hasMore={state.hasMore}
@@ -286,12 +290,13 @@ export default function PublicGallerySharePage() {
 }
 
 function SingleImageView({ image }: { image: ImageRow }) {
+  const { t } = useTranslation("gallery");
   const [downloading, setDownloading] = useState(false);
   return (
     <div className="flex flex-col items-center gap-4">
       <img
         src={image.image_url}
-        alt={image.caption ?? "Shared image"}
+        alt={image.caption ?? t("image.alt")}
         className="max-h-[80vh] max-w-full rounded-md"
       />
       <div className="flex items-center gap-3">

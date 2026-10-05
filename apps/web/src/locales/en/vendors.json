@@ -1,0 +1,54 @@
+{
+  "hero": {
+    "title": "Find your<br/><gold>unforgettable.</gold>",
+    "intro": "Meet the vendors who bring your vision to life."
+  },
+  "search": {
+    "label": "Search vendors or services",
+    "placeholder": "Search vendors or services",
+    "clear": "Clear search",
+    "location": "Location",
+    "clearLocation": "Clear location filter",
+    "date": "Event date",
+    "clearDate": "Clear date filter",
+    "submit": "Find vendors"
+  },
+  "browse": {
+    "title": "Browse by category",
+    "allVendors": "All vendors"
+  },
+  "results": {
+    "title": "Discover vendors",
+    "hiddenByDate_one": "{{count}} vendor hidden because they're booked that day.",
+    "hiddenByDate_other": "{{count}} vendors hidden because they're booked that day.",
+    "viewGroupPage": "View the {{group}} page"
+  },
+  "filters": {
+    "loading": "Loading…",
+    "count_one": "{{count}} vendor",
+    "count_other": "{{count}} vendors",
+    "remove": "Remove {{label}}",
+    "clearAll": "Clear all",
+    "more": "More filters",
+    "byCategory": "Filter by category",
+    "clearSelections": "Clear all selections",
+    "sortLabel": "Sort vendors",
+    "sortPlaceholder": "Sort by",
+    "sort": {
+      "popular": "Most reviewed",
+      "rating": "Highest rated",
+      "price-low": "Lowest price",
+      "price-high": "Highest price"
+    }
+  },
+  "empty": {
+    "title": "No vendors found",
+    "body": "Try a different search, category or date.",
+    "clear": "Clear filters"
+  },
+  "closing": {
+    "title": "Are you a <gold>vendor?</gold>",
+    "sub": "Get discovered by people planning events like yours. The Free plan includes one listing.",
+    "cta": "List your business — free"
+  }
+}

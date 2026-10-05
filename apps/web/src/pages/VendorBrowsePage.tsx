@@ -482,14 +482,14 @@ export default function VendorBrowsePage() {
                     className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#f4f1ea] px-3 text-[13px] font-bold text-foreground"
                   >
                     {f.label}
-                    <button type="button" onClick={f.clear} aria-label={`Remove ${f.label}`} className="hover:text-accent">
+                    <button type="button" onClick={f.clear} aria-label={t("filters.remove", { label: f.label })} className="hover:text-accent">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </span>
                 ))}
                 {activeFilters.length > 1 && (
                   <button type="button" onClick={clearAll} className="shrink-0 text-[13px] font-bold text-gold hover:text-white">
-                    Clear all
+                    {t("filters.clearAll")}
                   </button>
                 )}
               </div>
@@ -497,14 +497,14 @@ export default function VendorBrowsePage() {
               {/* Full category list, multi-select. */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" aria-label="More filters" className={`${pill} !px-3 md:!px-4`}>
+                  <button type="button" aria-label={t("filters.more")} className={`${pill} !px-3 md:!px-4`}>
                     <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                    <span className="hidden md:inline">More filters</span>
+                    <span className="hidden md:inline">{t("filters.more")}</span>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" collisionPadding={20} className="w-64 max-h-[70vh] overflow-y-auto">
                   <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Filter by category
+                    {t("filters.byCategory")}
                   </DropdownMenuLabel>
                   {activeCategories.size > 0 && (
                     <>
@@ -513,7 +513,7 @@ export default function VendorBrowsePage() {
                         onClick={() => setActiveCategories(new Set())}
                         className="w-full text-left px-2 py-1.5 text-xs text-accent hover:bg-accent/10 rounded-sm"
                       >
-                        Clear all selections
+                        {t("filters.clearSelections")}
                       </button>
                       <DropdownMenuSeparator />
                     </>
@@ -522,7 +522,7 @@ export default function VendorBrowsePage() {
                     <div key={group.slug}>
                       {gi > 0 && <DropdownMenuSeparator />}
                       <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {group.name}
+                        {categoryNames.group(group.slug, group.name)}
                       </DropdownMenuLabel>
                       {group.subs.map((sub) => (
                         <DropdownMenuCheckboxItem
@@ -531,7 +531,7 @@ export default function VendorBrowsePage() {
                           onCheckedChange={() => toggleCategory(sub)}
                           onSelect={(e) => e.preventDefault()}
                         >
-                          {sub}
+                          {categoryNames.sub(sub)}
                         </DropdownMenuCheckboxItem>
                       ))}
                     </div>
@@ -541,16 +541,16 @@ export default function VendorBrowsePage() {
 
               <Select value={sort} onValueChange={(v) => setSort(v as keyof typeof sortOptions)}>
                 <SelectTrigger
-                  aria-label="Sort vendors"
+                  aria-label={t("filters.sortLabel")}
                   className="h-11 w-[172px] shrink-0 rounded-full border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea]"
                 >
-                  <SelectValue placeholder="Sort by" />
+                  <SelectValue placeholder={t("filters.sortPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="popular">Most reviewed</SelectItem>
-                  <SelectItem value="rating">Highest rated</SelectItem>
-                  <SelectItem value="price-low">Lowest price</SelectItem>
-                  <SelectItem value="price-high">Highest price</SelectItem>
+                  <SelectItem value="popular">{t("filters.sort.popular")}</SelectItem>
+                  <SelectItem value="rating">{t("filters.sort.rating")}</SelectItem>
+                  <SelectItem value="price-low">{t("filters.sort.price-low")}</SelectItem>
+                  <SelectItem value="price-high">{t("filters.sort.price-high")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -587,12 +587,12 @@ export default function VendorBrowsePage() {
             ) : (
               <div className="rounded-2xl border border-white/15 px-6 py-20 text-center">
                 <Store className="mx-auto mb-4 h-10 w-10 text-gold" aria-hidden />
-                <h3 className="m-0 mb-2 text-2xl">No vendors found</h3>
+                <h3 className="m-0 mb-2 text-2xl">{t("empty.title")}</h3>
                 <p className="m-0 mx-auto max-w-sm text-[15px] text-[#f4f1ea]/80">
-                  Try a different search, category or date.
+                  {t("empty.body")}
                 </p>
                 <Button variant="outline" className="mt-6" onClick={clearAll}>
-                  Clear filters
+                  {t("empty.clear")}
                 </Button>
               </div>
             )}
@@ -602,12 +602,14 @@ export default function VendorBrowsePage() {
         <div className="border-t border-white/10">
           <ClosingBand
             title={
-              <>
-                Are you a <span className="font-editorial text-gold">vendor?</span>
-              </>
+              <Trans
+                t={t}
+                i18nKey="closing.title"
+                components={{ gold: <span className="font-editorial text-gold" /> }}
+              />
             }
-            sub="Get discovered by people planning events like yours. The Free plan includes one listing."
-            cta={{ label: "List your business — free", to: "/signup/vendor" }}
+            sub={t("closing.sub")}
+            cta={{ label: t("closing.cta"), to: "/signup/vendor" }}
           />
         </div>
       </main>

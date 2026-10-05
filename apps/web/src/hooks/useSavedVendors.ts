@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import i18n from "@/i18n";
 
 interface SavedVendorsApi {
   savedIds: Set<string>;
@@ -47,13 +48,11 @@ export function useSavedVendors(): SavedVendorsApi {
   const toggle = useCallback<SavedVendorsApi["toggle"]>(
     async (vendorId, opts) => {
       if (!user) {
-        toast.info("Sign in to save vendors");
+        toast.info(i18n.t("saved.signIn", { ns: "vendorCard" }));
         return;
       }
       if (opts?.isReal === false) {
-        toast.info(
-          "This vendor is a sample listing — saving will work once they're live.",
-        );
+        toast.info(i18n.t("saved.sample", { ns: "vendorCard" }));
         return;
       }
 

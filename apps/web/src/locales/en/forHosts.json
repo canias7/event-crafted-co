@@ -1,0 +1,77 @@
+{
+  "hero": {
+    "eyebrow": "For hosts",
+    "title": "Plan with confidence. <gold>Enjoy</gold> every moment.",
+    "sub": "Find trusted vendors, compare quotes and keep every detail of your event in one place.",
+    "primary": "Find vendors",
+    "secondary": "How it works"
+  },
+  "steps": {
+    "eyebrow": "How it works",
+    "title": "Four steps to your event.",
+    "items": {
+      "discover": {
+        "title": "Discover",
+        "body": "Find the perfect vendors for your unique vision."
+      },
+      "connect": {
+        "title": "Connect",
+        "body": "Message, compare, and get custom quotes."
+      },
+      "plan": {
+        "title": "Plan",
+        "body": "Keep each event's date, guests and notes in one place."
+      },
+      "book": {
+        "title": "Book",
+        "body": "Secure your vendors and relax, knowing you're in good hands."
+      }
+    }
+  },
+  "event_types": {
+    "title_line1": "Every event.",
+    "title_line2": "Every type.",
+    "items": {
+      "weddings": "Weddings",
+      "birthdays": "Birthdays",
+      "corporate": "Corporate events",
+      "parties": "Parties & celebrations",
+      "social": "Social gatherings",
+      "more": "and more…"
+    }
+  },
+  "tools": {
+    "eyebrow": "Everything you need, all in one place",
+    "title": "Powerful tools. Seamless experience.",
+    "items": {
+      "search": {
+        "title": "Smart search",
+        "body": "Find the right vendors faster."
+      },
+      "messaging": {
+        "title": "Messaging",
+        "body": "All your conversations in one place."
+      },
+      "availability": {
+        "title": "Availability",
+        "body": "Pick your date to see who's free."
+      },
+      "quotes": {
+        "title": "Quotes & proposals",
+        "body": "Compare and decide with confidence."
+      },
+      "payments": {
+        "title": "Contracts & payments",
+        "body": "Sign and pay securely online."
+      },
+      "reviews": {
+        "title": "Reviews",
+        "body": "Real feedback from real clients."
+      }
+    }
+  },
+  "closing": {
+    "title": "Let's make something <gold>unforgettable.</gold>",
+    "cta": "Find vendors"
+  }
+}

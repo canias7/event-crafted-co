@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ArrowRight, ChevronDown, ChevronUp, Heart, Play, Search, Share, Volume2, VolumeX, X } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
@@ -23,6 +24,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { useVendors } from "@/hooks/useVendors";
 import { supabase } from "@/integrations/supabase/client";
+import i18n from "@/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 const INK = "#14161a";
 const GOLD = "#c9a86a";
@@ -53,12 +56,9 @@ interface ReelItem {
 }
 type Tab = "feed" | "reels" | "vendors" | "saved";
 
-const TABS: { id: Tab; label: string; sub: string }[] = [
-  { id: "feed", label: "Feed", sub: "Real work from Vendora vendors." },
-  { id: "reels", label: "Reels", sub: "A closer look at the craft." },
-  { id: "vendors", label: "Vendors", sub: "The people behind the work." },
-  { id: "saved", label: "Saved", sub: "The vendors you've saved." },
-];
+// Each tab's label and line under the title are in the explore
+// namespace: tabs.<id>.label / tabs.<id>.sub.
+const TABS: { id: Tab }[] = [{ id: "feed" }, { id: "reels" }, { id: "vendors" }, { id: "saved" }];
 
 const portfolioUrl = (path: string) =>
   supabase.storage.from("vendor-portfolios").getPublicUrl(path).data.publicUrl;
@@ -71,13 +71,14 @@ async function shareVendor(name: string, href: string) {
       return;
     }
     await navigator.clipboard.writeText(url);
-    toast.success("Link copied");
+    toast.success(i18n.t("toasts.linkCopied", { ns: "explore" }));
   } catch {
     /* share sheet dismissed */
   }
 }
 
 export default function PublicExplorePage() {
+  const { t } = useTranslation("explore");
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState<VendorRow[]>([]);
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -85,7 +86,7 @@ export default function PublicExplorePage() {
   const [coverByVendor, setCoverByVendor] = useState<Map<string, string>>(new Map());
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const tab: Tab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : "feed";
+  const tab: Tab = TABS.some((item) => item.id === tabParam) ? (tabParam as Tab) : "feed";
   const [category, setCategory] = useState<string>(ALL);
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(PAGE_SIZE);
@@ -233,26 +234,26 @@ export default function PublicExplorePage() {
         {/* ═══════ HEADER: title + search ═══════ */}
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="m-0 text-[40px] leading-none md:text-[52px]">Explore</h1>
+            <h1 className="m-0 text-[40px] leading-none md:text-[52px]">{t("title")}</h1>
             <p className="m-0 mt-3 text-[15px] md:text-base" style={{ color: SOFT }}>
-              {TABS.find((t) => t.id === tab)?.sub}
+              {t(`tabs.${tab}.sub`)}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <label className="flex h-11 min-w-[180px] flex-1 items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-4 transition-colors focus-within:border-white/40 md:w-80 md:flex-none">
               <Search className="h-4 w-4 shrink-0 text-gold" aria-hidden />
-              <span className="sr-only">Search vendors</span>
+              <span className="sr-only">{t("search.label")}</span>
               <input
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
                   setShown(PAGE_SIZE);
                 }}
-                placeholder="Search vendors"
+                placeholder={t("search.placeholder")}
                 className="w-full min-w-0 bg-transparent text-[14px] text-[#f4f1ea] outline-none placeholder:text-[#f4f1ea]/60"
               />
               {query && (
-                <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="hover:text-gold">
+                <button type="button" onClick={() => setQuery("")} aria-label={t("search.clear")} className="hover:text-gold">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -265,21 +266,21 @@ export default function PublicExplorePage() {
 
         {/* ═══════ TABS + category ═══════ */}
         <div className="mt-6 flex items-center justify-between gap-4 border-b border-white/15">
-          <div className="no-scrollbar flex gap-6 overflow-x-auto" role="tablist" aria-label="Explore">
-            {TABS.map((t) => (
+          <div className="no-scrollbar flex gap-6 overflow-x-auto" role="tablist" aria-label={t("tablistLabel")}>
+            {TABS.map((item) => (
               <button
-                key={t.id}
+                key={item.id}
                 type="button"
                 role="tab"
-                aria-selected={tab === t.id}
-                onClick={() => pickTab(t.id)}
+                aria-selected={tab === item.id}
+                onClick={() => pickTab(item.id)}
                 className={`relative shrink-0 pb-3 pt-2 text-[15px] font-bold transition-colors ${
-                  tab === t.id
+                  tab === item.id
                     ? "text-gold after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-gold"
                     : "text-[#f4f1ea]/80 hover:text-white"
                 }`}
               >
-                {t.label}
+                {t(`tabs.${item.id}.label`)}
               </button>
             ))}
           </div>
@@ -302,7 +303,7 @@ export default function PublicExplorePage() {
                 ))}
               </div>
             ) : visibleFeed.length === 0 ? (
-              <Empty title="Nothing here yet" body="Try another category or search." />
+              <Empty title={t("empty.feed")} body={t("empty.tryAnother")} />
             ) : (
               <>
                 <div className="grid gap-x-6 gap-y-10 md:grid-cols-2">
@@ -325,7 +326,7 @@ export default function PublicExplorePage() {
                       onClick={() => setShown((n) => n + PAGE_SIZE)}
                       className="inline-flex h-11 items-center rounded-full border border-white/15 bg-white/[0.04] px-6 text-[14px] font-bold transition-colors hover:border-white/40"
                     >
-                      Show more
+                      {t("showMore")}
                     </button>
                   </div>
                 )}
@@ -367,19 +368,21 @@ function CategorySelect({
   onChange: (v: string) => void;
   className?: string;
 }) {
+  const { t } = useTranslation("explore");
+  const categoryNames = useCategoryNames();
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
-        aria-label="Category"
+        aria-label={t("category.label")}
         className={`h-11 w-[188px] shrink-0 rounded-full border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea] ${className}`}
       >
-        <SelectValue>{value === ALL ? "All categories" : value}</SelectValue>
+        <SelectValue>{value === ALL ? categoryNames.all : categoryNames.browse(value)}</SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL}>All categories</SelectItem>
+        <SelectItem value={ALL}>{categoryNames.all}</SelectItem>
         {BROWSE_CATEGORIES.map((c) => (
           <SelectItem key={c.label} value={c.label}>
-            {c.label}
+            {categoryNames.browse(c.label)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -446,9 +449,13 @@ function FeedPost({
   saved: boolean;
   onSave: () => void;
 }) {
-  const name = vendor?.business_name ?? "Vendor";
+  const { t } = useTranslation("explore");
+  const categoryNames = useCategoryNames();
+  const name = vendor?.business_name ?? t("vendorFallback");
   const href = `/vendors/${item.vendorId}`;
-  const meta = [vendor?.category, vendor?.location].filter(Boolean).join(" · ");
+  const meta = [vendor?.category ? categoryNames.sub(vendor.category) : null, vendor?.location]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <article className="min-w-0 border-b border-white/15 pb-8">
@@ -468,20 +475,20 @@ function FeedPost({
         </div>
       </header>
 
-      <Link to={href} className="group mt-3 block overflow-hidden rounded-2xl bg-white/5" aria-label={`View ${name}'s profile`}>
+      <Link to={href} className="group mt-3 block overflow-hidden rounded-2xl bg-white/5" aria-label={t("post.viewProfileOf", { name })}>
         <img
           src={item.image}
-          alt={item.caption ?? `Work by ${name}`}
+          alt={item.caption ?? t("post.workBy", { name })}
           loading={eager ? "eager" : "lazy"}
           className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] md:aspect-[4/3]"
         />
       </Link>
 
       <div className="-ml-2 mt-2 flex items-center">
-        <IconAction label={saved ? `Remove ${name} from saved` : `Save ${name}`} pressed={saved} onClick={onSave}>
+        <IconAction label={saved ? t("post.unsave", { name }) : t("post.save", { name })} pressed={saved} onClick={onSave}>
           <Heart className={`h-[22px] w-[22px] ${saved ? "fill-gold text-gold" : ""}`} />
         </IconAction>
-        <IconAction label={`Share ${name}`} onClick={() => shareVendor(name, href)}>
+        <IconAction label={t("post.share", { name })} onClick={() => shareVendor(name, href)}>
           <Share className="h-[20px] w-[20px]" />
         </IconAction>
       </div>
@@ -491,7 +498,7 @@ function FeedPost({
         to={href}
         className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-gold transition-colors hover:text-white"
       >
-        View profile <ArrowRight className="h-3.5 w-3.5" />
+        {t("post.viewProfile")} <ArrowRight className="h-3.5 w-3.5" />
       </Link>
     </article>
   );
@@ -517,6 +524,8 @@ function ReelsView({
   /** True when reels exist but the category / search hides them all. */
   filtered: boolean;
 }) {
+  const { t } = useTranslation("explore");
+  const categoryNames = useCategoryNames();
   const [index, setIndex] = useState(0);
   const [muted, setMuted] = useState(true);
   const reduceMotion =
@@ -533,18 +542,18 @@ function ReelsView({
           <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15">
             <Play className="h-5 w-5 text-gold" aria-hidden />
           </span>
-          <h2 className="m-0 mt-5 text-[24px] leading-tight">{filtered ? "No reels here" : "No reels yet"}</h2>
+          <h2 className="m-0 mt-5 text-[24px] leading-tight">{filtered ? t("reels.emptyFiltered") : t("reels.empty")}</h2>
           <p className="m-0 mt-2 text-[14px] leading-relaxed" style={{ color: SOFT }}>
             {filtered
-              ? "Try another category or search."
-              : "When vendors share short videos of their work, they'll play here."}
+              ? t("empty.tryAnother")
+              : t("reels.emptyBody")}
           </p>
           <button
             type="button"
             onClick={onBrowseFeed}
             className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
           >
-            Browse the feed <ArrowRight className="h-4 w-4" />
+            {t("browseFeed")} <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -554,7 +563,7 @@ function ReelsView({
   const current = Math.min(index, reels.length - 1);
   const reel = reels[current];
   const vendor = vendorById.get(reel.vendorId);
-  const name = vendor?.business_name ?? "Vendor";
+  const name = vendor?.business_name ?? t("vendorFallback");
   const href = `/vendors/${reel.vendorId}`;
   const saved = isSaved(reel.vendorId);
   const go = (d: number) => setIndex(Math.max(0, Math.min(reels.length - 1, current + d)));
@@ -565,8 +574,8 @@ function ReelsView({
 
   return (
     <section
-      aria-label="Reels"
-      aria-roledescription="carousel"
+      aria-label={t("reels.regionLabel")}
+      aria-roledescription={t("reels.roleDescription")}
       className="flex flex-col items-center gap-4 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-6 lg:gap-8"
       onKeyDown={(e) => {
         if (e.key === "ArrowDown") {
@@ -581,7 +590,7 @@ function ReelsView({
       <div className="hidden md:block" aria-hidden />
       <div
         className="relative aspect-[9/16] w-full max-w-[400px] overflow-hidden rounded-2xl bg-black md:h-[clamp(440px,calc(100vh-340px),720px)] md:w-auto md:max-w-none"
-        aria-label={`Reel ${current + 1} of ${reels.length}, from ${name}`}
+        aria-label={t("reels.position", { current: current + 1, total: reels.length, name })}
       >
         <video
           key={reel.id}
@@ -611,7 +620,7 @@ function ReelsView({
             )}
             {vendor?.category && (
               <p className="m-0 truncate text-[12px]" style={{ color: SOFT }}>
-                {vendor.category}
+                {categoryNames.sub(vendor.category)}
               </p>
             )}
           </div>
@@ -619,7 +628,7 @@ function ReelsView({
         <button
           type="button"
           onClick={() => setMuted((m) => !m)}
-          aria-label={muted ? "Turn sound on" : "Turn sound off"}
+          aria-label={muted ? t("reels.soundOn") : t("reels.soundOff")}
           className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white transition-colors hover:bg-black/75"
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
@@ -635,28 +644,28 @@ function ReelsView({
             type="button"
             onClick={() => onSave(reel.vendorId)}
             aria-pressed={saved}
-            aria-label={saved ? "Saved" : "Save vendor"}
+            aria-label={saved ? t("reels.saved") : t("reels.save")}
             className={reelAction}
           >
             <Heart className={`h-6 w-6 ${saved ? "fill-gold text-gold" : ""}`} aria-hidden />
-            <span className="hidden md:inline">{saved ? "Saved" : "Save vendor"}</span>
+            <span className="hidden md:inline">{saved ? t("reels.saved") : t("reels.save")}</span>
           </button>
-          <button type="button" onClick={() => shareVendor(name, href)} aria-label="Share" className={reelAction}>
+          <button type="button" onClick={() => shareVendor(name, href)} aria-label={t("reels.share")} className={reelAction}>
             <Share className="h-6 w-6" aria-hidden />
-            <span className="hidden md:inline">Share</span>
+            <span className="hidden md:inline">{t("reels.share")}</span>
           </button>
           <Link
             to={href}
             className="ml-auto inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-4 text-[13px] font-bold text-foreground transition-colors hover:bg-gold-hover md:ml-0"
           >
-            View profile
+            {t("post.viewProfile")}
           </Link>
         </div>
         <div className="flex gap-2 md:flex-col md:gap-3">
-          <button type="button" onClick={() => go(-1)} disabled={current === 0} aria-label="Previous reel" className={navButton}>
+          <button type="button" onClick={() => go(-1)} disabled={current === 0} aria-label={t("reels.previous")} className={navButton}>
             <ChevronUp className="h-5 w-5" />
           </button>
-          <button type="button" onClick={() => go(1)} disabled={current === reels.length - 1} aria-label="Next reel" className={navButton}>
+          <button type="button" onClick={() => go(1)} disabled={current === reels.length - 1} aria-label={t("reels.next")} className={navButton}>
             <ChevronDown className="h-5 w-5" />
           </button>
         </div>
@@ -677,6 +686,7 @@ function VendorsGrid({
   onlyIds?: Set<string>;
   empty?: ReactNode;
 }) {
+  const { t } = useTranslation("explore");
   const { vendors, loading } = useVendors();
   const list = vendors
     .filter((v) => !onlyIds || onlyIds.has(v.id))
@@ -699,7 +709,7 @@ function VendorsGrid({
     );
   }
   if (list.length === 0) {
-    return <>{empty ?? <Empty title="No vendors here" body="Try another category or search." />}</>;
+    return <>{empty ?? <Empty title={t("empty.vendors")} body={t("empty.tryAnother")} />}</>;
   }
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -721,23 +731,24 @@ function SavedView({
   term: string;
   onBrowse: () => void;
 }) {
+  const { t } = useTranslation("explore");
   const { user } = useAuth();
   const { savedIds, loading } = useSavedVendors();
 
   if (!user) {
     return (
-      <Empty title="Keep the vendors you love" body="Sign in, then tap the heart on any post or vendor to save it here.">
+      <Empty title={t("saved.signedOutTitle")} body={t("saved.signedOutBody")}>
         <Link
           to="/login"
           className="inline-flex h-11 items-center rounded-full border border-border bg-white px-5 text-[14px] font-bold text-foreground transition-colors hover:border-foreground/30"
         >
-          Log in
+          {t("saved.logIn")}
         </Link>
         <Link
           to="/signup"
           className="inline-flex h-11 items-center rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
         >
-          Sign up
+          {t("saved.signUp")}
         </Link>
       </Empty>
     );
@@ -758,11 +769,11 @@ function SavedView({
       onlyIds={savedIds}
       empty={
         <Empty
-          title={savedIds.size === 0 ? "Nothing saved yet" : "No saved vendors here"}
+          title={savedIds.size === 0 ? t("saved.noneTitle") : t("saved.noneHereTitle")}
           body={
             savedIds.size === 0
-              ? "Tap the heart on any post or vendor to save it here."
-              : "Try another category or search."
+              ? t("saved.noneBody")
+              : t("empty.tryAnother")
           }
         >
           {savedIds.size === 0 && (
@@ -771,7 +782,7 @@ function SavedView({
               onClick={onBrowse}
               className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
             >
-              Browse the feed <ArrowRight className="h-4 w-4" />
+              {t("browseFeed")} <ArrowRight className="h-4 w-4" />
             </button>
           )}
         </Empty>

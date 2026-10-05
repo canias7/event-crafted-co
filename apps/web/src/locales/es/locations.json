@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "title": "Proveedores por ubicación — Vendora",
+    "description": "Encuentra proveedores de Vendora por ciudad. Fotógrafos, floristas, espacios para eventos, banquetes y organizadores: el equipo cerca de tu evento."
+  },
+  "eyebrow": "— PROVEEDORES POR UBICACIÓN",
+  "title": "Encuentra a tu equipo <gold>cerca de ti.</gold>",
+  "intro_one": "Hoy hay {{count}} ciudad en Vendora. Elige una para filtrar el directorio.",
+  "intro_other": "Hoy hay {{count}} ciudades en Vendora. Elige una para filtrar el directorio.",
+  "picker": {
+    "allWithCount_one": "Todas las ciudades · {{count}} proveedor",
+    "allWithCount_other": "Todas las ciudades · {{count}} proveedores",
+    "search": "Busca una ciudad…",
+    "empty": "Aún no hay ciudades.",
+    "all": "Todas las ciudades"
+  },
+  "empty": {
+    "none": "Aún no hay proveedores",
+    "noneIn": "No hay proveedores en {{city}}",
+    "body": "Vuelve pronto: el directorio sigue creciendo."
+  },
+  "count_one": "{{count}} proveedor",
+  "count_other": "{{count}} proveedores",
+  "countIn_one": "{{count}} proveedor en {{city}}",
+  "countIn_other": "{{count}} proveedores en {{city}}"
+}

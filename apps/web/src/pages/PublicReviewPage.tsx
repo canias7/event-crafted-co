@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Star, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Public review submission via tokenized link sent by the vendor.
 // Reviewer doesn't need an account; we resolve host identity from
@@ -24,8 +26,15 @@ interface RequestContext {
   vendor_slug: string | null;
 }
 
+// Kept as a key (not text) so the message follows a language switch.
+type FormError =
+  | { key: "ratingRequired" }
+  | { key: "submit"; message: string };
+
 export default function PublicReviewPage() {
   const { token } = useParams();
+  const { t } = useTranslation("review");
+  const categories = useCategoryNames();
   const [ctx, setCtx] = useState<RequestContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState<number>(0);
@@ -33,7 +42,7 @@ export default function PublicReviewPage() {
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FormError | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -58,15 +67,15 @@ export default function PublicReviewPage() {
   }, [token]);
 
   useDocumentMeta({
-    title: ctx ? `Review ${ctx.vendor_name} — Vendora` : "Leave a review — Vendora",
-    description: "Share your experience and help others choose the right vendor.",
+    title: ctx ? t("meta.titleVendor", { vendor: ctx.vendor_name }) : t("meta.title"),
+    description: t("meta.description"),
     type: "website",
   });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!token || rating < 1) {
-      setError("Please choose a star rating");
+      setError({ key: "ratingRequired" });
       return;
     }
     // Whitespace-only bodies are noise. Normalize here so we send
@@ -87,7 +96,7 @@ export default function PublicReviewPage() {
     );
     setSubmitting(false);
     if (rpcError) {
-      setError(rpcError.message);
+      setError({ key: "submit", message: rpcError.message });
       return;
     }
     setDone(true);
@@ -105,17 +114,16 @@ export default function PublicReviewPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-editorial text-3xl mb-2">Link not found</h1>
+        <h1 className="font-editorial text-3xl mb-2">{t("notFound.title")}</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
-          This review link is invalid or has been removed. If you
-          received it from a vendor, ask them to send a new one.
+          {t("notFound.body")}
         </p>
         <Button
           asChild
           className="mt-6 rounded-full"
           variant="outline"
         >
-          <Link to="/">Back to Vendora</Link>
+          <Link to="/">{t("notFound.back")}</Link>
         </Button>
       </div>
     );
@@ -126,16 +134,15 @@ export default function PublicReviewPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <CheckCircle2 className="w-12 h-12 text-accent mb-4" />
-          <h1 className="font-editorial text-4xl mb-2">Thanks for the review</h1>
+          <h1 className="font-editorial text-4xl mb-2">{t("done.title")}</h1>
           <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">
-            Your review of {ctx.vendor_name} is live. It helps other
-            hosts find vendors they can trust.
+            {t("done.body", { vendor: ctx.vendor_name })}
           </p>
           {ctx.vendor_slug && (
             <Button
               asChild
             >
-              <Link to={`/v/${ctx.vendor_slug}`}>View profile</Link>
+              <Link to={`/v/${ctx.vendor_slug}`}>{t("done.viewProfile")}</Link>
             </Button>
           )}
         </main>
@@ -148,9 +155,9 @@ export default function PublicReviewPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-editorial text-3xl mb-2">Link no longer active</h1>
+        <h1 className="font-editorial text-3xl mb-2">{t("revoked.title")}</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
-          The vendor has revoked this review link.
+          {t("revoked.body")}
         </p>
       </div>
     );
@@ -163,23 +170,25 @@ export default function PublicReviewPage() {
           <div className="text-center mb-8">
             <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
               <Star className="w-3 h-3" />
-              Leave a review
+              {t("form.eyebrow")}
             </p>
             <h1 className="font-editorial text-4xl mb-2">
-              How was {ctx.vendor_name}?
+              {t("form.title", { vendor: ctx.vendor_name })}
             </h1>
             <p className="text-sm text-muted-foreground capitalize">
-              {ctx.vendor_category}
+              {ctx.vendor_category
+                ? categories.sub(ctx.vendor_category)
+                : ctx.vendor_category}
             </p>
           </div>
 
           <form onSubmit={submit} className="space-y-5">
             <div className="text-center">
-              <Label className="block mb-3">Your rating</Label>
+              <Label className="block mb-3">{t("form.rating")}</Label>
               <div
                 className="inline-flex gap-1.5"
                 role="radiogroup"
-                aria-label="Star rating"
+                aria-label={t("form.ratingAria")}
               >
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -203,7 +212,7 @@ export default function PublicReviewPage() {
                     }}
                     role="radio"
                     aria-checked={rating === star}
-                    aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                    aria-label={t("form.star", { count: star })}
                     className="p-1 hover:scale-110 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                   >
                     <Star
@@ -219,18 +228,18 @@ export default function PublicReviewPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="rev-body">Tell others about your experience (optional)</Label>
+              <Label htmlFor="rev-body">{t("form.body")}</Label>
               <Textarea
                 id="rev-body"
                 rows={5}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="What stood out? What worked well? What should others know?"
+                placeholder={t("form.bodyPlaceholder")}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="rev-name">Your name (optional)</Label>
+              <Label htmlFor="rev-name">{t("form.name")}</Label>
               <Input
                 id="rev-name"
                 value={name}
@@ -242,7 +251,11 @@ export default function PublicReviewPage() {
             {error && (
               <div className="flex items-start gap-2 text-xs bg-destructive/5 border border-destructive/20 rounded-sm p-2.5 text-destructive/85">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span className="leading-relaxed">{error}</span>
+                <span className="leading-relaxed">
+                  {error.key === "submit"
+                    ? t("errors.submit", { message: error.message })
+                    : t("errors.ratingRequired")}
+                </span>
               </div>
             )}
 
@@ -252,7 +265,7 @@ export default function PublicReviewPage() {
               className="w-full"
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Submit review
+              {t("form.submit")}
             </Button>
           </form>
         </div>

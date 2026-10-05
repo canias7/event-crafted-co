@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { CATEGORY_FAQS } from "@/data/categoryFaqs";
 import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
 import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
@@ -52,7 +54,9 @@ const heroByGroup: Record<string, PictureSource> = {
 
 // Single source of truth lives in categoryTaxonomy.CATEGORY_GROUPS;
 // this object adapts that list to the page-config shape used here +
-// in PublicNav + VendorBrowsePage.
+// in PublicNav + VendorBrowsePage. Text here is English (and `name` is
+// a lookup key); pages show it in the visitor's language through
+// useCategoryNames().
 export const categoryConfig: Record<string, CategoryConfig> =
   Object.fromEntries(
     CATEGORY_GROUPS.map((g) => [
@@ -74,16 +78,25 @@ export const allCategorySlugs = Object.keys(categoryConfig);
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorCategoryPage() {
+  const { t } = useTranslation("categoryPage");
+  const categoryNames = useCategoryNames();
   const { slug } = useParams();
   const config = slug ? categoryConfig[slug] : null;
   const { vendors, loading } = useVendors();
   const [activeSubs, setActiveSubs] = useState<Set<string>>(new Set());
 
+  // The group's name and copy in the visitor's language. `display` and
+  // `name` are the same group name today, so one translation covers both.
+  const groupName = config && slug ? categoryNames.group(slug, config.display) : "";
+  const groupNameLower = groupName.toLowerCase();
+  const groupDescription = config && slug ? categoryNames.groupDescription(slug, config.description) : undefined;
+  const groupLongCopy = config && slug ? categoryNames.groupLongCopy(slug, config.longCopy) : "";
+
   useDocumentMeta({
     title: config
-      ? `${config.display} on Vendora — ${config.description}`
-      : "Vendor category — Vendora",
-    description: config?.description,
+      ? t("meta.title", { name: groupName, description: groupDescription })
+      : t("meta.fallbackTitle"),
+    description: groupDescription,
     // Picture object → use the JPG fallback as the social-share image
     // (modern crawlers pick AVIF/WebP from <source> in the page itself).
     image: config?.hero?.img.src,

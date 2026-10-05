@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "titleVendor": "Reseña de {{vendor}} — Vendora",
+    "title": "Deja una reseña — Vendora",
+    "description": "Comparte tu experiencia y ayuda a otros a elegir el proveedor indicado."
+  },
+  "notFound": {
+    "title": "Enlace no encontrado",
+    "body": "Este enlace de reseña no es válido o se eliminó. Si te lo envió un proveedor, pídele uno nuevo.",
+    "back": "Volver a Vendora"
+  },
+  "done": {
+    "title": "Gracias por tu reseña",
+    "body": "Tu reseña de {{vendor}} ya está publicada. Ayuda a otros anfitriones a encontrar proveedores de confianza.",
+    "viewProfile": "Ver perfil"
+  },
+  "revoked": {
+    "title": "Este enlace ya no está activo",
+    "body": "El proveedor desactivó este enlace de reseña."
+  },
+  "form": {
+    "eyebrow": "Deja una reseña",
+    "title": "¿Cómo te fue con {{vendor}}?",
+    "rating": "Tu calificación",
+    "ratingAria": "Calificación con estrellas",
+    "star_one": "{{count}} estrella",
+    "star_other": "{{count}} estrellas",
+    "body": "Cuéntales a otros cómo fue tu experiencia (opcional)",
+    "bodyPlaceholder": "¿Qué destacó? ¿Qué funcionó bien? ¿Qué deberían saber los demás?",
+    "name": "Tu nombre (opcional)",
+    "submit": "Enviar reseña"
+  },
+  "errors": {
+    "ratingRequired": "Elige una calificación con estrellas",
+    "submit": "No pudimos enviar tu reseña. Inténtalo de nuevo."
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "hero": {
+    "eyebrow": "Para anfitriones",
+    "title": "Planea con confianza. <gold>Disfruta</gold> cada momento.",
+    "sub": "Encuentra proveedores de confianza, compara cotizaciones y ten cada detalle de tu evento en un solo lugar.",
+    "primary": "Buscar proveedores",
+    "secondary": "Cómo funciona"
+  },
+  "steps": {
+    "eyebrow": "Cómo funciona",
+    "title": "Cuatro pasos hacia tu evento.",
+    "items": {
+      "discover": {
+        "title": "Descubre",
+        "body": "Encuentra a los proveedores perfectos para tu visión única."
+      },
+      "connect": {
+        "title": "Conecta",
+        "body": "Envía mensajes, compara y recibe cotizaciones personalizadas."
+      },
+      "plan": {
+        "title": "Planea",
+        "body": "Guarda la fecha, los invitados y las notas de cada evento en un solo lugar."
+      },
+      "book": {
+        "title": "Contrata",
+        "body": "Asegura a tus proveedores y relájate: estás en buenas manos."
+      }
+    }
+  },
+  "event_types": {
+    "title_line1": "Cada evento.",
+    "title_line2": "Cada ocasión.",
+    "items": {
+      "weddings": "Bodas",
+      "birthdays": "Cumpleaños",
+      "corporate": "Eventos corporativos",
+      "parties": "Fiestas y celebraciones",
+      "social": "Reuniones sociales",
+      "more": "y más…"
+    }
+  },
+  "tools": {
+    "eyebrow": "Todo lo que necesitas, en un solo lugar",
+    "title": "Herramientas potentes. Una experiencia fluida.",
+    "items": {
+      "search": {
+        "title": "Búsqueda inteligente",
+        "body": "Encuentra más rápido a los proveedores indicados."
+      },
+      "messaging": {
+        "title": "Mensajes",
+        "body": "Todas tus conversaciones en un solo lugar."
+      },
+      "availability": {
+        "title": "Disponibilidad",
+        "body": "Elige tu fecha para ver quién está libre."
+      },
+      "quotes": {
+        "title": "Cotizaciones y propuestas",
+        "body": "Compara y decide con confianza."
+      },
+      "payments": {
+        "title": "Contratos y pagos",
+        "body": "Firma y paga en línea de forma segura."
+      },
+      "reviews": {
+        "title": "Reseñas",
+        "body": "Opiniones reales de clientes reales."
+      }
+    }
+  },
+  "closing": {
+    "title": "Hagamos algo <gold>inolvidable.</gold>",
+    "cta": "Buscar proveedores"
+  }
+}

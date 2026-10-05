@@ -1,0 +1,66 @@
+{
+  "hero": {
+    "eyebrow": "For vendors",
+    "title": "More clients. More bookings. More <gold>growth.</gold>",
+    "sub": "Get discovered by people planning events like yours, then run inquiries, proposals and payments in one place.",
+    "primary": "List your business — free",
+    "secondary": "How it works"
+  },
+  "steps": {
+    "eyebrow": "How it works",
+    "title": "From first inquiry to booked.",
+    "items": {
+      "discovered": {
+        "title": "Get discovered",
+        "body": "Be seen by people actively planning events like yours."
+      },
+      "inquiries": {
+        "title": "Manage inquiries",
+        "body": "Respond, chat, and share proposals all in one inbox."
+      },
+      "book": {
+        "title": "Book clients",
+        "body": "Secure bookings with contracts, payments, and automations."
+      },
+      "grow": {
+        "title": "Grow your business",
+        "body": "Track performance, collect reviews, and build your brand."
+      }
+    }
+  },
+  "tools": {
+    "eyebrow": "Everything you need, all in one place",
+    "title": "Run your business from one place.",
+    "items": {
+      "found": {
+        "title": "Get found",
+        "body": "Show up in search, on Explore and on category pages."
+      },
+      "inbox": {
+        "title": "One inbox",
+        "body": "Every client conversation in one place."
+      },
+      "availability": {
+        "title": "Availability",
+        "body": "Block busy dates, so hosts searching them see who's free."
+      },
+      "proposals": {
+        "title": "Proposals & contracts",
+        "body": "Send proposals and contracts clients sign online."
+      },
+      "payments": {
+        "title": "Payments",
+        "body": "Get paid securely online."
+      },
+      "reviews": {
+        "title": "Reviews",
+        "body": "Build trust with reviews from real clients."
+      }
+    }
+  },
+  "closing": {
+    "title": "Start <gold>free.</gold>",
+    "sub": "The Free plan includes one listing. Upgrade whenever you're ready for more.",
+    "cta": "List your business — free"
+  }
+}

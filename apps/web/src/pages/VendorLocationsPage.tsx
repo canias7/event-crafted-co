@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Check, ChevronDown, MapPin } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
@@ -44,14 +45,14 @@ function normalizeLocation(loc: string): string {
 }
 
 export default function VendorLocationsPage() {
+  const { t } = useTranslation("locations");
   const { vendors, loading } = useVendors();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>(ALL_CITIES);
 
   useDocumentMeta({
-    title: "Vendors by location — Vendora",
-    description:
-      "Browse Vendora vendors by city. Photographers, florists, venues, caterers, planners — find the team near your event.",
+    title: t("meta.title"),
+    description: t("meta.description"),
   });
 
   // Map vendors to their normalized city label so we can group, count,
@@ -84,7 +85,7 @@ export default function VendorLocationsPage() {
   const totalLocations = cities.length;
   const triggerLabel =
     selected === ALL_CITIES
-      ? `All cities · ${vendors.length} ${vendors.length === 1 ? "vendor" : "vendors"}`
+      ? t("picker.allWithCount", { count: vendors.length })
       : selected;
 
   return (
@@ -94,15 +95,13 @@ export default function VendorLocationsPage() {
       <section className="pt-12 md:pt-16 pb-10">
         <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <p className="font-label text-gold tracking-[0.4em] mb-4">
-            — VENDORS BY LOCATION
+            {t("eyebrow")}
           </p>
           <h1 className="font-editorial text-5xl md:text-5xl leading-[1.05] mb-4">
-            Find your team{" "}
-            <span className="text-gold">near you.</span>
+            <Trans t={t} i18nKey="title" components={{ gold: <span className="text-gold" /> }} />
           </h1>
           <p className="text-base md:text-lg text-[#f4f1ea]/80 max-w-2xl leading-relaxed">
-            {totalLocations} {totalLocations === 1 ? "city" : "cities"} on Vendora
-            today. Pick one to filter the directory.
+            {t("intro", { count: totalLocations })}
           </p>
 
           {/* City picker — searchable combobox */}
@@ -132,12 +131,12 @@ export default function VendorLocationsPage() {
                 align="start"
               >
                 <Command>
-                  <CommandInput placeholder="Search a city…" className="h-11" />
+                  <CommandInput placeholder={t("picker.search")} className="h-11" />
                   <CommandList>
-                    <CommandEmpty>No cities yet.</CommandEmpty>
+                    <CommandEmpty>{t("picker.empty")}</CommandEmpty>
                     <CommandGroup>
                       <CommandItem
-                        value="All cities"
+                        value={t("picker.all")}
                         onSelect={() => {
                           setSelected(ALL_CITIES);
                           setOpen(false);
@@ -149,7 +148,7 @@ export default function VendorLocationsPage() {
                             selected === ALL_CITIES ? "opacity-100 text-accent" : "opacity-0",
                           )}
                         />
-                        <span className="flex-1">All cities</span>
+                        <span className="flex-1">{t("picker.all")}</span>
                         <span className="text-xs text-muted-foreground tnum">
                           {vendors.length}
                         </span>
@@ -202,19 +201,19 @@ export default function VendorLocationsPage() {
                 <MapPin className="w-5 h-5 text-gold" />
               </div>
               <p className="font-editorial text-2xl mb-2">
-                {selected === ALL_CITIES ? "No vendors yet" : `No vendors in ${selected}`}
+                {selected === ALL_CITIES ? t("empty.none") : t("empty.noneIn", { city: selected })}
               </p>
               <p className="text-sm text-[#f4f1ea]/80">
-                Check back as the directory grows.
+                {t("empty.body")}
               </p>
             </div>
           ) : (
             <>
               <div className="max-w-5xl mx-auto mb-6 px-1">
                 <p className="font-label text-[#f4f1ea]/80">
-                  {filtered.length}{" "}
-                  {filtered.length === 1 ? "vendor" : "vendors"}
-                  {selected === ALL_CITIES ? "" : ` in ${selected}`}
+                  {selected === ALL_CITIES
+                    ? t("count", { count: filtered.length })
+                    : t("countIn", { count: filtered.length, city: selected })}
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

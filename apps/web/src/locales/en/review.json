@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "titleVendor": "Review {{vendor}} — Vendora",
+    "title": "Leave a review — Vendora",
+    "description": "Share your experience and help others choose the right vendor."
+  },
+  "notFound": {
+    "title": "Link not found",
+    "body": "This review link is invalid or has been removed. If you received it from a vendor, ask them to send a new one.",
+    "back": "Back to Vendora"
+  },
+  "done": {
+    "title": "Thanks for the review",
+    "body": "Your review of {{vendor}} is live. It helps other hosts find vendors they can trust.",
+    "viewProfile": "View profile"
+  },
+  "revoked": {
+    "title": "Link no longer active",
+    "body": "The vendor has revoked this review link."
+  },
+  "form": {
+    "eyebrow": "Leave a review",
+    "title": "How was {{vendor}}?",
+    "rating": "Your rating",
+    "ratingAria": "Star rating",
+    "star_one": "{{count}} star",
+    "star_other": "{{count}} stars",
+    "body": "Tell others about your experience (optional)",
+    "bodyPlaceholder": "What stood out? What worked well? What should others know?",
+    "name": "Your name (optional)",
+    "submit": "Submit review"
+  },
+  "errors": {
+    "ratingRequired": "Please choose a star rating",
+    "submit": "{{message}}"
+  }
+}

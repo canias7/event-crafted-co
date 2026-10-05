@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Top-level public-nav links. The "Vendors" entry is rendered as a
 // dropdown menu (not just a single link) — see VendorsDropdown below.
@@ -50,18 +51,19 @@ export function PublicNav({
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
   const { session, profile, ownListing, hasVendorAccess, signOut } = useAuth();
   const { t } = useTranslation();
+  const { t: ts } = useTranslation("shell");
+  const categoryNames = useCategoryNames();
   const secondaryLinks = buildSecondaryLinks(t);
 
-  // Sort categories alphabetically by display name. comingSoon items
-  // sort to the bottom so the live ones are scanned first.
-  const sortedCategories = useMemo(() => {
-    return Object.entries(categoryConfig)
-      .map(([slug, cfg]) => ({ slug, ...cfg }))
-      .sort((a, b) => {
-        if (!!a.comingSoon !== !!b.comingSoon) return a.comingSoon ? 1 : -1;
-        return a.display.localeCompare(b.display);
-      });
-  }, []);
+  // Sort categories alphabetically by display name (in the visitor's
+  // language). comingSoon items sort to the bottom so the live ones are
+  // scanned first.
+  const sortedCategories = Object.entries(categoryConfig)
+    .map(([slug, cfg]) => ({ slug, ...cfg, display: categoryNames.group(slug, cfg.display) }))
+    .sort((a, b) => {
+      if (!!a.comingSoon !== !!b.comingSoon) return a.comingSoon ? 1 : -1;
+      return a.display.localeCompare(b.display);
+    });
 
   // Multi-role: send the user to whichever portal they're more likely to
   // want. Vendor access → /vendor/me (the vendor landing surface; the
@@ -97,14 +99,14 @@ export function PublicNav({
               borderBottom: "0.5px solid rgba(0,0,0,0.12)",
             }
       }
-      aria-label="Public"
+      aria-label={ts("nav.aria_label")}
     >
       <div
         className={`container mx-auto flex items-center justify-between px-5 md:px-8 ${
           dark ? "h-16" : overlay ? "h-20 md:h-24" : "h-16"
         }`}
       >
-        <Link to="/" aria-label="Vendora — Events, simplified">
+        <Link to="/" aria-label={ts("nav.logo_label")}>
           <VendoraLogo
             size="md"
             color={overlay ? CREAM : "#000"}
@@ -135,17 +137,17 @@ export function PublicNav({
             >
               <DropdownMenuItem asChild>
                 <Link to="/vendors" className="cursor-pointer font-medium">
-                  All vendors
+                  {ts("nav.all_vendors")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/vendors/locations" className="cursor-pointer">
-                  Browse by location
+                  {ts("nav.browse_by_location")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Categories
+                {ts("nav.categories")}
               </DropdownMenuLabel>
               {sortedCategories.map((c) =>
                 c.comingSoon ? (
@@ -156,7 +158,7 @@ export function PublicNav({
                   >
                     <span className="flex-1">{c.display}</span>
                     <span className="text-[10px] uppercase tracking-wide bg-secondary text-muted-foreground rounded-full px-1.5 py-0.5">
-                      Soon
+                      {ts("nav.soon")}
                     </span>
                   </DropdownMenuItem>
                 ) : (
@@ -195,7 +197,7 @@ export function PublicNav({
             className={`text-sm font-medium ${linkClass(location.pathname === "/explore")}`}
             aria-current={location.pathname === "/explore" ? "page" : undefined}
           >
-            Explore
+            {ts("nav.explore")}
           </Link>
           <Link
             to="/how-it-works"
@@ -204,7 +206,7 @@ export function PublicNav({
             )}`}
             aria-current={location.pathname === "/how-it-works" ? "page" : undefined}
           >
-            How it works
+            {ts("nav.how_it_works")}
           </Link>
         </div>
 
@@ -223,7 +225,7 @@ export function PublicNav({
                   profile.business_name ??
                   ownListing?.business_name ??
                   profile.display_name ??
-                  "Account";
+                  ts("nav.account");
                 return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -357,17 +359,17 @@ export function PublicNav({
                 onClick={() => setMobileOpen(false)}
                 className="block py-2 text-sm font-medium text-foreground"
               >
-                All vendors
+                {ts("nav.all_vendors")}
               </Link>
               <Link
                 to="/vendors/locations"
                 onClick={() => setMobileOpen(false)}
                 className="block py-2 text-sm text-muted-foreground"
               >
-                By location
+                {ts("nav.by_location")}
               </Link>
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-3 mb-1">
-                Categories
+                {ts("nav.categories")}
               </p>
               {sortedCategories.map((c) =>
                 c.comingSoon ? (
@@ -377,7 +379,7 @@ export function PublicNav({
                   >
                     {c.display}{" "}
                     <span className="text-[10px] uppercase tracking-wide bg-secondary rounded-full px-1.5 py-0.5 ml-1">
-                      Soon
+                      {ts("nav.soon")}
                     </span>
                   </p>
                 ) : (
@@ -408,14 +410,14 @@ export function PublicNav({
             onClick={() => setMobileOpen(false)}
             className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
           >
-            Explore
+            {ts("nav.explore")}
           </Link>
           <Link
             to="/how-it-works"
             onClick={() => setMobileOpen(false)}
             className="block py-3 text-sm font-medium text-muted-foreground hover:text-accent"
           >
-            How it works
+            {ts("nav.how_it_works")}
           </Link>
           {session && profile ? (
             <>
@@ -433,19 +435,19 @@ export function PublicNav({
                 }}
                 className="block w-full text-left py-3 text-sm font-medium text-muted-foreground"
               >
-                Sign out
+                {ts("nav.sign_out")}
               </button>
             </>
           ) : (
             <div className="flex gap-3 pt-3 border-t border-border mt-2">
               <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
                 <Button variant="outline" className="w-full" size="sm">
-                  Sign in
+                  {ts("nav.sign_in")}
                 </Button>
               </Link>
               <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}>
                 <Button className="w-full" size="sm">
-                  Get started
+                  {ts("nav.get_started")}
                 </Button>
               </Link>
             </div>

@@ -1,0 +1,73 @@
+{
+  "title": "Explore",
+  "tablistLabel": "Explore",
+  "tabs": {
+    "feed": {
+      "label": "Feed",
+      "sub": "Real work from Vendora vendors."
+    },
+    "reels": {
+      "label": "Reels",
+      "sub": "A closer look at the craft."
+    },
+    "vendors": {
+      "label": "Vendors",
+      "sub": "The people behind the work."
+    },
+    "saved": {
+      "label": "Saved",
+      "sub": "The vendors you've saved."
+    }
+  },
+  "search": {
+    "label": "Search vendors",
+    "placeholder": "Search vendors",
+    "clear": "Clear search"
+  },
+  "category": {
+    "label": "Category"
+  },
+  "vendorFallback": "Vendor",
+  "post": {
+    "viewProfileOf": "View {{name}}'s profile",
+    "workBy": "Work by {{name}}",
+    "save": "Save {{name}}",
+    "unsave": "Remove {{name}} from saved",
+    "share": "Share {{name}}",
+    "viewProfile": "View profile"
+  },
+  "showMore": "Show more",
+  "browseFeed": "Browse the feed",
+  "toasts": {
+    "linkCopied": "Link copied"
+  },
+  "reels": {
+    "regionLabel": "Reels",
+    "roleDescription": "carousel",
+    "position": "Reel {{current}} of {{total}}, from {{name}}",
+    "soundOn": "Turn sound on",
+    "soundOff": "Turn sound off",
+    "save": "Save vendor",
+    "saved": "Saved",
+    "share": "Share",
+    "previous": "Previous reel",
+    "next": "Next reel",
+    "empty": "No reels yet",
+    "emptyFiltered": "No reels here",
+    "emptyBody": "When vendors share short videos of their work, they'll play here."
+  },
+  "empty": {
+    "feed": "Nothing here yet",
+    "vendors": "No vendors here",
+    "tryAnother": "Try another category or search."
+  },
+  "saved": {
+    "signedOutTitle": "Keep the vendors you love",
+    "signedOutBody": "Sign in, then tap the heart on any post or vendor to save it here.",
+    "logIn": "Log in",
+    "signUp": "Sign up",
+    "noneTitle": "Nothing saved yet",
+    "noneHereTitle": "No saved vendors here",
+    "noneBody": "Tap the heart on any post or vendor to save it here."
+  }
+}

@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "title": "{{name}} — {{category}} on Vendora",
+    "description": "{{category}} on Vendora",
+    "descriptionWithLocation": "{{category}} on Vendora · {{location}}",
+    "fallbackTitle": "Vendor — Vendora",
+    "categoryFallbackBio": "{{category}} on Vendora."
+  },
+  "notFound": {
+    "title": "Vendor not found",
+    "body": "We couldn't find the vendor you're looking for."
+  },
+  "backToDirectory": "Back to directory",
+  "about": {
+    "eyebrow": "About",
+    "title": "About {{name}}"
+  },
+  "trust": {
+    "verified": "Verified vendor",
+    "verifiedBody": "Identity & business info verified by Vendora",
+    "insured": "Insured",
+    "insuredBody": "Certificate on file"
+  },
+  "intro": {
+    "eyebrow": "Meet the team",
+    "title": "In their own words",
+    "videoTitle": "{{name}} intro"
+  },
+  "portfolio": {
+    "eyebrow": "Portfolio",
+    "title": "Recent work",
+    "openAll": "Open portfolio ({{total}} photos)",
+    "coverAlt": "{{name}} portfolio cover",
+    "photoAlt": "{{name}} portfolio {{number}}",
+    "open": "Open {{label}}",
+    "seeAll": "See all ({{total}})"
+  },
+  "coBooked": {
+    "eyebrow": "Often booked with",
+    "title": "Hosts who booked {{name}} also booked"
+  },
+  "recommendations": {
+    "eyebrow": "Recommendations",
+    "title": "Vendors {{name}} loves",
+    "vendorFallback": "Vendor"
+  },
+  "sampleFaqs": {
+    "advance": {
+      "q": "How far in advance should I book?",
+      "a": "For peak season (May–October), 9–12 months ahead. For off-season or weekday events, 3–6 months is usually fine."
+    },
+    "travel": {
+      "q": "Do you travel?",
+      "a": "Yes — happy to travel anywhere in the continental US, with travel and lodging arranged separately. International on request."
+    },
+    "cancellation": {
+      "q": "What's your cancellation policy?",
+      "a": "Deposits are non-refundable, but transferable to a new date with 60+ days' notice. Full policy is shared in the booking contract."
+    }
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "customNote": "Custom pricing — final cost varies by event details.",
+    "note": "Final pricing depends on the date and event details.",
+    "liveCalendar": "Live availability calendar",
+    "mobileLabel": "Price"
+  },
+  "actions": {
+    "sendInquiry": "Send Inquiry",
+    "messageVendor": "Message vendor",
+    "save": "Save",
+    "saved": "Saved",
+    "share": "Share",
+    "reportProfile": "Report this profile"
+  },
+  "noPayToRank": {
+    "title": "No pay-to-rank.",
+    "body": "Vendora doesn't accept money to influence search ranking. Vendors appear based on fit and review quality, not ad spend."
+  },
+  "signInPrompt": {
+    "title": "Send an inquiry to {{name}}",
+    "body": "Inquiries are routed to vendors with AI-drafted replies in under 3 hours. Sign up as a host to send your first inquiry — it's free.",
+    "signUp": "Create a free host account",
+    "logIn": "I already have an account"
+  },
+  "share": {
+    "text": "Check out {{name}} on Vendora",
+    "copied": "Link copied",
+    "copyFailed": "Couldn't copy the link"
+  },
+  "toasts": {
+    "adminInquiry": "Inquiries are sent from host accounts, not admin.",
+    "vendorInquiry": "Vendors connect through “Message vendor,” not inquiries.",
+    "ownerNotFound": "Couldn't find the owner of this listing.",
+    "proOnly": "Vendor-to-vendor messaging is a Pro feature.",
+    "proOnlyBody": "Upgrade to Pro or Premium to start conversations with other vendors.",
+    "upgrade": "Upgrade"
+  },
+  "video": {
+    "defaultTitle": "Vendor intro video"
+  },
+  "brandCard": {
+    "vendorFallback": "Vendor",
+    "rating": "Rating",
+    "joined": "Joined",
+    "showFront": "Show profile front",
+    "showBio": "Show bio on back",
+    "back": "Back",
+    "bio": "Bio",
+    "about": "About {{name}}",
+    "noBio": "No bio yet for {{name}}."
+  },
+  "verifiedBadge": {
+    "title": "Verified vendor",
+    "label": "Verified"
+  },
+  "badges": {
+    "identity": {
+      "label": "ID",
+      "full": "Identity verified"
+    },
+    "insurance": {
+      "label": "Insured",
+      "full": "Liability insurance verified"
+    },
+    "business_license": {
+      "label": "Licensed",
+      "full": "Business license verified"
+    },
+    "background_check": {
+      "label": "Bg-checked",
+      "full": "Background check verified"
+    }
+  },
+  "showcase": {
+    "eyebrow": "Showcase",
+    "title": "In motion",
+    "unmute": "Unmute clips",
+    "mute": "Mute clips",
+    "muted": "Muted",
+    "soundOn": "Sound on"
+  },
+  "otherListings": {
+    "eyebrow": "More from this vendor",
+    "title": "Their other listings",
+    "previous": "Scroll to previous listings",
+    "next": "Scroll to more listings",
+    "listingFallback": "Listing",
+    "vendorFallback": "Vendor"
+  },
+  "team": {
+    "eyebrow": "The people behind the details",
+    "title": "Meet the Team",
+    "specialty": "Specialty:",
+    "tenure": "With the business:",
+    "showLess": "Show less",
+    "viewBio": "View bio →"
+  },
+  "openDates": {
+    "eyebrow": "✦ Last-minute availability",
+    "title": "This vendor has open dates coming up",
+    "note": "Send an inquiry to lock one in before it's gone."
+  },
+  "coBookedRail": {
+    "cobooked": "Often booked with",
+    "recommended": "Recommended for you",
+    "eyebrow": "Vendora suggests",
+    "handPickedBooked": "Hand-picked · booked together {{times}}×",
+    "handPicked": "Hand-picked partner",
+    "booked": "Booked together {{times}}×"
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Common questions"
+  },
+  "social": {
+    "title": "Latest on social"
+  },
+  "bundles": {
+    "eyebrow": "Bundles",
+    "title": "Multi-vendor packages"
+  },
+  "availability": {
+    "title": "Availability",
+    "body": "Crossed-out dates are already booked or blocked. Open dates are still available — send an inquiry to confirm and lock in.",
+    "blocked": "Booked / blocked",
+    "open": "Open dates — send an inquiry to confirm"
+  },
+  "calendar": {
+    "previousMonth": "Go to previous month",
+    "nextMonth": "Go to next month"
+  },
+  "serviceArea": {
+    "eyebrow": "Service area",
+    "title": "Where {{category}}s travel",
+    "basedIn": "Based in {{location}}. Travels up to {{miles}} miles for events.",
+    "travels": "Travels up to {{miles}} miles for events."
+  },
+  "attributes": {
+    "title": "About this {{category}}"
+  },
+  "report": {
+    "button": "Report",
+    "ariaLabel": "Report this content",
+    "title": "Report content",
+    "description": "Reports go to our trust & safety team. We review every one and take action when warranted. Reporters are kept private.",
+    "signInRequired": "You need to be signed in to report content.",
+    "signIn": "Sign in",
+    "thanksTitle": "Thanks for the report",
+    "thanksBody": "We'll review this within 24 hours. If we take action, you'll hear back via email.",
+    "close": "Close",
+    "reason": "Reason",
+    "reasonPlaceholder": "Choose a reason",
+    "details": "More context (optional)",
+    "detailsPlaceholder": "What should we look at? Any specific examples?",
+    "cancel": "Cancel",
+    "submit": "Submit report",
+    "alreadyReported": "You've already reported this. Our team is reviewing.",
+    "reasons": {
+      "spam": "Spam or scam",
+      "harassment": "Harassment or bullying",
+      "inappropriate": "Inappropriate content",
+      "misleading": "False or misleading",
+      "impersonation": "Impersonation",
+      "copyright": "Copyright violation",
+      "safety": "Safety concern",
+      "other": "Other"
+    }
+  },
+  "lightbox": {
+    "label": "Image viewer",
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next",
+    "imageFallback": "Image",
+    "openSource": "Open source"
+  },
+  "inquiry": {
+    "title": "Send an inquiry",
+    "subtitle": "Vendors typically reply within 3 hours via AI-assisted drafts.",
+    "sendingTo": "Sending to",
+    "vendor": "Vendor",
+    "noVendors": "No vendors are accepting inquiries yet. We're onboarding new vendors weekly — check back soon.",
+    "chooseVendor": "Choose a vendor",
+    "bookedThatDay": "(booked that day)",
+    "eventType": "Event type",
+    "eventTypes": {
+      "wedding": "Wedding",
+      "birthday": "Birthday",
+      "holiday_dinner": "Holiday dinner",
+      "other": "Other"
+    },
+    "eventDate": "Event date",
+    "pickDate": "Pick a date",
+    "pickVendorFirst": "Pick a vendor first",
+    "blockedNote": "Struck-through dates are blocked by this vendor.",
+    "guestCount": "Guest count",
+    "location": "Location",
+    "locationPlaceholder": "City, neighborhood, or venue name",
+    "budget": "Budget range",
+    "min": "Min",
+    "max": "Max",
+    "intakeTitle": "A few questions from this vendor",
+    "yes": "Yes",
+    "no": "No",
+    "choose": "Choose…",
+    "anythingElse": "Anything else?",
+    "tellUs": "Tell us about your event",
+    "requestsPlaceholder": "Color palette, vibe, must-haves, anything else the vendor should know.",
+    "cancel": "Cancel",
+    "sending": "Sending…",
+    "send": "Send inquiry",
+    "toasts": {
+      "loadVendorsFailed": "Couldn't load vendors: {{message}}",
+      "signInFirst": "Please sign in first",
+      "chooseVendor": "Please choose a vendor",
+      "budgetOrder": "Budget min must be less than budget max",
+      "vendorUnavailable": "That vendor isn't available on the date you picked.",
+      "answerRequired": "Please answer: {{question}}",
+      "sendFailed": "Couldn't send inquiry: {{message}}",
+      "sent": "Inquiry sent — vendor will reply soon"
+    }
+  }
+}

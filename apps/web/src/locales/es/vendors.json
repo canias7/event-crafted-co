@@ -1,0 +1,54 @@
+{
+  "hero": {
+    "title": "Encuentra algo<br/><gold>inolvidable.</gold>",
+    "intro": "Conoce a los proveedores que hacen realidad lo que imaginas."
+  },
+  "search": {
+    "label": "Buscar proveedores o servicios",
+    "placeholder": "Buscar proveedores o servicios",
+    "clear": "Borrar búsqueda",
+    "location": "Ubicación",
+    "clearLocation": "Quitar filtro de ubicación",
+    "date": "Fecha del evento",
+    "clearDate": "Quitar filtro de fecha",
+    "submit": "Buscar proveedores"
+  },
+  "browse": {
+    "title": "Explora por categoría",
+    "allVendors": "Todos los proveedores"
+  },
+  "results": {
+    "title": "Descubre proveedores",
+    "hiddenByDate_one": "{{count}} proveedor oculto porque ya está reservado ese día.",
+    "hiddenByDate_other": "{{count}} proveedores ocultos porque ya están reservados ese día.",
+    "viewGroupPage": "Ver la página de {{group}}"
+  },
+  "filters": {
+    "loading": "Cargando…",
+    "count_one": "{{count}} proveedor",
+    "count_other": "{{count}} proveedores",
+    "remove": "Quitar {{label}}",
+    "clearAll": "Borrar todo",
+    "more": "Más filtros",
+    "byCategory": "Filtrar por categoría",
+    "clearSelections": "Borrar todas las selecciones",
+    "sortLabel": "Ordenar proveedores",
+    "sortPlaceholder": "Ordenar por",
+    "sort": {
+      "popular": "Más reseñas",
+      "rating": "Mejor calificados",
+      "price-low": "Menor precio",
+      "price-high": "Mayor precio"
+    }
+  },
+  "empty": {
+    "title": "No se encontraron proveedores",
+    "body": "Prueba con otra búsqueda, categoría o fecha.",
+    "clear": "Borrar filtros"
+  },
+  "closing": {
+    "title": "¿Eres <gold>proveedor?</gold>",
+    "sub": "Haz que te descubran personas que organizan eventos como los tuyos. El plan Gratis incluye un anuncio.",
+    "cta": "Publica tu negocio — gratis"
+  }
+}

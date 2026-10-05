@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 /**
  * Visible-on-focus "skip to main content" link, mounted globally.
  * Keyboard users tab here first to jump past the nav. Off-screen until
@@ -9,12 +11,13 @@
  * cost when the target doesn't exist.
  */
 export function SkipLink() {
+  const { t } = useTranslation("shell");
   return (
     <a
       href="#main-content"
       className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-full focus:bg-foreground focus:text-background focus:font-medium focus:text-sm focus:outline-none focus:ring-2 focus:ring-accent"
     >
-      Skip to main content
+      {t("skip_link")}
     </a>
   );
 }
