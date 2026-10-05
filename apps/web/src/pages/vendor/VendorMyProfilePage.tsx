@@ -341,6 +341,7 @@ function HeaderCard({
   ratingAvg: number | null;
   onShare: () => void;
 }) {
+  const { t } = useTranslation("vendorHome");
   return (
     <BrandCardShell businessName={businessName} bio={bio}>
       <div className="flex flex-col sm:flex-row gap-5 items-start">
@@ -380,10 +381,10 @@ function HeaderCard({
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-2 max-w-xs">
             <Stat
-              label="Rating"
+              label={t("profile.rating")}
               value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
             />
-            <Stat label="Joined" value={memberSince} />
+            <Stat label={t("profile.joined")} value={memberSince} />
           </div>
         </div>
         <div className="shrink-0 flex flex-col gap-2">
@@ -394,12 +395,12 @@ function HeaderCard({
             onClick={onShare}
           >
             <Share2 className="h-3.5 w-3.5 mr-1" />
-            Share profile
+            {t("profile.share")}
           </Button>
           <Link to="/vendor/edit-profile">
             <Button variant="outline" className="rounded-full" size="sm">
               <Edit3 className="h-3.5 w-3.5 mr-1" />
-              Edit identity
+              {t("profile.editIdentity")}
             </Button>
           </Link>
         </div>
@@ -433,11 +434,12 @@ function ListingsList({
   onAddListing: () => void;
   onEditListing: (vendorId: string) => void;
 }) {
+  const { t } = useTranslation("vendorHome");
   if (listings.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
-        <p className="text-sm text-muted-foreground mb-3">No listing yet.</p>
-        <Button onClick={onAddListing}>Create your listing</Button>
+        <p className="text-sm text-muted-foreground mb-3">{t("profile.noListing")}</p>
+        <Button onClick={onAddListing}>{t("profile.createListing")}</Button>
       </div>
     );
   }

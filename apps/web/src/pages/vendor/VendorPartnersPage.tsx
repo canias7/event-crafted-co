@@ -1166,7 +1166,7 @@ function PartnerChatPane(props: {
     saveEdit,
     deleteMessage,
   } = props;
-  const { t } = useTranslation("vendorPartners");
+  const { t, i18n } = useTranslation("vendorPartners");
 
   const initial = (otherVendorName?.trim()?.charAt(0) ?? "V").toUpperCase();
 
