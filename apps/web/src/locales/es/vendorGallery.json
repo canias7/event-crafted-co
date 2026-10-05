@@ -1,0 +1,150 @@
+{
+  "header": {
+    "title": "Galería",
+    "subtitle": "Tu biblioteca multimedia. Sube una vez y reutiliza en todos tus anuncios.",
+    "storageUsedOf": "{{used}} de {{cap}} usados",
+    "storageUsed": "{{used}} usados",
+    "upgrade": "Mejorar plan"
+  },
+  "tabs": {
+    "all": "Todas",
+    "uncategorized": "Sin álbum",
+    "newAlbum": "Nuevo álbum",
+    "smart": "Inteligentes",
+    "last7": "Últimos 7 días",
+    "last30": "Últimos 30 días",
+    "portraits": "Verticales",
+    "landscapes": "Horizontales",
+    "large": "Grandes (>5 MB)",
+    "trash": "Papelera"
+  },
+  "toolbar": {
+    "searchPlaceholder": "Busca por pie de foto o nombre de archivo",
+    "sort": "Orden: {{label}}",
+    "sortShort": {
+      "newest": "Más recientes",
+      "oldest": "Más antiguas",
+      "name_asc": "A→Z",
+      "name_desc": "Z→A"
+    },
+    "sortOptions": {
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguas primero",
+      "name_asc": "Nombre A→Z",
+      "name_desc": "Nombre Z→A"
+    },
+    "shape": "Forma: {{label}}",
+    "shapes": {
+      "portrait": "Vertical",
+      "landscape": "Horizontal",
+      "square": "Cuadrada"
+    },
+    "anyShape": "Cualquier forma",
+    "format": "Formato: {{label}}",
+    "anyFormat": "Cualquier formato",
+    "any": "Cualquiera",
+    "dates": "Fechas: {{label}}",
+    "dateFrom": "desde {{date}}",
+    "dateTo": "hasta {{date}}",
+    "from": "Desde",
+    "to": "Hasta",
+    "clear": "Borrar",
+    "density": {
+      "compact": "Compacta",
+      "medium": "Mediana",
+      "large": "Grande"
+    },
+    "view": {
+      "grid": "Vista de cuadrícula",
+      "list": "Vista de lista",
+      "calendar": "Vista de calendario"
+    },
+    "cancel": "Cancelar",
+    "select": "Seleccionar",
+    "upload": "Subir"
+  },
+  "status": {
+    "loading": "Cargando…",
+    "trashEmpty": "La papelera está vacía",
+    "noMatches": "Sin resultados",
+    "imageCount_one": "{{count}} imagen",
+    "imageCount_other": "{{count}} imágenes",
+    "autoDelete": "Se eliminan automáticamente a los 30 días"
+  },
+  "album": {
+    "zipping": "Comprimiendo {{done}}/{{total}}",
+    "download": "Descargar álbum",
+    "rename": "Renombrar",
+    "delete": "Eliminar álbum"
+  },
+  "bulk": {
+    "selected_one": "{{count}} seleccionada",
+    "selected_other": "{{count}} seleccionadas",
+    "restore": "Restaurar",
+    "moveTo": "Mover a",
+    "downloadZip": "Descargar zip",
+    "deleteForever": "Eliminar para siempre",
+    "delete": "Eliminar"
+  },
+  "empty": {
+    "trashTitle": "La papelera está vacía",
+    "trashBody": "Las imágenes eliminadas se quedan aquí 30 días antes de borrarse para siempre.",
+    "noFilterMatches": "Ninguna imagen coincide con tus filtros",
+    "dropHere": "Suelta imágenes aquí o toca para subirlas",
+    "formats": "JPG, PNG, WebP. Hasta 20 MB cada una."
+  },
+  "tile": {
+    "imageAlt": "Imagen de la galería",
+    "albumCover": "Portada del álbum",
+    "select": "Seleccionar",
+    "deselect": "Quitar selección",
+    "deletePermanently": "Eliminar definitivamente",
+    "moveToTrash": "Mover a la papelera"
+  },
+  "list": {
+    "filename": "Nombre de archivo",
+    "album": "Álbum",
+    "uploaded": "Fecha de subida",
+    "size": "Tamaño"
+  },
+  "toasts": {
+    "imagesOnly": "Elige solo archivos de imagen.",
+    "tooBig": "\"{{name}}\" pesa más de 20 MB. Prueba con una versión más pequeña.",
+    "uploadPartial": "Subidas: {{uploaded}}. Con error: {{failed}}. Revisa la consola.",
+    "added_one": "Se agregó {{count}} imagen.",
+    "added_other": "Se agregaron {{count}} imágenes.",
+    "deleted": "Eliminada.",
+    "movedToTrashSingle": "Se movió a la papelera. Tienes 30 días para restaurarla.",
+    "permanentlyDeleted_one": "{{count}} imagen eliminada definitivamente.",
+    "permanentlyDeleted_other": "{{count}} imágenes eliminadas definitivamente.",
+    "movedToTrash_one": "{{count}} imagen movida a la papelera.",
+    "movedToTrash_other": "{{count}} imágenes movidas a la papelera.",
+    "restored_one": "{{count}} imagen restaurada.",
+    "restored_other": "{{count}} imágenes restauradas.",
+    "movedToAlbum_one": "{{count}} imagen movida al álbum.",
+    "movedToAlbum_other": "{{count}} imágenes movidas al álbum.",
+    "movedToUncategorized_one": "{{count}} imagen movida a Sin álbum.",
+    "movedToUncategorized_other": "{{count}} imágenes movidas a Sin álbum.",
+    "albumEmpty": "Este álbum no tiene imágenes.",
+    "albumZipCap": "El zip de un álbum admite hasta 50 imágenes (este tiene {{size}}). Usa Seleccionar + Descargar zip por partes.",
+    "downloaded_one": "Se descargó {{count}} imagen.",
+    "downloaded_other": "Se descargaron {{count}} imágenes.",
+    "zipFailed": "No se pudo crear el zip.",
+    "zipCap": "El zip admite hasta 50 imágenes por lote (seleccionaste {{size}}). Descárgalas en grupos más pequeños.",
+    "albumCreated": "Álbum creado.",
+    "renamed": "Álbum renombrado.",
+    "albumDeleted": "Álbum eliminado.",
+    "coverUpdated": "Portada actualizada.",
+    "reorderFailed": "No se pudo reordenar: {{message}}"
+  },
+  "confirm": {
+    "deleteOne": "¿Eliminar definitivamente? No se puede deshacer.",
+    "deleteMany_one": "¿Eliminar {{count}} imagen definitivamente? No se puede deshacer.",
+    "deleteMany_other": "¿Eliminar {{count}} imágenes definitivamente? No se puede deshacer.",
+    "deleteAlbum": "¿Eliminar el álbum \"{{name}}\"? Las imágenes se conservan: pasan a Sin álbum."
+  },
+  "prompt": {
+    "newAlbum": "Nombre del nuevo álbum",
+    "renameAlbum": "Cambiar el nombre del álbum"
+  }
+}

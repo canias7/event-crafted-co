@@ -102,7 +102,6 @@ export function BookingConfirmationCard({
       ? stamps.vendor_confirmed_booked_at !== null
       : stamps.host_confirmed_booked_at !== null;
 
-
   const state: "initial" | "waiting" | "pending" | "confirmed" = ownStamped
     ? otherStamped
       ? "confirmed"

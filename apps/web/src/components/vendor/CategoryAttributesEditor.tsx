@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, Plus, ListPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ import {
   type AttributeField,
   getCategorySchema,
 } from "@/data/categoryAttributes";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Vendor-side editor for the category-specific structured fields.
 // Loads the schema from src/data/categoryAttributes.ts based on the
@@ -24,6 +26,35 @@ import {
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type Attrs = Record<string, AttrValue>;
 
+// The schema's text in the vendor's language, keyed by the English
+// text: section names, field labels, suffixes and preset options from
+// the vendorProfileParts namespace (so the public listing shows the
+// same words), help text from this editor's own. The schema in
+// @vendora/core stays English: the mobile apps share it, and option
+// strings are the values saved to category_attributes. A vendor's
+// custom tag isn't in the lists and shows as typed.
+type SchemaText = Record<"section" | "label" | "suffix" | "option" | "help", (text: string) => string>;
+
+function useSchemaText(): SchemaText {
+  // `t` changes identity when the language changes, so the maps rebuild.
+  const { t } = useTranslation("vendorProfileParts");
+  const { t: tEditor } = useTranslation("listingEditor");
+  return useMemo(() => {
+    const lookup = (names: unknown) => (text: string) =>
+      names && typeof names === "object" && Object.prototype.hasOwnProperty.call(names, text)
+        ? String((names as Record<string, unknown>)[text])
+        : text;
+    const shared = (group: string) => lookup(t(`attributes.${group}`, { returnObjects: true }));
+    return {
+      section: shared("sections"),
+      label: shared("labels"),
+      suffix: shared("suffixes"),
+      option: shared("options"),
+      help: lookup(tEditor("attributes.help", { returnObjects: true })),
+    };
+  }, [t, tEditor]);
+}
+
 export function CategoryAttributesEditor({
   vendorId,
   category,
@@ -33,6 +64,8 @@ export function CategoryAttributesEditor({
   category: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("listingEditor");
+  const categoryNames = useCategoryNames();
   const schema = getCategorySchema(category);
   const [attrs, setAttrs] = useState<Attrs>({});
   const [loading, setLoading] = useState(true);
@@ -74,7 +107,7 @@ export function CategoryAttributesEditor({
       toast.error(error.message);
       return;
     }
-    toast.success(`${category} details saved`);
+    toast.success(t("attributes.saved", { category: categoryNames.sub(category) }));
   }
 
   function setField(key: string, value: AttrValue) {
@@ -93,7 +126,7 @@ export function CategoryAttributesEditor({
 
   if (!schema) return null;
   if (loading) {
-    return <p className="text-xs text-muted-foreground py-3">Loading…</p>;
+    return <p className="text-xs text-muted-foreground py-3">{t("common.loading")}</p>;
   }
 
   return (
@@ -101,12 +134,10 @@ export function CategoryAttributesEditor({
       <div className="mb-6">
         <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
           <ListPlus className="w-3 h-3" />
-          {category} details
+          {t("attributes.details", { category: categoryNames.sub(category) })}
         </p>
         <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-          Tell hosts what your space and offering includes — these
-          surface on your public listing and let hosts filter the
-          directory by what matters.
+          {t("attributes.intro")}
         </p>
       </div>
 
@@ -123,13 +154,13 @@ export function CategoryAttributesEditor({
               disabled={saving}
             >
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save details
+              {t("attributes.save")}
             </Button>
           </div>
         </form>
       ) : (
         <div className="text-xs text-muted-foreground italic py-3">
-          Read-only — only the vendor owner can edit these.
+          {t("attributes.readOnly")}
         </div>
       )}
     </div>
@@ -151,6 +182,7 @@ export function CategoryAttributesFields({
   attrs: Attrs;
   onChange: (next: Attrs) => void;
 }) {
+  const tx = useSchemaText();
   const schema = getCategorySchema(category);
   if (!schema) return null;
 
@@ -181,11 +213,12 @@ export function CategoryAttributesFields({
               : "space-y-5 pt-8 border-t border-border"
           }
         >
-          <legend className="font-display text-base">{section.name}</legend>
+          <legend className="font-display text-base">{tx.section(section.name)}</legend>
           <div className="space-y-6">
             {section.fields.map((field) => (
               <FieldEditor
                 key={field.key}
+                tx={tx}
                 field={field}
                 value={attrs[field.key]}
                 onChange={(v) => setField(field.key, v)}
@@ -200,22 +233,28 @@ export function CategoryAttributesFields({
 }
 
 function FieldEditor({
+  tx,
   field,
   value,
   onChange,
   onToggleTag,
 }: {
+  tx: SchemaText;
   field: AttributeField;
   value: AttrValue;
   onChange: (v: AttrValue) => void;
   onToggleTag: (option: string) => void;
 }) {
+  const { t } = useTranslation("listingEditor");
+  const label = tx.label(field.label);
+  const help = field.help ? tx.help(field.help) : undefined;
+
   if (field.type === "currency") {
     const dollars = typeof value === "number" ? Math.round(value / 100) : "";
     return (
       <div className="space-y-2 max-w-sm">
         <Label htmlFor={`f-${field.key}`} className="text-sm font-medium">
-          {field.label}
+          {label}
         </Label>
         <Input
           id={`f-${field.key}`}
@@ -230,8 +269,8 @@ function FieldEditor({
           placeholder="$"
           className="h-10"
         />
-        {field.help && (
-          <p className="text-xs text-muted-foreground">{field.help}</p>
+        {help && (
+          <p className="text-xs text-muted-foreground">{help}</p>
         )}
       </div>
     );
@@ -241,7 +280,7 @@ function FieldEditor({
     return (
       <div className="space-y-2 max-w-sm">
         <Label htmlFor={`f-${field.key}`} className="text-sm font-medium">
-          {field.label}
+          {label}
         </Label>
         <div className="flex items-center gap-2">
           <Input
@@ -260,12 +299,12 @@ function FieldEditor({
           />
           {field.suffix && (
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {field.suffix}
+              {tx.suffix(field.suffix)}
             </span>
           )}
         </div>
-        {field.help && (
-          <p className="text-xs text-muted-foreground">{field.help}</p>
+        {help && (
+          <p className="text-xs text-muted-foreground">{help}</p>
         )}
       </div>
     );
@@ -276,11 +315,11 @@ function FieldEditor({
       <div className="flex items-center justify-between gap-4 py-1">
         <div className="min-w-0">
           <Label className="text-sm font-medium cursor-pointer">
-            {field.label}
+            {label}
           </Label>
-          {field.help && (
+          {help && (
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              {field.help}
+              {help}
             </p>
           )}
         </div>
@@ -303,10 +342,10 @@ function FieldEditor({
     return (
       <div className="space-y-3">
         <div>
-          <Label className="text-sm font-medium">{field.label}</Label>
-          {field.help && (
+          <Label className="text-sm font-medium">{label}</Label>
+          {help && (
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              {field.help}
+              {help}
             </p>
           )}
         </div>
@@ -336,7 +375,7 @@ function FieldEditor({
                 aria-pressed={active}
               >
                 {active && <Check className="w-3 h-3" />}
-                {opt}
+                {tx.option(opt)}
               </button>
             );
           })}
@@ -351,7 +390,7 @@ function FieldEditor({
                 color: "#14161a",
                 border: "0.5px solid rgba(0,0,0,0.45)",
               }}
-              title="Custom entry — click to remove"
+              title={t("attributes.customEntry")}
             >
               <Check className="w-3 h-3" />
               {opt}
@@ -374,7 +413,7 @@ function FieldEditor({
     return (
       <div className="space-y-2 max-w-sm">
         <Label htmlFor={`f-${field.key}`} className="text-sm font-medium">
-          {field.label}
+          {label}
         </Label>
         <select
           id={`f-${field.key}`}
@@ -385,12 +424,12 @@ function FieldEditor({
           <option value="">—</option>
           {field.options.map((opt) => (
             <option key={opt} value={opt}>
-              {opt}
+              {tx.option(opt)}
             </option>
           ))}
         </select>
-        {field.help && (
-          <p className="text-xs text-muted-foreground">{field.help}</p>
+        {help && (
+          <p className="text-xs text-muted-foreground">{help}</p>
         )}
       </div>
     );
@@ -404,6 +443,7 @@ function FieldEditor({
 // the same flex row as the preset chips so it reads as part of the
 // pill cluster, not a separate form row.
 function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
+  const { t } = useTranslation("listingEditor");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -434,10 +474,10 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
           color: "rgba(26,22,18,0.55)",
           border: "0.5px dashed rgba(0,0,0,0.4)",
         }}
-        aria-label="Add a custom option"
+        aria-label={t("attributes.addCustomAria")}
       >
         <Plus className="w-3 h-3" />
-        Add other
+        {t("attributes.addOther")}
       </button>
     );
   }
@@ -460,7 +500,7 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
         onBlur={() => {
           if (!draft.trim()) setEditing(false);
         }}
-        placeholder="Type and press Enter"
+        placeholder={t("attributes.customPlaceholder")}
         className="text-xs bg-transparent outline-none border-0 w-40 placeholder:text-placeholder"
       />
       <button
@@ -469,7 +509,7 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
         onClick={commit}
         disabled={!draft.trim()}
         className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
-        aria-label="Add"
+        aria-label={t("attributes.add")}
       >
         <Check className="w-3 h-3" />
       </button>

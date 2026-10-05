@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
   ExternalLink,
@@ -9,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import i18n from "@/i18n";
 
 // Account-level VendoraPay (Stripe Express) connection — bank/payout +
 // KYC. Self-contained: fetches its own account status and runs the
@@ -69,7 +71,7 @@ function StatusDot({
 }
 
 async function fnError(error: { message?: string; context?: Response } | null): Promise<string> {
-  let detail = "Try again in a moment.";
+  let detail = i18n.t("pay.try_again", { ns: "vendorPayments" });
   const ctx = error?.context;
   if (ctx && typeof ctx.json === "function") {
     try {
@@ -85,6 +87,7 @@ async function fnError(error: { message?: string; context?: Response } | null): 
 }
 
 export function VendoraPayConnection() {
+  const { t } = useTranslation("vendorPayments");
   const [status, setStatus] = useState<PayStatus | null>(null);
   // Gate rendering on the first status load — otherwise the "Connect
   // VendoraPay" CTA flashes (status starts null → !onboarded → shows,
@@ -120,7 +123,7 @@ export function VendoraPayConnection() {
       body: {},
     });
     if (error || !(data as { url?: string })?.url) {
-      toast.error("Couldn't open VendoraPay onboarding", {
+      toast.error(t("pay.onboarding_failed"), {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         description: await fnError(error as any),
       });
@@ -128,7 +131,7 @@ export function VendoraPayConnection() {
       return;
     }
     window.location.href = (data as { url: string }).url;
-  }, [connecting]);
+  }, [connecting, t]);
 
   const openDashboard = useCallback(async () => {
     if (opening) return;
@@ -139,14 +142,14 @@ export function VendoraPayConnection() {
     );
     setOpening(false);
     if (error || !(data as { url?: string })?.url) {
-      toast.error("Couldn't open Stripe Express", {
+      toast.error(t("pay.express_failed"), {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         description: await fnError(error as any),
       });
       return;
     }
     window.open((data as { url: string }).url, "_blank", "noopener,noreferrer");
-  }, [opening]);
+  }, [opening, t]);
 
   return (
     <section>
@@ -177,16 +180,14 @@ export function VendoraPayConnection() {
               <Landmark className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold">Connect VendoraPay</h3>
+              <h3 className="text-sm font-semibold">{t("pay.connect_title")}</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md leading-relaxed">
-                Set up payments to send invoices, accept cards, and get paid out
-                to your bank. Verify your identity + bank (about 3 minutes) —
-                we'll bring you right back here.
+                {t("pay.connect_body")}
               </p>
             </div>
             <Button onClick={handleConnect} disabled={connecting} className="rounded-full">
               {connecting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-              Connect VendoraPay
+              {t("pay.connect_button")}
             </Button>
           </div>
         ) : null}
@@ -206,18 +207,18 @@ export function VendoraPayConnection() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="text-[15px] font-semibold leading-tight">Payout method</h3>
+                <h3 className="text-[15px] font-semibold leading-tight">{t("pay.payout_method")}</h3>
                 {status?.bank?.last4 || status?.payouts_enabled ? (
-                  <StatusDot tone="good" label="Connected" />
+                  <StatusDot tone="good" label={t("pay.status.connected")} />
                 ) : status?.onboarded ? (
-                  <StatusDot tone="warn" label="Pending" />
+                  <StatusDot tone="warn" label={t("pay.status.pending")} />
                 ) : (
-                  <StatusDot tone="warn" label="Action required" />
+                  <StatusDot tone="warn" label={t("pay.status.action_required")} />
                 )}
               </div>
               {status?.bank?.last4 ? (
                 <p className="text-sm text-foreground mt-1.5">
-                  {status.bank.bank_name ?? "Bank"} ····{status.bank.last4}
+                  {status.bank.bank_name ?? t("pay.bank")} ····{status.bank.last4}
                   {status.bank.currency ? (
                     <span className="text-xs text-muted-foreground ml-2 uppercase">
                       {status.bank.currency}
@@ -227,28 +228,28 @@ export function VendoraPayConnection() {
               ) : (
                 <p className="text-sm text-muted-foreground mt-1.5 max-w-md leading-relaxed">
                   {status?.payouts_enabled
-                    ? "Your bank is connected. Manage it in the VendoraPay Express dashboard."
+                    ? t("pay.bank_connected")
                     : status?.onboarded
-                      ? "Add your bank account in the VendoraPay Express dashboard to receive payouts."
-                      : "Link a verified bank account to start receiving automated payouts."}
+                      ? t("pay.add_bank_in_dashboard")
+                      : t("pay.link_bank")}
                 </p>
               )}
               <p
                 className="text-[12px] text-muted-foreground mt-3 pl-3"
                 style={{ borderLeft: "2px solid rgba(0,0,0,0.25)" }}
               >
-                Funds settle T+2 business days after each successful charge.
+                {t("pay.settle_note")}
               </p>
             </div>
             {status?.onboarded ? (
               <Button variant="outline" size="sm" onClick={openDashboard} disabled={opening} className="rounded-full">
                 {opening ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5 mr-1" />}
-                {status?.bank?.last4 ? "Manage bank" : "Add bank"}
+                {status?.bank?.last4 ? t("pay.manage_bank") : t("pay.add_bank")}
               </Button>
             ) : (
               <Button onClick={handleConnect} disabled={connecting} size="sm" className="rounded-full">
                 {connecting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                Connect account
+                {t("pay.connect_account")}
                 <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             )}
@@ -270,35 +271,34 @@ export function VendoraPayConnection() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="text-[15px] font-semibold leading-tight">Business verification</h3>
+                <h3 className="text-[15px] font-semibold leading-tight">{t("pay.verification_title")}</h3>
                 {status?.charges_enabled ? (
-                  <StatusDot tone="good" label="Verified" />
+                  <StatusDot tone="good" label={t("pay.status.verified")} />
                 ) : status?.details_submitted ? (
-                  <StatusDot tone="info" label="In review" />
+                  <StatusDot tone="info" label={t("pay.status.in_review")} />
                 ) : (
-                  <StatusDot tone="bad" label="Incomplete" />
+                  <StatusDot tone="bad" label={t("pay.status.incomplete")} />
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-1.5 max-w-md leading-relaxed">
-                Submit legal entity details and tax ID (EIN or SSN) to satisfy
-                KYC and enable 1099-K reporting.
+                {t("pay.verification_body")}
               </p>
               <p
                 className="text-[12px] text-muted-foreground mt-3 pl-3"
                 style={{ borderLeft: "2px solid rgba(0,0,0,0.25)" }}
               >
-                Required by federal regulation before your first payout.
+                {t("pay.verification_note")}
               </p>
             </div>
             {status?.onboarded ? (
               <Button variant="outline" size="sm" onClick={openDashboard} disabled={opening} className="rounded-full">
                 {opening ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5 mr-1" />}
-                Update info
+                {t("pay.update_info")}
               </Button>
             ) : (
               <Button onClick={handleConnect} disabled={connecting} size="sm" className="rounded-full">
                 {connecting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                Start verification
+                {t("pay.start_verification")}
                 <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             )}

@@ -1,0 +1,150 @@
+{
+  "header": {
+    "title": "Gallery",
+    "subtitle": "Your media library. Upload once, reuse across listings.",
+    "storageUsedOf": "{{used}} of {{cap}} used",
+    "storageUsed": "{{used}} used",
+    "upgrade": "Upgrade"
+  },
+  "tabs": {
+    "all": "All",
+    "uncategorized": "Uncategorized",
+    "newAlbum": "New album",
+    "smart": "Smart",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "portraits": "Portraits",
+    "landscapes": "Landscapes",
+    "large": "Large (>5 MB)",
+    "trash": "Trash"
+  },
+  "toolbar": {
+    "searchPlaceholder": "Search caption or filename",
+    "sort": "Sort: {{label}}",
+    "sortShort": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "name_asc": "A→Z",
+      "name_desc": "Z→A"
+    },
+    "sortOptions": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "name_asc": "Name A→Z",
+      "name_desc": "Name Z→A"
+    },
+    "shape": "Shape: {{label}}",
+    "shapes": {
+      "portrait": "Portrait",
+      "landscape": "Landscape",
+      "square": "Square"
+    },
+    "anyShape": "Any shape",
+    "format": "Format: {{label}}",
+    "anyFormat": "Any format",
+    "any": "Any",
+    "dates": "Dates: {{label}}",
+    "dateFrom": "from {{date}}",
+    "dateTo": "to {{date}}",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "density": {
+      "compact": "Compact",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "view": {
+      "grid": "Grid view",
+      "list": "List view",
+      "calendar": "Calendar view"
+    },
+    "cancel": "Cancel",
+    "select": "Select",
+    "upload": "Upload"
+  },
+  "status": {
+    "loading": "Loading…",
+    "trashEmpty": "Trash is empty",
+    "noMatches": "No matches",
+    "imageCount_one": "{{count}} image",
+    "imageCount_other": "{{count}} images",
+    "autoDelete": "Items auto-delete after 30 days"
+  },
+  "album": {
+    "zipping": "Zipping {{done}}/{{total}}",
+    "download": "Download album",
+    "rename": "Rename",
+    "delete": "Delete album"
+  },
+  "bulk": {
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "restore": "Restore",
+    "moveTo": "Move to",
+    "downloadZip": "Download zip",
+    "deleteForever": "Delete forever",
+    "delete": "Delete"
+  },
+  "empty": {
+    "trashTitle": "Trash is empty",
+    "trashBody": "Deleted images appear here for 30 days before they're purged.",
+    "noFilterMatches": "No images match your filters",
+    "dropHere": "Drop images here or tap to upload",
+    "formats": "JPG, PNG, WebP. Up to 20 MB each."
+  },
+  "tile": {
+    "imageAlt": "Gallery image",
+    "albumCover": "Album cover",
+    "select": "Select",
+    "deselect": "Deselect",
+    "deletePermanently": "Delete permanently",
+    "moveToTrash": "Move to trash"
+  },
+  "list": {
+    "filename": "Filename",
+    "album": "Album",
+    "uploaded": "Uploaded",
+    "size": "Size"
+  },
+  "toasts": {
+    "imagesOnly": "Pick image files only.",
+    "tooBig": "\"{{name}}\" is over 20 MB. Try a smaller version.",
+    "uploadPartial": "{{uploaded}} uploaded, {{failed}} failed. Check console.",
+    "added_one": "{{count}} image added.",
+    "added_other": "{{count}} images added.",
+    "deleted": "Deleted.",
+    "movedToTrashSingle": "Moved to Trash. 30 days to restore.",
+    "permanentlyDeleted_one": "{{count}} permanently deleted.",
+    "permanentlyDeleted_other": "{{count}} permanently deleted.",
+    "movedToTrash_one": "{{count}} moved to Trash.",
+    "movedToTrash_other": "{{count}} moved to Trash.",
+    "restored_one": "{{count}} restored.",
+    "restored_other": "{{count}} restored.",
+    "movedToAlbum_one": "{{count}} moved to album.",
+    "movedToAlbum_other": "{{count}} moved to album.",
+    "movedToUncategorized_one": "{{count}} moved to Uncategorized.",
+    "movedToUncategorized_other": "{{count}} moved to Uncategorized.",
+    "albumEmpty": "This album has no images.",
+    "albumZipCap": "Album zip is capped at 50 images (album has {{size}}). Use Select + Download zip in batches.",
+    "downloaded_one": "Downloaded {{count}} images.",
+    "downloaded_other": "Downloaded {{count}} images.",
+    "zipFailed": "Couldn't build zip.",
+    "zipCap": "Zip is capped at 50 images per batch (selected {{size}}). Download in smaller groups.",
+    "albumCreated": "Album created.",
+    "renamed": "Renamed.",
+    "albumDeleted": "Album deleted.",
+    "coverUpdated": "Cover updated.",
+    "reorderFailed": "Reorder failed: {{message}}"
+  },
+  "confirm": {
+    "deleteOne": "Delete permanently? Can't be undone.",
+    "deleteMany_one": "Delete {{count}} permanently? Can't be undone.",
+    "deleteMany_other": "Delete {{count}} permanently? Can't be undone.",
+    "deleteAlbum": "Delete album \"{{name}}\"? The images stay — they move to Uncategorized."
+  },
+  "prompt": {
+    "newAlbum": "New album name",
+    "renameAlbum": "Rename album"
+  }
+}

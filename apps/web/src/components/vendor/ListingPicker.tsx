@@ -6,6 +6,7 @@
 // listing would surface a calendar / leads view that doesn't have
 // any meaningful data yet.
 
+import { useTranslation } from "react-i18next";
 import { Check, ChevronDown } from "lucide-react";
 import {
   Popover,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 export interface ListingOpt {
   id: string;
@@ -38,12 +40,13 @@ export interface ListingOpt {
   default_tax_pct?: number | null;
 }
 
+// `status` names the label in listingEditor's listingPicker.status.
 function statusBadge(s: ListingOpt["application_status"]) {
   if (s === "approved")
-    return { label: "Live", bg: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" };
+    return { status: "live", bg: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" };
   if (s === "rejected")
-    return { label: "Rejected", bg: "hsl(var(--destructive) / 0.1)", color: "hsl(var(--destructive))" };
-  return { label: "Pending", bg: "hsl(var(--pending))", color: "hsl(var(--accent))" };
+    return { status: "rejected", bg: "hsl(var(--destructive) / 0.1)", color: "hsl(var(--destructive))" };
+  return { status: "pending", bg: "hsl(var(--pending))", color: "hsl(var(--accent))" };
 }
 
 export function ListingPicker({
@@ -61,13 +64,18 @@ export function ListingPicker({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const { t } = useTranslation("listingEditor");
+  const categoryNames = useCategoryNames();
+  // Category names as shown; the stored English one stays on the row.
+  const categoryLabel = (category: string | null) =>
+    category ? categoryNames.sub(category) : category;
   const selected = listings.find((l) => l.id === selectedId) ?? null;
   const selLabel =
     selected?.business_name?.trim() ||
-    selected?.category?.toString() ||
-    "Pick a listing";
+    categoryLabel(selected?.category ?? null) ||
+    t("listingPicker.pick");
   const selSub = selected
-    ? [selected.category, selected.location].filter(Boolean).join(" · ")
+    ? [categoryLabel(selected.category), selected.location].filter(Boolean).join(" · ")
     : null;
   const selBadge = selected ? statusBadge(selected.application_status) : null;
 
@@ -78,7 +86,7 @@ export function ListingPicker({
   return (
     <div>
       <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-2">
-        Listing
+        {t("listingPicker.label")}
       </p>
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
@@ -123,7 +131,7 @@ export function ListingPicker({
                   className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5 shrink-0"
                   style={{ background: selBadge.bg, color: selBadge.color }}
                 >
-                  {selBadge.label}
+                  {t(`listingPicker.status.${selBadge.status}`)}
                 </span>
               ) : null}
             </span>
@@ -140,14 +148,16 @@ export function ListingPicker({
           align="start"
         >
           <Command>
-            <CommandInput placeholder="Search your listings…" className="h-11" />
+            <CommandInput placeholder={t("listingPicker.search")} className="h-11" />
             <CommandList>
-              <CommandEmpty>No matching listings.</CommandEmpty>
+              <CommandEmpty>{t("listingPicker.empty")}</CommandEmpty>
               <CommandGroup>
                 {listings.map((l) => {
                   const label =
-                    l.business_name?.trim() || l.category || "Untitled listing";
-                  const sub = [l.category, l.location]
+                    l.business_name?.trim() ||
+                    categoryLabel(l.category) ||
+                    t("listingPicker.untitled");
+                  const sub = [categoryLabel(l.category), l.location]
                     .filter(Boolean)
                     .join(" · ");
                   const badge = statusBadge(l.application_status);
@@ -185,7 +195,7 @@ export function ListingPicker({
                         className="text-[10px] uppercase tracking-wider font-medium rounded-full px-2 py-0.5 shrink-0 ml-2"
                         style={{ background: badge.bg, color: badge.color }}
                       >
-                        {badge.label}
+                        {t(`listingPicker.status.${badge.status}`)}
                       </span>
                     </CommandItem>
                   );

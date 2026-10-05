@@ -1,0 +1,38 @@
+{
+  "sidebarTitle": "Vendor Portal",
+  "title": "Meet the Team",
+  "subtitle": "Introduce the people behind your business — optional, and always in your control.",
+  "loading": "Loading…",
+  "showTeam": "Show the team on my public profile",
+  "showTeamHint": "When off, nothing is shown publicly — your entries stay saved.",
+  "hidden": " · hidden",
+  "moveUp": "Move up",
+  "moveDown": "Move down",
+  "remove": "Remove",
+  "add": "Add team member",
+  "form": {
+    "editTitle": "Edit member ✦",
+    "newTitle": "New member ✦",
+    "fullName": "Full name *",
+    "role": "Role — e.g., Lead planner *",
+    "bio": "Short bio (up to 300 characters) *",
+    "specialty": "Specialty",
+    "years": "Years with the business",
+    "funFact": "Fun fact",
+    "link": "Link (portfolio, Instagram…)",
+    "replacePhoto": "Replace photo",
+    "addPhoto": "Add photo",
+    "visible": "Visible on my profile",
+    "saving": "Saving…",
+    "save": "Save member",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "live": "Your team section is live.",
+    "hidden": "Team section hidden.",
+    "required": "Name, role, and a short bio are required.",
+    "updated": "Member updated.",
+    "added": "Member added.",
+    "saveFailed": "Couldn't save."
+  }
+}

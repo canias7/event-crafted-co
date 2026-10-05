@@ -452,20 +452,22 @@ function ListingsList({
           enforced server-side (trg_enforce_listing_cap). */}
       <div className="flex items-center justify-between gap-3 mb-3">
         <p className="text-xs text-muted-foreground tnum">
-          {listings.length}
-          {listingCap !== null ? ` of ${listingCap}` : ""} listing
-          {listingCap === 1 && listings.length === 1 ? "" : "s"}
+          {listingCap === null
+            ? t("profile.count", { count: listings.length })
+            : listingCap === 1 && listings.length === 1
+              ? t("profile.countOfCapOne", { n: listings.length, cap: listingCap })
+              : t("profile.countOfCap", { n: listings.length, cap: listingCap })}
         </p>
         {underCap ? (
           <Button size="sm" variant="outline" onClick={onAddListing}>
-            New listing
+            {t("profile.newListing")}
           </Button>
         ) : (
           <Link
             to="/vendor/subscription"
             className="text-xs font-medium underline underline-offset-2 text-foreground"
           >
-            Upgrade for more listings
+            {t("profile.upgrade")}
           </Link>
         )}
       </div>
@@ -502,18 +504,22 @@ function ListingDirectoryCard({
   heroUrl: string | null;
   onEdit: (vendorId: string) => void;
 }) {
+  const { t } = useTranslation("vendorHome");
+  const priceLabels = usePriceLabels();
+  const categoryNames = useCategoryNames();
   const [previewOpen, setPreviewOpen] = useState(false);
-  const name = listing.business_name ?? "Listing";
+  const name = listing.business_name ?? t("profile.listing");
   const price =
-    formatListingPrice(listing.price_min_cents, listing.price_max_cents) || null;
+    priceLabels.listingPrice(listing.price_min_cents, listing.price_max_cents) || null;
+  const pricingModels = priceLabels.pricingModels(listing.pricing_models);
   const statusLabel =
     listing.application_status === "approved"
-      ? "Live"
+      ? t("profile.status.live")
       : listing.application_status === "pending"
-        ? "Pending review"
+        ? t("profile.status.pending")
         : listing.application_status === "rejected"
-          ? "Rejected"
-          : "Draft";
+          ? t("profile.status.rejected")
+          : t("profile.status.draft");
   const statusTone =
     listing.application_status === "approved"
       ? "bg-primary text-primary-foreground border-transparent"
@@ -528,7 +534,7 @@ function ListingDirectoryCard({
         type="button"
         onClick={() => setPreviewOpen(true)}
         className="block group text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-sm"
-        aria-label={`Preview ${name}`}
+        aria-label={t("profile.previewAria", { name })}
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
           {heroUrl ? (
@@ -540,7 +546,7 @@ function ListingDirectoryCard({
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
-              <span className="text-xs">No listing photos yet</span>
+              <span className="text-xs">{t("profile.noPhotos")}</span>
             </div>
           )}
           <span
@@ -552,14 +558,16 @@ function ListingDirectoryCard({
         <div className="px-1">
           <p className="text-sm font-medium leading-tight line-clamp-1">{name}</p>
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-            {[listing.category, listing.location].filter(Boolean).join(" · ")}
+            {[listing.category ? categoryNames.sub(listing.category) : null, listing.location]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           {price ? (
             <p className="text-xs text-foreground mt-0.5 tnum">{price}</p>
           ) : null}
-          {pricingModelsLabel(listing.pricing_models) && (
+          {pricingModels && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-              {pricingModelsLabel(listing.pricing_models)}
+              {pricingModels}
             </p>
           )}
         </div>
@@ -609,7 +617,9 @@ function ListingPreviewModal({
   price: string | null;
   onEdit: () => void;
 }) {
-  const name = listing.business_name ?? "Listing";
+  const { t } = useTranslation("vendorHome");
+  const categoryNames = useCategoryNames();
+  const name = listing.business_name ?? t("profile.listing");
   const isApproved = listing.application_status === "approved";
   // The iframe cold-boots the whole app, so it's blank for a beat before
   // React mounts. Show a loader over it until onLoad fires.
@@ -635,7 +645,7 @@ function ListingPreviewModal({
             {listing.verified_at ? (
               <CheckCircle2
                 className="w-4 h-4 text-accent shrink-0"
-                aria-label="Verified"
+                aria-label={t("profile.verified")}
               />
             ) : null}
           </div>
@@ -649,12 +659,12 @@ function ListingPreviewModal({
             }}
           >
             <Edit3 className="h-3.5 w-3.5 mr-1" />
-            Edit listing
+            {t("profile.editListing")}
           </Button>
         </div>
 
         <DialogDescription className="sr-only">
-          Preview of how this listing appears to visitors.
+          {t("profile.previewDescription")}
         </DialogDescription>
 
         {/* Body: live public page for approved listings; fallback
@@ -664,12 +674,12 @@ function ListingPreviewModal({
             {!iframeLoaded && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading preview…</p>
+                <p className="text-sm text-muted-foreground">{t("profile.loadingPreview")}</p>
               </div>
             )}
             <iframe
               src={iframeHref}
-              title={`Preview of ${name}`}
+              title={t("profile.previewTitle", { name })}
               onLoad={() => setIframeLoaded(true)}
               className="w-full h-full border-0 bg-background"
               // Same-origin so the public page can use its normal
@@ -688,19 +698,19 @@ function ListingPreviewModal({
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                  No listing photos yet
+                  {t("profile.noPhotos")}
                 </div>
               )}
             </div>
             <div className="px-6 pt-5 pb-6 max-w-3xl mx-auto">
               <p className="font-label text-muted-foreground text-xs mb-1">
-                Preview (not yet published)
+                {t("profile.unpublished")}
               </p>
               <h2 className="font-editorial text-3xl break-words">{name}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {[listing.category, listing.location]
+                {[listing.category ? categoryNames.sub(listing.category) : null, listing.location]
                   .filter(Boolean)
-                  .join(" · ") || "Category and location not set"}
+                  .join(" · ") || t("profile.noCategoryLocation")}
               </p>
               {price ? (
                 <p className="mt-3 text-sm font-medium tnum">{price}</p>
@@ -711,13 +721,11 @@ function ListingPreviewModal({
                 </p>
               ) : (
                 <p className="mt-4 text-sm text-muted-foreground italic">
-                  No description yet — add one in Edit profile so visitors
-                  know what you offer.
+                  {t("profile.noBio")}
                 </p>
               )}
               <p className="mt-6 text-xs text-muted-foreground">
-                The full public layout will appear here once this listing
-                is approved.
+                {t("profile.approvalNote")}
               </p>
             </div>
           </div>

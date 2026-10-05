@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2, Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,37 +19,33 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
 
-const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// Day names, option labels and default message texts live in
+// vendorScheduling.json; `key` points at the label.
 const DURATIONS = [15, 30, 45, 60, 90, 120];
 const BUFFERS = [
-  { label: "None", v: 0 },
-  { label: "30 min", v: 30 },
-  { label: "1 hour", v: 60 },
-  { label: "2 hours", v: 120 },
-  { label: "1 day", v: 1440 },
+  { key: "none", v: 0 },
+  { key: "m30", v: 30 },
+  { key: "h1", v: 60 },
+  { key: "h2", v: 120 },
+  { key: "d1", v: 1440 },
 ];
 const NOTICES = [
-  { label: "None", v: 0 },
-  { label: "24 hours", v: 24 },
-  { label: "48 hours", v: 48 },
-  { label: "1 week", v: 168 },
+  { key: "none", v: 0 },
+  { key: "h24", v: 24 },
+  { key: "h48", v: 48 },
+  { key: "w1", v: 168 },
 ];
-const MAX_PER_DAY: { label: string; v: number | null }[] = [
-  { label: "No limit", v: null },
-  { label: "1", v: 1 },
-  { label: "2", v: 2 },
-  { label: "3", v: 3 },
-  { label: "5", v: 5 },
-];
+// null = no limit.
+const MAX_PER_DAY: (number | null)[] = [null, 1, 2, 3, 5];
 const TIME_OPTIONS: string[] = [];
 for (let h = 6; h <= 22; h++) {
   TIME_OPTIONS.push(`${String(h).padStart(2, "0")}:00`);
   if (h < 22) TIME_OPTIONS.push(`${String(h).padStart(2, "0")}:30`);
 }
 
-function timeLabel(hhmm: string): string {
+function timeLabel(hhmm: string, am: string, pm: string): string {
   const [h, m] = hhmm.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
+  const ampm = h >= 12 ? pm : am;
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
@@ -82,19 +79,13 @@ interface PromoSuggestion {
   status: string;
 }
 
-const DEFAULT_TEXTS = {
-  auto_reply:
-    "Thanks so much for reaching out! We got your inquiry and will reply personally within a few hours.",
-  confirm: "You're booked! We're looking forward to it — details below.",
-  reminder: "Friendly reminder about our upcoming appointment!",
-  followup: "Just following up — any questions I can answer?",
-  review:
-    "It was a pleasure being part of your event! If you have a minute, we'd love a review — it helps other hosts find us.",
-};
-
 const PRO_TYPE_CAP = 5;
 
 export default function VendorSchedulingPage() {
+  const { t, i18n } = useTranslation("vendorScheduling");
+  // Spanish dates use US-Spanish formats; English keeps the browser default.
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
+  const dayLabels = t("days", { returnObjects: true }) as string[];
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
 
@@ -108,19 +99,26 @@ export default function VendorSchedulingPage() {
   const [notice, setNotice] = useState(0);
   const [maxPerDay, setMaxPerDay] = useState<number | null>(null);
 
+  // Message texts: null means "not set yet", so the box shows (and Save
+  // stores) the default wording, in the vendor's language.
   const [autoReplyOn, setAutoReplyOn] = useState(false);
-  const [autoReplyText, setAutoReplyText] = useState(DEFAULT_TEXTS.auto_reply);
+  const [autoReplyText, setAutoReplyText] = useState<string | null>(null);
   const [confirmOn, setConfirmOn] = useState(false);
-  const [confirmText, setConfirmText] = useState(DEFAULT_TEXTS.confirm);
+  const [confirmText, setConfirmText] = useState<string | null>(null);
   const [reminderOn, setReminderOn] = useState(false);
   const [reminderHours, setReminderHours] = useState(24);
-  const [reminderText, setReminderText] = useState(DEFAULT_TEXTS.reminder);
+  const [reminderText, setReminderText] = useState<string | null>(null);
   const [followupOn, setFollowupOn] = useState(false);
   const [followupDays, setFollowupDays] = useState(3);
-  const [followupText, setFollowupText] = useState(DEFAULT_TEXTS.followup);
+  const [followupText, setFollowupText] = useState<string | null>(null);
   const [reviewOn, setReviewOn] = useState(false);
   const [reviewDays, setReviewDays] = useState(7);
-  const [reviewText, setReviewText] = useState(DEFAULT_TEXTS.review);
+  const [reviewText, setReviewText] = useState<string | null>(null);
+  const autoReplyValue = autoReplyText ?? t("defaults.autoReply");
+  const confirmValue = confirmText ?? t("defaults.confirm");
+  const reminderValue = reminderText ?? t("defaults.reminder");
+  const followupValue = followupText ?? t("defaults.followup");
+  const reviewValue = reviewText ?? t("defaults.review");
   const [altDatesOn, setAltDatesOn] = useState(false);
   const [fillOn, setFillOn] = useState(false);
 
@@ -170,18 +168,18 @@ export default function VendorSchedulingPage() {
       setNotice(s.min_notice_hours ?? 0);
       setMaxPerDay(s.max_per_day ?? null);
       setAutoReplyOn(!!s.auto_reply_enabled);
-      setAutoReplyText(s.auto_reply_text ?? DEFAULT_TEXTS.auto_reply);
+      setAutoReplyText(s.auto_reply_text ?? null);
       setConfirmOn(!!s.confirm_enabled);
-      setConfirmText(s.confirm_text ?? DEFAULT_TEXTS.confirm);
+      setConfirmText(s.confirm_text ?? null);
       setReminderOn(!!s.reminder_enabled);
       setReminderHours(s.reminder_hours_before ?? 24);
-      setReminderText(s.reminder_text ?? DEFAULT_TEXTS.reminder);
+      setReminderText(s.reminder_text ?? null);
       setFollowupOn(!!s.followup_enabled);
       setFollowupDays(s.followup_days_after ?? 3);
-      setFollowupText(s.followup_text ?? DEFAULT_TEXTS.followup);
+      setFollowupText(s.followup_text ?? null);
       setReviewOn(!!s.review_enabled);
       setReviewDays(s.review_days_after ?? 7);
-      setReviewText(s.review_text ?? DEFAULT_TEXTS.review);
+      setReviewText(s.review_text ?? null);
       setAltDatesOn(!!s.alt_dates_enabled);
       setFillOn(!!s.fill_calendar_enabled);
     }
@@ -206,18 +204,18 @@ export default function VendorSchedulingPage() {
         min_notice_hours: notice,
         max_per_day: maxPerDay,
         auto_reply_enabled: autoReplyOn,
-        auto_reply_text: autoReplyText.trim() || null,
+        auto_reply_text: autoReplyValue.trim() || null,
         confirm_enabled: confirmOn,
-        confirm_text: confirmText.trim() || null,
+        confirm_text: confirmValue.trim() || null,
         reminder_enabled: reminderOn,
         reminder_hours_before: reminderHours,
-        reminder_text: reminderText.trim() || null,
+        reminder_text: reminderValue.trim() || null,
         followup_enabled: followupOn,
         followup_days_after: followupDays,
-        followup_text: followupText.trim() || null,
+        followup_text: followupValue.trim() || null,
         review_enabled: reviewOn,
         review_days_after: reviewDays,
-        review_text: reviewText.trim() || null,
+        review_text: reviewValue.trim() || null,
         alt_dates_enabled: altDatesOn,
         fill_calendar_enabled: fillOn,
         updated_at: new Date().toISOString(),
@@ -226,7 +224,7 @@ export default function VendorSchedulingPage() {
     );
     setSaving(false);
     if (error) toast.error(error.message);
-    else toast.success("Your scheduling setup is live.");
+    else toast.success(t("toasts.saved"));
   }
 
   const canAddType = premium || (pro ? types.length < PRO_TYPE_CAP : types.length < 1);
@@ -234,14 +232,14 @@ export default function VendorSchedulingPage() {
   async function addType() {
     if (!userId || addingType) return;
     if (!newTypeName.trim()) {
-      toast.error("Give the appointment type a name — e.g., Consultation call.");
+      toast.error(t("toasts.typeNameRequired"));
       return;
     }
     if (!canAddType) {
       toast.error(
         pro
-          ? `Pro includes up to ${PRO_TYPE_CAP} appointment types — Premium has no limit.`
-          : "Free includes one appointment type — Pro unlocks up to 5.",
+          ? t("toasts.proCap", { cap: PRO_TYPE_CAP })
+          : t("toasts.freeCap"),
       );
       return;
     }
@@ -262,9 +260,9 @@ export default function VendorSchedulingPage() {
     void load();
   }
 
-  async function removeType(t: ApptType) {
+  async function removeType(type: ApptType) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from("vendor_appointment_types").delete().eq("id", t.id);
+    await (supabase as any).from("vendor_appointment_types").delete().eq("id", type.id);
     void load();
   }
 
@@ -276,7 +274,7 @@ export default function VendorSchedulingPage() {
       .update({ status, decided_at: new Date().toISOString() })
       .eq("id", sug.id);
     if (status === "approved")
-      toast.success("Openings promoted — they now show as last-minute availability on your public listing.");
+      toast.success(t("toasts.promoted"));
   }
 
   return (
@@ -288,52 +286,55 @@ export default function VendorSchedulingPage() {
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
-            Smart Scheduling <span className="text-accent">✦</span>
+            {t("header.title")} <span className="text-accent">✦</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Working hours, appointment types, and automations — same setup as the app.
+            {t("header.subtitle")}
           </p>
         </div>
 
         <div className="p-4 md:p-8 max-w-[1100px] space-y-5">
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
             </div>
           ) : (
             <>
               {/* Appointment types — every plan */}
               <section className="card-soft p-6">
-                <p className="font-label text-accent">Appointment types ✦</p>
+                <p className="font-label text-accent">{t("types.title")} ✦</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  What can hosts book with you? Give each a name and a length.
+                  {t("types.body")}
                   {!premium ? (
                     <span>
                       {" "}
-                      ({types.length}/{pro ? PRO_TYPE_CAP : 1} on {pro ? "Pro" : "Free"})
+                      {t(pro ? "types.usagePro" : "types.usageFree", {
+                        used: types.length,
+                        cap: pro ? PRO_TYPE_CAP : 1,
+                      })}
                     </span>
                   ) : null}
                 </p>
                 <div className="mt-4 space-y-2">
-                  {types.map((t) => (
+                  {types.map((type) => (
                     <div
-                      key={t.id}
+                      key={type.id}
                       className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3"
                     >
                       <div>
                         <p className="m-0 text-sm font-medium">
-                          {t.name}
-                          {!t.active ? (
-                            <span className="text-muted-foreground"> · off</span>
+                          {type.name}
+                          {!type.active ? (
+                            <span className="text-muted-foreground"> · {t("types.off")}</span>
                           ) : null}
                         </p>
                         <p className="m-0 text-[11.5px] text-muted-foreground">
-                          {t.duration_minutes} minutes
+                          {t("types.minutes", { minutes: type.duration_minutes })}
                         </p>
                       </div>
                       <button
-                        onClick={() => void removeType(t)}
-                        aria-label={`Delete ${t.name}`}
+                        onClick={() => void removeType(type)}
+                        aria-label={t("types.delete", { name: type.name })}
                         className="text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -345,7 +346,7 @@ export default function VendorSchedulingPage() {
                   <input
                     value={newTypeName}
                     onChange={(e) => setNewTypeName(e.target.value)}
-                    placeholder="e.g., Consultation call"
+                    placeholder={t("types.placeholder")}
                     className="min-w-0 flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm outline-none"
                   />
                   <select
@@ -355,7 +356,9 @@ export default function VendorSchedulingPage() {
                   >
                     {DURATIONS.map((d) => (
                       <option key={d} value={d}>
-                        {d >= 60 ? `${d / 60} hr${d > 60 ? "s" : ""}` : `${d} min`}
+                        {d >= 60
+                          ? t("duration.hours", { count: d / 60 })
+                          : t("duration.minutes", { minutes: d })}
                       </option>
                     ))}
                   </select>
@@ -364,7 +367,7 @@ export default function VendorSchedulingPage() {
                     disabled={addingType}
                     className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold px-4 text-sm font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-9"
                   >
-                    <Plus className="h-4 w-4" /> Add
+                    <Plus className="h-4 w-4" /> {t("types.add")}
                   </button>
                 </div>
               </section>
@@ -373,9 +376,9 @@ export default function VendorSchedulingPage() {
                 <>
                   {/* Working hours */}
                   <section className="card-soft p-6">
-                    <p className="font-label text-accent">Your working hours ✦</p>
+                    <p className="font-label text-accent">{t("hours.title")} ✦</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      When can appointments happen?
+                      {t("hours.body")}
                     </p>
                     <div className="mt-4 divide-y divide-border rounded-xl border border-border bg-background">
                       {[1, 2, 3, 4, 5, 6, 0].map((d) => {
@@ -391,7 +394,7 @@ export default function VendorSchedulingPage() {
                                   setHours((h) => ({ ...h, [key]: { ...day, on: e.target.checked } }))
                                 }
                               />
-                              {DAY_LABELS[d]}
+                              {dayLabels[d]}
                             </label>
                             {day.on ? (
                               <span className="flex items-center gap-2 text-sm">
@@ -402,9 +405,9 @@ export default function VendorSchedulingPage() {
                                   }
                                   className="rounded-lg border border-border bg-background px-2 py-1 text-sm"
                                 >
-                                  {TIME_OPTIONS.map((t) => (
-                                    <option key={t} value={t}>
-                                      {timeLabel(t)}
+                                  {TIME_OPTIONS.map((hhmm) => (
+                                    <option key={hhmm} value={hhmm}>
+                                      {timeLabel(hhmm, t("time.am"), t("time.pm"))}
                                     </option>
                                   ))}
                                 </select>
@@ -416,15 +419,15 @@ export default function VendorSchedulingPage() {
                                   }
                                   className="rounded-lg border border-border bg-background px-2 py-1 text-sm"
                                 >
-                                  {TIME_OPTIONS.map((t) => (
-                                    <option key={t} value={t}>
-                                      {timeLabel(t)}
+                                  {TIME_OPTIONS.map((hhmm) => (
+                                    <option key={hhmm} value={hhmm}>
+                                      {timeLabel(hhmm, t("time.am"), t("time.pm"))}
                                     </option>
                                   ))}
                                 </select>
                               </span>
                             ) : (
-                              <span className="text-sm text-muted-foreground">Unavailable</span>
+                              <span className="text-sm text-muted-foreground">{t("hours.unavailable")}</span>
                             )}
                           </div>
                         );
@@ -434,26 +437,26 @@ export default function VendorSchedulingPage() {
 
                   {/* Booking rules */}
                   <section className="card-soft p-6">
-                    <p className="font-label text-accent">Booking rules ✦</p>
+                    <p className="font-label text-accent">{t("rules.title")} ✦</p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-3">
                       <RuleSelect
-                        label="Buffer between appointments"
+                        label={t("rules.buffer")}
                         value={String(buffer)}
-                        options={BUFFERS.map((b) => ({ label: b.label, value: String(b.v) }))}
+                        options={BUFFERS.map((b) => ({ label: t(`buffers.${b.key}`), value: String(b.v) }))}
                         onChange={(v) => setBuffer(Number(v))}
                       />
                       <RuleSelect
-                        label="Minimum notice"
+                        label={t("rules.notice")}
                         value={String(notice)}
-                        options={NOTICES.map((n) => ({ label: n.label, value: String(n.v) }))}
+                        options={NOTICES.map((n) => ({ label: t(`notices.${n.key}`), value: String(n.v) }))}
                         onChange={(v) => setNotice(Number(v))}
                       />
                       <RuleSelect
-                        label="Max appointments per day"
+                        label={t("rules.maxPerDay")}
                         value={maxPerDay === null ? "none" : String(maxPerDay)}
                         options={MAX_PER_DAY.map((m) => ({
-                          label: m.label,
-                          value: m.v === null ? "none" : String(m.v),
+                          label: m === null ? t("noLimit") : String(m),
+                          value: m === null ? "none" : String(m),
                         }))}
                         onChange={(v) => setMaxPerDay(v === "none" ? null : Number(v))}
                       />
@@ -464,86 +467,86 @@ export default function VendorSchedulingPage() {
                     <>
                       {/* Automated messages */}
                       <section className="card-soft p-6">
-                        <p className="font-label text-accent">Automated messages ✦</p>
+                        <p className="font-label text-accent">{t("auto.title")} ✦</p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Vendora sends these for you, in your words.
+                          {t("auto.body")}
                         </p>
                         <div className="mt-4 space-y-4">
                           <AutoRow
-                            title="Instant inquiry reply"
-                            sub="Sent the moment a new inquiry lands."
+                            title={t("auto.instantReply.title")}
+                            sub={t("auto.instantReply.sub")}
                             on={autoReplyOn}
                             setOn={setAutoReplyOn}
-                            text={autoReplyText}
+                            text={autoReplyValue}
                             setText={setAutoReplyText}
                           />
                           <AutoRow
-                            title="Booking confirmations"
-                            sub="Sent when you confirm an appointment."
+                            title={t("auto.confirmations.title")}
+                            sub={t("auto.confirmations.sub")}
                             on={confirmOn}
                             setOn={setConfirmOn}
-                            text={confirmText}
+                            text={confirmValue}
                             setText={setConfirmText}
                           />
                           <AutoRow
-                            title="Reminders"
-                            sub="Sent before upcoming appointments."
+                            title={t("auto.reminders.title")}
+                            sub={t("auto.reminders.sub")}
                             on={reminderOn}
                             setOn={setReminderOn}
-                            text={reminderText}
+                            text={reminderValue}
                             setText={setReminderText}
                             chips={{
                               options: [
-                                { label: "24h before", value: "24" },
-                                { label: "48h before", value: "48" },
+                                { label: t("auto.hoursBefore", { hours: 24 }), value: "24" },
+                                { label: t("auto.hoursBefore", { hours: 48 }), value: "48" },
                               ],
                               value: String(reminderHours),
                               onChange: (v) => setReminderHours(Number(v)),
                             }}
                           />
                           <AutoRow
-                            title="Follow-ups"
-                            sub="Sent after an appointment passes."
+                            title={t("auto.followups.title")}
+                            sub={t("auto.followups.sub")}
                             on={followupOn}
                             setOn={setFollowupOn}
-                            text={followupText}
+                            text={followupValue}
                             setText={setFollowupText}
                             chips={{
                               options: [
-                                { label: "1 day after", value: "1" },
-                                { label: "3 days after", value: "3" },
-                                { label: "7 days after", value: "7" },
+                                { label: t("auto.daysAfter", { count: 1 }), value: "1" },
+                                { label: t("auto.daysAfter", { count: 3 }), value: "3" },
+                                { label: t("auto.daysAfter", { count: 7 }), value: "7" },
                               ],
                               value: String(followupDays),
                               onChange: (v) => setFollowupDays(Number(v)),
                             }}
                           />
                           <AutoRow
-                            title="Review requests"
-                            sub="Sent after a booked event wraps."
+                            title={t("auto.reviews.title")}
+                            sub={t("auto.reviews.sub")}
                             on={reviewOn}
                             setOn={setReviewOn}
-                            text={reviewText}
+                            text={reviewValue}
                             setText={setReviewText}
                             chips={{
                               options: [
-                                { label: "3 days after", value: "3" },
-                                { label: "7 days after", value: "7" },
-                                { label: "14 days after", value: "14" },
+                                { label: t("auto.daysAfter", { count: 3 }), value: "3" },
+                                { label: t("auto.daysAfter", { count: 7 }), value: "7" },
+                                { label: t("auto.daysAfter", { count: 14 }), value: "14" },
                               ],
                               value: String(reviewDays),
                               onChange: (v) => setReviewDays(Number(v)),
                             }}
                           />
                           <ToggleRow
-                            title="Suggest alternative dates"
-                            sub="When someone asks for a date you're booked, your instant reply offers your nearest open dates."
+                            title={t("auto.altDates.title")}
+                            sub={t("auto.altDates.sub")}
                             on={altDatesOn}
                             setOn={setAltDatesOn}
                           />
                           <ToggleRow
-                            title="Fill Your Calendar — open-date alerts"
-                            sub="Get notified about unbooked upcoming dates. Nothing is ever promoted without your approval."
+                            title={t("auto.fill.title")}
+                            sub={t("auto.fill.sub")}
                             on={fillOn}
                             setOn={setFillOn}
                           />
@@ -555,35 +558,36 @@ export default function VendorSchedulingPage() {
                           key={sug.id}
                           className="card-soft border border-accent/40 bg-accent/5 p-6"
                         >
-                          <p className="font-label text-accent">Fill your calendar ✦</p>
+                          <p className="font-label text-accent">{t("fill.title")} ✦</p>
                           <p className="mt-2 text-sm">
                             <strong>
-                              {sug.open_dates.length} open date
-                              {sug.open_dates.length === 1 ? "" : "s"} coming up:
+                              {t("fill.openDates", { count: sug.open_dates.length })}
                             </strong>{" "}
                             {sug.open_dates
                               .slice(0, 6)
                               .map((d) =>
-                                new Date(`${d}T12:00:00`).toLocaleDateString(undefined, {
+                                new Date(`${d}T12:00:00`).toLocaleDateString(dateLocale, {
                                   month: "short",
                                   day: "numeric",
                                 }),
                               )
                               .join(" · ")}
-                            {sug.open_dates.length > 6 ? ` +${sug.open_dates.length - 6} more` : ""}
+                            {sug.open_dates.length > 6
+                              ? ` ${t("fill.more", { more: sug.open_dates.length - 6 })}`
+                              : ""}
                           </p>
                           <div className="mt-3 flex gap-2">
                             <button
                               onClick={() => void decideSuggestion(sug, "approved")}
                               className="inline-flex justify-center items-center rounded-full bg-gold px-5 text-sm font-bold text-foreground hover:bg-gold-hover h-9"
                             >
-                              Promote openings
+                              {t("fill.promote")}
                             </button>
                             <button
                               onClick={() => void decideSuggestion(sug, "dismissed")}
                               className="rounded-full border border-border bg-background px-5 py-2 text-sm font-semibold"
                             >
-                              Not now
+                              {t("fill.notNow")}
                             </button>
                           </div>
                         </section>
@@ -591,18 +595,15 @@ export default function VendorSchedulingPage() {
                     </>
                   ) : (
                     <section className="card-soft border border-accent/40 bg-accent/5 p-6">
-                      <p className="font-label text-accent">Put it on autopilot ✦</p>
+                      <p className="font-label text-accent">{t("upsell.premiumTitle")} ✦</p>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        Your hours and rules are set — Premium makes Vendora work
-                        them for you: instant inquiry replies, confirmations,
-                        reminders, follow-ups, review requests, and Fill Your
-                        Calendar open-date alerts.
+                        {t("upsell.premiumBody")}
                       </p>
                       <Link
                         to="/vendor/subscription"
                         className="inline-flex justify-center items-center mt-4 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
                       >
-                        ✦ Upgrade to Premium
+                        ✦ {t("upsell.upgradePremium")}
                       </Link>
                     </section>
                   )}
@@ -612,24 +613,21 @@ export default function VendorSchedulingPage() {
                     disabled={saving}
                     className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
                   >
-                    {saving ? "Saving…" : "Save scheduling setup"}
+                    {saving ? t("saving") : t("save")}
                   </button>
                 </>
               ) : (
                 <section className="card-soft p-8 text-center">
                   <Zap className="mx-auto h-8 w-8 text-accent" />
-                  <h2 className="font-editorial text-3xl mt-4">Work less. Book more.</h2>
+                  <h2 className="font-editorial text-3xl mt-4">{t("upsell.proTitle")}</h2>
                   <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-                    Pro unlocks the scheduling controls — working hours, buffers,
-                    minimum notice, daily limits, and up to 5 appointment types.
-                    Premium adds the automations that answer, remind, follow up,
-                    and fill your calendar for you.
+                    {t("upsell.proBody")}
                   </p>
                   <Link
                     to="/vendor/subscription"
                     className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
                   >
-                    ✦ See plans
+                    ✦ {t("upsell.seePlans")}
                   </Link>
                 </section>
               )}
@@ -715,6 +713,7 @@ function AutoRow({
   setText: (v: string) => void;
   chips?: { options: { label: string; value: string }[]; value: string; onChange: (v: string) => void };
 }) {
+  const { t } = useTranslation("vendorScheduling");
   return (
     <div className="rounded-xl border border-border bg-background px-4 py-3">
       <label className="flex cursor-pointer items-start justify-between gap-4">
@@ -733,7 +732,7 @@ function AutoRow({
         <div className="mt-3 space-y-2">
           {chips ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[12px] font-medium text-muted-foreground">Send</span>
+              <span className="text-[12px] font-medium text-muted-foreground">{t("auto.send")}</span>
               {chips.options.map((o) => (
                 <button
                   key={o.value}

@@ -8,6 +8,7 @@
 // renderer linkifies), so this is purely additive and breaks nothing.
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Loader2,
@@ -112,11 +113,14 @@ function prefillProposalBody(
   return b;
 }
 
-const KIND_META: Record<SendKind, { label: string; icon: typeof FileText; title: string }> = {
-  invoice: { label: "Invoice", icon: ReceiptText, title: "Send an invoice" },
-  link: { label: "Pay link", icon: Link2, title: "Send a pay link" },
-  proposal: { label: "Proposal", icon: FileText, title: "Send a proposal" },
-  contract: { label: "Contract", icon: FileSignature, title: "Send a contract" },
+// `label` goes into the message sent to the host, so it stays as is.
+// What the vendor reads (menu label, dialog title) is
+// picker.kinds.<kind> in the proposals namespace.
+const KIND_META: Record<SendKind, { label: string; icon: typeof FileText }> = {
+  invoice: { label: "Invoice", icon: ReceiptText },
+  link: { label: "Pay link", icon: Link2 },
+  proposal: { label: "Proposal", icon: FileText },
+  contract: { label: "Contract", icon: FileSignature },
 };
 
 export function ChatSendPicker({
@@ -135,6 +139,7 @@ export function ChatSendPicker({
   // vendor reviews, then sends). Falls back to onSend if absent.
   onStageInvoice?: (invoiceId: string, body: string) => Promise<void> | void;
 }) {
+  const { t } = useTranslation("proposals");
   const [kind, setKind] = useState<SendKind | null>(null);
   const [rows, setRows] = useState<PickRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -169,7 +174,7 @@ export function ChatSendPicker({
           setRows(
             ((data ?? []) as any[]).map((inv) => ({
               id: inv.id,
-              primary: `Invoice ${inv.invoice_number}`,
+              primary: t("picker.rows.invoice", { number: inv.invoice_number }),
               secondary: `${formatMoney(inv.total_cents, inv.currency)}${inv.bill_to_name ? ` · ${inv.bill_to_name}` : ""}`,
               body: `🧾 Invoice ${inv.invoice_number} · ${formatMoney(inv.total_cents, inv.currency)} — [Pay online](${ORIGIN}/pay/invoice/${inv.slug})`,
             })),
@@ -185,7 +190,7 @@ export function ChatSendPicker({
           setRows(
             ((data ?? []) as any[]).map((l) => ({
               id: l.id,
-              primary: l.title || "Pay link",
+              primary: l.title || t("picker.kinds.link.label"),
               secondary: formatMoney(l.amount_cents, l.currency),
               body: `💳 ${l.title || "Payment"} · ${formatMoney(l.amount_cents, l.currency)} — [Pay online](${ORIGIN}/pay/link/${l.slug})`,
             })),
@@ -203,14 +208,14 @@ export function ChatSendPicker({
             .limit(50);
           const emoji = k === "contract" ? "📑" : "📄";
           setRows(
-            ((data ?? []) as any[]).map((t) => ({
-              id: t.id,
-              primary: t.name,
-              secondary: (t.body as string)?.trim().split("\n")[0] || "Empty",
-              body: `${emoji} ${KIND_META[k].label}: ${t.name}\n\n${t.body}`,
+            ((data ?? []) as any[]).map((tpl) => ({
+              id: tpl.id,
+              primary: tpl.name,
+              secondary: (tpl.body as string)?.trim().split("\n")[0] || t("picker.rows.empty"),
+              body: `${emoji} ${KIND_META[k].label}: ${tpl.name}\n\n${tpl.body}`,
               ...(k === "contract"
-                ? { contract: { name: t.name, body: t.body, templateId: t.id } }
-                : { proposal: { name: t.name, body: t.body, templateId: t.id } }),
+                ? { contract: { name: tpl.name, body: tpl.body, templateId: tpl.id } }
+                : { proposal: { name: tpl.name, body: tpl.body, templateId: tpl.id } }),
             })),
           );
         }
@@ -218,7 +223,8 @@ export function ChatSendPicker({
         setLoading(false);
       }
     },
-    [vendorId],
+    // t: rows carry translated labels, so refetch on a language switch.
+    [vendorId, t],
   );
 
   useEffect(() => {
@@ -244,7 +250,7 @@ export function ChatSendPicker({
       // text/link body.
       if (kind === "invoice" && onStageInvoice) {
         await onStageInvoice(row.id, row.body);
-        toast.success("Invoice added — review and send");
+        toast.success(t("picker.toast.invoiceAdded"));
       } else if (
         (kind === "contract" && row.contract) ||
         (kind === "proposal" && row.proposal)
@@ -280,7 +286,7 @@ export function ChatSendPicker({
         return; // editor's send button creates + sends it
       } else {
         await onSend(row.body);
-        toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
+        toast.success(t(`picker.toast.sent.${kind ?? "item"}`));
       }
       setKind(null);
     } finally {
@@ -306,14 +312,14 @@ export function ChatSendPicker({
         .select("sign_token")
         .single();
       if (error || !(data as { sign_token?: string })?.sign_token) {
-        toast.error("Couldn't create the contract", { description: error?.message });
+        toast.error(t("picker.toast.contractFailed"), { description: error?.message });
         return;
       }
       const token = (data as { sign_token: string }).sign_token;
       await onSend(
         `📑 Contract: ${editing.name} — [Review & sign](${ORIGIN}/sign/${token})`,
       );
-      toast.success("Contract sent for signing");
+      toast.success(t("picker.toast.contractSent"));
       setEditing(null);
       setKind(null);
     } finally {
@@ -339,14 +345,14 @@ export function ChatSendPicker({
         .select("view_token")
         .single();
       if (error || !(data as { view_token?: string })?.view_token) {
-        toast.error("Couldn't create the proposal", { description: error?.message });
+        toast.error(t("picker.toast.proposalFailed"), { description: error?.message });
         return;
       }
       const token = (data as { view_token: string }).view_token;
       await onSend(
         `📄 Proposal: ${editing.name} — [View proposal](${ORIGIN}/proposal/${token})`,
       );
-      toast.success("Proposal sent");
+      toast.success(t("picker.toast.proposalSent"));
       setEditing(null);
       setKind(null);
     } finally {

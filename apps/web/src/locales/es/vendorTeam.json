@@ -1,0 +1,38 @@
+{
+  "sidebarTitle": "Portal de proveedores",
+  "title": "Conoce al equipo",
+  "subtitle": "Presenta a las personas detrás de tu negocio — es opcional y siempre lo controlas tú.",
+  "loading": "Cargando…",
+  "showTeam": "Mostrar el equipo en mi perfil público",
+  "showTeamHint": "Si está desactivado, no se muestra nada públicamente — tus datos se quedan guardados.",
+  "hidden": " · oculto",
+  "moveUp": "Subir",
+  "moveDown": "Bajar",
+  "remove": "Quitar",
+  "add": "Agregar integrante",
+  "form": {
+    "editTitle": "Editar integrante ✦",
+    "newTitle": "Nuevo integrante ✦",
+    "fullName": "Nombre completo *",
+    "role": "Puesto — p. ej., Organizadora principal *",
+    "bio": "Biografía breve (hasta 300 caracteres) *",
+    "specialty": "Especialidad",
+    "years": "Años en el negocio",
+    "funFact": "Dato curioso",
+    "link": "Enlace (portafolio, Instagram…)",
+    "replacePhoto": "Reemplazar foto",
+    "addPhoto": "Agregar foto",
+    "visible": "Visible en mi perfil",
+    "saving": "Guardando…",
+    "save": "Guardar integrante",
+    "cancel": "Cancelar"
+  },
+  "toast": {
+    "live": "Tu sección de equipo ya está visible.",
+    "hidden": "Sección de equipo oculta.",
+    "required": "El nombre, el puesto y una biografía breve son obligatorios.",
+    "updated": "Integrante actualizado.",
+    "added": "Integrante agregado.",
+    "saveFailed": "No se pudo guardar."
+  }
+}

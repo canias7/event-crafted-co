@@ -53,6 +53,8 @@ interface InvoiceDetails {
   vendor_can_accept?: boolean;
 }
 
+// Money stays en-US in both languages: "$1,234.50" is also how US
+// Spanish writes it.
 function formatMoney(cents: number, currency = "usd"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -61,7 +63,6 @@ function formatMoney(cents: number, currency = "usd"): string {
 }
 
 // `locale` is "en-US" in English (as before) and "es-US" in Spanish.
-// Money stays en-US in both: "$1,234.50" is also how US Spanish writes it.
 function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(locale, {

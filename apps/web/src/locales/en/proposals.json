@@ -1,0 +1,113 @@
+{
+  "picker": {
+    "trigger": "Send an invoice, pay link, proposal, or contract",
+    "send": "Send",
+    "kinds": {
+      "invoice": {
+        "label": "Invoice",
+        "title": "Send an invoice"
+      },
+      "link": {
+        "label": "Pay link",
+        "title": "Send a pay link"
+      },
+      "proposal": {
+        "label": "Proposal",
+        "title": "Send a proposal"
+      },
+      "contract": {
+        "label": "Contract",
+        "title": "Send a contract"
+      }
+    },
+    "rows": {
+      "invoice": "Invoice {{number}}",
+      "empty": "Empty"
+    },
+    "hints": {
+      "invoice": "Pick one to add as a PDF (with its pay link) to your message — then review and send.",
+      "link": "Pick one to drop its payment link into the chat.",
+      "contract": "Pick a contract to send for e-signature — the host gets a link to review and sign.",
+      "proposal": "Pick a saved template to send into the chat. Create them in Files."
+    },
+    "empty": {
+      "invoice": "No unpaid invoices. Create one in Files → Invoices.",
+      "link": "No active pay links. Create one in Files → Pay Links.",
+      "contract": "No saved contracts. Create one in Files → Contracts.",
+      "proposal": "No saved proposals. Create one in Files → Proposals."
+    },
+    "editor": {
+      "contractTitle": "Review & fill the contract",
+      "proposalTitle": "Review & fill the proposal",
+      "contractHint": "Complete any [brackets] (e.g. [Total Amount]), then send it for e-signature.",
+      "proposalHint": "Complete any [brackets] (e.g. [Total Amount]), then send it for the client to review and accept.",
+      "unfilledContract": "Heads up — there are still unfilled [placeholders] in the contract.",
+      "unfilledProposal": "Heads up — there are still unfilled [placeholders] in the proposal.",
+      "back": "Back",
+      "sendContract": "Send for signature",
+      "sendProposal": "Send proposal"
+    },
+    "toast": {
+      "invoiceAdded": "Invoice added — review and send",
+      "sent": {
+        "invoice": "Invoice sent",
+        "link": "Pay link sent",
+        "proposal": "Proposal sent",
+        "contract": "Contract sent",
+        "item": "Item sent"
+      },
+      "contractFailed": "Couldn't create the contract",
+      "contractSent": "Contract sent for signing",
+      "proposalFailed": "Couldn't create the proposal",
+      "proposalSent": "Proposal sent"
+    }
+  },
+  "sentProposals": {
+    "title": "Sent proposals",
+    "empty": "No proposals sent yet. Compose one on the left and send it from the box below.",
+    "status": {
+      "sent": "Awaiting",
+      "accepted": "Accepted",
+      "cancelled": "Cancelled"
+    },
+    "acceptedBy": "Accepted by {{name}} · {{date}}",
+    "client": "client",
+    "toSent": "To {{name}} · Sent {{date}}",
+    "sent": "Sent {{date}}",
+    "preview": "Preview",
+    "pdf": "PDF",
+    "link": "Link",
+    "void": "Void",
+    "confirmVoid": "Void \"{{title}}\"? The client won't be able to accept it.",
+    "toast": {
+      "linkCopied": "Proposal link copied",
+      "copyFailed": "Couldn't copy the link",
+      "voidFailed": "Couldn't void the proposal",
+      "voided": "Proposal voided"
+    }
+  },
+  "sentContracts": {
+    "title": "Sent for signature",
+    "empty": "No contracts sent yet. Compose one on the left and send it from the box below.",
+    "status": {
+      "sent": "Awaiting",
+      "signed": "Signed",
+      "cancelled": "Cancelled"
+    },
+    "signedBy": "Signed by {{name}} · {{date}}",
+    "client": "client",
+    "toSent": "To {{name}} · Sent {{date}}",
+    "sent": "Sent {{date}}",
+    "preview": "Preview",
+    "pdf": "PDF",
+    "link": "Link",
+    "void": "Void",
+    "confirmVoid": "Void \"{{title}}\"? The recipient won't be able to sign it.",
+    "toast": {
+      "linkCopied": "Sign link copied",
+      "copyFailed": "Couldn't copy the link",
+      "voidFailed": "Couldn't void the contract",
+      "voided": "Contract voided"
+    }
+  }
+}

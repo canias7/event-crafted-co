@@ -102,12 +102,12 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
       all: appointments.length,
     };
     for (const a of appointments) {
-      const t = new Date(a.scheduled_at).getTime();
+      const at = new Date(a.scheduled_at).getTime();
       if (a.status === "proposed" && a.proposed_by === "host")
         counts.needs_response++;
-      if ((a.status === "accepted" || a.status === "proposed") && t >= now.getTime())
+      if ((a.status === "accepted" || a.status === "proposed") && at >= now.getTime())
         counts.upcoming++;
-      if (t < now.getTime()) counts.past++;
+      if (at < now.getTime()) counts.past++;
     }
     return [
       { value: "upcoming", label: t("filters.upcoming"), count: counts.upcoming },
@@ -124,14 +124,14 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
   const visible = useMemo(() => {
     const now = Date.now();
     return appointments.filter((a) => {
-      const t = new Date(a.scheduled_at).getTime();
+      const at = new Date(a.scheduled_at).getTime();
       switch (filter) {
         case "upcoming":
           return (
-            (a.status === "accepted" || a.status === "proposed") && t >= now
+            (a.status === "accepted" || a.status === "proposed") && at >= now
           );
         case "past":
-          return t < now;
+          return at < now;
         case "needs_response":
           return a.status === "proposed" && a.proposed_by === "host";
         case "all":

@@ -77,7 +77,7 @@
       "messageEmpty": "El mensaje no puede estar vacío",
       "maxAttachments": "Hasta {{max}} archivos adjuntos por mensaje",
       "uploadFailed": "No se pudieron subir tus archivos adjuntos — el mensaje no se envió.",
-      "partialUpload": "Se subieron {{uploaded}} de {{total}} archivos adjuntos."
+      "partialUpload": "Archivos adjuntos subidos: {{uploaded}} de {{total}}."
     },
     "summary": {
       "close": "Cerrar",
