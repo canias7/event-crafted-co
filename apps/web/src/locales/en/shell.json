@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "aria_label": "Public",
+    "logo_label": "Vendora — Events, simplified",
+    "all_vendors": "All vendors",
+    "browse_by_location": "Browse by location",
+    "by_location": "By location",
+    "categories": "Categories",
+    "soon": "Soon",
+    "explore": "Explore",
+    "how_it_works": "How it works",
+    "account": "Account",
+    "sign_out": "Sign out",
+    "sign_in": "Sign in",
+    "get_started": "Get started"
+  },
+  "footer": {
+    "home_label": "Vendora home",
+    "for_hosts": "For hosts",
+    "for_vendors": "For vendors",
+    "company": "Company",
+    "plan_with_vendora": "Plan with Vendora",
+    "browse_vendors": "Browse vendors",
+    "explore": "Explore",
+    "grow_with_vendora": "Grow with Vendora",
+    "list_your_business": "List your business",
+    "how_it_works": "How it works",
+    "help": "Help",
+    "status": "Status",
+    "press": "Press",
+    "changelog": "Changelog"
+  },
+  "cookies": {
+    "dismiss": "Dismiss",
+    "title": "Cookies, briefly",
+    "body": "We use essential cookies to keep you signed in, and (with your consent) analytics cookies to understand which features get used. We don't sell data and we don't use ad-tracking cookies. See our <link>Privacy Policy</link>.",
+    "accept_all": "Accept all",
+    "essential_only": "Essential only"
+  },
+  "command_palette": {
+    "placeholder": "Search vendors, pages…",
+    "empty": "No results.",
+    "groups": {
+      "vendors": "Vendors",
+      "public": "Public",
+      "customer": "Customer",
+      "vendor": "Vendor",
+      "account": "Account"
+    },
+    "pages": {
+      "browse_vendors": "Browse vendors",
+      "browse_by_location": "Browse by location",
+      "explore": "Explore",
+      "inbox": "Inbox",
+      "events": "Events",
+      "profile": "Profile",
+      "inquiry_inbox": "Inquiry inbox",
+      "overview": "Overview",
+      "calendar": "Calendar",
+      "partners": "Partners",
+      "settings": "Settings"
+    },
+    "hints": {
+      "directory": "Directory",
+      "cities": "Cities"
+    },
+    "open_search": "Open search",
+    "search": "Search"
+  },
+  "skip_link": "Skip to main content",
+  "email_verification": {
+    "title": "Confirm your email.",
+    "body": "We sent a link to <email>{{email}}</email>. Some features stay limited until you confirm.",
+    "resend": "Resend",
+    "sent": "Verification email sent — check your inbox",
+    "dismiss": "Dismiss"
+  }
+}

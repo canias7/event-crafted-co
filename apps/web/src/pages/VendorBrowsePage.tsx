@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Search, Store, X, ArrowRight, MapPin, CalendarDays, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
   groupOfSub,
 } from "@/data/categoryTaxonomy";
 import { BROWSE_CATEGORIES } from "@/data/browseCategories";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Sub-name → group-slug. Used to deep-link from a single-sub filter to
 // the parent group page (e.g. "Photography" → "/vendors/category/media").
@@ -65,7 +67,9 @@ const CREAM = "#f4f1ea";
 const GOLD = "#c9a86a";
 
 // Category photo tiles under the hero (the same seven categories as
-// Explore's menu); "More filters" opens the full list.
+// Explore's menu); "More filters" opens the full list. Labels stay
+// English here (they're the keys); the visitor's language is applied
+// when they're shown.
 const TILE_IMAGES: Record<string, PictureSource> = {
   Photography: tilePhotography,
   Venues: tileVenues,
@@ -80,6 +84,8 @@ const sameSet = (a: Set<string>, b: string[]) =>
   a.size === b.length && b.every((x) => a.has(x));
 
 export default function VendorBrowsePage() {
+  const { t, i18n } = useTranslation("vendors");
+  const categoryNames = useCategoryNames();
   const { vendors, loading } = useVendors();
   const { profile, activeEvent } = useAuth();
   const [searchParams] = useSearchParams();
@@ -212,19 +218,19 @@ export default function VendorBrowsePage() {
       ? vendors.filter((v) => unavailableIds.has(v.id)).length
       : 0;
 
-  const activeTile = TILES.find((t) => sameSet(activeCategories, t.subs));
+  const activeTile = TILES.find((tile) => sameSet(activeCategories, tile.subs));
   const pill =
     "inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea] transition-colors hover:border-white/40";
 
   // What's narrowing the list, as removable pills in the filter bar.
   const activeFilters: { label: string; clear: () => void }[] = [
     ...(activeTile
-      ? [{ label: activeTile.label, clear: () => setActiveCategories(new Set()) }]
-      : Array.from(activeCategories).map((cat) => ({ label: cat, clear: () => toggleCategory(cat) }))),
+      ? [{ label: categoryNames.browse(activeTile.label), clear: () => setActiveCategories(new Set()) }]
+      : Array.from(activeCategories).map((cat) => ({ label: categoryNames.sub(cat), clear: () => toggleCategory(cat) }))),
     ...(search.trim() ? [{ label: `"${search.trim()}"`, clear: () => setSearch("") }] : []),
     ...(locationFilter.trim() ? [{ label: locationFilter.trim(), clear: () => setLocationFilter("") }] : []),
     ...(dateFilter
-      ? [{ label: new Date(`${dateFilter}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }), clear: () => setDateFilter("") }]
+      ? [{ label: new Date(`${dateFilter}T00:00:00`).toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" }), clear: () => setDateFilter("") }]
       : []),
   ];
 
@@ -275,15 +281,17 @@ export default function VendorBrowsePage() {
                 letterSpacing: "-1.5px",
               }}
             >
-              Find your
-              <br />
-              <span style={{ color: GOLD }}>unforgettable.</span>
+              <Trans
+                t={t}
+                i18nKey="hero.title"
+                components={{ br: <br />, gold: <span style={{ color: GOLD }} /> }}
+              />
             </h1>
             <p
               className="hero-intro mx-auto mt-4 max-w-lg text-[15px] leading-relaxed md:text-lg lg:mx-0"
               style={{ color: "rgba(244,241,234,0.85)" }}
             >
-              Meet the vendors who bring your vision to life.
+              {t("hero.intro")}
             </p>
           </div>
 
@@ -295,11 +303,11 @@ export default function VendorBrowsePage() {
           >
             <label className="flex h-12 flex-1 items-center gap-2.5 px-3 md:h-11">
               <Search className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-              <span className="sr-only">Search vendors or services</span>
+              <span className="sr-only">{t("search.label")}</span>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search vendors or services"
+                placeholder={t("search.placeholder")}
                 className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
                 style={{ color: INK }}
               />
@@ -307,7 +315,7 @@ export default function VendorBrowsePage() {
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  aria-label="Clear search"
+                  aria-label={t("search.clear")}
                   className="text-foreground hover:text-accent"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -316,11 +324,11 @@ export default function VendorBrowsePage() {
             </label>
             <label className="flex h-12 items-center gap-2.5 border-t border-border px-3 md:h-11 md:w-56 md:border-l md:border-t-0">
               <MapPin className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-              <span className="sr-only">Location</span>
+              <span className="sr-only">{t("search.location")}</span>
               <input
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                placeholder="Location"
+                placeholder={t("search.location")}
                 className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
                 style={{ color: INK }}
               />
@@ -328,7 +336,7 @@ export default function VendorBrowsePage() {
                 <button
                   type="button"
                   onClick={() => setLocationFilter("")}
-                  aria-label="Clear location filter"
+                  aria-label={t("search.clearLocation")}
                   className="text-foreground hover:text-accent"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -340,14 +348,14 @@ export default function VendorBrowsePage() {
               className="flex h-12 items-center gap-2.5 border-t border-border px-3 md:h-11 md:w-56 md:border-l md:border-t-0"
             >
               <CalendarDays className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-              <span className="sr-only">Event date</span>
+              <span className="sr-only">{t("search.date")}</span>
               {/* Text until used, so it reads "Event date" rather than the
                   browser's mm/dd/yyyy; becomes a date picker on focus. */}
               <input
                 id="date-filter"
                 type={dateFilter || dateFocused ? "date" : "text"}
                 value={dateFilter}
-                placeholder="Event date"
+                placeholder={t("search.date")}
                 onFocus={(e) => {
                   setDateFocused(true);
                   const el = e.currentTarget;
@@ -368,7 +376,7 @@ export default function VendorBrowsePage() {
                 <button
                   type="button"
                   onClick={() => setDateFilter("")}
-                  aria-label="Clear date filter"
+                  aria-label={t("search.clearDate")}
                   className="text-foreground hover:text-accent"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -376,7 +384,7 @@ export default function VendorBrowsePage() {
               )}
             </label>
             <Button type="submit" size="lg" className="shrink-0 gap-2">
-              Find vendors
+              {t("search.submit")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </form>
@@ -387,32 +395,32 @@ export default function VendorBrowsePage() {
         {/* ═══════ BROWSE BY CATEGORY — photo tiles ═══════ */}
         <section className="container mx-auto px-5 pt-8 md:px-8 md:pt-10">
           <div className="flex items-end justify-between gap-3">
-            <h2 className="m-0 text-[26px] leading-tight md:text-[34px]">Browse by category</h2>
+            <h2 className="m-0 text-[26px] leading-tight md:text-[34px]">{t("browse.title")}</h2>
             {activeCategories.size > 0 && (
               <button
                 type="button"
                 onClick={() => setActiveCategories(new Set())}
                 className="inline-flex h-9 items-center gap-1.5 text-[14px] font-bold text-gold transition-colors hover:text-white"
               >
-                All vendors <ArrowRight className="h-4 w-4" />
+                {t("browse.allVendors")} <ArrowRight className="h-4 w-4" />
               </button>
             )}
           </div>
           <div className="no-scrollbar -mx-5 mt-6 flex snap-x scroll-px-5 gap-3 overflow-x-auto px-5 pb-1 md:-mx-8 md:scroll-px-8 md:px-8 lg:mx-0 lg:grid lg:grid-cols-7 lg:overflow-visible lg:px-0">
-            {TILES.map((t) => {
-              const selected = activeTile?.label === t.label;
+            {TILES.map((tile) => {
+              const selected = activeTile?.label === tile.label;
               return (
                 <button
-                  key={t.label}
+                  key={tile.label}
                   type="button"
-                  onClick={() => setActiveCategories(selected ? new Set() : new Set(t.subs))}
+                  onClick={() => setActiveCategories(selected ? new Set() : new Set(tile.subs))}
                   aria-pressed={selected}
                   className={`group relative aspect-[4/5] w-[42vw] max-w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl text-left outline-none ring-offset-[#14161a] transition-shadow focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 sm:w-[30vw] lg:w-auto lg:max-w-none ${
                     selected ? "ring-2 ring-gold ring-offset-2" : ""
                   }`}
                 >
                   <Picture
-                    source={t.image}
+                    source={tile.image}
                     alt=""
                     sizes="(min-width: 1024px) 14vw, 42vw"
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
@@ -427,7 +435,7 @@ export default function VendorBrowsePage() {
                       selected ? "text-gold" : "text-[#f4f1ea]"
                     }`}
                   >
-                    {t.label}
+                    {categoryNames.browse(tile.label)}
                   </span>
                 </button>
               );
@@ -438,10 +446,10 @@ export default function VendorBrowsePage() {
         {/* ═══════ RESULTS ═══════ */}
         <section id="vendor-results" className="scroll-mt-2 pt-12 md:pt-16">
           <div className="container mx-auto px-5 md:px-8">
-            <h2 className="m-0 text-[32px] leading-tight md:text-[44px]">Discover vendors</h2>
+            <h2 className="m-0 text-[32px] leading-tight md:text-[44px]">{t("results.title")}</h2>
             {hiddenByDate > 0 && (
               <p className="m-0 mt-2 text-[14px] text-[#f4f1ea]/80">
-                {hiddenByDate} {hiddenByDate === 1 ? "vendor" : "vendors"} hidden because they're booked that day.
+                {t("results.hiddenByDate", { count: hiddenByDate })}
               </p>
             )}
             {category !== "All" && slugByCategory[category] && (
@@ -449,7 +457,9 @@ export default function VendorBrowsePage() {
                 to={`/vendors/category/${slugByCategory[category]}`}
                 className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-gold hover:text-white"
               >
-                View the {groupOfSub(category) ?? category} page
+                {t("results.viewGroupPage", {
+                  group: categoryNames.group(slugByCategory[category], groupOfSub(category) ?? category),
+                })}
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             )}
@@ -459,7 +469,7 @@ export default function VendorBrowsePage() {
           <div className="sticky top-0 z-30 mt-6 border-y border-white/10 bg-[#14161a]/90 backdrop-blur-md">
             <div className="container mx-auto flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3 md:flex-nowrap md:px-8">
               <p className="m-0 mr-auto shrink-0 text-[14px] font-bold md:mr-0">
-                {loading && vendors.length === 0 ? "Loading…" : `${filtered.length} ${filtered.length === 1 ? "vendor" : "vendors"}`}
+                {loading && vendors.length === 0 ? t("filters.loading") : t("filters.count", { count: filtered.length })}
               </p>
               <div
                 className={`no-scrollbar order-last min-w-0 basis-full items-center gap-2 overflow-x-auto md:order-none md:flex md:flex-1 md:basis-auto ${
