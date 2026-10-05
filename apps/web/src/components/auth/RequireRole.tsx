@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AppRole, useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +16,7 @@ export function RequireRole({ role, children }: { role: AppRole | AppRole[]; chi
     refreshProfile,
   } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation("auth");
 
   // Still-loading covers two cases:
   //  1. Initial AuthProvider mount before getSession() resolves.
@@ -28,7 +30,7 @@ export function RequireRole({ role, children }: { role: AppRole | AppRole[]; chi
   if (loading || profilePending) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="font-label text-muted-foreground">Loading…</div>
+        <div className="font-label text-muted-foreground">{t("require_role.loading")}</div>
       </div>
     );
   }
@@ -45,15 +47,15 @@ export function RequireRole({ role, children }: { role: AppRole | AppRole[]; chi
         <div className="max-w-sm text-center space-y-4">
           <p className="text-foreground">
             {profileStatus === "error"
-              ? "We couldn't load your account. Check your connection and try again."
-              : "We couldn't find your account details. Try signing in again."}
+              ? t("require_role.load_error")
+              : t("require_role.not_found")}
           </p>
           <div className="flex justify-center gap-3">
             {profileStatus === "error" ? (
-              <Button onClick={() => void refreshProfile()}>Try again</Button>
+              <Button onClick={() => void refreshProfile()}>{t("require_role.try_again")}</Button>
             ) : null}
             <Button variant="outline" onClick={() => void signOut()}>
-              Sign out
+              {t("require_role.sign_out")}
             </Button>
           </div>
         </div>

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { eventTypeLabel } from "@vendora/core";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import { usePriceLabels } from "@/lib/priceLabels";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -29,7 +31,7 @@ import {
   Loader2,
   Smile,
 } from "lucide-react";
-import { groupMessages } from "@/lib/threadFormatting";
+import { groupMessages, isSameDay } from "@/lib/threadFormatting";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -86,10 +88,11 @@ interface Inquiry {
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
-const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string; label: string }> = {
-  hot: { bg: "bg-destructive/10", text: "text-destructive", label: "Hot lead" },
-  warm: { bg: "bg-pending", text: "text-accent", label: "Warm lead" },
-  cold: { bg: "bg-muted", text: "text-foreground", label: "Cold lead" },
+// Chip label: t(`lead.${score}`) in the vendorInquiry namespace.
+const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string }> = {
+  hot: { bg: "bg-destructive/10", text: "text-destructive" },
+  warm: { bg: "bg-pending", text: "text-accent" },
+  cold: { bg: "bg-muted", text: "text-foreground" },
 };
 
 interface Message {
@@ -129,7 +132,25 @@ function fmtMoney(c: number | null) {
   return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
 }
 
+// Day separator in the thread ("Today" / "Yesterday" / "Monday, Mar 5"),
+// in the vendor's language. Same rules as daySeparator() in
+// lib/threadFormatting, which only speaks English.
+function daySeparatorText(iso: string, t: TFunction, language: string): string {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameDay(iso, now.toISOString())) return t("thread.today");
+  if (isSameDay(iso, yesterday.toISOString())) return t("thread.yesterday");
+  return new Date(iso).toLocaleDateString(language, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function InquiryDetailPage() {
+  const { t, i18n } = useTranslation("vendorInquiry");
+  const priceLabels = usePriceLabels();
   const { inquiryId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -529,7 +550,7 @@ export default function InquiryDetailPage() {
   // sender's view doesn't diverge from the recipient's until the
   // next realtime tick.
   async function deleteMessage(messageId: string) {
-    const ok = window.confirm("Delete this message? This can't be undone.");
+    const ok = window.confirm(t("confirmDelete"));
     if (!ok) return;
     const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
@@ -564,7 +585,7 @@ export default function InquiryDetailPage() {
   async function saveEdit(messageId: string) {
     const body = editingDraft.trim();
     if (!body) {
-      toast.error("Message can't be empty");
+      toast.error(t("toast.emptyMessage"));
       return;
     }
     const before = messages.find((m) => m.id === messageId);
@@ -640,10 +661,10 @@ export default function InquiryDetailPage() {
     }
     toast.success(
       next === "won"
-        ? "Marked as booked"
+        ? t("toast.markedBooked")
         : next === "lost"
-          ? "Marked as closed"
-          : "Reopened",
+          ? t("toast.markedClosed")
+          : t("toast.reopened"),
     );
     load();
   }
@@ -653,11 +674,18 @@ export default function InquiryDetailPage() {
     for (const f of Array.from(list)) {
       const err = validateAttachment(f);
       if (err) {
-        toast.error(err);
+        // validateAttachment words its error in English ("<name>: max
+        // 10 MB" or "<name>: only JPG, …"); say the same in the
+        // vendor's language.
+        toast.error(
+          t(err.endsWith("max 10 MB") ? "toast.fileTooLarge" : "toast.fileType", {
+            name: f.name,
+          }),
+        );
         continue;
       }
       if (pendingFiles.length + accepted.length >= MAX_FILES) {
-        toast.error(`Up to ${MAX_FILES} attachments per message`);
+        toast.error(t("toast.maxFiles", { max: MAX_FILES }));
         break;
       }
       accepted.push(f);
@@ -691,7 +719,7 @@ export default function InquiryDetailPage() {
   async function stageInvoice(invoiceId: string, body: string) {
     if (!inquiryId || !user) return;
     if (pendingFiles.length >= MAX_FILES) {
-      toast.error(`Up to ${MAX_FILES} attachments per message`);
+      toast.error(t("toast.maxFiles", { max: MAX_FILES }));
       return;
     }
     const { data: inv } = await supabase
@@ -702,7 +730,7 @@ export default function InquiryDetailPage() {
       .eq("id", invoiceId)
       .maybeSingle();
     if (!inv) {
-      toast.error("Couldn't load that invoice.");
+      toast.error(t("toast.invoiceLoadFailed"));
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -777,7 +805,7 @@ export default function InquiryDetailPage() {
       !composer.trim()
     ) {
       setSending(false);
-      toast.error("Couldn't upload your attachments — message not sent.");
+      toast.error(t("toast.uploadFailed"));
       return;
     }
     // Partial-failure case: some uploads succeeded, some didn't. Call
@@ -789,7 +817,10 @@ export default function InquiryDetailPage() {
       uploaded.length < pendingFiles.length
     ) {
       toast.info(
-        `${uploaded.length} of ${pendingFiles.length} attachments uploaded.`,
+        t("toast.partialUpload", {
+          uploaded: uploaded.length,
+          total: pendingFiles.length,
+        }),
       );
     }
     const { error } = await supabase.from("direct_messages").insert({
@@ -827,20 +858,20 @@ export default function InquiryDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
+        {t("loading")}
       </div>
     );
   }
   if (!inquiry) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Inquiry not found
+        {t("notFound")}
       </div>
     );
   }
 
   const isClosed = inquiry.status === "won" || inquiry.status === "lost";
-  const hostName = inquiry.host?.display_name?.trim() || "Host";
+  const hostName = inquiry.host?.display_name?.trim() || t("host");
   const initial = hostName.charAt(0).toUpperCase();
 
   // "Seen" indicator: surface under the last outgoing (vendor/agent)
@@ -860,7 +891,7 @@ export default function InquiryDetailPage() {
       ? inquiry.host_read_at
       : null;
   const seenTimeLabel = seenAt
-    ? new Date(seenAt).toLocaleTimeString(undefined, {
+    ? new Date(seenAt).toLocaleTimeString(i18n.language, {
         hour: "numeric",
         minute: "2-digit",
       })
@@ -883,7 +914,7 @@ export default function InquiryDetailPage() {
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
           <Link
             to="/vendor/inbox"
-            aria-label="Back to inbox"
+            aria-label={t("header.back")}
             className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -924,7 +955,7 @@ export default function InquiryDetailPage() {
                       className={`shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full ${chip.bg} ${chip.text}`}
                       title={inquiry.lead_score_reason ?? undefined}
                     >
-                      {chip.label}
+                      {t(`lead.${inquiry.lead_score}`)}
                     </span>
                   );
                 })()
@@ -932,10 +963,13 @@ export default function InquiryDetailPage() {
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
               {inquiry.event_type
-                ? `${eventTypeLabel(inquiry.event_type)} inquiry`
-                : "Inquiry"}
+                ? t("header.eventInquiry", {
+                    type: priceLabels.eventType(inquiry.event_type),
+                    typeLower: priceLabels.eventType(inquiry.event_type).toLowerCase(),
+                  })
+                : t("header.inquiry")}
               {inquiry.event_date
-                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(undefined, {
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(i18n.language, {
                     month: "short",
                     day: "numeric",
                   })}`
@@ -945,7 +979,7 @@ export default function InquiryDetailPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                aria-label="Inquiry details"
+                aria-label={t("header.details")}
                 className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
               >
                 <Info className="w-4 h-4" />
@@ -957,7 +991,7 @@ export default function InquiryDetailPage() {
                 className="cursor-pointer"
               >
                 <Eye className="w-4 h-4 mr-2" />
-                View inquiry
+                {t("header.viewInquiry")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {isClosed ? (
@@ -967,7 +1001,7 @@ export default function InquiryDetailPage() {
                   className="cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Reopen inquiry
+                  {t("header.reopen")}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
@@ -976,7 +1010,7 @@ export default function InquiryDetailPage() {
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Close inquiry
+                  {t("header.close")}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -1029,15 +1063,20 @@ export default function InquiryDetailPage() {
             // redundant). Keep the empty state quiet.
             null
           ) : (
-            groupedItems.map((it) => {
+            groupedItems.map((it, itemIndex) => {
               if (it.kind === "sep") {
+                // A separator always comes right before the first
+                // message of its day; label it from that message.
+                const nextItem = groupedItems[itemIndex + 1];
                 return (
                   <div
                     key={it.key}
                     className="flex items-center justify-center py-3"
                   >
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
-                      {it.label}
+                      {nextItem && nextItem.kind === "msg"
+                        ? daySeparatorText(nextItem.message.created_at, t, i18n.language)
+                        : it.label}
                     </span>
                   </div>
                 );

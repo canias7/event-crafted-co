@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 
@@ -10,118 +11,115 @@ import { Footer } from "@/components/public/Footer";
 // request_account_deletion() (migration 20260512120000) and the Privacy
 // Policy's retention section.
 export default function AccountDeletionPage() {
+  const { t } = useTranslation("auth");
   useEffect(() => {
-    document.title = "Delete your account — Vendora";
+    document.title = t("account_deletion.meta_title");
     return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
+      document.title = t("account_deletion.default_title");
     };
-  }, []);
+  }, [t]);
+
+  const strong = { strong: <strong /> };
 
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
       <article className="pt-32 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-accent mb-3">— LEGAL</p>
+        <p className="font-label text-accent mb-3">{t("account_deletion.eyebrow")}</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
-          Delete your account
+          {t("account_deletion.title")}
         </h1>
         <p className="text-sm text-muted-foreground mb-12">
-          Applies to the <strong>Vendora</strong> and{" "}
-          <strong>Vendora for Vendors</strong> apps. Last updated: June 17, 2026.
+          <Trans i18nKey="account_deletion.applies" ns="auth" components={strong} />
         </p>
 
         <div className="space-y-8 text-foreground leading-relaxed">
           <p>
-            You can permanently delete your Vendora account and its associated
-            data at any time. Here's how, and exactly what happens to your data.
+            {t("account_deletion.intro")}
           </p>
 
-          <Section title="1. Delete it from the app (fastest)">
-            <p className="mb-2">In the Vendora app:</p>
+          <Section title={t("account_deletion.app.title")}>
+            <p className="mb-2">{t("account_deletion.app.lead")}</p>
             <ol className="list-decimal pl-5 space-y-1.5">
-              <li>Open the app and sign in.</li>
+              <li>{t("account_deletion.app.step_open")}</li>
               <li>
-                Go to <strong>More (•••) → Settings</strong> (on the website:{" "}
-                <strong>Settings</strong>).
+                <Trans i18nKey="account_deletion.app.step_settings" ns="auth" components={strong} />
               </li>
               <li>
-                Tap <strong>Delete account</strong>.
+                <Trans i18nKey="account_deletion.app.step_delete" ns="auth" components={strong} />
               </li>
               <li>
-                Confirm with <strong>Yes, delete it</strong>.
+                <Trans i18nKey="account_deletion.app.step_confirm" ns="auth" components={strong} />
               </li>
             </ol>
             <p className="mt-3">
-              Your account is deleted immediately and you're signed out. This
-              cannot be undone.
+              {t("account_deletion.app.result")}
             </p>
           </Section>
 
-          <Section title="2. Or request it by email">
+          <Section title={t("account_deletion.email.title")}>
             <p>
-              If you can't sign in, email{" "}
-              <a
-                href="mailto:hello@eventvendora.com?subject=Delete%20my%20account"
-                className="text-accent font-medium"
-              >
-                hello@eventvendora.com
-              </a>{" "}
-              from the email address on your account, with the subject{" "}
-              <strong>"Delete my account."</strong> We verify ownership and
-              complete the deletion within 30 days.
+              <Trans
+                i18nKey="account_deletion.email.body"
+                ns="auth"
+                components={{
+                  ...strong,
+                  mail: (
+                    <a
+                      href="mailto:hello@eventvendora.com?subject=Delete%20my%20account"
+                      className="text-accent font-medium"
+                    />
+                  ),
+                }}
+              />
             </p>
           </Section>
 
-          <Section title="3. What gets deleted">
+          <Section title={t("account_deletion.deleted.title")}>
             <p className="mb-2">
-              Deleting your account permanently removes:
+              {t("account_deletion.deleted.lead")}
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Your login (email and password) and profile.</li>
+              <li>{t("account_deletion.deleted.login")}</li>
               <li>
-                Your vendor listings and the portfolio / gallery photos you
-                uploaded.
+                {t("account_deletion.deleted.listings")}
               </li>
-              <li>Your messages, inquiries, and conversation threads.</li>
-              <li>Saved searches, saved vendors, and planning data.</li>
-              <li>Push-notification tokens for your devices.</li>
+              <li>{t("account_deletion.deleted.messages")}</li>
+              <li>{t("account_deletion.deleted.saved")}</li>
+              <li>{t("account_deletion.deleted.push")}</li>
             </ul>
           </Section>
 
-          <Section title="4. What's kept, and for how long">
+          <Section title={t("account_deletion.kept.title")}>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Anonymized moderation / audit records</strong> — kept
-                with your personal identifiers removed, for safety and abuse
-                prevention.
+                <Trans i18nKey="account_deletion.kept.audit" ns="auth" components={strong} />
               </li>
               <li>
-                <strong>Records required by law</strong> (e.g. tax or
-                fraud-prevention records) — retained only as long as the law
-                requires, then deleted.
+                <Trans i18nKey="account_deletion.kept.legal" ns="auth" components={strong} />
               </li>
               <li>
-                <strong>Encrypted backups</strong> — purged on a rolling basis,
-                within 30 days of deletion.
+                <Trans i18nKey="account_deletion.kept.backups" ns="auth" components={strong} />
               </li>
             </ul>
           </Section>
 
-          <Section title="5. Questions">
+          <Section title={t("account_deletion.questions.title")}>
             <p>
-              Email{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="text-accent font-medium"
-              >
-                hello@eventvendora.com
-              </a>{" "}
-              and we'll help. See our{" "}
-              <a href="/privacy" className="text-accent font-medium">
-                Privacy Policy
-              </a>{" "}
-              for more on how we handle your data.
+              <Trans
+                i18nKey="account_deletion.questions.body"
+                ns="auth"
+                components={{
+                  mail: (
+                    <a
+                      href="mailto:hello@eventvendora.com"
+                      className="text-accent font-medium"
+                    />
+                  ),
+                  privacy: <a href="/privacy" className="text-accent font-medium" />,
+                }}
+              />
             </p>
           </Section>
         </div>

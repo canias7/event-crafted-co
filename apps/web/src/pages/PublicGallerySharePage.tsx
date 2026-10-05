@@ -377,7 +377,7 @@ function AlbumView({
             <div className="aspect-square overflow-hidden rounded-md bg-secondary/40">
               <img
                 src={`${img.image_url}?width=400&quality=75`}
-                alt={img.caption ?? "Shared image"}
+                alt={img.caption ?? t("image.alt")}
                 loading="lazy"
                 className="w-full h-full object-cover transition group-hover:scale-[1.02]"
               />
@@ -401,10 +401,10 @@ function AlbumView({
             {loadingMore ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Loading…
+                {t("album.loading")}
               </>
             ) : (
-              `Load more (${total - images.length} left)`
+              t("album.loadMore", { count: total - images.length })
             )}
           </Button>
         </div>
@@ -435,6 +435,7 @@ function SimpleLightbox({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const { t } = useTranslation("gallery");
   const img = images[index];
   const [downloading, setDownloading] = useState(false);
   useEffect(() => {
@@ -454,7 +455,7 @@ function SimpleLightbox({
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("image.close")}
         className="absolute top-4 right-4 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20"
       >
         <X className="w-5 h-5" />
@@ -470,7 +471,9 @@ function SimpleLightbox({
             await downloadCrossOrigin(img.image_url);
           } catch (err) {
             toast.error(
-              err instanceof Error ? err.message : "Couldn't download.",
+              err instanceof Error
+                ? t("image.downloadError", { message: err.message })
+                : t("image.downloadFailed"),
             );
           } finally {
             setDownloading(false);
@@ -483,11 +486,11 @@ function SimpleLightbox({
         ) : (
           <Download className="w-4 h-4" />
         )}
-        {downloading ? "Downloading…" : "Download"}
+        {downloading ? t("image.downloading") : t("image.download")}
       </button>
       <img
         src={img.image_url}
-        alt={img.caption ?? "Shared image"}
+        alt={img.caption ?? t("image.alt")}
         className="max-h-[90vh] max-w-[90vw] object-contain rounded-md"
         onClick={(e) => e.stopPropagation()}
       />

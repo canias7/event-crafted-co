@@ -1,0 +1,166 @@
+{
+  "vendorCount_one": "{{count}} proveedor",
+  "vendorCount_other": "{{count}} proveedores",
+  "faq": {
+    "eyebrow": "Preguntas frecuentes",
+    "commonQuestions": "Dudas comunes",
+    "frequentlyAsked": "Preguntas frecuentes"
+  },
+  "city": {
+    "meta": {
+      "title": "Proveedores para eventos en {{city}} — Vendora",
+      "description": "Fotógrafos, floristas, espacios para eventos, servicios de banquetes y organizadores seleccionados a mano en {{city}}. Consulta precios y reseñas reales, y contrata directamente a través de Vendora."
+    },
+    "empty": {
+      "title": "Aún no hay proveedores en {{city}}",
+      "body": "Vendora todavía está armando su selección en {{city}}. Consulta el directorio completo o elige otra ciudad.",
+      "cta": "Ver todas las ciudades"
+    },
+    "back": "Todas las ciudades",
+    "eyebrow": "— PROVEEDORES EN {{city}}",
+    "title": "La lista de {{city}}, <accent>seleccionada a mano.</accent>",
+    "intro_one": "Hoy Vendora tiene {{count}} proveedor en {{city}} y sus alrededores: fotografía, flores, banquetes, espacios para eventos y todo lo demás que necesita una celebración. Antes de publicar un anuncio, nuestro equipo editorial revisa la calidad del portafolio, las referencias y la fiabilidad de cada proveedor.",
+    "intro_other": "Hoy Vendora tiene {{count}} proveedores en {{city}} y sus alrededores: fotografía, flores, banquetes, espacios para eventos y todo lo demás que necesita una celebración. Antes de publicar un anuncio, nuestro equipo editorial revisa la calidad del portafolio, las referencias y la fiabilidad de cada proveedor.",
+    "countIn_one": "{{count}} proveedor en {{city}}",
+    "countIn_other": "{{count}} proveedores en {{city}}",
+    "faqTitle": "Organizar un evento en {{city}}",
+    "otherCities": {
+      "eyebrow": "— OTRAS CIUDADES",
+      "title": "Proveedores en ciudades cercanas"
+    },
+    "jsonLd": {
+      "name": "Proveedores para eventos en {{city}}",
+      "description": "Proveedores para eventos seleccionados a mano en {{city}}."
+    }
+  },
+  "cityFaqs": {
+    "find": {
+      "q": "¿Cómo encuentro proveedores en {{city}} en Vendora?",
+      "a": "Consulta el directorio y filtra por ubicación, o usa esta página para ver solo a los proveedores que están en {{city}} o cerca. Cada perfil muestra precios, reseñas reales y mensajes directos, sin necesidad de llamar ni de perseguir respuestas."
+    },
+    "vetted": {
+      "q": "¿Los proveedores de {{city}} en Vendora están verificados?",
+      "a": "Sí. Antes de aprobar cualquier anuncio, nuestro equipo editorial revisa a mano la calidad del portafolio, las referencias y la trayectoria profesional de cada proveedor, sin importar la ciudad."
+    },
+    "eventTypes": {
+      "q": "¿Qué tipos de eventos atienden los proveedores de {{city}}?",
+      "a": "Bodas, cumpleaños especiales, reuniones de temporada, baby showers, aniversarios, eventos corporativos y cenas íntimas. Usa los filtros de categoría para afinar la búsqueda según lo que estás organizando."
+    },
+    "timing": {
+      "q": "¿Con cuánta anticipación debo contratar proveedores en {{city}}?",
+      "a": "Los proveedores de temporada alta (bodas de mayo a octubre y fiestas de fin de año en diciembre) suelen reservarse con 9 a 12 meses de anticipación. Para reuniones más pequeñas o fechas fuera de temporada, de 6 a 8 semanas suele bastar, aunque los espacios y fotógrafos más solicitados se reservan antes."
+    },
+    "fees": {
+      "q": "¿Hay algún cargo por reservar?",
+      "a": "Buscar y contactar proveedores es gratis para los anfitriones. Le pagas directamente a cada proveedor a través de los mensajes seguros y las propuestas de Vendora; no agregamos ningún recargo a sus precios."
+    }
+  },
+  "cityCategory": {
+    "meta": {
+      "title": "{{name}} en {{city}} — Vendora",
+      "description": "Proveedores de {{name}} seleccionados a mano en {{city}}. Consulta precios y reseñas reales, y contrata al proveedor ideal para tu evento a través de Vendora."
+    },
+    "all": "Todo en {{name}}",
+    "title": "{{name}} en <accent>{{city}}</accent>",
+    "intro": "{{longCopy}} Esta es la selección de proveedores de {{name}} que trabajan en {{city}}.",
+    "empty": {
+      "title": "Aún no hay proveedores de {{name}} en {{city}}",
+      "body": "Todavía estamos ampliando nuestra cobertura aquí. Mira otros proveedores de {{name}} en Vendora: muchos viajan para atender eventos."
+    },
+    "count_one": "{{count}} proveedor de {{name}}",
+    "count_other": "{{count}} proveedores de {{name}}",
+    "otherCities": {
+      "eyebrow": "También atienden",
+      "title": "{{name}} en otras ciudades"
+    },
+    "otherGroups": {
+      "eyebrow": "Más en {{city}}",
+      "title": "Otros proveedores en {{city}}"
+    },
+    "faqQuestionInCity": "{{question}} en {{city}}?",
+    "listName": "{{name}} en {{city}}"
+  },
+  "eventTypeCity": {
+    "meta": {
+      "title": "{{display}} en {{city}} — Vendora",
+      "description": "{{description}} Encuentra proveedores en {{city}} para {{noun}}."
+    },
+    "back": "Todos los proveedores",
+    "title": "{{eventType}} en <accent>{{city}}</accent>",
+    "intro": "{{description}} Estos son los proveedores que trabajan en {{city}} para {{noun}}.",
+    "empty": {
+      "title": "Aún no hay proveedores en {{city}} para {{noun}}",
+      "body": "Todavía estamos ampliando nuestra cobertura. Mira todos los proveedores para eventos de Vendora: muchos viajan.",
+      "cta": "Proveedores en {{city}}"
+    },
+    "browseByCategory": "Explora por categoría",
+    "mightNeed": "Lo que podrías necesitar para {{noun}}",
+    "categoryInCity": "{{category}} en {{city}}"
+  },
+  "eventTypes": {
+    "wedding": {
+      "display": "Proveedores para bodas",
+      "short": "Bodas",
+      "noun": "una boda",
+      "description": "Fotógrafos, floristas, espacios y organizadores seleccionados a mano para bodas."
+    },
+    "birthday": {
+      "display": "Proveedores para fiestas de cumpleaños",
+      "short": "Fiestas de cumpleaños",
+      "noun": "un cumpleaños especial",
+      "description": "Del primer cumpleaños a los 50: proveedores que convierten el día en algo memorable."
+    },
+    "baby-shower": {
+      "display": "Proveedores para baby showers",
+      "short": "Baby showers",
+      "noun": "un baby shower",
+      "description": "Fotógrafos, decoradores y servicios de banquetes especializados en baby showers y revelaciones de género."
+    },
+    "anniversary": {
+      "display": "Proveedores para aniversarios",
+      "short": "Aniversarios",
+      "noun": "una celebración de aniversario",
+      "description": "Proveedores para aniversarios especiales: renovación de votos, cenas y reuniones familiares."
+    },
+    "holiday-dinner": {
+      "display": "Proveedores para cenas de fiestas",
+      "short": "Cenas de fiestas",
+      "noun": "una cena de fiestas",
+      "description": "Servicios de banquetes, chefs privados, decoradores y empresas de renta para Acción de Gracias, Navidad, Año Nuevo y reuniones de temporada."
+    },
+    "corporate": {
+      "display": "Proveedores para eventos corporativos",
+      "short": "Eventos corporativos",
+      "noun": "un evento corporativo",
+      "description": "Organizadores de eventos, equipos audiovisuales, servicios de banquetes y espacios para galas, retiros y lanzamientos de productos."
+    },
+    "graduation": {
+      "display": "Proveedores para fiestas de graduación",
+      "short": "Fiestas de graduación",
+      "noun": "una fiesta de graduación",
+      "description": "Fotógrafos, servicios de banquetes y decoradores para fiestas de graduación y otros logros."
+    },
+    "bridal": {
+      "display": "Proveedores para despedidas de soltera",
+      "short": "Despedidas de soltera",
+      "noun": "una despedida de soltera",
+      "description": "Floristas, fotógrafos y espacios para despedidas de soltera y celebraciones previas a la boda."
+    },
+    "engagement": {
+      "display": "Proveedores para fiestas de compromiso",
+      "short": "Fiestas de compromiso",
+      "noun": "una fiesta de compromiso",
+      "description": "Proveedores seleccionados a mano para fiestas de compromiso: fotógrafos, floristas y espacios."
+    }
+  },
+  "topCategories": {
+    "Photographer": "Fotógrafos",
+    "Florist": "Floristas",
+    "Venue": "Espacios para eventos",
+    "Catering": "Banquetes",
+    "DJ": "DJs",
+    "Decorator": "Decoradores",
+    "AV": "Equipo audiovisual",
+    "Event Planner": "Organizadores de eventos"
+  }
+}

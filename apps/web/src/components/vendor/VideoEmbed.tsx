@@ -1,16 +1,19 @@
 // Lightweight video URL → embed renderer. Recognizes YouTube + Vimeo;
 // falls back to a native <video> tag for direct .mp4 / .webm URLs.
 
+import { useTranslation } from "react-i18next";
+
 const YT_RE = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/;
 const VIMEO_RE = /vimeo\.com\/(?:video\/)?(\d+)/;
 
 export function VideoEmbed({ url, title }: { url: string; title?: string }) {
+  const { t } = useTranslation("vendorProfile");
   const yt = url.match(YT_RE);
   if (yt) {
     return (
       <iframe
         src={`https://www.youtube-nocookie.com/embed/${yt[1]}`}
-        title={title ?? "Vendor intro video"}
+        title={title ?? t("video.defaultTitle")}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         loading="lazy"
@@ -23,7 +26,7 @@ export function VideoEmbed({ url, title }: { url: string; title?: string }) {
     return (
       <iframe
         src={`https://player.vimeo.com/video/${v[1]}`}
-        title={title ?? "Vendor intro video"}
+        title={title ?? t("video.defaultTitle")}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
         loading="lazy"

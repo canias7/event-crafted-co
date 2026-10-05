@@ -33,7 +33,7 @@
   "cookies": {
     "dismiss": "Dismiss",
     "title": "Cookies, briefly",
-    "body": "We use essential cookies to keep you signed in, and (with your consent) analytics cookies to understand which features get used. We don't sell data and we don't use ad-tracking cookies. See our <link>Privacy Policy</link>.",
+    "body": "We use essential cookies to keep you signed in, and (with your consent) analytics cookies to understand which features get used. We don't sell data and we don't use ad-tracking cookies. See our <policy>Privacy Policy</policy>.",
     "accept_all": "Accept all",
     "essential_only": "Essential only"
   },

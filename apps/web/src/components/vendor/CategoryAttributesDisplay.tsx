@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/format";
@@ -20,6 +21,32 @@ import {
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type Attrs = Record<string, AttrValue>;
 
+// Section names, field labels, suffixes and preset options in the
+// visitor's language (locales/<language>/vendorProfileParts.json,
+// keyed by the English text). The stored values stay English; a
+// vendor's own custom tag isn't in the list and shows as typed.
+type AttributeNames = Record<"section" | "label" | "suffix" | "option", (text: string) => string>;
+
+function useAttributeNames(): AttributeNames {
+  const { t, i18n } = useTranslation("vendorProfileParts");
+  const language = i18n.resolvedLanguage;
+  return useMemo(() => {
+    const lookup = (group: string) => {
+      const names = t(`attributes.${group}`, { returnObjects: true }) as unknown;
+      return (text: string) =>
+        names && typeof names === "object" && Object.prototype.hasOwnProperty.call(names, text)
+          ? String((names as Record<string, unknown>)[text])
+          : text;
+    };
+    return {
+      section: lookup("sections"),
+      label: lookup("labels"),
+      suffix: lookup("suffixes"),
+      option: lookup("options"),
+    };
+  }, [t, language]);
+}
+
 export function CategoryAttributesDisplay({
   vendorId,
   category,
@@ -27,6 +54,8 @@ export function CategoryAttributesDisplay({
   vendorId: string;
   category: string;
 }) {
+  const { t } = useTranslation("vendorProfile");
+  const names = useAttributeNames();
   const schema = getCategorySchema(category);
   const [attrs, setAttrs] = useState<Attrs | null>(null);
 
@@ -76,11 +105,11 @@ export function CategoryAttributesDisplay({
   return (
     <div className="space-y-7">
       <h2 className="font-editorial text-3xl sm:text-4xl text-foreground">
-        About this {category.toLowerCase()}
+        {t("attributes.title", { category: category.toLowerCase() })}
       </h2>
       <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7">
         {populatedSections.map((section) => (
-          <SectionDisplay key={section.name} section={section} attrs={attrs} />
+          <SectionDisplay key={section.name} section={section} attrs={attrs} names={names} />
         ))}
       </div>
     </div>
@@ -90,9 +119,11 @@ export function CategoryAttributesDisplay({
 function SectionDisplay({
   section,
   attrs,
+  names,
 }: {
   section: CategorySection;
   attrs: Attrs;
+  names: AttributeNames;
 }) {
   const populated = section.fields.filter((f) => hasValue(attrs[f.key]));
   if (populated.length === 0) return null;
@@ -100,11 +131,11 @@ function SectionDisplay({
   return (
     <div>
       <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-3">
-        {section.name}
+        {names.section(section.name)}
       </p>
       <dl className="space-y-2.5 text-sm">
         {populated.map((field) => (
-          <FieldDisplay key={field.key} field={field} value={attrs[field.key]} />
+          <FieldDisplay key={field.key} field={field} value={attrs[field.key]} names={names} />
         ))}
       </dl>
     </div>
@@ -114,14 +145,17 @@ function SectionDisplay({
 function FieldDisplay({
   field,
   value,
+  names,
 }: {
   field: AttributeField;
   value: AttrValue;
+  names: AttributeNames;
 }) {
+  const label = names.label(field.label);
   if (field.type === "currency" && typeof value === "number") {
     return (
       <div className="flex items-baseline justify-between gap-3">
-        <dt className="text-muted-foreground">{field.label}</dt>
+        <dt className="text-muted-foreground">{label}</dt>
         <dd className="font-medium tnum tabular-nums">{formatCents(value)}</dd>
       </div>
     );
@@ -130,10 +164,10 @@ function FieldDisplay({
   if (field.type === "int" && typeof value === "number") {
     return (
       <div className="flex items-baseline justify-between gap-3">
-        <dt className="text-muted-foreground">{field.label}</dt>
+        <dt className="text-muted-foreground">{label}</dt>
         <dd className="font-medium tnum tabular-nums">
           {value}
-          {field.suffix ? ` ${field.suffix}` : ""}
+          {field.suffix ? ` ${names.suffix(field.suffix)}` : ""}
         </dd>
       </div>
     );
@@ -143,7 +177,7 @@ function FieldDisplay({
     return (
       <div className="flex items-center gap-2">
         <Check className="w-3.5 h-3.5 text-accent shrink-0" />
-        <dt className="text-foreground">{field.label}</dt>
+        <dt className="text-foreground">{label}</dt>
       </div>
     );
   }
@@ -153,7 +187,7 @@ function FieldDisplay({
     if (tags.length === 0) return null;
     return (
       <div>
-        <dt className="text-foreground mb-2">{field.label}</dt>
+        <dt className="text-foreground mb-2">{label}</dt>
         <dd className="flex flex-wrap gap-2">
           {tags.map((t) => (
             <span
@@ -165,7 +199,7 @@ function FieldDisplay({
                 border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >
-              {t}
+              {names.option(t)}
             </span>
           ))}
         </dd>
@@ -176,8 +210,8 @@ function FieldDisplay({
   if (field.type === "select" && typeof value === "string" && value) {
     return (
       <div className="flex items-baseline justify-between gap-3">
-        <dt className="text-muted-foreground">{field.label}</dt>
-        <dd className="font-medium">{value}</dd>
+        <dt className="text-muted-foreground">{label}</dt>
+        <dd className="font-medium">{names.option(value)}</dd>
       </div>
     );
   }

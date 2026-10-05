@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -13,6 +14,7 @@ const DASHBOARD_PATHS = new Set([
 ]);
 
 export function MobilePortalBell() {
+  const { t } = useTranslation("notifications");
   const location = useLocation();
   const { session, profile } = useAuth();
 
@@ -30,7 +32,7 @@ export function MobilePortalBell() {
     <div className="lg:hidden fixed top-3 right-3 z-50">
       <Link
         to={inboxPath}
-        aria-label="Open inbox"
+        aria-label={t("mobile.open_inbox")}
         className="w-10 h-10 rounded-full bg-background/85 backdrop-blur-sm border border-border shadow-soft flex items-center justify-center text-muted-foreground hover:text-accent transition-colors"
       >
         <MessageSquare className="w-4 h-4" />

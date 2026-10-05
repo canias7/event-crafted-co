@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { Check, Loader2, FileSignature, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,11 +28,12 @@ interface SignContract {
   has_fixed_recipient: boolean;
 }
 
-function fmtDate(iso: string | null): string {
+// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -42,6 +44,8 @@ function fmtDate(iso: string | null): string {
 
 export default function SignContractPage() {
   const { token } = useParams<{ token: string }>();
+  const { t, i18n } = useTranslation("checkout");
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
   const [contract, setContract] = useState<SignContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [signerName, setSignerName] = useState("");
@@ -87,13 +91,13 @@ export default function SignContractPage() {
     });
     setSendingCode(false);
     if (error) {
-      toast.error("Couldn't send the code", {
-        description: "Please try again in a moment.",
+      toast.error(t("sign.toast.codeError"), {
+        description: t("sign.toast.codeErrorBody"),
       });
       return;
     }
     setCodeSent(true);
-    toast.success("Code sent — check your email");
+    toast.success(t("sign.toast.codeSent"));
   }
 
   async function sign() {
@@ -119,17 +123,17 @@ export default function SignContractPage() {
     if (error) {
       const m = String(error.message || "");
       const friendly = m.includes("invalid_code")
-        ? "That code isn't right. Double-check and try again."
+        ? t("sign.toast.invalidCode")
         : m.includes("code_expired_or_missing")
-          ? "Your code expired. Request a new one."
+          ? t("sign.toast.codeExpired")
           : m.includes("too_many_attempts")
-            ? "Too many attempts. Request a new code."
-            : "Couldn't record your signature.";
+            ? t("sign.toast.tooManyAttempts")
+            : t("sign.toast.signError");
       toast.error(friendly);
       return;
     }
     if (data === "signed") {
-      toast.success("Signed — thank you!");
+      toast.success(t("sign.toast.signed"));
       setContract((c) =>
         c
           ? {
@@ -159,9 +163,9 @@ export default function SignContractPage() {
     return (
       <div className="min-h-screen public-canvas flex items-center justify-center px-6">
         <div className="text-center">
-          <h1 className="font-editorial text-3xl mb-2">Contract not found</h1>
+          <h1 className="font-editorial text-3xl mb-2">{t("sign.notFound.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            This signing link is invalid or has expired.
+            {t("sign.notFound.body")}
           </p>
         </div>
       </div>
@@ -177,8 +181,8 @@ export default function SignContractPage() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <FileSignature className="w-4 h-4" />
           {contract.vendor_business_name
-            ? `${contract.vendor_business_name} · Contract`
-            : "Contract"}
+            ? t("sign.headerVendor", { vendor: contract.vendor_business_name })
+            : t("sign.header")}
         </div>
 
         <div
@@ -203,15 +207,15 @@ export default function SignContractPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-foreground">
-                      Signed by {contract.signer_name}
+                      {t("sign.signedBy", { name: contract.signer_name ?? "" })}
                     </p>
                     <p className="text-sm text-foreground">
-                      {fmtDate(contract.signed_at)}
+                      {fmtDate(contract.signed_at, dateLocale)}
                     </p>
                     {contract.signature_image ? (
                       <img
                         src={contract.signature_image}
-                        alt="Signature"
+                        alt={t("sign.signatureAlt")}
                         className="mt-2 h-14 bg-white rounded border border-border"
                       />
                     ) : (
@@ -230,19 +234,19 @@ export default function SignContractPage() {
                   className="rounded-full"
                 >
                   <Download className="w-4 h-4 mr-1.5" />
-                  Download signed PDF
+                  {t("sign.downloadPdf")}
                 </Button>
               </div>
             ) : isOpen && fixedRecipient ? (
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Type your full name to sign
+                    {t("sign.nameLabel")}
                   </label>
                   <Input
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
-                    placeholder="Your full name"
+                    placeholder={t("sign.namePlaceholder")}
                     className="mt-1"
                   />
                   {signerName.trim() && !signatureImage ? (
@@ -256,7 +260,7 @@ export default function SignContractPage() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Or draw your signature (optional)
+                    {t("sign.drawLabel")}
                   </label>
                   <div className="mt-1">
                     <SignaturePad onChange={setSignatureImage} />
@@ -266,14 +270,21 @@ export default function SignContractPage() {
                     the contract's bound recipient, so only they can sign. */}
                 <div className="border-t border-foreground/10 pt-4">
                   <label className="text-xs font-medium text-muted-foreground">
-                    Verify your email to sign
+                    {t("sign.verifyLabel")}
                   </label>
                   <div className="mt-1 flex gap-2 items-center">
                     <div className="flex-1 rounded-md border border-foreground/15 bg-muted/40 px-3 py-2 text-sm text-foreground">
-                      We'll send a code to{" "}
-                      <span className="font-medium">
-                        {contract.recipient_email_masked}
-                      </span>
+                      <Trans
+                        t={t}
+                        i18nKey="sign.codeTo"
+                        components={{
+                          email: (
+                            <span className="font-medium">
+                              {contract.recipient_email_masked}
+                            </span>
+                          ),
+                        }}
+                      />
                     </div>
                     <Button
                       type="button"
@@ -285,9 +296,9 @@ export default function SignContractPage() {
                       {sendingCode ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : codeSent ? (
-                        "Resend"
+                        t("sign.resend")
                       ) : (
-                        "Send code"
+                        t("sign.sendCode")
                       )}
                     </Button>
                   </div>
@@ -299,12 +310,13 @@ export default function SignContractPage() {
                         onChange={(e) =>
                           setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
                         }
-                        placeholder="Enter the 6-digit code"
+                        placeholder={t("sign.codePlaceholder")}
                         className="tracking-[0.4em] text-center"
                       />
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        We emailed a code to {contract.recipient_email_masked}.
-                        It expires in 10 minutes.
+                        {t("sign.codeSentTo", {
+                          email: contract.recipient_email_masked ?? "",
+                        })}
                       </p>
                     </div>
                   ) : null}
@@ -317,8 +329,7 @@ export default function SignContractPage() {
                     className="mt-0.5"
                   />
                   <span>
-                    I have read and agree to this contract, and my signature
-                    above is my legally binding electronic signature.
+                    {t("sign.consent")}
                   </span>
                 </label>
                 <Button
@@ -336,26 +347,27 @@ export default function SignContractPage() {
                   ) : (
                     <FileSignature className="w-4 h-4 mr-1.5" />
                   )}
-                  Sign contract
+                  {t("sign.submit")}
                 </Button>
               </div>
             ) : isOpen ? (
               <p className="text-sm text-muted-foreground">
-                This contract isn't ready for signing yet
                 {contract.vendor_business_name
-                  ? ` — please reach out to ${contract.vendor_business_name}.`
-                  : "."}
+                  ? t("sign.notReadyVendor", { vendor: contract.vendor_business_name })
+                  : t("sign.notReady")}
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                This contract is {contract.status} and can no longer be signed.
+                {t([`sign.closed.${contract.status}`, "sign.closed.other"], {
+                  status: contract.status,
+                })}
               </p>
             )}
           </div>
         </div>
 
         <p className="text-[11px] text-muted-foreground text-center mt-4">
-          Powered by Vendora · electronic signatures
+          {t("sign.poweredBy")}
         </p>
       </div>
     </div>

@@ -7,6 +7,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { supabase } from "@/integrations/supabase/client";
 import { vendorImageUrl } from "@/lib/storage";
 
@@ -21,6 +23,8 @@ interface OtherListing {
 }
 
 export function VendorOtherListings({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
+  const categoryNames = useCategoryNames();
   const [items, setItems] = useState<OtherListing[] | null>(null);
   // listing id → cover image (first portfolio photo). Falls back to the
   // logo, then a monogram, so cards always show something.
@@ -91,14 +95,14 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
 
   return (
     <div>
-      <p className="font-label text-accent mb-4">More from this vendor</p>
-      <h2 className="font-editorial text-4xl mb-6">Their other listings</h2>
+      <p className="font-label text-accent mb-4">{t("otherListings.eyebrow")}</p>
+      <h2 className="font-editorial text-4xl mb-6">{t("otherListings.title")}</h2>
       <div className="relative">
         {showArrows && (
           <button
             type="button"
             onClick={() => scrollByCards(-1)}
-            aria-label="Scroll to previous listings"
+            aria-label={t("otherListings.previous")}
             className="absolute -left-3 top-[38%] -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-background border border-border shadow-soft hover:bg-secondary transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -113,7 +117,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
             const displayName =
               l.business_name?.trim() ||
               l.brand?.business_name?.trim() ||
-              "Listing";
+              t("otherListings.listingFallback");
             const cover = covers[l.id] || l.logo_url;
             return (
               <Link
@@ -137,7 +141,9 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
                 </div>
                 <div className="p-3">
                   <p className="text-xs uppercase tracking-widest text-muted-foreground truncate">
-                    {l.category ?? "Vendor"}
+                    {l.category
+                      ? categoryNames.sub(l.category)
+                      : (l.category ?? t("otherListings.vendorFallback"))}
                   </p>
                   <h3 className="mt-1 font-bold text-foreground truncate">
                     {displayName}
@@ -157,7 +163,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
           <button
             type="button"
             onClick={() => scrollByCards(1)}
-            aria-label="Scroll to more listings"
+            aria-label={t("otherListings.next")}
             className="absolute -right-3 top-[38%] -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 items-center justify-center rounded-full bg-background border border-border shadow-soft hover:bg-secondary transition-colors"
           >
             <ChevronRight className="w-4 h-4" />

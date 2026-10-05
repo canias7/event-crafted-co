@@ -2,12 +2,14 @@
 // onChange. Sizes its backing buffer to its rendered size on mount so the
 // pointer coordinates line up 1:1 (no scaling offset).
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function SignaturePad({
   onChange,
 }: {
   onChange: (dataUrl: string | null) => void;
 }) {
+  const { t } = useTranslation("checkout");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const inked = useRef(false);
@@ -89,7 +91,7 @@ export function SignaturePad({
         />
         {!hasInk ? (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-            Draw your signature here
+            {t("sign.pad.placeholder")}
           </span>
         ) : null}
       </div>
@@ -99,7 +101,7 @@ export function SignaturePad({
           onClick={clear}
           className="mt-1.5 text-xs text-muted-foreground hover:text-accent underline"
         >
-          Clear
+          {t("sign.pad.clear")}
         </button>
       ) : null}
     </div>

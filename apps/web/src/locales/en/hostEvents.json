@@ -1,0 +1,80 @@
+{
+  "title": "Events",
+  "subtitle": "Plan your events — weddings, dinners, anything.",
+  "upNext": "Up next",
+  "onThisDay": "On this day",
+  "nothingOnDay": "Nothing on this day.",
+  "past": "Past",
+  "newEvent": "New event",
+  "eventTypes": {
+    "wedding": "Wedding",
+    "birthday": "Birthday",
+    "anniversary": "Anniversary",
+    "corporate": "Corporate",
+    "holiday_dinner": "Holiday dinner",
+    "other": "Other"
+  },
+  "weekdays": ["S", "M", "T", "W", "T", "F", "S"],
+  "calendar": {
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "empty": {
+    "title": "Plan your first event",
+    "body": "Add a date, location, and a few details. You'll have a clean timeline of every event you're planning."
+  },
+  "card": {
+    "actions": "Event actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "liveBadge": "LIVE",
+    "live": "Live",
+    "goLive": "Go live",
+    "manageLive": "Manage live",
+    "pastLives": "Past lives ({{n}})",
+    "guests_one": "{{count}} guests",
+    "guests_other": "{{count}} guests",
+    "going_one": "{{count}} going",
+    "going_other": "{{count}} going",
+    "copied": "Copied",
+    "shareInvite": "Share invite link"
+  },
+  "deleteDialog": {
+    "title": "Delete event?",
+    "body": "\"{{title}}\" will be removed. This can't be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete"
+  },
+  "form": {
+    "newTitle": "New event",
+    "editTitle": "Edit event",
+    "title": "Title",
+    "titlePlaceholder": "e.g. Sarah & Marcus's Wedding",
+    "eventType": "Event type",
+    "eventTypePlaceholder": "Pick one (optional)",
+    "date": "Date",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "location": "Location",
+    "locationPlaceholder": "Venue or address",
+    "guests": "Guests",
+    "notes": "Notes",
+    "notesPlaceholder": "Anything else worth remembering.",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "creating": "Creating…",
+    "save": "Save changes",
+    "create": "Create event"
+  },
+  "toasts": {
+    "deleted": "Event deleted",
+    "inviteCopied": "Invite link copied",
+    "copyFailed": "Couldn't copy — long-press the link in the menu instead.",
+    "signInFirst": "Sign in first",
+    "titleRequired": "Title is required",
+    "dateRequired": "Date is required",
+    "dateRange": "Pick a date between today and the end of next year.",
+    "updated": "Event updated",
+    "created": "Event created"
+  }
+}

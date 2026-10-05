@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "title": "Claim your vendor listing — Vendora",
+    "description": "We pre-listed your business on Vendora. Claim this listing to take ownership and start receiving inquiries."
+  },
+  "notFound": {
+    "title": "Link not found",
+    "body": "This claim link is invalid or has been used. If you think this is a mistake, reach out to hello@eventvendora.com with the URL.",
+    "back": "Back to Vendora"
+  },
+  "eyebrow": "— CLAIM YOUR LISTING",
+  "intro": "We pre-listed <name/> on Vendora using public business info. Claim this listing to take ownership — you'll be able to edit your profile, set pricing, upload portfolio photos, and start receiving host inquiries.",
+  "invitedVia": "Invited via {{email}}. Vendora is a vendor-first event marketplace — no booking fees, no commissions, just direct connections to hosts planning weddings, birthdays, holidays, and more.",
+  "alreadyClaimed": "This listing has already been claimed. <link>Sign in</link> to access it.",
+  "signUp": "Sign up to claim",
+  "signIn": "Already have an account? Sign in",
+  "claim": "Claim this listing",
+  "notYours": "Not your business? Email <mail>hello@eventvendora.com</mail> and we'll remove the listing.",
+  "toast": {
+    "claimed": "Claimed — welcome to Vendora",
+    "error": "{{message}}",
+    "not_authenticated": "Sign in first to claim.",
+    "invalid_token": "This claim link is invalid or expired.",
+    "already_claimed": "Someone already claimed this listing.",
+    "already_owned": "This vendor is already linked to an account.",
+    "fallback": "Couldn't claim — try again."
+  }
+}

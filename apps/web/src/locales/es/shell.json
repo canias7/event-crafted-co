@@ -33,7 +33,7 @@
   "cookies": {
     "dismiss": "Cerrar",
     "title": "Cookies, en pocas palabras",
-    "body": "Usamos cookies esenciales para mantener tu sesión iniciada y (con tu consentimiento) cookies de analítica para entender qué funciones se usan. No vendemos datos ni usamos cookies de seguimiento publicitario. Consulta nuestra <link>Política de privacidad</link>.",
+    "body": "Usamos cookies esenciales para mantener tu sesión iniciada y (con tu consentimiento) cookies de analítica para entender qué funciones se usan. No vendemos datos ni usamos cookies de seguimiento publicitario. Consulta nuestra <policy>Política de privacidad</policy>.",
     "accept_all": "Aceptar todas",
     "essential_only": "Solo esenciales"
   },

@@ -10,6 +10,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Check, CreditCard, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,19 +60,36 @@ function formatMoney(cents: number, currency = "usd"): string {
   }).format(cents / 100);
 }
 
-function formatDate(iso: string | null): string {
+// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+// Money stays en-US in both: "$1,234.50" is also how US Spanish writes it.
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
+  return new Date(iso).toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
 }
 
+// Checkout-start failures. English shows the server's text as before;
+// Spanish gets a translated line (checkout.json → startError), with
+// its own wording for the server errors a payer can actually hit.
+const START_ERRORS = new Map([
+  ["vendor not ready to receive payments", "vendorNotReady"],
+  ["rate_limited", "rateLimited"],
+]);
+
+function startErrorDetail(t: TFunction, detail: string | null): string {
+  if (detail === null) return t("startError.tryAgain");
+  return t(`startError.${START_ERRORS.get(detail) ?? "detail"}`, { detail });
+}
+
 export default function InvoiceCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const flow = searchParams.get("status");
+  const { t, i18n } = useTranslation("checkout");
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
 
   const [invoice, setInvoice] = useState<InvoiceDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +127,8 @@ export default function InvoiceCheckoutPage() {
       body: { slug },
     });
     if (error || !(data as { url?: string })?.url) {
-      let detail = "Try again in a moment.";
+      // null = nothing from the server ("Try again in a moment.").
+      let detail: string | null = null;
       const ctx = (error as { context?: Response } | null)?.context;
       if (ctx && typeof ctx.json === "function") {
         try {
@@ -120,12 +140,14 @@ export default function InvoiceCheckoutPage() {
       } else if (error?.message) {
         detail = error.message;
       }
-      toast.error("Couldn't start checkout", { description: detail });
+      toast.error(t("startError.title"), {
+        description: startErrorDetail(t, detail),
+      });
       setPaying(false);
       return;
     }
     window.location.href = (data as { url: string }).url;
-  }, [slug, paying]);
+  }, [slug, paying, t]);
 
   if (loading) {
     return (
@@ -140,40 +162,48 @@ export default function InvoiceCheckoutPage() {
   if (notFound || !invoice) {
     return (
       <Shell>
-        <Centered title="Invoice not found" sub="This invoice doesn't exist." />
+        <Centered
+          title={t("invoice.notFound.title")}
+          sub={t("invoice.notFound.body")}
+        />
       </Shell>
     );
   }
 
   if (flow === "success" || invoice.status === "paid") {
     const amountPaid = formatMoney(invoice.total_cents, invoice.currency);
-    const vendorName = invoice.vendor_business_name ?? "Your vendor";
+    const vendorName = invoice.vendor_business_name ?? t("invoice.paid.yourVendor");
     return (
       <Shell>
         <Centered
           icon={<Check className="w-7 h-7 text-accent" />}
-          title="Payment received"
+          title={t("invoice.paid.title")}
           sub={
             <span>
-              You paid{" "}
-              <strong className="font-semibold text-foreground">{amountPaid}</strong>{" "}
-              {invoice.invoice_number ? (
-                <>
-                  for Invoice{" "}
-                  <span className="font-medium text-foreground">
-                    {invoice.invoice_number}
-                  </span>
-                  .{" "}
-                </>
-              ) : (
-                ". "
-              )}
-              A receipt is on its way to{" "}
-              <span className="font-medium text-foreground">
-                {invoice.bill_to_email ?? "your email"}
-              </span>
-              . {vendorName} will be in touch — funds settle to their account
-              within 2 business days.
+              <Trans
+                t={t}
+                i18nKey={
+                  invoice.invoice_number
+                    ? "invoice.paid.bodyNumber"
+                    : "invoice.paid.bodyNoNumber"
+                }
+                components={{
+                  amount: (
+                    <strong className="font-semibold text-foreground">{amountPaid}</strong>
+                  ),
+                  number: (
+                    <span className="font-medium text-foreground">
+                      {invoice.invoice_number}
+                    </span>
+                  ),
+                  email: (
+                    <span className="font-medium text-foreground">
+                      {invoice.bill_to_email ?? t("invoice.paid.yourEmail")}
+                    </span>
+                  ),
+                  vendor: <>{vendorName}</>,
+                }}
+              />
             </span>
           }
         />
@@ -185,8 +215,10 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Invoice cancelled"
-          sub={`${invoice.vendor_business_name ?? "The vendor"} cancelled this invoice. Please reach out if you have questions.`}
+          title={t("invoice.cancelled.title")}
+          sub={t("invoice.cancelled.body", {
+            vendor: invoice.vendor_business_name ?? t("invoice.cancelled.theVendor"),
+          })}
         />
       </Shell>
     );
@@ -196,8 +228,8 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Invoice not yet ready"
-          sub="This invoice hasn't been sent yet. Check back once your vendor finalizes it."
+          title={t("invoice.draft.title")}
+          sub={t("invoice.draft.body")}
         />
       </Shell>
     );
@@ -207,8 +239,10 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Already refunded"
-          sub={`${invoice.vendor_business_name ?? "Your vendor"} has refunded this invoice.`}
+          title={t("invoice.refunded.title")}
+          sub={t("invoice.refunded.body", {
+            vendor: invoice.vendor_business_name ?? t("invoice.refunded.yourVendor"),
+          })}
         />
       </Shell>
     );

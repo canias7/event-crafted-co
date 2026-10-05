@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { authErrorText } from "@/components/auth/authErrors";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
@@ -19,6 +20,7 @@ import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 // email rule.
 export default function SignupPage({ role = "host" }: { role?: "host" | "vendor" } = {}) {
   const { t } = useTranslation();
+  const { t: tAuth } = useTranslation("auth");
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,11 +34,11 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!adult) {
-      toast.error("You must confirm you're 18 or older to sign up.");
+      toast.error(tAuth("signup.toast.must_be_adult"));
       return;
     }
     if (captcha.blocked) {
-      toast.error("Please complete the bot-check below.");
+      toast.error(tAuth("captcha.complete"));
       return;
     }
     setLoading(true);
@@ -60,9 +62,9 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
     setLoading(false);
     if (error) {
       if (captcha.handleError(error)) {
-        toast.error("Please complete the bot-check below, then try again.");
+        toast.error(tAuth("captcha.complete_retry"));
       } else {
-        toast.error(error.message);
+        toast.error(authErrorText(error.message));
       }
       return;
     }
@@ -72,9 +74,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
     // user has an empty identities array. Without this check the user is
     // told "Application received" when nothing was created.
     if (data.user && (data.user.identities?.length ?? 0) === 0 && !data.session) {
-      toast.error(
-        "This email already has an account. Sign in instead — or use Forgot password if you can't get in.",
-      );
+      toast.error(tAuth("signup.toast.email_taken"));
       captcha.reset();
       return;
     }
@@ -98,30 +98,30 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       navigate(`/check-email?email=${encodeURIComponent(email)}&role=host`);
       return;
     }
-    toast.success("Account created");
+    toast.success(tAuth("signup.toast.created"));
     navigate("/customer/onboarding");
   }
 
   const isVendor = role === "vendor";
-  const pillLabel = isVendor ? "VENDOR SIGN UP" : "HOST SIGN UP";
-  const accentWord = isVendor ? "vendor." : "host.";
+  const pillLabel = isVendor ? tAuth("signup.pill_vendor") : tAuth("signup.pill_host");
+  const accentWord = isVendor ? tAuth("shared.accent_vendor") : tAuth("shared.accent_host");
   const otherSidePath = isVendor ? "/signup/host" : "/signup/vendor";
-  const otherSideLabel = isVendor ? "Sign up as a host" : "Sign up as a vendor";
+  const otherSideLabel = isVendor ? tAuth("signup.as_host") : tAuth("signup.as_vendor");
 
   return (
     <GlassyAuthShell
-      title={isVendor ? "List with Vendora," : "Plan with Vendora,"}
+      title={isVendor ? tAuth("signup.title_vendor") : tAuth("signup.title_host")}
       titleAccent={accentWord}
       subtitle={
         isVendor
-          ? "Create a vendor account. Your first listing is hand-reviewed before going live."
-          : "Create a host account. Free, takes a minute."
+          ? tAuth("signup.subtitle_vendor")
+          : tAuth("signup.subtitle_host")
       }
       pillLabel={pillLabel}
       topRight={
         <>
           <span>
-            <span style={{ opacity: 0.6 }}>Already have an account? </span>
+            <span style={{ opacity: 0.6 }}>{tAuth("shared.have_account")}{" "}</span>
             <Link
               to="/login"
               className="pb-px font-medium"
@@ -134,7 +134,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       }
       belowCardLink={
         <div>
-          <span style={{ opacity: 0.6 }}>On the other side? </span>
+          <span style={{ opacity: 0.6 }}>{tAuth("shared.other_side")}{" "}</span>
           <Link
             to={otherSidePath}
             className="font-medium pb-px"
@@ -151,14 +151,14 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             className="uppercase mb-1.5"
             style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
           >
-            {isVendor ? "Business name" : t("auth.signup.name_label")}
+            {isVendor ? tAuth("signup.business_name") : t("auth.signup.name_label")}
           </div>
           <input
             className="auth-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            placeholder={isVendor ? "Your business name" : "Your name"}
+            placeholder={isVendor ? tAuth("signup.business_placeholder") : tAuth("signup.name_placeholder")}
           />
         </div>
         <div>
@@ -179,7 +179,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="you@example.com"
+            placeholder={tAuth("shared.email_placeholder")}
           />
         </div>
         <div>
@@ -202,7 +202,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             />
             <button
               type="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? tAuth("password.hide") : tAuth("password.show")}
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
               className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-accent transition-colors"

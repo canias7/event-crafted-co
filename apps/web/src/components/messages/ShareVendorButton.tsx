@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Store, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import type { VendorCardAttachment } from "@/lib/messageAttachments";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Composer action: search approved vendors and drop one into the conversation
 // as a tappable card. Built for the "host introduces one vendor to another"
@@ -37,6 +39,8 @@ export function ShareVendorButton({
   onShare: (card: VendorCardAttachment) => Promise<boolean> | boolean;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("messages");
+  const categoryNames = useCategoryNames();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<VendorRow[]>([]);
@@ -88,7 +92,11 @@ export function ShareVendorButton({
       setOpen(false);
       setQuery("");
       setResults([]);
-      toast.success(`Shared ${v.business_name ?? "vendor"}`);
+      toast.success(
+        t("share_vendor.shared", {
+          name: v.business_name ?? t("share_vendor.shared_fallback"),
+        }),
+      );
     }
   }
 
@@ -100,16 +108,16 @@ export function ShareVendorButton({
         <button
           type="button"
           disabled={disabled}
-          aria-label="Share a vendor profile"
+          aria-label={t("share_vendor.trigger")}
           className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
         >
           <Store className="w-4 h-4" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 p-3">
-        <p className="text-sm font-semibold">Share a vendor</p>
+        <p className="text-sm font-semibold">{t("share_vendor.title")}</p>
         <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-          Send a vendor's profile into this conversation.
+          {t("share_vendor.subtitle")}
         </p>
         <div className="relative">
           <Search
@@ -120,8 +128,8 @@ export function ShareVendorButton({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search vendors…"
-            aria-label="Search vendors by business name"
+            placeholder={t("share_vendor.search_placeholder")}
+            aria-label={t("share_vendor.search_label")}
             className="pl-9 rounded-full"
           />
         </div>
@@ -132,11 +140,11 @@ export function ShareVendorButton({
             </div>
           ) : trimmed.length < MIN_QUERY ? (
             <p className="py-6 text-center text-xs text-muted-foreground">
-              Type at least {MIN_QUERY} characters.
+              {t("share_vendor.min_chars", { min: MIN_QUERY })}
             </p>
           ) : results.length === 0 ? (
             <p className="py-6 text-center text-xs text-muted-foreground">
-              No approved vendors match “{trimmed}”.
+              {t("share_vendor.no_results", { query: trimmed })}
             </p>
           ) : (
             results.map((v) => (
@@ -161,10 +169,12 @@ export function ShareVendorButton({
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    {v.business_name ?? "Vendor"}
+                    {v.business_name ?? t("share_vendor.vendor_fallback")}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {[v.category, v.location].filter(Boolean).join(" · ")}
+                    {[v.category ? categoryNames.sub(v.category) : null, v.location]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
                 {sendingId === v.id ? (

@@ -1,0 +1,60 @@
+{
+  "page_title": "Terms of Service — Vendora",
+  "eyebrow": "— LEGAL",
+  "title": "Terms of service",
+  "last_updated": "Last updated: May 3, 2026",
+  "translation_note": "This translation is for your convenience. If it differs from the English version, the English version prevails.",
+  "intro": "By using Vendora, you agree to these terms. If you don't, please don't use the platform. We may update these terms; meaningful changes will be announced via email and a banner notice 30 days before they take effect.",
+  "eligibility": {
+    "title": "1. Eligibility",
+    "body": "You must be at least 18 years old and able to enter a binding contract in your jurisdiction. Vendors must be a legitimate business — sole proprietors, LLCs, corporations."
+  },
+  "account": {
+    "title": "2. Your account",
+    "body": "You're responsible for keeping your password safe and for any activity under your account. Tell us immediately at <email>hello@eventvendora.com</email> if you suspect unauthorized access."
+  },
+  "hosts": {
+    "title": "3. For hosts",
+    "body": "Browsing Vendora and sending inquiries is free for hosts. When you book a vendor, you contract directly with that vendor — Vendora is the introduction layer, not the contracting party. Payment terms, cancellation policies, and deliverables are between you and the vendor."
+  },
+  "vendors": {
+    "title": "4. For vendors",
+    "commission": "Vendora charges <strong>3% on confirmed bookings</strong> (\"won\" inquiries). No listing fees, no monthly minimums.",
+    "membership": "Membership is <strong>month-to-month</strong>; you can pause or leave any time without penalty.",
+    "your_data": "Vendor profiles, portfolios, and reviews are <strong>your data</strong>. You can export your reviews at any time, including if you leave the platform.",
+    "ranking": "We do not accept money to influence search ranking. Sort order is determined by fit and quality signals only.",
+    "delivery": "You're responsible for delivering the services you describe in your profile and quotes."
+  },
+  "conduct": {
+    "title": "5. Prohibited conduct",
+    "body": "You agree not to: scrape vendor data, attempt to circumvent Vendora's commission by transacting off-platform after an introduction, post false or misleading reviews, harass other users, or use the platform for anything illegal."
+  },
+  "content": {
+    "title": "6. Content + intellectual property",
+    "body": "You retain ownership of everything you upload (portfolio images, messages, reviews). By posting, you grant Vendora a worldwide, royalty-free license to display it within the platform and (for vendors) in editorial features that promote your business."
+  },
+  "ai": {
+    "title": "7. AI-assisted replies",
+    "body": "When the AI inquiry agent is active, vendors review and approve every drafted reply before it sends. Vendora is not responsible for the content of vendor messages, AI-drafted or otherwise."
+  },
+  "disclaimers": {
+    "title": "8. Disclaimers",
+    "body": "Vendora is provided \"as is.\" We don't guarantee any specific vendor's availability, quality, or performance — vendors are independent businesses. Reviews are user-submitted opinion."
+  },
+  "liability": {
+    "title": "9. Limitation of liability",
+    "body": "To the fullest extent permitted by law, Vendora's liability is limited to fees you've paid us in the 12 months prior to a claim. We're not liable for indirect, consequential, or punitive damages."
+  },
+  "termination": {
+    "title": "10. Termination",
+    "body": "You can close your account anytime from your settings. We can suspend accounts that violate these terms with notice (or without notice for severe violations)."
+  },
+  "law": {
+    "title": "11. Governing law",
+    "body": "These terms are governed by the laws of the State of New York, without regard to conflict-of-law principles. Disputes are resolved in courts located in New York County."
+  },
+  "contact": {
+    "title": "12. Contact",
+    "body": "Questions about these terms: <email>hello@eventvendora.com</email>."
+  }
+}

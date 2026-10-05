@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "title": "Changelog — what's new on Vendora",
+    "description": "A running log of features, improvements, and fixes shipped to Vendora — the marketplace + planning tools for event hosts and vendors."
+  },
+  "eyebrow": "— CHANGELOG",
+  "title": "What we've been <gold>shipping.</gold>",
+  "intro": "The features, improvements and fixes you'll notice, newest first. No marketing fluff, just the work.",
+  "categories": {
+    "feature": "New",
+    "improvement": "Better",
+    "fix": "Fix",
+    "security": "Security"
+  },
+  "list_name": "Vendora changelog",
+  "entries": {
+    "explore_redesigned": {
+      "title": "Explore, redesigned",
+      "description": "Browse vendors' work in a two-column gallery, watch reels one at a time, and find every vendor and the ones you've saved, all from one page."
+    },
+    "vendors_page_look": {
+      "title": "A new look for the vendors page",
+      "description": "Browse by category with photo tiles, keep your filters in view while you scroll, and see each vendor in a taller card."
+    },
+    "host_vendor_pages": {
+      "title": "Pages for hosts and for vendors",
+      "description": "What Vendora does for someone planning an event, and what it does for event businesses, each have their own page now. The home page is simpler."
+    },
+    "how_it_works": {
+      "title": "How it works, step by step",
+      "description": "A new page walks hosts and vendors through Vendora, from the first search or listing to a confirmed booking."
+    },
+    "one_look": {
+      "title": "One look across the website and apps",
+      "description": "Libre Baskerville for every word, one set of colours, gold buttons and flat cards, the same on the website and in both apps."
+    },
+    "listing_drafts": {
+      "title": "Save a listing as a draft",
+      "description": "Vendors can save a listing part-way through and come back to finish it later."
+    },
+    "block_several_days": {
+      "title": "Block several days at once",
+      "description": "In the vendor app's calendar, pick any set of days and block them in one go."
+    },
+    "unanswered_badge": {
+      "title": "Unanswered inquiries at a glance",
+      "description": "The Inbox tab in the vendor app shows a badge with how many inquiries are waiting for a reply."
+    },
+    "password_reset_links": {
+      "title": "Password reset links work again",
+      "description": "The reset link in the email no longer says it has expired when it hasn't."
+    },
+    "vendor_messaging": {
+      "title": "Vendor-to-vendor messaging",
+      "description": "Vendors can message each other directly to coordinate on shared events, photographer to planner or florist to DJ, without looping in the host."
+    },
+    "verification_badges": {
+      "title": "Verification badges",
+      "description": "Vendors can send identity, insurance and business-licence documents for review. Approved checks show as badges on their profile and cards."
+    },
+    "english_spanish": {
+      "title": "English and Spanish",
+      "description": "The website follows your browser's language, in English or Spanish, and you can switch at the bottom of any page."
+    },
+    "city_category_pages": {
+      "title": "City and category pages",
+      "description": "Every city with vendors has its own page, and category pages answer the questions people ask most."
+    },
+    "faster_page_loads": {
+      "title": "Faster page loads",
+      "description": "Photos come in smaller, modern formats, and the next page starts loading as soon as you point at its link."
+    }
+  }
+}

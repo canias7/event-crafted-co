@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { supabase } from "@/integrations/supabase/client";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 
@@ -35,6 +37,8 @@ type Props =
 
 export function CoBookedRail(props: Props) {
   const { eyebrow, title, limit = 6 } = props;
+  const { t } = useTranslation("vendorProfile");
+  const categoryNames = useCategoryNames();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,8 +75,12 @@ export function CoBookedRail(props: Props) {
   if (loading) return null;
   if (items.length === 0) return null;
 
-  const heading = title ?? ("cobookedFor" in props ? "Often booked with" : "Recommended for you");
-  const eyebrowLabel = eyebrow ?? "Vendora suggests";
+  const heading =
+    title ??
+    ("cobookedFor" in props
+      ? t("coBookedRail.cobooked")
+      : t("coBookedRail.recommended"));
+  const eyebrowLabel = eyebrow ?? t("coBookedRail.eyebrow");
 
   return (
     <section>
@@ -93,7 +101,7 @@ export function CoBookedRail(props: Props) {
                     {v.business_name}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                    {v.category}
+                    {v.category ? categoryNames.sub(v.category) : v.category}
                     {v.location && ` · ${v.location}`}
                   </p>
                 </div>
@@ -103,10 +111,10 @@ export function CoBookedRail(props: Props) {
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-3 inline-flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5" />
                   {v.is_curated && v.cobookings && v.cobookings > 0
-                    ? `Hand-picked · booked together ${v.cobookings}×`
+                    ? t("coBookedRail.handPickedBooked", { times: v.cobookings })
                     : v.is_curated
-                      ? "Hand-picked partner"
-                      : `Booked together ${v.cobookings}×`}
+                      ? t("coBookedRail.handPicked")
+                      : t("coBookedRail.booked", { times: v.cobookings })}
                 </p>
               )}
             </Link>

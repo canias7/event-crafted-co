@@ -8,6 +8,7 @@ import { Download, Mail, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { CONTACT_EMAIL, Footer } from "@/components/public/Footer";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
@@ -16,63 +17,42 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
-const STATS: Array<{ value: string; label: string }> = [
-  { value: "31", label: "Vendor categories" },
-  { value: "2", label: "Languages" },
-  { value: "$0", label: "To list a business" },
+// The words for the stats, quick facts and colour names live in
+// locales/<language>/press.json (stats.<id>, facts.items.<id>,
+// brand.palette.<id>).
+const STATS: Array<{ id: string; value: string }> = [
+  { id: "categories", value: "31" },
+  { id: "languages", value: "2" },
+  { id: "free_listing", value: "$0" },
 ];
 
-const QUICK_FACTS = [
-  {
-    label: "What it is",
-    body: "An event marketplace where hosts find, message and book vendors, and keep each event's date, guests and notes in one place. Weddings, birthdays, corporate events, parties and more.",
-  },
-  {
-    label: "Founded",
-    body: "2026.",
-  },
-  {
-    label: "How vendors are reviewed",
-    body: "Every listing is reviewed by the Vendora team before it goes live.",
-  },
-  {
-    label: "What vendors get",
-    body: "A listing with portfolio photos, packages and prices; one inbox for inquiries; proposals and contracts clients sign online; and secure online payments. The Free plan includes one listing.",
-  },
-  {
-    label: "Finding vendors",
-    body: "Search by category, city and date, with a page for each city and category.",
-  },
-  {
-    label: "Languages",
-    body: "English and Spanish.",
-  },
-];
+const QUICK_FACTS = ["what", "founded", "reviewed", "vendors_get", "finding", "languages"];
 
 const PALETTE = [
-  { name: "Ink", hex: "#14161A" },
-  { name: "Ivory", hex: "#F4F1EA" },
-  { name: "Cream", hex: "#FBF9F4" },
-  { name: "Bronze", hex: "#8A6F3E" },
-  { name: "Champagne", hex: "#C9A86A" },
+  { id: "ink", hex: "#14161A" },
+  { id: "ivory", hex: "#F4F1EA" },
+  { id: "cream", hex: "#FBF9F4" },
+  { id: "bronze", hex: "#8A6F3E" },
+  { id: "champagne", hex: "#C9A86A" },
 ];
 
 export default function PressPage() {
+  const { t } = useTranslation("press");
   const [copied, setCopied] = useState(false);
 
   useDocumentMeta({
-    title: "Press kit — Vendora",
-    description: "Vendora's logo, colours, quick facts and press contact.",
+    title: t("meta.title"),
+    description: t("meta.description"),
   });
 
   async function copyEmail() {
     try {
       await navigator.clipboard.writeText(CONTACT_EMAIL);
       setCopied(true);
-      toast.success("Email copied");
+      toast.success(t("toast.copied"));
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Copy failed");
+      toast.error(t("toast.copy_failed"));
     }
   }
 
@@ -91,13 +71,12 @@ export default function PressPage() {
       {/* Hero */}
       <section className="border-b border-white/15 pb-12 pt-12 md:pb-16 md:pt-16">
         <div className="container mx-auto max-w-5xl px-5 md:px-8">
-          <p className="mb-4 font-label text-gold">Press kit</p>
+          <p className="mb-4 font-label text-gold">{t("hero.eyebrow")}</p>
           <h1 className="mb-5 font-editorial text-5xl leading-[1.0] md:text-6xl">
-            Everything you need to <span className="text-gold">write about us.</span>
+            <Trans t={t} i18nKey="hero.title" components={{ gold: <span className="text-gold" /> }} />
           </h1>
           <p className="mb-8 max-w-2xl text-base leading-relaxed md:text-lg">
-            Our logo and colours, the short version of what we do, and a real
-            person you can email.
+            {t("hero.body")}
           </p>
           {emailButton}
         </div>
@@ -109,7 +88,7 @@ export default function PressPage() {
           <div className="grid grid-cols-3 gap-4">
             {STATS.map((s, i) => (
               <motion.div
-                key={s.label}
+                key={s.id}
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -117,7 +96,7 @@ export default function PressPage() {
                 className="text-center md:text-left"
               >
                 <p className="mb-1 font-editorial text-4xl tnum md:text-5xl">{s.value}</p>
-                <p className="text-xs uppercase tracking-[0.2em]">{s.label}</p>
+                <p className="text-xs uppercase tracking-[0.2em]">{t(`stats.${s.id}`)}</p>
               </motion.div>
             ))}
           </div>
@@ -127,13 +106,13 @@ export default function PressPage() {
       {/* Quick facts */}
       <section className="py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 md:px-8">
-          <p className="mb-3 font-label text-gold">Quick facts</p>
-          <h2 className="mb-10 font-editorial text-4xl">The 60-second version</h2>
+          <p className="mb-3 font-label text-gold">{t("facts.eyebrow")}</p>
+          <h2 className="mb-10 font-editorial text-4xl">{t("facts.title")}</h2>
           <dl className="space-y-6">
-            {QUICK_FACTS.map((f) => (
-              <div key={f.label}>
-                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-gold">{f.label}</dt>
-                <dd className="m-0 text-base leading-relaxed">{f.body}</dd>
+            {QUICK_FACTS.map((id) => (
+              <div key={id}>
+                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-gold">{t(`facts.items.${id}.label`)}</dt>
+                <dd className="m-0 text-base leading-relaxed">{t(`facts.items.${id}.body`)}</dd>
               </div>
             ))}
           </dl>
@@ -143,8 +122,8 @@ export default function PressPage() {
       {/* Logo + brand */}
       <section className="border-t border-white/15 py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 md:px-8">
-          <p className="mb-3 font-label text-gold">Brand</p>
-          <h2 className="mb-8 font-editorial text-4xl">Logo and colours</h2>
+          <p className="mb-3 font-label text-gold">{t("brand.eyebrow")}</p>
+          <h2 className="mb-8 font-editorial text-4xl">{t("brand.title")}</h2>
 
           <div className="mb-6 grid gap-3 sm:grid-cols-2">
             <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#14161a] p-10">
@@ -156,8 +135,7 @@ export default function PressPage() {
           </div>
 
           <p className="mb-6 text-sm leading-relaxed">
-            Use the logo on Ink (#14161A) or Ivory (#F4F1EA). Don't stretch,
-            recolour or rotate it, or add effects. Need a logo file? Email us.
+            {t("brand.usage")}
           </p>
 
           <div className="mb-10 flex flex-wrap items-center gap-3 text-xs">
@@ -167,7 +145,7 @@ export default function PressPage() {
               className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-bold transition-colors hover:border-white/40"
             >
               <Download className="h-3 w-3" />
-              App icon (512×512)
+              {t("brand.app_icon", { size: "512×512" })}
             </a>
             <a
               href="/pwa-192.png"
@@ -175,19 +153,19 @@ export default function PressPage() {
               className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-bold transition-colors hover:border-white/40"
             >
               <Download className="h-3 w-3" />
-              App icon (192×192)
+              {t("brand.app_icon", { size: "192×192" })}
             </a>
           </div>
 
-          <h3 className="mb-4 font-editorial text-2xl">Colours</h3>
+          <h3 className="mb-4 font-editorial text-2xl">{t("brand.colours")}</h3>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
             {PALETTE.map((c) => (
-              <div key={c.name}>
+              <div key={c.id}>
                 <div
                   className="h-16 rounded-2xl border border-white/15"
                   style={{ backgroundColor: c.hex }}
                 />
-                <p className="mt-2 text-sm font-bold">{c.name}</p>
+                <p className="mt-2 text-sm font-bold">{t(`brand.palette.${c.id}`)}</p>
                 <p className="m-0 text-[11px] tnum text-[#f4f1ea]/80">{c.hex}</p>
               </div>
             ))}
@@ -198,11 +176,10 @@ export default function PressPage() {
       {/* Contact */}
       <section className="border-t border-white/15 py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 text-center md:px-8">
-          <p className="mb-3 font-label text-gold">Contact</p>
-          <h2 className="mb-3 font-editorial text-4xl">Let's talk</h2>
+          <p className="mb-3 font-label text-gold">{t("contact.eyebrow")}</p>
+          <h2 className="mb-3 font-editorial text-4xl">{t("contact.title")}</h2>
           <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed">
-            Editorial requests, interviews and partnership inquiries. We read
-            every message.
+            {t("contact.body")}
           </p>
           {emailButton}
         </div>

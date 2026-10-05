@@ -6,6 +6,7 @@
 // the dashboard.
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   password: string;
@@ -13,13 +14,14 @@ interface Props {
 
 interface Scored {
   level: 0 | 1 | 2 | 3 | 4;
-  label: string;
+  /** Key under password.strength in the auth namespace. */
+  labelKey: string;
   color: string;
 }
 
 function score(pw: string): Scored {
   if (!pw)
-    return { level: 0, label: "", color: "transparent" };
+    return { level: 0, labelKey: "", color: "transparent" };
 
   let s = 0;
   // Length contributes most.
@@ -40,7 +42,7 @@ function score(pw: string): Scored {
     s -= 1;
 
   const level = Math.max(0, Math.min(4, s)) as Scored["level"];
-  const labels = ["Too short", "Weak", "Fair", "Strong", "Very strong"];
+  const labelKeys = ["too_short", "weak", "fair", "strong", "very_strong"];
   const colors = [
     "#dc2626", // red — too short
     "#dc2626", // red — weak
@@ -48,11 +50,12 @@ function score(pw: string): Scored {
     "#16a34a", // green — strong
     "#16a34a", // green — very strong
   ];
-  return { level, label: labels[level], color: colors[level] };
+  return { level, labelKey: labelKeys[level], color: colors[level] };
 }
 
 export function PasswordStrengthMeter({ password }: Props) {
-  const { level, label, color } = useMemo(() => score(password), [password]);
+  const { t } = useTranslation("auth");
+  const { level, labelKey, color } = useMemo(() => score(password), [password]);
 
   if (!password) return null;
 
@@ -78,7 +81,7 @@ export function PasswordStrengthMeter({ password }: Props) {
           fontWeight: 500,
         }}
       >
-        {label}
+        {t(`password.strength.${labelKey}`)}
       </p>
     </div>
   );

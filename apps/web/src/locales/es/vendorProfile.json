@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "title": "{{name}} — {{category}} en Vendora",
+    "description": "{{category}} en Vendora",
+    "descriptionWithLocation": "{{category}} en Vendora · {{location}}",
+    "fallbackTitle": "Proveedor — Vendora",
+    "categoryFallbackBio": "{{category}} en Vendora."
+  },
+  "notFound": {
+    "title": "Proveedor no encontrado",
+    "body": "No encontramos el proveedor que buscas."
+  },
+  "backToDirectory": "Volver al directorio",
+  "about": {
+    "eyebrow": "Acerca de",
+    "title": "Acerca de {{name}}"
+  },
+  "trust": {
+    "verified": "Proveedor verificado",
+    "verifiedBody": "Identidad y datos del negocio verificados por Vendora",
+    "insured": "Asegurado",
+    "insuredBody": "Certificado de seguro en nuestros registros"
+  },
+  "intro": {
+    "eyebrow": "Conoce al equipo",
+    "title": "En sus propias palabras",
+    "videoTitle": "Presentación de {{name}}"
+  },
+  "portfolio": {
+    "eyebrow": "Portafolio",
+    "title": "Trabajos recientes",
+    "openAll": "Abrir portafolio ({{total}} fotos)",
+    "coverAlt": "Portada del portafolio de {{name}}",
+    "photoAlt": "Portafolio de {{name}}, foto {{number}}",
+    "open": "Abrir {{label}}",
+    "seeAll": "Ver todas ({{total}})"
+  },
+  "coBooked": {
+    "eyebrow": "Suele contratarse con",
+    "title": "Los anfitriones que contrataron a {{name}} también contrataron"
+  },
+  "recommendations": {
+    "eyebrow": "Recomendaciones",
+    "title": "Proveedores favoritos de {{name}}",
+    "vendorFallback": "Proveedor"
+  },
+  "sampleFaqs": {
+    "advance": {
+      "q": "¿Con cuánta anticipación debo contratarlos?",
+      "a": "Para temporada alta (mayo–octubre), con 9–12 meses de anticipación. Para temporada baja o eventos entre semana, 3–6 meses suelen ser suficientes."
+    },
+    "travel": {
+      "q": "¿Viajas para eventos?",
+      "a": "Sí — con gusto viajamos a cualquier parte de EE. UU. continental; el viaje y el hospedaje se coordinan por separado. Eventos internacionales, a solicitud."
+    },
+    "cancellation": {
+      "q": "¿Cuál es tu política de cancelación?",
+      "a": "Los anticipos no son reembolsables, pero se pueden pasar a una nueva fecha con 60 días o más de aviso. La política completa viene en el contrato de reserva."
+    }
+  },
+  "pricing": {
+    "eyebrow": "Precios",
+    "customNote": "Precio a la medida — el costo final varía según los detalles del evento.",
+    "note": "El precio final depende de la fecha y de los detalles del evento.",
+    "liveCalendar": "Calendario de disponibilidad en vivo",
+    "mobileLabel": "Precio"
+  },
+  "actions": {
+    "sendInquiry": "Enviar consulta",
+    "messageVendor": "Escribir al proveedor",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "share": "Compartir",
+    "reportProfile": "Reportar este perfil"
+  },
+  "noPayToRank": {
+    "title": "Sin posiciones pagadas.",
+    "body": "Vendora no acepta dinero para influir en el orden de los resultados de búsqueda. Los proveedores aparecen según qué tan bien encajan y la calidad de sus reseñas, no por lo que gastan en publicidad."
+  },
+  "signInPrompt": {
+    "title": "Envía una consulta a {{name}}",
+    "body": "Las consultas llegan a los proveedores, que responden en menos de 3 horas con borradores hechos con IA. Regístrate como anfitrión para enviar tu primera consulta — es gratis.",
+    "signUp": "Crea una cuenta de anfitrión gratis",
+    "logIn": "Ya tengo una cuenta"
+  },
+  "share": {
+    "text": "Mira {{name}} en Vendora",
+    "copied": "Enlace copiado",
+    "copyFailed": "No se pudo copiar el enlace"
+  },
+  "toasts": {
+    "adminInquiry": "Las consultas se envían desde cuentas de anfitrión, no de administrador.",
+    "vendorInquiry": "Los proveedores se contactan con “Escribir al proveedor”, no con consultas.",
+    "ownerNotFound": "No encontramos al dueño de este anuncio.",
+    "proOnly": "Los mensajes entre proveedores son una función Pro.",
+    "proOnlyBody": "Mejora a Pro o Premium para iniciar conversaciones con otros proveedores.",
+    "upgrade": "Mejorar plan"
+  },
+  "video": {
+    "defaultTitle": "Video de presentación del proveedor"
+  },
+  "brandCard": {
+    "vendorFallback": "Proveedor",
+    "rating": "Calificación",
+    "joined": "Miembro desde",
+    "showFront": "Ver el frente del perfil",
+    "showBio": "Ver la biografía al reverso",
+    "back": "Volver",
+    "bio": "Bio",
+    "about": "Acerca de {{name}}",
+    "noBio": "{{name}} todavía no tiene biografía."
+  },
+  "verifiedBadge": {
+    "title": "Proveedor verificado",
+    "label": "Verificado"
+  },
+  "badges": {
+    "identity": {
+      "label": "Identidad",
+      "full": "Identidad verificada"
+    },
+    "insurance": {
+      "label": "Asegurado",
+      "full": "Seguro de responsabilidad civil verificado"
+    },
+    "business_license": {
+      "label": "Con licencia",
+      "full": "Licencia comercial verificada"
+    },
+    "background_check": {
+      "label": "Antecedentes",
+      "full": "Antecedentes verificados"
+    }
+  },
+  "showcase": {
+    "eyebrow": "Destacados",
+    "title": "En movimiento",
+    "unmute": "Activar el sonido de los clips",
+    "mute": "Silenciar los clips",
+    "muted": "Sin sonido",
+    "soundOn": "Con sonido"
+  },
+  "otherListings": {
+    "eyebrow": "Más de este proveedor",
+    "title": "Sus otros anuncios",
+    "previous": "Ver anuncios anteriores",
+    "next": "Ver más anuncios",
+    "listingFallback": "Anuncio",
+    "vendorFallback": "Proveedor"
+  },
+  "team": {
+    "eyebrow": "Las personas detrás de cada detalle",
+    "title": "Conoce al equipo",
+    "specialty": "Especialidad:",
+    "tenure": "Antigüedad:",
+    "showLess": "Ver menos",
+    "viewBio": "Ver biografía →"
+  },
+  "openDates": {
+    "eyebrow": "✦ Disponibilidad de último minuto",
+    "title": "Este proveedor tiene fechas libres próximamente",
+    "note": "Envía una consulta para apartar una antes de que se ocupe."
+  },
+  "coBookedRail": {
+    "cobooked": "Suele contratarse con",
+    "recommended": "Recomendados para ti",
+    "eyebrow": "Sugerencias de Vendora",
+    "handPickedBooked": "Elegido a mano · contratados juntos {{times}}×",
+    "handPicked": "Socio elegido a mano",
+    "booked": "Contratados juntos {{times}}×"
+  },
+  "faq": {
+    "eyebrow": "Preguntas frecuentes",
+    "title": "Dudas comunes"
+  },
+  "social": {
+    "title": "Lo último en redes"
+  },
+  "bundles": {
+    "eyebrow": "Combos",
+    "title": "Paquetes con varios proveedores"
+  },
+  "availability": {
+    "title": "Disponibilidad",
+    "body": "Las fechas tachadas ya están reservadas o bloqueadas. Las fechas libres siguen disponibles — envía una consulta para confirmar y apartar la tuya.",
+    "blocked": "Reservada / bloqueada",
+    "open": "Fechas libres — envía una consulta para confirmar"
+  },
+  "calendar": {
+    "previousMonth": "Ir al mes anterior",
+    "nextMonth": "Ir al mes siguiente"
+  },
+  "serviceArea": {
+    "eyebrow": "Zona de servicio",
+    "title": "Hasta dónde viaja este proveedor",
+    "basedIn": "Con base en {{location}}. Viaja hasta {{miles}} millas para eventos.",
+    "travels": "Viaja hasta {{miles}} millas para eventos."
+  },
+  "attributes": {
+    "title": "Sobre este proveedor"
+  },
+  "report": {
+    "button": "Reportar",
+    "ariaLabel": "Reportar este contenido",
+    "title": "Reportar contenido",
+    "description": "Los reportes llegan a nuestro equipo de confianza y seguridad. Revisamos cada uno y tomamos medidas cuando corresponde. Quien reporta se mantiene en privado.",
+    "signInRequired": "Necesitas iniciar sesión para reportar contenido.",
+    "signIn": "Iniciar sesión",
+    "thanksTitle": "Gracias por tu reporte",
+    "thanksBody": "Lo revisaremos en un plazo de 24 horas. Si tomamos medidas, te avisaremos por correo.",
+    "close": "Cerrar",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Elige un motivo",
+    "details": "Más contexto (opcional)",
+    "detailsPlaceholder": "¿Qué debemos revisar? ¿Algún ejemplo concreto?",
+    "cancel": "Cancelar",
+    "submit": "Enviar reporte",
+    "alreadyReported": "Ya reportaste esto. Nuestro equipo lo está revisando.",
+    "reasons": {
+      "spam": "Spam o estafa",
+      "harassment": "Acoso o intimidación",
+      "inappropriate": "Contenido inapropiado",
+      "misleading": "Falso o engañoso",
+      "impersonation": "Suplantación de identidad",
+      "copyright": "Infracción de derechos de autor",
+      "safety": "Problema de seguridad",
+      "other": "Otro"
+    }
+  },
+  "lightbox": {
+    "label": "Visor de imágenes",
+    "close": "Cerrar",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "imageFallback": "Imagen",
+    "openSource": "Ver fuente"
+  },
+  "inquiry": {
+    "title": "Envía una consulta",
+    "subtitle": "Los proveedores suelen responder en menos de 3 horas con borradores asistidos por IA.",
+    "sendingTo": "Enviar a",
+    "vendor": "Proveedor",
+    "noVendors": "Todavía no hay proveedores que acepten consultas. Cada semana sumamos proveedores nuevos — vuelve pronto.",
+    "chooseVendor": "Elige un proveedor",
+    "bookedThatDay": "(reservado ese día)",
+    "eventType": "Tipo de evento",
+    "eventTypes": {
+      "wedding": "Boda",
+      "birthday": "Cumpleaños",
+      "holiday_dinner": "Cena de fiestas",
+      "other": "Otro"
+    },
+    "eventDate": "Fecha del evento",
+    "pickDate": "Elige una fecha",
+    "pickVendorFirst": "Primero elige un proveedor",
+    "blockedNote": "Las fechas tachadas están bloqueadas por este proveedor.",
+    "guestCount": "Número de invitados",
+    "location": "Ubicación",
+    "locationPlaceholder": "Ciudad, barrio o nombre del lugar",
+    "budget": "Rango de presupuesto",
+    "min": "Mín.",
+    "max": "Máx.",
+    "intakeTitle": "Algunas preguntas de este proveedor",
+    "yes": "Sí",
+    "no": "No",
+    "choose": "Elige…",
+    "anythingElse": "¿Algo más?",
+    "tellUs": "Cuéntanos sobre tu evento",
+    "requestsPlaceholder": "Paleta de colores, ambiente, imprescindibles y todo lo que el proveedor deba saber.",
+    "cancel": "Cancelar",
+    "sending": "Enviando…",
+    "send": "Enviar consulta",
+    "toasts": {
+      "loadVendorsFailed": "No se pudieron cargar los proveedores: {{message}}",
+      "signInFirst": "Primero inicia sesión",
+      "chooseVendor": "Elige un proveedor",
+      "budgetOrder": "El presupuesto mínimo debe ser menor que el máximo",
+      "vendorUnavailable": "Ese proveedor no está disponible en la fecha que elegiste.",
+      "answerRequired": "Falta responder: {{question}}",
+      "sendFailed": "No se pudo enviar la consulta: {{message}}",
+      "sent": "Consulta enviada — el proveedor te responderá pronto"
+    }
+  }
+}

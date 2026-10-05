@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "title": "{{title}} — En vivo en Vendora",
+    "fallbackTitle": "Transmisión en vivo — Vendora",
+    "description": "Mira este evento en vivo en Vendora."
+  },
+  "notFound": {
+    "title": "Enlace de transmisión no encontrado",
+    "body": "Este enlace de transmisión en vivo no es válido o se eliminó. Pídele al anfitrión un enlace actualizado.",
+    "back": "Volver a Vendora"
+  },
+  "status": {
+    "replay": "Repetición",
+    "live": "En vivo ahora",
+    "soon": "Empieza pronto",
+    "ended": "Transmisión finalizada"
+  },
+  "recorded": "Grabado el {{when}}",
+  "watching_one": "{{count}} persona viendo",
+  "watching_other": "{{count}} personas viendo",
+  "player": {
+    "endedTitle": "Transmisión finalizada",
+    "endedBody": "Este evento ya no se está transmitiendo. El anfitrión no activó la grabación.",
+    "waitingTitle": "Esperando la transmisión",
+    "waitingBody": "El anfitrión todavía no ha empezado a transmitir. Esta página cambiará automáticamente cuando comience la transmisión."
+  },
+  "archive": {
+    "other": "Otras transmisiones",
+    "past": "Transmisiones anteriores"
+  },
+  "footer": "Con tecnología de Vendora · Cualquier persona con este enlace puede verla"
+}

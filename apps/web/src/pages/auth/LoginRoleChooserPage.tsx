@@ -5,6 +5,7 @@
 
 import { Link, Navigate } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginRoleChooserPage() {
@@ -12,6 +13,7 @@ export default function LoginRoleChooserPage() {
   // portal they belong to. (Catches users who hit /login from an
   // old tab while already signed in elsewhere.)
   const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
+  const { t } = useTranslation("auth");
   if (!loading && session) {
     if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
@@ -99,13 +101,13 @@ export default function LoginRoleChooserPage() {
         className="absolute z-[3] text-[13px]"
         style={{ top: "36px", right: "40px", color: "#000" }}
       >
-        New to Vendora?{" "}
+        {t("login_chooser.new_to_vendora")}{" "}
         <Link
           to="/signup"
           className="font-medium pb-px"
           style={{ borderBottom: "0.5px solid #000" }}
         >
-          Sign up
+          {t("login_chooser.sign_up")}
         </Link>
       </div>
 
@@ -137,7 +139,7 @@ export default function LoginRoleChooserPage() {
             className="uppercase font-semibold text-black"
             style={{ fontSize: "11px", letterSpacing: "2.5px" }}
           >
-            Welcome back
+            {t("login_chooser.pill")}
           </span>
         </div>
 
@@ -150,7 +152,7 @@ export default function LoginRoleChooserPage() {
             letterSpacing: "-1.2px",
           }}
         >
-          Sign in
+          {t("login_chooser.title")}
         </h1>
         <h1
           className="font-editorial text-black mt-2 mb-4 text-center"
@@ -160,7 +162,7 @@ export default function LoginRoleChooserPage() {
             letterSpacing: "-0.8px",
           }}
         >
-          to Vendora.
+          {t("login_chooser.title_accent")}
         </h1>
 
         {/* Role cards */}
@@ -171,14 +173,14 @@ export default function LoginRoleChooserPage() {
           <RoleCard
             to="/login/host"
             icon={<CalendarHeart className="w-5 h-5" />}
-            title="Host sign in"
-            subtitle="Plan events, message vendors, manage your inquiries."
+            title={t("login_chooser.host_title")}
+            subtitle={t("login_chooser.host_subtitle")}
           />
           <RoleCard
             to="/login/vendor"
             icon={<Briefcase className="w-5 h-5" />}
-            title="Vendor sign in"
-            subtitle="Manage your listing, inquiries, and partner threads."
+            title={t("login_chooser.vendor_title")}
+            subtitle={t("login_chooser.vendor_subtitle")}
           />
         </div>
 

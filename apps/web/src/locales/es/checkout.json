@@ -1,0 +1,195 @@
+{
+  "proposal": {
+    "notFound": {
+      "title": "Propuesta no encontrada",
+      "body": "Este enlace no es válido o ya venció."
+    },
+    "header": "Propuesta",
+    "headerVendor": "{{vendor}} · Propuesta",
+    "acceptedBy": "Aceptada por {{name}}",
+    "cta": {
+      "title": "¿Todo listo para avanzar?",
+      "body": "Acepta y te enviaremos el contrato y la factura.",
+      "namePlaceholder": "Escribe tu nombre completo para aceptar",
+      "agree": "Revisé esta propuesta y quiero continuar.",
+      "accept": "Aceptar propuesta"
+    },
+    "closed": {
+      "declined": "Esta propuesta fue rechazada y ya no se puede aceptar.",
+      "cancelled": "Esta propuesta fue cancelada y ya no se puede aceptar.",
+      "other": "Esta propuesta ya no se puede aceptar."
+    },
+    "toast": {
+      "accepted": "Aceptada — ¡gracias!",
+      "error": "No pudimos registrar tu aceptación. Inténtalo de nuevo."
+    },
+    "poweredBy": "Con tecnología de Vendora"
+  },
+  "sign": {
+    "notFound": {
+      "title": "Contrato no encontrado",
+      "body": "Este enlace para firmar no es válido o ya venció."
+    },
+    "header": "Contrato",
+    "headerVendor": "{{vendor}} · Contrato",
+    "signedBy": "Firmado por {{name}}",
+    "signatureAlt": "Firma",
+    "downloadPdf": "Descargar PDF firmado",
+    "nameLabel": "Escribe tu nombre completo para firmar",
+    "namePlaceholder": "Tu nombre completo",
+    "drawLabel": "O dibuja tu firma (opcional)",
+    "verifyLabel": "Verifica tu correo para firmar",
+    "codeTo": "Enviaremos un código a <email/>",
+    "resend": "Reenviar",
+    "sendCode": "Enviar código",
+    "codePlaceholder": "Ingresa el código de 6 dígitos",
+    "codeSentTo": "Enviamos un código a {{email}}. Vence en 10 minutos.",
+    "consent": "He leído y acepto este contrato, y mi firma de arriba es mi firma electrónica legalmente vinculante.",
+    "submit": "Firmar contrato",
+    "notReady": "Este contrato todavía no está listo para firmarse.",
+    "notReadyVendor": "Este contrato todavía no está listo para firmarse — comunícate con {{vendor}}.",
+    "closed": {
+      "cancelled": "Este contrato fue cancelado y ya no se puede firmar.",
+      "other": "Este contrato ya no se puede firmar."
+    },
+    "poweredBy": "Con tecnología de Vendora · firmas electrónicas",
+    "pad": {
+      "placeholder": "Dibuja tu firma aquí",
+      "clear": "Borrar"
+    },
+    "pdf": {
+      "title": "Contrato",
+      "signedHeading": "FIRMADO ELECTRÓNICAMENTE",
+      "signedOn": "Firmado el {{date}}",
+      "fileFallback": "contrato",
+      "fileSuffix": "firmado"
+    },
+    "toast": {
+      "codeError": "No pudimos enviar el código",
+      "codeErrorBody": "Inténtalo de nuevo en un momento.",
+      "codeSent": "Código enviado — revisa tu correo",
+      "signed": "Firmado — ¡gracias!",
+      "invalidCode": "Ese código no es correcto. Revísalo e inténtalo de nuevo.",
+      "codeExpired": "Tu código venció. Solicita uno nuevo.",
+      "tooManyAttempts": "Demasiados intentos. Solicita un código nuevo.",
+      "signError": "No pudimos registrar tu firma."
+    }
+  },
+  "startError": {
+    "title": "No se pudo iniciar el pago",
+    "tryAgain": "Inténtalo de nuevo en un momento.",
+    "detail": "Inténtalo de nuevo en un momento.",
+    "vendorNotReady": "Este proveedor todavía no puede recibir pagos.",
+    "rateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo."
+  },
+  "invoice": {
+    "notFound": {
+      "title": "Factura no encontrada",
+      "body": "Esta factura no existe."
+    },
+    "paid": {
+      "title": "Pago recibido",
+      "bodyNumber": "Pagaste <amount/> por la factura <number/>. En breve llegará un recibo a <email/>. <vendor/> se pondrá en contacto contigo — los fondos se depositan en su cuenta en un plazo de 2 días hábiles.",
+      "bodyNoNumber": "Pagaste <amount/>. En breve llegará un recibo a <email/>. <vendor/> se pondrá en contacto contigo — los fondos se depositan en su cuenta en un plazo de 2 días hábiles.",
+      "yourEmail": "tu correo",
+      "yourVendor": "Tu proveedor"
+    },
+    "cancelled": {
+      "title": "Factura cancelada",
+      "body": "{{vendor}} canceló esta factura. Si tienes preguntas, ponte en contacto.",
+      "theVendor": "El proveedor"
+    },
+    "draft": {
+      "title": "La factura aún no está lista",
+      "body": "Esta factura todavía no se ha enviado. Vuelve a revisar cuando tu proveedor la finalice."
+    },
+    "refunded": {
+      "title": "Factura ya reembolsada",
+      "body": "{{vendor}} reembolsó esta factura.",
+      "yourVendor": "Tu proveedor"
+    },
+    "savePdf": "Guardar como PDF",
+    "pay": "Pagar {{amount}}",
+    "headsUp": "Aviso — este proveedor todavía está terminando de configurar sus pagos, así que es posible que el pago en línea aún no esté disponible. Mientras tanto, puedes revisar la factura abajo.",
+    "issuedVia": "Emitida a través de VendoraPay",
+    "label": "Factura",
+    "billTo": "Facturar a",
+    "issued": "Emitida",
+    "due": "Vence",
+    "table": {
+      "item": "Concepto",
+      "qty": "Cant.",
+      "unitPrice": "Precio unit.",
+      "amount": "Monto"
+    },
+    "subtotal": "Subtotal",
+    "tax": "Impuesto ({{rate}}%)",
+    "lateFee": "Recargo por pago tardío",
+    "totalDue": "Total a pagar",
+    "notes": "Notas",
+    "thanks": "Gracias por tu preferencia.",
+    "poweredBy": "Con tecnología de <brand>VendoraPay</brand>",
+    "statement": "Pagos con tarjeta procesados de forma segura. \"VENDORAPAY\" aparecerá en tu estado de cuenta."
+  },
+  "payLink": {
+    "notFound": {
+      "title": "Enlace no encontrado",
+      "body": "Este enlace de pago no existe."
+    },
+    "paid": {
+      "title": "Pago recibido",
+      "body": "Gracias. {{vendor}} se pondrá en contacto contigo.",
+      "yourVendor": "Tu proveedor"
+    },
+    "cancelled": {
+      "title": "Enlace cancelado",
+      "body": "{{vendor}} canceló esta solicitud de pago. Si tienes preguntas, ponte en contacto.",
+      "theVendor": "El proveedor"
+    },
+    "expired": {
+      "title": "Enlace vencido",
+      "bodyVendor": "Esta solicitud de pago venció. Pídele una nueva a {{vendor}}.",
+      "body": "Esta solicitud de pago venció. Pídele una nueva al proveedor."
+    },
+    "scheduled": {
+      "title": "Aún no vence",
+      "body": "Este pago todavía no vence. Te enviaremos un recordatorio por correo en la fecha programada."
+    },
+    "poweredBy": "Con tecnología de VendoraPay",
+    "amountDue": "Monto a pagar",
+    "inactive": "Este enlace ya no acepta pagos.",
+    "pay": "Pagar {{amount}}",
+    "preparing": "Preparando el pago seguro…",
+    "statement": "Pagos con tarjeta procesados de forma segura. Verás \"VENDORAPAY\" en tu estado de cuenta.",
+    "loadingForm": "Cargando el formulario de pago…",
+    "secured": "Protegido por Stripe",
+    "toast": {
+      "paymentFailed": "No se pudo completar el pago",
+      "processError": "No pudimos procesar el pago. Inténtalo de nuevo."
+    }
+  },
+  "mobileReturn": {
+    "done": {
+      "title": "Listo",
+      "body": "Ya puedes volver a la app de Vendora."
+    },
+    "upgraded": {
+      "title": "Pago exitoso",
+      "body": "Tu plan está activo. Vuelve a la app de Vendora para continuar."
+    },
+    "topup": {
+      "title": "Créditos agregados",
+      "body": "Tu recarga se completó. Vuelve a la app de Vendora."
+    },
+    "cancelled": {
+      "title": "Pago cancelado",
+      "body": "No se hizo ningún cambio. Ya puedes volver a la app de Vendora."
+    },
+    "portal": {
+      "title": "Facturación actualizada",
+      "body": "Los cambios que hiciste quedaron guardados. Vuelve a la app de Vendora."
+    },
+    "open": "Abrir la app",
+    "hint": "Si la app no se abre automáticamente, toca el botón de arriba o vuelve a ella manualmente — tus cambios ya están guardados."
+  }
+}

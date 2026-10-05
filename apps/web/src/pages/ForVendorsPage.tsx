@@ -3,57 +3,57 @@
 // "I'm a vendor" on the home page leads here.
 
 import { CalendarDays, CreditCard, FileText, MessageCircle, Search, Star } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
 import planner from "@/assets/hero/wedding.jpg?as=picture";
 
-const STEPS = [
-  { title: "Get discovered", body: "Be seen by people actively planning events like yours." },
-  { title: "Manage inquiries", body: "Respond, chat, and share proposals all in one inbox." },
-  { title: "Book clients", body: "Secure bookings with contracts, payments, and automations." },
-  { title: "Grow your business", body: "Track performance, collect reviews, and build your brand." },
-];
+// Text lives in locales/<lang>/forVendors.json, keyed by these ids.
+const STEPS = ["discovered", "inquiries", "book", "grow"];
 
 const TOOLS = [
-  { icon: Search, title: "Get found", body: "Show up in search, on Explore and on category pages." },
-  { icon: MessageCircle, title: "One inbox", body: "Every client conversation in one place." },
-  { icon: CalendarDays, title: "Availability", body: "Block busy dates, so hosts searching them see who's free." },
-  { icon: FileText, title: "Proposals & contracts", body: "Send proposals and contracts clients sign online." },
-  { icon: CreditCard, title: "Payments", body: "Get paid securely online." },
-  { icon: Star, title: "Reviews", body: "Build trust with reviews from real clients." },
+  { id: "found", icon: Search },
+  { id: "inbox", icon: MessageCircle },
+  { id: "availability", icon: CalendarDays },
+  { id: "proposals", icon: FileText },
+  { id: "payments", icon: CreditCard },
+  { id: "reviews", icon: Star },
 ];
 
 export default function ForVendorsPage() {
+  const { t } = useTranslation("forVendors");
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PhotoHero
         photo={planner}
-        eyebrow="For vendors"
+        eyebrow={t("hero.eyebrow")}
         title={
-          <>
-            More clients. More bookings. More <span className="font-editorial text-gold">growth.</span>
-          </>
+          <Trans
+            t={t}
+            i18nKey="hero.title"
+            components={{ gold: <span className="font-editorial text-gold" /> }}
+          />
         }
-        sub="Get discovered by people planning events like yours, then run inquiries, proposals and payments in one place."
-        primary={{ label: "List your business — free", to: "/signup/vendor" }}
-        secondary={{ label: "How it works", to: "/how-it-works#for-vendors" }}
+        sub={t("hero.sub")}
+        primary={{ label: t("hero.primary"), to: "/signup/vendor" }}
+        secondary={{ label: t("hero.secondary"), to: "/how-it-works#for-vendors" }}
       />
 
       <main id="main-content">
         {/* Steps */}
         <section className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-          <p className="m-0 text-center font-label text-gold">How it works</p>
+          <p className="m-0 text-center font-label text-gold">{t("steps.eyebrow")}</p>
           <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[42px]">
-            From first inquiry to booked.
+            {t("steps.title")}
           </h2>
           <ol className="m-0 mt-12 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-            {STEPS.map((s, i) => (
-              <li key={s.title} className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 md:p-6">
+            {STEPS.map((id, i) => (
+              <li key={id} className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 md:p-6">
                 <p className="m-0 text-[30px] font-bold leading-none text-gold">
                   {String(i + 1).padStart(2, "0")}
                 </p>
-                <p className="m-0 mt-4 text-[16px] font-bold">{s.title}</p>
-                <p className="m-0 mt-1.5 text-[13.5px] leading-relaxed">{s.body}</p>
+                <p className="m-0 mt-4 text-[16px] font-bold">{t(`steps.items.${id}.title`)}</p>
+                <p className="m-0 mt-1.5 text-[13.5px] leading-relaxed">{t(`steps.items.${id}.body`)}</p>
               </li>
             ))}
           </ol>
@@ -62,21 +62,21 @@ export default function ForVendorsPage() {
         {/* Tools */}
         <section className="border-t border-white/15">
           <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-            <p className="m-0 text-center font-label text-gold">Everything you need, all in one place</p>
+            <p className="m-0 text-center font-label text-gold">{t("tools.eyebrow")}</p>
             <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
-              Run your business from one place.
+              {t("tools.title")}
             </h2>
             <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
-              {TOOLS.map((t) => (
-                <div key={t.title} className="text-center">
+              {TOOLS.map((tool) => (
+                <div key={tool.id} className="text-center">
                   <span
                     className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
                     style={{ border: "1px solid rgba(201,168,106,0.4)" }}
                   >
-                    <t.icon className="h-5 w-5 text-gold" aria-hidden />
+                    <tool.icon className="h-5 w-5 text-gold" aria-hidden />
                   </span>
-                  <p className="m-0 mt-3 text-[14px] font-bold">{t.title}</p>
-                  <p className="m-0 mt-1 text-[13px] leading-relaxed">{t.body}</p>
+                  <p className="m-0 mt-3 text-[14px] font-bold">{t(`tools.items.${tool.id}.title`)}</p>
+                  <p className="m-0 mt-1 text-[13px] leading-relaxed">{t(`tools.items.${tool.id}.body`)}</p>
                 </div>
               ))}
             </div>
@@ -86,12 +86,14 @@ export default function ForVendorsPage() {
         <div className="border-t border-white/15">
           <ClosingBand
             title={
-              <>
-                Start <span className="font-editorial text-gold">free.</span>
-              </>
+              <Trans
+                t={t}
+                i18nKey="closing.title"
+                components={{ gold: <span className="font-editorial text-gold" /> }}
+              />
             }
-            sub="The Free plan includes one listing. Upgrade whenever you're ready for more."
-            cta={{ label: "List your business — free", to: "/signup/vendor" }}
+            sub={t("closing.sub")}
+            cta={{ label: t("closing.cta"), to: "/signup/vendor" }}
           />
         </div>
       </main>

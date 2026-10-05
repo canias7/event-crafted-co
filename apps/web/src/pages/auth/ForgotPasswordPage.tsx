@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
+import { authErrorText } from "@/components/auth/authErrors";
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
+  const { t: tAuth } = useTranslation("auth");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -18,7 +20,7 @@ export default function ForgotPasswordPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (captcha.blocked) {
-      toast.error("Please complete the bot-check below.");
+      toast.error(tAuth("captcha.complete"));
       return;
     }
     setSubmitting(true);
@@ -29,9 +31,9 @@ export default function ForgotPasswordPage() {
     setSubmitting(false);
     if (error) {
       if (captcha.handleError(error)) {
-        toast.error("Please complete the bot-check below, then try again.");
+        toast.error(tAuth("captcha.complete_retry"));
       } else {
-        toast.error(error.message);
+        toast.error(authErrorText(error.message));
       }
       return;
     }
@@ -43,7 +45,7 @@ export default function ForgotPasswordPage() {
       title={t("auth.forgot.tagline_lead")}
       titleAccent={t("auth.forgot.tagline_accent")}
       subtitle={t("auth.forgot.subtitle")}
-      pillLabel="RESET LINK"
+      pillLabel={tAuth("forgot.pill")}
       topRight={
         <Link
           to="/login"
@@ -118,7 +120,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={tAuth("shared.email_placeholder")}
             />
           </div>
           {captcha.required ? (
@@ -134,7 +136,7 @@ export default function ForgotPasswordPage() {
             {submitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Sending…
+                {tAuth("shared.sending")}
               </>
             ) : (
               t("auth.forgot.submit")

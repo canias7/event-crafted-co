@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // Cloudflare Turnstile widget wrapper. Self-contained — no NPM
 // dependency. Loads the official Cloudflare script once (idempotent
@@ -85,6 +86,7 @@ export function TurnstileWidget({
   // "timeout-or-duplicate".
   resetKey?: number;
 }) {
+  const { t } = useTranslation("auth");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -144,7 +146,7 @@ export function TurnstileWidget({
   if (failed) {
     return (
       <p className="text-xs text-destructive">
-        Couldn't load the bot-check. Refresh the page and try again.
+        {t("captcha.load_failed")}
       </p>
     );
   }

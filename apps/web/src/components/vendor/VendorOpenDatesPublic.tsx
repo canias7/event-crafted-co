@@ -5,6 +5,7 @@
 // Renders nothing when there are no upcoming approved open dates.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PromoRow {
@@ -13,8 +14,8 @@ interface PromoRow {
   created_at: string;
 }
 
-function fmt(d: string): string {
-  return new Date(`${d}T12:00:00`).toLocaleDateString(undefined, {
+function fmt(d: string, language: string): string {
+  return new Date(`${d}T12:00:00`).toLocaleDateString(language, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -22,6 +23,7 @@ function fmt(d: string): string {
 }
 
 export function VendorOpenDatesPublic({ vendorId }: { vendorId: string }) {
+  const { t, i18n } = useTranslation("vendorProfile");
   const [dates, setDates] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -54,10 +56,10 @@ export function VendorOpenDatesPublic({ vendorId }: { vendorId: string }) {
   return (
     <div className="card-soft p-5 sm:p-6 border border-accent/30 bg-accent/5">
       <p className="font-label text-accent mb-1">
-        ✦ Last-minute availability
+        {t("openDates.eyebrow")}
       </p>
       <p className="font-editorial text-2xl mb-3">
-        This vendor has open dates coming up
+        {t("openDates.title")}
       </p>
       {message && (
         <p className="text-sm text-foreground leading-relaxed mb-3">{message}</p>
@@ -68,12 +70,12 @@ export function VendorOpenDatesPublic({ vendorId }: { vendorId: string }) {
             key={d}
             className="inline-flex items-center rounded-full bg-background border border-accent/40 px-3 py-1 text-sm"
           >
-            {fmt(d)}
+            {fmt(d, i18n.language)}
           </span>
         ))}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Send an inquiry to lock one in before it's gone.
+        {t("openDates.note")}
       </p>
     </div>
   );

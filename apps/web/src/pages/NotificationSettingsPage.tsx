@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,43 +42,20 @@ const DEFAULT_PREFS: NotifPrefs = {
   marketing: false,
 };
 
-interface PrefDef {
-  key: keyof NotifPrefs;
-  title: string;
-  subtitle: string;
-}
-
-const PREFS: PrefDef[] = [
-  {
-    key: "new_inquiry",
-    title: "New inquiry",
-    subtitle: "Email + push + in-app when a host asks about your listing",
-  },
-  {
-    key: "proposal_accepted",
-    title: "Proposal accepted",
-    subtitle: "When a host accepts a proposal you sent",
-  },
-  {
-    key: "review_received",
-    title: "New review",
-    subtitle: "When a host leaves you a rating",
-  },
-  {
-    key: "weekly_digest",
-    title: "Weekly digest",
-    subtitle: "Monday summary of last week's activity",
-  },
-  {
-    key: "marketing",
-    title: "Marketing",
-    subtitle: "Product news, tips, and occasional offers (opt-in)",
-  },
+// Rows in display order. Titles and subtitles live in the "settings"
+// namespace under notifications.prefs.<key>.
+const PREFS: Array<keyof NotifPrefs> = [
+  "new_inquiry",
+  "proposal_accepted",
+  "review_received",
+  "weekly_digest",
+  "marketing",
 ];
 
 export default function NotificationSettingsPage() {
   const { user, isApprovedVendor } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation("settings");
   const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
@@ -114,7 +92,7 @@ export default function NotificationSettingsPage() {
       .eq("id", user.id);
     if (error) {
       setPrefs(prefs);
-      toast.error("Couldn't update preference");
+      toast.error(t("notifications.update_error"));
     }
   }
 
@@ -136,11 +114,11 @@ export default function NotificationSettingsPage() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent transition-colors mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Settings
+            {t("notifications.back")}
           </button>
-          <h1 className="font-editorial text-3xl">Notifications</h1>
+          <h1 className="font-editorial text-3xl">{t("notifications.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Choose what we tell you about, and how.
+            {t("notifications.subtitle")}
           </p>
         </div>
 
@@ -155,40 +133,43 @@ export default function NotificationSettingsPage() {
                 border: "1px solid hsl(var(--border))",
               }}
             >
-              {PREFS.map((p, i) => (
-                <div key={p.key}>
-                  {i > 0 ? (
-                    <div
-                      className="h-px"
-                      style={{ background: "rgba(0,0,0,0.08)" }}
-                    />
-                  ) : null}
-                  <div className="flex items-center gap-4 px-4 md:px-5 py-4">
-                    <div
-                      className="w-10 h-10 rounded-xl inline-flex items-center justify-center shrink-0"
-                      style={{
-                        background: "rgba(0,0,0,0.14)",
-                        color: "#14161a",
-                      }}
-                    >
-                      <Bell className="w-4 h-4" />
+              {PREFS.map((key, i) => {
+                const title = t(`notifications.prefs.${key}.title`);
+                return (
+                  <div key={key}>
+                    {i > 0 ? (
+                      <div
+                        className="h-px"
+                        style={{ background: "rgba(0,0,0,0.08)" }}
+                      />
+                    ) : null}
+                    <div className="flex items-center gap-4 px-4 md:px-5 py-4">
+                      <div
+                        className="w-10 h-10 rounded-xl inline-flex items-center justify-center shrink-0"
+                        style={{
+                          background: "rgba(0,0,0,0.14)",
+                          color: "#14161a",
+                        }}
+                      >
+                        <Bell className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground leading-tight">
+                          {title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                          {t(`notifications.prefs.${key}.subtitle`)}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={prefs[key]}
+                        onCheckedChange={(v) => togglePref(key, v)}
+                        aria-label={t("notifications.toggle_label", { title })}
+                      />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground leading-tight">
-                        {p.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        {p.subtitle}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={prefs[p.key]}
-                      onCheckedChange={(v) => togglePref(p.key, v)}
-                      aria-label={`${p.title} notifications`}
-                    />
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

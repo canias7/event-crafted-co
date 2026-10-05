@@ -55,7 +55,7 @@ export function CookieBanner() {
                 t={t}
                 i18nKey="cookies.body"
                 components={{
-                  link: (
+                  policy: (
                     <Link
                       to="/privacy"
                       onClick={() => decide("essential")}

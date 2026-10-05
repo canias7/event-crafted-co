@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bell, Check, Inbox, Sparkles, MessageCircle, Star, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { es as esLocale } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
@@ -57,6 +59,12 @@ interface Props {
 }
 
 export function NotificationBell({ variant = "dark" }: Props) {
+  const { t, i18n } = useTranslation("notifications");
+  // "time ago" text follows the site language (English stays date-fns'
+  // default locale).
+  const timeLocale = (i18n.resolvedLanguage ?? i18n.language ?? "en").startsWith("es")
+    ? esLocale
+    : undefined;
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
@@ -160,8 +168,8 @@ export function NotificationBell({ variant = "dark" }: Props) {
         <button
           aria-label={
             unreadCount > 0
-              ? `Notifications, ${unreadCount} unread`
-              : "Notifications"
+              ? t("bell.label_unread", { unread: unreadCount })
+              : t("bell.label")
           }
           className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${triggerColor}`}
         >
@@ -178,7 +186,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
         className="w-80 p-0 overflow-hidden"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <p className="font-display text-sm">Notifications</p>
+          <p className="font-display text-sm">{t("bell.title")}</p>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -187,7 +195,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
               onClick={markAllRead}
             >
               <Check className="w-3 h-3 mr-1" />
-              Mark all read
+              {t("bell.mark_all_read")}
             </Button>
           )}
         </div>
@@ -195,14 +203,14 @@ export function NotificationBell({ variant = "dark" }: Props) {
         <div className="max-h-96 overflow-y-auto">
           {loading && items.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              Loading…
+              {t("bell.loading")}
             </div>
           ) : items.length === 0 ? (
             <div className="p-8 text-center">
               <Calendar className="w-8 h-8 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-sm font-medium">You're all caught up</p>
+              <p className="text-sm font-medium">{t("bell.empty_title")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                We'll let you know when something happens.
+                {t("bell.empty_body")}
               </p>
             </div>
           ) : (
@@ -257,6 +265,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
                       <p className="text-[10px] text-muted-foreground mt-1 tnum">
                         {formatDistanceToNow(new Date(n.created_at), {
                           addSuffix: true,
+                          locale: timeLocale,
                         })}
                       </p>
                     </div>
@@ -293,13 +302,13 @@ export function NotificationBell({ variant = "dark" }: Props) {
                 <>
                   {today.length > 0 ? (
                     <>
-                      <SectionLabel>Today</SectionLabel>
+                      <SectionLabel>{t("bell.today")}</SectionLabel>
                       {today.map(renderItem)}
                     </>
                   ) : null}
                   {earlier.length > 0 ? (
                     <>
-                      <SectionLabel>Earlier</SectionLabel>
+                      <SectionLabel>{t("bell.earlier")}</SectionLabel>
                       {earlier.map(renderItem)}
                     </>
                   ) : null}

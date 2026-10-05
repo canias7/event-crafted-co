@@ -52,7 +52,9 @@ const InquiryFormModal = lazyWithReload(() =>
 );
 import { useAuth } from "@/hooks/useAuth";
 import { useVendors } from "@/hooks/useVendors";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { useTranslation } from "react-i18next";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 
 // vite-imagetools auto-pictureifies anything in /assets/vendor-*,
@@ -132,25 +134,17 @@ const sampleReviews = [
   },
 ];
 
-const sampleFaqs = [
-  {
-    q: "How far in advance should I book?",
-    a: "For peak season (May–October), 9–12 months ahead. For off-season or weekday events, 3–6 months is usually fine.",
-  },
-  {
-    q: "Do you travel?",
-    a: "Yes — happy to travel anywhere in the continental US, with travel and lodging arranged separately. International on request.",
-  },
-  {
-    q: "What's your cancellation policy?",
-    a: "Deposits are non-refundable, but transferable to a new date with 60+ days' notice. Full policy is shared in the booking contract.",
-  },
-];
+// Placeholder FAQs for sample (non-DB) vendors. The question and answer
+// text lives in locales/<language>/vendorProfile.json under sampleFaqs.<id>.
+const sampleFaqIds = ["advance", "travel", "cancellation"] as const;
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorDetailPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation("vendorProfile");
+  const categoryNames = useCategoryNames();
+  const priceLabels = usePriceLabels();
   // Route is either /vendors/:id or /v/:slug — accept both. The
   // :id segment may actually contain a slug (some callers build
   // /vendors/<slug> URLs), so fall back to slug-match when id-match
@@ -349,19 +343,33 @@ export default function VendorDetailPage() {
     ? reviewStats.count
     : vendor?.reviews ?? 0;
 
+  // Category in the visitor's language (the DB keeps the English name).
+  const categoryLabel = vendor ? categoryNames.sub(vendor.category) : "";
+  // useVendors fills a missing bio with "<category> on Vendora." in
+  // English; show that stand-in in the visitor's language.
+  const displayDescription =
+    vendor && vendor.description === `${vendor.category} on Vendora.`
+      ? t("meta.categoryFallbackBio", { category: categoryLabel })
+      : vendor?.description;
+
   // Per-vendor title + OG/Twitter card so social shares of vendor URLs
   // unfurl with the hero image + name + category.
   useDocumentMeta(
     vendor
       ? {
-          title: `${vendor.name} — ${vendor.category} on Vendora`,
+          title: t("meta.title", { name: vendor.name, category: categoryLabel }),
           description:
-            vendor.description ||
-            `${vendor.category} on Vendora${vendor.location ? ` · ${vendor.location}` : ""}`,
+            displayDescription ||
+            (vendor.location
+              ? t("meta.descriptionWithLocation", {
+                  category: categoryLabel,
+                  location: vendor.location,
+                })
+              : t("meta.description", { category: categoryLabel })),
           image: (imageMap[vendor.image] ?? featureFlorals).img.src,
           type: "product",
         }
-      : { title: "Vendor — Vendora" },
+      : { title: t("meta.fallbackTitle") },
   );
 
   // JSON-LD structured data for SEO. LocalBusiness covers vendors broadly
@@ -424,13 +432,13 @@ export default function VendorDetailPage() {
       return;
     }
     if (profile.role === "admin") {
-      toast.info("Inquiries are sent from host accounts, not admin.");
+      toast.info(t("toasts.adminInquiry"));
       return;
     }
     // Vendors don't send inquiries to vendors — that contact goes through
     // "Message vendor" (partner threads). Inquiries are host → vendor only.
     if (isApprovedVendor) {
-      toast.info("Vendors connect through “Message vendor,” not inquiries.");
+      toast.info(t("toasts.vendorInquiry"));
       return;
     }
     setInquiryPackageId(packageId ?? null);
@@ -442,7 +450,7 @@ export default function VendorDetailPage() {
     const shareUrl = `${window.location.origin}/vendors/${vendor.id}`;
     const shareData = {
       title: vendor.name,
-      text: `Check out ${vendor.name} on Vendora`,
+      text: t("share.text", { name: vendor.name }),
       url: shareUrl,
     };
     // Web Share API is the right experience on mobile (system share
@@ -459,9 +467,9 @@ export default function VendorDetailPage() {
     }
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Link copied");
+      toast.success(t("share.copied"));
     } catch {
-      toast.error("Couldn't copy the link");
+      toast.error(t("share.copyFailed"));
     }
   }
 
@@ -478,7 +486,7 @@ export default function VendorDetailPage() {
     // inquiry form; the "Message vendor" button is hidden for hosts.
     if (isApprovedVendor) {
       if (!listingOwnerUserId) {
-        toast.error("Couldn't find the owner of this listing.");
+        toast.error(t("toasts.ownerNotFound"));
         return;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -490,11 +498,10 @@ export default function VendorDetailPage() {
         // V2V initiation is Pro-and-up; the RPC raises
         // 'v2v_requires_pro' for Free vendors.
         if (error.message?.includes("v2v_requires_pro")) {
-          toast.error("Vendor-to-vendor messaging is a Pro feature.", {
-            description:
-              "Upgrade to Pro or Premium to start conversations with other vendors.",
+          toast.error(t("toasts.proOnly"), {
+            description: t("toasts.proOnlyBody"),
             action: {
-              label: "Upgrade",
+              label: t("toasts.upgrade"),
               onClick: () => {
                 navigate("/vendor/subscription");
               },
@@ -524,14 +531,14 @@ export default function VendorDetailPage() {
         {!isPreview && <PublicNav />}
         <div className="pt-32 pb-24 container mx-auto px-6 text-center">
           <p className="font-label text-muted-foreground mb-4">404</p>
-          <h1 className="font-editorial text-4xl mb-3">Vendor not found</h1>
+          <h1 className="font-editorial text-4xl mb-3">{t("notFound.title")}</h1>
           <p className="text-sm text-muted-foreground mb-8">
-            We couldn't find the vendor you're looking for.
+            {t("notFound.body")}
           </p>
           <Link to="/vendors">
             <Button variant="outline" className="rounded-full">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to directory
+              {t("backToDirectory")}
             </Button>
           </Link>
         </div>
@@ -558,7 +565,7 @@ export default function VendorDetailPage() {
               className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-accent transition-colors mb-8"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Back to directory
+              {t("backToDirectory")}
             </Link>
           )}
           <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
@@ -577,12 +584,12 @@ export default function VendorDetailPage() {
                 vendor.description &&
                 vendor.description.trim().length > 40 && (
                   <div>
-                    <p className="font-label text-accent mb-4">About</p>
+                    <p className="font-label text-accent mb-4">{t("about.eyebrow")}</p>
                     <h2 className="font-editorial text-4xl mb-6">
-                      About {vendor.name}
+                      {t("about.title", { name: vendor.name })}
                     </h2>
                     <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap">
-                      {vendor.description}
+                      {displayDescription}
                     </p>
                   </div>
                 )}
@@ -599,9 +606,9 @@ export default function VendorDetailPage() {
                       </svg>
                     </span>
                     <div>
-                      <p className="text-sm font-semibold">Verified vendor</p>
+                      <p className="text-sm font-semibold">{t("trust.verified")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Identity &amp; business info verified by Vendora
+                        {t("trust.verifiedBody")}
                       </p>
                     </div>
                   </div>
@@ -614,9 +621,9 @@ export default function VendorDetailPage() {
                         </svg>
                       </span>
                       <div>
-                        <p className="text-sm font-semibold">Insured</p>
+                        <p className="text-sm font-semibold">{t("trust.insured")}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Certificate on file
+                          {t("trust.insuredBody")}
                         </p>
                       </div>
                     </div>
@@ -627,12 +634,12 @@ export default function VendorDetailPage() {
               {/* Intro video — optional, only when vendor sets one */}
               {vendor.introVideoUrl && (
                 <div>
-                  <p className="font-label text-accent mb-4">Meet the team</p>
-                  <h2 className="font-editorial text-4xl mb-8">In their own words</h2>
+                  <p className="font-label text-accent mb-4">{t("intro.eyebrow")}</p>
+                  <h2 className="font-editorial text-4xl mb-8">{t("intro.title")}</h2>
                   <div className="aspect-video w-full overflow-hidden rounded-sm bg-muted">
                     <VideoEmbed
                       url={vendor.introVideoUrl}
-                      title={`${vendor.name} intro`}
+                      title={t("intro.videoTitle", { name: vendor.name })}
                     />
                   </div>
                 </div>
@@ -644,8 +651,8 @@ export default function VendorDetailPage() {
                   towers over an empty column during load). */}
               {vendor.isReal && portfolioLoading && (
                 <div>
-                  <p className="font-label text-accent mb-4">Portfolio</p>
-                  <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
+                  <p className="font-label text-accent mb-4">{t("portfolio.eyebrow")}</p>
+                  <h2 className="font-editorial text-4xl mb-8">{t("portfolio.title")}</h2>
                   <div className="grid grid-cols-2 gap-3">
                     <Skeleton className="aspect-[4/3] rounded-sm" />
                     <Skeleton className="aspect-[4/3] rounded-sm" />
@@ -661,8 +668,8 @@ export default function VendorDetailPage() {
                   rather than a not-yet-populated one. */}
               {portfolioItems.length > 0 && (
               <div>
-                <p className="font-label text-accent mb-4">Portfolio</p>
-                <h2 className="font-editorial text-4xl mb-8">Recent work</h2>
+                <p className="font-label text-accent mb-4">{t("portfolio.eyebrow")}</p>
+                <h2 className="font-editorial text-4xl mb-8">{t("portfolio.title")}</h2>
                 {portfolioItems.length > 6 ? (
                   // Airbnb-style hero: 1 wide cover + 2 stacked
                   // middle thumbs + 2 tall right columns. "See all
@@ -680,11 +687,11 @@ export default function VendorDetailPage() {
                       type="button"
                       onClick={() => setLightboxIndex(0)}
                       className="md:hidden block w-full aspect-[16/10] overflow-hidden rounded-xl bg-muted group"
-                      aria-label={`Open portfolio (${portfolioItems.length} photos)`}
+                      aria-label={t("portfolio.openAll", { total: portfolioItems.length })}
                     >
                       <img
                         src={portfolioItems[0].src}
-                        alt={portfolioItems[0].caption ?? `${vendor.name} portfolio cover`}
+                        alt={portfolioItems[0].caption ?? t("portfolio.coverAlt", { name: vendor.name })}
                         className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
                       />
                     </button>
@@ -692,7 +699,8 @@ export default function VendorDetailPage() {
                     <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-2 aspect-[2.4/1] rounded-xl overflow-hidden">
                       {portfolioItems.slice(0, 5).map((item, i) => {
                         const altText =
-                          item.caption ?? `${vendor.name} portfolio ${i + 1}`;
+                          item.caption ??
+                          t("portfolio.photoAlt", { name: vendor.name, number: i + 1 });
                         // Cover spans 2 cols × 2 rows on the left.
                         // i=1 top-middle thumb, i=2 bottom-middle
                         // thumb, i=3 tall right column. The 4th
@@ -715,7 +723,7 @@ export default function VendorDetailPage() {
                             key={`hero-${item.src}-${i}`}
                             onClick={() => setLightboxIndex(i)}
                             className={`group overflow-hidden bg-muted relative ${positionClass}`}
-                            aria-label={`Open ${altText}`}
+                            aria-label={t("portfolio.open", { label: altText })}
                           >
                             <img
                               src={item.src}
@@ -734,7 +742,7 @@ export default function VendorDetailPage() {
                       className="absolute bottom-3 right-3 md:bottom-4 md:right-4 inline-flex items-center gap-1.5 rounded-full bg-white text-foreground px-4 py-2 md:px-4 md:py-2.5 text-sm font-bold shadow-soft ring-1 ring-foreground/10 hover:bg-white/90 transition-colors"
                     >
                       <Grid3X3 className="w-4 h-4" />
-                      See all ({portfolioItems.length})
+                      {t("portfolio.seeAll", { total: portfolioItems.length })}
                     </button>
                   </div>
                 ) : (
@@ -744,7 +752,8 @@ export default function VendorDetailPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {portfolioItems.map((item, i) => {
                       const altText =
-                        item.caption ?? `${vendor.name} portfolio ${i + 1}`;
+                        item.caption ??
+                        t("portfolio.photoAlt", { name: vendor.name, number: i + 1 });
                       const animDelay = Math.min(i * 0.05, 0.4);
                       return (
                         <motion.button
@@ -758,7 +767,7 @@ export default function VendorDetailPage() {
                           className={`group overflow-hidden rounded-sm bg-muted block aspect-square ${
                             i === 0 ? "col-span-2 row-span-2" : ""
                           }`}
-                          aria-label={`Open ${altText}`}
+                          aria-label={t("portfolio.open", { label: altText })}
                         >
                           <img
                             src={item.src}
@@ -854,17 +863,17 @@ export default function VendorDetailPage() {
               {vendor.isReal && (
                 <CoBookedRail
                   cobookedFor={vendor.id}
-                  eyebrow="Often booked with"
-                  title={`Hosts who booked ${vendor.name} also booked`}
+                  eyebrow={t("coBooked.eyebrow")}
+                  title={t("coBooked.title", { name: vendor.name })}
                 />
               )}
 
               {/* Vendors we love (from this vendor) */}
               {recommendations.length > 0 && (
                 <div>
-                  <p className="font-label text-accent mb-4">Recommendations</p>
+                  <p className="font-label text-accent mb-4">{t("recommendations.eyebrow")}</p>
                   <h2 className="font-editorial text-4xl mb-6">
-                    Vendors {vendor.name} loves
+                    {t("recommendations.title", { name: vendor.name })}
                   </h2>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {recommendations.map((r) => (
@@ -874,10 +883,12 @@ export default function VendorDetailPage() {
                         className="group block card-soft p-4 hover:border-foreground/30 transition-colors"
                       >
                         <p className="font-display text-base group-hover:text-accent transition-colors">
-                          {r.recommended?.business_name ?? "Vendor"}
+                          {r.recommended?.business_name ?? t("recommendations.vendorFallback")}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {r.recommended?.category}
+                          {r.recommended?.category
+                            ? categoryNames.sub(r.recommended.category)
+                            : r.recommended?.category}
                           {r.recommended?.location
                             ? ` · ${r.recommended.location}`
                             : ""}
@@ -901,7 +912,12 @@ export default function VendorDetailPage() {
                   <VendorFaqsPublic vendorId={vendor.id} />
                 </>
               ) : (
-                <VendorFaqList items={sampleFaqs} />
+                <VendorFaqList
+                  items={sampleFaqIds.map((id) => ({
+                    q: t(`sampleFaqs.${id}.q`),
+                    a: t(`sampleFaqs.${id}.a`),
+                  }))}
+                />
               )}
 
               {/* "More from this vendor" — moved to the bottom so it's
@@ -918,26 +934,26 @@ export default function VendorDetailPage() {
             <aside className="lg:col-span-1">
               <div className="lg:sticky lg:top-24 space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-6">
-                  <p className="font-label text-muted-foreground mb-2">Pricing</p>
+                  <p className="font-label text-muted-foreground mb-2">{t("pricing.eyebrow")}</p>
                   <p className="font-editorial text-4xl mb-1 tnum">
-                    {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
+                    {priceLabels.listingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
                   </p>
-                  {pricingModelsLabel(vendor.pricingModels) ? (
+                  {priceLabels.pricingModels(vendor.pricingModels) ? (
                     <p className="text-sm text-muted-foreground mb-1">
-                      {pricingModelsLabel(vendor.pricingModels)}
+                      {priceLabels.pricingModels(vendor.pricingModels)}
                     </p>
                   ) : null}
                   <p className="text-xs text-muted-foreground mb-6">
                     {vendor.customPricing
-                      ? "Custom pricing — final cost varies by event details."
-                      : "Final pricing depends on the date and event details."}
+                      ? t("pricing.customNote")
+                      : t("pricing.note")}
                   </p>
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-2.5 text-sm">
                       <Calendar className="w-4 h-4 text-accent flex-shrink-0" />
                       <span className="text-foreground">
-                        Live availability calendar
+                        {t("pricing.liveCalendar")}
                       </span>
                     </div>
                   </div>
@@ -954,7 +970,7 @@ export default function VendorDetailPage() {
                           className="w-full h-[52px]"
                         >
                           <Mail className="w-4 h-4 mr-2" />
-                          Send Inquiry
+                          {t("actions.sendInquiry")}
                         </Button>
                       )}
 
@@ -973,7 +989,7 @@ export default function VendorDetailPage() {
                           variant="outline"
                           className="w-full h-10 rounded-full mt-2"
                         >
-                          Message vendor
+                          {t("actions.messageVendor")}
                         </Button>
                       )}
 
@@ -988,7 +1004,7 @@ export default function VendorDetailPage() {
                               saved ? "fill-accent text-accent" : ""
                             }`}
                           />
-                          {saved ? "Saved" : "Save"}
+                          {saved ? t("actions.saved") : t("actions.save")}
                         </Button>
                         <Button
                           variant="outline"
@@ -996,7 +1012,7 @@ export default function VendorDetailPage() {
                           onClick={handleShare}
                         >
                           <Share2 className="w-3.5 h-3.5 mr-2" />
-                          Share
+                          {t("actions.share")}
                         </Button>
                       </div>
                     </>
@@ -1004,9 +1020,8 @@ export default function VendorDetailPage() {
                 </div>
 
                 <div className="bg-secondary/50 rounded-sm p-5 text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-medium text-foreground">No pay-to-rank.</span>{" "}
-                  Vendora doesn't accept money to influence search ranking. Vendors
-                  appear based on fit and review quality, not ad spend.
+                  <span className="font-medium text-foreground">{t("noPayToRank.title")}</span>{" "}
+                  {t("noPayToRank.body")}
                 </div>
 
                 {vendor.isReal && !isPreview && (
@@ -1016,7 +1031,7 @@ export default function VendorDetailPage() {
                       contentId={vendor.id}
                       variant="link"
                       size="sm"
-                      label="Report this profile"
+                      label={t("actions.reportProfile")}
                     />
                   </div>
                 )}
@@ -1045,10 +1060,10 @@ export default function VendorDetailPage() {
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">
-              Price
+              {t("pricing.mobileLabel")}
             </p>
             <p className="font-display text-lg tnum leading-tight">
-              {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
+              {priceLabels.listingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
             </p>
           </div>
           <Button
@@ -1056,7 +1071,7 @@ export default function VendorDetailPage() {
             disabled={authLoading}
           >
             <Mail className="w-4 h-4 mr-2" />
-            Send Inquiry
+            {t("actions.sendInquiry")}
           </Button>
         </div>
       )}
@@ -1066,22 +1081,21 @@ export default function VendorDetailPage() {
         <DialogContent className="sm:max-w-md rounded-3xl">
           <DialogHeader>
             <DialogTitle className="font-editorial text-3xl">
-              Send an inquiry to {vendor.name}
+              {t("signInPrompt.title", { name: vendor.name })}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed pt-2">
-              Inquiries are routed to vendors with AI-drafted replies in under 3
-              hours. Sign up as a host to send your first inquiry — it's free.
+              {t("signInPrompt.body")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
             <Link to="/signup" className="block">
               <Button className="w-full">
-                Create a free host account
+                {t("signInPrompt.signUp")}
               </Button>
             </Link>
             <Link to="/login" className="block">
               <Button variant="outline" className="w-full h-11 rounded-full">
-                I already have an account
+                {t("signInPrompt.logIn")}
               </Button>
             </Link>
           </div>
@@ -1108,7 +1122,7 @@ export default function VendorDetailPage() {
       <Lightbox
         images={portfolioItems.map((item, i) => ({
           src: item.src,
-          alt: item.caption ?? `${vendor.name} portfolio ${i + 1}`,
+          alt: item.caption ?? t("portfolio.photoAlt", { name: vendor.name, number: i + 1 }),
           caption: item.caption,
         }))}
         index={lightboxIndex}

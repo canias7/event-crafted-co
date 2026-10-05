@@ -5,6 +5,7 @@
 // doesn't take width.
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Smile, MoreHorizontal, Reply } from "lucide-react";
 import {
   Popover,
@@ -35,6 +36,7 @@ export function MessageActionMenu({
   onReact,
   onReply,
 }: Props) {
+  const { t } = useTranslation("messages");
   const [reactOpen, setReactOpen] = useState(false);
   return (
     <div
@@ -49,7 +51,7 @@ export function MessageActionMenu({
         <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label="React"
+            aria-label={t("actions.react")}
             className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-soft hover:bg-secondary"
           >
             <Smile className="w-3.5 h-3.5 text-foreground" />
@@ -64,7 +66,7 @@ export function MessageActionMenu({
             <button
               key={e}
               type="button"
-              aria-label={`React with ${e}`}
+              aria-label={t("actions.react_with", { emoji: e })}
               onClick={() => {
                 onReact(e);
                 setReactOpen(false);
@@ -81,7 +83,7 @@ export function MessageActionMenu({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label="More"
+              aria-label={t("actions.more")}
               className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-background/95 backdrop-blur border border-border shadow-soft hover:bg-secondary"
             >
               <MoreHorizontal className="w-3.5 h-3.5 text-foreground" />
@@ -91,7 +93,7 @@ export function MessageActionMenu({
             {onReply ? (
               <DropdownMenuItem onClick={onReply}>
                 <Reply className="w-4 h-4 mr-2" />
-                Reply
+                {t("actions.reply")}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

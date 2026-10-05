@@ -251,15 +251,14 @@ export default function VendorCategoryPage() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <p className="font-editorial text-2xl mb-2">
-                No {config.display.toLowerCase()} on Vendora yet
+                {t("empty.title", { name: groupNameLower })}
               </p>
               <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                We're hand-selecting new vendors weekly. Check back soon, or
-                browse our other categories.
+                {t("empty.body")}
               </p>
               <Link to="/vendors" className="inline-block mt-6">
                 <Button variant="outline" className="rounded-full">
-                  Browse all vendors
+                  {t("empty.cta")}
                 </Button>
               </Link>
             </div>
@@ -279,7 +278,8 @@ export default function VendorCategoryPage() {
       {/* FAQ — also serialized as FAQPage JSON-LD below */}
       <FaqSection
         items={faqs}
-        title={`Booking ${config.display.toLowerCase()} on Vendora`}
+        title={t("faq.title", { name: groupNameLower })}
+        eyebrow={t("faq.eyebrow")}
       />
 
       {/* "Other categories" cross-link section pulled — page ends
@@ -290,8 +290,8 @@ export default function VendorCategoryPage() {
         data={{
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: `${config.display} on Vendora`,
-          description: config.description,
+          name: t("meta.listName", { name: groupName }),
+          description: groupDescription,
           numberOfItems: filtered.length,
           itemListElement: filtered.slice(0, 25).map((v, i) => ({
             "@type": "ListItem",

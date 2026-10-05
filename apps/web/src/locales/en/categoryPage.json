@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "title": "{{name}} on Vendora — {{description}}",
+    "fallbackTitle": "Vendor category — Vendora",
+    "listName": "{{name}} on Vendora"
+  },
+  "comingSoon": {
+    "title": "{{name}} — coming soon",
+    "browseOther": "Browse other vendors"
+  },
+  "all": "All",
+  "count_one": "{{count}} {{name}}",
+  "count_other": "{{count}} {{name}}",
+  "browseAllCategories": "Browse all categories",
+  "empty": {
+    "title": "No {{name}} on Vendora yet",
+    "body": "We're hand-selecting new vendors weekly. Check back soon, or browse our other categories.",
+    "cta": "Browse all vendors"
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Booking {{name}} on Vendora"
+  }
+}

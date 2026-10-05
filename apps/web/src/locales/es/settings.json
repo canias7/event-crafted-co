@@ -1,0 +1,71 @@
+{
+  "page": {
+    "title": "Configuración",
+    "subtitle": "Administra tu cuenta"
+  },
+  "email": {
+    "title": "Correo electrónico",
+    "subtitle": "El correo registrado en esta cuenta",
+    "change_hint": "Escribe a hello@eventvendora.com para cambiar tu correo"
+  },
+  "notifications_row": {
+    "title": "Notificaciones",
+    "subtitle": "Elige qué correos, notificaciones push y alertas en la app recibes",
+    "manage": "Administrar"
+  },
+  "terms": {
+    "title": "Términos del servicio",
+    "subtitle": "Lo que aceptaste al registrarte"
+  },
+  "privacy": {
+    "title": "Política de privacidad",
+    "subtitle": "Cómo manejamos tus datos"
+  },
+  "view": "Ver",
+  "sign_out": {
+    "title": "Cerrar sesión",
+    "subtitle": "Cierra la sesión en este dispositivo",
+    "button": "Cerrar sesión"
+  },
+  "delete": {
+    "title": "Eliminar cuenta",
+    "subtitle": "Elimina para siempre tu perfil y todo lo relacionado con él",
+    "subtitle_vendor": "Elimina para siempre tu perfil y todo lo relacionado con él — anuncios, portafolio, disponibilidad",
+    "button": "Eliminar",
+    "confirm_title": "¿Eliminar tu cuenta?",
+    "confirm_body": "Esto eliminará tu perfil y todos los datos relacionados. Tu sesión se cerrará de inmediato y no podrás volver a iniciar sesión con este correo.",
+    "cancel": "Cancelar",
+    "confirm": "Sí, eliminarla",
+    "success": "Cuenta cerrada. Hasta pronto.",
+    "error": "No se pudo eliminar tu cuenta: {{message}}"
+  },
+  "notifications": {
+    "back": "Configuración",
+    "title": "Notificaciones",
+    "subtitle": "Elige de qué te avisamos y cómo.",
+    "toggle_label": "Notificaciones: {{title}}",
+    "update_error": "No se pudo actualizar la preferencia",
+    "prefs": {
+      "new_inquiry": {
+        "title": "Nueva consulta",
+        "subtitle": "Correo, push y aviso en la app cuando un anfitrión pregunta por tu anuncio"
+      },
+      "proposal_accepted": {
+        "title": "Propuesta aceptada",
+        "subtitle": "Cuando un anfitrión acepta una propuesta que enviaste"
+      },
+      "review_received": {
+        "title": "Nueva reseña",
+        "subtitle": "Cuando un anfitrión te deja una calificación"
+      },
+      "weekly_digest": {
+        "title": "Resumen semanal",
+        "subtitle": "Un resumen cada lunes de la actividad de la semana anterior"
+      },
+      "marketing": {
+        "title": "Promociones",
+        "subtitle": "Novedades del producto, consejos y ofertas ocasionales (opcional)"
+      }
+    }
+  }
+}

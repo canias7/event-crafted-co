@@ -1,0 +1,166 @@
+{
+  "vendorCount_one": "{{count}} vendor",
+  "vendorCount_other": "{{count}} vendors",
+  "faq": {
+    "eyebrow": "FAQ",
+    "commonQuestions": "Common questions",
+    "frequentlyAsked": "Frequently asked"
+  },
+  "city": {
+    "meta": {
+      "title": "Event vendors in {{city}} — Vendora",
+      "description": "Hand-vetted photographers, florists, venues, caterers, and planners in {{city}}. Browse pricing, real reviews, and book directly through Vendora."
+    },
+    "empty": {
+      "title": "No vendors in {{city}} yet",
+      "body": "Vendora is still curating its {{city}} chapter. Browse the full directory or another city below.",
+      "cta": "Browse all cities"
+    },
+    "back": "All cities",
+    "eyebrow": "— VENDORS IN {{city}}",
+    "title": "The {{city}} list, <accent>hand-curated.</accent>",
+    "intro_one": "{{count}} vendor based in or near {{city}} on Vendora today — across photography, florals, catering, venues, and the rest of the event stack. Every one is vetted by our editorial team for portfolio quality, references, and reliability before they're listed.",
+    "intro_other": "{{count}} vendors based in or near {{city}} on Vendora today — across photography, florals, catering, venues, and the rest of the event stack. Every one is vetted by our editorial team for portfolio quality, references, and reliability before they're listed.",
+    "countIn_one": "{{count}} vendor in {{city}}",
+    "countIn_other": "{{count}} vendors in {{city}}",
+    "faqTitle": "Planning an event in {{city}}",
+    "otherCities": {
+      "eyebrow": "— OTHER CITIES",
+      "title": "Vendors in nearby markets"
+    },
+    "jsonLd": {
+      "name": "Event vendors in {{city}}",
+      "description": "Hand-vetted event vendors based in {{city}}."
+    }
+  },
+  "cityFaqs": {
+    "find": {
+      "q": "How do I find vendors in {{city}} on Vendora?",
+      "a": "Browse the directory and filter by location, or use this page to see only vendors based in or near {{city}}. Each profile shows pricing, real reviews, and direct messaging — no calls or chasing required."
+    },
+    "vetted": {
+      "q": "Are {{city}} vendors on Vendora vetted?",
+      "a": "Yes. Every vendor is hand-reviewed by our editorial team for portfolio quality, references, and professional standing before being approved to list — regardless of city."
+    },
+    "eventTypes": {
+      "q": "What types of events do {{city}} vendors handle?",
+      "a": "Weddings, milestone birthdays, holiday gatherings, baby showers, anniversaries, corporate events, and intimate dinners. Use the category filters to narrow down by what you're planning."
+    },
+    "timing": {
+      "q": "How early should I book vendors in {{city}}?",
+      "a": "Peak-season vendors (May-October weddings, December holiday events) often book 9-12 months out. For smaller gatherings or off-peak dates, 6-8 weeks is typically enough — though the most in-demand venues and photographers book earlier."
+    },
+    "fees": {
+      "q": "Is there a booking fee?",
+      "a": "Browsing and contacting vendors is free for hosts. You pay each vendor directly through Vendora's secure messaging and proposal flow — we don't add markups to vendor pricing."
+    }
+  },
+  "cityCategory": {
+    "meta": {
+      "title": "{{name}} in {{city}} — Vendora",
+      "description": "Hand-vetted {{name}} in {{city}}. Browse pricing, real reviews, and book the right {{name}} for your event through Vendora."
+    },
+    "all": "All {{name}}",
+    "title": "{{name}} in <accent>{{city}}</accent>",
+    "intro": "{{longCopy}} Showing the curated list of {{name}} serving {{city}}.",
+    "empty": {
+      "title": "No {{name}} in {{city}} yet",
+      "body": "We're still building out coverage here. Browse other {{name}} on Vendora — many travel for events."
+    },
+    "count_one": "{{count}} {{name}}",
+    "count_other": "{{count}} {{name}}",
+    "otherCities": {
+      "eyebrow": "Also serving",
+      "title": "{{name}} in other cities"
+    },
+    "otherGroups": {
+      "eyebrow": "More in {{city}}",
+      "title": "Other vendors in {{city}}"
+    },
+    "faqQuestionInCity": "{{question}} in {{city}}?",
+    "listName": "{{name}} in {{city}}"
+  },
+  "eventTypeCity": {
+    "meta": {
+      "title": "{{display}} in {{city}} — Vendora",
+      "description": "{{description}} Browse vendors serving {{city}} for {{noun}}."
+    },
+    "back": "All vendors",
+    "title": "{{eventType}} in <accent>{{city}}</accent>",
+    "intro": "{{description}} Showing vendors who serve {{city}} for {{noun}}.",
+    "empty": {
+      "title": "No vendors in {{city}} yet for {{noun}}",
+      "body": "We're still building out coverage. Browse all event vendors in Vendora — many travel.",
+      "cta": "All vendors in {{city}}"
+    },
+    "browseByCategory": "Browse by category",
+    "mightNeed": "What you might need for {{noun}}",
+    "categoryInCity": "{{category}} in {{city}}"
+  },
+  "eventTypes": {
+    "wedding": {
+      "display": "Wedding Vendors",
+      "short": "Wedding",
+      "noun": "a wedding",
+      "description": "Hand-vetted photographers, florists, venues, and planners for weddings."
+    },
+    "birthday": {
+      "display": "Birthday Party Vendors",
+      "short": "Birthday Party",
+      "noun": "a milestone birthday",
+      "description": "From 1st birthdays to 50th milestones — vendors who turn the day into something memorable."
+    },
+    "baby-shower": {
+      "display": "Baby Shower Vendors",
+      "short": "Baby Shower",
+      "noun": "a baby shower",
+      "description": "Photographers, decorators, and caterers who specialize in baby showers and gender reveals."
+    },
+    "anniversary": {
+      "display": "Anniversary Vendors",
+      "short": "Anniversary",
+      "noun": "an anniversary celebration",
+      "description": "Vendors for milestone anniversaries — vow renewals, dinner parties, and family gatherings."
+    },
+    "holiday-dinner": {
+      "display": "Holiday Dinner Vendors",
+      "short": "Holiday Dinner",
+      "noun": "a holiday dinner",
+      "description": "Caterers, private chefs, decorators, and rental companies for Thanksgiving, Christmas, NYE, and seasonal gatherings."
+    },
+    "corporate": {
+      "display": "Corporate Event Vendors",
+      "short": "Corporate Event",
+      "noun": "a corporate event",
+      "description": "Event planners, AV teams, caterers, and venues for galas, retreats, and product launches."
+    },
+    "graduation": {
+      "display": "Graduation Party Vendors",
+      "short": "Graduation Party",
+      "noun": "a graduation party",
+      "description": "Photographers, caterers, and decorators for graduation parties and milestones."
+    },
+    "bridal": {
+      "display": "Bridal Shower Vendors",
+      "short": "Bridal Shower",
+      "noun": "a bridal shower",
+      "description": "Florists, photographers, and venues for bridal showers and pre-wedding celebrations."
+    },
+    "engagement": {
+      "display": "Engagement Party Vendors",
+      "short": "Engagement Party",
+      "noun": "an engagement party",
+      "description": "Hand-vetted vendors for engagement parties — photographers, florists, venues."
+    }
+  },
+  "topCategories": {
+    "Photographer": "Photographers",
+    "Florist": "Florists",
+    "Venue": "Venues",
+    "Catering": "Caterings",
+    "DJ": "DJs",
+    "Decorator": "Decorators",
+    "AV": "AVs",
+    "Event Planner": "Event Planners"
+  }
+}

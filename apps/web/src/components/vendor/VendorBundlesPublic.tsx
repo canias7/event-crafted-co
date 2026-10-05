@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Layers, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/format";
 
@@ -30,6 +31,7 @@ interface Bundle {
 }
 
 export function VendorBundlesPublic({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,9 +67,9 @@ export function VendorBundlesPublic({ vendorId }: { vendorId: string }) {
     <div>
       <p className="font-label text-accent mb-4 inline-flex items-center gap-1.5">
         <Layers className="w-3 h-3" />
-        Bundles
+        {t("bundles.eyebrow")}
       </p>
-      <h2 className="font-editorial text-4xl mb-6">Multi-vendor packages</h2>
+      <h2 className="font-editorial text-4xl mb-6">{t("bundles.title")}</h2>
       <div className="space-y-4">
         {bundles.map((b) => (
           <div

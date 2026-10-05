@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { CITY_FAQS } from "@/data/categoryFaqs";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
 import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -28,6 +30,8 @@ const slugByCategory: Record<string, string> = Object.entries(
 );
 
 export default function VendorCityPage() {
+  const { t, i18n } = useTranslation("cityPages");
+  const categoryNames = useCategoryNames();
   const { citySlug } = useParams();
   const { vendors, loading } = useVendors();
   const cityLabel = citySlug ? citySlugDisplay(citySlug) : "";
@@ -71,11 +75,12 @@ export default function VendorCityPage() {
       }));
   }, [vendors, citySlug]);
 
-  const faqs = useMemo(() => CITY_FAQS(cityLabel), [cityLabel]);
+  // In the visitor's language; rebuilt when they switch.
+  const faqs = useMemo(() => CITY_FAQS(cityLabel, i18n.language), [cityLabel, i18n.language]);
 
   useDocumentMeta({
-    title: `Event vendors in ${cityLabel} — Vendora`,
-    description: `Hand-vetted photographers, florists, venues, caterers, and planners in ${cityLabel}. Browse pricing, real reviews, and book directly through Vendora.`,
+    title: t("city.meta.title", { city: cityLabel }),
+    description: t("city.meta.description", { city: cityLabel }),
     type: "website",
   });
 
@@ -90,15 +95,14 @@ export default function VendorCityPage() {
               <MapPin className="w-5 h-5 text-muted-foreground" />
             </div>
             <h1 className="font-editorial text-4xl mb-3">
-              No vendors in {cityLabel} yet
+              {t("city.empty.title", { city: cityLabel })}
             </h1>
             <p className="text-muted-foreground mb-8">
-              Vendora is still curating its {cityLabel} chapter. Browse
-              the full directory or another city below.
+              {t("city.empty.body", { city: cityLabel })}
             </p>
             <Link to="/vendors/locations">
               <Button variant="outline" className="rounded-full">
-                Browse all cities
+                {t("city.empty.cta")}
               </Button>
             </Link>
           </div>
@@ -120,7 +124,7 @@ export default function VendorCityPage() {
             className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-accent transition-colors mb-8"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            All cities
+            {t("city.back")}
           </Link>
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -128,7 +132,7 @@ export default function VendorCityPage() {
             transition={{ ...spring }}
             className="font-label text-accent tracking-[0.4em] mb-4"
           >
-            — VENDORS IN {cityLabel.toUpperCase()}
+            {t("city.eyebrow", { city: cityLabel.toUpperCase() })}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
@@ -136,10 +140,12 @@ export default function VendorCityPage() {
             transition={{ ...spring, delay: 0.1, duration: 0.9 }}
             className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6"
           >
-            The {cityLabel} list,{" "}
-            <span className="text-accent">
-              hand-curated.
-            </span>
+            <Trans
+              t={t}
+              i18nKey="city.title"
+              values={{ city: cityLabel }}
+              components={{ accent: <span className="text-accent" /> }}
+            />
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -147,12 +153,7 @@ export default function VendorCityPage() {
             transition={{ ...spring, delay: 0.25 }}
             className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed"
           >
-            {inCity.length}{" "}
-            {inCity.length === 1 ? "vendor" : "vendors"} based in or
-            near {cityLabel} on Vendora today — across photography,
-            florals, catering, venues, and the rest of the event stack.
-            Every one is vetted by our editorial team for portfolio
-            quality, references, and reliability before they're listed.
+            {t("city.intro", { count: inCity.length, city: cityLabel })}
           </motion.p>
           {byCategory.length > 1 && (
             <div className="flex flex-wrap gap-2 mt-8">
@@ -167,7 +168,7 @@ export default function VendorCityPage() {
                     to={`/vendors/${slug}/in/${citySlug}`}
                     className="text-xs uppercase tracking-wide bg-secondary/60 hover:bg-secondary text-foreground px-3 py-1.5 rounded-full transition-colors"
                   >
-                    {cat}
+                    {categoryNames.sub(cat)}
                     <span className="text-muted-foreground ml-1.5 tnum">
                       {list.length}
                     </span>
@@ -184,8 +185,7 @@ export default function VendorCityPage() {
         <div className="container mx-auto px-5 md:px-8">
           <div className="flex items-end justify-between mb-8 max-w-5xl mx-auto">
             <p className="font-label text-muted-foreground">
-              {inCity.length}{" "}
-              {inCity.length === 1 ? "vendor" : "vendors"} in {cityLabel}
+              {t("city.countIn", { count: inCity.length, city: cityLabel })}
             </p>
           </div>
           {loading && inCity.length === 0 ? (
@@ -209,17 +209,21 @@ export default function VendorCityPage() {
       </section>
 
       {/* FAQ */}
-      <FaqSection items={faqs} title={`Planning an event in ${cityLabel}`} />
+      <FaqSection
+        items={faqs}
+        title={t("city.faqTitle", { city: cityLabel })}
+        eyebrow={t("faq.eyebrow")}
+      />
 
       {/* Related cities for crawl + browse */}
       {nearbyCities.length > 0 && (
         <section className="py-16 border-t border-border">
           <div className="container mx-auto px-5 md:px-8 max-w-5xl">
             <p className="font-label text-accent mb-3 tracking-[0.4em]">
-              — OTHER CITIES
+              {t("city.otherCities.eyebrow")}
             </p>
             <h2 className="font-editorial text-4xl mb-8">
-              Vendors in nearby markets
+              {t("city.otherCities.title")}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {nearbyCities.map((c) => (
@@ -232,7 +236,7 @@ export default function VendorCityPage() {
                     {c.label}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1 tnum">
-                    {c.count} {c.count === 1 ? "vendor" : "vendors"}
+                    {t("vendorCount", { count: c.count })}
                   </p>
                 </Link>
               ))}
@@ -246,8 +250,8 @@ export default function VendorCityPage() {
         data={{
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: `Event vendors in ${cityLabel}`,
-          description: `Hand-vetted event vendors based in ${cityLabel}.`,
+          name: t("city.jsonLd.name", { city: cityLabel }),
+          description: t("city.jsonLd.description", { city: cityLabel }),
           numberOfItems: inCity.length,
           itemListElement: inCity.slice(0, 25).map((v, i) => ({
             "@type": "ListItem",

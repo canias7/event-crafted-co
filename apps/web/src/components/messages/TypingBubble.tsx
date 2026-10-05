@@ -3,6 +3,8 @@
 // before. The cream/hairline palette matches the new incoming-
 // bubble styling on both sides.
 
+import { useTranslation } from "react-i18next";
+
 interface Props {
   /** Render a 24px-wide spacer on the left so the bubble lines up
    *  with the incoming-avatar column on pages that show one (host
@@ -15,6 +17,7 @@ interface Props {
 }
 
 export function TypingBubble({ withAvatarSpacer, label }: Props) {
+  const { t } = useTranslation("messages");
   return (
     <div className="flex items-end gap-2 mt-2">
       {withAvatarSpacer ? <span className="shrink-0 w-6" aria-hidden /> : null}
@@ -26,7 +29,7 @@ export function TypingBubble({ withAvatarSpacer, label }: Props) {
         ) : null}
         <div
           className="bg-muted border border-transparent px-4 py-2.5 rounded-2xl rounded-bl-sm inline-flex items-end gap-1"
-          aria-label={label ?? "Typing"}
+          aria-label={label ?? t("typing")}
         >
           <span
             className="inline-block w-1.5 h-1.5 rounded-full bg-foreground/40 animate-pulse"

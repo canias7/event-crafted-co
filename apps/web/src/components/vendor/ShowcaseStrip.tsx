@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ShowcaseClip {
@@ -19,6 +20,7 @@ function clipUrl(path: string) {
 // viewport (IntersectionObserver), one shared mute toggle controls audio
 // for the active tile so visitors aren't pelted by 6 clips at once.
 export function ShowcaseStrip({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [clips, setClips] = useState<ShowcaseClip[]>([]);
   const [muted, setMuted] = useState(true);
 
@@ -46,24 +48,24 @@ export function ShowcaseStrip({ vendorId }: { vendorId: string }) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="font-label text-accent mb-1">Showcase</p>
-          <h2 className="font-editorial text-4xl">In motion</h2>
+          <p className="font-label text-accent mb-1">{t("showcase.eyebrow")}</p>
+          <h2 className="font-editorial text-4xl">{t("showcase.title")}</h2>
         </div>
         <button
           type="button"
           onClick={() => setMuted((m) => !m)}
           className="rounded-full border border-border bg-background hover:bg-secondary transition-colors px-3 py-1.5 text-xs flex items-center gap-1.5"
-          aria-label={muted ? "Unmute clips" : "Mute clips"}
+          aria-label={muted ? t("showcase.unmute") : t("showcase.mute")}
         >
           {muted ? (
             <>
               <VolumeX className="w-3.5 h-3.5" />
-              Muted
+              {t("showcase.muted")}
             </>
           ) : (
             <>
               <Volume2 className="w-3.5 h-3.5" />
-              Sound on
+              {t("showcase.soundOn")}
             </>
           )}
         </button>

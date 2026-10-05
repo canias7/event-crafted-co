@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandCardShell } from "@/components/vendor/BrandCardShell";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
@@ -32,6 +33,7 @@ interface VendorRow {
 }
 
 export function VendorBrandCard({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [row, setRow] = useState<VendorRow | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
 
@@ -78,7 +80,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
   const businessName =
     row.business_name?.trim() ||
     row.brand?.business_name?.trim() ||
-    "Vendor";
+    t("brandCard.vendorFallback");
   const bio = row.bio?.trim() || row.brand?.bio?.trim() || null;
   const memberSinceYear = row.created_at
     ? String(new Date(row.created_at).getFullYear())
@@ -143,11 +145,11 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
 
       <div className="mt-6 grid grid-cols-2 rounded-2xl bg-card border border-border px-3 py-3 divide-x divide-border">
         <StatCell
-          label="Rating"
+          label={t("brandCard.rating")}
           value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
           italic
         />
-        <StatCell label="Joined" value={memberSinceYear ?? "—"} />
+        <StatCell label={t("brandCard.joined")} value={memberSinceYear ?? "—"} />
       </div>
 
     </BrandCardShell>

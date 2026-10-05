@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "title": "{{name}} en Vendora — {{description}}",
+    "fallbackTitle": "Categoría de proveedores — Vendora",
+    "listName": "{{name}} en Vendora"
+  },
+  "comingSoon": {
+    "title": "{{name}} — muy pronto",
+    "browseOther": "Ver otros proveedores"
+  },
+  "all": "Todos",
+  "count_one": "{{count}} proveedor de {{name}}",
+  "count_other": "{{count}} proveedores de {{name}}",
+  "browseAllCategories": "Ver todas las categorías",
+  "empty": {
+    "title": "Aún no hay proveedores de {{name}} en Vendora",
+    "body": "Cada semana seleccionamos a mano nuevos proveedores. Vuelve pronto o mira nuestras otras categorías.",
+    "cta": "Ver todos los proveedores"
+  },
+  "faq": {
+    "eyebrow": "Preguntas frecuentes",
+    "title": "Cómo contratar proveedores de {{name}} en Vendora"
+  }
+}

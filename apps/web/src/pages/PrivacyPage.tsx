@@ -1,144 +1,112 @@
 import { useEffect } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 
 export default function PrivacyPage() {
+  // The policy's words are in locales/<language>/privacy.json.
+  const { t, i18n } = useTranslation("privacy");
+  // A translated policy says the English one prevails; English doesn't.
+  const isTranslation = (i18n.resolvedLanguage ?? "en") !== "en";
+
   useEffect(() => {
-    document.title = "Privacy Policy — Vendora";
+    document.title = t("page_title");
     return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
+      document.title = t("defaultTitle", { ns: "meta" });
     };
-  }, []);
+  }, [t]);
+
+  // A sentence with bold lead-ins (<strong>) or the email link (<email>).
+  const rich = (key: string) => (
+    <Trans
+      t={t}
+      i18nKey={key}
+      components={{
+        strong: <strong />,
+        email: (
+          <a
+            href="mailto:hello@eventvendora.com"
+            className="text-gold font-medium hover:text-white"
+          />
+        ),
+      }}
+    />
+  );
 
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PublicNav tone="dark" />
 
       <article id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-gold mb-3">— LEGAL</p>
+        <p className="font-label text-gold mb-3">{t("eyebrow")}</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
-          Privacy policy
+          {t("title")}
         </h1>
-        <p className="text-sm text-[#f4f1ea]/80 mb-12">
-          Last updated: May 3, 2026
+        <p className={`text-sm text-[#f4f1ea]/80 ${isTranslation ? "mb-2" : "mb-12"}`}>
+          {t("last_updated")}
         </p>
+        {isTranslation && (
+          <p className="text-sm text-[#f4f1ea]/80 mb-12">
+            {t("translation_note")}
+          </p>
+        )}
 
         <div className="space-y-8 leading-relaxed">
           <p>
-            Vendora is a vendor-first event marketplace. This page describes
-            what we collect, how we use it, and the rights you have over your
-            data.
+            {t("intro")}
           </p>
 
-          <Section title="1. What we collect">
+          <Section title={t("collect.title")}>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>
-                <strong>Account info</strong> — your email, password (hashed),
-                and the role you signed up as (host, vendor, or admin).
-              </li>
-              <li>
-                <strong>Profile + event details</strong> — display name, optional
-                phone, event type, date, location, budget range, and any notes
-                you've shared during onboarding.
-              </li>
-              <li>
-                <strong>Vendor profile</strong> — for vendors, your business
-                name, category, bio, base price, location, service radius, and
-                portfolio images you upload.
-              </li>
-              <li>
-                <strong>Messages and inquiries</strong> — message bodies,
-                inquiry details, status changes, and any reviews you post.
-              </li>
-              <li>
-                <strong>Usage data</strong> — pages visited, features used,
-                approximate location from IP. We do not sell this to third
-                parties.
-              </li>
+              <li>{rich("collect.account")}</li>
+              <li>{rich("collect.profile")}</li>
+              <li>{rich("collect.vendor_profile")}</li>
+              <li>{rich("collect.messages")}</li>
+              <li>{rich("collect.usage")}</li>
             </ul>
           </Section>
 
-          <Section title="2. How we use it">
+          <Section title={t("use.title")}>
             <p>
-              We use your data to operate Vendora — matching hosts with
-              relevant vendors, routing messages between you and a vendor,
-              displaying public vendor profiles in our directory, sending
-              transactional emails (signup confirmation, inquiry receipts), and
-              improving the product.
+              {t("use.operate")}
             </p>
             <p className="mt-3">
-              When the AI inquiry agent is enabled, your inquiry details and a
-              vendor's prior messages are sent to Anthropic's Claude API to
-              draft replies. The vendor reviews and approves every reply
-              before it sends — drafts are never sent automatically.
+              {t("use.ai")}
             </p>
           </Section>
 
-          <Section title="3. Who we share with">
+          <Section title={t("share.title")}>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>
-                <strong>Vendors you inquire with</strong> — when you send an
-                inquiry, the vendor sees your event details and display name.
-              </li>
-              <li>
-                <strong>Service providers</strong> — Supabase (hosting and
-                database), and (for AI replies) Anthropic.
-              </li>
-              <li>
-                <strong>No advertisers, no data brokers, no resellers.</strong>{" "}
-                Vendora does not sell or rent your personal data.
-              </li>
+              <li>{rich("share.vendors")}</li>
+              <li>{rich("share.providers")}</li>
+              <li>{rich("share.no_sale")}</li>
             </ul>
           </Section>
 
-          <Section title="4. Cookies">
+          <Section title={t("cookies.title")}>
             <p>
-              We use essential cookies for authentication and session
-              management. With your consent we may use analytics cookies to
-              understand which features get used. You can change cookie
-              preferences from the banner shown on first visit, or in your
-              browser settings.
+              {t("cookies.body")}
             </p>
           </Section>
 
-          <Section title="5. Your rights">
+          <Section title={t("rights.title")}>
             <p>
-              You can access, correct, export, or delete your data at any
-              time. Most of this is available directly in your account settings;
-              for a full export or deletion request, email{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="text-gold font-medium hover:text-white"
-              >
-                hello@eventvendora.com
-              </a>
-              . We respond within 30 days.
+              {rich("rights.access")}
             </p>
             <p className="mt-3">
-              EU/UK residents have rights under GDPR; California residents have
-              rights under CCPA — both are honored regardless of where you
-              live.
+              {t("rights.laws")}
             </p>
           </Section>
 
-          <Section title="6. Data retention">
+          <Section title={t("retention.title")}>
             <p>
-              We keep account data while your account is active and for 90 days
-              after deletion (in case you change your mind). Anonymized usage
-              data may be kept longer for analytics.
+              {t("retention.body")}
             </p>
           </Section>
 
-          <Section title="7. Contact">
+          <Section title={t("contact.title")}>
             <p>
-              Questions about this policy or your data: email{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="text-gold font-medium hover:text-white"
-              >
-                hello@eventvendora.com
-              </a>
-              .
+              {rich("contact.body")}
             </p>
           </Section>
         </div>

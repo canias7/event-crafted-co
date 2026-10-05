@@ -1,0 +1,71 @@
+{
+  "page": {
+    "title": "Settings",
+    "subtitle": "Manage your account"
+  },
+  "email": {
+    "title": "Email",
+    "subtitle": "Email on file for this account",
+    "change_hint": "Contact hello@eventvendora.com to change your email"
+  },
+  "notifications_row": {
+    "title": "Notifications",
+    "subtitle": "Pick which emails, pushes, and in-app alerts you get",
+    "manage": "Manage"
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "subtitle": "What you agreed to when you signed up"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "How we handle your data"
+  },
+  "view": "View",
+  "sign_out": {
+    "title": "Sign out",
+    "subtitle": "Sign out of this device",
+    "button": "Sign out"
+  },
+  "delete": {
+    "title": "Delete account",
+    "subtitle": "Permanently removes your profile and everything tied to it",
+    "subtitle_vendor": "Permanently removes your profile and everything tied to it — listings, portfolio, availability",
+    "button": "Delete",
+    "confirm_title": "Delete account?",
+    "confirm_body": "This will delete your profile and all related data. You'll be signed out immediately and won't be able to sign back in with this email.",
+    "cancel": "Cancel",
+    "confirm": "Yes, delete it",
+    "success": "Account closed. Goodbye for now.",
+    "error": "{{message}}"
+  },
+  "notifications": {
+    "back": "Settings",
+    "title": "Notifications",
+    "subtitle": "Choose what we tell you about, and how.",
+    "toggle_label": "{{title}} notifications",
+    "update_error": "Couldn't update preference",
+    "prefs": {
+      "new_inquiry": {
+        "title": "New inquiry",
+        "subtitle": "Email + push + in-app when a host asks about your listing"
+      },
+      "proposal_accepted": {
+        "title": "Proposal accepted",
+        "subtitle": "When a host accepts a proposal you sent"
+      },
+      "review_received": {
+        "title": "New review",
+        "subtitle": "When a host leaves you a rating"
+      },
+      "weekly_digest": {
+        "title": "Weekly digest",
+        "subtitle": "Monday summary of last week's activity"
+      },
+      "marketing": {
+        "title": "Marketing",
+        "subtitle": "Product news, tips, and occasional offers (opt-in)"
+      }
+    }
+  }
+}
