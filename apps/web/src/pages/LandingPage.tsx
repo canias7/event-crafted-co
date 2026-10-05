@@ -25,13 +25,6 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation("landing");
 
-  // The page title in the visitor's language (English is the same title
-  // index.html ships with).
-  const pageTitle = t("meta.title");
-  useEffect(() => {
-    document.title = pageTitle;
-  }, [pageTitle]);
-
   // How it works used to be a section here; old /#how-it-works links go
   // to its page.
   useEffect(() => {

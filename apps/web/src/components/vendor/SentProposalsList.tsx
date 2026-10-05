@@ -3,6 +3,8 @@
 // Invoices list: per-row Preview / PDF / Copy link / Cancel actions plus
 // a status pill.
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import {
   Check,
   Clock,
@@ -33,18 +35,21 @@ interface SentProposal {
 const ORIGIN =
   typeof window !== "undefined" ? window.location.origin : "https://eventvendora.com";
 
+// In the vendor's language (the list re-renders on a switch through its
+// useTranslation hook).
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function StatusPill({ status }: { status: string }) {
+  const { t } = useTranslation("proposals");
   const map: Record<string, { label: string; cls: string; icon: "check" | "clock" }> = {
-    sent: { label: "Awaiting", cls: "bg-pending text-accent", icon: "clock" },
-    accepted: { label: "Accepted", cls: "bg-primary text-primary-foreground", icon: "check" },
-    cancelled: { label: "Cancelled", cls: "bg-muted text-foreground", icon: "clock" },
+    sent: { label: t("sentProposals.status.sent"), cls: "bg-pending text-accent", icon: "clock" },
+    accepted: { label: t("sentProposals.status.accepted"), cls: "bg-primary text-primary-foreground", icon: "check" },
+    cancelled: { label: t("sentProposals.status.cancelled"), cls: "bg-muted text-foreground", icon: "clock" },
   };
   const m = map[status] ?? { label: status, cls: "bg-muted text-foreground", icon: "clock" as const };
   return (
@@ -64,6 +69,7 @@ export function SentProposalsList({
   accountVendorIds: string[];
   listings?: ListingOpt[];
 }) {
+  const { t } = useTranslation("proposals");
   const [rows, setRows] = useState<SentProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -103,8 +109,8 @@ export function SentProposalsList({
   function copyLink(token: string) {
     void navigator.clipboard
       .writeText(`${ORIGIN}/proposal/${token}`)
-      .then(() => toast.success("Proposal link copied"))
-      .catch(() => toast.error("Couldn't copy the link"));
+      .then(() => toast.success(t("sentProposals.toast.linkCopied")))
+      .catch(() => toast.error(t("sentProposals.toast.copyFailed")));
   }
 
   function brandFor(vendorId: string): string | null {
