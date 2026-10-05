@@ -89,5 +89,10 @@
     "done": "Done",
     "cancel": "Cancel",
     "create": "Create link"
+  },
+  "download": {
+    "fetchFailed": "Couldn't fetch image ({{status}})",
+    "timedOut": "Download timed out after {{seconds}}s. Check your connection and retry.",
+    "decodeFailed": "Image decode failed"
   }
 }

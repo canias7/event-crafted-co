@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Upload,
   Trash2,
@@ -38,6 +39,7 @@ export function ShowcaseClipsManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [clips, setClips] = useState<ShowcaseClip[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -52,7 +54,7 @@ export function ShowcaseClipsManager({
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) {
-      toast.error(`Couldn't load clips: ${error.message}`);
+      toast.error(t("showcaseClips.loadFailed", { message: error.message }));
       setClips([]);
     } else {
       setClips((data as ShowcaseClip[]) ?? []);
@@ -68,18 +70,18 @@ export function ShowcaseClipsManager({
   async function uploadFiles(fileList: FileList) {
     const remaining = MAX_CLIPS - clips.length;
     if (remaining <= 0) {
-      toast.error(`Max ${MAX_CLIPS} showcase clips`);
+      toast.error(t("showcaseClips.maxClips", { max: MAX_CLIPS }));
       return;
     }
     const accepted = Array.from(fileList)
       .slice(0, remaining)
       .filter((f) => {
         if (!ACCEPTED.includes(f.type)) {
-          toast.error(`${f.name}: only MP4, WEBM, or MOV`);
+          toast.error(t("showcaseClips.typeError", { name: f.name }));
           return false;
         }
         if (f.size > MAX_BYTES) {
-          toast.error(`${f.name}: max 30 MB`);
+          toast.error(t("showcaseClips.sizeError", { name: f.name }));
           return false;
         }
         return true;
@@ -119,7 +121,7 @@ export function ShowcaseClipsManager({
 
     setUploading(false);
     if (succeeded > 0) {
-      toast.success(`${succeeded} clip${succeeded === 1 ? "" : "s"} uploaded`);
+      toast.success(t("showcaseClips.uploaded", { count: succeeded }));
       load();
     }
   }
@@ -150,7 +152,7 @@ export function ShowcaseClipsManager({
       .eq("id", other.id);
     setBusyId(null);
     if (a.error || b.error) {
-      toast.error(a.error?.message ?? b.error?.message ?? "Reorder failed");
+      toast.error(a.error?.message ?? b.error?.message ?? t("showcaseClips.reorderFailed"));
       return;
     }
     load();
@@ -160,11 +162,9 @@ export function ShowcaseClipsManager({
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <p className="font-label text-muted-foreground">Showcase clips</p>
+          <p className="font-label text-muted-foreground">{t("showcaseClips.title")}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Short vertical videos (15-60s, max 30 MB) — first dance, the
-            cake reveal, a venue at sunset. Hosts swipe through them on
-            your profile.
+            {t("showcaseClips.intro")}
           </p>
         </div>
         {canEdit && (
@@ -179,12 +179,12 @@ export function ShowcaseClipsManager({
             {uploading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Uploading…
+                {t("common.uploading")}
               </>
             ) : (
               <>
                 <Upload className="w-3.5 h-3.5 mr-1.5" />
-                Add clip
+                {t("showcaseClips.addClip")}
               </>
             )}
           </Button>
@@ -216,10 +216,9 @@ export function ShowcaseClipsManager({
       ) : clips.length === 0 ? (
         <div className="border border-dashed border-border rounded-sm p-10 text-center">
           <Film className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-          <p className="text-sm font-medium mb-1">No clips yet</p>
+          <p className="text-sm font-medium mb-1">{t("showcaseClips.emptyTitle")}</p>
           <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-            A 30-second highlight is worth more than a paragraph. Upload
-            2-3 to start.
+            {t("showcaseClips.emptyBody")}
           </p>
         </div>
       ) : (
@@ -243,7 +242,7 @@ export function ShowcaseClipsManager({
                         onClick={() => move(c, -1)}
                         disabled={busyId === c.id}
                         className="w-7 h-7 rounded-full bg-foreground/85 text-background flex items-center justify-center backdrop-blur-sm"
-                        aria-label="Move up"
+                        aria-label={t("showcaseClips.moveUp")}
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
                       </button>
@@ -254,7 +253,7 @@ export function ShowcaseClipsManager({
                         onClick={() => move(c, 1)}
                         disabled={busyId === c.id}
                         className="w-7 h-7 rounded-full bg-foreground/85 text-background flex items-center justify-center backdrop-blur-sm"
-                        aria-label="Move down"
+                        aria-label={t("showcaseClips.moveDown")}
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
                       </button>
@@ -264,7 +263,7 @@ export function ShowcaseClipsManager({
                       onClick={() => deleteClip(c)}
                       disabled={busyId === c.id}
                       className="w-7 h-7 rounded-full bg-foreground/85 text-background flex items-center justify-center backdrop-blur-sm"
-                      aria-label="Delete clip"
+                      aria-label={t("showcaseClips.deleteClip")}
                     >
                       {busyId === c.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -299,6 +298,7 @@ function CaptionField({
   clip: ShowcaseClip;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [value, setValue] = useState(clip.caption ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -342,7 +342,7 @@ function CaptionField({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      placeholder="Caption (optional)"
+      placeholder={t("showcaseClips.captionPlaceholder")}
       disabled={saving}
       className={`w-full text-xs px-2.5 py-1.5 rounded-sm bg-secondary/50 border ${
         dirty ? "border-accent/40" : "border-transparent"

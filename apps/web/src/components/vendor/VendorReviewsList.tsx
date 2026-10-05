@@ -1,6 +1,7 @@
+import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
-import { eventTypeLabel } from "@vendora/core";
 import { ReportButton } from "@/components/trust/ReportButton";
+import { usePriceLabels } from "@/lib/priceLabels";
 
 // Review block on the vendor detail page. Falls back to a curated
 // `samples` list when there are no real reviews yet — gives newer
@@ -56,16 +57,18 @@ export function VendorReviewsList({
   totalCount,
   vendorName,
 }: Props) {
+  const { t } = useTranslation("vendorTools");
+  const priceLabels = usePriceLabels();
   return (
     <div>
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
         <div>
-          <p className="font-label text-accent mb-4">Reviews</p>
+          <p className="font-label text-accent mb-4">{t("reviews.eyebrow")}</p>
           <h2 className="font-editorial text-4xl">
             <span className="tnum">{averageRating.toFixed(1)}</span>{" "}
             <span className="text-muted-foreground font-light">·</span>{" "}
             <span className="text-muted-foreground font-light tnum">
-              {totalCount} {totalCount === 1 ? "review" : "reviews"}
+              {t("reviews.count", { count: totalCount })}
             </span>
           </h2>
         </div>
@@ -103,7 +106,10 @@ export function VendorReviewsList({
                       >
                         <img
                           src={url}
-                          alt={`Photo ${i + 1} from ${r.host?.display_name ?? "host"}'s review`}
+                          alt={t("reviews.photoAlt", {
+                            n: i + 1,
+                            name: r.host?.display_name ?? t("reviews.hostFallback"),
+                          })}
                           loading="lazy"
                           className="w-full h-full object-cover"
                         />
@@ -113,11 +119,11 @@ export function VendorReviewsList({
                 )}
                 <div>
                   <p className="text-sm font-medium">
-                    {r.host?.display_name ?? "Anonymous host"}
+                    {r.host?.display_name ?? t("reviews.anonymous")}
                   </p>
                   {r.inquiry && (
                     <p className="text-xs text-muted-foreground capitalize">
-                      {eventTypeLabel(r.inquiry.event_type)}
+                      {priceLabels.eventType(r.inquiry.event_type)}
                       {r.inquiry.event_date && (
                         <>
                           {" · "}
@@ -130,7 +136,7 @@ export function VendorReviewsList({
                 {r.response && (
                   <div className="mt-4 ml-6 pl-4 border-l-2 border-accent/40">
                     <p className="font-label text-accent mb-1.5">
-                      Response from {vendorName}
+                      {t("reviews.responseFrom", { name: vendorName })}
                     </p>
                     <p className="text-sm text-foreground leading-relaxed">
                       {r.response.body}

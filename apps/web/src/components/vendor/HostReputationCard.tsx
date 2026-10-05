@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -40,27 +42,24 @@ interface HostReputation {
   tier: "new" | "reliable" | "top" | "caution";
 }
 
+// Labels: vendorTools hostReputation.tiers.<tier>.
 const tierMeta: Record<
   HostReputation["tier"],
-  { label: string; tone: string; Icon: typeof ShieldCheck }
+  { tone: string; Icon: typeof ShieldCheck }
 > = {
   new: {
-    label: "New host",
     tone: "bg-secondary text-muted-foreground border-border",
     Icon: UserPlus,
   },
   reliable: {
-    label: "Reliable",
     tone: "bg-accent/10 text-accent border-accent/30",
     Icon: ShieldCheck,
   },
   top: {
-    label: "Top host",
     tone: "bg-accent text-accent-foreground border-accent",
     Icon: Sparkles,
   },
   caution: {
-    label: "Caution",
     tone: "bg-destructive/10 text-destructive border-destructive/30",
     Icon: ShieldAlert,
   },
@@ -75,13 +74,13 @@ const FLAG_LABELS: Record<string, { label: string; positive: boolean }> = {
   paid_late: { label: "Paid late", positive: false },
 };
 
-function joinedAgo(joinedAt: string) {
+function joinedAgo(t: TFunction, joinedAt: string) {
   const days = Math.floor(
     (Date.now() - new Date(joinedAt).getTime()) / (1000 * 60 * 60 * 24),
   );
-  if (days < 30) return `${days}d on Vendora`;
-  if (days < 365) return `${Math.floor(days / 30)}mo on Vendora`;
-  return `${Math.floor(days / 365)}y on Vendora`;
+  if (days < 30) return t("hostReputation.joinedDays", { count: days });
+  if (days < 365) return t("hostReputation.joinedMonths", { count: Math.floor(days / 30) });
+  return t("hostReputation.joinedYears", { count: Math.floor(days / 365) });
 }
 
 interface Props {
@@ -98,6 +97,7 @@ export function HostReputationCard({
   inquiryId,
   canFlag = true,
 }: Props) {
+  const { t } = useTranslation("vendorTools");
   const [rep, setRep] = useState<HostReputation | null>(null);
   const [loading, setLoading] = useState(true);
   const [flagOpen, setFlagOpen] = useState(false);
@@ -140,23 +140,23 @@ export function HostReputationCard({
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div className="flex items-center gap-2">
           <TierIcon className="w-3.5 h-3.5 text-foreground" />
-          <p className="font-label text-muted-foreground">Host signals</p>
+          <p className="font-label text-muted-foreground">{t("hostReputation.signals")}</p>
         </div>
         <span
           className={`text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 border ${meta.tone}`}
         >
-          {meta.label}
+          {t(`hostReputation.tiers.${rep.tier}`)}
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
         <Metric
-          label="Inquiries"
+          label={t("hostReputation.inquiries")}
           value={rep.total_inquiries.toString()}
-          sub={`${rep.bookings} booked`}
+          sub={t("hostReputation.booked", { n: rep.bookings })}
         />
         <Metric
-          label="Reply rate"
+          label={t("hostReputation.replyRate")}
           value={
             rep.response_rate != null
               ? `${Math.round(rep.response_rate * 100)}%`
@@ -165,22 +165,22 @@ export function HostReputationCard({
           sub={
             rep.response_rate != null
               ? rep.response_rate >= 0.8
-                ? "responsive"
+                ? t("hostReputation.responsive")
                 : rep.response_rate >= 0.5
-                  ? "ok"
-                  : "slow"
-              : "no replies yet"
+                  ? t("hostReputation.ok")
+                  : t("hostReputation.slow")
+              : t("hostReputation.noReplies")
           }
         />
         <Metric
-          label="Joined"
-          value={joinedAgo(rep.joined_at)}
+          label={t("hostReputation.joined")}
+          value={joinedAgo(t, rep.joined_at)}
           sub={
             rep.ghosted > 0
-              ? `${rep.ghosted} ghosted`
+              ? t("hostReputation.ghosted", { n: rep.ghosted })
               : rep.positive_flags > 0
-                ? `${rep.positive_flags} kudos`
-                : "clean"
+                ? t("hostReputation.kudos", { n: rep.positive_flags })
+                : t("hostReputation.clean")
           }
         />
       </div>
@@ -188,8 +188,7 @@ export function HostReputationCard({
       {rep.negative_flags >= 2 && (
         <p className="text-xs text-destructive/80 mb-3 flex items-start gap-1.5">
           <ShieldAlert className="w-3 h-3 mt-0.5 shrink-0" />
-          {rep.negative_flags} other vendor{rep.negative_flags === 1 ? "" : "s"}{" "}
-          flagged this host. Consider asking for a deposit upfront.
+          {t("hostReputation.flaggedWarning", { count: rep.negative_flags })}
         </p>
       )}
 
@@ -201,7 +200,7 @@ export function HostReputationCard({
           className="rounded-full text-xs h-7 px-2.5 -ml-2 text-muted-foreground hover:text-accent"
         >
           <Flag className="w-3 h-3 mr-1.5" />
-          Flag this host
+          {t("hostReputation.flag")}
         </Button>
       )}
 
@@ -254,6 +253,7 @@ function FlagDialog({
   inquiryId: string;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [flagType, setFlagType] = useState("pleasant");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -275,7 +275,7 @@ function FlagDialog({
       toast.error(error.message);
       return;
     }
-    toast.success("Saved");
+    toast.success(t("common.saved"));
     onOpenChange(false);
     setNote("");
     onSaved();
@@ -286,43 +286,41 @@ function FlagDialog({
       <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">
-            Flag this host
+            {t("hostReputation.flag")}
           </DialogTitle>
           <DialogDescription>
-            Your flag is private to you and rolls up into the host's
-            cross-vendor signals. Use both positive and negative — the
-            kudos help great hosts stand out.
+            {t("hostReputation.flagIntro")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="flag-type">Signal</Label>
+            <Label htmlFor="flag-type">{t("hostReputation.signal")}</Label>
             <Select value={flagType} onValueChange={setFlagType}>
               <SelectTrigger id="flag-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pleasant">
-                  ✓ Easy to work with
+                  ✓ {t("hostReputation.flags.pleasant")}
                 </SelectItem>
                 <SelectItem value="great_communication">
-                  ✓ Great communication
+                  ✓ {t("hostReputation.flags.great_communication")}
                 </SelectItem>
-                <SelectItem value="rebooked">✓ Rebooked us</SelectItem>
-                <SelectItem value="no_show">⚠ No-show</SelectItem>
-                <SelectItem value="unresponsive">⚠ Went unresponsive</SelectItem>
-                <SelectItem value="paid_late">⚠ Paid late</SelectItem>
+                <SelectItem value="rebooked">✓ {t("hostReputation.flags.rebooked")}</SelectItem>
+                <SelectItem value="no_show">⚠ {t("hostReputation.flags.no_show")}</SelectItem>
+                <SelectItem value="unresponsive">⚠ {t("hostReputation.flags.unresponsive")}</SelectItem>
+                <SelectItem value="paid_late">⚠ {t("hostReputation.flags.paid_late")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="flag-note">Note (optional, private)</Label>
+            <Label htmlFor="flag-note">{t("hostReputation.note")}</Label>
             <Textarea
               id="flag-note"
               rows={3}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Anything other vendors should know."
+              placeholder={t("hostReputation.notePlaceholder")}
             />
           </div>
           <DialogFooter className="pt-1 gap-2 sm:gap-0">
@@ -333,7 +331,7 @@ function FlagDialog({
               disabled={saving}
               className="rounded-full"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -344,7 +342,7 @@ function FlagDialog({
               ) : (
                 <Check className="w-4 h-4 mr-2" />
               )}
-              Save flag
+              {t("hostReputation.saveFlag")}
             </Button>
           </DialogFooter>
         </form>
@@ -355,15 +353,17 @@ function FlagDialog({
 
 // Compact inline tier badge for inbox rows.
 export function HostTierBadge({ tier }: { tier: HostReputation["tier"] }) {
+  const { t } = useTranslation("vendorTools");
   const meta = tierMeta[tier];
   const Icon = meta.Icon;
+  const label = t(`hostReputation.tiers.${tier}`);
   return (
     <span
       className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wide rounded-full px-1.5 py-0.5 border ${meta.tone}`}
-      title={`Host tier: ${meta.label}`}
+      title={t("hostReputation.tierTitle", { tier: label })}
     >
       <Icon className="w-2.5 h-2.5" />
-      {meta.label}
+      {label}
     </span>
   );
 }

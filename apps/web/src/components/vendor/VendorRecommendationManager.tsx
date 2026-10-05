@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Loader2, Search, Heart, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +46,8 @@ export function VendorRecommendationManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorTools");
+  const categoryNames = useCategoryNames();
   const [recs, setRecs] = useState<RecRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -76,7 +80,7 @@ export function VendorRecommendationManager({
       return;
     }
     setRecs((p) => p.filter((r) => r.id !== id));
-    toast.success("Removed");
+    toast.success(t("recommendations.removed"));
   }
 
   return (
@@ -84,11 +88,10 @@ export function VendorRecommendationManager({
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <p className="font-label text-muted-foreground">
-            Vendors you recommend
+            {t("recommendations.title")}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Curate a short list of vendors you've worked with — surfaces on your
-            public profile as "Vendors we love"
+            {t("recommendations.intro")}
           </p>
         </div>
         {canEdit && (
@@ -100,7 +103,7 @@ export function VendorRecommendationManager({
             onClick={() => setPickerOpen(true)}
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Add a vendor
+            {t("recommendations.add")}
           </Button>
         )}
       </div>
@@ -118,8 +121,7 @@ export function VendorRecommendationManager({
         <div className="border border-dashed border-border rounded-sm p-6 text-center">
           <Heart className="w-6 h-6 mx-auto text-muted-foreground/40 mb-2" />
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            Hosts trust referrals more than ranked listings. Add 3–5 vendors
-            you'd vouch for.
+            {t("recommendations.emptyBody")}
           </p>
         </div>
       ) : (
@@ -132,10 +134,10 @@ export function VendorRecommendationManager({
               <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="min-w-0">
                   <p className="font-display text-base truncate">
-                    {r.recommended?.business_name ?? "Vendor"}
+                    {r.recommended?.business_name ?? t("recommendations.vendorFallback")}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {r.recommended?.category}
+                    {r.recommended?.category && categoryNames.sub(r.recommended.category)}
                     {r.recommended?.location ? ` · ${r.recommended.location}` : ""}
                   </p>
                 </div>
@@ -146,7 +148,7 @@ export function VendorRecommendationManager({
                     className="h-7 w-7 shrink-0"
                     disabled={deletingId === r.id}
                     onClick={() => deleteRec(r.id)}
-                    aria-label="Remove recommendation"
+                    aria-label={t("recommendations.removeAria")}
                   >
                     {deletingId === r.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -197,6 +199,8 @@ function RecommendPicker({
   excludeIds: Set<string>;
   nextOrder: number;
 }) {
+  const { t } = useTranslation("vendorTools");
+  const categoryNames = useCategoryNames();
   const [search, setSearch] = useState("");
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -227,17 +231,22 @@ function RecommendPicker({
   }, [recommenderId, excludeIds]);
 
   const filtered = useMemo(() => {
-    const t = search.trim().toLowerCase();
-    if (!t) return vendors.slice(0, 30);
+    const q = search.trim().toLowerCase();
+    if (!q) return vendors.slice(0, 30);
     return vendors
       .filter(
         (v) =>
-          v.business_name.toLowerCase().includes(t) ||
-          v.category.toLowerCase().includes(t) ||
-          (v.location ?? "").toLowerCase().includes(t),
+          v.business_name.toLowerCase().includes(q) ||
+          v.category.toLowerCase().includes(q) ||
+          // The category as shown, so a search in Spanish finds it too.
+          categoryNames.sub(v.category).toLowerCase().includes(q) ||
+          (v.location ?? "").toLowerCase().includes(q),
       )
       .slice(0, 30);
-  }, [vendors, search]);
+    // categoryNames is rebuilt each render; its output only changes with
+    // the language, which `t` tracks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendors, search, t]);
 
   async function add() {
     if (!picked) return;
@@ -253,7 +262,7 @@ function RecommendPicker({
       toast.error(error.message);
       return;
     }
-    toast.success(`Added ${picked.business_name}`);
+    toast.success(t("recommendations.added", { name: picked.business_name }));
     onAdded();
   }
 
@@ -262,10 +271,10 @@ function RecommendPicker({
       <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            Recommend a vendor
+            {t("recommendations.dialogTitle")}
           </DialogTitle>
           <DialogDescription>
-            Pick a vendor to vouch for, optionally add a short note.
+            {t("recommendations.dialogBody")}
           </DialogDescription>
         </DialogHeader>
         {!picked ? (
@@ -275,7 +284,7 @@ function RecommendPicker({
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, category, or city"
+                placeholder={t("recommendations.searchPlaceholder")}
                 className="h-10 pl-9"
                 autoFocus
               />
@@ -283,11 +292,11 @@ function RecommendPicker({
             <div className="max-h-72 overflow-y-auto -mx-1 px-1 space-y-1">
               {loading ? (
                 <p className="text-xs text-muted-foreground text-center py-6">
-                  Loading vendors…
+                  {t("recommendations.loadingVendors")}
                 </p>
               ) : filtered.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">
-                  No matches.
+                  {t("recommendations.noMatches")}
                 </p>
               ) : (
                 filtered.map((v) => (
@@ -301,7 +310,7 @@ function RecommendPicker({
                       {v.business_name}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {v.category}
+                      {categoryNames.sub(v.category)}
                       {v.location ? ` · ${v.location}` : ""}
                     </p>
                   </button>
@@ -317,7 +326,7 @@ function RecommendPicker({
                   {picked.business_name}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {picked.category}
+                  {categoryNames.sub(picked.category)}
                   {picked.location ? ` · ${picked.location}` : ""}
                 </p>
               </div>
@@ -327,17 +336,17 @@ function RecommendPicker({
                 size="icon"
                 className="h-7 w-7 shrink-0"
                 onClick={() => setPicked(null)}
-                aria-label="Pick a different vendor"
+                aria-label={t("recommendations.pickDifferent")}
               >
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="rec-note">Why you recommend them (optional)</Label>
+              <Label htmlFor="rec-note">{t("recommendations.noteLabel")}</Label>
               <Textarea
                 id="rec-note"
                 rows={3}
-                placeholder="Worked with them on three weddings — always on time, beautiful eye for color."
+                placeholder={t("recommendations.notePlaceholder")}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
@@ -352,7 +361,7 @@ function RecommendPicker({
             disabled={submitting}
             className="rounded-full"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -360,7 +369,7 @@ function RecommendPicker({
             disabled={!picked || submitting}
           >
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Add recommendation
+            {t("recommendations.addRecommendation")}
           </Button>
         </DialogFooter>
       </DialogContent>

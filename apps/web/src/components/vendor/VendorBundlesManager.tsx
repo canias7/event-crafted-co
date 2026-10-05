@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Loader2, Layers, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +56,7 @@ export function VendorBundlesManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [rows, setRows] = useState<BundleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -89,7 +91,7 @@ export function VendorBundlesManager({
       toast.error(error.message);
       return;
     }
-    toast.success("Deleted");
+    toast.success(t("bundles.deleted"));
     load();
   }
 
@@ -99,11 +101,10 @@ export function VendorBundlesManager({
         <div>
           <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
             <Layers className="w-3 h-3" />
-            Bundles
+            {t("bundles.title")}
           </p>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            Multi-vendor packages — partner with other vendors and offer
-            combined pricing.
+            {t("bundles.intro")}
           </p>
         </div>
         {canEdit && (
@@ -117,16 +118,16 @@ export function VendorBundlesManager({
             className="rounded-full"
           >
             <Plus className="w-3 h-3 mr-1.5" />
-            New bundle
+            {t("bundles.newBundle")}
           </Button>
         )}
       </div>
 
       {loading ? (
-        <p className="text-xs text-muted-foreground py-4">Loading…</p>
+        <p className="text-xs text-muted-foreground py-4">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
         <p className="text-xs text-muted-foreground italic py-3">
-          No bundles yet.
+          {t("bundles.empty")}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -140,7 +141,7 @@ export function VendorBundlesManager({
                   <p className="font-medium">{b.name}</p>
                   {!b.is_active && (
                     <span className="text-[10px] uppercase text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
-                      Hidden
+                      {t("bundles.hidden")}
                     </span>
                   )}
                 </div>
@@ -150,7 +151,7 @@ export function VendorBundlesManager({
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {b.members.length} vendor{b.members.length === 1 ? "" : "s"}
+                  {t("bundles.vendorCount", { count: b.members.length })}
                   {b.price_cents != null
                     ? ` · ${formatCents(b.price_cents)}`
                     : ""}
@@ -177,7 +178,7 @@ export function VendorBundlesManager({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        aria-label={`Delete bundle ${b.name}`}
+                        aria-label={t("bundles.deleteAria", { name: b.name })}
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -185,16 +186,15 @@ export function VendorBundlesManager({
                     <AlertDialogContent className="rounded-3xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-editorial text-3xl">
-                          Delete bundle?
+                          {t("bundles.deleteTitle")}
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm leading-relaxed">
-                          "{b.name}" will be removed from your offerings.
-                          This cannot be undone.
+                          {t("bundles.deleteBody", { name: b.name })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="gap-2 sm:gap-0">
                         <AlertDialogCancel className="rounded-full">
-                          Cancel
+                          {t("common.cancel")}
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={(e) => {
@@ -203,7 +203,7 @@ export function VendorBundlesManager({
                           }}
                           className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Delete
+                          {t("bundles.delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -239,6 +239,7 @@ function BundleEditor({
   primaryVendorId: string;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [priceDollars, setPriceDollars] = useState("");
@@ -268,7 +269,7 @@ function BundleEditor({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error("Name is required");
+      toast.error(t("bundles.nameRequired"));
       return;
     }
     setSubmitting(true);
@@ -304,7 +305,7 @@ function BundleEditor({
         .single();
       if (error || !data) {
         setSubmitting(false);
-        toast.error(error?.message ?? "Couldn't save");
+        toast.error(error?.message ?? t("bundles.couldntSave"));
         return;
       }
       bundleId = (data as { id: string }).id;
@@ -354,11 +355,9 @@ function BundleEditor({
     setSubmitting(false);
     const missing = names.length - (memberRows.length - 1);
     if (missing > 0) {
-      toast.warning(
-        `Saved, but ${missing} partner ${missing === 1 ? "name" : "names"} didn't match an existing vendor.`,
-      );
+      toast.warning(t("bundles.partialMatch", { count: missing }));
     } else {
-      toast.success("Saved");
+      toast.success(t("common.saved"));
     }
     onOpenChange(false);
     onSaved();
@@ -369,31 +368,31 @@ function BundleEditor({
       <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            {bundle ? "Edit bundle" : "New bundle"}
+            {bundle ? t("bundles.editBundle") : t("bundles.newBundle")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="b-name">Bundle name</Label>
+            <Label htmlFor="b-name">{t("bundles.bundleName")}</Label>
             <Input
               id="b-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Photo + Video Combo"
+              placeholder={t("bundles.namePlaceholder")}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="b-desc">Description</Label>
+            <Label htmlFor="b-desc">{t("bundles.description")}</Label>
             <Textarea
               id="b-desc"
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Includes 8 hours photo + 6 hours video, edited gallery + highlight reel."
+              placeholder={t("bundles.descriptionPlaceholder")}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="b-price">Combined price ($)</Label>
+            <Label htmlFor="b-price">{t("bundles.price")}</Label>
             <Input
               id="b-price"
               type="number"
@@ -405,7 +404,7 @@ function BundleEditor({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="b-members">
-              Partner vendors (comma-separated business names)
+              {t("bundles.partners")}
             </Label>
             <Input
               id="b-members"
@@ -414,14 +413,14 @@ function BundleEditor({
               placeholder="Hudson Valley Cinema, Bloom + Bough"
             />
             <p className="text-xs text-muted-foreground">
-              Exact name match required. You're auto-included as the lead.
+              {t("bundles.partnersHint")}
             </p>
           </div>
           <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
             <div>
-              <p className="text-sm font-medium">Active</p>
+              <p className="text-sm font-medium">{t("bundles.active")}</p>
               <p className="text-xs text-muted-foreground">
-                Show this bundle on your public profile.
+                {t("bundles.activeHint")}
               </p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
@@ -434,14 +433,14 @@ function BundleEditor({
               disabled={submitting}
               className="rounded-full"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={submitting}
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save bundle
+              {t("bundles.saveBundle")}
             </Button>
           </DialogFooter>
         </form>

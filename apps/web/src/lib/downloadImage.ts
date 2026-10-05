@@ -14,6 +14,11 @@
 // Streaming-fetch shape: both helpers accept an optional
 // `onProgress(received, total)` callback. `total` is the
 // Content-Length header (may be 0 if the server doesn't send it).
+//
+// Error messages are shown to the vendor in toasts, so they come from
+// the galleryTools namespace (download.*) in the current language.
+
+import i18n from "@/i18n";
 
 export interface ProgressCallback {
   (received: number, total: number): void;
@@ -36,7 +41,9 @@ async function fetchAsBlob(
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) {
-      throw new Error(`Couldn't fetch image (${res.status})`);
+      throw new Error(
+        i18n.t("download.fetchFailed", { ns: "galleryTools", status: res.status }),
+      );
     }
     // Fall back to the simple blob() path if the response isn't a
     // streamable body (older browsers, or no progress requested).
@@ -63,7 +70,10 @@ async function fetchAsBlob(
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(
-        `Download timed out after ${FETCH_TIMEOUT_MS / 1000}s. Check your connection and retry.`,
+        i18n.t("download.timedOut", {
+          ns: "galleryTools",
+          seconds: FETCH_TIMEOUT_MS / 1000,
+        }),
       );
     }
     throw err;
@@ -104,7 +114,8 @@ export async function loadImageViaBlob(
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error("Image decode failed"));
+      el.onerror = () =>
+        reject(new Error(i18n.t("download.decodeFailed", { ns: "galleryTools" })));
       el.src = objectUrl;
     });
     return img;

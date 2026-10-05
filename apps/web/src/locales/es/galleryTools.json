@@ -89,5 +89,10 @@
     "done": "Listo",
     "cancel": "Cancelar",
     "create": "Crear enlace"
+  },
+  "download": {
+    "fetchFailed": "No se pudo obtener la imagen ({{status}})",
+    "timedOut": "La descarga tardó más de {{seconds}} s. Revisa tu conexión e inténtalo de nuevo.",
+    "decodeFailed": "No se pudo decodificar la imagen"
   }
 }
