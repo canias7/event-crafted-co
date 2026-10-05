@@ -37,5 +37,19 @@
     "updated": "Template updated",
     "deleted": "Template deleted",
     "starters": "Added 3 starter templates"
+  },
+  "starters": {
+    "thanks": {
+      "name": "Thanks for reaching out",
+      "body": "Hi! Thanks so much for reaching out — I'd love to hear more about your event. Could you share the date, the headcount, and roughly the budget you have in mind?"
+    },
+    "proposal": {
+      "name": "Send proposal",
+      "body": "I've put together a proposal based on what you shared. Let me know if anything needs tweaking — happy to adjust!"
+    },
+    "unavailable": {
+      "name": "Date unavailable",
+      "body": "Unfortunately I'm already booked on that date. If you have any flexibility, I'd be happy to share what's still open nearby. Either way — thanks for thinking of me!"
+    }
   }
 }

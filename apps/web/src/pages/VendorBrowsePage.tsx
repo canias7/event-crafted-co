@@ -550,7 +550,12 @@ export default function VendorBrowsePage() {
                   aria-label={t("filters.sortLabel")}
                   className="h-11 w-[172px] shrink-0 rounded-full border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea]"
                 >
-                  <SelectValue placeholder={t("filters.sortPlaceholder")} />
+                  {/* The trigger is a fixed 172px, so a label that doesn't fit
+                      there has a shorter form (filters.sortTrigger); the list
+                      below always shows the full names. */}
+                  <SelectValue placeholder={t("filters.sortPlaceholder")}>
+                    {t(`filters.sortTrigger.${sort}`, { defaultValue: t(`filters.sort.${sort}`) })}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="popular">{t("filters.sort.popular")}</SelectItem>

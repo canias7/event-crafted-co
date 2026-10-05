@@ -39,6 +39,9 @@
       "rating": "Highest rated",
       "price-low": "Lowest price",
       "price-high": "Highest price"
+    },
+    "sortTrigger": {
+      "rating": "Highest rated"
     }
   },
   "empty": {

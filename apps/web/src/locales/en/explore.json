@@ -25,7 +25,11 @@
     "clear": "Clear search"
   },
   "category": {
-    "label": "Category"
+    "label": "Category",
+    "triggerAll": "All categories",
+    "trigger": {
+      "Decor & florals": "Decor & florals"
+    }
   },
   "vendorFallback": "Vendor",
   "post": {

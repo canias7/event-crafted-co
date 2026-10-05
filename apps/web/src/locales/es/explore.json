@@ -25,7 +25,11 @@
     "clear": "Borrar búsqueda"
   },
   "category": {
-    "label": "Categoría"
+    "label": "Categoría",
+    "triggerAll": "Categorías",
+    "trigger": {
+      "Decor & florals": "Decoración"
+    }
   },
   "vendorFallback": "Proveedor",
   "post": {

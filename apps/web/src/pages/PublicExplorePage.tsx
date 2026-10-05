@@ -370,13 +370,19 @@ function CategorySelect({
 }) {
   const { t } = useTranslation("explore");
   const categoryNames = useCategoryNames();
+  // The trigger is a fixed 188px, so a name that doesn't fit there has a
+  // shorter form (category.trigger*); the menu always shows the full names.
+  const triggerLabel =
+    value === ALL
+      ? t("category.triggerAll", { defaultValue: categoryNames.all })
+      : t(`category.trigger.${value}`, { defaultValue: categoryNames.browse(value) });
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={t("category.label")}
         className={`h-11 w-[188px] shrink-0 rounded-full border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea] ${className}`}
       >
-        <SelectValue>{value === ALL ? categoryNames.all : categoryNames.browse(value)}</SelectValue>
+        <SelectValue>{triggerLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>{categoryNames.all}</SelectItem>

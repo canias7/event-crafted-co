@@ -67,22 +67,11 @@ interface Template {
   updated_at: string;
 }
 
-// Inserted into the vendor's own templates (and sent to hosts from
-// there), so they stay as written rather than following the UI language.
-const STARTER_TEMPLATES: Array<{ name: string; body: string }> = [
-  {
-    name: "Thanks for reaching out",
-    body: "Hi! Thanks so much for reaching out — I'd love to hear more about your event. Could you share the date, the headcount, and roughly the budget you have in mind?",
-  },
-  {
-    name: "Send proposal",
-    body: "I've put together a proposal based on what you shared. Let me know if anything needs tweaking — happy to adjust!",
-  },
-  {
-    name: "Date unavailable",
-    body: "Unfortunately I'm already booked on that date. If you have any flexibility, I'd be happy to share what's still open nearby. Either way — thanks for thinking of me!",
-  },
-];
+// "Use 3 starter templates" writes these into the vendor's own
+// templates (starters.<id> in vendorTemplates.json), in the language the
+// vendor is using; from then on they're the vendor's text to edit and
+// send as written.
+const STARTER_IDS = ["thanks", "proposal", "unavailable"] as const;
 
 export default function VendorTemplatesPage() {
   const { t } = useTranslation("vendorTemplates");
@@ -230,10 +219,10 @@ export default function VendorTemplatesPage() {
   async function seedStarters() {
     if (!activeVendorId) return;
     setSaving(true);
-    const rows = STARTER_TEMPLATES.map((s) => ({
+    const rows = STARTER_IDS.map((id) => ({
       vendor_id: activeVendorId,
-      name: s.name,
-      body: s.body,
+      name: t(`starters.${id}.name`),
+      body: t(`starters.${id}.body`),
     }));
     const { data, error } = await supabase
       .from("vendor_message_templates")

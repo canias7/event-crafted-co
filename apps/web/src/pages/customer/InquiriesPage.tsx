@@ -1,8 +1,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
-import { usePriceLabels } from "@/lib/priceLabels";
-import { useCategoryNames } from "@/lib/categoryNames";
+import { eventTypeText, usePriceLabels } from "@/lib/priceLabels";
+import { categoryName, useCategoryNames } from "@/lib/categoryNames";
 import { lazyWithReload } from "@/lib/lazyWithReload";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Inbox, Search } from "lucide-react";
@@ -213,13 +213,18 @@ export default function InquiriesPage() {
           r.vendor?.business_name?.toLowerCase().includes(q) ||
           r.vendor?.category?.toLowerCase().includes(q) ||
           r.event_type?.toLowerCase().includes(q) ||
+          // The category and event type as the row shows them, so a
+          // Spanish search for "boda" finds weddings.
+          (r.vendor?.category && categoryName(r.vendor.category).toLowerCase().includes(q)) ||
+          eventTypeText(r.event_type).toLowerCase().includes(q) ||
           r.event_date?.toLowerCase().includes(q) ||
           r.location?.toLowerCase().includes(q),
       );
     }
     return out;
+    // i18n.language: the shown category and event-type names change with it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, statusFilter, search]);
+  }, [rows, statusFilter, search, i18n.language]);
 
   return (
     <div className="flex min-h-screen vendor-canvas">

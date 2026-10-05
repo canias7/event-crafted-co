@@ -37,5 +37,19 @@
     "updated": "Plantilla actualizada",
     "deleted": "Plantilla eliminada",
     "starters": "Se agregaron 3 plantillas iniciales"
+  },
+  "starters": {
+    "thanks": {
+      "name": "Gracias por escribir",
+      "body": "¡Hola! Muchas gracias por escribirme. Me encantaría saber más sobre tu evento. ¿Me compartes la fecha, el número de invitados y, más o menos, el presupuesto que tienes en mente?"
+    },
+    "proposal": {
+      "name": "Enviar propuesta",
+      "body": "Preparé una propuesta con base en lo que me compartiste. Avísame si hay que ajustar algo, ¡con gusto lo cambio!"
+    },
+    "unavailable": {
+      "name": "Fecha no disponible",
+      "body": "Lamentablemente ya tengo un compromiso en esa fecha. Si tienes algo de flexibilidad, con gusto te comparto las fechas que tengo libres cerca de esa. De cualquier forma, ¡gracias por pensar en mí!"
+    }
   }
 }

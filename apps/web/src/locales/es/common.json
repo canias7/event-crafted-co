@@ -171,7 +171,8 @@
       "submit": "Crear cuenta",
       "already_have_account": "¿Ya tienes cuenta?",
       "sign_in": "Iniciar sesión"
-    }
+    },
+    "verify_email_first": "Confirma tu correo antes de {{action}}. Revisa tu bandeja de entrada o usa el aviso de arriba para reenviarlo."
   },
   "sidebar": {
     "customer": {

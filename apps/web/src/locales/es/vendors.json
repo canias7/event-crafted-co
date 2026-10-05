@@ -39,6 +39,9 @@
       "rating": "Mejor calificados",
       "price-low": "Menor precio",
       "price-high": "Mayor precio"
+    },
+    "sortTrigger": {
+      "rating": "Calificación"
     }
   },
   "empty": {
