@@ -1,0 +1,32 @@
+{
+  "title": "Cuenta",
+  "subtitle": "Proveedores guardados y verificación.",
+  "saved": {
+    "title": "Anuncios guardados",
+    "count_one": "{{count}} guardado",
+    "count_other": "{{count}} guardados",
+    "emptyTitle": "Aún no tienes proveedores guardados",
+    "emptyBody": "Toca el corazón en la tarjeta de cualquier proveedor mientras exploras y aparecerá aquí para que lo tengas a mano.",
+    "browse": "Ver proveedores"
+  },
+  "verification": {
+    "title": "Verificación",
+    "confirm": "¿Solicitar la verificación de anfitrión?\n\nTe contactaremos en un plazo de 48 horas para verificar tu identidad (basta con una foto de una identificación oficial). Por lo general, así los proveedores te responden más rápido.",
+    "requestFailed": "No se pudo enviar la solicitud — inténtalo de nuevo en un momento.",
+    "requestReceived": "Solicitud recibida — nuestro equipo te contactará en un plazo de 48 horas.",
+    "verifiedToast": "Anfitrión verificado — los proveedores ven una insignia en tus consultas.",
+    "verifiedTitle": "Tu cuenta está verificada",
+    "verifiedSubtitle": "Los proveedores dan prioridad a los anfitriones verificados.",
+    "pendingToast": "Verificación pendiente — te escribiremos en un plazo de 48 h.",
+    "pendingTitle": "Verificación pendiente",
+    "pendingSubtitle": "Te contactaremos en un plazo de 48 horas.",
+    "retryTitle": "Intenta verificarte de nuevo",
+    "requestTitle": "Verifica tu cuenta",
+    "requestSubtitle": "Genera confianza con los proveedores. Respuestas más rápidas, mejores coincidencias."
+  },
+  "subscriptions": {
+    "title": "Suscripciones",
+    "comingSoon": "Próximamente",
+    "body": "Pronto llegarán planes Premium para anfitriones con consultas ilimitadas, respuestas prioritarias y atención personalizada."
+  }
+}

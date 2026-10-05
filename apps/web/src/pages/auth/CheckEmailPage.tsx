@@ -107,7 +107,7 @@ export default function CheckEmailPage() {
             i18nKey={isVendor ? "check_email.questions" : "check_email.not_received"}
             ns="auth"
             components={{
-              link: (
+              emailLink: (
                 <a
                   href="mailto:hello@eventvendora.com"
                   className="font-medium pb-px"

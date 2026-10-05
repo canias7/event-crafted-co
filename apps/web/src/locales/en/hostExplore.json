@@ -1,0 +1,30 @@
+{
+  "title": "Explore",
+  "subtitle": "Browse approved vendors, posts, reels, and buzz.",
+  "tabs": {
+    "listing": "Listings",
+    "grid": "Posts",
+    "reels": "Reels",
+    "buzz": "Buzz"
+  },
+  "allCategories": "All",
+  "other": "Other",
+  "vendorFallback": "Vendor",
+  "hostFallback": "Host",
+  "saveVendor": "Save vendor",
+  "removeFavorite": "Remove from favorites",
+  "postAlt": "Post",
+  "reelLabel": "Reel",
+  "empty": {
+    "listings": "No listings yet — check back soon.",
+    "posts": "No posts yet.",
+    "reels": "No reels yet.",
+    "buzz": "No buzz yet."
+  },
+  "time": {
+    "justNow": "just now",
+    "minutes": "{{n}}m",
+    "hours": "{{n}}h",
+    "days": "{{n}}d"
+  }
+}

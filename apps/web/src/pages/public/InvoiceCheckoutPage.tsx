@@ -268,7 +268,7 @@ export default function InvoiceCheckoutPage() {
             size="sm"
           >
             <Download className="w-3.5 h-3.5 mr-1.5" />
-            Save as PDF
+            {t("invoice.savePdf")}
           </Button>
           <Button
             onClick={handlePay}
@@ -281,15 +281,13 @@ export default function InvoiceCheckoutPage() {
             ) : (
               <CreditCard className="w-3.5 h-3.5 mr-1.5" />
             )}
-            Pay {totalDue}
+            {t("invoice.pay", { amount: totalDue })}
           </Button>
         </div>
         {invoice.vendor_can_accept === false ? (
           <div className="max-w-3xl mx-auto px-5 sm:px-8 pb-3 -mt-1">
             <p className="text-[12px] text-accent bg-pending border border-accent/25 rounded-lg px-3 py-2">
-              Heads up — this vendor is still finishing their payment setup, so
-              online payment may not be available just yet. You can review the
-              invoice below in the meantime.
+              {t("invoice.headsUp")}
             </p>
           </div>
         ) : null}
@@ -306,12 +304,12 @@ export default function InvoiceCheckoutPage() {
             <div className="min-w-0">
               <h1 className="text-xl font-semibold tracking-tight truncate">{businessName}</h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Issued via VendoraPay
+                {t("invoice.issuedVia")}
               </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
-                Invoice
+                {t("invoice.label")}
               </p>
               <p className="text-2xl font-editorial mt-0.5 tabular-nums">
                 {invoice.invoice_number || "—"}
@@ -325,7 +323,7 @@ export default function InvoiceCheckoutPage() {
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Bill to
+                {t("invoice.billTo")}
               </p>
               <p className="text-sm font-medium mt-1">
                 {invoice.bill_to_name ?? "—"}
@@ -339,15 +337,15 @@ export default function InvoiceCheckoutPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Issued
+                  {t("invoice.issued")}
                 </p>
-                <p className="mt-1">{formatDate(invoice.issue_date)}</p>
+                <p className="mt-1">{formatDate(invoice.issue_date, dateLocale)}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Due
+                  {t("invoice.due")}
                 </p>
-                <p className="mt-1">{formatDate(invoice.due_date)}</p>
+                <p className="mt-1">{formatDate(invoice.due_date, dateLocale)}</p>
               </div>
             </div>
           </section>
@@ -357,10 +355,10 @@ export default function InvoiceCheckoutPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border-b border-foreground/15">
-                  <th className="py-2.5 pr-2 font-semibold">Item</th>
-                  <th className="py-2.5 px-2 font-semibold text-right w-16">Qty</th>
-                  <th className="py-2.5 px-2 font-semibold text-right w-28">Unit price</th>
-                  <th className="py-2.5 pl-2 font-semibold text-right w-28">Amount</th>
+                  <th className="py-2.5 pr-2 font-semibold">{t("invoice.table.item")}</th>
+                  <th className="py-2.5 px-2 font-semibold text-right w-16">{t("invoice.table.qty")}</th>
+                  <th className="py-2.5 px-2 font-semibold text-right w-28">{t("invoice.table.unitPrice")}</th>
+                  <th className="py-2.5 pl-2 font-semibold text-right w-28">{t("invoice.table.amount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -386,14 +384,16 @@ export default function InvoiceCheckoutPage() {
           <section className="mt-6 flex justify-end">
             <div className="w-full max-w-xs space-y-1.5 text-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span>Subtotal</span>
+                <span>{t("invoice.subtotal")}</span>
                 <span className="tabular-nums">
                   {formatMoney(invoice.subtotal_cents, invoice.currency)}
                 </span>
               </div>
               {invoice.tax_cents > 0 ? (
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Tax ({(invoice.tax_rate_bps / 100).toFixed(2)}%)</span>
+                  <span>
+                    {t("invoice.tax", { rate: (invoice.tax_rate_bps / 100).toFixed(2) })}
+                  </span>
                   <span className="tabular-nums">
                     {formatMoney(invoice.tax_cents, invoice.currency)}
                   </span>
@@ -401,7 +401,7 @@ export default function InvoiceCheckoutPage() {
               ) : null}
               {invoice.late_fee_cents && invoice.late_fee_cents > 0 ? (
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Late fee</span>
+                  <span>{t("invoice.lateFee")}</span>
                   <span className="tabular-nums">
                     {formatMoney(invoice.late_fee_cents, invoice.currency)}
                   </span>
@@ -409,7 +409,7 @@ export default function InvoiceCheckoutPage() {
               ) : null}
               <div className="flex items-center justify-between pt-2 mt-1 border-t border-foreground/15">
                 <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Total due
+                  {t("invoice.totalDue")}
                 </span>
                 <span className="text-lg font-editorial tabular-nums">
                   {totalDue}
@@ -422,7 +422,7 @@ export default function InvoiceCheckoutPage() {
           {invoice.notes ? (
             <section className="mt-10">
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Notes
+                {t("invoice.notes")}
               </p>
               <p className="text-sm text-foreground mt-1 whitespace-pre-wrap leading-relaxed">
                 {invoice.notes}
@@ -432,15 +432,21 @@ export default function InvoiceCheckoutPage() {
 
           {/* Footer */}
           <footer className="mt-12 pt-6 border-t border-foreground/10 flex items-center justify-between gap-4 flex-wrap text-[11px] text-muted-foreground">
-            <span>Thank you for your business.</span>
+            <span>{t("invoice.thanks")}</span>
             <span>
-              Powered by <span className="font-semibold text-foreground">VendoraPay</span>
+              <Trans
+                t={t}
+                i18nKey="invoice.poweredBy"
+                components={{
+                  brand: <span className="font-semibold text-foreground" />,
+                }}
+              />
             </span>
           </footer>
         </article>
 
         <p className="text-[11px] text-muted-foreground text-center mt-6 print:hidden">
-          Card payments processed securely. &quot;VENDORAPAY&quot; will appear on your statement.
+          {t("invoice.statement")}
         </p>
       </div>
     </Shell>

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Inbox, Loader2, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { eventTypeText, usePriceLabels } from "@/lib/priceLabels";
 import { useRealtime } from "@/lib/realtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,52 +41,50 @@ interface InquiryRow {
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
-// Map lead temperatures to a pip color + label.
+// Map lead temperatures to a pip color. The label is t(`lead.${score}`)
+// in the vendorInbox namespace.
 const LEAD_SCORE_STYLE: Record<
   "hot" | "warm" | "cold",
-  { dot: string; text: string; label: string }
+  { dot: string; text: string }
 > = {
   hot: {
     dot: "bg-destructive",
     text: "text-destructive",
-    label: "Hot",
   },
   warm: {
     dot: "bg-accent",
     text: "text-accent",
-    label: "Warm",
   },
   cold: {
     dot: "bg-foreground/30",
     text: "text-foreground",
-    label: "Cold",
   },
 };
 
-function relativeTime(iso: string | null): string {
+function relativeTime(iso: string | null, t: TFunction, language: string): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
+  if (m < 1) return t("time.now");
+  if (m < 60) return t("time.minutes", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return t("time.hours", { n: h });
   const d = Math.floor(h / 24);
-  if (d === 1) return "Yesterday";
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, {
+  if (d === 1) return t("time.yesterday");
+  if (d < 7) return t("time.days", { n: d });
+  return new Date(iso).toLocaleDateString(language, {
     month: "short",
     day: "numeric",
   });
 }
 
 
-function previewFor(r: InquiryRow): string {
+// `eventLabel` is the event type as shown in the row ("holiday dinner").
+function previewFor(r: InquiryRow, t: TFunction, eventLabel: string): string {
   if (r.special_requests && r.special_requests.trim().length > 0) {
     return r.special_requests.trim();
   }
-  const type = r.event_type.replace(/_/g, " ");
-  return `Inquiry about your ${type}`;
+  return t("row.preview", { type: eventLabel });
 }
 
 // Inbox page size for range-based pagination ("Load more").
@@ -91,6 +92,7 @@ function previewFor(r: InquiryRow): string {
 const PAGE_SIZE = 10;
 
 export default function VendorInboxPage() {
+  const { t, i18n } = useTranslation("vendorInbox");
   const { user, vendorMemberships } = useAuth();
   // Cover EVERY listing the vendor owns, not just the first one. A
   // vendor with multiple listings should see inquiries for all of them
@@ -245,11 +247,16 @@ export default function VendorInboxPage() {
       return (
         r.host?.display_name?.toLowerCase().includes(q) ||
         r.event_type?.toLowerCase().includes(q) ||
+        // The event type as the row shows it, so a Spanish search
+        // for "boda" finds weddings.
+        eventTypeText(r.event_type).toLowerCase().includes(q) ||
         r.event_date?.toLowerCase().includes(q) ||
         r.location?.toLowerCase().includes(q)
       );
     });
-  }, [rows, search, leadFilter]);
+    // i18n.language: the shown event-type names change with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, search, leadFilter, i18n.language]);
 
   // Realtime: subscribe to the user-scoped channel and refetch when
   // ANY inquiry changes. The shared user channel only delivers events
@@ -267,13 +274,13 @@ export default function VendorInboxPage() {
 
   return (
     <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("sidebarTitle")} backPath="/" />
       <main id="main-content" className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-editorial text-3xl">
-                Inbox
+                {t("title")}
                 {totalCount !== null ? (
                   <span className="ml-2 align-middle text-base font-bold text-foreground">
                     {totalCount}
@@ -281,7 +288,7 @@ export default function VendorInboxPage() {
                 ) : null}
               </h1>
               <p className="text-sm font-bold text-foreground">
-                Conversations with hosts — every message in one place
+                {t("subtitle")}
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -297,7 +304,7 @@ export default function VendorInboxPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by host, event type, location, or date"
+              placeholder={t("searchPlaceholder")}
               className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1 font-bold text-foreground placeholder:text-foreground placeholder:font-bold"
             />
           </div>
@@ -307,10 +314,10 @@ export default function VendorInboxPage() {
               many hot leads they have without clicking through. */}
           <div className="mb-4 flex items-center gap-1.5 overflow-x-auto">
             {([
-              { key: "all", label: "All", count: totalCount ?? rows.length, dot: "" },
-              { key: "hot", label: "Hot", count: leadCounts.hot, dot: "bg-destructive" },
-              { key: "warm", label: "Warm", count: leadCounts.warm, dot: "bg-accent" },
-              { key: "cold", label: "Cold", count: leadCounts.cold, dot: "bg-foreground/30" },
+              { key: "all", label: t("filters.all"), count: totalCount ?? rows.length, dot: "" },
+              { key: "hot", label: t("filters.hot"), count: leadCounts.hot, dot: "bg-destructive" },
+              { key: "warm", label: t("filters.warm"), count: leadCounts.warm, dot: "bg-accent" },
+              { key: "cold", label: t("filters.cold"), count: leadCounts.cold, dot: "bg-foreground/30" },
             ] as const).map((pill) => {
               const active = leadFilter === pill.key;
               return (
@@ -375,13 +382,12 @@ export default function VendorInboxPage() {
               </div>
               <p className="font-display text-xl font-bold text-foreground">
                 {rows.length === 0
-                  ? "No inquiries yet"
-                  : "Nothing matches that search"}
+                  ? t("empty.noInquiries")
+                  : t("empty.noMatch")}
               </p>
               {rows.length === 0 ? (
                 <p className="text-sm font-bold text-foreground mt-2 max-w-sm mx-auto">
-                  When a host sends you an inquiry, the conversation will land
-                  here.
+                  {t("empty.body")}
                 </p>
               ) : null}
             </div>
@@ -413,10 +419,10 @@ export default function VendorInboxPage() {
                 {loadingMore ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Loading…
+                    {t("loading")}
                   </>
                 ) : (
-                  "Load more"
+                  t("loadMore")
                 )}
               </button>
             </div>

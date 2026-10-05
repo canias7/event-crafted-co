@@ -24,6 +24,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe, type Stripe as StripeJs } from "@stripe/stripe-js";
 import { Check, CreditCard, Loader2, ShieldCheck } from "lucide-react";
@@ -70,6 +72,8 @@ function stripeFor(pk: string): Promise<StripeJs | null> {
   return p;
 }
 
+// Money stays en-US in both languages: "$1,234.50" is also how US
+// Spanish writes it.
 function formatMoney(cents: number, currency = "usd"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -77,8 +81,22 @@ function formatMoney(cents: number, currency = "usd"): string {
   }).format(cents / 100);
 }
 
+// Checkout-start failures. English shows the server's text as before;
+// Spanish gets a translated line (checkout.json → startError), with
+// its own wording for the server errors a payer can actually hit.
+const START_ERRORS = new Map([
+  ["vendor not ready to receive payments", "vendorNotReady"],
+  ["rate_limited", "rateLimited"],
+]);
+
+function startErrorDetail(t: TFunction, detail: string | null): string {
+  if (detail === null) return t("startError.tryAgain");
+  return t(`startError.${START_ERRORS.get(detail) ?? "detail"}`, { detail });
+}
+
 export default function PayLinkCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { t, i18n } = useTranslation("checkout");
   const [searchParams] = useSearchParams();
   // Stripe appends redirect_status (succeeded | failed | pending) when it
   // returns from a redirect-based method (e.g. 3DS). Only treat the
@@ -172,7 +190,8 @@ export default function PayLinkCheckoutPage() {
       body: { slug },
     });
     if (error || !(data as { url?: string })?.url) {
-      let detail = "Try again in a moment.";
+      // null = nothing from the server ("Try again in a moment.").
+      let detail: string | null = null;
       const ctx = (error as { context?: Response } | null)?.context;
       if (ctx && typeof ctx.json === "function") {
         try {
@@ -184,12 +203,14 @@ export default function PayLinkCheckoutPage() {
       } else if (error?.message) {
         detail = error.message;
       }
-      toast.error("Couldn't start checkout", { description: detail });
+      toast.error(t("startError.title"), {
+        description: startErrorDetail(t, detail),
+      });
       setPaying(false);
       return;
     }
     window.location.href = (data as { url: string }).url;
-  }, [slug, paying]);
+  }, [slug, paying, t]);
 
   const stripePromise = useMemo(
     () => (publishableKey ? stripeFor(publishableKey) : null),
@@ -237,7 +258,10 @@ export default function PayLinkCheckoutPage() {
   if (notFound || !link) {
     return (
       <Shell>
-        <Centered title="Link not found" sub="This pay link doesn't exist." />
+        <Centered
+          title={t("payLink.notFound.title")}
+          sub={t("payLink.notFound.body")}
+        />
       </Shell>
     );
   }
@@ -247,8 +271,10 @@ export default function PayLinkCheckoutPage() {
       <Shell>
         <Centered
           icon={<Check className="w-7 h-7 text-accent" />}
-          title="Payment received"
-          sub={`Thanks. ${link.vendor_business_name ?? "Your vendor"} will be in touch.`}
+          title={t("payLink.paid.title")}
+          sub={t("payLink.paid.body", {
+            vendor: link.vendor_business_name ?? t("payLink.paid.yourVendor"),
+          })}
         />
       </Shell>
     );
@@ -258,8 +284,10 @@ export default function PayLinkCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Link cancelled"
-          sub={`${link.vendor_business_name ?? "The vendor"} cancelled this payment request. Please reach out if you have questions.`}
+          title={t("payLink.cancelled.title")}
+          sub={t("payLink.cancelled.body", {
+            vendor: link.vendor_business_name ?? t("payLink.cancelled.theVendor"),
+          })}
         />
       </Shell>
     );
@@ -269,8 +297,12 @@ export default function PayLinkCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Link expired"
-          sub={`This payment request expired. Reach out to ${link.vendor_business_name ?? "the vendor"} for a fresh one.`}
+          title={t("payLink.expired.title")}
+          sub={
+            link.vendor_business_name != null
+              ? t("payLink.expired.bodyVendor", { vendor: link.vendor_business_name })
+              : t("payLink.expired.body")
+          }
         />
       </Shell>
     );
@@ -280,8 +312,8 @@ export default function PayLinkCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Not yet due"
-          sub="This payment isn't due yet. We'll email you a reminder on the scheduled date."
+          title={t("payLink.scheduled.title")}
+          sub={t("payLink.scheduled.body")}
         />
       </Shell>
     );
@@ -310,7 +342,7 @@ export default function PayLinkCheckoutPage() {
             <div className="text-sm font-semibold truncate">
               {link.vendor_business_name ?? "VendoraPay"}
             </div>
-            <div className="text-[11px] text-muted-foreground">Powered by VendoraPay</div>
+            <div className="text-[11px] text-muted-foreground">{t("payLink.poweredBy")}</div>
           </div>
         </div>
 
@@ -323,7 +355,7 @@ export default function PayLinkCheckoutPage() {
           }}
         >
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-            Amount due
+            {t("payLink.amountDue")}
           </div>
           <div className="text-4xl font-editorial mt-1">
             {formatMoney(link.amount_cents, link.currency)}
@@ -339,7 +371,7 @@ export default function PayLinkCheckoutPage() {
         {/* Payment */}
         {expired ? (
           <div className="text-center text-sm text-muted-foreground">
-            This link is no longer accepting payments.
+            {t("payLink.inactive")}
           </div>
         ) : useHosted ? (
           // Fallback: hosted Stripe Checkout redirect.
@@ -353,12 +385,12 @@ export default function PayLinkCheckoutPage() {
             ) : (
               <CreditCard className="w-4 h-4 mr-2" />
             )}
-            Pay {formatMoney(link.amount_cents, link.currency)}
+            {t("payLink.pay", { amount: formatMoney(link.amount_cents, link.currency) })}
           </Button>
         ) : intentLoading || !clientSecret || !stripePromise ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Preparing secure checkout…
+            {t("payLink.preparing")}
           </div>
         ) : (
           // Embedded Stripe Payment Element — themed to the brand palette.
@@ -367,6 +399,9 @@ export default function PayLinkCheckoutPage() {
             stripe={stripePromise}
             options={{
               clientSecret,
+              // Card form labels and Stripe's own error messages in the
+              // page's language ("auto", the default, in English).
+              locale: i18n.resolvedLanguage === "es" ? "es-419" : "auto",
               fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" }],
               appearance: {
                 theme: "stripe",
@@ -392,7 +427,7 @@ export default function PayLinkCheckoutPage() {
         )}
 
         <p className="text-[11px] text-muted-foreground text-center mt-4">
-          Card payments processed securely. You'll see "VENDORAPAY" on your statement.
+          {t("payLink.statement")}
         </p>
       </div>
     </Shell>
@@ -412,6 +447,7 @@ function PayForm({
   collectContact: boolean;
   onNeedsHosted: () => void;
 }) {
+  const { t } = useTranslation("checkout");
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -435,13 +471,13 @@ function PayForm({
       // Reached only if confirmPayment fails immediately (validation, card
       // declined without redirect). On success Stripe navigates away.
       if (error) {
-        toast.error(error.message ?? "Payment failed");
+        toast.error(error.message ?? t("payLink.toast.paymentFailed"));
       }
     } catch (err) {
       // A thrown error (e.g. element not mounted) must never leave the
       // button stuck spinning.
       console.error("[PayLinkCheckout] confirmPayment threw", err);
-      toast.error("Couldn't process the payment. Please try again.");
+      toast.error(t("payLink.toast.processError"));
     } finally {
       setSubmitting(false);
     }
@@ -471,7 +507,7 @@ function PayForm({
       {!ready ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Loading payment form…
+          {t("payLink.loadingForm")}
         </div>
       ) : null}
       <Button
@@ -484,11 +520,11 @@ function PayForm({
         ) : (
           <CreditCard className="w-4 h-4 mr-2" />
         )}
-        Pay {amountLabel}
+        {t("payLink.pay", { amount: amountLabel })}
       </Button>
       <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
         <ShieldCheck className="w-3.5 h-3.5" />
-        Secured by Stripe
+        {t("payLink.secured")}
       </div>
     </form>
   );

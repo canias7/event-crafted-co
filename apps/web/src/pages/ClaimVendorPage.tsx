@@ -184,7 +184,7 @@ export default function ClaimVendorPage() {
                 t={t}
                 i18nKey="alreadyClaimed"
                 components={{
-                  link: <Link to="/login" className="text-accent underline" />,
+                  signInLink: <Link to="/login" className="text-accent underline" />,
                 }}
               />
             </p>

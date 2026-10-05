@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Award, CheckCircle2, ChevronRight, Clock, Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -22,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 type VerifStatus = "none" | "pending" | "approved" | "rejected";
 
 export default function HostAccountPage() {
+  const { t } = useTranslation("hostAccount");
   const { user } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { savedIds, loading: savedLoading } = useSavedVendors();
@@ -54,9 +56,7 @@ export default function HostAccountPage() {
 
   async function requestVerification() {
     if (!user?.id) return;
-    const ok = window.confirm(
-      "Request host verification?\n\nWe'll reach out within 48 hours to verify your identity (a photo of a government ID is enough). It typically unlocks faster vendor replies.",
-    );
+    const ok = window.confirm(t("verification.confirm"));
     if (!ok) return;
     setRequesting(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,10 +65,10 @@ export default function HostAccountPage() {
       .insert({ user_id: user.id, status: "pending" });
     setRequesting(false);
     if (error) {
-      toast.error("Couldn't send request — try again in a moment.");
+      toast.error(t("verification.requestFailed"));
       return;
     }
-    toast.success("Request received — our team will reach out within 48 hours.");
+    toast.success(t("verification.requestReceived"));
     loadVerif();
   }
 
@@ -85,15 +85,15 @@ export default function HostAccountPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={customerNavItems}
-        title="Account"
+        title={t("title")}
         backPath="/customer/profile"
       />
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-editorial text-3xl">Account</h1>
+            <h1 className="font-editorial text-3xl">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Saved vendors and verification.
+              {t("subtitle")}
             </p>
           </div>
           <NotificationBell variant="light" />
@@ -103,10 +103,10 @@ export default function HostAccountPage() {
           {/* Saved Listings */}
           <section>
             <div className="flex items-baseline justify-between mb-4">
-              <h2 className="font-editorial text-2xl">Saved listings</h2>
+              <h2 className="font-editorial text-2xl">{t("saved.title")}</h2>
               {!listingsLoading && savedVendors.length > 0 ? (
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  {savedVendors.length} saved
+                  {t("saved.count", { count: savedVendors.length })}
                 </span>
               ) : null}
             </div>
@@ -128,16 +128,15 @@ export default function HostAccountPage() {
                 <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                   <Heart className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <p className="font-display text-xl">No saved vendors yet</p>
+                <p className="font-display text-xl">{t("saved.emptyTitle")}</p>
                 <p className="text-sm text-muted-foreground mt-2 mb-6 max-w-sm mx-auto leading-relaxed">
-                  Tap the heart on any vendor card while browsing and they'll
-                  show up here for easy reference.
+                  {t("saved.emptyBody")}
                 </p>
                 <Link
                   to="/customer/explore"
                   className="inline-flex justify-center items-center gap-2 rounded-full bg-gold text-foreground px-5 text-sm font-bold hover:bg-gold-hover transition-colors h-11"
                 >
-                  Browse vendors
+                  {t("saved.browse")}
                 </Link>
               </div>
             ) : (
@@ -151,7 +150,7 @@ export default function HostAccountPage() {
 
           {/* Verification */}
           <section>
-            <h2 className="font-editorial text-2xl mb-4">Verification</h2>
+            <h2 className="font-editorial text-2xl mb-4">{t("verification.title")}</h2>
             {verifLoading ? (
               <Skeleton className="h-20 w-full rounded-2xl" />
             ) : (
@@ -165,7 +164,7 @@ export default function HostAccountPage() {
 
           {/* Subscriptions */}
           <section>
-            <h2 className="font-editorial text-2xl mb-4">Subscriptions</h2>
+            <h2 className="font-editorial text-2xl mb-4">{t("subscriptions.title")}</h2>
             <div
               className="rounded-2xl p-8 text-center"
               style={{
@@ -176,10 +175,9 @@ export default function HostAccountPage() {
               <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
                 <Sparkles className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="font-editorial text-2xl">Coming soon</p>
+              <p className="font-editorial text-2xl">{t("subscriptions.comingSoon")}</p>
               <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto leading-relaxed">
-                Premium host plans for unlimited inquiries, priority replies,
-                and concierge support are on the way.
+                {t("subscriptions.body")}
               </p>
             </div>
           </section>
@@ -199,19 +197,20 @@ function VerificationCard({
   requesting: boolean;
   onRequest: () => void;
 }) {
+  const { t } = useTranslation("hostAccount");
   if (status === "approved") {
     return (
       <ActionCard
         onClick={() =>
           toast.success(
-            "Verified host — vendors see a badge on your inquiries.",
+            t("verification.verifiedToast"),
           )
         }
         icon={CheckCircle2}
         iconBg="bg-accent"
         iconColor="text-white"
-        title="You're verified"
-        subtitle="Vendors prioritize verified hosts."
+        title={t("verification.verifiedTitle")}
+        subtitle={t("verification.verifiedSubtitle")}
       />
     );
   }
@@ -219,13 +218,13 @@ function VerificationCard({
     return (
       <ActionCard
         onClick={() =>
-          toast.message("Verification pending — we'll email you within 48h.")
+          toast.message(t("verification.pendingToast"))
         }
         icon={Clock}
         iconBg="bg-foreground"
         iconColor="text-white"
-        title="Verification pending"
-        subtitle="We'll reach out within 48 hours."
+        title={t("verification.pendingTitle")}
+        subtitle={t("verification.pendingSubtitle")}
       />
     );
   }
@@ -235,8 +234,8 @@ function VerificationCard({
       icon={Award}
       iconBg="bg-foreground"
       iconColor="text-background"
-      title={status === "rejected" ? "Try verifying again" : "Become Verified"}
-      subtitle="Build trust with vendors. Faster replies, better matches."
+      title={status === "rejected" ? t("verification.retryTitle") : t("verification.requestTitle")}
+      subtitle={t("verification.requestSubtitle")}
     />
   );
 }

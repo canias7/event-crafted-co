@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -272,6 +273,7 @@ export function VendorFaqsManager({
 // Public-facing read of a vendor's FAQs, including a JSON-LD FAQPage
 // block for rich results. Returns null when there's nothing to show.
 export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [faqs, setFaqs] = useState<Array<{ q: string; a: string }>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -330,10 +332,10 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
         className="font-label mb-3"
         style={{ color: "#14161a", letterSpacing: "0.22em" }}
       >
-        FAQ
+        {t("faq.eyebrow")}
       </p>
       <h2 className="font-editorial text-4xl mb-7 text-foreground">
-        Common questions
+        {t("faq.title")}
       </h2>
       <FaqCardList items={faqs.map((f) => ({ q: f.q, a: f.a }))} />
     </div>

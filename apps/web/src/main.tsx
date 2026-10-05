@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import "./i18n";
+import i18n from "./i18n";
 import { captureException, initSentry } from "./lib/sentry";
 
 // Init Sentry before render so the boundary's captureException works on
@@ -32,20 +32,23 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const root = document.getElementById("root")!;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
+  // i18n is already initialised (its resources are bundled), so the
+  // message follows the visitor's language.
+  const t = (key: string) => i18n.t(`config_error.${key}`, { ns: "portal" });
   root.innerHTML = `
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#f7f5f2;color:#1a1a1a;">
       <div style="max-width:480px;background:#ffffff;border-radius:8px;padding:32px;border:1px solid #ececec;">
-        <p style="font-size:12px;letter-spacing:0.18em;color:#8a6f3e;text-transform:uppercase;margin:0 0 16px;">Vendora · Configuration error</p>
-        <h1 style="font-size:22px;line-height:1.3;font-weight:600;margin:0 0 12px;">Missing Supabase environment variables</h1>
+        <p style="font-size:12px;letter-spacing:0.18em;color:#8a6f3e;text-transform:uppercase;margin:0 0 16px;">${t("eyebrow")}</p>
+        <h1 style="font-size:22px;line-height:1.3;font-weight:600;margin:0 0 12px;">${t("title")}</h1>
         <p style="font-size:14px;line-height:1.6;color:#3a3a3a;margin:0 0 16px;">
-          The app can't start because <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;font-size:13px;">VITE_SUPABASE_URL</code>
-          ${!SUPABASE_URL && !SUPABASE_KEY ? "and" : !SUPABASE_URL ? "is" : "or"}
+          ${t("lead")} <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;font-size:13px;">VITE_SUPABASE_URL</code>
+          ${!SUPABASE_URL && !SUPABASE_KEY ? t("and") : !SUPABASE_URL ? t("is") : t("or")}
           <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;font-size:13px;">VITE_SUPABASE_PUBLISHABLE_KEY</code>
-          ${!SUPABASE_URL || !SUPABASE_KEY ? "isn't set." : "are missing."}
+          ${!SUPABASE_URL || !SUPABASE_KEY ? t("not_set") : t("missing")}
         </p>
         <p style="font-size:13px;line-height:1.6;color:#777;margin:0;">
-          Local: copy <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;">.env.example</code> to <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;">.env.local</code> with your project URL + anon key.
-          Hosted: set them in your deploy environment (Lovable / Vercel / etc.) and rebuild.
+          ${t("local_lead")} <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;">.env.example</code> ${t("local_to")} <code style="background:#f5f5f5;padding:1px 6px;border-radius:3px;">.env.local</code> ${t("local_trail")}
+          ${t("hosted")}
         </p>
       </div>
     </div>`;

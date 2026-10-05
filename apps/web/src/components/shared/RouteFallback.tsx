@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // Suspense fallback for lazy routes. Stays invisible for the first
 // ~100ms — most chunks load fast enough that flashing a skeleton at
@@ -8,6 +9,7 @@ import { useEffect, useState } from "react";
 const SHIMMER_DELAY_MS = 100;
 
 export function RouteFallback() {
+  const { t } = useTranslation("portal");
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function RouteFallback() {
           ))}
         </div>
       </div>
-      <span className="sr-only">Loading page…</span>
+      <span className="sr-only">{t("route_loading")}</span>
     </div>
   );
 }

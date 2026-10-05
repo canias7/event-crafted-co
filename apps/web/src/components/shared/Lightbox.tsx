@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface LightboxImage {
   src: string;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
+  const { t } = useTranslation("vendorProfile");
   const onKey = useCallback(
     (e: KeyboardEvent) => {
       if (index === null) return;
@@ -51,7 +53,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Image viewer"
+      aria-label={t("lightbox.label")}
       className="fixed inset-0 z-[100] bg-foreground/95 backdrop-blur-sm flex items-center justify-center"
       onClick={onClose}
     >
@@ -62,7 +64,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
           onClose();
         }}
         className="absolute top-4 right-4 w-10 h-10 rounded-full bg-background/10 hover:bg-background/20 text-background flex items-center justify-center transition-colors"
-        aria-label="Close"
+        aria-label={t("lightbox.close")}
       >
         <X className="w-5 h-5" />
       </button>
@@ -79,7 +81,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
             onIndexChange(index - 1);
           }}
           className="absolute left-4 md:left-8 w-12 h-12 rounded-full bg-background/10 hover:bg-background/20 text-background flex items-center justify-center transition-colors"
-          aria-label="Previous"
+          aria-label={t("lightbox.previous")}
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -92,7 +94,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
             onIndexChange(index + 1);
           }}
           className="absolute right-4 md:right-8 w-12 h-12 rounded-full bg-background/10 hover:bg-background/20 text-background flex items-center justify-center transition-colors"
-          aria-label="Next"
+          aria-label={t("lightbox.next")}
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -104,7 +106,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
       >
         <img
           src={current.src}
-          alt={current.alt ?? current.caption ?? "Image"}
+          alt={current.alt ?? current.caption ?? t("lightbox.imageFallback")}
           className="max-w-full max-h-[80vh] object-contain rounded-2xl"
         />
         {(current.caption || current.href) && (
@@ -121,7 +123,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
                 rel="noreferrer"
                 className="inline-block mt-2 text-xs text-background/70 hover:text-background underline"
               >
-                Open source
+                {t("lightbox.openSource")}
               </a>
             )}
           </div>

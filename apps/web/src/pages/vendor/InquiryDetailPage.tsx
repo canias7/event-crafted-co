@@ -1278,7 +1278,7 @@ export default function InquiryDetailPage() {
           {seenTimeLabel ? (
             <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
               <CheckCheck className="w-3 h-3" aria-hidden />
-              <span>Read · {seenTimeLabel}</span>
+              <span>{t("thread.read", { time: seenTimeLabel })}</span>
             </div>
           ) : null}
 
@@ -1327,7 +1327,7 @@ export default function InquiryDetailPage() {
           inquiry.status === "cancelled" ? (
             <div className="flex items-center justify-center py-4">
               <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
-                Conversation ended
+                {t("thread.ended")}
               </span>
             </div>
           ) : null}
@@ -1348,10 +1348,10 @@ export default function InquiryDetailPage() {
           }}
         >
           {inquiry.status === "lost"
-            ? "Conversation ended."
+            ? t("ended.lost")
             : inquiry.status === "expired"
-              ? "Conversation ended — inquiry expired."
-              : "Conversation ended — inquiry cancelled."}
+              ? t("ended.expired")
+              : t("ended.cancelled")}
         </div>
       ) : (
       <div
@@ -1389,7 +1389,7 @@ export default function InquiryDetailPage() {
               className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <MapPin className="w-3.5 h-3.5 text-accent" />
-              Pin location
+              {t("composer.pinLocation")}
             </button>
           </div>
 
@@ -1409,8 +1409,8 @@ export default function InquiryDetailPage() {
                   replyTarget.sender_role === "host"
                     ? hostName
                     : replyTarget.sender_role === "vendor"
-                      ? "You"
-                      : "Vendora AI"
+                      ? t("you")
+                      : t("vendoraAi")
                 }
                 body={replyTarget.deleted_at ? "" : replyTarget.body}
                 tone="composer"
@@ -1432,7 +1432,7 @@ export default function InquiryDetailPage() {
                           prev.filter((_, j) => j !== i),
                         )
                       }
-                      aria-label="Remove attachment"
+                      aria-label={t("composer.removeAttachment")}
                       className="text-muted-foreground hover:text-accent"
                     >
                       <X className="w-3 h-3" />
@@ -1451,7 +1451,7 @@ export default function InquiryDetailPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || pendingFiles.length >= MAX_FILES}
-                aria-label="Attach files"
+                aria-label={t("composer.attachFiles")}
                 className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
               >
                 <Paperclip className="w-4 h-4" />
@@ -1469,7 +1469,7 @@ export default function InquiryDetailPage() {
                   <button
                     type="button"
                     disabled={sending}
-                    aria-label="Quick reactions"
+                    aria-label={t("composer.quickReactions")}
                     className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
                   >
                     <Smile className="w-4 h-4" />
@@ -1481,7 +1481,7 @@ export default function InquiryDetailPage() {
                       <button
                         key={e}
                         type="button"
-                        aria-label={`Insert ${e}`}
+                        aria-label={t("composer.insertEmoji", { emoji: e })}
                         onClick={() => {
                           setComposer((v) => v + e);
                           setEmojiOpen(false);
@@ -1534,7 +1534,7 @@ export default function InquiryDetailPage() {
                   }
                 }}
                 rows={1}
-                placeholder={`Message ${hostName}…`}
+                placeholder={t("composer.placeholder", { name: hostName })}
                 className="resize-none min-h-[36px] max-h-32 rounded-2xl border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
               />
               <input
@@ -1554,7 +1554,7 @@ export default function InquiryDetailPage() {
                   sending ||
                   (!composer.trim() && pendingFiles.length === 0)
                 }
-                aria-label="Send"
+                aria-label={t("composer.send")}
                 className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0 disabled:bg-muted"
               >
                 {sending ? (
@@ -1605,13 +1605,12 @@ function InquiryIntakeCard({
   inquiry: Inquiry;
   hostInitial: string;
 }) {
-  const eventLabel = inquiry.event_type
-    ? inquiry.event_type
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-    : "Event";
+  const { t, i18n } = useTranslation("vendorInquiry");
+  const { eventType } = usePriceLabels();
+  // "Holiday Dinner"; "Event" when there's no type.
+  const eventLabel = eventType(inquiry.event_type);
   const dateStr = inquiry.event_date
-    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(undefined, {
+    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(i18n.language, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -1643,7 +1642,7 @@ function InquiryIntakeCard({
       <div className="flex items-center gap-1.5">
         <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-white border border-border text-foreground rounded-full px-2.5 py-1">
           <Sparkles className="w-3 h-3 text-accent" />
-          New inquiry
+          {t("intake.newInquiry")}
         </span>
       </div>
       <div className="flex items-start gap-2">
@@ -1679,13 +1678,13 @@ function InquiryIntakeCard({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {inquiry.guest_count ? (
-              <Field label="Guests" value={`${inquiry.guest_count}`} />
+              <Field label={t("intake.guests")} value={`${inquiry.guest_count}`} />
             ) : null}
             {inquiry.location ? (
-              <Field label="Location" value={inquiry.location} />
+              <Field label={t("intake.location")} value={inquiry.location} />
             ) : null}
             {(inquiry.budget_min_cents || inquiry.budget_max_cents) ? (
-              <Field label="Budget" value={budgetStr} />
+              <Field label={t("intake.budget")} value={budgetStr} />
             ) : null}
           </div>
           {intakeEntries.length > 0 ? (
@@ -1729,6 +1728,8 @@ function InquiryPreviewSheet({
   hostName: string;
   onClose: () => void;
 }) {
+  const { t, i18n } = useTranslation("vendorInquiry");
+  const { eventType } = usePriceLabels();
   // Escape closes the sheet — mirrors the MediaLightbox pattern.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1777,12 +1778,14 @@ function InquiryPreviewSheet({
     };
   }, [inquiry.vendor_id, inquiry.intake_answers]);
 
-  const eventLabel = inquiry.event_type.replace(/_/g, " ");
+  // Lower-case like the raw "holiday dinner" it replaces; the
+  // element's `capitalize` class title-cases it.
+  const eventLabel = eventType(inquiry.event_type).toLowerCase();
   const dateStr = inquiry.event_date
     ? (() => {
         const [y, m, d] = inquiry.event_date.split("T")[0].split("-").map(Number);
         if (!y || !m || !d) return inquiry.event_date;
-        return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+        return new Date(y, m - 1, d).toLocaleDateString(i18n.language, {
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -1810,7 +1813,7 @@ function InquiryPreviewSheet({
     >
       <button
         onClick={onClose}
-        aria-label="Back to chat"
+        aria-label={t("preview.back")}
         className="fixed top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-white flex items-center justify-center hover:bg-white/25"
       >
         <ArrowLeft className="h-5 w-5" />
@@ -1824,7 +1827,7 @@ function InquiryPreviewSheet({
         }}
       >
         <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-accent mb-2">
-          Inquiry preview
+          {t("preview.eyebrow")}
         </p>
         <h2 className="font-editorial text-3xl mb-1">{hostName}</h2>
         <p className="text-sm text-muted-foreground capitalize mb-6">
@@ -1835,7 +1838,7 @@ function InquiryPreviewSheet({
           {dateStr ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Event date
+                {t("preview.eventDate")}
               </dt>
               <dd className="text-sm font-medium text-foreground">{dateStr}</dd>
             </div>
@@ -1843,7 +1846,7 @@ function InquiryPreviewSheet({
           {inquiry.guest_count != null ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Guests
+                {t("preview.guests")}
               </dt>
               <dd className="text-sm font-medium text-foreground">
                 {inquiry.guest_count}
@@ -1853,7 +1856,7 @@ function InquiryPreviewSheet({
           {inquiry.location ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Location
+                {t("preview.location")}
               </dt>
               <dd className="text-sm font-medium text-foreground">
                 {inquiry.location}
@@ -1863,7 +1866,7 @@ function InquiryPreviewSheet({
           {budgetStr ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Budget
+                {t("preview.budget")}
               </dt>
               <dd className="text-sm font-medium text-foreground tnum">
                 {budgetStr}
@@ -1875,7 +1878,7 @@ function InquiryPreviewSheet({
         {inquiry.special_requests ? (
           <div className="mt-7">
             <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-2">
-              Special requests
+              {t("preview.specialRequests")}
             </p>
             <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
               {inquiry.special_requests}
@@ -1886,7 +1889,7 @@ function InquiryPreviewSheet({
         {intakeEntries.length > 0 ? (
           <div className="mt-7">
             <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-3">
-              Intake form answers
+              {t("preview.intakeAnswers")}
             </p>
             <dl className="space-y-3">
               {intakeEntries.map(([qid, val]) => (
@@ -1905,7 +1908,7 @@ function InquiryPreviewSheet({
 
         {inquiry.recommended_verification ? (
           <div className="mt-7 p-3 rounded-xl bg-accent/10 text-sm text-foreground">
-            <span className="font-medium">Recommended verification: </span>
+            <span className="font-medium">{t("preview.recommendedVerification")}</span>
             {inquiry.recommended_verification}
           </div>
         ) : null}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Construction } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -12,7 +13,15 @@ import { vendorNavItems } from "@/data/navItems";
 // Content-area panel: a blurred decorative skeleton (hinting at the page
 // that's coming) under a frosted "under construction" card. Drop it into
 // any layout that already provides the surrounding chrome.
+//
+// Callers pass an English page title ("Usage"); a known one is shown in
+// the visitor's language, anything else as given.
+const PAGE_TITLE_KEYS = new Map<string, string>([["Usage", "usage"]]);
+
 export function UnderConstruction({ title }: { title?: string }) {
+  const { t } = useTranslation("portal");
+  const titleKey = title ? PAGE_TITLE_KEYS.get(title) : undefined;
+  const titleText = titleKey ? t(`under_construction.pages.${titleKey}`) : title;
   return (
     <div className="relative flex-1 min-h-[70vh] overflow-hidden">
       {/* Blurred decorative skeleton. */}
@@ -42,11 +51,12 @@ export function UnderConstruction({ title }: { title?: string }) {
             <Construction className="w-6 h-6 text-foreground" />
           </div>
           <h2 className="font-editorial text-2xl mb-2">
-            {title ? `${title} — under construction` : "Under construction"}
+            {titleText
+              ? t("under_construction.title_with_page", { title: titleText })
+              : t("under_construction.title")}
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We&apos;re polishing this up. It&apos;ll be back shortly — thanks for
-            your patience.
+            {t("under_construction.body")}
           </p>
         </div>
       </div>

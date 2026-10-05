@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { VendoraLogo, VendoraMark } from "@/components/shared/VendoraLogo";
 import {
@@ -15,13 +15,9 @@ import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { useLiveVendorBalance } from "@/hooks/useVendorCredits";
 
 // 'studio' is Premium's internal slug (kept for Stripe/webhook
-// compat); 'starter' is a retired, grandfathered tier.
-const TIER_LABEL: Record<VendorTier, string> = {
-  free: "Free plan",
-  starter: "Starter plan",
-  pro: "Pro plan",
-  studio: "Premium plan",
-};
+// compat); 'starter' is a retired, grandfathered tier. Labels and chip
+// names live in the "portal" namespace under sidebar.tier_label.<tier>
+// and sidebar.tier_name.<tier>.
 
 // Per-tier chip colours, from the brand palette: Free and Starter are
 // neutral, Pro is bronze on the gold tint, Premium (studio) is champagne.
@@ -32,9 +28,19 @@ const TIER_CHIP: Record<VendorTier, { bg: string; ring: string; text: string; sh
   pro:     { bg: "hsl(var(--pending))", ring: "hsl(var(--gold))",   text: "hsl(var(--accent))",     shadow: "none" },
   studio:  { bg: "hsl(var(--gold))",    ring: "hsl(var(--gold))",   text: "hsl(var(--foreground))", shadow: "none" },
 };
-const TIER_NAME: Record<VendorTier, string> = {
-  free: "Free", starter: "Starter", pro: "Pro", studio: "Premium",
-};
+
+// Pages pass an English title ("Vendor Portal", "Customer", …); show it in
+// the visitor's language. A title not listed here is shown as given.
+const TITLE_KEYS = new Map<string, string>([
+  ["Vendor Portal", "vendor_portal"],
+  ["Customer", "customer"],
+  ["Events", "events"],
+  ["Account", "account"],
+  ["Explore", "explore"],
+  ["Profile", "profile"],
+  ["My Profile", "my_profile"],
+  ["Edit profile", "edit_profile"],
+]);
 
 interface NavItem {
   labelKey: string;
@@ -63,6 +69,9 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const location = useLocation();
   const { t } = useTranslation();
+  const { t: tp } = useTranslation("portal");
+  const titleKey = TITLE_KEYS.get(title);
+  const titleText = titleKey ? tp(`sidebar.titles.${titleKey}`) : title;
   // Vendor-side sidebars swap the page-title sub-label for a live
   // plan badge ("Starter plan", "Pro plan", …) that flips the moment
   // the Stripe webhook updates vendor_profiles.subscription_tier.
@@ -71,7 +80,7 @@ export function DashboardSidebar({
   // Subscription tier lives on profiles (per-user) post migration
   // 20260524000000 — pass user.id, not ownListing.id.
   const { tier } = useVendorPlan(isVendorSide ? user?.id ?? null : null);
-  const subLabel = isVendorSide ? TIER_LABEL[tier] : title;
+  const subLabel = isVendorSide ? tp(`sidebar.tier_label.${tier}`) : titleText;
   // Live credit balance shown as a small chip on the right of the
   // Usage nav row. Subscribes to vendor_credit_balances UPDATEs so
   // it ticks down as the vendor spends credits and ticks up on
@@ -165,7 +174,10 @@ export function DashboardSidebar({
         {showBalance && (
           <span
             className="text-[11px] font-medium tnum shrink-0 text-foreground"
-            aria-label={`${liveBalance.toLocaleString()} credits`}
+            aria-label={tp("sidebar.credits", {
+              count: liveBalance,
+              balance: liveBalance.toLocaleString(),
+            })}
           >
             {liveBalance.toLocaleString()}
           </span>
@@ -250,13 +262,13 @@ export function DashboardSidebar({
         background: "transparent",
         borderRight: "0.5px solid rgba(0,0,0,0.08)",
       }}
-      aria-label={`${title} navigation`}
+      aria-label={tp("sidebar.nav_label", { title: titleText })}
     >
       {collapsed ? (
         <div className="px-2 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col items-center gap-3">
           <Link
             to={backPath}
-            title="Vendora — Events, simplified"
+            title={tp("sidebar.logo_label")}
             aria-label="Vendora"
           >
             <VendoraMark size={28} variant="gold" />
@@ -264,7 +276,7 @@ export function DashboardSidebar({
           <button
             type="button"
             onClick={() => setCollapsed(false)}
-            aria-label="Expand sidebar"
+            aria-label={tp("sidebar.expand")}
             className="w-8 h-8 rounded-md text-muted-foreground hover:text-accent hover:bg-secondary/50 flex items-center justify-center transition-colors"
           >
             <PanelLeftOpen className="w-4 h-4" />
@@ -273,23 +285,32 @@ export function DashboardSidebar({
       ) : (
         <div className="p-6 border-b border-[rgba(0,0,0,0.08)] flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link to={backPath} aria-label="Vendora — Events, simplified">
+            <Link to={backPath} aria-label={tp("sidebar.logo_label")}>
               <VendoraLogo size="md" color="currentColor" />
             </Link>
             {isVendorSide ? (
               <p className="mt-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                <span
-                  className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider"
-                  style={{
-                    background: TIER_CHIP[tier].bg,
-                    color: TIER_CHIP[tier].text,
-                    border: `1px solid ${TIER_CHIP[tier].ring}`,
-                    boxShadow: TIER_CHIP[tier].shadow,
+                {/* "Free plan" / "plan Gratis": the chip and the word swap
+                    places by language. */}
+                <Trans
+                  i18nKey="sidebar.plan_badge"
+                  ns="portal"
+                  values={{ tier: tp(`sidebar.tier_name.${tier}`) }}
+                  components={{
+                    chip: (
+                      <span
+                        className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider"
+                        style={{
+                          background: TIER_CHIP[tier].bg,
+                          color: TIER_CHIP[tier].text,
+                          border: `1px solid ${TIER_CHIP[tier].ring}`,
+                          boxShadow: TIER_CHIP[tier].shadow,
+                        }}
+                      />
+                    ),
+                    word: <span />,
                   }}
-                >
-                  {TIER_NAME[tier]}
-                </span>
-                <span>plan</span>
+                />
               </p>
             ) : (
               <p className="font-label text-muted-foreground mt-2 truncate">
@@ -300,7 +321,7 @@ export function DashboardSidebar({
           <button
             type="button"
             onClick={() => setCollapsed(true)}
-            aria-label="Collapse sidebar"
+            aria-label={tp("sidebar.collapse")}
             className="w-7 h-7 rounded-md text-muted-foreground hover:text-accent hover:bg-secondary/50 flex items-center justify-center transition-colors shrink-0"
           >
             <PanelLeftClose className="w-3.5 h-3.5" />
@@ -312,7 +333,7 @@ export function DashboardSidebar({
           apply page is gone. */}
       <nav
         className={`flex-1 ${collapsed ? "p-2 pt-3" : "p-3 pt-4"}`}
-        aria-label="Primary"
+        aria-label={tp("sidebar.primary")}
       >
         {/* Gallery shows for every vendor tier, including Free. */}
         {items.map(renderItem)}

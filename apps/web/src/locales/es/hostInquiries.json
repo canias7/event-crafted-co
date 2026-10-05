@@ -1,0 +1,92 @@
+{
+  "status": {
+    "new": "Esperando respuesta",
+    "drafted": "Proveedor redactando",
+    "replied": "Respondida",
+    "won": "Reservada",
+    "lost": "Cerrada",
+    "expired": "Vencida"
+  },
+  "vendorFallback": "Proveedor",
+  "list": {
+    "sidebarTitle": "Anfitrión",
+    "title": "Bandeja de entrada",
+    "subtitle": "Tus consultas a proveedores — todas en un solo lugar",
+    "newInquiry": "Nueva consulta",
+    "searchPlaceholder": "Busca por proveedor, evento o mensaje",
+    "filters": {
+      "all": "Todas",
+      "awaiting": "En espera",
+      "replied": "Respondidas",
+      "booked": "Reservadas"
+    },
+    "empty": {
+      "noneTitle": "Aún no tienes conversaciones",
+      "noSearchTitle": "Nada coincide con esa búsqueda",
+      "noFilterTitle": "Nada coincide con ese filtro",
+      "noneBody": "Escríbele a un proveedor desde Explorar — cada respuesta llega aquí para que la conversación quede en un solo lugar.",
+      "noSearchBody": "Prueba con otro término de búsqueda.",
+      "noFilterBody": "Prueba con otro filtro de estado arriba.",
+      "browseVendors": "Ver proveedores",
+      "clearFilter": "Quitar filtro"
+    },
+    "unread": "No leída",
+    "guests_one": "invitado",
+    "guests_other": "invitados",
+    "budget": "Presupuesto: {{min}} – {{max}}",
+    "time": {
+      "now": "ahora",
+      "minutes": "{{n}} min",
+      "hours": "{{n}} h",
+      "yesterday": "Ayer",
+      "days": "{{n}} d"
+    }
+  },
+  "detail": {
+    "backToInquiries": "Volver a las consultas",
+    "notFoundTitle": "No se encontró la consulta",
+    "notFoundBody": "Esta consulta no existe o no tienes acceso.",
+    "inquiryOfType": "Consulta de {{typeLower}}",
+    "inquiry": "Consulta",
+    "detailsLabel": "Detalles de la consulta",
+    "yourInquiry": "Tu consulta",
+    "noMessages": "Aún no hay mensajes — el proveedor responderá pronto.",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "messageDeleted": "Mensaje eliminado",
+    "you": "Tú",
+    "sentByAi": "Enviado por IA",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edited": "editado",
+    "read": "Leído · {{time}}",
+    "ended": {
+      "lost": "Conversación finalizada.",
+      "expired": "Conversación finalizada — la consulta venció.",
+      "cancelled": "Conversación finalizada — la consulta se canceló."
+    },
+    "proposeMeeting": "Proponer reunión",
+    "removeAttachment": "Quitar archivo adjunto",
+    "attachFiles": "Adjuntar archivos",
+    "quickReactions": "Reacciones rápidas",
+    "insertEmoji": "Insertar {{emoji}}",
+    "messagePlaceholder": "Escríbele a {{name}}…",
+    "send": "Enviar",
+    "confirmDelete": "¿Eliminar este mensaje? No se puede deshacer.",
+    "toasts": {
+      "messageEmpty": "El mensaje no puede estar vacío",
+      "maxAttachments": "Hasta {{max}} archivos adjuntos por mensaje",
+      "uploadFailed": "No se pudieron subir tus archivos adjuntos — el mensaje no se envió.",
+      "partialUpload": "Se subieron {{uploaded}} de {{total}} archivos adjuntos."
+    },
+    "summary": {
+      "close": "Cerrar",
+      "to": "Para",
+      "event": "Evento",
+      "guests": "Invitados",
+      "budget": "Presupuesto",
+      "location": "Ubicación",
+      "yourNotes": "Tus notas"
+    }
+  }
+}

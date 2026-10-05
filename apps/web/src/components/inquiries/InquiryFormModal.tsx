@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { es } from "date-fns/locale/es";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
@@ -56,12 +59,16 @@ interface InquiryFormModalProps {
   onSuccess?: (inquiryId: string) => void;
 }
 
-const eventTypes: Array<{ value: EventType; label: string }> = [
-  { value: "wedding", label: "Wedding" },
-  { value: "birthday", label: "Birthday" },
-  { value: "holiday_dinner", label: "Holiday dinner" },
-  { value: "other", label: "Other" },
-];
+// Labels live in locales/<language>/vendorProfile.json under
+// inquiry.eventTypes.<value>; the value is what's stored.
+const eventTypes: EventType[] = ["wedding", "birthday", "holiday_dinner", "other"];
+
+// Intake "yes / no" answers are stored in English; only the button
+// label is translated (inquiry.yes / inquiry.no).
+const yesNoOptions = [
+  { value: "Yes", labelKey: "inquiry.yes" },
+  { value: "No", labelKey: "inquiry.no" },
+] as const;
 
 export function InquiryFormModal({
   open,
@@ -73,6 +80,21 @@ export function InquiryFormModal({
 }: InquiryFormModalProps) {
   const { user, activeEvent, profile } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation("vendorProfile");
+  const categoryNames = useCategoryNames();
+  // Spanish month / weekday names for the date picker. Weeks still start
+  // on Sunday, as in English; English keeps react-day-picker's defaults.
+  const calendarLanguage =
+    i18n.resolvedLanguage === "es"
+      ? {
+          locale: es,
+          weekStartsOn: 0 as const,
+          labels: {
+            labelPrevious: () => t("calendar.previousMonth"),
+            labelNext: () => t("calendar.nextMonth"),
+          },
+        }
+      : {};
 
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
@@ -182,7 +204,7 @@ export function InquiryFormModal({
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
-          toast.error(`Couldn't load vendors: ${error.message}`);
+          toast.error(t("inquiry.toasts.loadVendorsFailed", { message: error.message }));
           setVendors([]);
         } else {
           const list = (data ?? []) as VendorOption[];
@@ -294,13 +316,13 @@ export function InquiryFormModal({
     const [y, m, d] = eventDate.split("-").map(Number);
     if (!y || !m || !d) return eventDate;
     const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString(undefined, {
+    return dt.toLocaleDateString(i18n.language, {
       weekday: "short",
       month: "short",
       day: "numeric",
       year: "numeric",
     });
-  }, [eventDate]);
+  }, [eventDate, i18n.language]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -310,11 +332,11 @@ export function InquiryFormModal({
     // inquiry rows for the same form payload.
     if (submitting) return;
     if (!user) {
-      toast.error("Please sign in first");
+      toast.error(t("inquiry.toasts.signInFirst"));
       return;
     }
     if (!vendorId) {
-      toast.error("Please choose a vendor");
+      toast.error(t("inquiry.toasts.chooseVendor"));
       return;
     }
 
@@ -323,12 +345,12 @@ export function InquiryFormModal({
     const maxCents = budgetMax ? Math.round(Number.parseFloat(budgetMax) * 100) : null;
 
     if (minCents != null && maxCents != null && minCents > maxCents) {
-      toast.error("Budget min must be less than budget max");
+      toast.error(t("inquiry.toasts.budgetOrder"));
       return;
     }
 
     if (eventDate && unavailableIds.has(vendorId)) {
-      toast.error("That vendor isn't available on the date you picked.");
+      toast.error(t("inquiry.toasts.vendorUnavailable"));
       return;
     }
 
@@ -345,7 +367,7 @@ export function InquiryFormModal({
       return v == null;
     });
     if (missingRequired) {
-      toast.error(`Please answer: ${missingRequired.label}`);
+      toast.error(t("inquiry.toasts.answerRequired", { question: missingRequired.label }));
       return;
     }
 
@@ -373,7 +395,7 @@ export function InquiryFormModal({
     setSubmitting(false);
 
     if (error) {
-      toast.error(`Couldn't send inquiry: ${error.message}`);
+      toast.error(t("inquiry.toasts.sendFailed", { message: error.message }));
       return;
     }
 
@@ -394,7 +416,7 @@ export function InquiryFormModal({
         console.error("[Inquiry] new_inquiry email threw", e);
       });
 
-    toast.success("Inquiry sent — vendor will reply soon");
+    toast.success(t("inquiry.toasts.sent"));
     onSuccess?.(data.id);
     reset();
     onOpenChange(false);
@@ -405,10 +427,10 @@ export function InquiryFormModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="font-editorial text-3xl">Send an inquiry</DialogTitle>
+          <DialogTitle className="font-editorial text-3xl">{t("inquiry.title")}</DialogTitle>
           <DialogDescription className="flex items-center gap-1.5 text-xs leading-relaxed pt-1">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            Vendors typically reply within 3 hours via AI-assisted drafts.
+            {t("inquiry.subtitle")}
           </DialogDescription>
         </DialogHeader>
 
@@ -426,13 +448,13 @@ export function InquiryFormModal({
                   aria-live="polite"
                 >
                   <span className="text-[10px] uppercase tracking-wider font-medium text-accent">
-                    Sending to
+                    {t("inquiry.sendingTo")}
                   </span>
                   <span className="text-sm font-medium text-foreground truncate flex-1">
                     {pinned.business_name}
                     <span className="text-muted-foreground font-normal">
                       {" "}
-                      · {pinned.category}
+                      · {pinned.category ? categoryNames.sub(pinned.category) : pinned.category}
                     </span>
                   </span>
                 </div>
@@ -441,19 +463,18 @@ export function InquiryFormModal({
           ) : (
             <div className="space-y-2">
               <Label htmlFor="vendor">
-                Vendor <span className="text-destructive">*</span>
+                {t("inquiry.vendor")} <span className="text-destructive">*</span>
               </Label>
               {vendorsLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : vendors.length === 0 ? (
                 <div className="text-sm text-muted-foreground border border-border rounded-md p-3 bg-secondary/40">
-                  No vendors are accepting inquiries yet. We're onboarding new
-                  vendors weekly — check back soon.
+                  {t("inquiry.noVendors")}
                 </div>
               ) : (
                 <Select value={vendorId} onValueChange={setVendorId}>
                   <SelectTrigger id="vendor" className="h-10">
-                    <SelectValue placeholder="Choose a vendor" />
+                    <SelectValue placeholder={t("inquiry.chooseVendor")} />
                   </SelectTrigger>
                   <SelectContent>
                     {vendors.map((v) => {
@@ -466,11 +487,11 @@ export function InquiryFormModal({
                         >
                           {v.business_name}{" "}
                           <span className="text-muted-foreground">
-                            · {v.category}
+                            · {v.category ? categoryNames.sub(v.category) : v.category}
                           </span>
                           {blocked && (
                             <span className="ml-2 text-xs text-destructive">
-                              (booked that day)
+                              {t("inquiry.bookedThatDay")}
                             </span>
                           )}
                         </SelectItem>
@@ -485,7 +506,7 @@ export function InquiryFormModal({
           {/* Event type */}
           <div className="space-y-2">
             <Label htmlFor="event-type">
-              Event type <span className="text-destructive">*</span>
+              {t("inquiry.eventType")} <span className="text-destructive">*</span>
             </Label>
             <Select
               value={eventType}
@@ -495,9 +516,9 @@ export function InquiryFormModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {eventTypes.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                {eventTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {t(`inquiry.eventTypes.${type}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -507,7 +528,7 @@ export function InquiryFormModal({
           {/* Date + guests */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="event-date">Event date</Label>
+              <Label htmlFor="event-date">{t("inquiry.eventDate")}</Label>
               <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <button
@@ -523,8 +544,8 @@ export function InquiryFormModal({
                       {eventDate
                         ? formattedEventDate
                         : vendorId
-                          ? "Pick a date"
-                          : "Pick a vendor first"}
+                          ? t("inquiry.pickDate")
+                          : t("inquiry.pickVendorFirst")}
                     </span>
                     <CalendarIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                   </button>
@@ -552,15 +573,16 @@ export function InquiryFormModal({
                       blocked:
                         "line-through text-muted-foreground bg-muted/40",
                     }}
+                    {...calendarLanguage}
                   />
                   <div className="px-3 pb-3 pt-1 text-[11px] text-muted-foreground border-t border-border">
-                    Struck-through dates are blocked by this vendor.
+                    {t("inquiry.blockedNote")}
                   </div>
                 </PopoverContent>
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="guest-count">Guest count</Label>
+              <Label htmlFor="guest-count">{t("inquiry.guestCount")}</Label>
               <Input
                 id="guest-count"
                 type="number"
@@ -576,19 +598,19 @@ export function InquiryFormModal({
 
           {/* Location */}
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location">{t("inquiry.location")}</Label>
             <Input
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, neighborhood, or venue name"
+              placeholder={t("inquiry.locationPlaceholder")}
               className="h-10"
             />
           </div>
 
           {/* Budget */}
           <div className="space-y-2">
-            <Label>Budget range</Label>
+            <Label>{t("inquiry.budget")}</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -601,7 +623,7 @@ export function InquiryFormModal({
                   step="100"
                   value={budgetMin}
                   onChange={(e) => setBudgetMin(e.target.value)}
-                  placeholder="Min"
+                  placeholder={t("inquiry.min")}
                   className="h-10 pl-7"
                 />
               </div>
@@ -616,7 +638,7 @@ export function InquiryFormModal({
                   step="100"
                   value={budgetMax}
                   onChange={(e) => setBudgetMax(e.target.value)}
-                  placeholder="Max"
+                  placeholder={t("inquiry.max")}
                   className="h-10 pl-7"
                 />
               </div>
@@ -628,7 +650,7 @@ export function InquiryFormModal({
             <div className="space-y-3 rounded-sm border border-accent/30 bg-accent/5 p-4">
               <div>
                 <p className="font-label text-accent mb-1">
-                  A few questions from this vendor
+                  {t("inquiry.intakeTitle")}
                 </p>
                 {intakeIntro && (
                   <p className="text-xs text-muted-foreground leading-relaxed">
@@ -675,7 +697,7 @@ export function InquiryFormModal({
                   )}
                   {q.type === "yesno" && (
                     <div className="flex gap-2">
-                      {["Yes", "No"].map((opt) => {
+                      {yesNoOptions.map(({ value: opt, labelKey }) => {
                         const active = intakeAnswers[q.id] === opt;
                         return (
                           <button
@@ -693,7 +715,7 @@ export function InquiryFormModal({
                                 : "bg-secondary text-foreground"
                             }`}
                           >
-                            {opt}
+                            {t(labelKey)}
                           </button>
                         );
                       })}
@@ -712,7 +734,7 @@ export function InquiryFormModal({
                       required={q.required}
                       className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
                     >
-                      <option value="">Choose…</option>
+                      <option value="">{t("inquiry.choose")}</option>
                       {(q.options ?? []).map((o) => (
                         <option key={o} value={o}>
                           {o}
@@ -758,15 +780,15 @@ export function InquiryFormModal({
           <div className="space-y-2">
             <Label htmlFor="special-requests">
               {intakeQuestions.length > 0
-                ? "Anything else?"
-                : "Tell us about your event"}
+                ? t("inquiry.anythingElse")
+                : t("inquiry.tellUs")}
             </Label>
             <Textarea
               id="special-requests"
               value={specialRequests}
               onChange={(e) => setSpecialRequests(e.target.value)}
               rows={intakeQuestions.length > 0 ? 2 : 4}
-              placeholder="Color palette, vibe, must-haves, anything else the vendor should know."
+              placeholder={t("inquiry.requestsPlaceholder")}
             />
           </div>
 
@@ -778,7 +800,7 @@ export function InquiryFormModal({
               disabled={submitting}
               className="rounded-full"
             >
-              Cancel
+              {t("inquiry.cancel")}
             </Button>
             <Button
               type="submit"
@@ -787,10 +809,10 @@ export function InquiryFormModal({
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending…
+                  {t("inquiry.sending")}
                 </>
               ) : (
-                "Send inquiry"
+                t("inquiry.send")
               )}
             </Button>
           </DialogFooter>

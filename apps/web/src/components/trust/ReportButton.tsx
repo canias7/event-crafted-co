@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Flag, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -40,16 +41,18 @@ export type ReportContentType =
   | "inquiry_message"
   | "real_event";
 
-const REASON_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "spam", label: "Spam or scam" },
-  { value: "harassment", label: "Harassment or bullying" },
-  { value: "inappropriate", label: "Inappropriate content" },
-  { value: "misleading", label: "False or misleading" },
-  { value: "impersonation", label: "Impersonation" },
-  { value: "copyright", label: "Copyright violation" },
-  { value: "safety", label: "Safety concern" },
-  { value: "other", label: "Other" },
-];
+// Stored reason values. Their labels live in
+// locales/<language>/vendorProfile.json under report.reasons.<value>.
+const REASON_OPTIONS = [
+  "spam",
+  "harassment",
+  "inappropriate",
+  "misleading",
+  "impersonation",
+  "copyright",
+  "safety",
+  "other",
+] as const;
 
 export function ReportButton({
   contentType,
@@ -64,6 +67,7 @@ export function ReportButton({
   size?: "sm" | "icon" | "default";
   label?: string;
 }) {
+  const { t } = useTranslation("vendorProfile");
   const [open, setOpen] = useState(false);
 
   return (
@@ -74,10 +78,10 @@ export function ReportButton({
         size={size}
         onClick={() => setOpen(true)}
         className="text-muted-foreground hover:text-accent"
-        aria-label="Report this content"
+        aria-label={t("report.ariaLabel")}
       >
         <Flag className={size === "icon" ? "w-3.5 h-3.5" : "w-3.5 h-3.5 mr-1.5"} />
-        {size !== "icon" && (label ?? "Report")}
+        {size !== "icon" && (label ?? t("report.button"))}
       </Button>
       <ReportDialog
         open={open}
@@ -100,6 +104,7 @@ function ReportDialog({
   contentType: ReportContentType;
   contentId: string;
 }) {
+  const { t } = useTranslation("vendorProfile");
   const { user } = useAuth();
   const [reason, setReason] = useState<string>("");
   const [details, setDetails] = useState("");
@@ -122,7 +127,7 @@ function ReportDialog({
     if (error) {
       // 23505 = unique violation = already reported and still open
       if (error.code === "23505") {
-        toast.info("You've already reported this. Our team is reviewing.");
+        toast.info(t("report.alreadyReported"));
         onOpenChange(false);
         return;
       }
@@ -148,28 +153,26 @@ function ReportDialog({
         <DialogHeader>
           <DialogTitle className="font-display text-2xl inline-flex items-center gap-2">
             <Flag className="w-5 h-5" />
-            Report content
+            {t("report.title")}
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
-            Reports go to our trust & safety team. We review every one
-            and take action when warranted. Reporters are kept private.
+            {t("report.description")}
           </DialogDescription>
         </DialogHeader>
 
         {!user ? (
           <div className="py-4 text-sm text-muted-foreground">
-            You need to be signed in to report content.{" "}
+            {t("report.signInRequired")}{" "}
             <Link to="/login" className="text-accent hover:underline">
-              Sign in
+              {t("report.signIn")}
             </Link>
           </div>
         ) : done ? (
           <div className="py-6 text-center">
             <ShieldCheck className="w-10 h-10 text-accent mx-auto mb-3" />
-            <p className="font-display text-xl mb-2">Thanks for the report</p>
+            <p className="font-display text-xl mb-2">{t("report.thanksTitle")}</p>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              We'll review this within 24 hours. If we take action, you'll
-              hear back via email.
+              {t("report.thanksBody")}
             </p>
             <Button
               type="button"
@@ -177,34 +180,34 @@ function ReportDialog({
               className="mt-5 rounded-full"
               variant="outline"
             >
-              Close
+              {t("report.close")}
             </Button>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label htmlFor="r-reason">Reason</Label>
+              <Label htmlFor="r-reason">{t("report.reason")}</Label>
               <Select value={reason} onValueChange={setReason}>
                 <SelectTrigger id="r-reason">
-                  <SelectValue placeholder="Choose a reason" />
+                  <SelectValue placeholder={t("report.reasonPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {REASON_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
+                  {REASON_OPTIONS.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {t(`report.reasons.${value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="r-details">More context (optional)</Label>
+              <Label htmlFor="r-details">{t("report.details")}</Label>
               <Textarea
                 id="r-details"
                 rows={3}
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
-                placeholder="What should we look at? Any specific examples?"
+                placeholder={t("report.detailsPlaceholder")}
               />
             </div>
             <DialogFooter className="gap-2 sm:gap-0">
@@ -215,14 +218,14 @@ function ReportDialog({
                 disabled={submitting}
                 className="rounded-full"
               >
-                Cancel
+                {t("report.cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={submitting || !reason}
               >
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Submit report
+                {t("report.submit")}
               </Button>
             </DialogFooter>
           </form>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Bounce page for Stripe redirects launched from the mobile apps.
 //
@@ -22,8 +23,10 @@ const APP_SCHEMES: Record<string, string> = {
 
 export default function MobileCheckoutReturnPage() {
   const [search] = useSearchParams();
+  const { t } = useTranslation("checkout");
 
-  const { deepLink, headline, body } = useMemo(() => {
+  // `outcome` picks the headline + body in checkout.json → mobileReturn.
+  const { deepLink, outcome } = useMemo(() => {
     const scheme = APP_SCHEMES[search.get("app") ?? ""] ?? APP_SCHEMES.vendor;
     // Forward every flag except `app` so the mobile screen can read
     // the same upgraded/topup/cancelled params the web page uses.
@@ -32,23 +35,20 @@ export default function MobileCheckoutReturnPage() {
     const qs = forwarded.toString();
     const link = `${scheme}://checkout-return${qs ? `?${qs}` : ""}`;
 
-    let headline = "All done";
-    let body = "You can head back to the Vendora app.";
+    let outcome = "done";
     if (search.get("upgraded")) {
-      headline = "Payment successful";
-      body = "Your plan is active. Head back to the Vendora app to continue.";
+      outcome = "upgraded";
     } else if (search.get("topup")) {
-      headline = "Credits added";
-      body = "Your top-up went through. Head back to the Vendora app.";
+      outcome = "topup";
     } else if (search.get("cancelled") || search.get("topup_cancelled")) {
-      headline = "Checkout cancelled";
-      body = "No changes were made. You can head back to the Vendora app.";
+      outcome = "cancelled";
     } else if (search.get("portal")) {
-      headline = "Billing updated";
-      body = "Any changes you made are saved. Head back to the Vendora app.";
+      outcome = "portal";
     }
-    return { deepLink: link, headline, body };
+    return { deepLink: link, outcome };
   }, [search]);
+  const headline = t(`mobileReturn.${outcome}.title`);
+  const body = t(`mobileReturn.${outcome}.body`);
 
   // Fire the deep link automatically; inside openAuthSessionAsync the
   // scheme navigation closes the browser sheet. The button below is
@@ -66,11 +66,10 @@ export default function MobileCheckoutReturnPage() {
           href={deepLink}
           className="inline-flex items-center justify-center rounded-full bg-gold text-foreground text-sm font-bold px-6 hover:bg-gold-hover h-11"
         >
-          Open the app
+          {t("mobileReturn.open")}
         </a>
         <p className="text-xs text-muted-foreground">
-          If the app doesn't open automatically, tap the button above or
-          switch back to it manually — your changes are already saved.
+          {t("mobileReturn.hint")}
         </p>
       </div>
     </div>
