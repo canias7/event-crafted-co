@@ -7,7 +7,7 @@ import { Picture, type PictureSource } from "@/components/shared/Picture";
 const INK = "#14161a";
 
 // Dark photo header for the For hosts and For vendors pages, in the
-// landing page's style: the overlaid nav, an eyebrow, a headline with one
+// landing page's style (it fades into the ink page below): the overlaid nav, an eyebrow, a headline with one
 // gold word (pass it in `title`), a line of copy, a gold button and a
 // quiet link. The headline and copy get the same readability halo and
 // shadow as the landing hero.
@@ -42,7 +42,7 @@ export function PhotoHero({
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(10,11,14,0.66) 0%, rgba(10,11,14,0.45) 45%, rgba(10,11,14,0.6) 75%, rgba(16,14,10,0.9) 100%)",
+            "linear-gradient(180deg, rgba(10,11,14,0.66) 0%, rgba(10,11,14,0.45) 45%, rgba(20,22,26,0.7) 78%, rgb(20,22,26) 100%)",
         }}
       />
 

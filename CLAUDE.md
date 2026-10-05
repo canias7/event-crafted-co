@@ -28,6 +28,10 @@ What Claude does NOT have direct shell access to:
 
 - **Always merge to `main`** when finishing a feature branch. Don't suggest changing Cloudflare/CI production branches as a substitute — merge instead so `main` stays the source of truth and production deploys flow through it. Use `mcp__github__create_pull_request` + `mcp__github__merge_pull_request`.
 
+- **Page walkthrough list.** The owner reviews the design page by page from the doc "Vendora pages — design walkthrough" (https://claude.ai/code/artifact/123e1786-6ad2-4a4d-a055-343b7d25c3d1): every website and admin page with its link and a Status dropdown. When a change adds, removes or renames a page (a route in `apps/web/src/App.tsx` or `apps/admin/src/App.tsx`), update that doc in the same piece of work: add, remove or rename the row. Leave the owner's Status values alone.
+
+- **Directions to a page.** When the owner asks how to get to a page, answer with the clicks from the home page (or the signed-in home), e.g. "footer → Company → Press". Check them against the current nav, footer and sidebars rather than from memory.
+
 - **`bunx expo install` writes to the ROOT `package.json`**, not the app's, even when run from inside `apps/<app>-mobile`. If you add packages to render an app headlessly (react-native-web, react-dom, @expo/metro-runtime), reverting `apps/<app>-mobile/package.json` does NOT undo it — check `git status` at the repo root before committing. Leaving them in desyncs `bun.lock`, and every OTA then dies on `bun install --frozen-lockfile` with "lockfile had changes, but lockfile is frozen".
 
 ## Brand system (locked with the owner, Oct 2026)
@@ -76,6 +80,14 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - **Two shadows only:** soft for menus, popovers, toasts and sticky or floating bars; lifted for modals and sheets (web `shadow-soft` / `shadow-lifted`, apps `...SHADOW.soft` / `...SHADOW.lifted`).
 - **Spacing:** anything 12 or more sits on the 4px grid. Page edge is 20px on phones and 32px from tablet up (web `px-5 md:px-8`; `.container` defaults to the same). 12 between stacked cards, 24 to 32 between sections.
 - **Inputs:** white, 1px hairline, 12px corners, 44px tall on the web.
+
+**Public pages are dark** (owner's call, Oct 2026): home, vendors, By location, Explore, How it works, For hosts / For vendors, Help, Status, Press, Changelog, Privacy and Terms. The city, category and vendor profile pages are still light; the owner is reviewing pages one by one.
+- Ink page (`style={{ backgroundColor: "#14161a" }}`) with cream text (`text-[#f4f1ea]`, `/80` for secondary).
+- Champagne for labels, links and accents (`text-gold`, hover to white), never bronze on ink.
+- White-at-15% hairlines; cards `border-white/15 bg-white/[0.03]`.
+- `PublicNav tone="dark"` (or `"overlay"` over a photo) and `<Footer tone="dark" />`.
+- Pop-up menus stay light. The brand red is too faint on ink for text, so put it on a cream pill.
+- Sign-in pages and the signed-in portals keep the light style for now.
 
 **Deliberately different (don't "fix")**
 

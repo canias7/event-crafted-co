@@ -39,7 +39,7 @@ const TOOLS = [
 
 export default function ForHostsPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PhotoHero
         photo={dinner}
         eyebrow="For hosts"
@@ -56,7 +56,7 @@ export default function ForHostsPage() {
       <main id="main-content">
         {/* Steps */}
         <section className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-          <p className="m-0 text-center font-label text-accent">How it works</p>
+          <p className="m-0 text-center font-label text-gold">How it works</p>
           <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[42px]">
             Four steps to your event.
           </h2>
@@ -67,7 +67,7 @@ export default function ForHostsPage() {
                 <li key={s.title} className="text-center">
                   {/* Arch-top photo */}
                   <div
-                    className="mx-auto aspect-[3/4] w-full max-w-[190px] overflow-hidden bg-card"
+                    className="mx-auto aspect-[3/4] w-full max-w-[190px] overflow-hidden bg-white/[0.03]"
                     style={{
                       borderRadius: "999px 999px 22px 22px",
                       border: "1px solid rgba(201,168,106,0.4)",
@@ -86,7 +86,7 @@ export default function ForHostsPage() {
               ))}
             </ol>
 
-            <div className="self-start rounded-2xl border border-border bg-card p-6">
+            <div className="self-start rounded-2xl border border-white/15 bg-white/[0.03] p-6">
               <p className="m-0 text-[22px] font-bold leading-snug">
                 Every event.
                 <br />
@@ -94,7 +94,7 @@ export default function ForHostsPage() {
               </p>
               <ul className="m-0 mt-4 list-none space-y-2.5 p-0">
                 {EVENT_TYPES.map((t) => (
-                  <li key={t} className="border-b border-border pb-2.5 text-[14px] last:border-0 last:pb-0">
+                  <li key={t} className="border-b border-white/15 pb-2.5 text-[14px] last:border-0 last:pb-0">
                     {t}
                   </li>
                 ))}
@@ -104,9 +104,9 @@ export default function ForHostsPage() {
         </section>
 
         {/* Tools */}
-        <section className="border-t border-border">
+        <section className="border-t border-white/15">
           <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-            <p className="m-0 text-center font-label text-accent">Everything you need, all in one place</p>
+            <p className="m-0 text-center font-label text-gold">Everything you need, all in one place</p>
             <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
               Powerful tools. Seamless experience.
             </h2>
@@ -114,10 +114,10 @@ export default function ForHostsPage() {
               {TOOLS.map((t) => (
                 <div key={t.title} className="text-center">
                   <span
-                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-pending"
+                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
                     style={{ border: "1px solid rgba(201,168,106,0.4)" }}
                   >
-                    <t.icon className="h-5 w-5 text-accent" aria-hidden />
+                    <t.icon className="h-5 w-5 text-gold" aria-hidden />
                   </span>
                   <p className="m-0 mt-3 text-[14px] font-bold">{t.title}</p>
                   <p className="m-0 mt-1 text-[13px] leading-relaxed">{t.body}</p>
@@ -127,14 +127,16 @@ export default function ForHostsPage() {
           </div>
         </section>
 
-        <ClosingBand
-          title={
-            <>
-              Let's make something <span className="font-editorial text-gold">unforgettable.</span>
-            </>
-          }
-          cta={{ label: "Find vendors", to: "/vendors" }}
-        />
+        <div className="border-t border-white/15">
+          <ClosingBand
+            title={
+              <>
+                Let's make something <span className="font-editorial text-gold">unforgettable.</span>
+              </>
+            }
+            cta={{ label: "Find vendors", to: "/vendors" }}
+          />
+        </div>
       </main>
 
       <Footer tone="dark" />
