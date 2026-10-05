@@ -442,9 +442,13 @@ function ConversationRow({
   row: InquiryRow;
   isFirst: boolean;
 }) {
-  const name = row.host?.display_name?.trim() || "Host";
+  const { t, i18n } = useTranslation("vendorInbox");
+  const { eventType } = usePriceLabels();
+  const name = row.host?.display_name?.trim() || t("row.host");
   const initial = name.charAt(0).toUpperCase();
-  const eventLabel = row.event_type.replace(/_/g, " ");
+  // Lower-case like the raw "holiday dinner" it replaces; the row's
+  // `capitalize` / `uppercase` classes style it.
+  const eventLabel = eventType(row.event_type).toLowerCase();
   // iMessage convention: blue dot whenever there's activity newer than
   // the last time the vendor opened this thread. Plain
   // "vendor_read_at == null" used to flip permanently off on first
@@ -465,8 +469,8 @@ function ConversationRow({
             transparent spacer so rows stay aligned. */}
         <span
           className="self-center shrink-0 w-2 h-2 rounded-full"
-          aria-label={isUnread ? "Unread" : undefined}
-          title={isUnread ? "Unread" : undefined}
+          aria-label={isUnread ? t("row.unread") : undefined}
+          title={isUnread ? t("row.unread") : undefined}
         >
           {isUnread ? (
             <span className="block w-2 h-2 rounded-full bg-gold" />
@@ -507,16 +511,17 @@ function ConversationRow({
             {row.lead_score && row.lead_score !== "unknown" ? (
               (() => {
                 const style = LEAD_SCORE_STYLE[row.lead_score];
+                const label = t(`lead.${row.lead_score}`);
                 return (
                   <span
                     className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider ${style.text}`}
                     title={row.lead_score_reason ?? undefined}
-                    aria-label={`Lead temperature: ${style.label}${
+                    aria-label={`${t("row.leadAria", { label })}${
                       row.lead_score_reason ? `. ${row.lead_score_reason}` : ""
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                    {style.label}
+                    {label}
                   </span>
                 );
               })()
