@@ -23,7 +23,7 @@ import tileCatering from "@/assets/categories/catering.jpg?as=picture";
 import tileBeauty from "@/assets/categories/beauty.jpg?as=picture";
 import tilePlanning from "@/assets/categories/planning.jpg?as=picture";
 import tileDecor from "@/assets/categories/decor.jpg?as=picture";
-import tileEntertainment from "@/assets/vendor-dj.jpg?as=picture";
+import tileEntertainment from "@/assets/categories/entertainment.jpg?as=picture";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
