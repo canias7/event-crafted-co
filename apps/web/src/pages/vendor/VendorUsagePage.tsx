@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { UnderConstructionPage } from "@/components/shared/UnderConstruction";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Usage hub for the vendor: live credit balance, period usage bar,
 // per-action cost reference, recent ledger, and the Stripe customer
@@ -103,12 +104,13 @@ function useUsageLabels() {
 // implementation below — VendorUsagePageImpl — and its backend stay
 // intact; re-enable by pointing the default export back at it.
 export default function VendorUsagePage() {
-  const { t } = useTranslation("vendorPlan");
-  return <UnderConstructionPage title={t("usage.title")} />;
+  // UnderConstructionPage takes the English page title and shows it in
+  // the visitor's language itself.
+  return <UnderConstructionPage title="Usage" />;
 }
 
 export function VendorUsagePageImpl() {
-  const { t, i18n } = useTranslation("vendorPlan");
+  const { t } = useTranslation("vendorPlan");
   const { formatActionType, kindLabel, dayShort, fmtHour } = useUsageLabels();
   const { ownListing, user } = useAuth();
   const vendorId = ownListing?.id ?? null;
@@ -326,7 +328,7 @@ export function VendorUsagePageImpl() {
 
   return (
     <div className="min-h-screen flex relative bg-[var(--vendor-canvas)]">
-      <DashboardSidebar items={navItems} title={t("sidebar_title")} backPath="/" />
+      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
@@ -493,7 +495,7 @@ export function VendorUsagePageImpl() {
                     }}
                   >
                     <div className="font-medium">
-                      {new Date(dailyTotals[hoveredBarIdx].date + "T00:00:00Z").toLocaleDateString(i18n.language, {
+                      {new Date(dailyTotals[hoveredBarIdx].date + "T00:00:00Z").toLocaleDateString(intlLocale(), {
                         weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
                       })}
                     </div>
@@ -517,7 +519,7 @@ export function VendorUsagePageImpl() {
                   const row = dailyTotals[idx];
                   if (!row) return null;
                   const d = new Date(row.date + "T00:00:00Z");
-                  const label = d.toLocaleDateString(i18n.language, {
+                  const label = d.toLocaleDateString(intlLocale(), {
                     month: "short",
                     day: "numeric",
                     timeZone: "UTC",
@@ -687,7 +689,7 @@ export function VendorUsagePageImpl() {
                                 : ""}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              {new Date(row.created_at).toLocaleString(i18n.language, {
+                              {new Date(row.created_at).toLocaleString(intlLocale(), {
                                 dateStyle: "medium", timeStyle: "short",
                               })}
                               {row.note ? ` — ${row.note}` : ""}

@@ -18,6 +18,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { compressImageIfNeeded } from "@/lib/imageCompress";
+import i18n from "@/i18n";
 
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 export const UPLOAD_CONCURRENCY = 5;
@@ -152,18 +153,17 @@ export async function uploadListingPhotos(
   return { paths, results };
 }
 
+// "Skipped 2 over 10 MB; 1 not images." in the vendor's language
+// (listingEditor namespace), or null when nothing was skipped.
 export function describeRejected(rejected: FileValidationResult["rejected"]): string | null {
   if (rejected.length === 0) return null;
+  const t = (key: string, count: number) => i18n.t(key, { ns: "listingEditor", count });
   const tooBig = rejected.filter((r) => r.reason === "size").length;
   const wrongType = rejected.filter((r) => r.reason === "type").length;
   const heic = rejected.filter((r) => r.reason === "heic").length;
   const parts: string[] = [];
-  if (tooBig > 0) parts.push(`${tooBig} over 10 MB`);
-  if (wrongType > 0) parts.push(`${wrongType} not images`);
-  if (heic > 0) {
-    parts.push(
-      `${heic} HEIC (iPhone) — convert to JPEG in the Photos app share menu`,
-    );
-  }
-  return `Skipped ${parts.join("; ")}.`;
+  if (tooBig > 0) parts.push(t("photos.skippedSize", tooBig));
+  if (wrongType > 0) parts.push(t("photos.skippedType", wrongType));
+  if (heic > 0) parts.push(t("photos.skippedHeic", heic));
+  return i18n.t("photos.skipped", { ns: "listingEditor", list: parts.join("; ") });
 }

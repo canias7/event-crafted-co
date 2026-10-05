@@ -29,6 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { intlLocale } from "@/lib/intlLocale";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
@@ -302,7 +303,7 @@ export function InquiryFormModal({
     const [y, m, d] = eventDate.split("-").map(Number);
     if (!y || !m || !d) return eventDate;
     const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString(i18n.language, {
+    return dt.toLocaleDateString(intlLocale(), {
       weekday: "short",
       month: "short",
       day: "numeric",

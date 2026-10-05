@@ -30,13 +30,7 @@ interface CoverageRow {
 
 const MILES_TO_METERS = 1609.34;
 
-export function VendorServiceAreaMap({
-  vendorId,
-  category,
-}: {
-  vendorId: string;
-  category: string;
-}) {
+export function VendorServiceAreaMap({ vendorId }: { vendorId: string }) {
   const { t } = useTranslation("vendorProfile");
   const [data, setData] = useState<CoverageRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,7 +95,7 @@ export function VendorServiceAreaMap({
         {t("serviceArea.eyebrow")}
       </p>
       <h2 className="font-editorial text-3xl mb-2">
-        {t("serviceArea.title", { category: category.toLowerCase() })}
+        {t("serviceArea.title")}
       </h2>
       <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
         {data.location

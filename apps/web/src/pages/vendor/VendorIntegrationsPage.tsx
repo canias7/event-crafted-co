@@ -206,7 +206,7 @@ export default function VendorIntegrationsPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
-        title={t("sidebar_title")}
+        title="Vendor Portal"
         backPath="/settings"
       />
       <main className="flex-1 pb-24 lg:pb-0">

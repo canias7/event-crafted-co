@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
@@ -7,9 +8,12 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 // integration would otherwise fall back to OS preference and produce
 // dark toasts on dark-mode machines.
 const Toaster = ({ ...props }: ToasterProps) => {
+  // Screen-reader name of the toast region (sonner appends the hotkey).
+  const { t } = useTranslation("ui");
   return (
     <Sonner
       theme="light"
+      containerAriaLabel={t("toasts.region")}
       className="toaster group"
       toastOptions={{
         classNames: {

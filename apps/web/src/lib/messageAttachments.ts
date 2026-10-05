@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import i18n from "@/i18n";
 
 const BUCKET = "message-attachments";
 export const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -118,10 +119,10 @@ export function validateAttachment(file: File): string | null {
   // ACCEPTED_MIME list still covers the common image / pdf cases).
   const isAcceptedAudio = file.type.startsWith("audio/");
   if (!isAcceptedAudio && !ACCEPTED_MIME.includes(file.type)) {
-    return `${file.name}: only JPG, PNG, WEBP, PDF, or audio`;
+    return i18n.t("attachments.bad_type", { ns: "messages", name: file.name });
   }
   if (file.size > MAX_BYTES) {
-    return `${file.name}: max 10 MB`;
+    return i18n.t("attachments.too_large", { ns: "messages", name: file.name });
   }
   return null;
 }

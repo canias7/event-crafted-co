@@ -50,5 +50,13 @@
     "no_audio": "No audio captured — hold to record",
     "mic_error": "Couldn't access mic",
     "mic_error_detail": "{{message}}"
+  },
+  "thread": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "attachments": {
+    "bad_type": "{{name}}: only JPG, PNG, WEBP, PDF, or audio",
+    "too_large": "{{name}}: max 10 MB"
   }
 }

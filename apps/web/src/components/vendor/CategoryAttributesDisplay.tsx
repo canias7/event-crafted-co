@@ -24,8 +24,12 @@ type Attrs = Record<string, AttrValue>;
 // Section names, field labels, suffixes and preset options in the
 // visitor's language (locales/<language>/vendorProfileParts.json,
 // keyed by the English text). The stored values stay English; a
-// vendor's own custom tag isn't in the list and shows as typed.
-type AttributeNames = Record<"section" | "label" | "suffix" | "option", (text: string) => string>;
+// vendor's own custom tag isn't in the list and shows as typed. An
+// option can read differently per field (fieldOptions.<field key>):
+// "Japanese" is "Japonés" as a language but "Japonesa" as a cuisine.
+type AttributeNames = Record<"section" | "label" | "suffix", (text: string) => string> & {
+  option: (text: string, field: string) => string;
+};
 
 function useAttributeNames(): AttributeNames {
   // `t` changes identity when the language changes, so the maps rebuild.
@@ -38,11 +42,19 @@ function useAttributeNames(): AttributeNames {
           ? String((names as Record<string, unknown>)[text])
           : text;
     };
+    const option = lookup("options");
+    const fieldOptions = t("attributes.fieldOptions", { returnObjects: true }) as unknown;
     return {
       section: lookup("sections"),
       label: lookup("labels"),
       suffix: lookup("suffixes"),
-      option: lookup("options"),
+      option: (text: string, field: string) => {
+        const own =
+          fieldOptions && typeof fieldOptions === "object"
+            ? (fieldOptions as Record<string, Record<string, string> | undefined>)[field]?.[text]
+            : undefined;
+        return own ?? option(text);
+      },
     };
   }, [t]);
 }
@@ -105,7 +117,7 @@ export function CategoryAttributesDisplay({
   return (
     <div className="space-y-7">
       <h2 className="font-editorial text-3xl sm:text-4xl text-foreground">
-        {t("attributes.title", { category: category.toLowerCase() })}
+        {t("attributes.title")}
       </h2>
       <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7">
         {populatedSections.map((section) => (
@@ -199,7 +211,7 @@ function FieldDisplay({
                 border: "0.5px solid rgba(0,0,0,0.3)",
               }}
             >
-              {names.option(t)}
+              {names.option(t, field.key)}
             </span>
           ))}
         </dd>
@@ -211,7 +223,7 @@ function FieldDisplay({
     return (
       <div className="flex items-baseline justify-between gap-3">
         <dt className="text-muted-foreground">{label}</dt>
-        <dd className="font-medium">{names.option(value)}</dd>
+        <dd className="font-medium">{names.option(value, field.key)}</dd>
       </div>
     );
   }

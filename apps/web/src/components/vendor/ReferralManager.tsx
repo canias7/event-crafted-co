@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { intlLocale } from "@/lib/intlLocale";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,13 @@ const statusBadge: Record<string, { className: string }> = {
 
 const refsTable = () => supabase.from("vendor_referrals");
 
+// In Spanish, the site's date format; in English, the browser default
+// as before.
+function shortDate(iso: string) {
+  const locale = intlLocale();
+  return new Date(iso).toLocaleDateString(locale.startsWith("es") ? locale : undefined);
+}
+
 export function ReferralManager({
   vendorId,
   canEdit,
@@ -56,7 +64,7 @@ export function ReferralManager({
   vendorId: string;
   canEdit: boolean;
 }) {
-  const { t, i18n } = useTranslation("vendorTools");
+  const { t } = useTranslation("vendorTools");
   const [refs, setRefs] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -220,8 +228,8 @@ export function ReferralManager({
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {t("referrals.sentExpires", {
-                      sent: new Date(r.created_at).toLocaleDateString(i18n.language),
-                      expires: new Date(r.expires_at).toLocaleDateString(i18n.language),
+                      sent: shortDate(r.created_at),
+                      expires: shortDate(r.expires_at),
                     })}
                   </p>
                 </div>

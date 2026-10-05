@@ -50,5 +50,13 @@
     "no_audio": "No se captó audio — mantén presionado para grabar",
     "mic_error": "No se pudo acceder al micrófono",
     "mic_error_detail": "No se pudo acceder al micrófono: {{message}}"
+  },
+  "thread": {
+    "today": "Hoy",
+    "yesterday": "Ayer"
+  },
+  "attachments": {
+    "bad_type": "{{name}}: solo se aceptan JPG, PNG, WEBP, PDF o audio",
+    "too_large": "{{name}}: máximo 10 MB"
   }
 }

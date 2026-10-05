@@ -8,7 +8,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import { usePriceLabels } from "@/lib/priceLabels";
 import {
   Bell,
@@ -24,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface ClientRow {
   host_id: string;
@@ -79,7 +79,7 @@ function initials(name: string): string {
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
-  return d.toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(intlLocale(), { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function VendorCrmPage() {

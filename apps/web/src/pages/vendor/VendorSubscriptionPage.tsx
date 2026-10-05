@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Subscription + AI credits surface for the vendor.
 //
@@ -597,7 +598,7 @@ export default function VendorSubscriptionPage() {
 
   return (
     <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title={t("sidebar_title")} backPath="/" />
+      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main id="main-content" className="flex-1 pb-24 lg:pb-0 relative">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
@@ -1023,7 +1024,7 @@ function BillingPanel({
   // no customer yet, so those controls are hidden unless this is true.
   hasBilling: boolean;
 }) {
-  const { t, i18n } = useTranslation("vendorPlan");
+  const { t } = useTranslation("vendorPlan");
   const [invoicesExpanded, setInvoicesExpanded] = useState(false);
 
   async function openPortal(action: "update" | "cancel") {
@@ -1160,7 +1161,7 @@ function BillingPanel({
                   }`}
                 >
                   {visible.map((row) => {
-                    const dateLabel = row.date.toLocaleDateString(i18n.language, {
+                    const dateLabel = row.date.toLocaleDateString(intlLocale(), {
                       month: "short",
                       day: "numeric",
                       year: "numeric",

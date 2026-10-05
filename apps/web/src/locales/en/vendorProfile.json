@@ -188,12 +188,12 @@
   },
   "serviceArea": {
     "eyebrow": "Service area",
-    "title": "Where {{category}}s travel",
+    "title": "Where this vendor travels",
     "basedIn": "Based in {{location}}. Travels up to {{miles}} miles for events.",
     "travels": "Travels up to {{miles}} miles for events."
   },
   "attributes": {
-    "title": "About this {{category}}"
+    "title": "About this vendor"
   },
   "report": {
     "button": "Report",

@@ -3,7 +3,7 @@
     "label": "Notificaciones",
     "label_unread": "Notificaciones, {{unread}} sin leer",
     "title": "Notificaciones",
-    "mark_all_read": "Marcar todo como leído",
+    "mark_all_read": "Marcar leídas",
     "loading": "Cargando…",
     "empty_title": "Estás al día",
     "empty_body": "Te avisaremos cuando pase algo.",

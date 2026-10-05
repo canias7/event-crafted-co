@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { SubNavTabs } from "@/components/shared/SubNavTabs";
 import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
+import { intlLocale } from "@/lib/intlLocale";
 
 // iMessage-style conversation list. Each row is one inquiry from a
 // host. Status is a single colored dot at the left edge (new = amber,
@@ -61,7 +62,7 @@ const LEAD_SCORE_STYLE: Record<
   },
 };
 
-function relativeTime(iso: string | null, t: TFunction, language: string): string {
+function relativeTime(iso: string | null, t: TFunction): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
@@ -72,7 +73,7 @@ function relativeTime(iso: string | null, t: TFunction, language: string): strin
   const d = Math.floor(h / 24);
   if (d === 1) return t("time.yesterday");
   if (d < 7) return t("time.days", { n: d });
-  return new Date(iso).toLocaleDateString(language, {
+  return new Date(iso).toLocaleDateString(intlLocale(), {
     month: "short",
     day: "numeric",
   });
@@ -442,13 +443,13 @@ function ConversationRow({
   row: InquiryRow;
   isFirst: boolean;
 }) {
-  const { t, i18n } = useTranslation("vendorInbox");
+  const { t } = useTranslation("vendorInbox");
   const { eventType } = usePriceLabels();
   const name = row.host?.display_name?.trim() || t("row.host");
   const initial = name.charAt(0).toUpperCase();
-  // Lower-case like the raw "holiday dinner" it replaces; the row's
-  // `capitalize` / `uppercase` classes style it.
-  const eventLabel = eventType(row.event_type).toLowerCase();
+  // The row's `capitalize` class title-cases it in English ("Holiday
+  // Dinner"); Spanish keeps sentence case.
+  const eventLabel = eventType(row.event_type);
   // iMessage convention: blue dot whenever there's activity newer than
   // the last time the vendor opened this thread. Plain
   // "vendor_read_at == null" used to flip permanently off on first
@@ -539,7 +540,7 @@ function ConversationRow({
 
         {/* Timestamp */}
         <span className="shrink-0 text-[11px] text-muted-foreground self-start tnum">
-          {relativeTime(row.last_message_at, t, i18n.language)}
+          {relativeTime(row.last_message_at, t)}
         </span>
       </Link>
     </li>

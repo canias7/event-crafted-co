@@ -1,5 +1,4 @@
 {
-  "sidebar_title": "Portal del proveedor",
   "credits": {
     "out_of_credits_action_one": "Sin créditos: esta acción necesitaba {{count}} crédito.",
     "out_of_credits_action_other": "Sin créditos: esta acción necesitaba {{count}} créditos.",
@@ -115,11 +114,11 @@
     "invoice_fallback": "Factura {{id}}",
     "line_item": "Concepto",
     "status": {
-      "paid": "pagada",
-      "open": "abierta",
-      "draft": "borrador",
-      "void": "anulada",
-      "uncollectible": "incobrable"
+      "paid": "Pagada",
+      "open": "Pendiente",
+      "draft": "Borrador",
+      "void": "Anulada",
+      "uncollectible": "Incobrable"
     },
     "view": "Ver",
     "download_pdf": "Descargar PDF",
@@ -169,10 +168,10 @@
       "sat": "S",
       "sun": "D"
     },
-    "hour_midnight": "12 a. m.",
-    "hour_noon": "12 p. m.",
-    "hour_am": "{{hour}} a. m.",
-    "hour_pm": "{{hour}} p. m.",
+    "hour_midnight": "12 a.m.",
+    "hour_noon": "12 p.m.",
+    "hour_am": "{{hour}} a.m.",
+    "hour_pm": "{{hour}} p.m.",
     "axis_hours": {
       "h0": "12a",
       "h6": "6a",

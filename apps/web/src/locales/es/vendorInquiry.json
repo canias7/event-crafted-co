@@ -19,8 +19,6 @@
     "close": "Cerrar consulta"
   },
   "thread": {
-    "today": "Hoy",
-    "yesterday": "Ayer",
     "deleted": "Mensaje eliminado",
     "sentAutomatically": "Enviado automáticamente",
     "cancel": "Cancelar",
@@ -67,8 +65,6 @@
     "markedClosed": "Marcada como cerrada",
     "reopened": "Reabierta",
     "maxFiles": "Hasta {{max}} archivos adjuntos por mensaje",
-    "fileType": "{{name}}: solo JPG, PNG, WEBP, PDF o audio",
-    "fileTooLarge": "{{name}}: máximo 10 MB",
     "invoiceLoadFailed": "No se pudo cargar esa factura.",
     "uploadFailed": "No se pudieron subir tus archivos adjuntos — el mensaje no se envió.",
     "partialUpload": "Archivos adjuntos subidos: {{uploaded}} de {{total}}."

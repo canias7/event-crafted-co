@@ -23,6 +23,7 @@ import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategoryNames } from "@/lib/categoryNames";
 import { usePriceLabels } from "@/lib/priceLabels";
+import { intlLocale } from "@/lib/intlLocale";
 
 type Tab = "listing" | "grid" | "reels" | "buzz";
 
@@ -602,5 +603,5 @@ function timeAgo(iso: string): string {
   if (diff < 3600) return tr("minutes", Math.floor(diff / 60));
   if (diff < 86400) return tr("hours", Math.floor(diff / 3600));
   if (diff < 604800) return tr("days", Math.floor(diff / 86400));
-  return new Date(iso).toLocaleDateString(i18n.language);
+  return new Date(iso).toLocaleDateString(intlLocale());
 }

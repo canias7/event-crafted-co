@@ -72,12 +72,14 @@ import {
 } from "@/lib/messageAttachments";
 import {
   QUICK_EMOJIS,
+  daySeparator,
   groupMessages,
   type GroupedItem,
 } from "@/lib/threadFormatting";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Vendor-to-vendor partner messaging — separate from host conversations.
 // Threads are keyed on profiles.id (the user account) so a vendor with
@@ -145,7 +147,7 @@ interface PartnerMessage {
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-function relativeTime(iso: string | null, t: Translate, language: string): string {
+function relativeTime(iso: string | null, t: Translate): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
@@ -156,7 +158,7 @@ function relativeTime(iso: string | null, t: Translate, language: string): strin
   const d = Math.floor(h / 24);
   if (d === 1) return t("time.yesterday");
   if (d < 7) return t("time.days", { n: d });
-  return new Date(iso).toLocaleDateString(language, {
+  return new Date(iso).toLocaleDateString(intlLocale(), {
     month: "short",
     day: "numeric",
   });
@@ -171,7 +173,7 @@ const reactionsTable = () =>
   (supabase as any).from("vendor_partner_message_reactions");
 
 export default function VendorPartnersPage() {
-  const { t, i18n } = useTranslation("vendorPartners");
+  const { t } = useTranslation("vendorPartners");
   const { user } = useAuth();
   const myUserId = user?.id ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -807,7 +809,7 @@ export default function VendorPartnersPage() {
 
   return (
     <div className="flex h-screen vendor-canvas overflow-hidden">
-      <DashboardSidebar items={navItems} title={t("sidebar_title")} backPath="/" />
+      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
 
       <main
         id="main-content"
@@ -959,7 +961,7 @@ export default function VendorPartnersPage() {
                               {name}
                             </p>
                             <span className="shrink-0 text-[11px] text-muted-foreground tnum">
-                              {relativeTime(th.last_message_at, t, i18n.language)}
+                              {relativeTime(th.last_message_at, t)}
                             </span>
                           </div>
                           <p
@@ -1166,7 +1168,7 @@ function PartnerChatPane(props: {
     saveEdit,
     deleteMessage,
   } = props;
-  const { t, i18n } = useTranslation("vendorPartners");
+  const { t } = useTranslation("vendorPartners");
 
   const initial = (otherVendorName?.trim()?.charAt(0) ?? "V").toUpperCase();
 
@@ -1289,15 +1291,23 @@ function PartnerChatPane(props: {
               {t("chat.empty")}
             </p>
           ) : (
-            groupedItems.map((it) => {
+            groupedItems.map((it, idx) => {
               if (it.kind === "sep") {
+                // Label the day at render time (it's the next message's
+                // day) so it follows a language switch; groupedItems is
+                // memoized on the messages only.
+                const next = groupedItems[idx + 1];
+                const sepLabel =
+                  next && next.kind === "msg"
+                    ? daySeparator(next.message.created_at)
+                    : it.label;
                 return (
                   <div
                     key={it.key}
                     className="flex items-center justify-center py-3"
                   >
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border-sm">
-                      {it.label}
+                      {sepLabel}
                     </span>
                   </div>
                 );
@@ -1457,7 +1467,7 @@ function PartnerChatPane(props: {
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
-                        {new Date(m.created_at).toLocaleTimeString(i18n.language, {
+                        {new Date(m.created_at).toLocaleTimeString(intlLocale(), {
                           hour: "numeric",
                           minute: "2-digit",
                         })}

@@ -1,5 +1,4 @@
 {
-  "sidebar_title": "Portal del proveedor",
   "vendor_fallback": "Proveedor",
   "time": {
     "now": "ahora",
@@ -17,7 +16,7 @@
     "empty_body": "Abre el perfil de un proveedor y toca “Escribir al proveedor” para empezar a coordinar directamente.",
     "you_prefix": "Tú: ",
     "no_messages": "Aún no hay mensajes",
-    "unread": "No leído"
+    "unread": "Sin leer"
   },
   "you": "Tú",
   "message_deleted": "Mensaje eliminado",
@@ -64,7 +63,7 @@
     "send": "Enviar"
   },
   "find": {
-    "title": "Busca un proveedor",
+    "title": "Buscar un proveedor",
     "subtitle": "Busca cualquier proveedor aprobado por el nombre de su negocio para iniciar un chat.",
     "placeholder": "Buscar proveedores…",
     "aria": "Buscar proveedores por nombre del negocio",

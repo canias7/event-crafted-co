@@ -8,6 +8,7 @@
 
 import { useTranslation } from "react-i18next";
 import type { InvoiceTemplate } from "@/data/vendorapayTemplates";
+import { intlLocale } from "@/lib/intlLocale";
 
 // The document chrome (labels and [placeholders]) is translated from
 // locales/<lang>/vendorPayments.json → invoice_preview; amounts stay
@@ -25,10 +26,13 @@ const RULE = "#e8e3dd";
 const ACCENT_WARM = "#1a1410";
 const ACCENT_COOL = "#1e2840";
 
+// Amounts keep the US format in English and follow US Spanish in
+// Spanish (same digits: $1,234.00).
 function money(n: number): string {
+  const locale = intlLocale();
   return (
     "$" +
-    n.toLocaleString("en-US", {
+    n.toLocaleString(locale.startsWith("es") ? locale : "en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })

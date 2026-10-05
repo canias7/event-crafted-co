@@ -4,7 +4,6 @@
 // a status pill.
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import {
   Check,
   Clock,
@@ -18,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import type { ListingOpt } from "@/components/vendor/ListingPicker";
 import { downloadDocumentPdf } from "@/lib/documentPdf";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface SentProposal {
   id: string;
@@ -41,7 +41,7 @@ function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(intlLocale(), { month: "short", day: "numeric", year: "numeric" });
 }
 
 function StatusPill({ status }: { status: string }) {

@@ -14,7 +14,9 @@ import type { SubNavTab } from "@/components/shared/SubNavTabs";
 // host DMs) was dropped along with VendorMessagesPage and the
 // find_or_create_direct_thread RPC — host → vendor messaging always
 // goes through an inquiry now.
+// Tab names are shown in the visitor's language via labelKey ("portal"
+// namespace); label is the English fallback.
 export const VENDOR_INBOX_HUB_TABS: SubNavTab[] = [
-  { label: "Inquiries", to: "/vendor/inbox" },
-  { label: "Vendors", to: "/vendor/partners" },
+  { label: "Inquiries", labelKey: "hub_tabs.inquiries", to: "/vendor/inbox" },
+  { label: "Vendors", labelKey: "hub_tabs.vendors", to: "/vendor/partners" },
 ];

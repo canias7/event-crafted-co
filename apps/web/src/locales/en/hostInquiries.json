@@ -31,7 +31,7 @@
       "clearFilter": "Clear filter"
     },
     "unread": "Unread",
-    "guests_one": "guests",
+    "guests_one": "guest",
     "guests_other": "guests",
     "budget": "Budget: {{min}} – {{max}}",
     "time": {

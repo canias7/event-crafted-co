@@ -32,7 +32,7 @@
     "goLive": "Go live",
     "manageLive": "Manage live",
     "pastLives": "Past lives ({{n}})",
-    "guests_one": "{{count}} guests",
+    "guests_one": "{{count}} guest",
     "guests_other": "{{count}} guests",
     "going_one": "{{count}} going",
     "going_other": "{{count}} going",

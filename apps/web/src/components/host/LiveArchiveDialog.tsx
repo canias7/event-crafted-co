@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Archive of finalized recordings for a single host event live stream.
 // Each row is one past broadcast. The "Watch" button opens the public
@@ -47,7 +48,7 @@ function fmtDuration(seconds: number | null): string {
 
 function fmtWhen(iso: string | null, fallbackIso: string): string {
   const target = iso ?? fallbackIso;
-  return new Date(target).toLocaleString(i18n.language, {
+  return new Date(target).toLocaleString(intlLocale(), {
     month: "short",
     day: "numeric",
     year: "numeric",

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { usePriceLabels } from "@/lib/priceLabels";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
@@ -31,7 +30,7 @@ import {
   Loader2,
   Smile,
 } from "lucide-react";
-import { groupMessages, isSameDay } from "@/lib/threadFormatting";
+import { daySeparator, groupMessages } from "@/lib/threadFormatting";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -64,6 +63,7 @@ import {
 import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface Inquiry {
   id: string;
@@ -129,27 +129,11 @@ function draftKey(inquiryId: string | undefined): string | null {
 }
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
-}
-
-// Day separator in the thread ("Today" / "Yesterday" / "Monday, Mar 5"),
-// in the vendor's language. Same rules as daySeparator() in
-// lib/threadFormatting, which only speaks English.
-function daySeparatorText(iso: string, t: TFunction, language: string): string {
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (isSameDay(iso, now.toISOString())) return t("thread.today");
-  if (isSameDay(iso, yesterday.toISOString())) return t("thread.yesterday");
-  return new Date(iso).toLocaleDateString(language, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
+  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
 }
 
 export default function InquiryDetailPage() {
-  const { t, i18n } = useTranslation("vendorInquiry");
+  const { t } = useTranslation("vendorInquiry");
   const priceLabels = usePriceLabels();
   const { inquiryId } = useParams();
   const navigate = useNavigate();
@@ -674,14 +658,7 @@ export default function InquiryDetailPage() {
     for (const f of Array.from(list)) {
       const err = validateAttachment(f);
       if (err) {
-        // validateAttachment words its error in English ("<name>: max
-        // 10 MB" or "<name>: only JPG, …"); say the same in the
-        // vendor's language.
-        toast.error(
-          t(err.endsWith("max 10 MB") ? "toast.fileTooLarge" : "toast.fileType", {
-            name: f.name,
-          }),
-        );
+        toast.error(err);
         continue;
       }
       if (pendingFiles.length + accepted.length >= MAX_FILES) {
@@ -891,7 +868,7 @@ export default function InquiryDetailPage() {
       ? inquiry.host_read_at
       : null;
   const seenTimeLabel = seenAt
-    ? new Date(seenAt).toLocaleTimeString(i18n.language, {
+    ? new Date(seenAt).toLocaleTimeString(intlLocale(), {
         hour: "numeric",
         minute: "2-digit",
       })
@@ -969,7 +946,7 @@ export default function InquiryDetailPage() {
                   })
                 : t("header.inquiry")}
               {inquiry.event_date
-                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(i18n.language, {
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(intlLocale(), {
                     month: "short",
                     day: "numeric",
                   })}`
@@ -1066,7 +1043,8 @@ export default function InquiryDetailPage() {
             groupedItems.map((it, itemIndex) => {
               if (it.kind === "sep") {
                 // A separator always comes right before the first
-                // message of its day; label it from that message.
+                // message of its day; label it from that message at
+                // render time, so it follows a language switch.
                 const nextItem = groupedItems[itemIndex + 1];
                 return (
                   <div
@@ -1075,7 +1053,7 @@ export default function InquiryDetailPage() {
                   >
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
                       {nextItem && nextItem.kind === "msg"
-                        ? daySeparatorText(nextItem.message.created_at, t, i18n.language)
+                        ? daySeparator(nextItem.message.created_at)
                         : it.label}
                     </span>
                   </div>
@@ -1253,7 +1231,7 @@ export default function InquiryDetailPage() {
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
-                        {new Date(m.created_at).toLocaleTimeString(i18n.language, {
+                        {new Date(m.created_at).toLocaleTimeString(intlLocale(), {
                           hour: "numeric",
                           minute: "2-digit",
                         })}
@@ -1605,12 +1583,12 @@ function InquiryIntakeCard({
   inquiry: Inquiry;
   hostInitial: string;
 }) {
-  const { t, i18n } = useTranslation("vendorInquiry");
+  const { t } = useTranslation("vendorInquiry");
   const { eventType } = usePriceLabels();
   // "Holiday Dinner"; "Event" when there's no type.
   const eventLabel = eventType(inquiry.event_type);
   const dateStr = inquiry.event_date
-    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(i18n.language, {
+    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(intlLocale(), {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -1728,7 +1706,7 @@ function InquiryPreviewSheet({
   hostName: string;
   onClose: () => void;
 }) {
-  const { t, i18n } = useTranslation("vendorInquiry");
+  const { t } = useTranslation("vendorInquiry");
   const { eventType } = usePriceLabels();
   // Escape closes the sheet — mirrors the MediaLightbox pattern.
   useEffect(() => {
@@ -1778,14 +1756,14 @@ function InquiryPreviewSheet({
     };
   }, [inquiry.vendor_id, inquiry.intake_answers]);
 
-  // Lower-case like the raw "holiday dinner" it replaces; the
-  // element's `capitalize` class title-cases it.
-  const eventLabel = eventType(inquiry.event_type).toLowerCase();
+  // The element's `capitalize` class title-cases it in English
+  // ("Holiday Dinner"); Spanish keeps sentence case.
+  const eventLabel = eventType(inquiry.event_type);
   const dateStr = inquiry.event_date
     ? (() => {
         const [y, m, d] = inquiry.event_date.split("T")[0].split("-").map(Number);
         if (!y || !m || !d) return inquiry.event_date;
-        return new Date(y, m - 1, d).toLocaleDateString(i18n.language, {
+        return new Date(y, m - 1, d).toLocaleDateString(intlLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",

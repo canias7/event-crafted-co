@@ -7,6 +7,7 @@ import { Footer } from "@/components/public/Footer";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CHANGELOG, type ChangelogCategory } from "@/data/changelog";
+import { intlLocale } from "@/lib/intlLocale";
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
@@ -34,13 +35,8 @@ const CATEGORY_META: Record<
   },
 };
 
-// Dates follow the page's language. When the browser is set to that
-// same language, its regional format is kept (en-GB "4 Oct 2026").
-function dateLocale(language: string) {
-  const browser = typeof navigator !== "undefined" ? navigator.language : "";
-  return browser && browser.split("-")[0] === language.split("-")[0] ? browser : language;
-}
-
+// Dates follow the page's language (intlLocale: US Spanish, or the
+// browser's own English format such as en-GB "4 Oct 2026").
 // "October 2026" / "Octubre de 2026" for a "YYYY-MM" month.
 function monthLabel(yearMonth: string, locale: string) {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -63,8 +59,8 @@ function dayLabel(date: string, locale: string) {
 }
 
 export default function ChangelogPage() {
-  const { t, i18n } = useTranslation("changelog");
-  const locale = dateLocale(i18n.language);
+  const { t } = useTranslation("changelog");
+  const locale = intlLocale();
 
   useDocumentMeta({
     title: t("meta.title"),

@@ -127,7 +127,7 @@
     "movedToUncategorized_other": "{{count}} moved to Uncategorized.",
     "albumEmpty": "This album has no images.",
     "albumZipCap": "Album zip is capped at 50 images (album has {{size}}). Use Select + Download zip in batches.",
-    "downloaded_one": "Downloaded {{count}} images.",
+    "downloaded_one": "Downloaded {{count}} image.",
     "downloaded_other": "Downloaded {{count}} images.",
     "zipFailed": "Couldn't build zip.",
     "zipCap": "Zip is capped at 50 images per batch (selected {{size}}). Download in smaller groups.",

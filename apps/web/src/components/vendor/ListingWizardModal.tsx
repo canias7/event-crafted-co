@@ -13,7 +13,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { Crown, GripVertical, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -46,7 +45,7 @@ import { useCategoryNames } from "@/lib/categoryNames";
 import { usePriceLabels } from "@/lib/priceLabels";
 import {
   UploadCancelledError,
-  type FileValidationResult,
+  describeRejected,
   uploadListingPhotos,
   validateListingPhotos,
 } from "@/lib/listingPhotoUpload";
@@ -94,23 +93,6 @@ type Attrs = Record<string, AttrValue>;
 interface PickedPhoto {
   id: string;
   file: File;
-}
-
-// describeRejected() from @/lib/listingPhotoUpload, in the vendor's
-// language: "Skipped 2 over 10 MB; 1 not images."
-function describeRejectedPhotos(
-  t: TFunction,
-  rejected: FileValidationResult["rejected"],
-): string | null {
-  if (rejected.length === 0) return null;
-  const tooBig = rejected.filter((r) => r.reason === "size").length;
-  const wrongType = rejected.filter((r) => r.reason === "type").length;
-  const heic = rejected.filter((r) => r.reason === "heic").length;
-  const parts: string[] = [];
-  if (tooBig > 0) parts.push(t("photos.skippedSize", { count: tooBig }));
-  if (wrongType > 0) parts.push(t("photos.skippedType", { count: wrongType }));
-  if (heic > 0) parts.push(t("photos.skippedHeic", { count: heic }));
-  return t("photos.skipped", { list: parts.join("; ") });
 }
 
 export function ListingWizardModal({
@@ -301,7 +283,7 @@ export function ListingWizardModal({
       }));
       setPhotos((prev) => [...prev, ...wrapped].slice(0, MAX_PHOTOS));
     }
-    const skip = describeRejectedPhotos(t, rejected);
+    const skip = describeRejected(rejected);
     if (skip) toast.warning(skip);
   }
 
@@ -836,7 +818,7 @@ export function ListingWizardModal({
             onClick={handleSaveDraft}
             disabled={submitting || !hasDraftContent}
           >
-            {t("common.saveDraft")}
+            {t("wizard.saveDraft")}
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
             {submitting ? (

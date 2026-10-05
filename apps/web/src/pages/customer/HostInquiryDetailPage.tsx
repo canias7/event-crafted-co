@@ -57,6 +57,7 @@ import {
   type VendorCardAttachment,
 } from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface Inquiry {
   id: string;
@@ -116,7 +117,7 @@ function daySeparatorLabel(iso: string): string {
   if (isSameDay(iso, yesterday.toISOString())) {
     return i18n.t("detail.yesterday", { ns: "hostInquiries" });
   }
-  return new Date(iso).toLocaleDateString(i18n.language, {
+  return new Date(iso).toLocaleDateString(intlLocale(), {
     weekday: "long",
     month: "short",
     day: "numeric",
@@ -124,14 +125,14 @@ function daySeparatorLabel(iso: string): string {
 }
 
 function fmtClock(iso: string): string {
-  return new Date(iso).toLocaleTimeString(i18n.language, {
+  return new Date(iso).toLocaleTimeString(intlLocale(), {
     hour: "numeric",
     minute: "2-digit",
   });
 }
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
 }
 
 // localStorage key for the in-flight draft, scoped per inquiry so two
@@ -837,7 +838,7 @@ export default function HostInquiryDetailPage() {
                   })
                 : t("detail.inquiry")}
               {inquiry.event_date
-                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(i18n.language, {
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(intlLocale(), {
                     month: "short",
                     day: "numeric",
                   })}`

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Star, MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Mirror of the WITH CHECK clause on review_responses UPDATE:
 // `created_at > now() - interval '10 minutes'`. Keep in sync with
@@ -25,7 +25,7 @@ const EDIT_WINDOW_MS = 10 * 60 * 1000;
 function fmtShortDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(i18n.language, {
+  return d.toLocaleDateString(intlLocale(), {
     month: "short",
     day: "numeric",
     year: "numeric",

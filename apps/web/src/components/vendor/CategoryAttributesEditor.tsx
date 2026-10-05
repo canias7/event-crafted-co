@@ -32,8 +32,11 @@ type Attrs = Record<string, AttrValue>;
 // same words), help text from this editor's own. The schema in
 // @vendora/core stays English: the mobile apps share it, and option
 // strings are the values saved to category_attributes. A vendor's
-// custom tag isn't in the lists and shows as typed.
-type SchemaText = Record<"section" | "label" | "suffix" | "option" | "help", (text: string) => string>;
+// custom tag isn't in the lists and shows as typed. An option can read
+// differently per field (fieldOptions.<field key>), as on the listing.
+type SchemaText = Record<"section" | "label" | "suffix" | "help", (text: string) => string> & {
+  option: (text: string, field: string) => string;
+};
 
 function useSchemaText(): SchemaText {
   // `t` changes identity when the language changes, so the maps rebuild.
@@ -45,11 +48,19 @@ function useSchemaText(): SchemaText {
         ? String((names as Record<string, unknown>)[text])
         : text;
     const shared = (group: string) => lookup(t(`attributes.${group}`, { returnObjects: true }));
+    const option = shared("options");
+    const fieldOptions = t("attributes.fieldOptions", { returnObjects: true }) as unknown;
     return {
       section: shared("sections"),
       label: shared("labels"),
       suffix: shared("suffixes"),
-      option: shared("options"),
+      option: (text: string, field: string) => {
+        const own =
+          fieldOptions && typeof fieldOptions === "object"
+            ? (fieldOptions as Record<string, Record<string, string> | undefined>)[field]?.[text]
+            : undefined;
+        return own ?? option(text);
+      },
       help: lookup(tEditor("attributes.help", { returnObjects: true })),
     };
   }, [t, tEditor]);
@@ -375,7 +386,7 @@ function FieldEditor({
                 aria-pressed={active}
               >
                 {active && <Check className="w-3 h-3" />}
-                {tx.option(opt)}
+                {tx.option(opt, field.key)}
               </button>
             );
           })}
@@ -424,7 +435,7 @@ function FieldEditor({
           <option value="">—</option>
           {field.options.map((opt) => (
             <option key={opt} value={opt}>
-              {tx.option(opt)}
+              {tx.option(opt, field.key)}
             </option>
           ))}
         </select>

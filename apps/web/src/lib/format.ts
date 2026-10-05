@@ -2,13 +2,10 @@
 // timestamps render consistently across the app. Pages that don't
 // import these still work — but new code should.
 //
-// Locale defaults to the browser's preferred locale; users with
-// "en-US" get US formats, "es-MX" gets Spanish, etc. We don't lock
-// to en-US.
+// Locale follows the site language (see intlLocale): US Spanish when
+// the site is in Spanish, the browser's English variant otherwise.
 
-const DEFAULT_LOCALE = typeof navigator !== "undefined"
-  ? navigator.language
-  : "en-US";
+import { intlLocale } from "@/lib/intlLocale";
 
 // ─── Dates ───
 
@@ -21,21 +18,21 @@ export function formatDate(
   if (!d) return "—";
   if (style === "iso") return d.toISOString().slice(0, 10);
   if (style === "short") {
-    return d.toLocaleDateString(DEFAULT_LOCALE, {
+    return d.toLocaleDateString(intlLocale(), {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
   }
   if (style === "weekday") {
-    return d.toLocaleDateString(DEFAULT_LOCALE, {
+    return d.toLocaleDateString(intlLocale(), {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
     });
   }
-  return d.toLocaleDateString(DEFAULT_LOCALE, {
+  return d.toLocaleDateString(intlLocale(), {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -50,7 +47,7 @@ export function formatTime(
   if (!input) return "—";
   const d = parseInput(input);
   if (!d) return "—";
-  return d.toLocaleTimeString(DEFAULT_LOCALE, {
+  return d.toLocaleTimeString(intlLocale(), {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -106,7 +103,7 @@ export function formatRelative(
   }
 
   // RelativeTimeFormat is widely supported in modern browsers.
-  return new Intl.RelativeTimeFormat(DEFAULT_LOCALE, {
+  return new Intl.RelativeTimeFormat(intlLocale(), {
     numeric: "auto",
   }).format(value, unit);
 }
@@ -118,7 +115,7 @@ export function formatCents(
   opts: { fallback?: string; currency?: string } = {},
 ): string {
   if (cents == null) return opts.fallback ?? "—";
-  return new Intl.NumberFormat(DEFAULT_LOCALE, {
+  return new Intl.NumberFormat(intlLocale(), {
     style: "currency",
     currency: opts.currency ?? "USD",
     minimumFractionDigits: 0,

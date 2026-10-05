@@ -23,6 +23,7 @@ const InquiryFormModal = lazyWithReload(() =>
   })),
 );
 import { customerNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface InquiryRow {
   id: string;
@@ -56,7 +57,7 @@ const statusStyles: Record<string, string> = {
 const LABELLED_STATUSES = ["new", "replied", "won", "lost", "expired"];
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
 }
 
 const AVATAR_COLORS = [
@@ -97,7 +98,7 @@ function relativeTime(iso: string | null): string {
   const d = Math.floor(h / 24);
   if (d === 1) return tr("yesterday");
   if (d < 7) return tr("days", d);
-  return new Date(iso).toLocaleDateString(i18n.language, {
+  return new Date(iso).toLocaleDateString(intlLocale(), {
     month: "short",
     day: "numeric",
   });

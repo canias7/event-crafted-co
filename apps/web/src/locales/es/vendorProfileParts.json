@@ -693,6 +693,16 @@
       "Uniforms provided": "Uniformes incluidos",
       "Multilingual staff": "Personal multilingüe",
       "On-call backup": "Personal de respaldo disponible"
+    },
+    "fieldOptions": {
+      "mc_languages": {
+        "Japanese": "Japonés",
+        "Korean": "Coreano"
+      },
+      "host_languages": {
+        "Japanese": "Japonés",
+        "Korean": "Coreano"
+      }
     }
   }
 }

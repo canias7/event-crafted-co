@@ -13,6 +13,7 @@ import { customerNavItems, setLastDashboardSide, vendorNavItems } from "@/data/n
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { useLiveVendorBalance } from "@/hooks/useVendorCredits";
+import { intlLocale } from "@/lib/intlLocale";
 
 // 'studio' is Premium's internal slug (kept for Stripe/webhook
 // compat); 'starter' is a retired, grandfathered tier. Labels and chip
@@ -87,6 +88,12 @@ export function DashboardSidebar({
   // top-ups, without a refresh.
   const { balance: liveBalance, initialized: balanceReady } =
     useLiveVendorBalance(isVendorSide ? user?.id ?? null : null);
+  // Spanish formats the count with the site's US-Spanish locale; English
+  // keeps the browser default it always used.
+  const numberLocale = intlLocale();
+  const balanceText = liveBalance.toLocaleString(
+    numberLocale.startsWith("es") ? numberLocale : undefined,
+  );
 
   // Stash the active side so cross-cutting pages (/settings, /support)
   // know which sidebar to render when the user clicks over. Without
@@ -176,10 +183,10 @@ export function DashboardSidebar({
             className="text-[11px] font-medium tnum shrink-0 text-foreground"
             aria-label={tp("sidebar.credits", {
               count: liveBalance,
-              balance: liveBalance.toLocaleString(),
+              balance: balanceText,
             })}
           >
-            {liveBalance.toLocaleString()}
+            {balanceText}
           </span>
         )}
         {hasChildren && !collapsed && (

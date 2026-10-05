@@ -19,7 +19,6 @@
     "pickCategoryFirst": "Pick a category above to unlock structured details.",
     "noStructured": "No structured details for {{category}} yet.",
     "commonQuestions": "Common questions.",
-    "saveDraft": "Save draft",
     "uploadingProgress": "Uploading {{done}}/{{total}}…"
   },
   "photos": {
@@ -67,6 +66,7 @@
     "liveHint": "Changes go live as soon as you save.",
     "publish": "Publish",
     "saving": "Saving…",
+    "saveDraft": "Save draft",
     "saveChanges": "Save changes",
     "submitted": "Listing submitted for review.",
     "reReview": "Listing updated — sent back to admin review (category change).",
@@ -94,6 +94,7 @@
     "faqHint": "Answer the first three or four hosts will ask — saves you typing later.",
     "withDraftHint": "{{error}} — or save a draft and finish later.",
     "submitHint": "Submitting sends this to review. Once approved, it goes public — no further edits.",
+    "saveDraft": "Save draft",
     "submitting": "Submitting…",
     "submit": "Submit for review",
     "createFailed": "Couldn't create listing",

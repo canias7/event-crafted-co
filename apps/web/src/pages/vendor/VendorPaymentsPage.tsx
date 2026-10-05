@@ -14,6 +14,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems } from "@/data/navItems";
 import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { useRealtime } from "@/lib/realtime";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface Balance {
   available_cents: number;
@@ -22,22 +23,23 @@ interface Balance {
   onboarded: boolean;
 }
 
+// Money and dates follow the site language (US Spanish in Spanish);
+// English keeps the fixed US format these cards always used.
+function usLocale(): string {
+  const locale = intlLocale();
+  return locale.startsWith("es") ? locale : "en-US";
+}
+
 function formatMoney(cents: number, currency = "usd"): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(usLocale(), {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(cents / 100);
 }
 
-// Dates follow the chosen language; English keeps the US format these
-// cards always used. Money stays US-formatted ($1,234.00) everywhere.
-function dateLocale(language: string): string {
-  return !language || language.startsWith("en") ? "en-US" : language;
-}
-
-function formatDate(iso: string | null, language: string): string {
+function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(dateLocale(language), {
+  return new Date(iso).toLocaleDateString(usLocale(), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -211,7 +213,7 @@ export default function VendorPaymentsPage(
 
   return (
     <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
-      <DashboardSidebar items={vendorNavItems} title={t("sidebar_title")} backPath="/settings" />
+      <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/settings" />
       {body}
       <MobileNav items={vendorNavItems} />
     </div>
@@ -244,7 +246,7 @@ function OverviewTab({
   // navigates to the Calendar tab.
   onViewCalendar: () => void;
 }) {
-  const { t, i18n } = useTranslation("vendorPayments");
+  const { t } = useTranslation("vendorPayments");
   const currency = balance?.currency ?? "usd";
   // Operating expenses are account-level (vendor_expenses.user_id), so
   // the OPEX card reads by the signed-in user rather than by listing.
@@ -468,7 +470,7 @@ function OverviewTab({
                     <tr key={inv.id}>
                       <td className="font-medium truncate max-w-[320px]">{inv.bill_to_name ?? "—"}</td>
                       <td className="text-muted-foreground">{inv.invoice_number}</td>
-                      <td className="text-muted-foreground">{formatDate(inv.paid_at, i18n.language)}</td>
+                      <td className="text-muted-foreground">{formatDate(inv.paid_at)}</td>
                       <td className="num font-semibold">{formatMoney(inv.total_cents, inv.currency || currency)}</td>
                     </tr>
                   ))}
@@ -518,10 +520,10 @@ function OverviewUpcomingAppointments({
   }>;
   onViewAll: () => void;
 }) {
-  const { t, i18n } = useTranslation("vendorPayments");
+  const { t } = useTranslation("vendorPayments");
   const fmtWhen = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleString(i18n.language, {
+    return d.toLocaleString(intlLocale(), {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -631,7 +633,8 @@ function OverviewRevenueChart({
   currency: string;
   previousTotal: number;
 }) {
-  const { t, i18n } = useTranslation("vendorPayments");
+  const { t } = useTranslation("vendorPayments");
+  const dateLoc = usLocale();
   // Guard against an empty series on first render (state initializes to
   // [] before the useEffect query resolves). The chart math below
   // dereferences pts[0] unconditionally, so an empty input would crash
@@ -662,10 +665,10 @@ function OverviewRevenueChart({
     for (const off of offsets) {
       const d = new Date(now);
       d.setDate(d.getDate() - off);
-      labels.push(d.toLocaleDateString(dateLocale(i18n.language), { month: "short", day: "numeric" }));
+      labels.push(d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" }));
     }
     return labels;
-  }, [i18n.language]);
+  }, [dateLoc]);
 
   return (
     <div
@@ -770,7 +773,7 @@ function OverviewRevenueChart({
           if (!showHover) return "";
           const d = new Date();
           d.setDate(d.getDate() - (n - 1 - (hoverIdx as number)));
-          return d.toLocaleDateString(dateLocale(i18n.language), { month: "short", day: "numeric" });
+          return d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" });
         })();
 
         return (
@@ -1169,7 +1172,7 @@ function formatMoneyCompact(cents: number, currency: string): string {
   // currency symbol correctly for any currency instead of the old
   // string-replace hack that only worked for a leading "$".
   if (Math.abs(v) < 1_000) return formatMoney(cents, currency);
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(usLocale(), {
     style: "currency",
     currency: currency.toUpperCase(),
     notation: "compact",

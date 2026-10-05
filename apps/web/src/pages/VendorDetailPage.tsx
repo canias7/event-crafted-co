@@ -848,10 +848,7 @@ export default function VendorDetailPage() {
                   renderer. */}
               {vendor.isReal && (
                 <SilentErrorBoundary label="VendorServiceAreaMap">
-                  <VendorServiceAreaMap
-                    vendorId={vendor.id}
-                    category={vendor.category}
-                  />
+                  <VendorServiceAreaMap vendorId={vendor.id} />
                 </SilentErrorBoundary>
               )}
 

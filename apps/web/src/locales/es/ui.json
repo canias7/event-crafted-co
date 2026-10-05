@@ -20,5 +20,10 @@
   "calendar": {
     "previous_month": "Ir al mes anterior",
     "next_month": "Ir al mes siguiente"
+  },
+  "toasts": {
+    "region": "Notificaciones",
+    "viewport": "Notificaciones ({hotkey})",
+    "item": "Notificación"
   }
 }

@@ -384,7 +384,7 @@ export function LiveBroadcastModal({
                     {t("live.watching", { count: viewerCount })}
                   </span>
                 </div>
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   <Button
                     type="button"
                     variant="outline"

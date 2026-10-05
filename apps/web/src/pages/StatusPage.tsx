@@ -132,30 +132,34 @@ function classify(ok: boolean, latencyMs: number): CheckStatus {
 
 // On the dark page: green only for "operational" (a live signal),
 // champagne for slow, and "Down" on a cream pill so the brand red
-// stays readable against ink. Each status's word is labels.<status> in
-// status.json.
+// stays readable against ink (its latency turns ink to match). Each
+// status's word is labels.<status> in status.json.
 const STATUS_META: Record<
   CheckStatus,
-  { tone: string; labelTone: string; Icon: typeof CheckCircle2 }
+  { tone: string; labelTone: string; latencyTone: string; Icon: typeof CheckCircle2 }
 > = {
   checking: {
     tone: "text-[#f4f1ea]/80",
     labelTone: "text-[#f4f1ea]/80",
+    latencyTone: "text-[#f4f1ea]/80",
     Icon: Loader2,
   },
   operational: {
     tone: "text-emerald-400",
     labelTone: "text-emerald-400",
+    latencyTone: "text-[#f4f1ea]/80",
     Icon: CheckCircle2,
   },
   degraded: {
     tone: "text-gold",
     labelTone: "text-gold",
+    latencyTone: "text-[#f4f1ea]/80",
     Icon: AlertCircle,
   },
   down: {
     tone: "text-destructive",
     labelTone: "rounded-full bg-[#f4f1ea] px-2 py-0.5 text-destructive",
+    latencyTone: "text-foreground",
     Icon: XCircle,
   },
 };
@@ -302,7 +306,7 @@ export default function StatusPage() {
                       >
                         {t(`labels.${status}`)}
                         {r?.latencyMs != null && (
-                          <span className="text-[#f4f1ea]/80 font-normal ml-2">
+                          <span className={`${meta.latencyTone} font-normal ml-2`}>
                             {r.latencyMs}ms
                           </span>
                         )}

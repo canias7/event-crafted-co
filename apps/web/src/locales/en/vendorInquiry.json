@@ -19,8 +19,6 @@
     "close": "Close inquiry"
   },
   "thread": {
-    "today": "Today",
-    "yesterday": "Yesterday",
     "deleted": "Message deleted",
     "sentAutomatically": "Sent automatically",
     "cancel": "Cancel",
@@ -67,8 +65,6 @@
     "markedClosed": "Marked as closed",
     "reopened": "Reopened",
     "maxFiles": "Up to {{max}} attachments per message",
-    "fileType": "{{name}}: only JPG, PNG, WEBP, PDF, or audio",
-    "fileTooLarge": "{{name}}: max 10 MB",
     "invoiceLoadFailed": "Couldn't load that invoice.",
     "uploadFailed": "Couldn't upload your attachments — message not sent.",
     "partialUpload": "{{uploaded}} of {{total}} attachments uploaded."

@@ -948,3 +948,9 @@
     letter-spacing: -0.2px;
   }
 }
+
+/* Spanish uses sentence case ("Cena de fiestas · 12 invitados"), so
+   Tailwind's `capitalize` only title-cases in English. */
+html:lang(es) .capitalize {
+  text-transform: none;
+}

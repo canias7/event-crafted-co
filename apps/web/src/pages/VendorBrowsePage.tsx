@@ -38,6 +38,7 @@ import {
 } from "@/data/categoryTaxonomy";
 import { BROWSE_CATEGORIES } from "@/data/browseCategories";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Sub-name → group-slug. Used to deep-link from a single-sub filter to
 // the parent group page (e.g. "Photography" → "/vendors/category/media").
@@ -84,7 +85,7 @@ const sameSet = (a: Set<string>, b: string[]) =>
   a.size === b.length && b.every((x) => a.has(x));
 
 export default function VendorBrowsePage() {
-  const { t, i18n } = useTranslation("vendors");
+  const { t } = useTranslation("vendors");
   const categoryNames = useCategoryNames();
   const { vendors, loading } = useVendors();
   const { profile, activeEvent } = useAuth();
@@ -218,6 +219,11 @@ export default function VendorBrowsePage() {
       ? vendors.filter((v) => unavailableIds.has(v.id)).length
       : 0;
 
+  // Dates follow the site language in Spanish ("5 de dic de 2026"); in
+  // English they keep the browser's default locale, as before.
+  const siteLocale = intlLocale();
+  const dateLocale = siteLocale.startsWith("es") ? siteLocale : undefined;
+
   const activeTile = TILES.find((tile) => sameSet(activeCategories, tile.subs));
   const pill =
     "inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea] transition-colors hover:border-white/40";
@@ -230,7 +236,7 @@ export default function VendorBrowsePage() {
     ...(search.trim() ? [{ label: `"${search.trim()}"`, clear: () => setSearch("") }] : []),
     ...(locationFilter.trim() ? [{ label: locationFilter.trim(), clear: () => setLocationFilter("") }] : []),
     ...(dateFilter
-      ? [{ label: new Date(`${dateFilter}T00:00:00`).toLocaleDateString(i18n.language, { month: "short", day: "numeric", year: "numeric" }), clear: () => setDateFilter("") }]
+      ? [{ label: new Date(`${dateFilter}T00:00:00`).toLocaleDateString(dateLocale, { month: "short", day: "numeric", year: "numeric" }), clear: () => setDateFilter("") }]
       : []),
   ];
 

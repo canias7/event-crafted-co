@@ -70,5 +70,9 @@
     "local_to": "a",
     "local_trail": "con la URL de tu proyecto + la clave anon.",
     "hosted": "En hosting: configúralas en el entorno de tu despliegue (Lovable / Vercel / etc.) y vuelve a compilar."
+  },
+  "hub_tabs": {
+    "inquiries": "Consultas",
+    "vendors": "Proveedores"
   }
 }

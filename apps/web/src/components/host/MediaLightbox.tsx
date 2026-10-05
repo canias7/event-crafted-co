@@ -5,7 +5,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
+import { intlLocale } from "@/lib/intlLocale";
 
 type LightboxItem =
   | {
@@ -84,7 +84,7 @@ export function MediaLightbox({
               textShadow: "0 1px 6px rgba(0,0,0,0.5)",
             }}
           >
-            {new Date(item.created_at).toLocaleString(i18n.language)}
+            {new Date(item.created_at).toLocaleString(intlLocale())}
           </p>
         </aside>
 

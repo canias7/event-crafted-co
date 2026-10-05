@@ -1,5 +1,4 @@
 {
-  "sidebar_title": "Vendor Portal",
   "credits": {
     "out_of_credits_action_one": "Out of credits — this action needed {{count}} credit.",
     "out_of_credits_action_other": "Out of credits — this action needed {{count}} credits.",
@@ -191,7 +190,7 @@
     "local_30d": "Local · 30d",
     "per_day_title": "Credits used per day",
     "spent_30d": "<n>{{total}}</n> cr · last 30d",
-    "active_days_one": "<n>{{count}}</n> active days",
+    "active_days_one": "<n>{{count}}</n> active day",
     "active_days_other": "<n>{{count}}</n> active days",
     "no_spend": "no spend",
     "credit_count_one": "{{formatted}} credit",

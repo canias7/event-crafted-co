@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Film, Grid3x3, MessageCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +16,7 @@ import {
   MediaComposerModal,
 } from "@/components/host/Composers";
 import { MediaLightbox } from "@/components/host/MediaLightbox";
+import { intlLocale } from "@/lib/intlLocale";
 
 type Tab = "grid" | "reels" | "buzz";
 
@@ -318,7 +318,7 @@ function BuzzList({
         <div key={b.id} className="card-soft p-4 relative group">
           <p className="text-sm text-foreground whitespace-pre-wrap">{b.body}</p>
           <p className="mt-2 text-xs text-muted-foreground">
-            {new Date(b.created_at).toLocaleDateString(i18n.language)}
+            {new Date(b.created_at).toLocaleDateString(intlLocale())}
           </p>
           <DeleteBadge onDelete={() => onDelete(b.id)} label={t("content.deleteBuzz")} />
         </div>

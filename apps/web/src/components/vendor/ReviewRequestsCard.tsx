@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatDate } from "@/lib/format";
 
 // Vendor-side review request manager. Sends a tokenized link to a
 // past client; recipient hits /review/:token to leave a review
@@ -49,18 +50,6 @@ const STATUS_TONE: Record<ReviewRequest["status"], string> = {
   completed: "bg-secondary text-secondary-foreground border-border",
   expired: "bg-secondary text-muted-foreground border-border",
 };
-
-// "May 3, 2026" in the vendor's language (formatDate's long style
-// follows the browser's locale instead).
-function longDate(input: string, language: string) {
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(language, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 export function ReviewRequestsCard({ vendorId }: { vendorId: string }) {
   const { t } = useTranslation("vendorTools");
@@ -149,7 +138,7 @@ function RequestRow({
   vendorId: string;
   onChange: () => void;
 }) {
-  const { t, i18n } = useTranslation("vendorTools");
+  const { t } = useTranslation("vendorTools");
   const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(false);
   const link =
@@ -199,11 +188,11 @@ function RequestRow({
             {r.recipient_email}
           </p>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {t("reviewRequests.sentOn", { date: longDate(r.sent_at, i18n.language) })}
+            {t("reviewRequests.sentOn", { date: formatDate(r.sent_at) })}
             {r.send_count > 1 && ` · ${r.send_count}×`}
             {r.completed_at &&
               ` · ${t("reviewRequests.completedOn", {
-                date: longDate(r.completed_at, i18n.language),
+                date: formatDate(r.completed_at),
               })}`}
           </p>
         </div>

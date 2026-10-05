@@ -20,5 +20,10 @@
   "calendar": {
     "previous_month": "Go to previous month",
     "next_month": "Go to next month"
+  },
+  "toasts": {
+    "region": "Notifications",
+    "viewport": "Notifications ({hotkey})",
+    "item": "Notification"
   }
 }

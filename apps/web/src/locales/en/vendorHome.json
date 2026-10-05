@@ -14,7 +14,7 @@
     "editIdentity": "Edit identity",
     "noListing": "No listing yet.",
     "createListing": "Create your listing",
-    "count_one": "{{count}} listings",
+    "count_one": "{{count}} listing",
     "count_other": "{{count}} listings",
     "countOfCap": "{{n}} of {{cap}} listings",
     "countOfCapOne": "{{n}} of {{cap}} listing",

@@ -70,5 +70,9 @@
     "local_to": "to",
     "local_trail": "with your project URL + anon key.",
     "hosted": "Hosted: set them in your deploy environment (Lovable / Vercel / etc.) and rebuild."
+  },
+  "hub_tabs": {
+    "inquiries": "Inquiries",
+    "vendors": "Vendors"
   }
 }

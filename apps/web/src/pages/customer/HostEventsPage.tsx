@@ -67,6 +67,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveBroadcastModal } from "@/components/host/LiveBroadcastModal";
 import { LiveArchiveDialog } from "@/components/host/LiveArchiveDialog";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface HostEvent {
   id: string;
@@ -131,7 +132,7 @@ function endOfNextYearYmd(): string {
 function fmtDate(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   return capFirst(
-    new Date(y, m - 1, d).toLocaleDateString(i18n.language, {
+    new Date(y, m - 1, d).toLocaleDateString(intlLocale(), {
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -146,7 +147,7 @@ function fmtTimeRange(start: string | null, end: string | null): string | null {
     const [h, m] = t.split(":").map(Number);
     const d = new Date();
     d.setHours(h, m, 0, 0);
-    return d.toLocaleTimeString(i18n.language, {
+    return d.toLocaleTimeString(intlLocale(), {
       hour: "numeric",
       minute: "2-digit",
     });
@@ -349,7 +350,7 @@ export default function HostEventsPage() {
   }
 
   const monthLabel = capFirst(
-    viewMonth.toLocaleDateString(i18n.language, {
+    viewMonth.toLocaleDateString(intlLocale(), {
       month: "long",
       year: "numeric",
     }),

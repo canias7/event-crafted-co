@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface PromoRow {
   open_dates: string[];
@@ -14,8 +15,8 @@ interface PromoRow {
   created_at: string;
 }
 
-function fmt(d: string, language: string): string {
-  return new Date(`${d}T12:00:00`).toLocaleDateString(language, {
+function fmt(d: string): string {
+  return new Date(`${d}T12:00:00`).toLocaleDateString(intlLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -23,7 +24,7 @@ function fmt(d: string, language: string): string {
 }
 
 export function VendorOpenDatesPublic({ vendorId }: { vendorId: string }) {
-  const { t, i18n } = useTranslation("vendorProfile");
+  const { t } = useTranslation("vendorProfile");
   const [dates, setDates] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -70,7 +71,7 @@ export function VendorOpenDatesPublic({ vendorId }: { vendorId: string }) {
             key={d}
             className="inline-flex items-center rounded-full bg-background border border-accent/40 px-3 py-1 text-sm"
           >
-            {fmt(d, i18n.language)}
+            {fmt(d)}
           </span>
         ))}
       </div>

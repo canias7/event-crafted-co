@@ -47,7 +47,7 @@
     "title": "Events ✦",
     "empty": "No inquiries on record yet.",
     "fallback": "Event inquiry",
-    "guests_one": "{{count}} guests",
+    "guests_one": "{{count}} guest",
     "guests_other": "{{count}} guests",
     "received": "Received {{date}}",
     "booked": "Booked",
