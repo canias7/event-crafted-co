@@ -21,13 +21,15 @@ export default defineConfig(({ mode }) => ({
     // generated at build time. Cuts hero JPEG payload by ~60% with AVIF.
     imagetools({
       defaultDirectives: (url) => {
-        // Auto-pictureify images in three asset families:
+        // Auto-pictureify images in four asset families:
         //   /assets/hero/*       — landing slideshow + featured imagery
         //   /assets/vendora-*    — feature shots used on landing + press kit
         //   /assets/vendor-*     — category fallback images on cards
+        //   /assets/categories/* — the category tiles on the vendors page
         // Each gets AVIF + WebP + JPG variants at 640/1024/1600 widths.
         if (
           /\/assets\/hero\//.test(url.pathname) ||
+          /\/assets\/categories\//.test(url.pathname) ||
           /\/assets\/vendora-/.test(url.pathname) ||
           /\/assets\/vendor-/.test(url.pathname)
         ) {
