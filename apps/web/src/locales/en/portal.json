@@ -1,0 +1,75 @@
+{
+  "sidebar": {
+    "titles": {
+      "vendor_portal": "Vendor Portal",
+      "customer": "Customer",
+      "events": "Events",
+      "account": "Account",
+      "explore": "Explore",
+      "profile": "Profile",
+      "my_profile": "My Profile",
+      "edit_profile": "Edit profile"
+    },
+    "nav_label": "{{title}} navigation",
+    "primary": "Primary",
+    "logo_label": "Vendora — Events, simplified",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar",
+    "tier_label": {
+      "free": "Free plan",
+      "starter": "Starter plan",
+      "pro": "Pro plan",
+      "studio": "Premium plan"
+    },
+    "tier_name": {
+      "free": "Free",
+      "starter": "Starter",
+      "pro": "Pro",
+      "studio": "Premium"
+    },
+    "plan_badge": "<chip>{{tier}}</chip><word>plan</word>",
+    "credits_one": "{{balance}} credits",
+    "credits_other": "{{balance}} credits"
+  },
+  "mobile_nav": {
+    "label": "Mobile primary",
+    "more_label": "More navigation",
+    "more": "More"
+  },
+  "error": {
+    "eyebrow": "— Something went wrong",
+    "title": "That page hit a snag.",
+    "body": "We logged the error so we can fix it. Try a reload first — if it keeps happening, head home and we'll route you somewhere stable.",
+    "reload": "Reload page",
+    "home": "Back to home",
+    "stack": "Stack trace (dev only)",
+    "report": "If you think this is a bug, please email <mailLink>hello@eventvendora.com</mailLink> with the steps you took."
+  },
+  "route_loading": "Loading page…",
+  "under_construction": {
+    "title": "Under construction",
+    "title_with_page": "{{title}} — under construction",
+    "body": "We're polishing this up. It'll be back shortly — thanks for your patience.",
+    "pages": {
+      "usage": "Usage"
+    }
+  },
+  "config_error": {
+    "eyebrow": "Vendora · Configuration error",
+    "title": "Missing Supabase environment variables",
+    "lead": "The app can't start because",
+    "and": "and",
+    "is": "is",
+    "or": "or",
+    "not_set": "isn't set.",
+    "missing": "are missing.",
+    "local_lead": "Local: copy",
+    "local_to": "to",
+    "local_trail": "with your project URL + anon key.",
+    "hosted": "Hosted: set them in your deploy environment (Lovable / Vercel / etc.) and rebuild."
+  },
+  "hub_tabs": {
+    "inquiries": "Inquiries",
+    "vendors": "Vendors"
+  }
+}

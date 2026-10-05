@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Loader2, Mail, ArrowRight } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
+import { authErrorText } from "@/components/auth/authErrors";
 
 export default function CheckEmailPage() {
+  const { t } = useTranslation("auth");
   const [params] = useSearchParams();
   const email = params.get("email") ?? "";
   const role = params.get("role") === "vendor" ? "vendor" : "host";
@@ -14,7 +17,7 @@ export default function CheckEmailPage() {
 
   async function resend() {
     if (!email) {
-      toast.error("Email missing — start over from signup.");
+      toast.error(t("check_email.toast.missing_email"));
       return;
     }
     setResending(true);
@@ -24,34 +27,36 @@ export default function CheckEmailPage() {
     });
     setResending(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(authErrorText(error.message));
       return;
     }
     setResent(true);
-    toast.success("Confirmation email sent");
+    toast.success(t("check_email.toast.sent"));
   }
 
   const isVendor = role === "vendor";
 
   return (
     <GlassyAuthShell
-      title={isVendor ? "Application" : "Check your"}
-      titleAccent={isVendor ? "received." : "email."}
+      title={isVendor ? t("check_email.title_vendor") : t("shared.check_your")}
+      titleAccent={isVendor ? t("check_email.accent_vendor") : t("shared.email_accent")}
       subtitle={
         isVendor
-          ? `Thanks for applying. Our team hand-reviews every application — we'll email ${email || "you"} within 2–3 business days. If approved, that email will include your sign-in details.`
+          ? email
+            ? t("check_email.subtitle_vendor", { email })
+            : t("check_email.subtitle_vendor_no_email")
           : email
-            ? `We sent a confirmation link to ${email}. Click it to finish signing up.`
-            : "We sent you a confirmation link. Click it to finish signing up."
+            ? t("check_email.subtitle_host", { email })
+            : t("check_email.subtitle_host_no_email")
       }
-      pillLabel={isVendor ? "UNDER REVIEW" : "HOST SIGN UP"}
+      pillLabel={isVendor ? t("check_email.pill_vendor") : t("signup.pill_host")}
       topRight={
         <Link
           to="/login"
           className="pb-px font-medium"
           style={{ borderBottom: "0.5px solid #000" }}
         >
-          Back to sign in
+          {t("shared.back_to_sign_in")}
         </Link>
       }
     >
@@ -81,13 +86,13 @@ export default function CheckEmailPage() {
             {resending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Sending…
+                {t("shared.sending")}
               </>
             ) : resent ? (
-              "Sent — check your inbox"
+              t("check_email.sent")
             ) : (
               <>
-                Resend email
+                {t("check_email.resend")}
                 <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
@@ -98,32 +103,19 @@ export default function CheckEmailPage() {
           className="text-center font-serif italic"
           style={{ fontSize: "12.5px", opacity: 0.7, lineHeight: 1.5 }}
         >
-          {isVendor ? (
-            <>
-              Questions? Email{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="font-medium pb-px"
-                style={{ borderBottom: "0.5px solid currentColor" }}
-              >
-                hello@eventvendora.com
-              </a>
-              .
-            </>
-          ) : (
-            <>
-              Didn't get it? Check your spam folder. If it still doesn't arrive,
-              email{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="font-medium pb-px"
-                style={{ borderBottom: "0.5px solid currentColor" }}
-              >
-                hello@eventvendora.com
-              </a>
-              .
-            </>
-          )}
+          <Trans
+            i18nKey={isVendor ? "check_email.questions" : "check_email.not_received"}
+            ns="auth"
+            components={{
+              emailLink: (
+                <a
+                  href="mailto:hello@eventvendora.com"
+                  className="font-medium pb-px"
+                  style={{ borderBottom: "0.5px solid currentColor" }}
+                />
+              ),
+            }}
+          />
         </p>
       </div>
     </GlassyAuthShell>

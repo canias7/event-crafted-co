@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "aria_label": "Sitio público",
+    "logo_label": "Vendora — Eventos, simplificados",
+    "all_vendors": "Todos los proveedores",
+    "browse_by_location": "Ver por ubicación",
+    "by_location": "Por ubicación",
+    "categories": "Categorías",
+    "soon": "Pronto",
+    "explore": "Explorar",
+    "how_it_works": "Cómo funciona",
+    "account": "Cuenta",
+    "sign_out": "Cerrar sesión",
+    "sign_in": "Iniciar sesión",
+    "get_started": "Comenzar"
+  },
+  "footer": {
+    "home_label": "Inicio de Vendora",
+    "for_hosts": "Para anfitriones",
+    "for_vendors": "Para proveedores",
+    "company": "Empresa",
+    "plan_with_vendora": "Planea con Vendora",
+    "browse_vendors": "Ver proveedores",
+    "explore": "Explorar",
+    "grow_with_vendora": "Crece con Vendora",
+    "list_your_business": "Publica tu negocio",
+    "how_it_works": "Cómo funciona",
+    "help": "Ayuda",
+    "status": "Estado",
+    "press": "Prensa",
+    "changelog": "Novedades"
+  },
+  "cookies": {
+    "dismiss": "Cerrar",
+    "title": "Cookies, en pocas palabras",
+    "body": "Usamos cookies esenciales para mantener tu sesión iniciada y (con tu consentimiento) cookies de analítica para entender qué funciones se usan. No vendemos datos ni usamos cookies de seguimiento publicitario. Consulta nuestra <policy>Política de privacidad</policy>.",
+    "accept_all": "Aceptar todas",
+    "essential_only": "Solo esenciales"
+  },
+  "command_palette": {
+    "placeholder": "Buscar proveedores, páginas…",
+    "empty": "Sin resultados.",
+    "groups": {
+      "vendors": "Proveedores",
+      "public": "Público",
+      "customer": "Cliente",
+      "vendor": "Proveedor",
+      "account": "Cuenta"
+    },
+    "pages": {
+      "browse_vendors": "Ver proveedores",
+      "browse_by_location": "Ver por ubicación",
+      "explore": "Explorar",
+      "inbox": "Bandeja de entrada",
+      "events": "Eventos",
+      "profile": "Perfil",
+      "inquiry_inbox": "Bandeja de consultas",
+      "overview": "Resumen",
+      "calendar": "Calendario",
+      "partners": "Socios",
+      "settings": "Configuración"
+    },
+    "hints": {
+      "directory": "Directorio",
+      "cities": "Ciudades"
+    },
+    "open_search": "Abrir búsqueda",
+    "search": "Buscar"
+  },
+  "skip_link": "Saltar al contenido principal",
+  "email_verification": {
+    "title": "Confirma tu correo.",
+    "body": "Enviamos un enlace a <email>{{email}}</email>. Algunas funciones estarán limitadas hasta que lo confirmes.",
+    "resend": "Reenviar",
+    "sent": "Correo de verificación enviado — revisa tu bandeja de entrada",
+    "dismiss": "Cerrar"
+  }
+}

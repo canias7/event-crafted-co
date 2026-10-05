@@ -1,0 +1,16 @@
+{
+  "bell": {
+    "label": "Notificaciones",
+    "label_unread": "Notificaciones, {{unread}} sin leer",
+    "title": "Notificaciones",
+    "mark_all_read": "Marcar leídas",
+    "loading": "Cargando…",
+    "empty_title": "Estás al día",
+    "empty_body": "Te avisaremos cuando pase algo.",
+    "today": "Hoy",
+    "earlier": "Anteriores"
+  },
+  "mobile": {
+    "open_inbox": "Abrir bandeja de entrada"
+  }
+}

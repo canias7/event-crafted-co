@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Mail, X, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Trans, useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 const DISMISS_KEY = "vendora.emailVerifyDismissed";
 
 export function EmailVerificationBanner() {
+  const { t } = useTranslation("shell");
   const { user, loading } = useAuth();
   const [dismissed, setDismissed] = useState(false);
   const [resending, setResending] = useState(false);
@@ -41,7 +43,7 @@ export function EmailVerificationBanner() {
       toast.error(error.message);
       return;
     }
-    toast.success("Verification email sent — check your inbox");
+    toast.success(t("email_verification.sent"));
   }
 
   function dismiss() {
@@ -61,11 +63,14 @@ export function EmailVerificationBanner() {
       <div className="container mx-auto px-5 md:px-6 py-2.5 flex items-center gap-3 flex-wrap">
         <Mail className="w-4 h-4 text-accent shrink-0" aria-hidden />
         <p className="flex-1 leading-relaxed">
-          <span className="font-medium">Confirm your email.</span>{" "}
+          <span className="font-medium">{t("email_verification.title")}</span>{" "}
           <span className="text-muted-foreground">
-            We sent a link to{" "}
-            <span className="font-medium text-foreground">{user.email}</span>.
-            Some features stay limited until you confirm.
+            <Trans
+              t={t}
+              i18nKey="email_verification.body"
+              values={{ email: user.email }}
+              components={{ email: <span className="font-medium text-foreground" /> }}
+            />
           </span>
         </p>
         <Button
@@ -81,13 +86,13 @@ export function EmailVerificationBanner() {
           ) : (
             <RefreshCw className="w-3 h-3 mr-1.5" />
           )}
-          Resend
+          {t("email_verification.resend")}
         </Button>
         <button
           type="button"
           onClick={dismiss}
           className="text-muted-foreground hover:text-accent p-1"
-          aria-label="Dismiss"
+          aria-label={t("email_verification.dismiss")}
         >
           <X className="w-3.5 h-3.5" />
         </button>

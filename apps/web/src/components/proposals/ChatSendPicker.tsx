@@ -8,6 +8,7 @@
 // renderer linkifies), so this is purely additive and breaks nothing.
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Loader2,
@@ -112,11 +113,14 @@ function prefillProposalBody(
   return b;
 }
 
-const KIND_META: Record<SendKind, { label: string; icon: typeof FileText; title: string }> = {
-  invoice: { label: "Invoice", icon: ReceiptText, title: "Send an invoice" },
-  link: { label: "Pay link", icon: Link2, title: "Send a pay link" },
-  proposal: { label: "Proposal", icon: FileText, title: "Send a proposal" },
-  contract: { label: "Contract", icon: FileSignature, title: "Send a contract" },
+// `label` goes into the message sent to the host, so it stays as is.
+// What the vendor reads (menu label, dialog title) is
+// picker.kinds.<kind> in the proposals namespace.
+const KIND_META: Record<SendKind, { label: string; icon: typeof FileText }> = {
+  invoice: { label: "Invoice", icon: ReceiptText },
+  link: { label: "Pay link", icon: Link2 },
+  proposal: { label: "Proposal", icon: FileText },
+  contract: { label: "Contract", icon: FileSignature },
 };
 
 export function ChatSendPicker({
@@ -135,6 +139,7 @@ export function ChatSendPicker({
   // vendor reviews, then sends). Falls back to onSend if absent.
   onStageInvoice?: (invoiceId: string, body: string) => Promise<void> | void;
 }) {
+  const { t } = useTranslation("proposals");
   const [kind, setKind] = useState<SendKind | null>(null);
   const [rows, setRows] = useState<PickRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -169,7 +174,7 @@ export function ChatSendPicker({
           setRows(
             ((data ?? []) as any[]).map((inv) => ({
               id: inv.id,
-              primary: `Invoice ${inv.invoice_number}`,
+              primary: t("picker.rows.invoice", { number: inv.invoice_number }),
               secondary: `${formatMoney(inv.total_cents, inv.currency)}${inv.bill_to_name ? ` · ${inv.bill_to_name}` : ""}`,
               body: `🧾 Invoice ${inv.invoice_number} · ${formatMoney(inv.total_cents, inv.currency)} — [Pay online](${ORIGIN}/pay/invoice/${inv.slug})`,
             })),
@@ -185,7 +190,7 @@ export function ChatSendPicker({
           setRows(
             ((data ?? []) as any[]).map((l) => ({
               id: l.id,
-              primary: l.title || "Pay link",
+              primary: l.title || t("picker.kinds.link.label"),
               secondary: formatMoney(l.amount_cents, l.currency),
               body: `💳 ${l.title || "Payment"} · ${formatMoney(l.amount_cents, l.currency)} — [Pay online](${ORIGIN}/pay/link/${l.slug})`,
             })),
@@ -203,14 +208,14 @@ export function ChatSendPicker({
             .limit(50);
           const emoji = k === "contract" ? "📑" : "📄";
           setRows(
-            ((data ?? []) as any[]).map((t) => ({
-              id: t.id,
-              primary: t.name,
-              secondary: (t.body as string)?.trim().split("\n")[0] || "Empty",
-              body: `${emoji} ${KIND_META[k].label}: ${t.name}\n\n${t.body}`,
+            ((data ?? []) as any[]).map((tpl) => ({
+              id: tpl.id,
+              primary: tpl.name,
+              secondary: (tpl.body as string)?.trim().split("\n")[0] || t("picker.rows.empty"),
+              body: `${emoji} ${KIND_META[k].label}: ${tpl.name}\n\n${tpl.body}`,
               ...(k === "contract"
-                ? { contract: { name: t.name, body: t.body, templateId: t.id } }
-                : { proposal: { name: t.name, body: t.body, templateId: t.id } }),
+                ? { contract: { name: tpl.name, body: tpl.body, templateId: tpl.id } }
+                : { proposal: { name: tpl.name, body: tpl.body, templateId: tpl.id } }),
             })),
           );
         }
@@ -218,7 +223,8 @@ export function ChatSendPicker({
         setLoading(false);
       }
     },
-    [vendorId],
+    // t: rows carry translated labels, so refetch on a language switch.
+    [vendorId, t],
   );
 
   useEffect(() => {
@@ -244,7 +250,7 @@ export function ChatSendPicker({
       // text/link body.
       if (kind === "invoice" && onStageInvoice) {
         await onStageInvoice(row.id, row.body);
-        toast.success("Invoice added — review and send");
+        toast.success(t("picker.toast.invoiceAdded"));
       } else if (
         (kind === "contract" && row.contract) ||
         (kind === "proposal" && row.proposal)
@@ -280,7 +286,7 @@ export function ChatSendPicker({
         return; // editor's send button creates + sends it
       } else {
         await onSend(row.body);
-        toast.success(`${kind ? KIND_META[kind].label : "Item"} sent`);
+        toast.success(t(`picker.toast.sent.${kind ?? "item"}`));
       }
       setKind(null);
     } finally {
@@ -306,14 +312,14 @@ export function ChatSendPicker({
         .select("sign_token")
         .single();
       if (error || !(data as { sign_token?: string })?.sign_token) {
-        toast.error("Couldn't create the contract", { description: error?.message });
+        toast.error(t("picker.toast.contractFailed"), { description: error?.message });
         return;
       }
       const token = (data as { sign_token: string }).sign_token;
       await onSend(
         `📑 Contract: ${editing.name} — [Review & sign](${ORIGIN}/sign/${token})`,
       );
-      toast.success("Contract sent for signing");
+      toast.success(t("picker.toast.contractSent"));
       setEditing(null);
       setKind(null);
     } finally {
@@ -339,14 +345,14 @@ export function ChatSendPicker({
         .select("view_token")
         .single();
       if (error || !(data as { view_token?: string })?.view_token) {
-        toast.error("Couldn't create the proposal", { description: error?.message });
+        toast.error(t("picker.toast.proposalFailed"), { description: error?.message });
         return;
       }
       const token = (data as { view_token: string }).view_token;
       await onSend(
         `📄 Proposal: ${editing.name} — [View proposal](${ORIGIN}/proposal/${token})`,
       );
-      toast.success("Proposal sent");
+      toast.success(t("picker.toast.proposalSent"));
       setEditing(null);
       setKind(null);
     } finally {
@@ -363,7 +369,7 @@ export function ChatSendPicker({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label="Send an invoice, pay link, proposal, or contract"
+              aria-label={t("picker.trigger")}
               className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
             >
               <Plus className="w-3.5 h-3.5 text-foreground" />
@@ -375,13 +381,13 @@ export function ChatSendPicker({
               return (
                 <DropdownMenuItem key={k} onClick={() => setKind(k)}>
                   <Icon className="w-3.5 h-3.5 mr-2 text-foreground" />
-                  {KIND_META[k].label}
+                  {t(`picker.kinds.${k}.label`)}
                 </DropdownMenuItem>
               );
             })}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className="select-none text-foreground">Send</span>
+        <span className="select-none text-foreground">{t("picker.send")}</span>
       </div>
 
       <Dialog
@@ -398,24 +404,24 @@ export function ChatSendPicker({
             <DialogTitle>
               {editing
                 ? editing.mode === "contract"
-                  ? "Review & fill the contract"
-                  : "Review & fill the proposal"
+                  ? t("picker.editor.contractTitle")
+                  : t("picker.editor.proposalTitle")
                 : kind
-                  ? KIND_META[kind].title
+                  ? t(`picker.kinds.${kind}.title`)
                   : ""}
             </DialogTitle>
             <DialogDescription className="text-xs">
               {editing
                 ? editing.mode === "contract"
-                  ? "Complete any [brackets] (e.g. [Total Amount]), then send it for e-signature."
-                  : "Complete any [brackets] (e.g. [Total Amount]), then send it for the client to review and accept."
+                  ? t("picker.editor.contractHint")
+                  : t("picker.editor.proposalHint")
                 : kind === "invoice"
-                ? "Pick one to add as a PDF (with its pay link) to your message — then review and send."
+                ? t("picker.hints.invoice")
                 : kind === "link"
-                  ? "Pick one to drop its payment link into the chat."
+                  ? t("picker.hints.link")
                   : kind === "contract"
-                    ? "Pick a contract to send for e-signature — the host gets a link to review and sign."
-                    : "Pick a saved template to send into the chat. Create them in Files."}
+                    ? t("picker.hints.contract")
+                    : t("picker.hints.proposal")}
             </DialogDescription>
           </DialogHeader>
 
@@ -431,8 +437,9 @@ export function ChatSendPicker({
               />
               {/\[[^\]]+\]/.test(editing.body) ? (
                 <p className="text-[11px] text-accent">
-                  Heads up — there are still unfilled [placeholders] in the{" "}
-                  {editing.mode}.
+                  {editing.mode === "contract"
+                    ? t("picker.editor.unfilledContract")
+                    : t("picker.editor.unfilledProposal")}
                 </p>
               ) : null}
               <div className="flex items-center justify-between gap-2">
@@ -441,7 +448,7 @@ export function ChatSendPicker({
                   onClick={() => setEditing(null)}
                   className="text-sm text-muted-foreground hover:text-accent px-2 py-1.5"
                 >
-                  Back
+                  {t("picker.editor.back")}
                 </button>
                 <button
                   type="button"
@@ -460,7 +467,9 @@ export function ChatSendPicker({
                   ) : (
                     <FileText className="w-3.5 h-3.5" />
                   )}
-                  {editing.mode === "contract" ? "Send for signature" : "Send proposal"}
+                  {editing.mode === "contract"
+                    ? t("picker.editor.sendContract")
+                    : t("picker.editor.sendProposal")}
                 </button>
               </div>
             </div>
@@ -471,10 +480,12 @@ export function ChatSendPicker({
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
               {kind === "invoice"
-                ? "No unpaid invoices. Create one in Files → Invoices."
+                ? t("picker.empty.invoice")
                 : kind === "link"
-                  ? "No active pay links. Create one in Files → Pay Links."
-                  : `No saved ${kind === "contract" ? "contracts" : "proposals"}. Create one in Files → ${kind === "contract" ? "Contracts" : "Proposals"}.`}
+                  ? t("picker.empty.link")
+                  : kind === "contract"
+                    ? t("picker.empty.contract")
+                    : t("picker.empty.proposal")}
             </p>
           ) : (
             <div className="divide-y divide-border -mx-2">

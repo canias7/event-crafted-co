@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { TrendingUp, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/format";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Vendor-side smart pricing — runs the same get_budget_benchmarks
 // RPC the host budget page uses, but flips the framing: shows the
@@ -25,6 +27,8 @@ interface Props {
 }
 
 export function SmartPricingHint({ category, location, myPriceCents }: Props) {
+  const { t } = useTranslation("listingEditor");
+  const categoryNames = useCategoryNames();
   const [benchmark, setBenchmark] = useState<Benchmark | null>(null);
 
   useEffect(() => {
@@ -52,6 +56,16 @@ export function SmartPricingHint({ category, location, myPriceCents }: Props) {
   const belowMarket = myPriceCents < benchmark.p25_cents;
   const aboveBand = myPriceCents > benchmark.p75_cents;
   const inBand = !belowMarket && !aboveBand;
+  const range = {
+    low: formatCents(benchmark.p25_cents),
+    high: formatCents(benchmark.p75_cents),
+  };
+  const rangeTag = { range: <span className="tnum" /> };
+  const sample = {
+    count: benchmark.sample_size,
+    category: categoryNames.sub(category).toLowerCase(),
+    location,
+  };
 
   return (
     <div className="rounded-sm border border-accent/25 bg-accent/5 px-3 py-2 flex items-start gap-2.5 text-xs">
@@ -63,38 +77,23 @@ export function SmartPricingHint({ category, location, myPriceCents }: Props) {
       <div className="min-w-0">
         {belowMarket && (
           <p className="font-medium leading-snug">
-            You're priced below the local typical (
-            <span className="tnum">
-              {formatCents(benchmark.p25_cents)}–
-              {formatCents(benchmark.p75_cents)}
-            </span>
-            ).
+            <Trans t={t} i18nKey="smartPricing.below" values={range} components={rangeTag} />
           </p>
         )}
         {aboveBand && (
           <p className="font-medium leading-snug">
-            Premium tier — above the local typical (
-            <span className="tnum">
-              {formatCents(benchmark.p25_cents)}–
-              {formatCents(benchmark.p75_cents)}
-            </span>
-            ).
+            <Trans t={t} i18nKey="smartPricing.above" values={range} components={rangeTag} />
           </p>
         )}
         {inBand && (
           <p className="font-medium leading-snug">
-            In line with local peers (
-            <span className="tnum">
-              {formatCents(benchmark.p25_cents)}–
-              {formatCents(benchmark.p75_cents)}
-            </span>
-            ).
+            <Trans t={t} i18nKey="smartPricing.inBand" values={range} components={rangeTag} />
           </p>
         )}
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          From {benchmark.sample_size} {category.toLowerCase()} package
-          {benchmark.sample_size === 1 ? "" : "s"}
-          {location ? ` near ${location}` : ""}.
+          {location
+            ? t("smartPricing.sampleNear", sample)
+            : t("smartPricing.sample", sample)}
         </p>
       </div>
     </div>

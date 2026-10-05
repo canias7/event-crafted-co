@@ -1,0 +1,37 @@
+{
+  "sidebarTitle": "Vendor Portal",
+  "title": "Inbox",
+  "subtitle": "Conversations with hosts — every message in one place",
+  "searchPlaceholder": "Search by host, event type, location, or date",
+  "filters": {
+    "all": "All",
+    "hot": "Hot",
+    "warm": "Warm",
+    "cold": "Cold"
+  },
+  "empty": {
+    "noInquiries": "No inquiries yet",
+    "noMatch": "Nothing matches that search",
+    "body": "When a host sends you an inquiry, the conversation will land here."
+  },
+  "loading": "Loading…",
+  "loadMore": "Load more",
+  "row": {
+    "host": "Host",
+    "unread": "Unread",
+    "leadAria": "Lead temperature: {{label}}",
+    "preview": "Inquiry about your {{type}}"
+  },
+  "lead": {
+    "hot": "Hot",
+    "warm": "Warm",
+    "cold": "Cold"
+  },
+  "time": {
+    "now": "now",
+    "minutes": "{{n}}m",
+    "hours": "{{n}}h",
+    "yesterday": "Yesterday",
+    "days": "{{n}}d"
+  }
+}

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Trans, Translation } from "react-i18next";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { captureException } from "@/lib/sentry";
 import {
@@ -94,70 +95,80 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.error) return this.props.children;
 
+    // Class component: <Translation> gives the "portal" strings and
+    // re-renders on a language switch.
     return (
-      <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
-        <div className="max-w-md w-full text-center">
-          <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-5">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
+      <Translation ns="portal">
+        {(t) => (
+          <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
+            <div className="max-w-md w-full text-center">
+              <div className="w-12 h-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center mb-5">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <p className="text-xs uppercase tracking-[0.4em] text-destructive mb-3">
+                {t("error.eyebrow")}
+              </p>
+              <h1 className="font-editorial text-4xl md:text-4xl leading-tight mb-3">
+                {t("error.title")}
+              </h1>
+              <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+                {t("error.body")}
+              </p>
+
+              <div className="flex items-center gap-2 justify-center mb-8">
+                <button
+                  type="button"
+                  onClick={this.handleReload}
+                  className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground px-5 text-sm hover:bg-gold-hover transition-colors font-bold h-11"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  {t("error.reload")}
+                </button>
+                <button
+                  type="button"
+                  onClick={this.handleHome}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background h-10 px-5 text-sm hover:border-foreground/30 transition-colors"
+                >
+                  <Home className="w-3.5 h-3.5" />
+                  {t("error.home")}
+                </button>
+              </div>
+
+              {/* Always-visible compact detail: error message + first
+                  ~20 lines of the component stack. Helps with bug
+                  reports from production users; full dev-mode trace is
+                  still below. */}
+              {this.state.error && (
+                <details className="text-left bg-secondary/40 rounded-2xl p-3 max-h-72 overflow-auto mb-3">
+                  <summary className="text-xs uppercase tracking-wide text-muted-foreground cursor-pointer">
+                    {t("error.stack")}
+                  </summary>
+                  <pre className="text-[10px] mt-3 whitespace-pre-wrap font-mono text-foreground">
+                    {this.state.error.toString()}
+                    {this.state.errorInfo?.componentStack}
+                  </pre>
+                </details>
+              )}
+
+              <p className="text-[11px] text-muted-foreground mt-6">
+                <Trans
+                  i18nKey="error.report"
+                  ns="portal"
+                  t={t}
+                  components={{
+                    mailLink: (
+                      <a
+                        href="mailto:hello@eventvendora.com"
+                        className="text-accent hover:underline"
+                      />
+                    ),
+                  }}
+                />
+              </p>
+            </div>
           </div>
-          <p className="text-xs uppercase tracking-[0.4em] text-destructive mb-3">
-            — Something went wrong
-          </p>
-          <h1 className="font-editorial text-4xl md:text-4xl leading-tight mb-3">
-            That page hit a snag.
-          </h1>
-          <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-            We logged the error so we can fix it. Try a reload first — if it
-            keeps happening, head home and we'll route you somewhere stable.
-          </p>
-
-          <div className="flex items-center gap-2 justify-center mb-8">
-            <button
-              type="button"
-              onClick={this.handleReload}
-              className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground px-5 text-sm hover:bg-gold-hover transition-colors font-bold h-11"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Reload page
-            </button>
-            <button
-              type="button"
-              onClick={this.handleHome}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background h-10 px-5 text-sm hover:border-foreground/30 transition-colors"
-            >
-              <Home className="w-3.5 h-3.5" />
-              Back to home
-            </button>
-          </div>
-
-          {/* Always-visible compact detail: error message + first
-              ~20 lines of the component stack. Helps with bug
-              reports from production users; full dev-mode trace is
-              still below. */}
-          {this.state.error && (
-            <details className="text-left bg-secondary/40 rounded-2xl p-3 max-h-72 overflow-auto mb-3">
-              <summary className="text-xs uppercase tracking-wide text-muted-foreground cursor-pointer">
-                Stack trace (dev only)
-              </summary>
-              <pre className="text-[10px] mt-3 whitespace-pre-wrap font-mono text-foreground">
-                {this.state.error.toString()}
-                {this.state.errorInfo?.componentStack}
-              </pre>
-            </details>
-          )}
-
-          <p className="text-[11px] text-muted-foreground mt-6">
-            If you think this is a bug, please email{" "}
-            <a
-              href="mailto:hello@eventvendora.com"
-              className="text-accent hover:underline"
-            >
-              hello@eventvendora.com
-            </a>{" "}
-            with the steps you took.
-          </p>
-        </div>
-      </div>
+        )}
+      </Translation>
     );
   }
 }

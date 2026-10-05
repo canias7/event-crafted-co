@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { eventTypeLabel } from "@vendora/core";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
+import { usePriceLabels } from "@/lib/priceLabels";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -33,7 +36,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { QUICK_EMOJIS, groupMessages } from "@/lib/threadFormatting";
+import { QUICK_EMOJIS, groupMessages, isSameDay } from "@/lib/threadFormatting";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +57,7 @@ import {
   type VendorCardAttachment,
 } from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface Inquiry {
   id: string;
@@ -97,17 +101,38 @@ const statusStyles: Record<string, string> = {
   expired: "bg-muted text-muted-foreground border-border",
 };
 
-const statusLabel: Record<string, string> = {
-  new: "Awaiting reply",
-  drafted: "Vendor drafting",
-  replied: "Replied",
-  won: "Booked",
-  lost: "Closed",
-  expired: "Expired",
-};
+// Statuses with a label in hostInquiries.json (status.<status>);
+// anything else shows the raw status.
+const LABELLED_STATUSES = ["new", "drafted", "replied", "won", "lost", "expired"];
+
+// Day separator in the thread: "Today" / "Yesterday" / "Monday, Mar 5",
+// in the visitor's language.
+function daySeparatorLabel(iso: string): string {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameDay(iso, now.toISOString())) {
+    return i18n.t("detail.today", { ns: "hostInquiries" });
+  }
+  if (isSameDay(iso, yesterday.toISOString())) {
+    return i18n.t("detail.yesterday", { ns: "hostInquiries" });
+  }
+  return new Date(iso).toLocaleDateString(intlLocale(), {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function fmtClock(iso: string): string {
+  return new Date(iso).toLocaleTimeString(intlLocale(), {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
 }
 
 // localStorage key for the in-flight draft, scoped per inquiry so two
@@ -118,6 +143,8 @@ function draftKey(inquiryId: string | undefined): string | null {
 }
 
 export default function HostInquiryDetailPage() {
+  const { t } = useTranslation("hostInquiries");
+  const priceLabels = usePriceLabels();
   const { inquiryId } = useParams();
   const { user } = useAuth();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
@@ -503,7 +530,7 @@ export default function HostInquiryDetailPage() {
   async function saveEdit(messageId: string) {
     const body = editingDraft.trim();
     if (!body) {
-      toast.error("Message can't be empty");
+      toast.error(t("detail.toasts.messageEmpty"));
       return;
     }
     // Snapshot the row pre-edit so we can revert if the UPDATE
@@ -534,7 +561,7 @@ export default function HostInquiryDetailPage() {
   }
 
   async function deleteMessage(messageId: string) {
-    const ok = window.confirm("Delete this message? This can't be undone.");
+    const ok = window.confirm(t("detail.confirmDelete"));
     if (!ok) return;
     const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
@@ -576,7 +603,7 @@ export default function HostInquiryDetailPage() {
         continue;
       }
       if (pendingFiles.length + accepted.length >= MAX_FILES) {
-        toast.error(`Up to ${MAX_FILES} attachments per message`);
+        toast.error(t("detail.toasts.maxAttachments", { max: MAX_FILES }));
         break;
       }
       accepted.push(f);
@@ -631,7 +658,7 @@ export default function HostInquiryDetailPage() {
       !composer.trim()
     ) {
       setSending(false);
-      toast.error("Couldn't upload your attachments — message not sent.");
+      toast.error(t("detail.toasts.uploadFailed"));
       return;
     }
     // Partial-failure case: some uploads succeeded, some didn't.
@@ -642,7 +669,10 @@ export default function HostInquiryDetailPage() {
       uploaded.length < pendingFiles.length
     ) {
       toast.info(
-        `${uploaded.length} of ${pendingFiles.length} attachments uploaded.`,
+        t("detail.toasts.partialUpload", {
+          uploaded: uploaded.length,
+          total: pendingFiles.length,
+        }),
       );
     }
     const { error } = await supabase.from("direct_messages").insert({
@@ -695,13 +725,13 @@ export default function HostInquiryDetailPage() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to inquiries
+            {t("detail.backToInquiries")}
           </Link>
           <div className="text-center py-24">
             <p className="font-label text-muted-foreground mb-3">404</p>
-            <h1 className="font-editorial text-3xl mb-2">Inquiry not found</h1>
+            <h1 className="font-editorial text-3xl mb-2">{t("detail.notFoundTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              This inquiry doesn't exist or you don't have access.
+              {t("detail.notFoundBody")}
             </p>
           </div>
         </main>
@@ -732,10 +762,10 @@ export default function HostInquiryDetailPage() {
   }
   if (!inquiry) return null;
 
-  const vendorName = inquiry.vendor?.business_name?.trim() || "Vendor";
+  const vendorName = inquiry.vendor?.business_name?.trim() || t("vendorFallback");
   const vendorInitial = vendorName.charAt(0).toUpperCase();
   const eventTypeNice = inquiry.event_type
-    ? eventTypeLabel(inquiry.event_type)
+    ? priceLabels.eventType(inquiry.event_type)
     : "";
 
   // "Seen" indicator — only fires when the vendor has read past the
@@ -752,12 +782,7 @@ export default function HostInquiryDetailPage() {
       new Date(lastOutgoing.created_at).getTime()
       ? inquiry.vendor_read_at
       : null;
-  const seenTimeLabel = seenAt
-    ? new Date(seenAt).toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : null;
+  const seenTimeLabel = seenAt ? fmtClock(seenAt) : null;
 
   return (
     <div className="min-h-screen vendor-canvas flex flex-col">
@@ -776,7 +801,7 @@ export default function HostInquiryDetailPage() {
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
           <Link
             to="/customer/inquiries"
-            aria-label="Back to inquiries"
+            aria-label={t("detail.backToInquiries")}
             className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -806,9 +831,14 @@ export default function HostInquiryDetailPage() {
           <div className="min-w-0 flex-1 leading-tight">
             <p className="font-medium text-foreground truncate">{vendorName}</p>
             <p className="text-[11px] text-muted-foreground truncate">
-              {eventTypeNice ? `${eventTypeNice} inquiry` : "Inquiry"}
+              {eventTypeNice
+                ? t("detail.inquiryOfType", {
+                    type: eventTypeNice,
+                    typeLower: eventTypeNice.toLocaleLowerCase(i18n.language),
+                  })
+                : t("detail.inquiry")}
               {inquiry.event_date
-                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(undefined, {
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(intlLocale(), {
                     month: "short",
                     day: "numeric",
                   })}`
@@ -818,7 +848,7 @@ export default function HostInquiryDetailPage() {
           <button
             type="button"
             onClick={() => setSummaryOpen(true)}
-            aria-label="Inquiry details"
+            aria-label={t("detail.detailsLabel")}
             className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
           >
             <Info className="w-4 h-4" />
@@ -847,7 +877,9 @@ export default function HostInquiryDetailPage() {
               variant="outline"
               className={`${statusStyles[inquiry.status] ?? ""} rounded-full text-[11px] font-medium`}
             >
-              {statusLabel[inquiry.status] ?? inquiry.status}
+              {LABELLED_STATUSES.includes(inquiry.status)
+                ? t(`status.${inquiry.status}`)
+                : inquiry.status}
             </Badge>
           </div>
 
@@ -857,7 +889,7 @@ export default function HostInquiryDetailPage() {
             <div className="flex items-end justify-end mt-2">
               <div className="max-w-md px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl rounded-br-sm bg-card text-foreground border border-border">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                  Your inquiry
+                  {t("detail.yourInquiry")}
                 </p>
                 <p>
                   <MessageBody body={inquiry.special_requests} />
@@ -869,18 +901,24 @@ export default function HostInquiryDetailPage() {
           {messages.length === 0 &&
           !inquiry.special_requests ? (
             <p className="text-sm text-muted-foreground py-12 text-center">
-              No messages yet — the vendor will reply soon.
+              {t("detail.noMessages")}
             </p>
           ) : (
-            groupedItems.map((it) => {
+            groupedItems.map((it, idx) => {
               if (it.kind === "sep") {
+                // The separator's day is the next message's day.
+                const next = groupedItems[idx + 1];
+                const sepLabel =
+                  next && next.kind === "msg"
+                    ? daySeparatorLabel(next.message.created_at)
+                    : it.label;
                 return (
                   <div
                     key={it.key}
                     className="flex items-center justify-center py-3"
                   >
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
-                      {it.label}
+                      {sepLabel}
                     </span>
                   </div>
                 );
@@ -951,7 +989,7 @@ export default function HostInquiryDetailPage() {
                       }`}
                     >
                       {isDeleted ? (
-                        <p>Message deleted</p>
+                        <p>{t("detail.messageDeleted")}</p>
                       ) : (
                         <>
                           {m.reply_to_message_id ? (() => {
@@ -963,7 +1001,7 @@ export default function HostInquiryDetailPage() {
                               parent.sender_role === "vendor"
                                 ? vendorName
                                 : parent.sender_role === "host"
-                                  ? "You"
+                                  ? t("detail.you")
                                   : "Vendora AI";
                             return (
                               <MessageReplyContext
@@ -976,7 +1014,7 @@ export default function HostInquiryDetailPage() {
                           {isAi ? (
                             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
                               <Sparkles className="w-3 h-3" />
-                              Sent by AI
+                              {t("detail.sentByAi")}
                             </span>
                           ) : null}
                           {editingMessageId === m.id ? (
@@ -1005,14 +1043,14 @@ export default function HostInquiryDetailPage() {
                                   onClick={cancelEditing}
                                   className="text-[11px] text-muted-foreground hover:text-accent px-2 py-1"
                                 >
-                                  Cancel
+                                  {t("detail.cancel")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
                                   className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
                                 >
-                                  Save
+                                  {t("detail.save")}
                                 </button>
                               </div>
                             </div>
@@ -1026,7 +1064,7 @@ export default function HostInquiryDetailPage() {
                           )}
                           {isEdited ? (
                             <span className="block text-[10px] opacity-60 mt-1">
-                              edited
+                              {t("detail.edited")}
                             </span>
                           ) : null}
                         </>
@@ -1048,10 +1086,7 @@ export default function HostInquiryDetailPage() {
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
-                        {new Date(m.created_at).toLocaleTimeString(undefined, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
+                        {fmtClock(m.created_at)}
                       </p>
                     ) : null}
                   </div>
@@ -1073,7 +1108,7 @@ export default function HostInquiryDetailPage() {
           {seenTimeLabel ? (
             <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
               <CheckCheck className="w-3 h-3" aria-hidden />
-              <span>Read · {seenTimeLabel}</span>
+              <span>{t("detail.read", { time: seenTimeLabel })}</span>
             </div>
           ) : null}
 
@@ -1153,10 +1188,10 @@ export default function HostInquiryDetailPage() {
           }}
         >
           {inquiry.status === "lost"
-            ? "Conversation ended."
+            ? t("detail.ended.lost")
             : inquiry.status === "expired"
-              ? "Conversation ended — inquiry expired."
-              : "Conversation ended — inquiry cancelled."}
+              ? t("detail.ended.expired")
+              : t("detail.ended.cancelled")}
         </div>
       ) : (
       <div
@@ -1180,7 +1215,7 @@ export default function HostInquiryDetailPage() {
               className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <CalendarDays className="w-3.5 h-3.5 text-foreground" />
-              Propose meeting
+              {t("detail.proposeMeeting")}
             </button>
           </div>
 
@@ -1191,7 +1226,7 @@ export default function HostInquiryDetailPage() {
                   replyTarget.sender_role === "vendor"
                     ? vendorName
                     : replyTarget.sender_role === "host"
-                      ? "You"
+                      ? t("detail.you")
                       : "Vendora AI"
                 }
                 body={replyTarget.deleted_at ? "" : replyTarget.body}
@@ -1214,7 +1249,7 @@ export default function HostInquiryDetailPage() {
                           prev.filter((_, j) => j !== i),
                         )
                       }
-                      aria-label="Remove attachment"
+                      aria-label={t("detail.removeAttachment")}
                       className="text-muted-foreground hover:text-accent"
                     >
                       <X className="w-3 h-3" />
@@ -1229,7 +1264,7 @@ export default function HostInquiryDetailPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || pendingFiles.length >= MAX_FILES}
-                aria-label="Attach files"
+                aria-label={t("detail.attachFiles")}
                 className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
               >
                 <Paperclip className="w-4 h-4" />
@@ -1251,7 +1286,7 @@ export default function HostInquiryDetailPage() {
                   <button
                     type="button"
                     disabled={sending}
-                    aria-label="Quick reactions"
+                    aria-label={t("detail.quickReactions")}
                     className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
                   >
                     <Smile className="w-4 h-4" />
@@ -1263,7 +1298,7 @@ export default function HostInquiryDetailPage() {
                       <button
                         key={e}
                         type="button"
-                        aria-label={`Insert ${e}`}
+                        aria-label={t("detail.insertEmoji", { emoji: e })}
                         onClick={() => {
                           setComposer((v) => v + e);
                           setEmojiOpen(false);
@@ -1296,7 +1331,7 @@ export default function HostInquiryDetailPage() {
                   }
                 }}
                 rows={1}
-                placeholder={`Message ${vendorName}…`}
+                placeholder={t("detail.messagePlaceholder", { name: vendorName })}
                 className="resize-none min-h-[36px] max-h-32 rounded-2xl border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
               />
               <input
@@ -1316,7 +1351,7 @@ export default function HostInquiryDetailPage() {
                   sending ||
                   (!composer.trim() && pendingFiles.length === 0)
                 }
-                aria-label="Send"
+                aria-label={t("detail.send")}
                 className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0 disabled:bg-muted"
               >
                 {sending ? (
@@ -1367,35 +1402,38 @@ function InquirySummarySheet({
   inquiry: Inquiry;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("hostInquiries");
+  const priceLabels = usePriceLabels();
+  const categoryNames = useCategoryNames();
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center">
       <div className="relative w-full sm:max-w-lg bg-card rounded-t-3xl sm:rounded-3xl shadow-lifted overflow-hidden max-h-[90vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("detail.summary.close")}
           className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white border border-border text-foreground hover:bg-muted inline-flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>
         <div className="p-6 pt-7 space-y-5">
           <div>
-            <p className="font-label text-muted-foreground">To</p>
+            <p className="font-label text-muted-foreground">{t("detail.summary.to")}</p>
             <h2 className="font-editorial text-2xl">
-              {inquiry.vendor?.business_name ?? "Vendor"}
+              {inquiry.vendor?.business_name ?? t("vendorFallback")}
             </h2>
             {inquiry.vendor?.category && (
               <p className="text-sm text-muted-foreground mt-0.5">
-                {inquiry.vendor.category}
+                {categoryNames.sub(inquiry.vendor.category)}
               </p>
             )}
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4 pt-4 border-t border-border">
             <div>
-              <p className="font-label text-muted-foreground">Event</p>
+              <p className="font-label text-muted-foreground">{t("detail.summary.event")}</p>
               <p className="text-sm capitalize mt-1">
-                {eventTypeLabel(inquiry.event_type)}
+                {priceLabels.eventType(inquiry.event_type)}
                 {inquiry.event_date && (
                   <>
                     {" · "}
@@ -1405,13 +1443,13 @@ function InquirySummarySheet({
               </p>
             </div>
             <div>
-              <p className="font-label text-muted-foreground">Guests</p>
+              <p className="font-label text-muted-foreground">{t("detail.summary.guests")}</p>
               <p className="text-sm tnum mt-1">
                 {inquiry.guest_count ?? "—"}
               </p>
             </div>
             <div>
-              <p className="font-label text-muted-foreground">Budget</p>
+              <p className="font-label text-muted-foreground">{t("detail.summary.budget")}</p>
               <p className="text-sm tnum mt-1">
                 {fmtMoney(inquiry.budget_min_cents)} –{" "}
                 {fmtMoney(inquiry.budget_max_cents)}
@@ -1421,14 +1459,14 @@ function InquirySummarySheet({
 
           {inquiry.location && (
             <div className="pt-4 border-t border-border">
-              <p className="font-label text-muted-foreground">Location</p>
+              <p className="font-label text-muted-foreground">{t("detail.summary.location")}</p>
               <p className="text-sm mt-1">{inquiry.location}</p>
             </div>
           )}
 
           {inquiry.special_requests && (
             <div className="pt-4 border-t border-border">
-              <p className="font-label text-muted-foreground">Your notes</p>
+              <p className="font-label text-muted-foreground">{t("detail.summary.yourNotes")}</p>
               <p className="text-sm mt-1 leading-relaxed whitespace-pre-wrap">
                 <MessageBody body={inquiry.special_requests} />
               </p>

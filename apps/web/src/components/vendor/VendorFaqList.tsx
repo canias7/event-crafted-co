@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { FaqCardList } from "@/components/vendor/VendorFaqsManager";
 
 // Static FAQ block on the vendor detail page. Renders the same
@@ -15,11 +16,8 @@ interface Props {
   eyebrow?: string;
 }
 
-export function VendorFaqList({
-  items,
-  title = "Common questions",
-  eyebrow = "FAQ",
-}: Props) {
+export function VendorFaqList({ items, title, eyebrow }: Props) {
+  const { t } = useTranslation("vendorProfile");
   if (items.length === 0) return null;
   return (
     <div>
@@ -27,10 +25,10 @@ export function VendorFaqList({
         className="font-label mb-3"
         style={{ color: "#14161a", letterSpacing: "0.22em" }}
       >
-        {eyebrow}
+        {eyebrow ?? t("faq.eyebrow")}
       </p>
       <h2 className="font-editorial text-4xl mb-7 text-foreground">
-        {title}
+        {title ?? t("faq.title")}
       </h2>
       <FaqCardList items={items} />
     </div>

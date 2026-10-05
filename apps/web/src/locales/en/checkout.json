@@ -1,0 +1,195 @@
+{
+  "proposal": {
+    "notFound": {
+      "title": "Proposal not found",
+      "body": "This link is invalid or has expired."
+    },
+    "header": "Proposal",
+    "headerVendor": "{{vendor}} · Proposal",
+    "acceptedBy": "Accepted by {{name}}",
+    "cta": {
+      "title": "Ready to move forward?",
+      "body": "Accept and we'll send the agreement and invoice.",
+      "namePlaceholder": "Type your full name to accept",
+      "agree": "I've reviewed this proposal and I'm ready to proceed.",
+      "accept": "Accept proposal"
+    },
+    "closed": {
+      "declined": "This proposal is declined and can no longer be accepted.",
+      "cancelled": "This proposal is cancelled and can no longer be accepted.",
+      "other": "This proposal is {{status}} and can no longer be accepted."
+    },
+    "toast": {
+      "accepted": "Accepted — thank you!",
+      "error": "Couldn't record your acceptance. Please try again."
+    },
+    "poweredBy": "Powered by Vendora"
+  },
+  "sign": {
+    "notFound": {
+      "title": "Contract not found",
+      "body": "This signing link is invalid or has expired."
+    },
+    "header": "Contract",
+    "headerVendor": "{{vendor}} · Contract",
+    "signedBy": "Signed by {{name}}",
+    "signatureAlt": "Signature",
+    "downloadPdf": "Download signed PDF",
+    "nameLabel": "Type your full name to sign",
+    "namePlaceholder": "Your full name",
+    "drawLabel": "Or draw your signature (optional)",
+    "verifyLabel": "Verify your email to sign",
+    "codeTo": "We'll send a code to <email/>",
+    "resend": "Resend",
+    "sendCode": "Send code",
+    "codePlaceholder": "Enter the 6-digit code",
+    "codeSentTo": "We emailed a code to {{email}}. It expires in 10 minutes.",
+    "consent": "I have read and agree to this contract, and my signature above is my legally binding electronic signature.",
+    "submit": "Sign contract",
+    "notReady": "This contract isn't ready for signing yet.",
+    "notReadyVendor": "This contract isn't ready for signing yet — please reach out to {{vendor}}.",
+    "closed": {
+      "cancelled": "This contract is cancelled and can no longer be signed.",
+      "other": "This contract is {{status}} and can no longer be signed."
+    },
+    "poweredBy": "Powered by Vendora · electronic signatures",
+    "pad": {
+      "placeholder": "Draw your signature here",
+      "clear": "Clear"
+    },
+    "pdf": {
+      "title": "Contract",
+      "signedHeading": "ELECTRONICALLY SIGNED",
+      "signedOn": "Signed {{date}}",
+      "fileFallback": "contract",
+      "fileSuffix": "signed"
+    },
+    "toast": {
+      "codeError": "Couldn't send the code",
+      "codeErrorBody": "Please try again in a moment.",
+      "codeSent": "Code sent — check your email",
+      "signed": "Signed — thank you!",
+      "invalidCode": "That code isn't right. Double-check and try again.",
+      "codeExpired": "Your code expired. Request a new one.",
+      "tooManyAttempts": "Too many attempts. Request a new code.",
+      "signError": "Couldn't record your signature."
+    }
+  },
+  "startError": {
+    "title": "Couldn't start checkout",
+    "tryAgain": "Try again in a moment.",
+    "detail": "{{detail}}",
+    "vendorNotReady": "{{detail}}",
+    "rateLimited": "{{detail}}"
+  },
+  "invoice": {
+    "notFound": {
+      "title": "Invoice not found",
+      "body": "This invoice doesn't exist."
+    },
+    "paid": {
+      "title": "Payment received",
+      "bodyNumber": "You paid <amount/> for Invoice <number/>. A receipt is on its way to <email/>. <vendor/> will be in touch — funds settle to their account within 2 business days.",
+      "bodyNoNumber": "You paid <amount/> . A receipt is on its way to <email/>. <vendor/> will be in touch — funds settle to their account within 2 business days.",
+      "yourEmail": "your email",
+      "yourVendor": "Your vendor"
+    },
+    "cancelled": {
+      "title": "Invoice cancelled",
+      "body": "{{vendor}} cancelled this invoice. Please reach out if you have questions.",
+      "theVendor": "The vendor"
+    },
+    "draft": {
+      "title": "Invoice not yet ready",
+      "body": "This invoice hasn't been sent yet. Check back once your vendor finalizes it."
+    },
+    "refunded": {
+      "title": "Already refunded",
+      "body": "{{vendor}} has refunded this invoice.",
+      "yourVendor": "Your vendor"
+    },
+    "savePdf": "Save as PDF",
+    "pay": "Pay {{amount}}",
+    "headsUp": "Heads up — this vendor is still finishing their payment setup, so online payment may not be available just yet. You can review the invoice below in the meantime.",
+    "issuedVia": "Issued via VendoraPay",
+    "label": "Invoice",
+    "billTo": "Bill to",
+    "issued": "Issued",
+    "due": "Due",
+    "table": {
+      "item": "Item",
+      "qty": "Qty",
+      "unitPrice": "Unit price",
+      "amount": "Amount"
+    },
+    "subtotal": "Subtotal",
+    "tax": "Tax ({{rate}}%)",
+    "lateFee": "Late fee",
+    "totalDue": "Total due",
+    "notes": "Notes",
+    "thanks": "Thank you for your business.",
+    "poweredBy": "Powered by <brand>VendoraPay</brand>",
+    "statement": "Card payments processed securely. \"VENDORAPAY\" will appear on your statement."
+  },
+  "payLink": {
+    "notFound": {
+      "title": "Link not found",
+      "body": "This pay link doesn't exist."
+    },
+    "paid": {
+      "title": "Payment received",
+      "body": "Thanks. {{vendor}} will be in touch.",
+      "yourVendor": "Your vendor"
+    },
+    "cancelled": {
+      "title": "Link cancelled",
+      "body": "{{vendor}} cancelled this payment request. Please reach out if you have questions.",
+      "theVendor": "The vendor"
+    },
+    "expired": {
+      "title": "Link expired",
+      "bodyVendor": "This payment request expired. Reach out to {{vendor}} for a fresh one.",
+      "body": "This payment request expired. Reach out to the vendor for a fresh one."
+    },
+    "scheduled": {
+      "title": "Not yet due",
+      "body": "This payment isn't due yet. We'll email you a reminder on the scheduled date."
+    },
+    "poweredBy": "Powered by VendoraPay",
+    "amountDue": "Amount due",
+    "inactive": "This link is no longer accepting payments.",
+    "pay": "Pay {{amount}}",
+    "preparing": "Preparing secure checkout…",
+    "statement": "Card payments processed securely. You'll see \"VENDORAPAY\" on your statement.",
+    "loadingForm": "Loading payment form…",
+    "secured": "Secured by Stripe",
+    "toast": {
+      "paymentFailed": "Payment failed",
+      "processError": "Couldn't process the payment. Please try again."
+    }
+  },
+  "mobileReturn": {
+    "done": {
+      "title": "All done",
+      "body": "You can head back to the Vendora app."
+    },
+    "upgraded": {
+      "title": "Payment successful",
+      "body": "Your plan is active. Head back to the Vendora app to continue."
+    },
+    "topup": {
+      "title": "Credits added",
+      "body": "Your top-up went through. Head back to the Vendora app."
+    },
+    "cancelled": {
+      "title": "Checkout cancelled",
+      "body": "No changes were made. You can head back to the Vendora app."
+    },
+    "portal": {
+      "title": "Billing updated",
+      "body": "Any changes you made are saved. Head back to the Vendora app."
+    },
+    "open": "Open the app",
+    "hint": "If the app doesn't open automatically, tap the button above or switch back to it manually — your changes are already saved."
+  }
+}

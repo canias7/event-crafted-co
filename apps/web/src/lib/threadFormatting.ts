@@ -9,6 +9,12 @@
 //     so consecutive same-sender messages collapse to tight spacing
 //     and only the last bubble per group keeps the asymmetric tail
 //     corner.
+//
+// Labels follow the site language ("messages" namespace); English keeps
+// the browser-default date format it always had.
+
+import i18n from "@/i18n";
+import { intlLocale } from "@/lib/intlLocale";
 
 export const QUICK_EMOJIS = [
   "👍",
@@ -47,14 +53,15 @@ export function daySeparator(iso: string): string {
     d.getMonth() === today.getMonth() &&
     d.getDate() === today.getDate()
   )
-    return "Today";
+    return i18n.t("thread.today", { ns: "messages" });
   if (
     d.getFullYear() === yesterday.getFullYear() &&
     d.getMonth() === yesterday.getMonth() &&
     d.getDate() === yesterday.getDate()
   )
-    return "Yesterday";
-  return d.toLocaleDateString(undefined, {
+    return i18n.t("thread.yesterday", { ns: "messages" });
+  const locale = intlLocale();
+  return d.toLocaleDateString(locale.startsWith("es") ? locale : undefined, {
     weekday: "long",
     month: "short",
     day: "numeric",

@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Handshake, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useRealtime } from "@/lib/realtime";
@@ -34,10 +35,9 @@ interface Stamps {
   vendor_confirmed_booked_at: string | null;
 }
 
-const ERROR_LABELS: Record<string, string> = {
-  not_authorized: "You're not allowed to mark this inquiry as booked.",
-  not_found: "Inquiry not found — refresh and try again.",
-};
+// Server error codes with friendly copy in inquiries.json
+// (booking.errors.<code>); anything else shows the raw message.
+const ERROR_CODES = ["not_authorized", "not_found"];
 
 export function BookingConfirmationCard({
   inquiryId,
@@ -46,6 +46,7 @@ export function BookingConfirmationCard({
   hasAcceptedProposal,
   onChange,
 }: Props) {
+  const { t } = useTranslation("inquiries");
   const [stamps, setStamps] = useState<Stamps | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -77,10 +78,14 @@ export function BookingConfirmationCard({
     });
     setSubmitting(false);
     if (error) {
-      toast.error(ERROR_LABELS[error.message] ?? error.message);
+      toast.error(
+        ERROR_CODES.includes(error.message)
+          ? t(`booking.errors.${error.message}`)
+          : error.message,
+      );
       return;
     }
-    toast.success("Marked as booked.");
+    toast.success(t("booking.markedBooked"));
     await refresh();
     onChange?.();
   }
@@ -96,8 +101,6 @@ export function BookingConfirmationCard({
     selfRole === "host"
       ? stamps.vendor_confirmed_booked_at !== null
       : stamps.host_confirmed_booked_at !== null;
-
-  const otherSideLabel = selfRole === "host" ? "vendor" : "host";
 
   const state: "initial" | "waiting" | "pending" | "confirmed" = ownStamped
     ? otherStamped
@@ -137,11 +140,10 @@ export function BookingConfirmationCard({
           {state === "initial" && (
             <>
               <p className="text-sm font-medium leading-tight">
-                Did you work with {otherPartyName}?
+                {t("booking.initialTitle", { name: otherPartyName })}
               </p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                If you closed off-platform (no proposal here), confirm so
-                event reviews can open on both sides.
+                {t("booking.initialBody")}
               </p>
               <Button
                 size="sm"
@@ -150,7 +152,7 @@ export function BookingConfirmationCard({
                 className="mt-3 rounded-full"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-                Yes, we worked together
+                {t("booking.initialCta")}
               </Button>
             </>
           )}
@@ -158,11 +160,12 @@ export function BookingConfirmationCard({
           {state === "waiting" && (
             <>
               <p className="text-sm font-medium leading-tight">
-                Waiting for {otherPartyName} to confirm
+                {t("booking.waitingTitle", { name: otherPartyName })}
               </p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                You marked this booked. Event reviews open once the {otherSideLabel}{" "}
-                confirms too.
+                {selfRole === "host"
+                  ? t("booking.waitingBodyVendor")
+                  : t("booking.waitingBodyHost")}
               </p>
             </>
           )}
@@ -170,10 +173,10 @@ export function BookingConfirmationCard({
           {state === "pending" && (
             <>
               <p className="text-sm font-medium leading-tight">
-                {otherPartyName} says you worked together
+                {t("booking.pendingTitle", { name: otherPartyName })}
               </p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Confirm to unlock event reviews on both sides.
+                {t("booking.pendingBody")}
               </p>
               <Button
                 size="sm"
@@ -182,7 +185,7 @@ export function BookingConfirmationCard({
                 className="mt-3 rounded-full"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-                Confirm
+                {t("booking.pendingCta")}
               </Button>
             </>
           )}
@@ -190,10 +193,10 @@ export function BookingConfirmationCard({
           {state === "confirmed" && (
             <>
               <p className="text-sm font-medium leading-tight">
-                Booking confirmed
+                {t("booking.confirmedTitle")}
               </p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Event reviews open 3 days after the event date.
+                {t("booking.confirmedBody")}
               </p>
             </>
           )}

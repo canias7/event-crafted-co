@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +14,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems } from "@/data/navItems";
 import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { useRealtime } from "@/lib/realtime";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface Balance {
   available_cents: number;
@@ -21,8 +23,15 @@ interface Balance {
   onboarded: boolean;
 }
 
+// Money and dates follow the site language (US Spanish in Spanish);
+// English keeps the fixed US format these cards always used.
+function usLocale(): string {
+  const locale = intlLocale();
+  return locale.startsWith("es") ? locale : "en-US";
+}
+
 function formatMoney(cents: number, currency = "usd"): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(usLocale(), {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(cents / 100);
@@ -30,7 +39,7 @@ function formatMoney(cents: number, currency = "usd"): string {
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
+  return new Date(iso).toLocaleDateString(usLocale(), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -40,6 +49,7 @@ function formatDate(iso: string | null): string {
 export default function VendorPaymentsPage(
   { embedded = false }: { embedded?: boolean } = {},
 ) {
+  const { t } = useTranslation("vendorPayments");
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -172,12 +182,12 @@ export default function VendorPaymentsPage(
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <h1 className="font-editorial text-3xl md:text-[2rem] leading-[1.05] tracking-tight">
-                {!embedded ? "VendoraPay" : "Overview"}
+                {!embedded ? "VendoraPay" : t("header.title_overview")}
               </h1>
               <p className="text-sm text-muted-foreground mt-1.5">
                 {!embedded
-                  ? "Accept card payments and track payouts from one place."
-                  : "Your business at a glance — balance, activity, and what's next."}
+                  ? t("header.subtitle_pay")
+                  : t("header.subtitle_overview")}
               </p>
             </div>
           </div>
@@ -236,6 +246,7 @@ function OverviewTab({
   // navigates to the Calendar tab.
   onViewCalendar: () => void;
 }) {
+  const { t } = useTranslation("vendorPayments");
   const currency = balance?.currency ?? "usd";
   // Operating expenses are account-level (vendor_expenses.user_id), so
   // the OPEX card reads by the signed-in user rather than by listing.
@@ -425,9 +436,9 @@ function OverviewTab({
           <div className="cockpit-data-card">
             <div className="cockpit-data-card-header">
               <div>
-                <h3 className="text-sm font-semibold">Recent activity</h3>
+                <h3 className="text-sm font-semibold">{t("recent.title")}</h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Latest paid invoices across every listing on the account
+                  {t("recent.subtitle")}
                 </p>
               </div>
               {onViewActivity ? (
@@ -436,22 +447,22 @@ function OverviewTab({
                   onClick={onViewActivity}
                   className="text-xs text-muted-foreground hover:text-accent border border-border rounded-md px-2.5 py-1 shrink-0"
                 >
-                  View all →
+                  {t("recent.view_all")}
                 </button>
               ) : null}
             </div>
             {recentInvoices.length === 0 ? (
               <div className="px-5 py-6 text-sm text-muted-foreground text-center">
-                No paid invoices yet. When customers pay, they'll show up here.
+                {t("recent.empty")}
               </div>
             ) : (
               <table className="cockpit-data-table">
                 <thead>
                   <tr>
-                    <th>Customer</th>
-                    <th>Invoice</th>
-                    <th>Date</th>
-                    <th className="num">Amount</th>
+                    <th>{t("recent.customer")}</th>
+                    <th>{t("recent.invoice")}</th>
+                    <th>{t("recent.date")}</th>
+                    <th className="num">{t("recent.amount")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -490,14 +501,9 @@ function OverviewTab({
 // Upcoming appointments card for the Overview — a compact "what's next
 // on the calendar" surface. Pulls confirmed (accepted) and proposed
 // meetings scheduled from now on, soonest first.
-const APPT_KIND_LABEL: Record<string, string> = {
-  consultation: "Consultation",
-  walkthrough: "Walkthrough",
-  tasting: "Tasting",
-  fitting: "Fitting",
-  phone_call: "Phone call",
-  other: "Meeting",
-};
+// Appointment kinds (appointments.kind) are labelled from
+// locales/<lang>/vendorPayments.json → appointments.kinds.
+const APPT_KINDS = ["consultation", "walkthrough", "tasting", "fitting", "phone_call", "other"];
 
 function OverviewUpcomingAppointments({
   appts,
@@ -514,9 +520,10 @@ function OverviewUpcomingAppointments({
   }>;
   onViewAll: () => void;
 }) {
+  const { t } = useTranslation("vendorPayments");
   const fmtWhen = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleString(undefined, {
+    return d.toLocaleString(intlLocale(), {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -527,9 +534,9 @@ function OverviewUpcomingAppointments({
     <div className="cockpit-data-card mb-4">
       <div className="cockpit-data-card-header">
         <div>
-          <h3 className="text-sm font-semibold">Upcoming appointments</h3>
+          <h3 className="text-sm font-semibold">{t("appointments.title")}</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Confirmed and proposed meetings across every listing
+            {t("appointments.subtitle")}
           </p>
         </div>
         <button
@@ -537,26 +544,30 @@ function OverviewUpcomingAppointments({
           onClick={onViewAll}
           className="text-xs text-muted-foreground hover:text-accent border border-border rounded-md px-2.5 py-1 shrink-0"
         >
-          View all →
+          {t("appointments.view_all")}
         </button>
       </div>
       {appts.length === 0 ? (
         <div className="px-5 py-6 text-sm text-muted-foreground text-center">
-          No upcoming appointments. Scheduled meetings will show up here.
+          {t("appointments.empty")}
         </div>
       ) : (
         <table className="cockpit-data-table">
           <thead>
             <tr>
-              <th>Appointment</th>
-              <th>With</th>
-              <th>When</th>
-              <th>Status</th>
+              <th>{t("appointments.appointment")}</th>
+              <th>{t("appointments.with")}</th>
+              <th>{t("appointments.when")}</th>
+              <th>{t("appointments.status")}</th>
             </tr>
           </thead>
           <tbody>
             {appts.map((a) => {
-              const label = a.title?.trim() || APPT_KIND_LABEL[a.kind] || "Meeting";
+              const label =
+                a.title?.trim() ||
+                (APPT_KINDS.includes(a.kind)
+                  ? t(`appointments.kinds.${a.kind}`)
+                  : t("appointments.meeting"));
               const confirmed = a.status === "accepted";
               return (
                 <tr key={a.id}>
@@ -580,7 +591,7 @@ function OverviewUpcomingAppointments({
                         color: confirmed ? "hsl(var(--primary-foreground))" : "hsl(var(--accent))",
                       }}
                     >
-                      {confirmed ? "Confirmed" : "Proposed"}
+                      {confirmed ? t("appointments.confirmed") : t("appointments.proposed")}
                     </span>
                   </td>
                 </tr>
@@ -622,6 +633,8 @@ function OverviewRevenueChart({
   currency: string;
   previousTotal: number;
 }) {
+  const { t } = useTranslation("vendorPayments");
+  const dateLoc = usLocale();
   // Guard against an empty series on first render (state initializes to
   // [] before the useEffect query resolves). The chart math below
   // dereferences pts[0] unconditionally, so an empty input would crash
@@ -652,10 +665,10 @@ function OverviewRevenueChart({
     for (const off of offsets) {
       const d = new Date(now);
       d.setDate(d.getDate() - off);
-      labels.push(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+      labels.push(d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" }));
     }
     return labels;
-  }, []);
+  }, [dateLoc]);
 
   return (
     <div
@@ -671,10 +684,10 @@ function OverviewRevenueChart({
             className="text-[22px] font-semibold leading-tight"
             style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
-            Revenue · last 30 days
+            {t("revenue.title")}
           </div>
           <div className="text-[13px] mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
-            Daily paid-invoice totals
+            {t("revenue.subtitle")}
           </div>
         </div>
         <div className="text-right">
@@ -760,7 +773,7 @@ function OverviewRevenueChart({
           if (!showHover) return "";
           const d = new Date();
           d.setDate(d.getDate() - (n - 1 - (hoverIdx as number)));
-          return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          return d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" });
         })();
 
         return (
@@ -868,7 +881,7 @@ function OverviewRevenueChart({
                     background: "hsl(var(--muted))",
                   }}
                 >
-                  No paid invoices in the last 30 days
+                  {t("revenue.empty")}
                 </div>
               </div>
             )}
@@ -900,11 +913,12 @@ function OverviewLeadsCard({
 }: {
   leads: { new: number; active: number; won: number; lost: number; total: number };
 }) {
+  const { t } = useTranslation("vendorPayments");
   const rows: Array<{ label: string; count: number; color: string }> = [
-    { label: "New",    count: leads.new,    color: "#c9a86a" }, // champagne — new, needs a reply
-    { label: "Active", count: leads.active, color: "#8a6f3e" }, // bronze — in conversation
-    { label: "Won",    count: leads.won,    color: "#14161a" }, // ink — converted
-    { label: "Lost",   count: leads.lost,   color: "#d9d1bf" }, // sand — lost/expired
+    { label: t("leads.new"),    count: leads.new,    color: "#c9a86a" }, // champagne — new, needs a reply
+    { label: t("leads.active"), count: leads.active, color: "#8a6f3e" }, // bronze — in conversation
+    { label: t("leads.won"),    count: leads.won,    color: "#14161a" }, // ink — converted
+    { label: t("leads.lost"),   count: leads.lost,   color: "#d9d1bf" }, // sand — lost/expired
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
   const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
@@ -912,17 +926,17 @@ function OverviewLeadsCard({
     <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3">
         <div>
-          <div className="cockpit-chart-title">Inquiries</div>
-          <div className="cockpit-chart-sub">Inbound pipeline · last 30 days</div>
+          <div className="cockpit-chart-title">{t("leads.title")}</div>
+          <div className="cockpit-chart-sub">{t("leads.subtitle")}</div>
         </div>
         <div className="text-right">
-          <div className="cockpit-kpi-label">Total</div>
+          <div className="cockpit-kpi-label">{t("leads.total")}</div>
           <div className="cockpit-money cockpit-money--lg">{leads.total}</div>
         </div>
       </div>
       {leads.total === 0 ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
-          No leads in the last 30 days. New inquiries land here.
+          {t("leads.empty")}
         </div>
       ) : (
         <>
@@ -947,8 +961,8 @@ function OverviewLeadsCard({
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
             {leads.won > 0
-              ? `${wonRate}% conversion · ${leads.won} of ${leads.total} won`
-              : `${leads.total} inquir${leads.total === 1 ? "y" : "ies"} this period`}
+              ? t("leads.conversion", { rate: wonRate, won: leads.won, total: leads.total })
+              : t("leads.period", { count: leads.total })}
           </div>
         </>
       )}
@@ -972,11 +986,12 @@ function OverviewCashflowCard({
   moneyOut: number;
   currency: string;
 }) {
+  const { t } = useTranslation("vendorPayments");
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: "Money in",  value: moneyIn,  color: "#8a6f3e" }, // bronze
-    { label: "Money out", value: moneyOut, color: "#14161a" }, // ink
+    { label: t("cashflow.money_in"),  value: moneyIn,  color: "#8a6f3e" }, // bronze
+    { label: t("cashflow.money_out"), value: moneyOut, color: "#14161a" }, // ink
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -986,11 +1001,11 @@ function OverviewCashflowCard({
     <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3">
         <div>
-          <div className="cockpit-chart-title">Cash flow</div>
-          <div className="cockpit-chart-sub">Money in vs out · last 30 days</div>
+          <div className="cockpit-chart-title">{t("cashflow.title")}</div>
+          <div className="cockpit-chart-sub">{t("cashflow.subtitle")}</div>
         </div>
         <div className="text-right">
-          <div className="cockpit-kpi-label">Net</div>
+          <div className="cockpit-kpi-label">{t("cashflow.net")}</div>
           <div
             className="cockpit-money cockpit-money--lg"
             style={{ color: netPositive ? "hsl(var(--accent))" : "hsl(var(--destructive))" }}
@@ -1001,7 +1016,7 @@ function OverviewCashflowCard({
       </div>
       {moneyIn === 0 && moneyOut === 0 ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
-          No money in or out in the last 30 days.
+          {t("cashflow.empty")}
         </div>
       ) : (
         <>
@@ -1026,8 +1041,8 @@ function OverviewCashflowCard({
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
             {marginPct !== null
-              ? `${marginPct}% net margin · ${formatMoney(moneyOut, currency)} spent`
-              : `${formatMoney(moneyOut, currency)} spent, nothing collected yet`}
+              ? t("cashflow.margin", { pct: marginPct, amount: formatMoney(moneyOut, currency) })
+              : t("cashflow.nothing_collected", { amount: formatMoney(moneyOut, currency) })}
           </div>
         </>
       )}
@@ -1053,12 +1068,16 @@ function OverviewExpensesCard({
   currency: string;
   onViewAll?: () => void;
 }) {
+  const { t } = useTranslation("vendorPayments");
   // Brand ramp (ink → bronze → champagne → sand) so a vendor scanning
   // the page picks up category rank by tone.
   const palette = ["#14161a", "#8a6f3e", "#c9a86a", "#d9d1bf"];
   const rows = expenses.topCategories.map((c, i) => ({
     ...c, color: palette[i] ?? "#ece7db",
   }));
+  // The overview RPC rolls the 4th+ item into an English "Other" bucket;
+  // every other label is the vendor's own line-item name.
+  const expenseLabel = (label: string) => (label === "Other" ? t("expenses.other") : label);
   // Donut geometry — stroked circle with stroke-dasharray for each
   // segment. Radius 38 + strokeWidth 14 gives an outer ring at 45
   // and an inner hole at ~31 inside a 100x100 viewbox. SVG strokes
@@ -1072,8 +1091,8 @@ function OverviewExpensesCard({
     <div className="cockpit-chart">
       <div className="flex items-baseline justify-between mb-3 gap-3">
         <div className="min-w-0">
-          <div className="cockpit-chart-title truncate">Operating expenses</div>
-          <div className="cockpit-chart-sub">Last 30 days · by item</div>
+          <div className="cockpit-chart-title truncate">{t("expenses.title")}</div>
+          <div className="cockpit-chart-sub">{t("expenses.subtitle")}</div>
         </div>
         {onViewAll ? (
           <button
@@ -1081,13 +1100,13 @@ function OverviewExpensesCard({
             onClick={onViewAll}
             className="text-xs text-muted-foreground hover:text-accent border border-border rounded-md px-2.5 py-1 shrink-0"
           >
-            View all →
+            {t("expenses.view_all")}
           </button>
         ) : null}
       </div>
       {expenses.count === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
-          No expenses logged in the last 30 days.
+          {t("expenses.empty")}
         </div>
       ) : (
         <>
@@ -1117,7 +1136,7 @@ function OverviewExpensesCard({
               {rows.map((r) => (
                 <div key={r.label} className="flex items-center gap-2 text-[11px]">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: r.color }} />
-                  <span className="text-foreground font-bold truncate flex-1">{r.label}</span>
+                  <span className="text-foreground font-bold truncate flex-1">{expenseLabel(r.label)}</span>
                   <span className="tabular-nums text-foreground font-bold shrink-0">
                     {formatMoney(r.cents, currency)}
                   </span>
@@ -1126,10 +1145,14 @@ function OverviewExpensesCard({
             </div>
           </div>
           <div className="mt-3 text-[11px] text-muted-foreground">
-            {expenses.count} expense{expenses.count === 1 ? "" : "s"} across{" "}
-            {expenses.categoryCount} item{expenses.categoryCount === 1 ? "" : "s"}
+            {t("expenses.summary", {
+              expenses: t("expenses.expense_count", { count: expenses.count }),
+              items: t("expenses.item_count", { count: expenses.categoryCount }),
+            })}
             {expenses.categoryCount > expenses.topCategories.length
-              ? ` · ${expenses.categoryCount - expenses.topCategories.length + 1} grouped into Other`
+              ? ` · ${t("expenses.grouped_other", {
+                  n: expenses.categoryCount - expenses.topCategories.length + 1,
+                })}`
               : ""}
           </div>
         </>
@@ -1149,7 +1172,7 @@ function formatMoneyCompact(cents: number, currency: string): string {
   // currency symbol correctly for any currency instead of the old
   // string-replace hack that only worked for a leading "$".
   if (Math.abs(v) < 1_000) return formatMoney(cents, currency);
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(usLocale(), {
     style: "currency",
     currency: currency.toUpperCase(),
     notation: "compact",

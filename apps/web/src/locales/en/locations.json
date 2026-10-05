@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "title": "Vendors by location — Vendora",
+    "description": "Browse Vendora vendors by city. Photographers, florists, venues, caterers, planners — find the team near your event."
+  },
+  "eyebrow": "— VENDORS BY LOCATION",
+  "title": "Find your team <gold>near you.</gold>",
+  "intro_one": "{{count}} city on Vendora today. Pick one to filter the directory.",
+  "intro_other": "{{count}} cities on Vendora today. Pick one to filter the directory.",
+  "picker": {
+    "allWithCount_one": "All cities · {{count}} vendor",
+    "allWithCount_other": "All cities · {{count}} vendors",
+    "search": "Search a city…",
+    "empty": "No cities yet.",
+    "all": "All cities"
+  },
+  "empty": {
+    "none": "No vendors yet",
+    "noneIn": "No vendors in {{city}}",
+    "body": "Check back as the directory grows."
+  },
+  "count_one": "{{count}} vendor",
+  "count_other": "{{count}} vendors",
+  "countIn_one": "{{count}} vendor in {{city}}",
+  "countIn_other": "{{count}} vendors in {{city}}"
+}

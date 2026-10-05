@@ -1,0 +1,30 @@
+{
+  "title": "Explorar",
+  "subtitle": "Explora proveedores aprobados, fotos, reels y buzz.",
+  "tabs": {
+    "listing": "Anuncios",
+    "grid": "Fotos",
+    "reels": "Reels",
+    "buzz": "Buzz"
+  },
+  "allCategories": "Todas",
+  "other": "Otros",
+  "vendorFallback": "Proveedor",
+  "hostFallback": "Anfitrión",
+  "saveVendor": "Guardar proveedor",
+  "removeFavorite": "Quitar de favoritos",
+  "postAlt": "Foto",
+  "reelLabel": "Reel",
+  "empty": {
+    "listings": "Aún no hay anuncios — vuelve pronto.",
+    "posts": "Aún no hay fotos.",
+    "reels": "Aún no hay reels.",
+    "buzz": "Aún no hay buzz."
+  },
+  "time": {
+    "justNow": "justo ahora",
+    "minutes": "{{n}} min",
+    "hours": "{{n}} h",
+    "days": "{{n}} d"
+  }
+}

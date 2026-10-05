@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "title": "System status — Vendora",
+    "description": "Real-time health of Vendora's core services — database, authentication, edge functions, storage."
+  },
+  "eyebrow": "— STATUS",
+  "title": "How the system is <gold>behaving.</gold>",
+  "overall": {
+    "operational": "All systems operational",
+    "degraded": "Partial degradation",
+    "down": "Service interruption",
+    "checking": "Running checks…"
+  },
+  "refresh_note": "Re-checks every 60s · last refresh just now",
+  "refresh": "Refresh",
+  "labels": {
+    "checking": "Checking",
+    "operational": "Operational",
+    "degraded": "Degraded",
+    "down": "Down"
+  },
+  "services": {
+    "supabase-db": {
+      "label": "Database",
+      "description": "Postgres reads via the Supabase API"
+    },
+    "supabase-auth": {
+      "label": "Authentication",
+      "description": "Sign-in + session endpoints"
+    },
+    "edge-functions": {
+      "label": "Edge functions",
+      "description": "Sitemap, calendar feeds, transactional email"
+    },
+    "storage": {
+      "label": "Storage",
+      "description": "Image and file delivery"
+    }
+  },
+  "notes": {
+    "function_url_unknown": "function URL unknown",
+    "storage_url_unknown": "storage URL unknown",
+    "storage_returned": "storage returned {{status}}",
+    "ping_threw": "ping threw"
+  },
+  "footnote": "Checks run from your browser, so they reflect the path between you and Vendora — not just our infrastructure. If you're seeing red here but our team's status post says green, it's likely a networking issue between you and the closest Supabase edge."
+}

@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,6 +26,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { LISTING_PALETTE } from "@/lib/listingColors";
+import { categoryName } from "@/lib/categoryNames";
+import { eventTypeText } from "@/lib/priceLabels";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -54,7 +57,7 @@ import {
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { type ListingOpt } from "@/components/vendor/ListingPicker";
 
-const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
+// Weekday initials live in vendorAppointments.json (weekdaysNarrow).
 
 type DayState = "available" | "booked" | "pending" | "blocked";
 
@@ -109,23 +112,25 @@ function fmtMoneyShort(cents: number): string {
   return `$${Math.round(cents / 100)}`;
 }
 
-function statusLabel(s: string): string {
-  switch (s) {
-    case "won":
-      return "Confirmed";
-    case "new":
-      return "Awaiting reply";
-    case "replied":
-      return "Replied";
-    case "drafted":
-      return "Drafting reply";
-    case "lost":
-      return "Lost";
-    case "expired":
-      return "Expired";
-    default:
-      return s;
-  }
+// Inquiry statuses with a label (vendorAppointments.json inquiryStatus.<status>);
+// any other status shows as stored.
+const INQUIRY_STATUSES = new Set([
+  "won",
+  "new",
+  "replied",
+  "drafted",
+  "lost",
+  "expired",
+]);
+
+// A listing's name for pickers and the day panel: its business name, else
+// its category (in the visitor's language), else the fallback word.
+function listingLabel(l: ListingOpt, fallback: string): string {
+  return (
+    l.business_name?.trim() ||
+    (l.category ? categoryName(l.category) : "") ||
+    fallback
+  );
 }
 
 // How a meeting reads on the calendar: confirmed (accepted) or already
@@ -138,28 +143,29 @@ function apptDayState(status: string): "booked" | "pending" | null {
   return null;
 }
 
-function prettyDay(ymd: string): string {
+function prettyDay(ymd: string, locale?: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
 }
 
-// Appointment display helpers — kind → label and a local-time string
-// for the calendar day panel.
-const APPT_KIND_LABEL: Record<string, string> = {
-  consultation: "Consultation",
-  walkthrough: "Walkthrough",
-  tasting: "Tasting",
-  fitting: "Fitting",
-  phone_call: "Phone call",
-  other: "Meeting",
-};
-function fmtApptTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
+// Appointment display helpers — kinds with a label
+// (vendorAppointments.json kinds.<kind>) and a local-time string for the
+// calendar day panel.
+const APPT_KINDS = new Set([
+  "consultation",
+  "walkthrough",
+  "tasting",
+  "fitting",
+  "phone_call",
+  "other",
+]);
+function fmtApptTime(iso: string, locale?: string): string {
+  return new Date(iso).toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -189,6 +195,14 @@ export default function VendorAppointmentsPage({
   hideLegend?: boolean;
 } = {}) {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation("vendorAppointments");
+  // Spanish dates use US-Spanish formats; English keeps the browser default.
+  const isEs = i18n.resolvedLanguage === "es";
+  const dateLocale = isEs ? "es-US" : undefined;
+  // Spanish month and weekday names are lowercase; capitalize them where
+  // they start a heading or a line.
+  const capFirst = (text: string) =>
+    isEs && text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 
   // Two modes:
   //  - Standalone /vendor/appointments page: works on the listing the
@@ -507,7 +521,7 @@ export default function VendorAppointmentsPage({
         else next.add(dow);
         return next;
       });
-      toast.error(`Couldn't update: ${error.message}`);
+      toast.error(t("toasts.updateFailed", { message: error.message }));
       return;
     }
     // Reload so the per-listing attribution (recurringListingIds →
@@ -543,8 +557,8 @@ export default function VendorAppointmentsPage({
     // Block scheduling in the past — appointments are forward-looking
     // calendar blocks, not a record of things that already happened.
     if (scheduledAt.getTime() < Date.now()) {
-      toast.error("Can't add an appointment in the past", {
-        description: "Pick today or a future date and time.",
+      toast.error(t("toasts.pastTitle"), {
+        description: t("toasts.pastDescription"),
       });
       return;
     }
@@ -566,10 +580,10 @@ export default function VendorAppointmentsPage({
     });
     setAddSaving(false);
     if (error) {
-      toast.error("Couldn't add to calendar", { description: error.message });
+      toast.error(t("toasts.addFailed"), { description: error.message });
       return;
     }
-    toast.success("Added to your calendar");
+    toast.success(t("toasts.added"));
     setAddOpen(false);
     setATitle("");
     setALocation("");
@@ -916,14 +930,14 @@ export default function VendorAppointmentsPage({
     // When >1 listing is in view, append the listing name to each
     // row's subtitle so the vendor knows which listing a booking
     // belongs to. Single-listing view stays clean (no redundant label).
+    const listingFallback = t("day.listingFallback");
     const listingNameById = new Map(
-      listings.map((l) => [
-        l.id,
-        l.business_name?.trim() || l.category || "Listing",
-      ]),
+      listings.map((l) => [l.id, listingLabel(l, listingFallback)]),
     );
     const labelFor = (vid: string) =>
-      showListingColors ? ` · ${listingNameById.get(vid) ?? "Listing"}` : "";
+      showListingColors ? ` · ${listingNameById.get(vid) ?? listingFallback}` : "";
+    const statusLabel = (status: string) =>
+      INQUIRY_STATUSES.has(status) ? t(`inquiryStatus.${status}`) : status;
     const out: Array<{
       kind: "inquiry" | "busy" | "appointment";
       inquiryId: string | null;
@@ -950,11 +964,9 @@ export default function VendorAppointmentsPage({
       out.push({
         kind: "inquiry",
         inquiryId: i.id,
-        title: i.event_type
-          ? i.event_type[0].toUpperCase() + i.event_type.slice(1)
-          : "Booking",
+        title: eventTypeText(i.event_type, t("day.booking")),
         subtitle:
-          (i.host?.display_name ?? "Host") +
+          (i.host?.display_name ?? t("day.host")) +
           " · " +
           statusLabel(i.status) +
           labelFor(i.vendor_id),
@@ -971,23 +983,25 @@ export default function VendorAppointmentsPage({
       if (!st) continue;
       if (ymdKey(new Date(a.scheduled_at)) !== selectedYmd) continue;
       const statusWord = a.status === "accepted"
-        ? "Confirmed"
+        ? t("apptStatus.accepted")
         : a.status === "completed"
-          ? "Completed"
-          : "Proposed";
+          ? t("apptStatus.completed")
+          : t("apptStatus.proposed");
       out.push({
         kind: "appointment",
         inquiryId: a.inquiry_id ?? null,
-        title: a.title?.trim() || APPT_KIND_LABEL[a.kind] || "Meeting",
+        title:
+          a.title?.trim() ||
+          t(APPT_KINDS.has(a.kind) ? `kinds.${a.kind}` : "kinds.other"),
         subtitle:
           // Host-less rows are off-platform/personal entries.
           (a.host_id
-            ? (a.host_name ?? "Client") + " · " + statusWord
-            : "Off-platform · personal") +
+            ? (a.host_name ?? t("day.client")) + " · " + statusWord
+            : t("day.offPlatform")) +
           (a.vendor_id ? labelFor(a.vendor_id) : ""),
         amountCents: null,
         accent: st,
-        timeLabel: fmtApptTime(a.scheduled_at),
+        timeLabel: fmtApptTime(a.scheduled_at, dateLocale),
       });
     }
     if (manualBlocks.has(selectedYmd)) {
@@ -1000,15 +1014,15 @@ export default function VendorAppointmentsPage({
       out.push({
         kind: "busy",
         inquiryId: null,
-        title: reason && !isLegacyFallback ? reason : "Blocked",
-        subtitle: "Marked unavailable",
+        title: reason && !isLegacyFallback ? reason : t("day.blocked"),
+        subtitle: t("day.markedUnavailable"),
         amountCents: null,
         accent: "muted",
-        timeLabel: "All day",
+        timeLabel: t("day.allDay"),
       });
     }
     return out;
-  }, [selectedYmd, inquiries, appointments, manualBlocks, listings, showListingColors]);
+  }, [selectedYmd, inquiries, appointments, manualBlocks, listings, showListingColors, t, dateLocale]);
 
   const isSelectedBlocked =
     !!selectedYmd && manualBlocks.has(selectedYmd);
@@ -1033,7 +1047,6 @@ export default function VendorAppointmentsPage({
   async function commitSelectedDayBlock() {
     if (!selectedYmd || blocking) return;
     const willBlock = !isSelectedBlocked;
-    const verb = willBlock ? "Block" : "Unblock";
     setConfirmOpen(false);
     setBlocking(true);
     // Target resolves from the block-target picker in account mode
@@ -1062,7 +1075,7 @@ export default function VendorAppointmentsPage({
       setBlocking(false);
       setBlockTitle("");
       if (error) {
-        toast.error(`Couldn't ${verb.toLowerCase()}: ${error.message}`);
+        toast.error(t("toasts.blockFailed", { message: error.message }));
         return;
       }
     } else {
@@ -1073,7 +1086,7 @@ export default function VendorAppointmentsPage({
         .eq("date", selectedYmd);
       setBlocking(false);
       if (error) {
-        toast.error(`Couldn't unblock: ${error.message}`);
+        toast.error(t("toasts.unblockFailed", { message: error.message }));
         return;
       }
     }
@@ -1106,7 +1119,7 @@ export default function VendorAppointmentsPage({
       .in("vendor_id", targetIds)
       .eq("date", ymd);
     if (error) {
-      toast.error(`Couldn't update title: ${error.message}`);
+      toast.error(t("toasts.titleFailed", { message: error.message }));
       // Roll the local map back by reloading from the server.
       void loadCalendar();
     }
@@ -1124,10 +1137,12 @@ export default function VendorAppointmentsPage({
     setSelectedYmd(ymdKey(today));
   }
 
-  const monthLabel = viewMonth.toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = capFirst(
+    viewMonth.toLocaleDateString(dateLocale, {
+      month: "long",
+      year: "numeric",
+    }),
+  );
 
   // Whether the Add-personal-entry selection (grid day + time) is
   // already in the past. Drives the disabled Add button + inline hint
@@ -1146,9 +1161,9 @@ export default function VendorAppointmentsPage({
           <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="font-editorial text-3xl">Calendar</h1>
+                <h1 className="font-editorial text-3xl">{t("header.title")}</h1>
                 <p className="text-sm text-muted-foreground">
-                  Manage your bookings &amp; availability
+                  {t("header.subtitle")}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1171,14 +1186,14 @@ export default function VendorAppointmentsPage({
                 <button
                   onClick={() => shiftMonth(-1)}
                   className="w-9 h-9 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center"
-                  aria-label="Previous month"
+                  aria-label={t("nav.previousMonth")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => shiftMonth(1)}
                   className="w-9 h-9 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center"
-                  aria-label="Next month"
+                  aria-label={t("nav.nextMonth")}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -1208,24 +1223,24 @@ export default function VendorAppointmentsPage({
                 // coloured by status. Matches STATUS_DOT in DayCell.
                 <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
                   {([
-                    ["#059669", "Booked"],
-                    ["#d97706", "Pending"],
-                    ["#a1a1aa", "Blocked"],
-                  ] as const).map(([color, label]) => (
-                    <span key={label} className="inline-flex items-center gap-1.5">
+                    ["#059669", "booked"],
+                    ["#d97706", "pending"],
+                    ["#a1a1aa", "blocked"],
+                  ] as const).map(([color, state]) => (
+                    <span key={state} className="inline-flex items-center gap-1.5">
                       <span
                         className="w-3 h-3 rounded-full inline-block"
                         style={{ background: color }}
                       />
-                      {label}
+                      {t(`legend.${state}`)}
                     </span>
                   ))}
                 </div>
               ) : (
                 <div className="mt-4 pt-3 border-t border-border flex justify-around text-xs font-bold">
-                  <LegendDot swatchClass="bg-foreground" label="Booked" />
-                  <LegendDot swatchClass="bg-pending" label="Pending" />
-                  <LegendDot swatchClass="hatch" label="Blocked" />
+                  <LegendDot swatchClass="bg-foreground" label={t("legend.booked")} />
+                  <LegendDot swatchClass="bg-pending" label={t("legend.pending")} />
+                  <LegendDot swatchClass="hatch" label={t("legend.blocked")} />
                 </div>
               )}
             </div>
@@ -1239,7 +1254,7 @@ export default function VendorAppointmentsPage({
             <DialogContent className="rounded-3xl max-w-md max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-editorial text-2xl text-left">
-                  {selectedYmd ? prettyDay(selectedYmd) : ""}
+                  {selectedYmd ? capFirst(prettyDay(selectedYmd, dateLocale)) : ""}
                 </DialogTitle>
               </DialogHeader>
               <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -1254,13 +1269,13 @@ export default function VendorAppointmentsPage({
                         setBlockTarget(e.target.value as BlockTarget)
                       }
                       disabled={blocking}
-                      aria-label="Block applies to"
+                      aria-label={t("day.blockAppliesTo")}
                       className="rounded-full bg-secondary text-foreground text-xs font-medium px-3 py-2 outline-none disabled:opacity-60"
                     >
-                      <option value="all">All listings</option>
+                      <option value="all">{t("day.allListings")}</option>
                       {listings.map((l) => (
                         <option key={l.id} value={l.id}>
-                          {l.business_name?.trim() || l.category || "Listing"}
+                          {listingLabel(l, t("day.listingFallback"))}
                         </option>
                       ))}
                     </select>
@@ -1274,7 +1289,7 @@ export default function VendorAppointmentsPage({
                     className="inline-flex items-center gap-1 rounded-full border border-border text-foreground px-4 py-2 text-xs font-bold disabled:opacity-60 hover:bg-secondary/50"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Add
+                    {t("day.add")}
                   </button>
                   <button
                     onClick={() => setConfirmOpen(true)}
@@ -1285,7 +1300,7 @@ export default function VendorAppointmentsPage({
                     }
                     title={
                       isSelectedBooked && !isSelectedBlocked
-                        ? "Already booked — unavailable to hosts"
+                        ? t("day.alreadyBookedTitle")
                         : undefined
                     }
                     className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-foreground px-4 text-xs font-bold disabled:bg-gold-muted h-9 hover:bg-gold-hover"
@@ -1295,20 +1310,24 @@ export default function VendorAppointmentsPage({
                     ) : (
                       <Plus className="h-3.5 w-3.5" />
                     )}
-                    {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block"}
+                    {blocking
+                      ? t("day.saving")
+                      : isSelectedBlocked
+                        ? t("day.unblock")
+                        : t("day.block")}
                   </button>
               </div>
 
               {isSelectedBooked && !isSelectedBlocked ? (
                 <p className="text-[12px] text-muted-foreground mb-1 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-foreground inline-block" />
-                  Already booked — this day is automatically unavailable to hosts.
+                  {t("day.alreadyBookedNote")}
                 </p>
               ) : null}
 
               {selectedItems.length === 0 ? (
                 <div className="card-soft p-6 text-center text-sm text-muted-foreground">
-                  Nothing on the books for this day.
+                  {t("day.empty")}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1346,7 +1365,7 @@ export default function VendorAppointmentsPage({
           {!hideUpcoming ? (
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-lg">Appointments</h2>
+                <h2 className="font-display text-lg">{t("appointments.title")}</h2>
                 <button
                   onClick={() => {
                     // Default to today so the entry has a day even if the
@@ -1358,15 +1377,14 @@ export default function VendorAppointmentsPage({
                   className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-foreground px-4 text-xs font-bold hover:bg-gold-hover h-9"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add appointment
+                  {t("appointments.add")}
                 </button>
               </div>
               {appointmentsLoading ? (
                 <Skeleton className="h-24 w-full rounded-md" />
               ) : appointments.length === 0 ? (
                 <div className="card-soft p-6 text-center text-sm text-muted-foreground">
-                  No appointments yet. Calls, consultations, and tastings you
-                  schedule show up here.
+                  {t("appointments.empty")}
                 </div>
               ) : (
                 <AppointmentsList
@@ -1393,34 +1411,36 @@ export default function VendorAppointmentsPage({
         <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-3xl">
-              {isSelectedBlocked ? "Re-open this date?" : "Block this date?"}
+              {isSelectedBlocked ? t("blockDialog.reopenTitle") : t("blockDialog.blockTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed">
               {selectedYmd ? (
                 isAccountMode ? (
                   isSelectedBlocked ? (
-                    <>
-                      {prettyDay(selectedYmd)} will be bookable again on every
-                      listing on your account ({queryListingIds.length}).
-                    </>
+                    t("blockDialog.reopenAccount", {
+                      day: prettyDay(selectedYmd, dateLocale),
+                      listings: queryListingIds.length,
+                    })
                   ) : (
-                    <>
-                      Hosts won&apos;t see any of your listings (
-                      {queryListingIds.length}) as bookable on{" "}
-                      {prettyDay(selectedYmd)}.
-                    </>
+                    t("blockDialog.blockAccount", {
+                      day: prettyDay(selectedYmd, dateLocale),
+                      listings: queryListingIds.length,
+                    })
                   )
                 ) : isSelectedBlocked ? (
-                  <>
-                    {prettyDay(selectedYmd)} will be bookable again on{" "}
-                    {selectedListing?.business_name?.trim() || "this listing"}.
-                  </>
+                  t("blockDialog.reopenListing", {
+                    day: prettyDay(selectedYmd, dateLocale),
+                    listing:
+                      selectedListing?.business_name?.trim() ||
+                      t("blockDialog.thisListing"),
+                  })
                 ) : (
-                  <>
-                    Hosts won&apos;t see{" "}
-                    {selectedListing?.business_name?.trim() || "this listing"}{" "}
-                    as bookable on {prettyDay(selectedYmd)}.
-                  </>
+                  t("blockDialog.blockListing", {
+                    day: prettyDay(selectedYmd, dateLocale),
+                    listing:
+                      selectedListing?.business_name?.trim() ||
+                      t("blockDialog.thisListing"),
+                  })
                 )
               ) : null}
             </AlertDialogDescription>
@@ -1431,13 +1451,14 @@ export default function VendorAppointmentsPage({
                 htmlFor="block-title"
                 className="block text-xs font-medium text-muted-foreground mb-1.5"
               >
-                What is it? <span className="text-muted-foreground">(optional)</span>
+                {t("blockDialog.whatIsIt")}{" "}
+                <span className="text-muted-foreground">{t("blockDialog.optional")}</span>
               </label>
               <Input
                 id="block-title"
                 value={blockTitle}
                 onChange={(e) => setBlockTitle(e.target.value)}
-                placeholder="Christian's birthday, vacation…"
+                placeholder={t("blockDialog.placeholder")}
                 maxLength={80}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -1447,13 +1468,13 @@ export default function VendorAppointmentsPage({
                 }}
               />
               <p className="text-[11px] text-muted-foreground mt-1.5">
-                Only you see this. Hosts just see the day as unavailable.
+                {t("blockDialog.privateNote")}
               </p>
             </div>
           ) : null}
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel disabled={blocking} className="rounded-full">
-              Cancel
+              {t("blockDialog.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
@@ -1462,7 +1483,7 @@ export default function VendorAppointmentsPage({
               }}
               disabled={blocking}
             >
-              {isSelectedBlocked ? "Unblock" : "Block"}
+              {isSelectedBlocked ? t("blockDialog.unblock") : t("blockDialog.block")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1473,18 +1494,18 @@ export default function VendorAppointmentsPage({
         <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-2xl">
-              Add personal entry
+              {t("addDialog.title")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
-              {selectedYmd ? prettyDay(selectedYmd) : ""} · block off-platform
-              time — vacation, an external booking, a personal appointment.
-              Private to you; no host is involved.
+              {t("addDialog.description", {
+                day: selectedYmd ? capFirst(prettyDay(selectedYmd, dateLocale)) : "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
             {showListingColors ? (
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Listing</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("addDialog.listing")}</span>
                 <select
                   value={aListingId ?? ""}
                   onChange={(e) => setAListingId(e.target.value || null)}
@@ -1492,38 +1513,35 @@ export default function VendorAppointmentsPage({
                 >
                   {listings.map((l) => (
                     <option key={l.id} value={l.id}>
-                      {l.business_name?.trim() || l.category || "Listing"}
+                      {listingLabel(l, t("day.listingFallback"))}
                     </option>
                   ))}
                 </select>
               </label>
             ) : null}
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Type</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("addDialog.type")}</span>
               {/* Free text — type anything, or pick a suggestion. */}
               <Input
                 value={aTitle}
                 onChange={(e) => setATitle(e.target.value)}
                 list="vendora-entry-types"
-                placeholder="Type or pick — e.g. Vacation, External shoot"
+                placeholder={t("addDialog.typePlaceholder")}
                 className="mt-1"
               />
+              {/* Suggestions are free text (saved as the entry's title), so
+                  they follow the vendor's language. */}
               <datalist id="vendora-entry-types">
-                <option value="Personal" />
-                <option value="Vacation" />
-                <option value="External shoot" />
-                <option value="Consultation" />
-                <option value="Walkthrough" />
-                <option value="Tasting" />
-                <option value="Fitting" />
-                <option value="Phone call" />
-                <option value="Errand" />
-                <option value="Other" />
+                {(t("addDialog.suggestions", { returnObjects: true }) as string[]).map(
+                  (suggestion) => (
+                    <option key={suggestion} value={suggestion} />
+                  ),
+                )}
               </datalist>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Time</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("addDialog.time")}</span>
                 <Input
                   type="time"
                   value={aTime}
@@ -1532,39 +1550,38 @@ export default function VendorAppointmentsPage({
                 />
               </label>
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Duration</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("addDialog.duration")}</span>
                 <select
                   value={aDuration}
                   onChange={(e) => setADuration(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="30">30 min</option>
-                  <option value="45">45 min</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
-                  <option value="240">Half day</option>
-                  <option value="480">Full day</option>
+                  <option value="30">{t("addDialog.durations.m30")}</option>
+                  <option value="45">{t("addDialog.durations.m45")}</option>
+                  <option value="60">{t("addDialog.durations.h1")}</option>
+                  <option value="90">{t("addDialog.durations.h90")}</option>
+                  <option value="120">{t("addDialog.durations.h2")}</option>
+                  <option value="240">{t("addDialog.durations.halfDay")}</option>
+                  <option value="480">{t("addDialog.durations.fullDay")}</option>
                 </select>
               </label>
             </div>
             {addIsPast ? (
               <p className="text-xs text-destructive">
-                That date &amp; time is in the past. Pick today or a future
-                date and time.
+                {t("addDialog.pastWarning")}
               </p>
             ) : null}
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Location (optional)</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("addDialog.location")}</span>
               <Input
                 value={aLocation}
                 onChange={(e) => setALocation(e.target.value)}
-                placeholder="e.g. address, Zoom"
+                placeholder={t("addDialog.locationPlaceholder")}
                 className="mt-1"
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Notes (optional)</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("addDialog.notes")}</span>
               <textarea
                 value={aNotes}
                 onChange={(e) => setANotes(e.target.value)}
@@ -1575,7 +1592,7 @@ export default function VendorAppointmentsPage({
           </div>
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel disabled={addSaving} className="rounded-full">
-              Cancel
+              {t("addDialog.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
@@ -1584,7 +1601,7 @@ export default function VendorAppointmentsPage({
               }}
               disabled={addSaving || addIsPast}
             >
-              {addSaving ? "Adding…" : "Add"}
+              {addSaving ? t("addDialog.adding") : t("addDialog.add")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1655,6 +1672,8 @@ function MonthGrid({
   selectedYmd: string | null;
   onSelect: (k: string) => void;
 }) {
+  const { t } = useTranslation("vendorAppointments");
+  const dayHeaders = t("weekdaysNarrow", { returnObjects: true }) as string[];
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
   const gridStart = new Date(firstOfMonth);
   gridStart.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
@@ -1667,7 +1686,7 @@ function MonthGrid({
   return (
     <div>
       <div className="grid grid-cols-7 mb-2">
-        {DAY_HEADERS.map((d, i) => (
+        {dayHeaders.map((d, i) => (
           <div
             key={i}
             className="text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
@@ -1716,21 +1735,21 @@ function RecurringBlocksSection({
   savingDow: number | null;
   onToggle: (dow: number, willBeOff: boolean) => void;
 }) {
-  const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
-  const FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const { t } = useTranslation("vendorAppointments");
+  const DAYS = t("weekdaysNarrow", { returnObjects: true }) as string[];
+  const FULL = t("weekdaysShort", { returnObjects: true }) as string[];
   return (
     <section className="card-soft p-4">
       <div className="flex items-baseline justify-between mb-1">
-        <h2 className="font-display text-lg">Recurring blocks</h2>
+        <h2 className="font-display text-lg">{t("recurring.title")}</h2>
         <p className="text-xs text-muted-foreground">
           {recurringOff.size > 0
-            ? `${recurringOff.size}× weekly`
-            : "Off-days repeat every week"}
+            ? t("recurring.weekly", { n: recurringOff.size })
+            : t("recurring.repeat")}
         </p>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        Tap a day to mark it permanently unavailable on every future week.
-        Hosts won't see you as bookable on that weekday.
+        {t("recurring.body")}
       </p>
       <div className="flex items-center gap-1.5 flex-wrap">
         {DAYS.map((short, dow) => {
@@ -1743,7 +1762,11 @@ function RecurringBlocksSection({
               onClick={() => onToggle(dow, !isOff)}
               disabled={savingDow !== null}
               aria-pressed={isOff}
-              aria-label={`${FULL[dow]} ${isOff ? "off" : "on"}`}
+              aria-label={
+                isOff
+                  ? t("recurring.dayOff", { day: FULL[dow] })
+                  : t("recurring.dayOn", { day: FULL[dow] })
+              }
               title={FULL[dow]}
               className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
                 isOff
@@ -1900,6 +1923,7 @@ function BlockedDayCard({
   title: string;
   onSave: (newTitle: string) => Promise<void> | void;
 }) {
+  const { t } = useTranslation("vendorAppointments");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   // Keep draft in sync if the parent prop changes (e.g. realtime
@@ -1940,7 +1964,7 @@ function BlockedDayCard({
                   setEditing(false);
                 }
               }}
-              placeholder="Christian's birthday…"
+              placeholder={t("day.blockedPlaceholder")}
               className="h-8 text-sm"
             />
           ) : (
@@ -1948,17 +1972,17 @@ function BlockedDayCard({
               type="button"
               onClick={() => setEditing(true)}
               className="group flex items-center gap-1.5 font-medium text-foreground hover:text-accent transition-colors text-left max-w-full"
-              aria-label="Edit title"
+              aria-label={t("day.editTitle")}
             >
               <span className="truncate">{title}</span>
               <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" />
             </button>
           )}
           <p className="text-xs text-muted-foreground truncate">
-            Marked unavailable
+            {t("day.markedUnavailable")}
           </p>
         </div>
-        <span className="text-xs text-muted-foreground">All day</span>
+        <span className="text-xs text-muted-foreground">{t("day.allDay")}</span>
       </div>
     </div>
   );

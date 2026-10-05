@@ -1,0 +1,135 @@
+{
+  "weekdaysNarrow": ["S", "M", "T", "W", "T", "F", "S"],
+  "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "inquiryStatus": {
+    "won": "Confirmed",
+    "new": "Awaiting reply",
+    "replied": "Replied",
+    "drafted": "Drafting reply",
+    "lost": "Lost",
+    "expired": "Expired"
+  },
+  "kinds": {
+    "consultation": "Consultation",
+    "walkthrough": "Walkthrough",
+    "tasting": "Tasting",
+    "fitting": "Fitting",
+    "phone_call": "Phone call",
+    "other": "Meeting"
+  },
+  "apptStatus": {
+    "accepted": "Confirmed",
+    "completed": "Completed",
+    "proposed": "Proposed"
+  },
+  "header": {
+    "title": "Calendar",
+    "subtitle": "Manage your bookings & availability"
+  },
+  "nav": {
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "legend": {
+    "booked": "Booked",
+    "pending": "Pending",
+    "blocked": "Blocked"
+  },
+  "day": {
+    "blockAppliesTo": "Block applies to",
+    "allListings": "All listings",
+    "listingFallback": "Listing",
+    "add": "Add",
+    "alreadyBookedTitle": "Already booked — unavailable to hosts",
+    "saving": "Saving…",
+    "block": "Block",
+    "unblock": "Unblock",
+    "alreadyBookedNote": "Already booked — this day is automatically unavailable to hosts.",
+    "empty": "Nothing on the books for this day.",
+    "booking": "Booking",
+    "host": "Host",
+    "client": "Client",
+    "offPlatform": "Off-platform · personal",
+    "blocked": "Blocked",
+    "markedUnavailable": "Marked unavailable",
+    "allDay": "All day",
+    "editTitle": "Edit title",
+    "blockedPlaceholder": "Christian's birthday…"
+  },
+  "recurring": {
+    "title": "Recurring blocks",
+    "weekly": "{{n}}× weekly",
+    "repeat": "Off-days repeat every week",
+    "body": "Tap a day to mark it permanently unavailable on every future week. Hosts won't see you as bookable on that weekday.",
+    "dayOff": "{{day}} off",
+    "dayOn": "{{day}} on"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "add": "Add appointment",
+    "empty": "No appointments yet. Calls, consultations, and tastings you schedule show up here."
+  },
+  "blockDialog": {
+    "reopenTitle": "Re-open this date?",
+    "blockTitle": "Block this date?",
+    "reopenAccount": "{{day}} will be bookable again on every listing on your account ({{listings}}).",
+    "blockAccount": "Hosts won't see any of your listings ({{listings}}) as bookable on {{day}}.",
+    "reopenListing": "{{day}} will be bookable again on {{listing}}.",
+    "blockListing": "Hosts won't see {{listing}} as bookable on {{day}}.",
+    "thisListing": "this listing",
+    "whatIsIt": "What is it?",
+    "optional": "(optional)",
+    "placeholder": "Christian's birthday, vacation…",
+    "privateNote": "Only you see this. Hosts just see the day as unavailable.",
+    "cancel": "Cancel",
+    "block": "Block",
+    "unblock": "Unblock"
+  },
+  "addDialog": {
+    "title": "Add personal entry",
+    "description": "{{day}} · block off-platform time — vacation, an external booking, a personal appointment. Private to you; no host is involved.",
+    "listing": "Listing",
+    "type": "Type",
+    "typePlaceholder": "Type or pick — e.g. Vacation, External shoot",
+    "suggestions": [
+      "Personal",
+      "Vacation",
+      "External shoot",
+      "Consultation",
+      "Walkthrough",
+      "Tasting",
+      "Fitting",
+      "Phone call",
+      "Errand",
+      "Other"
+    ],
+    "time": "Time",
+    "duration": "Duration",
+    "durations": {
+      "m30": "30 min",
+      "m45": "45 min",
+      "h1": "1 hour",
+      "h90": "1.5 hours",
+      "h2": "2 hours",
+      "halfDay": "Half day",
+      "fullDay": "Full day"
+    },
+    "pastWarning": "That date & time is in the past. Pick today or a future date and time.",
+    "location": "Location (optional)",
+    "locationPlaceholder": "e.g. address, Zoom",
+    "notes": "Notes (optional)",
+    "cancel": "Cancel",
+    "adding": "Adding…",
+    "add": "Add"
+  },
+  "toasts": {
+    "updateFailed": "Couldn't update: {{message}}",
+    "pastTitle": "Can't add an appointment in the past",
+    "pastDescription": "Pick today or a future date and time.",
+    "addFailed": "Couldn't add to calendar",
+    "added": "Added to your calendar",
+    "blockFailed": "Couldn't block: {{message}}",
+    "unblockFailed": "Couldn't unblock: {{message}}",
+    "titleFailed": "Couldn't update title: {{message}}"
+  }
+}

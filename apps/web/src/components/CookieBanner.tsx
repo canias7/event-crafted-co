@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "vendora.cookie-consent";
@@ -9,6 +10,7 @@ const STORAGE_KEY = "vendora.cookie-consent";
 type Choice = "all" | "essential";
 
 export function CookieBanner() {
+  const { t } = useTranslation("shell");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -16,8 +18,8 @@ export function CookieBanner() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       // Brief delay so the banner doesn't fight first-paint animations
-      const t = setTimeout(() => setOpen(true), 800);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => setOpen(true), 800);
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -42,24 +44,26 @@ export function CookieBanner() {
           <div className="bg-foreground text-background rounded-2xl shadow-lifted p-5 relative">
             <button
               onClick={() => decide("essential")}
-              aria-label="Dismiss"
+              aria-label={t("cookies.dismiss")}
               className="absolute top-3 right-3 text-background/60 hover:text-background"
             >
               <X className="w-4 h-4" />
             </button>
-            <p className="font-display text-base mb-2">Cookies, briefly</p>
+            <p className="font-display text-base mb-2">{t("cookies.title")}</p>
             <p className="text-xs text-background/75 leading-relaxed mb-4">
-              We use essential cookies to keep you signed in, and (with your
-              consent) analytics cookies to understand which features get used.
-              We don't sell data and we don't use ad-tracking cookies. See our{" "}
-              <Link
-                to="/privacy"
-                onClick={() => decide("essential")}
-                className="text-accent font-medium underline-offset-2 hover:underline"
-              >
-                Privacy Policy
-              </Link>
-              .
+              <Trans
+                t={t}
+                i18nKey="cookies.body"
+                components={{
+                  policy: (
+                    <Link
+                      to="/privacy"
+                      onClick={() => decide("essential")}
+                      className="text-accent font-medium underline-offset-2 hover:underline"
+                    />
+                  ),
+                }}
+              />
             </p>
             <div className="flex gap-2">
               <Button
@@ -67,7 +71,7 @@ export function CookieBanner() {
                 onClick={() => decide("all")}
                 className="flex-1"
               >
-                Accept all
+                {t("cookies.accept_all")}
               </Button>
               <Button
                 size="sm"
@@ -75,7 +79,7 @@ export function CookieBanner() {
                 onClick={() => decide("essential")}
                 className="text-background hover:bg-background/10 hover:text-background flex-1"
               >
-                Essential only
+                {t("cookies.essential_only")}
               </Button>
             </div>
           </div>

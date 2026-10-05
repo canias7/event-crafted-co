@@ -1,4 +1,5 @@
 import { Instagram } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Public Instagram / TikTok handle display on a vendor profile.
 // Rather than embedding actual posts (CORS / API key issues), we
@@ -11,12 +12,13 @@ interface Props {
 }
 
 export function SocialEmbedCard({ instagramHandle, tiktokHandle }: Props) {
+  const { t } = useTranslation("vendorProfile");
   if (!instagramHandle && !tiktokHandle) return null;
   const ig = instagramHandle?.replace(/^@/, "").trim();
   const tt = tiktokHandle?.replace(/^@/, "").trim();
   return (
     <div className="card-soft p-5">
-      <p className="font-label text-muted-foreground mb-3">Latest on social</p>
+      <p className="font-label text-muted-foreground mb-3">{t("social.title")}</p>
       <div className="flex flex-wrap gap-3">
         {ig && (
           <a

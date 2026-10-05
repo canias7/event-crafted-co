@@ -1,0 +1,121 @@
+{
+  "days": ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+  "time": {
+    "am": "a.m.",
+    "pm": "p.m."
+  },
+  "duration": {
+    "minutes": "{{minutes}} min",
+    "hours_one": "{{count}} h",
+    "hours_other": "{{count}} h"
+  },
+  "buffers": {
+    "none": "Ninguno",
+    "m30": "30 min",
+    "h1": "1 hora",
+    "h2": "2 horas",
+    "d1": "1 día"
+  },
+  "notices": {
+    "none": "Ninguna",
+    "h24": "24 horas",
+    "h48": "48 horas",
+    "w1": "1 semana"
+  },
+  "noLimit": "Sin límite",
+  "defaults": {
+    "autoReply": "¡Muchas gracias por escribirnos! Recibimos tu consulta y te responderemos personalmente en unas horas.",
+    "confirm": "¡Tu reserva está confirmada! Nos alegra mucho; abajo encontrarás los detalles.",
+    "reminder": "¡Un recordatorio amistoso de nuestra próxima cita!",
+    "followup": "Solo para dar seguimiento: ¿tienes alguna pregunta que pueda responderte?",
+    "review": "¡Fue un placer ser parte de tu evento! Si tienes un minuto, nos encantaría recibir tu reseña; ayuda a otros anfitriones a encontrarnos."
+  },
+  "toasts": {
+    "saved": "Tu configuración de agenda ya está activa.",
+    "typeNameRequired": "Ponle un nombre al tipo de cita; por ejemplo, Llamada de asesoría.",
+    "proCap": "Pro incluye hasta {{cap}} tipos de cita; Premium no tiene límite.",
+    "freeCap": "El plan Gratis incluye un tipo de cita; Pro desbloquea hasta 5.",
+    "promoted": "Fechas promocionadas: ahora aparecen como disponibilidad de último momento en tu anuncio público."
+  },
+  "header": {
+    "title": "Agenda inteligente",
+    "subtitle": "Horario de trabajo, tipos de cita y automatizaciones: la misma configuración que en la app."
+  },
+  "loading": "Cargando…",
+  "types": {
+    "title": "Tipos de cita",
+    "body": "¿Qué pueden reservar contigo los anfitriones? Ponle a cada uno un nombre y una duración.",
+    "usagePro": "({{used}}/{{cap}} en Pro)",
+    "usageFree": "({{used}}/{{cap}} en el plan Gratis)",
+    "off": "inactivo",
+    "minutes": "{{minutes}} minutos",
+    "delete": "Eliminar {{name}}",
+    "placeholder": "p. ej., Llamada de asesoría",
+    "add": "Agregar"
+  },
+  "hours": {
+    "title": "Tu horario de trabajo",
+    "body": "¿Cuándo pueden ser las citas?",
+    "unavailable": "No disponible"
+  },
+  "rules": {
+    "title": "Reglas de reserva",
+    "buffer": "Tiempo entre citas",
+    "notice": "Anticipación mínima",
+    "maxPerDay": "Máximo de citas por día"
+  },
+  "auto": {
+    "title": "Mensajes automáticos",
+    "body": "Vendora los envía por ti, con tus palabras.",
+    "send": "Enviar",
+    "instantReply": {
+      "title": "Respuesta instantánea a consultas",
+      "sub": "Se envía en cuanto llega una consulta nueva."
+    },
+    "confirmations": {
+      "title": "Confirmaciones de reserva",
+      "sub": "Se envían cuando confirmas una cita."
+    },
+    "reminders": {
+      "title": "Recordatorios",
+      "sub": "Se envían antes de las próximas citas."
+    },
+    "followups": {
+      "title": "Seguimientos",
+      "sub": "Se envían después de una cita."
+    },
+    "reviews": {
+      "title": "Solicitudes de reseña",
+      "sub": "Se envían cuando termina un evento reservado."
+    },
+    "altDates": {
+      "title": "Sugerir fechas alternativas",
+      "sub": "Cuando alguien pide una fecha en la que ya tienes reserva, tu respuesta instantánea ofrece tus fechas libres más cercanas."
+    },
+    "fill": {
+      "title": "Llena tu calendario: alertas de fechas libres",
+      "sub": "Recibe avisos de próximas fechas sin reservas. Nunca se promociona nada sin tu aprobación."
+    },
+    "hoursBefore": "{{hours}} h antes",
+    "daysAfter_one": "{{count}} día después",
+    "daysAfter_other": "{{count}} días después"
+  },
+  "fill": {
+    "title": "Llena tu calendario",
+    "openDates_one": "{{count}} fecha libre próximamente:",
+    "openDates_other": "{{count}} fechas libres próximamente:",
+    "more": "+{{more}} más",
+    "promote": "Promocionar fechas",
+    "notNow": "Ahora no"
+  },
+  "upsell": {
+    "premiumTitle": "Ponlo en piloto automático",
+    "premiumBody": "Tu horario y tus reglas ya están listos. Con Premium, Vendora los aplica por ti: respuestas instantáneas a consultas, confirmaciones, recordatorios, seguimientos, solicitudes de reseña y alertas de fechas libres de Llena tu calendario.",
+    "upgradePremium": "Mejora a Premium",
+    "proTitle": "Trabaja menos. Consigue más reservas.",
+    "proBody": "Pro desbloquea los controles de agenda: horario de trabajo, tiempo entre citas, anticipación mínima, límites diarios y hasta 5 tipos de cita. Premium agrega las automatizaciones que responden, recuerdan, dan seguimiento y llenan tu calendario por ti.",
+    "seePlans": "Ver planes"
+  },
+  "save": "Guardar configuración de agenda",
+  "saving": "Guardando…"
+}

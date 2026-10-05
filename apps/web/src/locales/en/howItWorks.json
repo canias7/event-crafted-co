@@ -1,0 +1,135 @@
+{
+  "hero": {
+    "eyebrow": "How Vendora works",
+    "title": "Your vision.<br/>The right people.<br/>An <gold>unforgettable</gold> event.",
+    "intro": "Discover vendors, explore their work and start a conversation. Then plan and book it all in one place.",
+    "explore_vendors": "Explore vendors",
+    "im_a_vendor": "I'm a vendor",
+    "image_alt": "A candlelit dinner table set with roses"
+  },
+  "jump": {
+    "planning": "I'm planning an event",
+    "vendor": "I'm a vendor",
+    "questions": "Questions"
+  },
+  "hosts": {
+    "eyebrow": "For hosts",
+    "title": "From inspiration to booking, step by step.",
+    "intro": "Planning a wedding, a birthday or a company event? Here's how it works from the first idea to the day itself.",
+    "cta": "Start exploring vendors",
+    "steps": {
+      "inspiration": {
+        "title": "Find your inspiration",
+        "body": "Start with ideas. Scroll the Explore feed to see real work from vendors on Vendora.",
+        "points": [
+          "Browse vendors' portfolio photos",
+          "Filter by category, from photography to catering",
+          "Save the vendors you love with the heart"
+        ]
+      },
+      "meet": {
+        "title": "Meet your vendors",
+        "body": "Narrow it down. Search by what you need, where your event is and your date.",
+        "points": [
+          "Search by service and location",
+          "Pick your date to hide vendors who are booked",
+          "Compare portfolios, prices and packages"
+        ]
+      },
+      "conversation": {
+        "title": "Start the conversation",
+        "body": "Open a vendor's profile and send an inquiry with your date and a few details.",
+        "points": [
+          "Tell them about your event in one message",
+          "Replies land in your inbox",
+          "Ask questions and get a custom quote"
+        ]
+      },
+      "plan": {
+        "title": "Plan in one place",
+        "body": "Keep track of each event you're planning, next to your conversations with vendors.",
+        "points": [
+          "Add each event with its date and guest count",
+          "Keep the location and your notes together",
+          "Every inquiry and reply in one inbox"
+        ]
+      },
+      "book": {
+        "title": "Book with confidence",
+        "body": "When you're ready, your vendor sends a proposal. Review it, sign and pay securely online.",
+        "points": [
+          "Proposals and contracts you can sign online",
+          "Secure online payments",
+          "Leave a review after your event"
+        ]
+      }
+    }
+  },
+  "vendors": {
+    "eyebrow": "For vendors",
+    "title": "Turn your craft into bookings.",
+    "intro": "Photographers, planners, caterers, florists, venues and more. Here's how you go from sign-up to booked.",
+    "image_alt": "A makeup artist at work",
+    "cta": "Join as a vendor",
+    "steps": {
+      "profile": {
+        "title": "Create your profile",
+        "body": "Sign up as a vendor and introduce your business: category, location, pricing and services. The Free plan includes one listing."
+      },
+      "showcase": {
+        "title": "Showcase your work",
+        "body": "Add portfolio photos so hosts can see what you do."
+      },
+      "approved": {
+        "title": "Get approved and discovered",
+        "body": "Every listing is reviewed before it goes live. Then hosts find you in search, on Explore and on category pages."
+      },
+      "inquiries": {
+        "title": "Answer inquiries",
+        "body": "Hosts message you with their date and details. Reply, chat and send proposals from one inbox."
+      },
+      "paid": {
+        "title": "Book and get paid",
+        "body": "Turn conversations into bookings with contracts and online payments."
+      },
+      "grow": {
+        "title": "Grow your business",
+        "body": "Collect reviews, track how your listing performs and keep building your brand."
+      }
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "A few things you might be wondering.",
+    "items": {
+      "find": {
+        "q": "How do I find the right vendor?",
+        "a": "Search <vendors>Vendors</vendors> by service, location and date, or scroll <explore>Explore</explore> for ideas. Open any profile to see their work, pricing and packages, and save the ones you like."
+      },
+      "contact": {
+        "q": "How do I contact a vendor?",
+        "a": "Open the vendor's profile and tap Send Inquiry. Add your date and a few details about your event. Their reply comes to your inbox, where you can keep the conversation going."
+      },
+      "checked": {
+        "q": "How are vendors checked?",
+        "a": "Every listing is reviewed by the Vendora team before it appears. Vendors who also verify their documents show a verified badge on their profile."
+      },
+      "booking": {
+        "q": "How does booking and payment work?",
+        "a": "Your vendor sends you a proposal. You can review and sign it online, then pay securely through Vendora."
+      },
+      "join": {
+        "q": "Can I join as a vendor?",
+        "a": "Yes. <signup>Sign up as a vendor</signup>, create your listing and add your work. The Free plan includes one listing, and your listing goes live once it's approved."
+      },
+      "other": {
+        "q": "I have another question.",
+        "a": "Visit the <help>Help centre</help> or email <email>hello@eventvendora.com</email>. Real people read every message."
+      }
+    }
+  },
+  "closing": {
+    "title": "Let's make something <gold>unforgettable.</gold>",
+    "cta": "Explore vendors"
+  }
+}

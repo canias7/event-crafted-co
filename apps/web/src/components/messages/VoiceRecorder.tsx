@@ -7,6 +7,7 @@
 // Safari.
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Mic, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ export function VoiceRecorder({
   disabled?: boolean;
   onRecorded: (file: File) => void;
 }) {
+  const { t } = useTranslation("messages");
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
@@ -83,7 +85,7 @@ export function VoiceRecorder({
     if (recording) return;
     const mime = pickMime();
     if (!mime) {
-      toast.error("Voice recording isn't supported in this browser");
+      toast.error(t("voice.unsupported"));
       return;
     }
     try {
@@ -113,7 +115,7 @@ export function VoiceRecorder({
         const blob = new Blob(chunksRef.current, { type: mime });
         chunksRef.current = [];
         if (blob.size < MIN_USEFUL_BYTES) {
-          toast.error("No audio captured — hold to record");
+          toast.error(t("voice.no_audio"));
           return;
         }
         const ts = new Date()
@@ -152,7 +154,10 @@ export function VoiceRecorder({
         });
       }, 1000);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Couldn't access mic";
+      const msg =
+        err instanceof Error
+          ? t("voice.mic_error_detail", { message: err.message })
+          : t("voice.mic_error");
       toast.error(msg);
     }
   }
@@ -185,7 +190,7 @@ export function VoiceRecorder({
         size="icon"
         onClick={start}
         disabled={disabled}
-        aria-label="Record voice message"
+        aria-label={t("voice.record")}
         className="h-9 w-9"
       >
         <Mic className="w-4 h-4" />
@@ -203,7 +208,7 @@ export function VoiceRecorder({
       <button
         type="button"
         onClick={stop}
-        aria-label="Stop recording"
+        aria-label={t("voice.stop")}
         className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive text-destructive-foreground hover:opacity-90"
       >
         <Square className="w-3 h-3" />
@@ -211,7 +216,7 @@ export function VoiceRecorder({
       <button
         type="button"
         onClick={cancel}
-        aria-label="Cancel recording"
+        aria-label={t("voice.cancel")}
         className="inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-destructive/20"
       >
         <X className="w-3.5 h-3.5" />

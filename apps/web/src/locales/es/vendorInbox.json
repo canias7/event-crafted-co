@@ -1,0 +1,37 @@
+{
+  "sidebarTitle": "Portal de proveedores",
+  "title": "Bandeja",
+  "subtitle": "Conversaciones con anfitriones — todos tus mensajes en un solo lugar",
+  "searchPlaceholder": "Buscar por anfitrión, tipo de evento, ubicación o fecha",
+  "filters": {
+    "all": "Todos",
+    "hot": "Calientes",
+    "warm": "Tibios",
+    "cold": "Fríos"
+  },
+  "empty": {
+    "noInquiries": "Aún no tienes consultas",
+    "noMatch": "Nada coincide con esa búsqueda",
+    "body": "Cuando un anfitrión te envíe una consulta, la conversación aparecerá aquí."
+  },
+  "loading": "Cargando…",
+  "loadMore": "Cargar más",
+  "row": {
+    "host": "Anfitrión",
+    "unread": "No leído",
+    "leadAria": "Temperatura del prospecto: {{label}}",
+    "preview": "Consulta sobre tu {{type}}"
+  },
+  "lead": {
+    "hot": "Caliente",
+    "warm": "Tibio",
+    "cold": "Frío"
+  },
+  "time": {
+    "now": "ahora",
+    "minutes": "{{n}} min",
+    "hours": "{{n}} h",
+    "yesterday": "Ayer",
+    "days": "{{n}} d"
+  }
+}

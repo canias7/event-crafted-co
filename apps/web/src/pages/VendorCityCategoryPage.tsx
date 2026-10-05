@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
   groupOfSub,
 } from "@/data/categoryTaxonomy";
 import { CATEGORY_FAQS } from "@/data/categoryFaqs";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Combined city + category vendor listing page. Generated programmatically:
 // every (category, city-with-vendors) tuple gets its own indexable URL like
@@ -32,6 +34,8 @@ import { CATEGORY_FAQS } from "@/data/categoryFaqs";
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorCityCategoryPage() {
+  const { t } = useTranslation("cityPages");
+  const categoryNames = useCategoryNames();
   const { categorySlug, citySlug } = useParams();
   const { vendors, loading } = useVendors();
   const config = categorySlug ? categoryConfig[categorySlug] : null;
@@ -104,16 +108,22 @@ export default function VendorCityCategoryPage() {
         ...f,
         // Append city qualifier so each FAQ is unique per page (helps
         // with FAQPage rich result eligibility).
-        q: f.q.includes(cityLabel) ? f.q : `${f.q} in ${cityLabel}?`.replace(
+        q: f.q.includes(cityLabel) ? f.q : t("cityCategory.faqQuestionInCity", { question: f.q, city: cityLabel }).replace(
           "??",
           "?",
         ),
       })),
-    [categorySlug, cityLabel],
+    [categorySlug, cityLabel, t],
   );
 
-  const title = `${config.display} in ${cityLabel} — Vendora`;
-  const description = `Hand-vetted ${config.display.toLowerCase()} in ${cityLabel}. Browse pricing, real reviews, and book the right ${config.name.toLowerCase()} for your event through Vendora.`;
+  // The group's name and copy in the visitor's language. `display` and
+  // `name` are the same group name today, so one translation covers both.
+  const groupName = categoryNames.group(categorySlug, config.display);
+  const groupNameLower = groupName.toLowerCase();
+  const groupLongCopy = categoryNames.groupLongCopy(categorySlug, config.longCopy);
+
+  const title = t("cityCategory.meta.title", { name: groupName, city: cityLabel });
+  const description = t("cityCategory.meta.description", { name: groupNameLower, city: cityLabel });
 
   useDocumentMeta({
     title,
@@ -141,19 +151,22 @@ export default function VendorCityCategoryPage() {
             className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent transition-colors mb-6"
           >
             <ArrowLeft className="w-3 h-3" />
-            All {config.display}
+            {t("cityCategory.all", { name: groupName })}
           </Link>
           <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
             <MapPin className="w-3 h-3" />
             {cityLabel.toUpperCase()}
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
-            {config.display} in{" "}
-            <span className="text-accent">{cityLabel}</span>
+            <Trans
+              t={t}
+              i18nKey="cityCategory.title"
+              values={{ name: groupName, city: cityLabel }}
+              components={{ accent: <span className="text-accent" /> }}
+            />
           </h1>
           <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
-            {config.longCopy} Showing the curated list of{" "}
-            {config.display.toLowerCase()} serving {cityLabel}.
+            {t("cityCategory.intro", { longCopy: groupLongCopy, name: groupNameLower, city: cityLabel })}
           </p>
         </div>
       </section>
@@ -175,16 +188,14 @@ export default function VendorCityCategoryPage() {
             <div className="text-center py-16 max-w-md mx-auto">
               <Sparkles className="w-8 h-8 mx-auto text-muted-foreground/40 mb-4" />
               <h2 className="font-editorial text-3xl mb-3">
-                No {config.display.toLowerCase()} in {cityLabel} yet
+                {t("cityCategory.empty.title", { name: groupNameLower, city: cityLabel })}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                We're still building out coverage here. Browse other{" "}
-                {config.display.toLowerCase()} on Vendora — many travel for
-                events.
+                {t("cityCategory.empty.body", { name: groupNameLower })}
               </p>
               <Link to={`/vendors/category/${categorySlug}`}>
                 <Button>
-                  All {config.display}
+                  {t("cityCategory.all", { name: groupName })}
                 </Button>
               </Link>
             </div>
@@ -192,10 +203,7 @@ export default function VendorCityCategoryPage() {
             <>
               <div className="flex items-baseline justify-between mb-8">
                 <p className="font-label text-muted-foreground tnum">
-                  {matched.length}{" "}
-                  {matched.length === 1
-                    ? config.name.toLowerCase()
-                    : config.display.toLowerCase()}
+                  {t("cityCategory.count", { count: matched.length, name: groupNameLower })}
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
@@ -222,9 +230,9 @@ export default function VendorCityCategoryPage() {
           <div className="container mx-auto px-5 md:px-8 max-w-6xl space-y-12">
             {otherCities.length > 0 && (
               <div>
-                <p className="font-label text-accent mb-4">Also serving</p>
+                <p className="font-label text-accent mb-4">{t("cityCategory.otherCities.eyebrow")}</p>
                 <h2 className="font-editorial text-3xl md:text-3xl mb-6">
-                  {config.display} in other cities
+                  {t("cityCategory.otherCities.title", { name: groupName })}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {otherCities.map((c) => (
@@ -246,10 +254,10 @@ export default function VendorCityCategoryPage() {
             {otherCategoriesInCity.length > 0 && (
               <div>
                 <p className="font-label text-accent mb-4">
-                  More in {cityLabel}
+                  {t("cityCategory.otherGroups.eyebrow", { city: cityLabel })}
                 </p>
                 <h2 className="font-editorial text-3xl md:text-3xl mb-6">
-                  Other vendors in {cityLabel}
+                  {t("cityCategory.otherGroups.title", { city: cityLabel })}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {otherCategoriesInCity.map((c) => (
@@ -258,7 +266,7 @@ export default function VendorCityCategoryPage() {
                       to={`/vendors/${c.slug}/in/${citySlug}`}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:border-foreground/30 transition-colors text-sm"
                     >
-                      {c.display}
+                      {categoryNames.group(c.slug, c.display)}
                       <span className="text-xs text-muted-foreground tnum">
                         {c.count}
                       </span>
@@ -271,13 +279,19 @@ export default function VendorCityCategoryPage() {
         </section>
       )}
 
-      {faqs.length > 0 && <FaqSection items={faqs} eyebrow="Common questions" />}
+      {faqs.length > 0 && (
+        <FaqSection
+          items={faqs}
+          eyebrow={t("faq.commonQuestions")}
+          title={t("faq.frequentlyAsked")}
+        />
+      )}
 
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: `${config.display} in ${cityLabel}`,
+          name: t("cityCategory.listName", { name: groupName, city: cityLabel }),
           description,
           numberOfItems: matched.length,
           itemListElement: matched.slice(0, 30).map((v, i) => ({

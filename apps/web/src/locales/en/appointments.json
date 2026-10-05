@@ -1,0 +1,80 @@
+{
+  "kinds": {
+    "consultation": "Consultation",
+    "walkthrough": "Walkthrough",
+    "tasting": "Tasting",
+    "fitting": "Fitting",
+    "phone_call": "Phone call",
+    "other": "Meeting"
+  },
+  "kindOptions": {
+    "consultation": "Consultation",
+    "walkthrough": "Walkthrough",
+    "tasting": "Tasting",
+    "fitting": "Fitting",
+    "phone_call": "Phone call",
+    "other": "Other"
+  },
+  "status": {
+    "proposed": "Proposed",
+    "accepted": "Confirmed",
+    "declined": "Declined",
+    "cancelled": "Cancelled",
+    "completed": "Completed"
+  },
+  "statusChanged": {
+    "proposed": "Appointment proposed",
+    "accepted": "Appointment accepted",
+    "declined": "Appointment declined",
+    "cancelled": "Appointment cancelled",
+    "completed": "Appointment completed"
+  },
+  "filters": {
+    "upcoming": "Upcoming",
+    "needs_response": "Needs response",
+    "past": "Past",
+    "all": "All"
+  },
+  "list": {
+    "emptyTitle": "No appointments yet",
+    "emptyBody": "When you propose a meeting from an inquiry, it'll show up here once the host responds.",
+    "noMatches": "Nothing matches that filter.",
+    "with": "with {{name}}",
+    "personalSubtitle": "Off-platform · personal",
+    "proposedByYou": "Proposed by you",
+    "proposedByHost": "Proposed by the host",
+    "personal": "Personal",
+    "accept": "Accept",
+    "decline": "Decline",
+    "markComplete": "Mark complete",
+    "cancel": "Cancel",
+    "cancelTitle": "Cancel this appointment?",
+    "cancelBody": "The other party will be notified.",
+    "keep": "Keep it",
+    "cancelConfirm": "Cancel appointment",
+    "addToCalendar": "Add to calendar",
+    "openInquiry": "Open inquiry"
+  },
+  "ics": {
+    "linkedInquiry": "Linked inquiry: {{url}}",
+    "meetingSlug": "meeting"
+  },
+  "propose": {
+    "signInFirst": "Sign in first",
+    "pickDateTime": "Pick a date and time",
+    "pickFuture": "Pick a future date and time.",
+    "proposed": "Appointment proposed",
+    "title": "Propose a meeting",
+    "descriptionVendor": "Suggest a time to meet — the host will accept or decline.",
+    "descriptionHost": "Suggest a time to meet — the vendor will accept or decline.",
+    "kind": "Kind",
+    "duration": "Duration (min)",
+    "when": "When",
+    "location": "Location",
+    "locationPlaceholder": "Address, Zoom link, or phone number",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "Anything to prepare or bring.",
+    "cancel": "Cancel",
+    "send": "Send proposal"
+  }
+}

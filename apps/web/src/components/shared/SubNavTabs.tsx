@@ -1,4 +1,5 @@
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 
 // Horizontal tab strip that lives at the top of related "hub" pages
@@ -13,6 +14,10 @@ import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 
 export interface SubNavTab {
   label: string;
+  /** Optional i18n key in the "portal" namespace. When set, the tab shows
+   *  its translation, so it follows a language switch; `label` is the
+   *  English fallback. */
+  labelKey?: string;
   to: string;
   /** When true, only matches when pathname === `to` (exact). Default
    *  is "starts with" so detail pages under the section stay highlighted. */
@@ -27,6 +32,7 @@ export function SubNavTabs({
   className?: string;
 }) {
   const { pathname } = useLocation();
+  const { t: translate } = useTranslation("portal");
 
   return (
     <div
@@ -49,7 +55,7 @@ export function SubNavTabs({
                 : "text-muted-foreground hover:text-accent hover:bg-secondary"
             }`}
           >
-            {t.label}
+            {t.labelKey ? translate(t.labelKey, { defaultValue: t.label }) : t.label}
           </Link>
         );
       })}

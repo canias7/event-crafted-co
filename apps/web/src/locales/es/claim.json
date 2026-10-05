@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "title": "Reclama tu anuncio de proveedor — Vendora",
+    "description": "Ya publicamos tu negocio en Vendora. Reclama este anuncio para administrarlo y empezar a recibir consultas."
+  },
+  "notFound": {
+    "title": "Enlace no encontrado",
+    "body": "Este enlace para reclamar no es válido o ya se usó. Si crees que es un error, escríbenos a hello@eventvendora.com con la URL.",
+    "back": "Volver a Vendora"
+  },
+  "eyebrow": "— RECLAMA TU ANUNCIO",
+  "intro": "Publicamos <name/> en Vendora con información pública del negocio. Reclama este anuncio para administrarlo — podrás editar tu perfil, definir tus precios, subir fotos a tu portafolio y empezar a recibir consultas de anfitriones.",
+  "invitedVia": "Invitación enviada a {{email}}. Vendora es un mercado de eventos centrado en proveedores — sin cargos por reserva ni comisiones, solo conexiones directas con anfitriones que organizan bodas, cumpleaños, fiestas de temporada y más.",
+  "alreadyClaimed": "Este anuncio ya fue reclamado. <signInLink>Inicia sesión</signInLink> para acceder.",
+  "signUp": "Regístrate para reclamarlo",
+  "signIn": "¿Ya tienes cuenta? Inicia sesión",
+  "claim": "Reclamar este anuncio",
+  "notYours": "¿No es tu negocio? Escribe a <mail>hello@eventvendora.com</mail> y quitaremos el anuncio.",
+  "toast": {
+    "claimed": "Anuncio reclamado — te damos la bienvenida a Vendora",
+    "error": "No pudimos reclamar el anuncio. Inténtalo de nuevo.",
+    "not_authenticated": "Inicia sesión primero para reclamarlo.",
+    "invalid_token": "Este enlace para reclamar no es válido o ya venció.",
+    "already_claimed": "Alguien ya reclamó este anuncio.",
+    "already_owned": "Este proveedor ya está vinculado a una cuenta.",
+    "fallback": "No se pudo reclamar — inténtalo de nuevo."
+  }
+}

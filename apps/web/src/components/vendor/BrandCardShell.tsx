@@ -11,6 +11,7 @@
 import { useState, type ReactNode } from "react";
 import { Info, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   /** Front face content — logo, name, stats, action buttons. */
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function BrandCardShell({ children, bio, businessName }: Props) {
+  const { t } = useTranslation("vendorProfile");
   const [flipped, setFlipped] = useState(false);
   return (
     <div className="relative" style={{ perspective: 1400 }}>
@@ -31,7 +33,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
-        aria-label={flipped ? "Show profile front" : "Show bio on back"}
+        aria-label={flipped ? t("brandCard.showFront") : t("brandCard.showBio")}
         className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground hover:text-accent transition-colors"
         style={{
           background: "#ffffff",
@@ -41,12 +43,12 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
         {flipped ? (
           <>
             <RotateCcw className="h-3 w-3" />
-            Back
+            {t("brandCard.back")}
           </>
         ) : (
           <>
             <Info className="h-3 w-3" />
-            Bio
+            {t("brandCard.bio")}
           </>
         )}
       </button>
@@ -90,7 +92,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
             }}
           />
           <p className="relative font-label text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-2 pl-14 sm:pl-16">
-            About {businessName}
+            {t("brandCard.about", { name: businessName })}
           </p>
           <div className="relative flex-1 mt-3 overflow-y-auto pr-2">
             {bio?.trim() ? (
@@ -99,7 +101,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
               </p>
             ) : (
               <p className="text-sm text-muted-foreground italic">
-                No bio yet for {businessName}.
+                {t("brandCard.noBio", { name: businessName })}
               </p>
             )}
           </div>

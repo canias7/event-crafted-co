@@ -1,0 +1,70 @@
+{
+  "page_title": "Help — Vendora",
+  "eyebrow": "— HELP",
+  "title": "How can we help?",
+  "intro": "Common questions below. Anything else, email us — we read every one.",
+  "email_card": {
+    "title": "Email support",
+    "reply_time": "{{email}} · usually a reply within 24 hours",
+    "open": "Open →"
+  },
+  "faq": {
+    "vendors": {
+      "title": "Vendors",
+      "items": {
+        "approval": {
+          "q": "How long does listing approval take?",
+          "a": "Most submissions are reviewed within 24 hours on business days. You'll get an email when your listing goes live."
+        },
+        "photos": {
+          "q": "Why are my photos uploading slowly?",
+          "a": "Each photo is resized and compressed in your browser before upload to keep storage costs down. With 100 photos this usually takes 10–15 seconds. If it's stuck at the same number for over a minute, refresh and try again — your draft text fields are saved automatically."
+        },
+        "downgrade": {
+          "q": "What happens to my listing if I downgrade my plan?",
+          "a": "Your current cycle stays paid through its end. The new tier kicks in on the next renewal — credits, listing slots, and features adjust then. Existing photos and content are never touched by a tier change."
+        },
+        "pause": {
+          "q": "Can I pause my listing temporarily?",
+          "a": "Not yet as a single switch — but you can block out an entire date range from the Calendar page and hosts will see you as unavailable for those days. Full pause is on the roadmap."
+        },
+        "blocked_title": {
+          "q": "Do hosts see the title I add to a blocked date?",
+          "a": "No. Titles are private to you. Hosts only see the date as unavailable — your note (\"Christian's birthday\", etc) never leaves your side of the app."
+        }
+      }
+    },
+    "hosts": {
+      "title": "Hosts",
+      "items": {
+        "message": {
+          "q": "How do I message a vendor after sending an inquiry?",
+          "a": "Open the inquiry from your Inbox. Once the vendor responds, the conversation lives there — you'll get a notification when they reply."
+        },
+        "payment_info": {
+          "q": "Is my payment information shared with vendors?",
+          "a": "No. Vendors never see your card or bank details. Payments flow through VendoraPay, our white-labeled processor."
+        }
+      }
+    },
+    "billing": {
+      "title": "Billing",
+      "items": {
+        "invoice": {
+          "q": "How do I download an invoice?",
+          "a": "Vendor Subscription page → Billing panel → click View next to any invoice to open the secure invoice PDF. Right-click → Save to download."
+        },
+        "card": {
+          "q": "Where do I update my card?",
+          "a": "Subscription page → Billing panel → Update. Opens the secure payment-method page."
+        }
+      }
+    }
+  },
+  "legal": {
+    "eyebrow": "— LEGAL",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "refund": "Request a refund"
+  }
+}

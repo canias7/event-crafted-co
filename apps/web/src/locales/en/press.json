@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "Press kit — Vendora",
+    "description": "Vendora's logo, colours, quick facts and press contact."
+  },
+  "toast": {
+    "copied": "Email copied",
+    "copy_failed": "Copy failed"
+  },
+  "hero": {
+    "eyebrow": "Press kit",
+    "title": "Everything you need to <gold>write about us.</gold>",
+    "body": "Our logo and colours, the short version of what we do, and a real person you can email."
+  },
+  "stats": {
+    "categories": "Vendor categories",
+    "languages": "Languages",
+    "free_listing": "To list a business"
+  },
+  "facts": {
+    "eyebrow": "Quick facts",
+    "title": "The 60-second version",
+    "items": {
+      "what": {
+        "label": "What it is",
+        "body": "An event marketplace where hosts find, message and book vendors, and keep each event's date, guests and notes in one place. Weddings, birthdays, corporate events, parties and more."
+      },
+      "founded": {
+        "label": "Founded",
+        "body": "2026."
+      },
+      "reviewed": {
+        "label": "How vendors are reviewed",
+        "body": "Every listing is reviewed by the Vendora team before it goes live."
+      },
+      "vendors_get": {
+        "label": "What vendors get",
+        "body": "A listing with portfolio photos, packages and prices; one inbox for inquiries; proposals and contracts clients sign online; and secure online payments. The Free plan includes one listing."
+      },
+      "finding": {
+        "label": "Finding vendors",
+        "body": "Search by category, city and date, with a page for each city and category."
+      },
+      "languages": {
+        "label": "Languages",
+        "body": "English and Spanish."
+      }
+    }
+  },
+  "brand": {
+    "eyebrow": "Brand",
+    "title": "Logo and colours",
+    "usage": "Use the logo on Ink (#14161A) or Ivory (#F4F1EA). Don't stretch, recolour or rotate it, or add effects. Need a logo file? Email us.",
+    "app_icon": "App icon ({{size}})",
+    "colours": "Colours",
+    "palette": {
+      "ink": "Ink",
+      "ivory": "Ivory",
+      "cream": "Cream",
+      "bronze": "Bronze",
+      "champagne": "Champagne"
+    }
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Let's talk",
+    "body": "Editorial requests, interviews and partnership inquiries. We read every message."
+  }
+}

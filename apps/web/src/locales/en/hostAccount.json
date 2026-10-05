@@ -1,0 +1,32 @@
+{
+  "title": "Account",
+  "subtitle": "Saved vendors and verification.",
+  "saved": {
+    "title": "Saved listings",
+    "count_one": "{{count}} saved",
+    "count_other": "{{count}} saved",
+    "emptyTitle": "No saved vendors yet",
+    "emptyBody": "Tap the heart on any vendor card while browsing and they'll show up here for easy reference.",
+    "browse": "Browse vendors"
+  },
+  "verification": {
+    "title": "Verification",
+    "confirm": "Request host verification?\n\nWe'll reach out within 48 hours to verify your identity (a photo of a government ID is enough). It typically unlocks faster vendor replies.",
+    "requestFailed": "Couldn't send request — try again in a moment.",
+    "requestReceived": "Request received — our team will reach out within 48 hours.",
+    "verifiedToast": "Verified host — vendors see a badge on your inquiries.",
+    "verifiedTitle": "You're verified",
+    "verifiedSubtitle": "Vendors prioritize verified hosts.",
+    "pendingToast": "Verification pending — we'll email you within 48h.",
+    "pendingTitle": "Verification pending",
+    "pendingSubtitle": "We'll reach out within 48 hours.",
+    "retryTitle": "Try verifying again",
+    "requestTitle": "Become Verified",
+    "requestSubtitle": "Build trust with vendors. Faster replies, better matches."
+  },
+  "subscriptions": {
+    "title": "Subscriptions",
+    "comingSoon": "Coming soon",
+    "body": "Premium host plans for unlimited inquiries, priority replies, and concierge support are on the way."
+  }
+}

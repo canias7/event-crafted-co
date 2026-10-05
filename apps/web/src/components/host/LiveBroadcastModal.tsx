@@ -15,6 +15,8 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -74,6 +76,7 @@ export function LiveBroadcastModal({
   eventId,
   eventTitle,
 }: Props) {
+  const { t } = useTranslation("hostTools");
   const [creds, setCreds] = useState<StreamCreds | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +123,10 @@ export function LiveBroadcastModal({
         if (cancelled) return;
         setLoading(false);
         if (error) {
-          setError(error.message ?? "Couldn't create live stream");
+          setError(
+            error.message ??
+              i18n.t("live.errors.createFailed", { ns: "hostTools" }),
+          );
           return;
         }
         setCreds(data as StreamCreds);
@@ -227,7 +233,7 @@ export function LiveBroadcastModal({
       });
 
       const sdp = pc.localDescription?.sdp;
-      if (!sdp) throw new Error("Failed to assemble SDP offer");
+      if (!sdp) throw new Error(t("live.errors.sdpFailed"));
 
       const res = await fetch(WHIP_ENDPOINT, {
         method: "POST",
@@ -239,7 +245,9 @@ export function LiveBroadcastModal({
       });
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
-        throw new Error(`Mux WHIP rejected (${res.status}): ${errText}`);
+        throw new Error(
+          t("live.errors.whipRejected", { status: res.status, details: errText }),
+        );
       }
 
       // The Location header points at this session's resource URL —
@@ -258,7 +266,7 @@ export function LiveBroadcastModal({
       const msg = err instanceof Error ? err.message : String(err);
       setError(
         msg.includes("Permission")
-          ? "Camera and microphone permission was denied. Allow access and try again."
+          ? t("live.errors.permissionDenied")
           : msg,
       );
       setPhase("setup");
@@ -290,7 +298,7 @@ export function LiveBroadcastModal({
     if (!creds) return;
     await navigator.clipboard.writeText(creds.ingest_url);
     setCopiedField("ingest");
-    toast.success("Server URL copied");
+    toast.success(t("live.toasts.serverUrlCopied"));
     window.setTimeout(
       () => setCopiedField((f) => (f === "ingest" ? null : f)),
       1500,
@@ -300,7 +308,7 @@ export function LiveBroadcastModal({
     if (!creds) return;
     await navigator.clipboard.writeText(creds.stream_key);
     setCopiedField("key");
-    toast.success("Stream key copied");
+    toast.success(t("live.toasts.streamKeyCopied"));
     window.setTimeout(
       () => setCopiedField((f) => (f === "key" ? null : f)),
       1500,
@@ -325,7 +333,7 @@ export function LiveBroadcastModal({
     await navigator.clipboard.writeText(creds.share_url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    toast.success("Share link copied");
+    toast.success(t("live.toasts.shareLinkCopied"));
   }
 
   return (
@@ -336,11 +344,10 @@ export function LiveBroadcastModal({
             <Radio
               className={`w-5 h-5 ${phase === "live" ? "text-destructive animate-pulse" : "text-accent"}`}
             />
-            {phase === "live" ? "You're live" : "Go live"}
+            {phase === "live" ? t("live.titleLive") : t("live.titleSetup")}
           </DialogTitle>
           <DialogDescription>
-            Broadcast {eventTitle} to anyone with the share link. The
-            recording will be saved automatically for replay.
+            {t("live.description", { title: eventTitle })}
           </DialogDescription>
         </DialogHeader>
 
@@ -370,16 +377,14 @@ export function LiveBroadcastModal({
                 <div className="flex items-center justify-center gap-3 text-xs">
                   <span className="inline-flex items-center gap-1.5 text-destructive">
                     <Radio className="w-3 h-3 animate-pulse" />
-                    LIVE
+                    {t("live.liveBadge")}
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <Users className="w-3.5 h-3.5" />
-                    {viewerCount === 1
-                      ? "1 watching"
-                      : `${viewerCount} watching`}
+                    {t("live.watching", { count: viewerCount })}
                   </span>
                 </div>
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -390,12 +395,12 @@ export function LiveBroadcastModal({
                     {muted ? (
                       <>
                         <MicOff className="w-3.5 h-3.5 mr-1.5" />
-                        Unmute
+                        {t("live.unmute")}
                       </>
                     ) : (
                       <>
                         <Mic className="w-3.5 h-3.5 mr-1.5" />
-                        Mute
+                        {t("live.mute")}
                       </>
                     )}
                   </Button>
@@ -409,12 +414,12 @@ export function LiveBroadcastModal({
                     {videoOff ? (
                       <>
                         <VideoOff className="w-3.5 h-3.5 mr-1.5" />
-                        Camera on
+                        {t("live.cameraOn")}
                       </>
                     ) : (
                       <>
                         <Video className="w-3.5 h-3.5 mr-1.5" />
-                        Camera off
+                        {t("live.cameraOff")}
                       </>
                     )}
                   </Button>
@@ -428,10 +433,10 @@ export function LiveBroadcastModal({
                     {ending ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                        Ending…
+                        {t("live.ending")}
                       </>
                     ) : (
-                      "End stream"
+                      t("live.endStream")
                     )}
                   </Button>
                 </div>
@@ -445,7 +450,7 @@ export function LiveBroadcastModal({
             {phase !== "ended" && (
               <div className="rounded-sm border border-border bg-card p-3">
                 <p className="font-label text-muted-foreground text-xs mb-1.5">
-                  Share this link with anyone you want to watch
+                  {t("live.shareLabel")}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="text-xs font-mono bg-secondary/40 rounded px-2 py-1.5 flex-1 truncate">
@@ -461,12 +466,12 @@ export function LiveBroadcastModal({
                     {copied ? (
                       <>
                         <Check className="w-3.5 h-3.5 mr-1.5" />
-                        Copied
+                        {t("copied")}
                       </>
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5 mr-1.5" />
-                        Copy
+                        {t("copy")}
                       </>
                     )}
                   </Button>
@@ -489,7 +494,7 @@ export function LiveBroadcastModal({
                   className="w-full"
                 >
                   <Radio className="w-4 h-4 mr-2" />
-                  Start broadcasting
+                  {t("live.start")}
                 </Button>
 
                 {/* Power-user path: external encoders (OBS, Larix).
@@ -500,17 +505,17 @@ export function LiveBroadcastModal({
                   onClick={() => setShowAdvanced((v) => !v)}
                   className="text-xs text-muted-foreground hover:text-accent transition-colors"
                 >
-                  {showAdvanced ? "Hide" : "Use OBS / Larix instead"}
+                  {showAdvanced ? t("live.hide") : t("live.useEncoder")}
                 </button>
 
                 {showAdvanced && (
                   <div className="rounded-sm border border-border bg-secondary/30 p-3 space-y-2">
                     <p className="font-label text-muted-foreground text-xs">
-                      RTMP credentials
+                      {t("live.rtmpCredentials")}
                     </p>
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
-                        Server URL
+                        {t("live.serverUrl")}
                       </p>
                       <div className="flex items-center gap-2">
                         <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all">
@@ -519,18 +524,18 @@ export function LiveBroadcastModal({
                         <button
                           type="button"
                           onClick={copyIngest}
-                          aria-label="Copy server URL"
+                          aria-label={t("live.copyServerUrl")}
                           className="text-[10px] text-accent hover:underline shrink-0 inline-flex items-center gap-1"
                         >
                           {copiedField === "ingest" ? (
                             <>
                               <Check className="w-3 h-3" />
-                              Copied
+                              {t("copied")}
                             </>
                           ) : (
                             <>
                               <Copy className="w-3 h-3" />
-                              Copy
+                              {t("copy")}
                             </>
                           )}
                         </button>
@@ -538,7 +543,7 @@ export function LiveBroadcastModal({
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
-                        Stream key
+                        {t("live.streamKey")}
                       </p>
                       <div className="flex items-center gap-2">
                         <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all">
@@ -549,45 +554,43 @@ export function LiveBroadcastModal({
                         <button
                           type="button"
                           onClick={() => setStreamKeyVisible((v) => !v)}
-                          aria-label={streamKeyVisible ? "Hide stream key" : "Show stream key"}
+                          aria-label={streamKeyVisible ? t("live.hideStreamKey") : t("live.showStreamKey")}
                           className="text-[10px] text-accent hover:underline shrink-0 inline-flex items-center gap-1"
                         >
                           {streamKeyVisible ? (
                             <>
                               <EyeOff className="w-3 h-3" />
-                              Hide
+                              {t("live.hide")}
                             </>
                           ) : (
                             <>
                               <Eye className="w-3 h-3" />
-                              Show
+                              {t("live.show")}
                             </>
                           )}
                         </button>
                         <button
                           type="button"
                           onClick={copyStreamKey}
-                          aria-label="Copy stream key"
+                          aria-label={t("live.copyStreamKey")}
                           className="text-[10px] text-accent hover:underline shrink-0 inline-flex items-center gap-1"
                         >
                           {copiedField === "key" ? (
                             <>
                               <Check className="w-3 h-3" />
-                              Copied
+                              {t("copied")}
                             </>
                           ) : (
                             <>
                               <Copy className="w-3 h-3" />
-                              Copy
+                              {t("copy")}
                             </>
                           )}
                         </button>
                       </div>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
-                      Paste both into your encoder. Anyone with this
-                      stream key can broadcast to your event — don't
-                      share it like you'd share the watch link.
+                      {t("live.encoderNote")}
                     </p>
                   </div>
                 )}
@@ -598,7 +601,7 @@ export function LiveBroadcastModal({
               <div className="text-center py-2">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground inline mr-2" />
                 <span className="text-sm text-muted-foreground">
-                  Connecting to Mux…
+                  {t("live.connecting")}
                 </span>
               </div>
             )}
@@ -606,10 +609,9 @@ export function LiveBroadcastModal({
             {phase === "ended" && (
               <div className="space-y-3">
                 <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                  <p className="font-medium mb-1">Stream ended</p>
+                  <p className="font-medium mb-1">{t("live.endedTitle")}</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your recording is being processed. It'll be available
-                    at the share link within a minute or two.
+                    {t("live.endedBody")}
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-2">
@@ -621,14 +623,14 @@ export function LiveBroadcastModal({
                     className="rounded-full"
                   >
                     <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                    View watch page
+                    {t("live.viewWatchPage")}
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     onClick={() => onOpenChange(false)}
                   >
-                    Close
+                    {t("close")}
                   </Button>
                 </div>
               </div>

@@ -1,0 +1,66 @@
+{
+  "hero": {
+    "eyebrow": "Para proveedores",
+    "title": "Más clientes. Más reservas. Más <gold>crecimiento.</gold>",
+    "sub": "Haz que te descubran quienes organizan eventos como los tuyos y gestiona consultas, propuestas y pagos en un solo lugar.",
+    "primary": "Publica tu negocio — gratis",
+    "secondary": "Cómo funciona"
+  },
+  "steps": {
+    "eyebrow": "Cómo funciona",
+    "title": "De la primera consulta a la reserva.",
+    "items": {
+      "discovered": {
+        "title": "Haz que te descubran",
+        "body": "Hazte visible para quienes están organizando eventos como los tuyos."
+      },
+      "inquiries": {
+        "title": "Gestiona consultas",
+        "body": "Responde, chatea y comparte propuestas desde una sola bandeja de entrada."
+      },
+      "book": {
+        "title": "Cierra reservas",
+        "body": "Asegura reservas con contratos, pagos y automatizaciones."
+      },
+      "grow": {
+        "title": "Haz crecer tu negocio",
+        "body": "Mide tu rendimiento, reúne reseñas y construye tu marca."
+      }
+    }
+  },
+  "tools": {
+    "eyebrow": "Todo lo que necesitas, en un solo lugar",
+    "title": "Gestiona tu negocio desde un solo lugar.",
+    "items": {
+      "found": {
+        "title": "Haz que te encuentren",
+        "body": "Aparece en las búsquedas, en Explorar y en las páginas de categorías."
+      },
+      "inbox": {
+        "title": "Una sola bandeja",
+        "body": "Todas las conversaciones con tus clientes en un solo lugar."
+      },
+      "availability": {
+        "title": "Disponibilidad",
+        "body": "Bloquea tus fechas ocupadas para que los anfitriones que buscan esas fechas vean quién está libre."
+      },
+      "proposals": {
+        "title": "Propuestas y contratos",
+        "body": "Envía propuestas y contratos que tus clientes firman en línea."
+      },
+      "payments": {
+        "title": "Pagos",
+        "body": "Recibe tus pagos en línea de forma segura."
+      },
+      "reviews": {
+        "title": "Reseñas",
+        "body": "Genera confianza con reseñas de clientes reales."
+      }
+    }
+  },
+  "closing": {
+    "title": "Empieza <gold>gratis.</gold>",
+    "sub": "El plan Gratis incluye un anuncio. Mejora tu plan cuando necesites más.",
+    "cta": "Publica tu negocio — gratis"
+  }
+}

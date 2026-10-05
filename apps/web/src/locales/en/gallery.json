@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "sharedPhoto": "Shared photo",
+    "photos_one": "{{count}} photo",
+    "photos_other": "{{count}} photos"
+  },
+  "password": {
+    "title": "Password required",
+    "body": "This share is password-protected.",
+    "label": "Password",
+    "unlock": "Unlock",
+    "wrong": "Wrong password"
+  },
+  "notFound": {
+    "title": "Not found",
+    "body": "This share link doesn't exist — it may have been revoked."
+  },
+  "expired": {
+    "title": "Link expired",
+    "body": "The vendor set an expiry on this share and it's passed."
+  },
+  "album": {
+    "fallbackName": "Album",
+    "images_one": "{{count}} image",
+    "images_other": "{{count}} images",
+    "showing": "showing {{count}}",
+    "loading": "Loading…",
+    "loadMore_one": "Load more ({{count}} left)",
+    "loadMore_other": "Load more ({{count}} left)"
+  },
+  "image": {
+    "alt": "Shared image",
+    "download": "Download",
+    "downloading": "Downloading…",
+    "downloadFailed": "Couldn't download.",
+    "downloadError": "{{message}}",
+    "close": "Close"
+  }
+}

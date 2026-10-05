@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   Check,
@@ -24,11 +25,13 @@ import { vendorNavItems } from "@/data/navItems";
 
 type ConnectorKind = "vendorapay";
 
+// `category` is a key (locales/<lang>/vendorIntegrations.json →
+// categories) and each connector's description lives under
+// connectors.<id>; `name` is the product name and isn't translated.
 interface BaseConnector {
   id: string;
   name: string;
   category: string;
-  description: string;
   brand: React.ReactNode;
 }
 
@@ -61,9 +64,7 @@ const CONNECTORS: Connector[] = [
   {
     id: "vendorapay",
     name: "VendoraPay",
-    category: "Payments",
-    description:
-      "Accept card payments and payouts straight to your bank. Vendora's white-label processor handles KYC and money movement.",
+    category: "payments",
     brand: (
       <BrandMark bg="rgba(0,0,0,0.08)">
         <span
@@ -79,6 +80,7 @@ const CONNECTORS: Connector[] = [
 ];
 
 export default function VendorIntegrationsPage() {
+  const { t } = useTranslation("vendorIntegrations");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { ownListing } = useAuth();
@@ -122,19 +124,19 @@ export default function VendorIntegrationsPage() {
     const flag = searchParams.get("vendorapay");
     if (!flag) return;
     if (flag === "return") {
-      toast.success("Welcome back from VendoraPay", {
-        description: "Refreshing your account status…",
+      toast.success(t("toasts.welcome_back"), {
+        description: t("toasts.refreshing"),
       });
       void refreshPaymentInfo();
     } else if (flag === "refresh") {
-      toast.info("Onboarding link expired", {
-        description: "Click Manage to generate a fresh one.",
+      toast.info(t("toasts.link_expired"), {
+        description: t("toasts.link_expired_body"),
       });
     }
     const next = new URLSearchParams(searchParams);
     next.delete("vendorapay");
     setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams, refreshPaymentInfo]);
+  }, [searchParams, setSearchParams, refreshPaymentInfo, t]);
 
   const handleVendorapayConnect = useCallback(async () => {
     if (!vendorId || actingId) return;
@@ -148,7 +150,7 @@ export default function VendorIntegrationsPage() {
       // response body on .context. Surface the server's detail so
       // operators see WHY onboarding bounced instead of the generic
       // "Edge Function returned a non-2xx status code".
-      let detail = "Try again in a moment.";
+      let detail = t("toasts.try_again");
       const ctx = (error as { context?: Response } | null)?.context;
       if (ctx && typeof ctx.json === "function") {
         try {
@@ -161,20 +163,16 @@ export default function VendorIntegrationsPage() {
         detail = error.message;
       }
       console.error("[vendorapay-onboard] failed", { error, data });
-      toast.error("Couldn't open VendoraPay onboarding", { description: detail });
+      toast.error(t("toasts.onboarding_failed"), { description: detail });
       setActingId(null);
       return;
     }
     window.location.href = (data as { url: string }).url;
-  }, [vendorId, actingId]);
+  }, [vendorId, actingId, t]);
 
   const handleVendorapayDisconnect = useCallback(async () => {
     if (!vendorId || actingId) return;
-    if (
-      !window.confirm(
-        "Disconnect VendoraPay? Your processor account stays open — Vendora just stops referencing it. You can re-connect anytime.",
-      )
-    ) {
+    if (!window.confirm(t("confirm_disconnect"))) {
       return;
     }
     setActingId("vendorapay");
@@ -188,12 +186,12 @@ export default function VendorIntegrationsPage() {
     );
     setActingId(null);
     if (error) {
-      toast.error("Couldn't disconnect", { description: error.message });
+      toast.error(t("toasts.disconnect_failed"), { description: error.message });
       return;
     }
     await refreshPaymentInfo();
-    toast.success("VendoraPay disconnected");
-  }, [vendorId, actingId, refreshPaymentInfo]);
+    toast.success(t("toasts.disconnected"));
+  }, [vendorId, actingId, refreshPaymentInfo, t]);
 
   const grouped = CONNECTORS.reduce<Record<string, Connector[]>>((acc, c) => {
     (acc[c.category] ||= []).push(c);
@@ -219,11 +217,11 @@ export default function VendorIntegrationsPage() {
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent transition-colors mb-2"
           >
             <ChevronLeft className="w-3 h-3" />
-            Settings
+            {t("back_to_settings")}
           </button>
-          <h1 className="font-editorial text-3xl">Integrations</h1>
+          <h1 className="font-editorial text-3xl">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Connect Vendora to the tools you already use.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -231,7 +229,7 @@ export default function VendorIntegrationsPage() {
           {Object.entries(grouped).map(([category, items]) => (
             <section key={category}>
               <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
-                {category}
+                {t(`categories.${category}`)}
               </h2>
               <div className="space-y-2.5">
                 {items.map((c) => {
@@ -257,7 +255,7 @@ export default function VendorIntegrationsPage() {
                             vendorapayConnected &&
                             !chargesEnabled ? (
                               <span className="inline-flex items-center rounded-full bg-muted text-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                                Pending KYC
+                                {t("pending_kyc")}
                               </span>
                             ) : null}
                           </div>
@@ -265,8 +263,8 @@ export default function VendorIntegrationsPage() {
                             {c.kind === "vendorapay" &&
                             vendorapayConnected &&
                             !chargesEnabled
-                              ? "Finish KYC on the next step before hosts can pay you here."
-                              : c.description}
+                              ? t("finish_kyc")
+                              : t(`connectors.${c.id}.description`)}
                           </p>
                         </div>
                         <ConnectorActionButton
@@ -295,11 +293,12 @@ function StatusPill({
 }: {
   status: "connected" | "available";
 }) {
+  const { t } = useTranslation("vendorIntegrations");
   if (status === "connected") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
         <Check className="w-2.5 h-2.5" />
-        Connected
+        {t("connected")}
       </span>
     );
   }
@@ -319,6 +318,7 @@ function ConnectorActionButton({
   onVendorapayDisconnect: () => void;
   vendorapayConnected: boolean;
 }) {
+  const { t } = useTranslation("vendorIntegrations");
   if (vendorapayConnected) {
     return (
       <div className="flex items-center gap-2 shrink-0">
@@ -334,7 +334,7 @@ function ConnectorActionButton({
           ) : (
             <ExternalLink className="w-3.5 h-3.5 mr-1" />
           )}
-          Manage
+          {t("manage")}
         </Button>
         <Button
           variant="outline"
@@ -343,7 +343,7 @@ function ConnectorActionButton({
           disabled={acting}
           className="rounded-full text-destructive hover:text-destructive"
         >
-          Disconnect
+          {t("disconnect")}
         </Button>
       </div>
     );
@@ -361,7 +361,7 @@ function ConnectorActionButton({
       ) : (
         <ExternalLink className="w-3.5 h-3.5 mr-1" />
       )}
-      Connect
+      {t("connect")}
     </Button>
   );
 }

@@ -15,6 +15,7 @@
 
 import { Link, Navigate } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SignupRoleChooserPage() {
@@ -22,6 +23,7 @@ export default function SignupRoleChooserPage() {
   // portal they belong to. (Mostly catches users who land on /signup
   // from an old bookmark after they've already created an account.)
   const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
+  const { t } = useTranslation("auth");
   if (!loading && session) {
     if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
@@ -109,13 +111,13 @@ export default function SignupRoleChooserPage() {
         className="absolute z-[3] text-[13px]"
         style={{ top: "36px", right: "40px", color: "#000" }}
       >
-        Already have an account?{" "}
+        {t("shared.have_account")}{" "}
         <Link
           to="/login"
           className="font-medium pb-px"
           style={{ borderBottom: "0.5px solid #000" }}
         >
-          Sign in
+          {t("signup_chooser.sign_in")}
         </Link>
       </div>
 
@@ -147,7 +149,7 @@ export default function SignupRoleChooserPage() {
             className="uppercase font-semibold text-black"
             style={{ fontSize: "11px", letterSpacing: "2.5px" }}
           >
-            Join Vendora
+            {t("signup_chooser.pill")}
           </span>
         </div>
 
@@ -160,7 +162,7 @@ export default function SignupRoleChooserPage() {
             letterSpacing: "-1.2px",
           }}
         >
-          Create an account
+          {t("signup_chooser.title")}
         </h1>
         <h1
           className="font-editorial text-black mt-2 mb-4 text-center"
@@ -170,7 +172,7 @@ export default function SignupRoleChooserPage() {
             letterSpacing: "-0.8px",
           }}
         >
-          with Vendora.
+          {t("signup_chooser.title_accent")}
         </h1>
         <p
           className="text-center mb-11"
@@ -182,7 +184,7 @@ export default function SignupRoleChooserPage() {
             lineHeight: 1.6,
           }}
         >
-          Are you planning an event, or do you run a service?
+          {t("signup_chooser.question")}
         </p>
 
         {/* Role cards */}
@@ -193,14 +195,14 @@ export default function SignupRoleChooserPage() {
           <RoleCard
             to="/signup/host"
             icon={<CalendarHeart className="w-5 h-5" />}
-            title="I'm planning an event"
-            subtitle="Sign up as a host. Free, takes a minute."
+            title={t("signup_chooser.host_title")}
+            subtitle={t("signup_chooser.host_subtitle")}
           />
           <RoleCard
             to="/signup/vendor"
             icon={<Briefcase className="w-5 h-5" />}
-            title="I'm a vendor"
-            subtitle="Sign up free. Your first listing is hand-reviewed before going live."
+            title={t("signup_chooser.vendor_title")}
+            subtitle={t("signup_chooser.vendor_subtitle")}
           />
         </div>
 
@@ -223,7 +225,7 @@ export default function SignupRoleChooserPage() {
               boxShadow: "0 0 6px rgba(0,0,0,0.25)",
             }}
           />
-          <span>CURATED EVENT VENDORS · VERIFIED HOSTS · PRIVATELY MATCHED</span>
+          <span>{t("signup_chooser.tagline")}</span>
         </div>
       </div>
 

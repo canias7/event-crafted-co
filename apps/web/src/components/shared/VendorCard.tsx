@@ -3,8 +3,10 @@ import {
   Heart,
   ImageIcon,
 } from "lucide-react";
-import { formatListingPrice } from "@vendora/core";
+import { useTranslation } from "react-i18next";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
 import { PrefetchLink as Link } from "@/components/shared/PrefetchLink";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { VerificationBadges } from "@/components/vendor/VerificationBadges";
@@ -95,6 +97,9 @@ interface VendorCardProps {
 }
 
 export function VendorCard({ vendor, eager = false, tone = "light", tall = false }: VendorCardProps) {
+  const { t } = useTranslation("vendorCard");
+  const categoryNames = useCategoryNames();
+  const priceLabels = usePriceLabels();
   const { isSaved, toggle } = useSavedVendors();
   const saved = isSaved(vendor.id);
   const dark = tone === "dark";
@@ -137,12 +142,12 @@ export function VendorCard({ vendor, eager = false, tone = "light", tall = false
             }`}
           >
             <ImageIcon className="w-6 h-6" aria-hidden="true" />
-            <span className="text-xs">No listing photos yet</span>
+            <span className="text-xs">{t("noPhotos")}</span>
           </div>
         )}
         {/* Only the save button sits on the photo. */}
         <button
-          aria-label={saved ? "Remove from saved" : "Save vendor"}
+          aria-label={saved ? t("unsave") : t("save")}
           onClick={(e) => {
             e.preventDefault();
             toggle(vendor.id, { isReal: vendor.isReal });
@@ -163,7 +168,7 @@ export function VendorCard({ vendor, eager = false, tone = "light", tall = false
             dark ? "text-gold" : "text-accent"
           }`}
         >
-          {vendor.category}
+          {categoryNames.sub(vendor.category)}
         </p>
         <div className="mt-1.5 flex items-center gap-1.5">
           <h3
@@ -185,7 +190,7 @@ export function VendorCard({ vendor, eager = false, tone = "light", tall = false
           </p>
           <span className={`h-5 w-px shrink-0 ${dark ? "bg-white/15" : "bg-border"}`} aria-hidden />
           <p className="m-0 shrink-0 tnum">
-            {formatListingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
+            {priceLabels.listingPrice(vendor.priceMinCents, vendor.priceMaxCents)}
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function LogoCropperModal({ file, onCancel, onApply }: Props) {
+  const { t } = useTranslation("listingEditor");
   // On-screen square size. Fixed 320 on desktop, but clamp to the
   // viewport width so the crop square doesn't overflow narrow phones
   // (mobile view). Computed once — the modal is transient.
@@ -170,16 +172,15 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
       >
         <button
           onClick={onCancel}
-          aria-label="Close"
+          aria-label={t("common.close")}
           className="absolute top-3 right-3 w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <h2 className="font-editorial text-2xl mb-1">Adjust your logo</h2>
+        <h2 className="font-editorial text-2xl mb-1">{t("logoCropper.title")}</h2>
         <p className="text-xs text-muted-foreground mb-5">
-          Drag to position. Slide to zoom — zoom all the way out to fit your
-          whole logo.
+          {t("logoCropper.hint")}
         </p>
 
         <div
@@ -256,7 +257,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
             htmlFor="logo-zoom"
             className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground"
           >
-            Zoom
+            {t("logoCropper.zoom")}
           </label>
           <input
             id="logo-zoom"
@@ -272,10 +273,10 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" className="rounded-full" onClick={onCancel}>
-            Cancel
+            {t("logoCropper.cancel")}
           </Button>
           <Button className="rounded-full" onClick={apply} disabled={!imgSize}>
-            Apply
+            {t("logoCropper.apply")}
           </Button>
         </div>
       </div>

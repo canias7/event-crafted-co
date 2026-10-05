@@ -1,0 +1,29 @@
+{
+  "close": "Close",
+  "more": "More",
+  "breadcrumb": "breadcrumb",
+  "toggle_sidebar": "Toggle Sidebar",
+  "carousel": {
+    "role": "carousel",
+    "slide": "slide",
+    "previous": "Previous slide",
+    "next": "Next slide"
+  },
+  "pagination": {
+    "label": "pagination",
+    "go_previous": "Go to previous page",
+    "previous": "Previous",
+    "go_next": "Go to next page",
+    "next": "Next",
+    "more_pages": "More pages"
+  },
+  "calendar": {
+    "previous_month": "Go to previous month",
+    "next_month": "Go to next month"
+  },
+  "toasts": {
+    "region": "Notifications",
+    "viewport": "Notifications ({hotkey})",
+    "item": "Notification"
+  }
+}

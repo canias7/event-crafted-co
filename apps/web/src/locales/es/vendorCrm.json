@@ -1,0 +1,56 @@
+{
+  "sidebarTitle": "Portal de proveedores",
+  "title": "Vendora CRM",
+  "subtitle": "Tu cartera de clientes, creada a partir de cada consulta — igual que en la app.",
+  "loading": "Cargando tus clientes…",
+  "gate": {
+    "title": "Conoce a cada cliente.",
+    "body": "Vendora CRM convierte tus consultas en una cartera de clientes — cada anfitrión con el que has trabajado, sus eventos, tus notas privadas y tus recordatorios de seguimiento. Incluido en los planes Pro y Premium.",
+    "cta": "✦ Mejora a Pro"
+  },
+  "list": {
+    "search": "Buscar clientes",
+    "noMatch": "Ningún cliente coincide.",
+    "empty": "En cuanto un anfitrión envíe una consulta, aparecerá aquí.",
+    "inquiries_one": "{{count}} consulta",
+    "inquiries_other": "{{count}} consultas",
+    "booked_one": " · {{count}} reservada",
+    "booked_other": " · {{count}} reservadas",
+    "selectPrompt": "Selecciona un cliente para ver su ficha."
+  },
+  "record": {
+    "clientSince": "Cliente desde el {{date}}",
+    "nextEvent": " · Próximo evento: {{date}}",
+    "openInbox": "Abrir bandeja"
+  },
+  "followUp": {
+    "title": "Recordatorio de seguimiento ✦",
+    "scheduled": "Te avisaremos en tu teléfono el {{date}}.",
+    "clear": "Quitar",
+    "toast": "Te lo recordaremos el {{date}}.",
+    "options": {
+      "tomorrow": "Mañana",
+      "in3Days": "En 3 días",
+      "nextWeek": "La próxima semana",
+      "in2Weeks": "En 2 semanas",
+      "inAMonth": "En un mes"
+    }
+  },
+  "notes": {
+    "title": "Notas privadas ✦",
+    "placeholder": "Agrega una nota privada — precios, preferencias, nombres de los niños…",
+    "saving": "Guardando…",
+    "save": "Guardar nota",
+    "delete": "Eliminar nota"
+  },
+  "events": {
+    "title": "Eventos ✦",
+    "empty": "Aún no hay consultas registradas.",
+    "fallback": "Consulta de evento",
+    "guests_one": "{{count}} invitado",
+    "guests_other": "{{count}} invitados",
+    "received": "Recibida el {{date}}",
+    "booked": "Reservado",
+    "inquiry": "Consulta"
+  }
+}

@@ -4,6 +4,7 @@
 // here renders on their public listing via VendorTeamPublic.
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,7 @@ const EMPTY = {
 };
 
 export default function VendorTeamPage() {
+  const { t } = useTranslation("vendorTeam");
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
 
@@ -83,7 +85,7 @@ export default function VendorTeamPage() {
       setShowTeam(!next);
       toast.error(error.message);
     } else {
-      toast.success(next ? "Your team section is live." : "Team section hidden.");
+      toast.success(next ? t("toast.live") : t("toast.hidden"));
     }
   }
 
@@ -114,7 +116,7 @@ export default function VendorTeamPage() {
     e.preventDefault();
     if (!userId || saving) return;
     if (!form.full_name.trim() || !form.role_title.trim() || !form.bio.trim()) {
-      toast.error("Name, role, and a short bio are required.");
+      toast.error(t("toast.required"));
       return;
     }
     setSaving(true);
@@ -150,9 +152,9 @@ export default function VendorTeamPage() {
       if (error) throw new Error(error.message);
       setFormOpen(false);
       await load();
-      toast.success(editing ? "Member updated." : "Member added.");
+      toast.success(editing ? t("toast.updated") : t("toast.added"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save.");
+      toast.error(err instanceof Error ? err.message : t("toast.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -186,34 +188,34 @@ export default function VendorTeamPage() {
 
   return (
     <div className="min-h-screen flex relative bg-[var(--vendor-canvas)]">
-      <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("sidebarTitle")} backPath="/" />
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
-            Meet the Team <span className="text-accent">✦</span>
+            {t("title")} <span className="text-accent">✦</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Introduce the people behind your business — optional, and always in your control.
+            {t("subtitle")}
           </p>
         </div>
 
         <div className="p-4 md:p-8 max-w-[860px] space-y-5">
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
             </div>
           ) : (
             <>
               <label className="card-soft flex cursor-pointer items-center justify-between gap-4 p-5">
                 <span>
                   <span className="block text-[15px] font-semibold">
-                    Show the team on my public profile
+                    {t("showTeam")}
                   </span>
                   <span className="block text-[12.5px] text-muted-foreground mt-0.5">
-                    When off, nothing is shown publicly — your entries stay saved.
+                    {t("showTeamHint")}
                   </span>
                 </span>
                 <input
@@ -242,23 +244,23 @@ export default function VendorTeamPage() {
                       <p className="m-0 truncate text-[14.5px] font-semibold">
                         {m.full_name}
                         {!m.visible ? (
-                          <span className="text-muted-foreground font-normal"> · hidden</span>
+                          <span className="text-muted-foreground font-normal">{t("hidden")}</span>
                         ) : null}
                       </p>
                       <p className="m-0 truncate text-[12px] text-accent">{m.role_title}</p>
                     </button>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <IconBtn label="Move up" disabled={i === 0} onClick={() => void move(m, -1)}>
+                      <IconBtn label={t("moveUp")} disabled={i === 0} onClick={() => void move(m, -1)}>
                         <ArrowUp className="h-3.5 w-3.5" />
                       </IconBtn>
                       <IconBtn
-                        label="Move down"
+                        label={t("moveDown")}
                         disabled={i === members.length - 1}
                         onClick={() => void move(m, 1)}
                       >
                         <ArrowDown className="h-3.5 w-3.5" />
                       </IconBtn>
-                      <IconBtn label="Remove" onClick={() => void removeMember(m)}>
+                      <IconBtn label={t("remove")} onClick={() => void removeMember(m)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </IconBtn>
                     </div>
@@ -270,32 +272,32 @@ export default function VendorTeamPage() {
                 onClick={openNew}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-accent/60 bg-accent/5 py-4 text-sm font-semibold hover:bg-accent/10 transition-colors"
               >
-                <Plus className="h-4 w-4 text-accent" /> Add team member
+                <Plus className="h-4 w-4 text-accent" /> {t("add")}
               </button>
 
               {formOpen ? (
                 <form onSubmit={saveMember} className="card-soft space-y-3 p-6">
                   <p className="font-label text-accent">
-                    {editing ? "Edit member ✦" : "New member ✦"}
+                    {editing ? t("form.editTitle") : t("form.newTitle")}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <input
                       value={form.full_name}
                       onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
-                      placeholder="Full name *"
+                      placeholder={t("form.fullName")}
                       className={inputCls}
                     />
                     <input
                       value={form.role_title}
                       onChange={(e) => setForm((f) => ({ ...f, role_title: e.target.value }))}
-                      placeholder="Role — e.g., Lead planner *"
+                      placeholder={t("form.role")}
                       className={inputCls}
                     />
                   </div>
                   <textarea
                     value={form.bio}
                     onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value.slice(0, 300) }))}
-                    placeholder="Short bio (up to 300 characters) *"
+                    placeholder={t("form.bio")}
                     rows={3}
                     className={`${inputCls} resize-none`}
                   />
@@ -303,7 +305,7 @@ export default function VendorTeamPage() {
                     <input
                       value={form.specialty}
                       onChange={(e) => setForm((f) => ({ ...f, specialty: e.target.value }))}
-                      placeholder="Specialty"
+                      placeholder={t("form.specialty")}
                       className={inputCls}
                     />
                     <input
@@ -311,26 +313,26 @@ export default function VendorTeamPage() {
                       onChange={(e) =>
                         setForm((f) => ({ ...f, years_with_business: e.target.value }))
                       }
-                      placeholder="Years with the business"
+                      placeholder={t("form.years")}
                       className={inputCls}
                     />
                     <input
                       value={form.fun_fact}
                       onChange={(e) => setForm((f) => ({ ...f, fun_fact: e.target.value }))}
-                      placeholder="Fun fact"
+                      placeholder={t("form.funFact")}
                       className={inputCls}
                     />
                     <input
                       value={form.link_url}
                       onChange={(e) => setForm((f) => ({ ...f, link_url: e.target.value }))}
-                      placeholder="Link (portfolio, Instagram…)"
+                      placeholder={t("form.link")}
                       className={inputCls}
                     />
                   </div>
                   <div className="flex flex-wrap items-center gap-4">
                     <label className="flex cursor-pointer items-center gap-2 rounded-full border border-dashed border-accent/60 bg-accent/5 px-4 py-2 text-[13px] font-medium hover:bg-accent/10 transition-colors">
                       <ImagePlus className="h-4 w-4 text-accent" />
-                      {photo ? photo.name : editing?.photo_url ? "Replace photo" : "Add photo"}
+                      {photo ? photo.name : editing?.photo_url ? t("form.replacePhoto") : t("form.addPhoto")}
                       <input
                         type="file"
                         accept="image/*"
@@ -344,7 +346,7 @@ export default function VendorTeamPage() {
                         checked={form.visible}
                         onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
                       />
-                      Visible on my profile
+                      {t("form.visible")}
                     </label>
                   </div>
                   <div className="flex gap-2 pt-1">
@@ -353,14 +355,14 @@ export default function VendorTeamPage() {
                       disabled={saving}
                       className="inline-flex justify-center items-center rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover disabled:bg-gold-muted h-11"
                     >
-                      {saving ? "Saving…" : "Save member"}
+                      {saving ? t("form.saving") : t("form.save")}
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormOpen(false)}
                       className="rounded-full border border-border bg-background px-6 py-2.5 text-sm font-semibold"
                     >
-                      Cancel
+                      {t("form.cancel")}
                     </button>
                   </div>
                 </form>

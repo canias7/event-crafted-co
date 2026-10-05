@@ -6,6 +6,7 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
@@ -23,26 +24,35 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 type CheckStatus = "checking" | "operational" | "degraded" | "down";
 
+/**
+ * Why a check failed: the server's own message, shown as is, or one of
+ * ours, kept as a key (notes.<key> in locales/<language>/status.json) so
+ * it shows in the visitor's language.
+ */
+type CheckNote =
+  | string
+  | {
+      key: "function_url_unknown" | "storage_url_unknown" | "storage_returned" | "ping_threw";
+      status?: number;
+    };
+
 interface ServiceCheck {
+  /** Also names the service's label and description in status.json (services.<id>). */
   id: string;
-  label: string;
-  description: string;
   /** Returns the latency in ms, or throws/returns null on failure. */
-  ping: () => Promise<{ ok: boolean; latencyMs: number; note?: string }>;
+  ping: () => Promise<{ ok: boolean; latencyMs: number; note?: CheckNote }>;
 }
 
 interface CheckResult {
   status: CheckStatus;
   latencyMs?: number;
-  note?: string;
+  note?: CheckNote;
   checkedAt: number;
 }
 
 const SERVICES: ServiceCheck[] = [
   {
     id: "supabase-db",
-    label: "Database",
-    description: "Postgres reads via the Supabase API",
     ping: async () => {
       const start = performance.now();
       // Anonymous select against vendor_profiles (public RLS read).
@@ -57,8 +67,6 @@ const SERVICES: ServiceCheck[] = [
   },
   {
     id: "supabase-auth",
-    label: "Authentication",
-    description: "Sign-in + session endpoints",
     ping: async () => {
       const start = performance.now();
       const { error } = await supabase.auth.getSession();
@@ -68,15 +76,13 @@ const SERVICES: ServiceCheck[] = [
   },
   {
     id: "edge-functions",
-    label: "Edge functions",
-    description: "Sitemap, calendar feeds, transactional email",
     ping: async () => {
       // Sitemap is a public, anonymous edge function — perfect health
       // check. The functions URL isn't exposed by supabase-js (the
       // .url property is protected), so derive from env.
       const base = import.meta.env.VITE_SUPABASE_URL;
       if (!base) {
-        return { ok: false, latencyMs: 0, note: "function URL unknown" };
+        return { ok: false, latencyMs: 0, note: { key: "function_url_unknown" } };
       }
       const start = performance.now();
       const res = await fetch(`${base}/functions/v1/sitemap-xml`, {
@@ -89,13 +95,11 @@ const SERVICES: ServiceCheck[] = [
   },
   {
     id: "storage",
-    label: "Storage",
-    description: "Image and file delivery",
     ping: async () => {
       // Hit the public bucket index — should always 200.
       const base = import.meta.env.VITE_SUPABASE_URL;
       if (!base) {
-        return { ok: false, latencyMs: 0, note: "storage URL unknown" };
+        return { ok: false, latencyMs: 0, note: { key: "storage_url_unknown" } };
       }
       const start = performance.now();
       const res = await fetch(
@@ -110,7 +114,7 @@ const SERVICES: ServiceCheck[] = [
         latencyMs,
         note:
           res.status >= 500
-            ? `storage returned ${res.status}`
+            ? { key: "storage_returned", status: res.status }
             : undefined,
       };
     },
@@ -120,56 +124,54 @@ const SERVICES: ServiceCheck[] = [
 // Latency thresholds in ms. Above slow → degraded; failed → down.
 const SLOW_LATENCY = 1500;
 
-function classify(
-  ok: boolean,
-  latencyMs: number,
-): { status: CheckStatus; label: string } {
-  if (!ok) return { status: "down", label: "Down" };
-  if (latencyMs > SLOW_LATENCY) return { status: "degraded", label: "Degraded" };
-  return { status: "operational", label: "Operational" };
+function classify(ok: boolean, latencyMs: number): CheckStatus {
+  if (!ok) return "down";
+  if (latencyMs > SLOW_LATENCY) return "degraded";
+  return "operational";
 }
 
 // On the dark page: green only for "operational" (a live signal),
 // champagne for slow, and "Down" on a cream pill so the brand red
-// stays readable against ink.
+// stays readable against ink (its latency turns ink to match). Each
+// status's word is labels.<status> in status.json.
 const STATUS_META: Record<
   CheckStatus,
-  { tone: string; labelTone: string; Icon: typeof CheckCircle2; label: string }
+  { tone: string; labelTone: string; latencyTone: string; Icon: typeof CheckCircle2 }
 > = {
   checking: {
     tone: "text-[#f4f1ea]/80",
     labelTone: "text-[#f4f1ea]/80",
+    latencyTone: "text-[#f4f1ea]/80",
     Icon: Loader2,
-    label: "Checking",
   },
   operational: {
     tone: "text-emerald-400",
     labelTone: "text-emerald-400",
+    latencyTone: "text-[#f4f1ea]/80",
     Icon: CheckCircle2,
-    label: "Operational",
   },
   degraded: {
     tone: "text-gold",
     labelTone: "text-gold",
+    latencyTone: "text-[#f4f1ea]/80",
     Icon: AlertCircle,
-    label: "Degraded",
   },
   down: {
     tone: "text-destructive",
     labelTone: "rounded-full bg-[#f4f1ea] px-2 py-0.5 text-destructive",
+    latencyTone: "text-foreground",
     Icon: XCircle,
-    label: "Down",
   },
 };
 
 export default function StatusPage() {
+  const { t } = useTranslation("status");
   const [results, setResults] = useState<Record<string, CheckResult>>({});
   const [running, setRunning] = useState(false);
 
   useDocumentMeta({
-    title: "System status — Vendora",
-    description:
-      "Real-time health of Vendora's core services — database, authentication, edge functions, storage.",
+    title: t("meta.title"),
+    description: t("meta.description"),
   });
 
   async function runChecks() {
@@ -184,7 +186,7 @@ export default function StatusPage() {
       SERVICES.map(async (s) => {
         try {
           const r = await s.ping();
-          const { status } = classify(r.ok, r.latencyMs);
+          const status = classify(r.ok, r.latencyMs);
           setResults((prev) => ({
             ...prev,
             [s.id]: {
@@ -199,7 +201,7 @@ export default function StatusPage() {
             ...prev,
             [s.id]: {
               status: "down",
-              note: err instanceof Error ? err.message : "ping threw",
+              note: err instanceof Error ? err.message : { key: "ping_threw" },
               checkedAt: Date.now(),
             },
           }));
@@ -236,11 +238,10 @@ export default function StatusPage() {
       <section className="border-b border-white/15 pt-12 md:pt-16 pb-12 md:pb-16">
         <div className="container mx-auto px-5 md:px-8 max-w-4xl">
           <p className="font-label text-gold tracking-[0.4em] mb-4">
-            — STATUS
+            {t("eyebrow")}
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
-            How the system is{" "}
-            <span className="text-gold">behaving.</span>
+            <Trans t={t} i18nKey="title" components={{ gold: <span className="text-gold" /> }} />
           </h1>
 
           {/* Top-line overall */}
@@ -252,16 +253,10 @@ export default function StatusPage() {
             />
             <div className="flex-1 min-w-0">
               <p className="font-editorial text-2xl leading-tight">
-                {overall === "operational"
-                  ? "All systems operational"
-                  : overall === "degraded"
-                    ? "Partial degradation"
-                    : overall === "down"
-                      ? "Service interruption"
-                      : "Running checks…"}
+                {t(`overall.${overall}`)}
               </p>
               <p className="text-xs text-[#f4f1ea]/80 mt-0.5">
-                Re-checks every 60s · last refresh just now
+                {t("refresh_note")}
               </p>
             </div>
             <Button
@@ -277,7 +272,7 @@ export default function StatusPage() {
               ) : (
                 <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
               )}
-              Refresh
+              {t("refresh")}
             </Button>
           </div>
         </div>
@@ -288,7 +283,8 @@ export default function StatusPage() {
           <ul className="space-y-3">
             {SERVICES.map((s) => {
               const r = results[s.id];
-              const meta = r ? STATUS_META[r.status] : STATUS_META.checking;
+              const status: CheckStatus = r ? r.status : "checking";
+              const meta = STATUS_META[status];
               const Icon = meta.Icon;
               return (
                 <li
@@ -303,25 +299,27 @@ export default function StatusPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3 flex-wrap">
                       <p className="font-display text-base leading-tight">
-                        {s.label}
+                        {t(`services.${s.id}.label`)}
                       </p>
                       <p
                         className={`text-xs font-medium ${meta.labelTone} tabular-nums`}
                       >
-                        {meta.label}
+                        {t(`labels.${status}`)}
                         {r?.latencyMs != null && (
-                          <span className="text-[#f4f1ea]/80 font-normal ml-2">
+                          <span className={`${meta.latencyTone} font-normal ml-2`}>
                             {r.latencyMs}ms
                           </span>
                         )}
                       </p>
                     </div>
                     <p className="text-xs text-[#f4f1ea]/80 mt-1">
-                      {s.description}
+                      {t(`services.${s.id}.description`)}
                     </p>
                     {r?.note && r.status !== "operational" && (
                       <p className="text-[11px] text-[#f4f1ea]/80 mt-1">
-                        {r.note}
+                        {typeof r.note === "string"
+                          ? r.note
+                          : t(`notes.${r.note.key}`, { status: r.note.status })}
                       </p>
                     )}
                   </div>
@@ -331,10 +329,7 @@ export default function StatusPage() {
           </ul>
 
           <p className="text-xs text-[#f4f1ea]/80 mt-8 max-w-2xl leading-relaxed">
-            Checks run from your browser, so they reflect the path between you
-            and Vendora — not just our infrastructure. If you're seeing red
-            here but our team's status post says green, it's likely a
-            networking issue between you and the closest Supabase edge.
+            {t("footnote")}
           </p>
         </div>
       </section>

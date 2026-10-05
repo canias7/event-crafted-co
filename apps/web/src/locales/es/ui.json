@@ -1,0 +1,29 @@
+{
+  "close": "Cerrar",
+  "more": "Más",
+  "breadcrumb": "ruta de navegación",
+  "toggle_sidebar": "Mostrar u ocultar la barra lateral",
+  "carousel": {
+    "role": "carrusel",
+    "slide": "diapositiva",
+    "previous": "Diapositiva anterior",
+    "next": "Diapositiva siguiente"
+  },
+  "pagination": {
+    "label": "paginación",
+    "go_previous": "Ir a la página anterior",
+    "previous": "Anterior",
+    "go_next": "Ir a la página siguiente",
+    "next": "Siguiente",
+    "more_pages": "Más páginas"
+  },
+  "calendar": {
+    "previous_month": "Ir al mes anterior",
+    "next_month": "Ir al mes siguiente"
+  },
+  "toasts": {
+    "region": "Notificaciones",
+    "viewport": "Notificaciones ({hotkey})",
+    "item": "Notificación"
+  }
+}

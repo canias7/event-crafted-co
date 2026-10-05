@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +35,7 @@ function parseDate(s: string) {
 const HORIZON_MONTHS = 6;
 
 export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [oneOffBlocks, setOneOffBlocks] = useState<string[]>([]);
   const [weeklyRules, setWeeklyRules] = useState<RecurringRule[]>([]);
   const [bookedDates, setBookedDates] = useState<string[]>([]);
@@ -131,12 +133,13 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
 
   return (
     <div>
-      <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
-        Availability
+      {/* 36px on phones: one long word ("Disponibilidad", even
+          "Availability") at 48px is wider than a 360px screen. */}
+      <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-4">
+        {t("availability.title")}
       </h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-xl leading-relaxed">
-        Crossed-out dates are already booked or blocked. Open dates are
-        still available — send an inquiry to confirm and lock in.
+        {t("availability.body")}
       </p>
 
       <div className="card-soft p-4 sm:p-6 inline-block">
@@ -161,11 +164,11 @@ export function VendorAvailabilityPublic({ vendorId }: { vendorId: string }) {
       <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm bg-muted/40 line-through inline-block" />
-          Booked / blocked
+          {t("availability.blocked")}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <CalendarIcon className="w-3 h-3" />
-          Open dates — send an inquiry to confirm
+          {t("availability.open")}
         </span>
       </div>
     </div>

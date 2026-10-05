@@ -12,6 +12,7 @@
 
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
 
 interface Props {
@@ -40,6 +41,7 @@ export function GlassyAuthShell({
   belowCardLink,
   children,
 }: Props) {
+  const { t } = useTranslation("auth");
   return (
     <div
       className="relative min-h-screen overflow-hidden"
@@ -141,7 +143,7 @@ export function GlassyAuthShell({
         style={{ padding: "28px 40px" }}
       >
         <div className="flex items-center gap-3.5">
-          <Link to="/" aria-label="Vendora — Events, simplified">
+          <Link to="/" aria-label={t("shell.logo_label")}>
             <VendoraLogo size="md" color="#000" />
           </Link>
           <div
@@ -159,7 +161,7 @@ export function GlassyAuthShell({
               opacity: 0.55,
             }}
           >
-            Event marketplace
+            {t("shell.marketplace")}
           </div>
         </div>
         <div className="flex items-center gap-6 text-[13px]">

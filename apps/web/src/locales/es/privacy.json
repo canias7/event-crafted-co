@@ -1,0 +1,44 @@
+{
+  "page_title": "Política de privacidad — Vendora",
+  "eyebrow": "— LEGAL",
+  "title": "Política de privacidad",
+  "last_updated": "Última actualización: 3 de mayo de 2026",
+  "translation_note": "Esta traducción es para tu comodidad. Si hay alguna diferencia con la versión en inglés, prevalece la versión en inglés.",
+  "intro": "Vendora es un mercado de eventos centrado en los proveedores. Esta página describe qué recopilamos, cómo lo usamos y los derechos que tienes sobre tus datos.",
+  "collect": {
+    "title": "1. Qué recopilamos",
+    "account": "<strong>Información de la cuenta</strong> — tu correo electrónico, tu contraseña (guardada como hash) y el rol con el que te registraste (anfitrión, proveedor o administrador).",
+    "profile": "<strong>Perfil + detalles del evento</strong> — nombre visible, teléfono opcional, tipo de evento, fecha, ubicación, rango de presupuesto y cualquier nota que hayas compartido durante la configuración inicial.",
+    "vendor_profile": "<strong>Perfil de proveedor</strong> — en el caso de los proveedores, el nombre de tu negocio, categoría, biografía, precio base, ubicación, radio de servicio y las imágenes de portafolio que subas.",
+    "messages": "<strong>Mensajes y consultas</strong> — el contenido de los mensajes, los detalles de las consultas, los cambios de estado y cualquier reseña que publiques.",
+    "usage": "<strong>Datos de uso</strong> — páginas visitadas, funciones usadas, ubicación aproximada a partir de la IP. No vendemos estos datos a terceros."
+  },
+  "use": {
+    "title": "2. Cómo lo usamos",
+    "operate": "Usamos tus datos para operar Vendora — conectar a los anfitriones con proveedores relevantes, hacer llegar los mensajes entre tú y un proveedor, mostrar los perfiles públicos de los proveedores en nuestro directorio, enviar correos transaccionales (confirmación de registro, acuses de recibo de consultas) y mejorar el producto.",
+    "ai": "Cuando el agente de consultas con IA está activado, los detalles de tu consulta y los mensajes anteriores de un proveedor se envían a la API de Claude de Anthropic para redactar respuestas. El proveedor revisa y aprueba cada respuesta antes de que se envíe — los borradores nunca se envían automáticamente."
+  },
+  "share": {
+    "title": "3. Con quién lo compartimos",
+    "vendors": "<strong>Proveedores a los que envías consultas</strong> — cuando envías una consulta, el proveedor ve los detalles de tu evento y tu nombre visible.",
+    "providers": "<strong>Prestadores de servicios</strong> — Supabase (alojamiento y base de datos) y (para las respuestas con IA) Anthropic.",
+    "no_sale": "<strong>Sin anunciantes, sin intermediarios de datos, sin revendedores.</strong> Vendora no vende ni alquila tus datos personales."
+  },
+  "cookies": {
+    "title": "4. Cookies",
+    "body": "Usamos cookies esenciales para la autenticación y la gestión de sesiones. Con tu consentimiento, podemos usar cookies de análisis para entender qué funciones se usan. Puedes cambiar tus preferencias de cookies desde el aviso que aparece en tu primera visita o en la configuración de tu navegador."
+  },
+  "rights": {
+    "title": "5. Tus derechos",
+    "access": "Puedes acceder a tus datos, corregirlos, exportarlos o eliminarlos en cualquier momento. La mayor parte de esto está disponible directamente en la configuración de tu cuenta; para una exportación completa o una solicitud de eliminación, escribe a <email>hello@eventvendora.com</email>. Respondemos en un plazo de 30 días.",
+    "laws": "Los residentes de la UE y del Reino Unido tienen derechos según el RGPD (GDPR); los residentes de California tienen derechos según la CCPA — ambos se respetan sin importar dónde vivas."
+  },
+  "retention": {
+    "title": "6. Conservación de datos",
+    "body": "Conservamos los datos de la cuenta mientras tu cuenta esté activa y durante 90 días después de su eliminación (por si cambias de opinión). Los datos de uso anonimizados pueden conservarse por más tiempo con fines de análisis."
+  },
+  "contact": {
+    "title": "7. Contacto",
+    "body": "Preguntas sobre esta política o tus datos: escribe a <email>hello@eventvendora.com</email>."
+  }
+}

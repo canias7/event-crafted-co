@@ -3,6 +3,7 @@
 // link), Download. Arrow keys + Esc navigate / close.
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   ChevronRight,
@@ -62,6 +63,9 @@ export function Lightbox({
   onSetAsCover,
   isAlbumCover,
 }: Props) {
+  const { t, i18n } = useTranslation("galleryTools");
+  // Spanish dates use US-Spanish formats; English keeps the browser default.
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
   const row = rows[index];
   const [panelOpen, setPanelOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -145,7 +149,7 @@ export function Lightbox({
       ref={containerRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Image viewer"
+      aria-label={t("lightbox.viewer")}
       className="fixed inset-0 z-50 flex items-stretch bg-black/90"
       onClick={(e) => {
         // Only close when the backdrop itself was the click target.
@@ -164,7 +168,7 @@ export function Lightbox({
             e.stopPropagation();
             onPrev();
           }}
-          aria-label="Previous"
+          aria-label={t("lightbox.previous")}
           disabled={index === 0}
           className="absolute left-4 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
         >
@@ -176,7 +180,7 @@ export function Lightbox({
             e.stopPropagation();
             onNext();
           }}
-          aria-label="Next"
+          aria-label={t("lightbox.next")}
           disabled={index === rows.length - 1}
           className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
         >
@@ -185,7 +189,7 @@ export function Lightbox({
 
         <img
           src={row.image_url}
-          alt={row.caption ?? "Gallery image"}
+          alt={row.caption ?? t("lightbox.imageAlt")}
           className="max-h-[90vh] max-w-full object-contain rounded-md"
           onClick={(e) => e.stopPropagation()}
         />
@@ -202,16 +206,16 @@ export function Lightbox({
             {onSetAsCover ? (
               <ActionButton
                 onClick={onSetAsCover}
-                label={isAlbumCover ? "Album cover" : "Set as album cover"}
+                label={isAlbumCover ? t("lightbox.albumCover") : t("lightbox.setAsCover")}
                 active={isAlbumCover}
               >
                 <Star className={`w-4 h-4 ${isAlbumCover ? "fill-current" : ""}`} />
               </ActionButton>
             ) : null}
-            <ActionButton onClick={() => setEditOpen(true)} label="Edit">
+            <ActionButton onClick={() => setEditOpen(true)} label={t("lightbox.edit")}>
               <Pencil className="w-4 h-4" />
             </ActionButton>
-            <ActionButton onClick={() => setShareOpen(true)} label="Share">
+            <ActionButton onClick={() => setShareOpen(true)} label={t("lightbox.share")}>
               <Link2 className="w-4 h-4" />
             </ActionButton>
             <ActionButton
@@ -221,13 +225,13 @@ export function Lightbox({
                 try {
                   await downloadCrossOrigin(row.image_url);
                 } catch (err) {
-                  const msg = err instanceof Error ? err.message : "Couldn't download.";
+                  const msg = err instanceof Error ? err.message : t("lightbox.downloadFailed");
                   toast.error(msg);
                 } finally {
                   setDownloading(false);
                 }
               }}
-              label={downloading ? "Downloading…" : "Download"}
+              label={downloading ? t("lightbox.downloading") : t("lightbox.download")}
               disabled={downloading}
             >
               {downloading ? (
@@ -238,12 +242,12 @@ export function Lightbox({
             </ActionButton>
             <ActionButton
               onClick={() => setPanelOpen((p) => !p)}
-              label="Image info"
+              label={t("lightbox.info")}
               active={panelOpen}
             >
               <Info className="w-4 h-4" />
             </ActionButton>
-            <ActionButton onClick={onClose} label="Close">
+            <ActionButton onClick={onClose} label={t("lightbox.close")}>
               <X className="w-4 h-4" />
             </ActionButton>
           </div>
@@ -259,51 +263,51 @@ export function Lightbox({
           <div className="p-4 space-y-4">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-                File
+                {t("lightbox.file")}
               </p>
-              <ExifRow label="Dimensions">
+              <ExifRow label={t("lightbox.dimensions")}>
                 {row.width && row.height ? `${row.width} × ${row.height}` : "—"}
               </ExifRow>
               {row.file_size_bytes ? (
-                <ExifRow label="Size">{formatFileSize(row.file_size_bytes)}</ExifRow>
+                <ExifRow label={t("lightbox.size")}>{formatFileSize(row.file_size_bytes)}</ExifRow>
               ) : null}
-              <ExifRow label="Uploaded">
-                {new Date(row.created_at).toLocaleString()}
+              <ExifRow label={t("lightbox.uploaded")}>
+                {new Date(row.created_at).toLocaleString(dateLocale)}
               </ExifRow>
             </div>
             {row.exif ? (
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-                  Camera
+                  {t("lightbox.camera")}
                 </p>
                 {row.exif.camera_make || row.exif.camera_model ? (
-                  <ExifRow label="Body">
+                  <ExifRow label={t("lightbox.body")}>
                     {[row.exif.camera_make, row.exif.camera_model]
                       .filter(Boolean)
                       .join(" ")}
                   </ExifRow>
                 ) : null}
                 {row.exif.lens ? (
-                  <ExifRow label="Lens">{row.exif.lens}</ExifRow>
+                  <ExifRow label={t("lightbox.lens")}>{row.exif.lens}</ExifRow>
                 ) : null}
                 {row.exif.date_taken ? (
-                  <ExifRow label="Captured">
-                    {new Date(row.exif.date_taken).toLocaleString()}
+                  <ExifRow label={t("lightbox.captured")}>
+                    {new Date(row.exif.date_taken).toLocaleString(dateLocale)}
                   </ExifRow>
                 ) : null}
                 {row.exif.iso ? (
                   <ExifRow label="ISO">{String(row.exif.iso)}</ExifRow>
                 ) : null}
                 {row.exif.aperture ? (
-                  <ExifRow label="Aperture">
+                  <ExifRow label={t("lightbox.aperture")}>
                     f/{row.exif.aperture}
                   </ExifRow>
                 ) : null}
                 {row.exif.shutter ? (
-                  <ExifRow label="Shutter">{row.exif.shutter}</ExifRow>
+                  <ExifRow label={t("lightbox.shutter")}>{row.exif.shutter}</ExifRow>
                 ) : null}
                 {row.exif.focal_length ? (
-                  <ExifRow label="Focal length">
+                  <ExifRow label={t("lightbox.focalLength")}>
                     {row.exif.focal_length}mm
                   </ExifRow>
                 ) : null}
@@ -316,21 +320,21 @@ export function Lightbox({
                       rel="noreferrer"
                       className="text-accent hover:underline"
                     >
-                      {formatCoord(row.exif.gps_lat, "N", "S")},{" "}
-                      {formatCoord(row.exif.gps_lon, "E", "W")}
+                      {formatCoord(row.exif.gps_lat, t("lightbox.north"), t("lightbox.south"))},{" "}
+                      {formatCoord(row.exif.gps_lon, t("lightbox.east"), t("lightbox.west"))}
                     </a>
                   </ExifRow>
                 ) : null}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic">
-                No camera metadata.
+                {t("lightbox.noMetadata")}
               </p>
             )}
             {row.caption ? (
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-                  Caption
+                  {t("lightbox.caption")}
                 </p>
                 <p className="text-sm text-foreground leading-relaxed">
                   {row.caption}
@@ -352,7 +356,7 @@ export function Lightbox({
         open={shareOpen}
         onOpenChange={setShareOpen}
         imageId={row.id}
-        targetLabel={row.caption ?? "this image"}
+        targetLabel={row.caption ?? t("lightbox.thisImage")}
       />
     </div>
   );

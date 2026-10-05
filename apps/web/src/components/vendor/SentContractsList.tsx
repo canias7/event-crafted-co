@@ -3,6 +3,7 @@
 // Invoices list: per-row Preview / PDF / Copy link / Cancel actions plus
 // a status pill.
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   Clock,
@@ -16,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import type { ListingOpt } from "@/components/vendor/ListingPicker";
 import { downloadDocumentPdf } from "@/lib/documentPdf";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface SentContract {
   id: string;
@@ -34,18 +36,21 @@ interface SentContract {
 const ORIGIN =
   typeof window !== "undefined" ? window.location.origin : "https://eventvendora.com";
 
+// In the vendor's language (the list re-renders on a switch through its
+// useTranslation hook).
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(intlLocale(), { month: "short", day: "numeric", year: "numeric" });
 }
 
 function StatusPill({ status }: { status: string }) {
+  const { t } = useTranslation("proposals");
   const map: Record<string, { label: string; cls: string; icon: "check" | "clock" }> = {
-    sent: { label: "Awaiting", cls: "bg-pending text-accent", icon: "clock" },
-    signed: { label: "Signed", cls: "bg-primary text-primary-foreground", icon: "check" },
-    cancelled: { label: "Cancelled", cls: "bg-muted text-foreground", icon: "clock" },
+    sent: { label: t("sentContracts.status.sent"), cls: "bg-pending text-accent", icon: "clock" },
+    signed: { label: t("sentContracts.status.signed"), cls: "bg-primary text-primary-foreground", icon: "check" },
+    cancelled: { label: t("sentContracts.status.cancelled"), cls: "bg-muted text-foreground", icon: "clock" },
   };
   const m = map[status] ?? { label: status, cls: "bg-muted text-foreground", icon: "clock" as const };
   return (
@@ -65,6 +70,7 @@ export function SentContractsList({
   accountVendorIds: string[];
   listings?: ListingOpt[];
 }) {
+  const { t } = useTranslation("proposals");
   const [rows, setRows] = useState<SentContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -104,14 +110,16 @@ export function SentContractsList({
   function copyLink(token: string) {
     void navigator.clipboard
       .writeText(`${ORIGIN}/sign/${token}`)
-      .then(() => toast.success("Sign link copied"))
-      .catch(() => toast.error("Couldn't copy the link"));
+      .then(() => toast.success(t("sentContracts.toast.linkCopied")))
+      .catch(() => toast.error(t("sentContracts.toast.copyFailed")));
   }
 
   function brandFor(vendorId: string): string | null {
     return listings.find((l) => l.id === vendorId)?.business_name ?? null;
   }
 
+  // The PDF is the signed document itself (lib/documentPdf also dates it
+  // in en-US), so its labels stay as they are.
   function downloadPdf(c: SentContract) {
     downloadDocumentPdf({
       title: c.title,
@@ -135,7 +143,7 @@ export function SentContractsList({
       // Voiding is terminal: the public /sign page and the sign_contract
       // RPC both refuse any status other than 'sent', so a cancelled
       // contract can never be signed. Always confirm.
-      if (!confirm(`Void "${c.title}"? The recipient won't be able to sign it.`)) return;
+      if (!confirm(t("sentContracts.confirmVoid", { title: c.title }))) return;
       setCancellingId(c.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
@@ -145,13 +153,13 @@ export function SentContractsList({
         .eq("status", "sent");
       setCancellingId(null);
       if (error) {
-        toast.error("Couldn't void the contract", { description: error.message });
+        toast.error(t("sentContracts.toast.voidFailed"), { description: error.message });
         return;
       }
-      toast.success("Contract voided");
+      toast.success(t("sentContracts.toast.voided"));
       await load();
     },
-    [load],
+    [load, t],
   );
 
   return (
@@ -162,14 +170,14 @@ export function SentContractsList({
     >
       <div className="px-4 pt-3 pb-2 border-b border-border">
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-          Sent for signature
+          {t("sentContracts.title")}
         </span>
       </div>
       {loading ? (
         <div className="h-16 m-4 rounded-xl bg-foreground/5 animate-pulse" />
       ) : rows.length === 0 ? (
         <p className="px-4 py-6 text-xs text-muted-foreground">
-          No contracts sent yet. Compose one on the left and send it from the box below.
+          {t("sentContracts.empty")}
         </p>
       ) : (
         <div className="max-h-[420px] overflow-y-auto scrollbar-hide">
@@ -186,8 +194,16 @@ export function SentContractsList({
                     </div>
                     <p className="text-xs text-muted-foreground truncate mt-1">
                       {signed
-                        ? `Signed by ${c.signer_name ?? "client"} · ${fmtDate(c.signed_at)}`
-                        : `${c.recipient_name ? `To ${c.recipient_name} · ` : ""}Sent ${fmtDate(c.created_at)}`}
+                        ? t("sentContracts.signedBy", {
+                            name: c.signer_name ?? t("sentContracts.client"),
+                            date: fmtDate(c.signed_at),
+                          })
+                        : c.recipient_name
+                          ? t("sentContracts.toSent", {
+                              name: c.recipient_name,
+                              date: fmtDate(c.created_at),
+                            })
+                          : t("sentContracts.sent", { date: fmtDate(c.created_at) })}
                     </p>
                   </div>
                 </div>
@@ -198,7 +214,7 @@ export function SentContractsList({
                     className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    Preview
+                    {t("sentContracts.preview")}
                   </button>
                   <button
                     type="button"
@@ -206,7 +222,7 @@ export function SentContractsList({
                     className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    PDF
+                    {t("sentContracts.pdf")}
                   </button>
                   {open ? (
                     <button
@@ -215,7 +231,7 @@ export function SentContractsList({
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent border border-border rounded-full px-2.5 py-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                      Link
+                      {t("sentContracts.link")}
                     </button>
                   ) : null}
                   {open ? (
@@ -228,7 +244,7 @@ export function SentContractsList({
                       {cancellingId === c.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : null}
-                      Void
+                      {t("sentContracts.void")}
                     </button>
                   ) : null}
                 </div>

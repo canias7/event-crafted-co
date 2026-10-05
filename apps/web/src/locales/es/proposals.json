@@ -1,0 +1,113 @@
+{
+  "picker": {
+    "trigger": "Enviar una factura, un enlace de pago, una propuesta o un contrato",
+    "send": "Enviar",
+    "kinds": {
+      "invoice": {
+        "label": "Factura",
+        "title": "Enviar una factura"
+      },
+      "link": {
+        "label": "Enlace de pago",
+        "title": "Enviar un enlace de pago"
+      },
+      "proposal": {
+        "label": "Propuesta",
+        "title": "Enviar una propuesta"
+      },
+      "contract": {
+        "label": "Contrato",
+        "title": "Enviar un contrato"
+      }
+    },
+    "rows": {
+      "invoice": "Factura {{number}}",
+      "empty": "Sin contenido"
+    },
+    "hints": {
+      "invoice": "Elige una para agregarla a tu mensaje como PDF (con su enlace de pago) — luego revisa y envía.",
+      "link": "Elige uno para poner su enlace de pago en el chat.",
+      "contract": "Elige un contrato para enviarlo a firma electrónica — el anfitrión recibe un enlace para revisarlo y firmarlo.",
+      "proposal": "Elige una plantilla guardada para enviarla al chat. Créalas en Archivos."
+    },
+    "empty": {
+      "invoice": "No hay facturas pendientes de pago. Crea una en Archivos → Facturas.",
+      "link": "No hay enlaces de pago activos. Crea uno en Archivos → Enlaces de pago.",
+      "contract": "No hay contratos guardados. Crea uno en Archivos → Contratos.",
+      "proposal": "No hay propuestas guardadas. Crea una en Archivos → Propuestas."
+    },
+    "editor": {
+      "contractTitle": "Revisa y completa el contrato",
+      "proposalTitle": "Revisa y completa la propuesta",
+      "contractHint": "Completa los [corchetes] (p. ej., [Total Amount]) y luego envíalo para firma electrónica.",
+      "proposalHint": "Completa los [corchetes] (p. ej., [Total Amount]) y luego envíala para que el cliente la revise y la acepte.",
+      "unfilledContract": "Atención — todavía hay [campos] sin completar en el contrato.",
+      "unfilledProposal": "Atención — todavía hay [campos] sin completar en la propuesta.",
+      "back": "Atrás",
+      "sendContract": "Enviar para firma",
+      "sendProposal": "Enviar propuesta"
+    },
+    "toast": {
+      "invoiceAdded": "Factura agregada — revísala y envíala",
+      "sent": {
+        "invoice": "Factura enviada",
+        "link": "Enlace de pago enviado",
+        "proposal": "Propuesta enviada",
+        "contract": "Contrato enviado",
+        "item": "Elemento enviado"
+      },
+      "contractFailed": "No se pudo crear el contrato",
+      "contractSent": "Contrato enviado para firma",
+      "proposalFailed": "No se pudo crear la propuesta",
+      "proposalSent": "Propuesta enviada"
+    }
+  },
+  "sentProposals": {
+    "title": "Propuestas enviadas",
+    "empty": "Aún no has enviado propuestas. Redacta una a la izquierda y envíala desde el cuadro de abajo.",
+    "status": {
+      "sent": "En espera",
+      "accepted": "Aceptada",
+      "cancelled": "Cancelada"
+    },
+    "acceptedBy": "Aceptada por {{name}} · {{date}}",
+    "client": "el cliente",
+    "toSent": "Para {{name}} · Enviada el {{date}}",
+    "sent": "Enviada el {{date}}",
+    "preview": "Vista previa",
+    "pdf": "PDF",
+    "link": "Enlace",
+    "void": "Anular",
+    "confirmVoid": "¿Anular \"{{title}}\"? El cliente no podrá aceptarla.",
+    "toast": {
+      "linkCopied": "Enlace de la propuesta copiado",
+      "copyFailed": "No se pudo copiar el enlace",
+      "voidFailed": "No se pudo anular la propuesta",
+      "voided": "Propuesta anulada"
+    }
+  },
+  "sentContracts": {
+    "title": "Enviados para firma",
+    "empty": "Aún no has enviado contratos. Redacta uno a la izquierda y envíalo desde el cuadro de abajo.",
+    "status": {
+      "sent": "En espera",
+      "signed": "Firmado",
+      "cancelled": "Cancelado"
+    },
+    "signedBy": "Firmado por {{name}} · {{date}}",
+    "client": "el cliente",
+    "toSent": "Para {{name}} · Enviado el {{date}}",
+    "sent": "Enviado el {{date}}",
+    "preview": "Vista previa",
+    "pdf": "PDF",
+    "link": "Enlace",
+    "void": "Anular",
+    "confirmVoid": "¿Anular \"{{title}}\"? El destinatario no podrá firmarlo.",
+    "toast": {
+      "linkCopied": "Enlace de firma copiado",
+      "copyFailed": "No se pudo copiar el enlace",
+      "voidFailed": "No se pudo anular el contrato",
+      "voided": "Contrato anulado"
+    }
+  }
+}

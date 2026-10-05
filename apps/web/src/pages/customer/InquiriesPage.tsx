@@ -1,5 +1,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { eventTypeLabel } from "@vendora/core";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
+import { eventTypeText, usePriceLabels } from "@/lib/priceLabels";
+import { categoryName, useCategoryNames } from "@/lib/categoryNames";
 import { lazyWithReload } from "@/lib/lazyWithReload";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Inbox, Search } from "lucide-react";
@@ -20,6 +23,7 @@ const InquiryFormModal = lazyWithReload(() =>
   })),
 );
 import { customerNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface InquiryRow {
   id: string;
@@ -48,16 +52,12 @@ const statusStyles: Record<string, string> = {
   expired: "bg-muted text-muted-foreground border-border",
 };
 
-const statusLabel: Record<string, string> = {
-  new: "Awaiting reply",
-  replied: "Replied",
-  won: "Booked",
-  lost: "Closed",
-  expired: "Expired",
-};
+// Statuses the inbox labels (hostInquiries.json status.<status>);
+// anything else shows the raw status.
+const LABELLED_STATUSES = ["new", "replied", "won", "lost", "expired"];
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
 }
 
 const AVATAR_COLORS = [
@@ -87,22 +87,27 @@ function initialsOf(name: string): string {
 
 function relativeTime(iso: string | null): string {
   if (!iso) return "";
+  const tr = (key: string, n?: number) =>
+    i18n.t(`list.time.${key}`, { ns: "hostInquiries", n });
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
+  if (m < 1) return tr("now");
+  if (m < 60) return tr("minutes", m);
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return tr("hours", h);
   const d = Math.floor(h / 24);
-  if (d === 1) return "Yesterday";
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, {
+  if (d === 1) return tr("yesterday");
+  if (d < 7) return tr("days", d);
+  return new Date(iso).toLocaleDateString(intlLocale(), {
     month: "short",
     day: "numeric",
   });
 }
 
 export default function InquiriesPage() {
+  const { t } = useTranslation("hostInquiries");
+  const priceLabels = usePriceLabels();
+  const categoryNames = useCategoryNames();
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<InquiryRow[]>([]);
@@ -176,20 +181,20 @@ export default function InquiriesPage() {
   //   All / Awaiting / Replied / Booked. No "Closed" — lost/expired
   //   inquiries are rare and hosts almost never filter for them.
   const filterOptions = [
-    { value: "all", label: "All", matches: () => true },
+    { value: "all", label: t("list.filters.all"), matches: () => true },
     {
       value: "awaiting",
-      label: "Awaiting",
+      label: t("list.filters.awaiting"),
       matches: (s: string) => s === "new",
     },
     {
       value: "replied",
-      label: "Replied",
+      label: t("list.filters.replied"),
       matches: (s: string) => s === "replied",
     },
     {
       value: "booked",
-      label: "Booked",
+      label: t("list.filters.booked"),
       matches: (s: string) => s === "won",
     },
   ];
@@ -208,25 +213,30 @@ export default function InquiriesPage() {
           r.vendor?.business_name?.toLowerCase().includes(q) ||
           r.vendor?.category?.toLowerCase().includes(q) ||
           r.event_type?.toLowerCase().includes(q) ||
+          // The category and event type as the row shows them, so a
+          // Spanish search for "boda" finds weddings.
+          (r.vendor?.category && categoryName(r.vendor.category).toLowerCase().includes(q)) ||
+          eventTypeText(r.event_type).toLowerCase().includes(q) ||
           r.event_date?.toLowerCase().includes(q) ||
           r.location?.toLowerCase().includes(q),
       );
     }
     return out;
+    // i18n.language: the shown category and event-type names change with it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, statusFilter, search]);
+  }, [rows, statusFilter, search, i18n.language]);
 
   return (
     <div className="flex min-h-screen vendor-canvas">
-      <DashboardSidebar items={navItems} title="Customer" backPath="/" />
+      <DashboardSidebar items={navItems} title={t("list.sidebarTitle")} backPath="/" />
 
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="font-editorial text-3xl">Inbox</h1>
+              <h1 className="font-editorial text-3xl">{t("list.title")}</h1>
               <p className="text-sm text-muted-foreground">
-                Your inquiries to vendors — all in one place
+                {t("list.subtitle")}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -235,7 +245,7 @@ export default function InquiriesPage() {
                 onClick={() => setModalOpen(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New inquiry
+                {t("list.newInquiry")}
               </Button>
             </div>
           </div>
@@ -248,7 +258,7 @@ export default function InquiriesPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by vendor, event, or message"
+              placeholder={t("list.searchPlaceholder")}
               className="pl-9 rounded-full bg-secondary/50 border-transparent focus-visible:ring-1"
             />
           </div>
@@ -298,31 +308,31 @@ export default function InquiriesPage() {
                 <Inbox className="w-10 h-10 mx-auto text-muted-foreground/40 mb-4" />
                 <h3 className="font-editorial text-2xl mb-2">
                   {rows.length === 0
-                    ? "No conversations yet"
+                    ? t("list.empty.noneTitle")
                     : search
-                      ? "Nothing matches that search"
-                      : "Nothing matches that filter"}
+                      ? t("list.empty.noSearchTitle")
+                      : t("list.empty.noFilterTitle")}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6 leading-relaxed">
                   {rows.length === 0
-                    ? "Reach out to a vendor from Explore — every reply lands here so the conversation stays in one place."
+                    ? t("list.empty.noneBody")
                     : search
-                      ? "Try a different search term."
-                      : "Try a different status filter above."}
+                      ? t("list.empty.noSearchBody")
+                      : t("list.empty.noFilterBody")}
                 </p>
                 <div className="flex gap-2 justify-center">
                   {rows.length === 0 && (
                     <>
                       <Link to="/customer/explore">
                         <Button variant="outline" className="rounded-full">
-                          Browse vendors
+                          {t("list.empty.browseVendors")}
                         </Button>
                       </Link>
                       <Button
                         onClick={() => setModalOpen(true)}
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        New inquiry
+                        {t("list.newInquiry")}
                       </Button>
                     </>
                   )}
@@ -332,7 +342,7 @@ export default function InquiriesPage() {
                       className="rounded-full"
                       onClick={() => setStatusFilter("all")}
                     >
-                      Clear filter
+                      {t("list.empty.clearFilter")}
                     </Button>
                   )}
                 </div>
@@ -340,7 +350,7 @@ export default function InquiriesPage() {
             ) : (
               <div className="divide-y divide-border">
                 {filteredRows.map((r) => {
-                  const vendorName = r.vendor?.business_name ?? "Vendor";
+                  const vendorName = r.vendor?.business_name ?? t("vendorFallback");
                   const seed = r.vendor?.business_name ?? r.id;
                   const logoUrl = r.vendor?.logo_url ?? null;
                   // Unread when the latest activity is newer than the
@@ -376,7 +386,7 @@ export default function InquiriesPage() {
                           <div className="flex items-center gap-3 mb-1.5 flex-wrap">
                             {isUnread ? (
                               <span
-                                aria-label="Unread"
+                                aria-label={t("list.unread")}
                                 className="shrink-0 w-2 h-2 rounded-full bg-gold"
                               />
                             ) : null}
@@ -385,12 +395,12 @@ export default function InquiriesPage() {
                             </h3>
                             {r.vendor?.category && (
                               <span className="font-label text-muted-foreground">
-                                {r.vendor.category}
+                                {categoryNames.sub(r.vendor.category)}
                               </span>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {eventTypeLabel(r.event_type)}
+                            {priceLabels.eventType(r.event_type)}
                             {r.event_date && (
                               <>
                                 {" "}
@@ -401,7 +411,7 @@ export default function InquiriesPage() {
                               <>
                                 {" "}
                                 · <span className="tnum">{r.guest_count}</span>{" "}
-                                guests
+                                {t("list.guests", { count: r.guest_count })}
                               </>
                             )}
                             {r.location && <> · {r.location}</>}
@@ -409,8 +419,10 @@ export default function InquiriesPage() {
                           {(r.budget_min_cents != null ||
                             r.budget_max_cents != null) && (
                             <p className="text-xs text-muted-foreground tnum mt-1">
-                              Budget: {fmtMoney(r.budget_min_cents)} –{" "}
-                              {fmtMoney(r.budget_max_cents)}
+                              {t("list.budget", {
+                                min: fmtMoney(r.budget_min_cents),
+                                max: fmtMoney(r.budget_max_cents),
+                              })}
                             </p>
                           )}
                         </div>
@@ -421,7 +433,9 @@ export default function InquiriesPage() {
                           variant="outline"
                           className={`${statusStyles[r.status] ?? ""} font-medium`}
                         >
-                          {statusLabel[r.status] ?? r.status}
+                          {LABELLED_STATUSES.includes(r.status)
+                            ? t(`status.${r.status}`)
+                            : r.status}
                         </Badge>
                         <span className="text-xs text-muted-foreground tnum hidden sm:block">
                           {relativeTime(r.last_message_at)}

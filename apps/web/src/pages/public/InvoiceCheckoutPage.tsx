@@ -10,6 +10,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Check, CreditCard, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +53,8 @@ interface InvoiceDetails {
   vendor_can_accept?: boolean;
 }
 
+// Money stays en-US in both languages: "$1,234.50" is also how US
+// Spanish writes it.
 function formatMoney(cents: number, currency = "usd"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -58,19 +62,35 @@ function formatMoney(cents: number, currency = "usd"): string {
   }).format(cents / 100);
 }
 
-function formatDate(iso: string | null): string {
+// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
+  return new Date(iso).toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
 }
 
+// Checkout-start failures. English shows the server's text as before;
+// Spanish gets a translated line (checkout.json → startError), with
+// its own wording for the server errors a payer can actually hit.
+const START_ERRORS = new Map([
+  ["vendor not ready to receive payments", "vendorNotReady"],
+  ["rate_limited", "rateLimited"],
+]);
+
+function startErrorDetail(t: TFunction, detail: string | null): string {
+  if (detail === null) return t("startError.tryAgain");
+  return t(`startError.${START_ERRORS.get(detail) ?? "detail"}`, { detail });
+}
+
 export default function InvoiceCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const flow = searchParams.get("status");
+  const { t, i18n } = useTranslation("checkout");
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
 
   const [invoice, setInvoice] = useState<InvoiceDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +128,8 @@ export default function InvoiceCheckoutPage() {
       body: { slug },
     });
     if (error || !(data as { url?: string })?.url) {
-      let detail = "Try again in a moment.";
+      // null = nothing from the server ("Try again in a moment.").
+      let detail: string | null = null;
       const ctx = (error as { context?: Response } | null)?.context;
       if (ctx && typeof ctx.json === "function") {
         try {
@@ -120,12 +141,14 @@ export default function InvoiceCheckoutPage() {
       } else if (error?.message) {
         detail = error.message;
       }
-      toast.error("Couldn't start checkout", { description: detail });
+      toast.error(t("startError.title"), {
+        description: startErrorDetail(t, detail),
+      });
       setPaying(false);
       return;
     }
     window.location.href = (data as { url: string }).url;
-  }, [slug, paying]);
+  }, [slug, paying, t]);
 
   if (loading) {
     return (
@@ -140,40 +163,48 @@ export default function InvoiceCheckoutPage() {
   if (notFound || !invoice) {
     return (
       <Shell>
-        <Centered title="Invoice not found" sub="This invoice doesn't exist." />
+        <Centered
+          title={t("invoice.notFound.title")}
+          sub={t("invoice.notFound.body")}
+        />
       </Shell>
     );
   }
 
   if (flow === "success" || invoice.status === "paid") {
     const amountPaid = formatMoney(invoice.total_cents, invoice.currency);
-    const vendorName = invoice.vendor_business_name ?? "Your vendor";
+    const vendorName = invoice.vendor_business_name ?? t("invoice.paid.yourVendor");
     return (
       <Shell>
         <Centered
           icon={<Check className="w-7 h-7 text-accent" />}
-          title="Payment received"
+          title={t("invoice.paid.title")}
           sub={
             <span>
-              You paid{" "}
-              <strong className="font-semibold text-foreground">{amountPaid}</strong>{" "}
-              {invoice.invoice_number ? (
-                <>
-                  for Invoice{" "}
-                  <span className="font-medium text-foreground">
-                    {invoice.invoice_number}
-                  </span>
-                  .{" "}
-                </>
-              ) : (
-                ". "
-              )}
-              A receipt is on its way to{" "}
-              <span className="font-medium text-foreground">
-                {invoice.bill_to_email ?? "your email"}
-              </span>
-              . {vendorName} will be in touch — funds settle to their account
-              within 2 business days.
+              <Trans
+                t={t}
+                i18nKey={
+                  invoice.invoice_number
+                    ? "invoice.paid.bodyNumber"
+                    : "invoice.paid.bodyNoNumber"
+                }
+                components={{
+                  amount: (
+                    <strong className="font-semibold text-foreground">{amountPaid}</strong>
+                  ),
+                  number: (
+                    <span className="font-medium text-foreground">
+                      {invoice.invoice_number}
+                    </span>
+                  ),
+                  email: (
+                    <span className="font-medium text-foreground">
+                      {invoice.bill_to_email ?? t("invoice.paid.yourEmail")}
+                    </span>
+                  ),
+                  vendor: <>{vendorName}</>,
+                }}
+              />
             </span>
           }
         />
@@ -185,8 +216,10 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Invoice cancelled"
-          sub={`${invoice.vendor_business_name ?? "The vendor"} cancelled this invoice. Please reach out if you have questions.`}
+          title={t("invoice.cancelled.title")}
+          sub={t("invoice.cancelled.body", {
+            vendor: invoice.vendor_business_name ?? t("invoice.cancelled.theVendor"),
+          })}
         />
       </Shell>
     );
@@ -196,8 +229,8 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Invoice not yet ready"
-          sub="This invoice hasn't been sent yet. Check back once your vendor finalizes it."
+          title={t("invoice.draft.title")}
+          sub={t("invoice.draft.body")}
         />
       </Shell>
     );
@@ -207,8 +240,10 @@ export default function InvoiceCheckoutPage() {
     return (
       <Shell>
         <Centered
-          title="Already refunded"
-          sub={`${invoice.vendor_business_name ?? "Your vendor"} has refunded this invoice.`}
+          title={t("invoice.refunded.title")}
+          sub={t("invoice.refunded.body", {
+            vendor: invoice.vendor_business_name ?? t("invoice.refunded.yourVendor"),
+          })}
         />
       </Shell>
     );
@@ -234,7 +269,7 @@ export default function InvoiceCheckoutPage() {
             size="sm"
           >
             <Download className="w-3.5 h-3.5 mr-1.5" />
-            Save as PDF
+            {t("invoice.savePdf")}
           </Button>
           <Button
             onClick={handlePay}
@@ -247,15 +282,13 @@ export default function InvoiceCheckoutPage() {
             ) : (
               <CreditCard className="w-3.5 h-3.5 mr-1.5" />
             )}
-            Pay {totalDue}
+            {t("invoice.pay", { amount: totalDue })}
           </Button>
         </div>
         {invoice.vendor_can_accept === false ? (
           <div className="max-w-3xl mx-auto px-5 sm:px-8 pb-3 -mt-1">
             <p className="text-[12px] text-accent bg-pending border border-accent/25 rounded-lg px-3 py-2">
-              Heads up — this vendor is still finishing their payment setup, so
-              online payment may not be available just yet. You can review the
-              invoice below in the meantime.
+              {t("invoice.headsUp")}
             </p>
           </div>
         ) : null}
@@ -272,12 +305,12 @@ export default function InvoiceCheckoutPage() {
             <div className="min-w-0">
               <h1 className="text-xl font-semibold tracking-tight truncate">{businessName}</h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Issued via VendoraPay
+                {t("invoice.issuedVia")}
               </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
-                Invoice
+                {t("invoice.label")}
               </p>
               <p className="text-2xl font-editorial mt-0.5 tabular-nums">
                 {invoice.invoice_number || "—"}
@@ -291,7 +324,7 @@ export default function InvoiceCheckoutPage() {
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Bill to
+                {t("invoice.billTo")}
               </p>
               <p className="text-sm font-medium mt-1">
                 {invoice.bill_to_name ?? "—"}
@@ -305,15 +338,15 @@ export default function InvoiceCheckoutPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Issued
+                  {t("invoice.issued")}
                 </p>
-                <p className="mt-1">{formatDate(invoice.issue_date)}</p>
+                <p className="mt-1">{formatDate(invoice.issue_date, dateLocale)}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Due
+                  {t("invoice.due")}
                 </p>
-                <p className="mt-1">{formatDate(invoice.due_date)}</p>
+                <p className="mt-1">{formatDate(invoice.due_date, dateLocale)}</p>
               </div>
             </div>
           </section>
@@ -323,10 +356,10 @@ export default function InvoiceCheckoutPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border-b border-foreground/15">
-                  <th className="py-2.5 pr-2 font-semibold">Item</th>
-                  <th className="py-2.5 px-2 font-semibold text-right w-16">Qty</th>
-                  <th className="py-2.5 px-2 font-semibold text-right w-28">Unit price</th>
-                  <th className="py-2.5 pl-2 font-semibold text-right w-28">Amount</th>
+                  <th className="py-2.5 pr-2 font-semibold">{t("invoice.table.item")}</th>
+                  <th className="py-2.5 px-2 font-semibold text-right w-16">{t("invoice.table.qty")}</th>
+                  <th className="py-2.5 px-2 font-semibold text-right w-28">{t("invoice.table.unitPrice")}</th>
+                  <th className="py-2.5 pl-2 font-semibold text-right w-28">{t("invoice.table.amount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -352,14 +385,16 @@ export default function InvoiceCheckoutPage() {
           <section className="mt-6 flex justify-end">
             <div className="w-full max-w-xs space-y-1.5 text-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span>Subtotal</span>
+                <span>{t("invoice.subtotal")}</span>
                 <span className="tabular-nums">
                   {formatMoney(invoice.subtotal_cents, invoice.currency)}
                 </span>
               </div>
               {invoice.tax_cents > 0 ? (
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Tax ({(invoice.tax_rate_bps / 100).toFixed(2)}%)</span>
+                  <span>
+                    {t("invoice.tax", { rate: (invoice.tax_rate_bps / 100).toFixed(2) })}
+                  </span>
                   <span className="tabular-nums">
                     {formatMoney(invoice.tax_cents, invoice.currency)}
                   </span>
@@ -367,7 +402,7 @@ export default function InvoiceCheckoutPage() {
               ) : null}
               {invoice.late_fee_cents && invoice.late_fee_cents > 0 ? (
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Late fee</span>
+                  <span>{t("invoice.lateFee")}</span>
                   <span className="tabular-nums">
                     {formatMoney(invoice.late_fee_cents, invoice.currency)}
                   </span>
@@ -375,7 +410,7 @@ export default function InvoiceCheckoutPage() {
               ) : null}
               <div className="flex items-center justify-between pt-2 mt-1 border-t border-foreground/15">
                 <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                  Total due
+                  {t("invoice.totalDue")}
                 </span>
                 <span className="text-lg font-editorial tabular-nums">
                   {totalDue}
@@ -388,7 +423,7 @@ export default function InvoiceCheckoutPage() {
           {invoice.notes ? (
             <section className="mt-10">
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Notes
+                {t("invoice.notes")}
               </p>
               <p className="text-sm text-foreground mt-1 whitespace-pre-wrap leading-relaxed">
                 {invoice.notes}
@@ -398,15 +433,21 @@ export default function InvoiceCheckoutPage() {
 
           {/* Footer */}
           <footer className="mt-12 pt-6 border-t border-foreground/10 flex items-center justify-between gap-4 flex-wrap text-[11px] text-muted-foreground">
-            <span>Thank you for your business.</span>
+            <span>{t("invoice.thanks")}</span>
             <span>
-              Powered by <span className="font-semibold text-foreground">VendoraPay</span>
+              <Trans
+                t={t}
+                i18nKey="invoice.poweredBy"
+                components={{
+                  brand: <span className="font-semibold text-foreground" />,
+                }}
+              />
             </span>
           </footer>
         </article>
 
         <p className="text-[11px] text-muted-foreground text-center mt-6 print:hidden">
-          Card payments processed securely. &quot;VENDORAPAY&quot; will appear on your statement.
+          {t("invoice.statement")}
         </p>
       </div>
     </Shell>

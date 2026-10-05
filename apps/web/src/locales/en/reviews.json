@@ -1,0 +1,56 @@
+{
+  "errors": {
+    "min_messages_required": "Chat with this vendor a bit more before leaving a rating.",
+    "no_accepted_proposal": "Event reviews open after both sides confirm the booking — or once a proposal is accepted.",
+    "event_too_recent": "Hold off until 3 days after the event so the dust settles.",
+    "no_event_date": "Set an event date on the inquiry first.",
+    "not_authorized": "You're not allowed to review this inquiry.",
+    "host_mismatch": "Inquiry mismatch — refresh and try again.",
+    "vendor_mismatch": "Inquiry mismatch — refresh and try again.",
+    "edit_window_expired": "Edits are only allowed in the first 10 minutes after submission.",
+    "invalid_rating": "Pick a star count between 1 and 5.",
+    "not_found": "Review not found — it may have been removed."
+  },
+  "eventPrompt": "How was your event with {{name}}?",
+  "conversationPrompt": "Rate {{name}}'s communication",
+  "modal": {
+    "editEventTitle": "Edit your event review",
+    "editConversationTitle": "Edit your conversation rating",
+    "editDescription": "Edits are only allowed in the first 10 minutes after submission.",
+    "eventDescription": "Your review goes live once both sides review — or after 14 days.",
+    "conversationDescription": "Quick read on how this conversation went so far.",
+    "starRating": "Star rating",
+    "stars_one": "{{count}} star",
+    "stars_other": "{{count}} stars",
+    "eventLabel": "What stood out?",
+    "conversationLabel": "Anything to add? (optional)",
+    "eventPlaceholder": "Tell other hosts what made this vendor great (or not).",
+    "conversationPlaceholder": "Responsive, professional, easy to work with...",
+    "cancel": "Cancel",
+    "saveEdit": "Save edit",
+    "submit": "Submit",
+    "toasts": {
+      "tapStar": "Tap a star first.",
+      "updated": "Review updated.",
+      "eventSubmitted": "Review submitted. It'll go live once the other side reviews too (or in 14 days).",
+      "conversationSubmitted": "Rating submitted."
+    }
+  },
+  "prompt": {
+    "eventBody": "Leave an event review — visible once both sides review.",
+    "conversationBody": "Quick read on this conversation.",
+    "rate": "Rate"
+  },
+  "status": {
+    "waitingFor": "Waiting for {{name}}",
+    "bothLive": "Both reviewed · live",
+    "live": "Live",
+    "eventSubmitted": "Event review submitted",
+    "conversationSubmitted": "Conversation rating submitted",
+    "editLabel_one": "Edit ({{count}} minute left)",
+    "editLabel_other": "Edit ({{count}} minutes left)",
+    "editLeft_one": "Edit ({{count}}m left)",
+    "editLeft_other": "Edit ({{count}}m left)",
+    "hiddenUntil": "Hidden until they review too — or goes live in 14 days."
+  }
+}

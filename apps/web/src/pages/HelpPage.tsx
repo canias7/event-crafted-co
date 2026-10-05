@@ -8,6 +8,7 @@
 
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Mail, FileText, Lock, MessageCircle } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
 import { CONTACT_EMAIL, Footer } from "@/components/public/Footer";
@@ -19,70 +20,36 @@ interface FAQ {
   a: string;
 }
 
-const VENDOR_FAQ: FAQ[] = [
-  {
-    q: "How long does listing approval take?",
-    a: "Most submissions are reviewed within 24 hours on business days. You'll get an email when your listing goes live.",
-  },
-  {
-    q: "Why are my photos uploading slowly?",
-    a: "Each photo is resized and compressed in your browser before upload to keep storage costs down. With 100 photos this usually takes 10–15 seconds. If it's stuck at the same number for over a minute, refresh and try again — your draft text fields are saved automatically.",
-  },
-  {
-    q: "What happens to my listing if I downgrade my plan?",
-    a: "Your current cycle stays paid through its end. The new tier kicks in on the next renewal — credits, listing slots, and features adjust then. Existing photos and content are never touched by a tier change.",
-  },
-  {
-    q: "Can I pause my listing temporarily?",
-    a: "Not yet as a single switch — but you can block out an entire date range from the Calendar page and hosts will see you as unavailable for those days. Full pause is on the roadmap.",
-  },
-  {
-    q: "Do hosts see the title I add to a blocked date?",
-    a: "No. Titles are private to you. Hosts only see the date as unavailable — your note (\"Christian's birthday\", etc) never leaves your side of the app.",
-  },
-];
-
-const HOST_FAQ: FAQ[] = [
-  {
-    q: "How do I message a vendor after sending an inquiry?",
-    a: "Open the inquiry from your Inbox. Once the vendor responds, the conversation lives there — you'll get a notification when they reply.",
-  },
-  {
-    q: "Is my payment information shared with vendors?",
-    a: "No. Vendors never see your card or bank details. Payments flow through VendoraPay, our white-labeled processor.",
-  },
-];
-
-const BILLING_FAQ: FAQ[] = [
-  {
-    q: "How do I download an invoice?",
-    a: "Vendor Subscription page → Billing panel → click View next to any invoice to open the secure invoice PDF. Right-click → Save to download.",
-  },
-  {
-    q: "Where do I update my card?",
-    a: "Subscription page → Billing panel → Update. Opens the secure payment-method page.",
-  },
+// FAQ sections and their questions, in display order. The words live in
+// locales/<language>/help.json under faq.<section>.title and
+// faq.<section>.items.<question>.q / .a.
+const FAQ_SECTIONS: { id: string; items: string[] }[] = [
+  { id: "vendors", items: ["approval", "photos", "downgrade", "pause", "blocked_title"] },
+  { id: "hosts", items: ["message", "payment_info"] },
+  { id: "billing", items: ["invoice", "card"] },
 ];
 
 export default function HelpPage() {
+  const { t } = useTranslation("help");
+
   useEffect(() => {
-    document.title = "Help — Vendora";
+    document.title = t("page_title");
     return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
+      document.title = t("defaultTitle", { ns: "meta" });
     };
-  }, []);
+  }, [t]);
 
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: INK }}>
       <PublicNav tone="dark" />
 
       <main id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-gold mb-3">— HELP</p>
+        <p className="font-label text-gold mb-3">{t("eyebrow")}</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
-          How can we help?
+          {t("title")}
         </h1>
         <p className="text-[#f4f1ea]/80 mb-8">
-          Common questions below. Anything else, email us — we read every one.
+          {t("intro")}
         </p>
 
         {/* Primary contact card */}
@@ -95,25 +62,32 @@ export default function HelpPage() {
               <Mail className="w-5 h-5" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold">Email support</p>
+              <p className="font-semibold">{t("email_card.title")}</p>
               <p className="text-sm text-[#f4f1ea]/80">
-                {CONTACT_EMAIL} · usually a reply within 24 hours
+                {t("email_card.reply_time", { email: CONTACT_EMAIL })}
               </p>
             </div>
             <span className="text-xs font-bold text-gold">
-              Open →
+              {t("email_card.open")}
             </span>
           </div>
         </a>
 
-        <FAQSection title="Vendors" items={VENDOR_FAQ} />
-        <FAQSection title="Hosts" items={HOST_FAQ} />
-        <FAQSection title="Billing" items={BILLING_FAQ} />
+        {FAQ_SECTIONS.map((section) => (
+          <FAQSection
+            key={section.id}
+            title={t(`faq.${section.id}.title`)}
+            items={section.items.map((id) => ({
+              q: t(`faq.${section.id}.items.${id}.q`),
+              a: t(`faq.${section.id}.items.${id}.a`),
+            }))}
+          />
+        ))}
 
         {/* Legal links — easy access from Help so vendors don't have
             to dig for the terms they agreed to on signup. */}
         <section className="mt-10 border-t border-white/15 pt-6">
-          <p className="font-label text-gold mb-3">— LEGAL</p>
+          <p className="font-label text-gold mb-3">{t("legal.eyebrow")}</p>
           <ul className="space-y-2.5">
             <li>
               <Link
@@ -121,7 +95,7 @@ export default function HelpPage() {
                 className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <FileText className="w-4 h-4" />
-                Terms of Service
+                {t("legal.terms")}
               </Link>
             </li>
             <li>
@@ -130,7 +104,7 @@ export default function HelpPage() {
                 className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <Lock className="w-4 h-4" />
-                Privacy Policy
+                {t("legal.privacy")}
               </Link>
             </li>
             <li>
@@ -139,7 +113,7 @@ export default function HelpPage() {
                 className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <MessageCircle className="w-4 h-4" />
-                Request a refund
+                {t("legal.refund")}
               </a>
             </li>
           </ul>

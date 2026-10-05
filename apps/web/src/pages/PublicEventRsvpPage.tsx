@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,9 +22,11 @@ interface EventDetail {
   maybe_count: number;
 }
 
-function fmtDate(ymd: string): string {
+// `locale` is undefined in English (the browser's default, as before)
+// and "es-US" in Spanish.
+function fmtDate(ymd: string, locale: string | undefined): string {
   const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, d).toLocaleDateString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -31,13 +34,17 @@ function fmtDate(ymd: string): string {
   });
 }
 
-function fmtTimeRange(start: string | null, end: string | null): string | null {
+function fmtTimeRange(
+  start: string | null,
+  end: string | null,
+  locale: string | undefined,
+): string | null {
   if (!start && !end) return null;
   const fmt = (t: string) => {
     const [h, m] = t.split(":").map(Number);
     const d = new Date();
     d.setHours(h, m, 0, 0);
-    return d.toLocaleTimeString(undefined, {
+    return d.toLocaleTimeString(locale, {
       hour: "numeric",
       minute: "2-digit",
     });
@@ -48,6 +55,8 @@ function fmtTimeRange(start: string | null, end: string | null): string | null {
 
 export default function PublicEventRsvpPage() {
   const { token } = useParams<{ token: string }>();
+  const { t, i18n } = useTranslation("rsvp");
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -84,7 +93,7 @@ export default function PublicEventRsvpPage() {
     e.preventDefault();
     if (!token) return;
     if (!name.trim()) {
-      toast.error("Please add your name");
+      toast.error(t("errors.nameRequired"));
       return;
     }
     setSubmitting(true);
@@ -97,7 +106,9 @@ export default function PublicEventRsvpPage() {
     });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      // English shows the server's message as before; Spanish shows a
+      // friendly line instead of the raw (English) database error.
+      toast.error(t("errors.submit", { message: error.message }));
       return;
     }
     setSubmitted(true);
@@ -129,16 +140,16 @@ export default function PublicEventRsvpPage() {
           }}
         >
           <p className="font-label text-muted-foreground mb-2">404</p>
-          <h1 className="font-editorial text-3xl mb-2">Event not found</h1>
+          <h1 className="font-editorial text-3xl mb-2">{t("notFound.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            This invite link may have been removed or mistyped.
+            {t("notFound.body")}
           </p>
         </div>
       </div>
     );
   }
 
-  const timeLabel = fmtTimeRange(event.start_time, event.end_time);
+  const timeLabel = fmtTimeRange(event.start_time, event.end_time, dateLocale);
 
   return (
     <div className="min-h-screen public-canvas">
@@ -146,7 +157,7 @@ export default function PublicEventRsvpPage() {
         <div className="text-center mb-8">
           <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
             <CalendarIcon className="w-3.5 h-3.5" />
-            You're invited
+            {t("invited")}
           </span>
           <h1 className="font-editorial text-4xl md:text-5xl mt-2">
             {event.title}
@@ -160,7 +171,7 @@ export default function PublicEventRsvpPage() {
             border: "1px solid hsl(var(--border))",
           }}
         >
-          <p className="font-editorial text-2xl">{fmtDate(event.event_date)}</p>
+          <p className="font-editorial text-2xl">{fmtDate(event.event_date, dateLocale)}</p>
           {timeLabel ? (
             <p className="mt-1 text-sm text-muted-foreground">{timeLabel}</p>
           ) : null}
@@ -180,14 +191,18 @@ export default function PublicEventRsvpPage() {
               <span className="font-editorial text-2xl tnum">
                 {event.going_count}
               </span>
-              <span className="ml-1.5 text-muted-foreground">going</span>
+              <span className="ml-1.5 text-muted-foreground">
+                {t("counts.going", { count: event.going_count })}
+              </span>
             </div>
             {event.maybe_count > 0 ? (
               <div>
                 <span className="font-editorial text-2xl tnum">
                   {event.maybe_count}
                 </span>
-                <span className="ml-1.5 text-muted-foreground">maybe</span>
+                <span className="ml-1.5 text-muted-foreground">
+                  {t("counts.maybe", { count: event.maybe_count })}
+                </span>
               </div>
             ) : null}
           </div>
@@ -201,9 +216,9 @@ export default function PublicEventRsvpPage() {
               border: "0.5px solid rgba(0,0,0,0.32)",
             }}
           >
-            <p className="font-editorial text-2xl">Thanks for RSVPing.</p>
+            <p className="font-editorial text-2xl">{t("thanks.title")}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              The host will see your response on their events page.
+              {t("thanks.body")}
             </p>
           </div>
         ) : (
@@ -213,7 +228,7 @@ export default function PublicEventRsvpPage() {
                 htmlFor="rsvp-name"
                 className="block text-[11px] uppercase tracking-[1.5px] mb-1.5 opacity-65 font-medium"
               >
-                Your name
+                {t("form.name")}
               </label>
               <input
                 id="rsvp-name"
@@ -222,7 +237,7 @@ export default function PublicEventRsvpPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 autoFocus
-                placeholder="First + last"
+                placeholder={t("form.namePlaceholder")}
               />
             </div>
             <div>
@@ -230,7 +245,7 @@ export default function PublicEventRsvpPage() {
                 htmlFor="rsvp-email"
                 className="block text-[11px] uppercase tracking-[1.5px] mb-1.5 opacity-65 font-medium"
               >
-                Email (optional)
+                {t("form.email")}
               </label>
               <input
                 id="rsvp-email"
@@ -238,12 +253,12 @@ export default function PublicEventRsvpPage() {
                 className="auth-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t("form.emailPlaceholder")}
               />
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[1.5px] mb-2 opacity-65 font-medium">
-                Are you going?
+                {t("form.question")}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {(["going", "maybe", "not_going"] as const).map((s) => (
@@ -263,7 +278,7 @@ export default function PublicEventRsvpPage() {
                         : { border: "0.5px solid rgba(0,0,0,0.15)" }
                     }
                   >
-                    {s === "going" ? "Going" : s === "maybe" ? "Maybe" : "Can't make it"}
+                    {t(`form.choices.${s}`)}
                   </button>
                 ))}
               </div>
@@ -276,10 +291,10 @@ export default function PublicEventRsvpPage() {
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Sending…
+                  {t("form.sending")}
                 </>
               ) : (
-                "Send RSVP"
+                t("form.submit")
               )}
             </button>
           </form>

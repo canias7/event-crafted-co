@@ -1,0 +1,77 @@
+{
+  "title": "Explorar",
+  "tablistLabel": "Explorar",
+  "tabs": {
+    "feed": {
+      "label": "Fotos",
+      "sub": "Trabajo real de los proveedores de Vendora."
+    },
+    "reels": {
+      "label": "Reels",
+      "sub": "Una mirada de cerca al oficio."
+    },
+    "vendors": {
+      "label": "Proveedores",
+      "sub": "Las personas detrás del trabajo."
+    },
+    "saved": {
+      "label": "Guardados",
+      "sub": "Los proveedores que has guardado."
+    }
+  },
+  "search": {
+    "label": "Buscar proveedores",
+    "placeholder": "Buscar proveedores",
+    "clear": "Borrar búsqueda"
+  },
+  "category": {
+    "label": "Categoría",
+    "triggerAll": "Categorías",
+    "trigger": {
+      "Decor & florals": "Decoración"
+    }
+  },
+  "vendorFallback": "Proveedor",
+  "post": {
+    "viewProfileOf": "Ver el perfil de {{name}}",
+    "workBy": "Trabajo de {{name}}",
+    "save": "Guardar a {{name}}",
+    "unsave": "Quitar a {{name}} de guardados",
+    "share": "Compartir {{name}}",
+    "viewProfile": "Ver perfil"
+  },
+  "showMore": "Ver más",
+  "browseFeed": "Ver las publicaciones",
+  "toasts": {
+    "linkCopied": "Enlace copiado"
+  },
+  "reels": {
+    "regionLabel": "Reels",
+    "roleDescription": "carrusel",
+    "position": "Reel {{current}} de {{total}}, publicado por {{name}}",
+    "soundOn": "Activar sonido",
+    "soundOff": "Desactivar sonido",
+    "save": "Guardar proveedor",
+    "saved": "Guardado",
+    "share": "Compartir",
+    "previous": "Reel anterior",
+    "next": "Reel siguiente",
+    "empty": "Aún no hay reels",
+    "emptyFiltered": "No hay reels aquí",
+    "emptyBody": "Cuando los proveedores compartan videos cortos de su trabajo, se verán aquí."
+  },
+  "empty": {
+    "feed": "Aún no hay nada aquí",
+    "vendors": "No hay proveedores aquí",
+    "tryAnother": "Prueba con otra categoría o búsqueda."
+  },
+  "saved": {
+    "signedOutTitle": "Guarda a los proveedores que te encantan",
+    "signedOutBody": "Inicia sesión y toca el corazón en cualquier publicación o proveedor para guardarlo aquí.",
+    "logIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "noneTitle": "Aún no has guardado nada",
+    "noneHereTitle": "No hay proveedores guardados aquí",
+    "noneBody": "Toca el corazón en cualquier publicación o proveedor para guardarlo aquí."
+  }
+}

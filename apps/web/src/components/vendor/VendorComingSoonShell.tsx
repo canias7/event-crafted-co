@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { type LucideIcon } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -16,6 +17,7 @@ export function VendorComingSoonShell({
   subtitle: string;
   Icon: LucideIcon;
 }) {
+  const { t } = useTranslation("vendorTools");
   return (
     <div className="min-h-screen vendor-canvas flex">
       <DashboardSidebar
@@ -47,10 +49,10 @@ export function VendorComingSoonShell({
               <Icon className="w-6 h-6" />
             </div>
             <h2 className="font-editorial text-3xl mb-2">
-              Coming soon
+              {t("comingSoon.title")}
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              {subtitle}. We're shipping this in a future release.
+              {t("comingSoon.body", { subtitle })}
             </p>
           </div>
         </div>

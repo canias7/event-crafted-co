@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Star, MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { formatDate } from "@/lib/format";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Mirror of the WITH CHECK clause on review_responses UPDATE:
 // `created_at > now() - interval '10 minutes'`. Keep in sync with
@@ -19,6 +20,17 @@ const EDIT_WINDOW_MS = 10 * 60 * 1000;
 //
 // Manages its own form state so the parent only has to pass the
 // review + an onChange callback for refreshing.
+
+// "Oct 5, 2026" / "5 oct 2026" in the visitor's language.
+function fmtShortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(intlLocale(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 export interface ReviewWithResponse {
   id: string;
@@ -49,6 +61,7 @@ export function InquiryReviewCard({
   responderRole = "vendor",
   onResponseSaved,
 }: Props) {
+  const { t } = useTranslation("inquiries");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(review.response?.body ?? "");
   const [saving, setSaving] = useState(false);
@@ -73,10 +86,10 @@ export function InquiryReviewCard({
 
   const incomingLabel =
     responderRole === "vendor"
-      ? "Host review"
+      ? t("review.hostReview")
       : review.kind === "conversation"
-        ? "Vendor's chat rating"
-        : "Vendor's review";
+        ? t("review.vendorChatRating")
+        : t("review.vendorReview");
 
   async function save() {
     if (!draft.trim() || saving) return;
@@ -103,8 +116,8 @@ export function InquiryReviewCard({
       if (/row-level security/i.test(error.message)) {
         toast.error(
           review.response
-            ? "Edit window closed — responses can only be edited within 10 minutes."
-            : "You're no longer allowed to respond to this review.",
+            ? t("review.toasts.editWindowExpired")
+            : t("review.toasts.notAllowed"),
         );
         setEditing(false);
         onResponseSaved();
@@ -113,7 +126,7 @@ export function InquiryReviewCard({
       toast.error(error.message);
       return;
     }
-    toast.success("Response saved");
+    toast.success(t("review.toasts.saved"));
     setEditing(false);
     onResponseSaved();
   }
@@ -124,7 +137,7 @@ export function InquiryReviewCard({
         <div className="flex items-center gap-2">
           <p className="font-label text-muted-foreground">{incomingLabel}</p>
           <span className="text-xs text-muted-foreground tnum">
-            {formatDate(review.created_at, "short")}
+            {fmtShortDate(review.created_at)}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -149,7 +162,7 @@ export function InquiryReviewCard({
         </p>
       ) : (
         <p className="text-sm text-muted-foreground italic">
-          No written feedback.
+          {t("review.noWrittenFeedback")}
         </p>
       )}
 
@@ -159,7 +172,7 @@ export function InquiryReviewCard({
             <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
               <p className="font-label text-accent flex items-center gap-1.5">
                 <MessageCircle className="w-3 h-3" />
-                Your response
+                {t("review.yourResponse")}
               </p>
               {canEdit ? (
                 <Button
@@ -171,11 +184,11 @@ export function InquiryReviewCard({
                     setEditing(true);
                   }}
                 >
-                  Edit ({minsLeft}m left)
+                  {t("review.editLeft", { count: minsLeft })}
                 </Button>
               ) : (
                 <span className="text-[10px] text-muted-foreground">
-                  Edit window closed
+                  {t("review.editWindowClosed")}
                 </span>
               )}
             </div>
@@ -186,13 +199,13 @@ export function InquiryReviewCard({
         ) : (
           <>
             <p className="font-label text-muted-foreground mb-2">
-              {review.response ? "Edit your response" : "Respond"}
+              {review.response ? t("review.editYourResponse") : t("review.respond")}
             </p>
             <Textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={3}
-              placeholder="Thanks for the kind words…"
+              placeholder={t("review.placeholder")}
             />
             <div className="flex justify-end gap-2 mt-2">
               {review.response && (
@@ -205,7 +218,7 @@ export function InquiryReviewCard({
                     setDraft(review.response?.body ?? "");
                   }}
                 >
-                  Cancel
+                  {t("review.cancel")}
                 </Button>
               )}
               <Button
@@ -216,12 +229,12 @@ export function InquiryReviewCard({
                 {saving ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    Saving…
+                    {t("review.saving")}
                   </>
                 ) : review.response ? (
-                  "Save"
+                  t("review.save")
                 ) : (
-                  "Post response"
+                  t("review.postResponse")
                 )}
               </Button>
             </div>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { eventTypeLabel } from "@vendora/core";
+import { useTranslation } from "react-i18next";
+import { usePriceLabels } from "@/lib/priceLabels";
 import { useRealtime } from "@/lib/realtime";
 import { useInquiryTyping } from "@/hooks/useInquiryTyping";
 import { MessageActionMenu } from "@/components/messages/MessageActionMenu";
@@ -29,7 +30,7 @@ import {
   Loader2,
   Smile,
 } from "lucide-react";
-import { groupMessages } from "@/lib/threadFormatting";
+import { daySeparator, groupMessages } from "@/lib/threadFormatting";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ import {
 import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface Inquiry {
   id: string;
@@ -86,10 +88,11 @@ interface Inquiry {
   host: { display_name: string | null; avatar_url: string | null } | null;
 }
 
-const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string; label: string }> = {
-  hot: { bg: "bg-destructive/10", text: "text-destructive", label: "Hot lead" },
-  warm: { bg: "bg-pending", text: "text-accent", label: "Warm lead" },
-  cold: { bg: "bg-muted", text: "text-foreground", label: "Cold lead" },
+// Chip label: t(`lead.${score}`) in the vendorInquiry namespace.
+const LEAD_CHIP: Record<"hot" | "warm" | "cold", { bg: string; text: string }> = {
+  hot: { bg: "bg-destructive/10", text: "text-destructive" },
+  warm: { bg: "bg-pending", text: "text-accent" },
+  cold: { bg: "bg-muted", text: "text-foreground" },
 };
 
 interface Message {
@@ -126,10 +129,12 @@ function draftKey(inquiryId: string | undefined): string | null {
 }
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString()}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
 }
 
 export default function InquiryDetailPage() {
+  const { t } = useTranslation("vendorInquiry");
+  const priceLabels = usePriceLabels();
   const { inquiryId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -529,7 +534,7 @@ export default function InquiryDetailPage() {
   // sender's view doesn't diverge from the recipient's until the
   // next realtime tick.
   async function deleteMessage(messageId: string) {
-    const ok = window.confirm("Delete this message? This can't be undone.");
+    const ok = window.confirm(t("confirmDelete"));
     if (!ok) return;
     const before = messages.find((m) => m.id === messageId);
     setMessages((prev) =>
@@ -564,7 +569,7 @@ export default function InquiryDetailPage() {
   async function saveEdit(messageId: string) {
     const body = editingDraft.trim();
     if (!body) {
-      toast.error("Message can't be empty");
+      toast.error(t("toast.emptyMessage"));
       return;
     }
     const before = messages.find((m) => m.id === messageId);
@@ -640,10 +645,10 @@ export default function InquiryDetailPage() {
     }
     toast.success(
       next === "won"
-        ? "Marked as booked"
+        ? t("toast.markedBooked")
         : next === "lost"
-          ? "Marked as closed"
-          : "Reopened",
+          ? t("toast.markedClosed")
+          : t("toast.reopened"),
     );
     load();
   }
@@ -657,7 +662,7 @@ export default function InquiryDetailPage() {
         continue;
       }
       if (pendingFiles.length + accepted.length >= MAX_FILES) {
-        toast.error(`Up to ${MAX_FILES} attachments per message`);
+        toast.error(t("toast.maxFiles", { max: MAX_FILES }));
         break;
       }
       accepted.push(f);
@@ -691,7 +696,7 @@ export default function InquiryDetailPage() {
   async function stageInvoice(invoiceId: string, body: string) {
     if (!inquiryId || !user) return;
     if (pendingFiles.length >= MAX_FILES) {
-      toast.error(`Up to ${MAX_FILES} attachments per message`);
+      toast.error(t("toast.maxFiles", { max: MAX_FILES }));
       return;
     }
     const { data: inv } = await supabase
@@ -702,7 +707,7 @@ export default function InquiryDetailPage() {
       .eq("id", invoiceId)
       .maybeSingle();
     if (!inv) {
-      toast.error("Couldn't load that invoice.");
+      toast.error(t("toast.invoiceLoadFailed"));
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -777,7 +782,7 @@ export default function InquiryDetailPage() {
       !composer.trim()
     ) {
       setSending(false);
-      toast.error("Couldn't upload your attachments — message not sent.");
+      toast.error(t("toast.uploadFailed"));
       return;
     }
     // Partial-failure case: some uploads succeeded, some didn't. Call
@@ -789,7 +794,10 @@ export default function InquiryDetailPage() {
       uploaded.length < pendingFiles.length
     ) {
       toast.info(
-        `${uploaded.length} of ${pendingFiles.length} attachments uploaded.`,
+        t("toast.partialUpload", {
+          uploaded: uploaded.length,
+          total: pendingFiles.length,
+        }),
       );
     }
     const { error } = await supabase.from("direct_messages").insert({
@@ -827,20 +835,20 @@ export default function InquiryDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
+        {t("loading")}
       </div>
     );
   }
   if (!inquiry) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Inquiry not found
+        {t("notFound")}
       </div>
     );
   }
 
   const isClosed = inquiry.status === "won" || inquiry.status === "lost";
-  const hostName = inquiry.host?.display_name?.trim() || "Host";
+  const hostName = inquiry.host?.display_name?.trim() || t("host");
   const initial = hostName.charAt(0).toUpperCase();
 
   // "Seen" indicator: surface under the last outgoing (vendor/agent)
@@ -860,7 +868,7 @@ export default function InquiryDetailPage() {
       ? inquiry.host_read_at
       : null;
   const seenTimeLabel = seenAt
-    ? new Date(seenAt).toLocaleTimeString(undefined, {
+    ? new Date(seenAt).toLocaleTimeString(intlLocale(), {
         hour: "numeric",
         minute: "2-digit",
       })
@@ -883,7 +891,7 @@ export default function InquiryDetailPage() {
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
           <Link
             to="/vendor/inbox"
-            aria-label="Back to inbox"
+            aria-label={t("header.back")}
             className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -924,7 +932,7 @@ export default function InquiryDetailPage() {
                       className={`shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full ${chip.bg} ${chip.text}`}
                       title={inquiry.lead_score_reason ?? undefined}
                     >
-                      {chip.label}
+                      {t(`lead.${inquiry.lead_score}`)}
                     </span>
                   );
                 })()
@@ -932,10 +940,13 @@ export default function InquiryDetailPage() {
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
               {inquiry.event_type
-                ? `${eventTypeLabel(inquiry.event_type)} inquiry`
-                : "Inquiry"}
+                ? t("header.eventInquiry", {
+                    type: priceLabels.eventType(inquiry.event_type),
+                    typeLower: priceLabels.eventType(inquiry.event_type).toLowerCase(),
+                  })
+                : t("header.inquiry")}
               {inquiry.event_date
-                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(undefined, {
+                ? ` · ${new Date(inquiry.event_date).toLocaleDateString(intlLocale(), {
                     month: "short",
                     day: "numeric",
                   })}`
@@ -945,7 +956,7 @@ export default function InquiryDetailPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                aria-label="Inquiry details"
+                aria-label={t("header.details")}
                 className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
               >
                 <Info className="w-4 h-4" />
@@ -957,7 +968,7 @@ export default function InquiryDetailPage() {
                 className="cursor-pointer"
               >
                 <Eye className="w-4 h-4 mr-2" />
-                View inquiry
+                {t("header.viewInquiry")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {isClosed ? (
@@ -967,7 +978,7 @@ export default function InquiryDetailPage() {
                   className="cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Reopen inquiry
+                  {t("header.reopen")}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
@@ -976,7 +987,7 @@ export default function InquiryDetailPage() {
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Close inquiry
+                  {t("header.close")}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -1029,15 +1040,21 @@ export default function InquiryDetailPage() {
             // redundant). Keep the empty state quiet.
             null
           ) : (
-            groupedItems.map((it) => {
+            groupedItems.map((it, itemIndex) => {
               if (it.kind === "sep") {
+                // A separator always comes right before the first
+                // message of its day; label it from that message at
+                // render time, so it follows a language switch.
+                const nextItem = groupedItems[itemIndex + 1];
                 return (
                   <div
                     key={it.key}
                     className="flex items-center justify-center py-3"
                   >
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
-                      {it.label}
+                      {nextItem && nextItem.kind === "msg"
+                        ? daySeparator(nextItem.message.created_at)
+                        : it.label}
                     </span>
                   </div>
                 );
@@ -1113,7 +1130,7 @@ export default function InquiryDetailPage() {
                       }`}
                     >
                       {isDeleted ? (
-                        <p>Message deleted</p>
+                        <p>{t("thread.deleted")}</p>
                       ) : (
                         <>
                           {m.reply_to_message_id ? (() => {
@@ -1125,8 +1142,8 @@ export default function InquiryDetailPage() {
                               parent.sender_role === "host"
                                 ? hostName
                                 : parent.sender_role === "vendor"
-                                  ? "You"
-                                  : "Vendora AI";
+                                  ? t("you")
+                                  : t("vendoraAi");
                             return (
                               <MessageReplyContext
                                 authorName={parentName}
@@ -1140,7 +1157,7 @@ export default function InquiryDetailPage() {
                           {isAi ? (
                             <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider opacity-80 mb-1">
                               <Sparkles className="w-3 h-3" />
-                              Sent automatically
+                              {t("thread.sentAutomatically")}
                             </span>
                           ) : null}
                           {editingMessageId === m.id ? (
@@ -1169,14 +1186,14 @@ export default function InquiryDetailPage() {
                                   onClick={cancelEditing}
                                   className="text-[11px] text-muted-foreground hover:text-accent px-2 py-1"
                                 >
-                                  Cancel
+                                  {t("thread.cancel")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
                                   className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
                                 >
-                                  Save
+                                  {t("thread.save")}
                                 </button>
                               </div>
                             </div>
@@ -1190,7 +1207,7 @@ export default function InquiryDetailPage() {
                           )}
                           {isEdited ? (
                             <span className="block text-[10px] opacity-60 mt-1">
-                              edited
+                              {t("thread.edited")}
                             </span>
                           ) : null}
                         </>
@@ -1214,7 +1231,7 @@ export default function InquiryDetailPage() {
                           it.isMe ? "text-right pr-1" : "pl-1"
                         }`}
                       >
-                        {new Date(m.created_at).toLocaleTimeString(undefined, {
+                        {new Date(m.created_at).toLocaleTimeString(intlLocale(), {
                           hour: "numeric",
                           minute: "2-digit",
                         })}
@@ -1239,7 +1256,7 @@ export default function InquiryDetailPage() {
           {seenTimeLabel ? (
             <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-1 mr-1">
               <CheckCheck className="w-3 h-3" aria-hidden />
-              <span>Read · {seenTimeLabel}</span>
+              <span>{t("thread.read", { time: seenTimeLabel })}</span>
             </div>
           ) : null}
 
@@ -1288,7 +1305,7 @@ export default function InquiryDetailPage() {
           inquiry.status === "cancelled" ? (
             <div className="flex items-center justify-center py-4">
               <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 border border-border">
-                Conversation ended
+                {t("thread.ended")}
               </span>
             </div>
           ) : null}
@@ -1309,10 +1326,10 @@ export default function InquiryDetailPage() {
           }}
         >
           {inquiry.status === "lost"
-            ? "Conversation ended."
+            ? t("ended.lost")
             : inquiry.status === "expired"
-              ? "Conversation ended — inquiry expired."
-              : "Conversation ended — inquiry cancelled."}
+              ? t("ended.expired")
+              : t("ended.cancelled")}
         </div>
       ) : (
       <div
@@ -1350,7 +1367,7 @@ export default function InquiryDetailPage() {
               className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <MapPin className="w-3.5 h-3.5 text-accent" />
-              Pin location
+              {t("composer.pinLocation")}
             </button>
           </div>
 
@@ -1370,8 +1387,8 @@ export default function InquiryDetailPage() {
                   replyTarget.sender_role === "host"
                     ? hostName
                     : replyTarget.sender_role === "vendor"
-                      ? "You"
-                      : "Vendora AI"
+                      ? t("you")
+                      : t("vendoraAi")
                 }
                 body={replyTarget.deleted_at ? "" : replyTarget.body}
                 tone="composer"
@@ -1393,7 +1410,7 @@ export default function InquiryDetailPage() {
                           prev.filter((_, j) => j !== i),
                         )
                       }
-                      aria-label="Remove attachment"
+                      aria-label={t("composer.removeAttachment")}
                       className="text-muted-foreground hover:text-accent"
                     >
                       <X className="w-3 h-3" />
@@ -1412,7 +1429,7 @@ export default function InquiryDetailPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || pendingFiles.length >= MAX_FILES}
-                aria-label="Attach files"
+                aria-label={t("composer.attachFiles")}
                 className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
               >
                 <Paperclip className="w-4 h-4" />
@@ -1430,7 +1447,7 @@ export default function InquiryDetailPage() {
                   <button
                     type="button"
                     disabled={sending}
-                    aria-label="Quick reactions"
+                    aria-label={t("composer.quickReactions")}
                     className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
                   >
                     <Smile className="w-4 h-4" />
@@ -1442,7 +1459,7 @@ export default function InquiryDetailPage() {
                       <button
                         key={e}
                         type="button"
-                        aria-label={`Insert ${e}`}
+                        aria-label={t("composer.insertEmoji", { emoji: e })}
                         onClick={() => {
                           setComposer((v) => v + e);
                           setEmojiOpen(false);
@@ -1495,7 +1512,7 @@ export default function InquiryDetailPage() {
                   }
                 }}
                 rows={1}
-                placeholder={`Message ${hostName}…`}
+                placeholder={t("composer.placeholder", { name: hostName })}
                 className="resize-none min-h-[36px] max-h-32 rounded-2xl border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
               />
               <input
@@ -1515,7 +1532,7 @@ export default function InquiryDetailPage() {
                   sending ||
                   (!composer.trim() && pendingFiles.length === 0)
                 }
-                aria-label="Send"
+                aria-label={t("composer.send")}
                 className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 w-9 p-0 disabled:bg-muted"
               >
                 {sending ? (
@@ -1566,13 +1583,12 @@ function InquiryIntakeCard({
   inquiry: Inquiry;
   hostInitial: string;
 }) {
-  const eventLabel = inquiry.event_type
-    ? inquiry.event_type
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-    : "Event";
+  const { t } = useTranslation("vendorInquiry");
+  const { eventType } = usePriceLabels();
+  // "Holiday Dinner"; "Event" when there's no type.
+  const eventLabel = eventType(inquiry.event_type);
   const dateStr = inquiry.event_date
-    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(undefined, {
+    ? new Date(inquiry.event_date + "T00:00:00").toLocaleDateString(intlLocale(), {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -1604,7 +1620,7 @@ function InquiryIntakeCard({
       <div className="flex items-center gap-1.5">
         <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-white border border-border text-foreground rounded-full px-2.5 py-1">
           <Sparkles className="w-3 h-3 text-accent" />
-          New inquiry
+          {t("intake.newInquiry")}
         </span>
       </div>
       <div className="flex items-start gap-2">
@@ -1640,13 +1656,13 @@ function InquiryIntakeCard({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {inquiry.guest_count ? (
-              <Field label="Guests" value={`${inquiry.guest_count}`} />
+              <Field label={t("intake.guests")} value={`${inquiry.guest_count}`} />
             ) : null}
             {inquiry.location ? (
-              <Field label="Location" value={inquiry.location} />
+              <Field label={t("intake.location")} value={inquiry.location} />
             ) : null}
             {(inquiry.budget_min_cents || inquiry.budget_max_cents) ? (
-              <Field label="Budget" value={budgetStr} />
+              <Field label={t("intake.budget")} value={budgetStr} />
             ) : null}
           </div>
           {intakeEntries.length > 0 ? (
@@ -1690,6 +1706,8 @@ function InquiryPreviewSheet({
   hostName: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("vendorInquiry");
+  const { eventType } = usePriceLabels();
   // Escape closes the sheet — mirrors the MediaLightbox pattern.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1738,12 +1756,14 @@ function InquiryPreviewSheet({
     };
   }, [inquiry.vendor_id, inquiry.intake_answers]);
 
-  const eventLabel = inquiry.event_type.replace(/_/g, " ");
+  // The element's `capitalize` class title-cases it in English
+  // ("Holiday Dinner"); Spanish keeps sentence case.
+  const eventLabel = eventType(inquiry.event_type);
   const dateStr = inquiry.event_date
     ? (() => {
         const [y, m, d] = inquiry.event_date.split("T")[0].split("-").map(Number);
         if (!y || !m || !d) return inquiry.event_date;
-        return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+        return new Date(y, m - 1, d).toLocaleDateString(intlLocale(), {
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -1771,7 +1791,7 @@ function InquiryPreviewSheet({
     >
       <button
         onClick={onClose}
-        aria-label="Back to chat"
+        aria-label={t("preview.back")}
         className="fixed top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-white flex items-center justify-center hover:bg-white/25"
       >
         <ArrowLeft className="h-5 w-5" />
@@ -1785,7 +1805,7 @@ function InquiryPreviewSheet({
         }}
       >
         <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-accent mb-2">
-          Inquiry preview
+          {t("preview.eyebrow")}
         </p>
         <h2 className="font-editorial text-3xl mb-1">{hostName}</h2>
         <p className="text-sm text-muted-foreground capitalize mb-6">
@@ -1796,7 +1816,7 @@ function InquiryPreviewSheet({
           {dateStr ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Event date
+                {t("preview.eventDate")}
               </dt>
               <dd className="text-sm font-medium text-foreground">{dateStr}</dd>
             </div>
@@ -1804,7 +1824,7 @@ function InquiryPreviewSheet({
           {inquiry.guest_count != null ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Guests
+                {t("preview.guests")}
               </dt>
               <dd className="text-sm font-medium text-foreground">
                 {inquiry.guest_count}
@@ -1814,7 +1834,7 @@ function InquiryPreviewSheet({
           {inquiry.location ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Location
+                {t("preview.location")}
               </dt>
               <dd className="text-sm font-medium text-foreground">
                 {inquiry.location}
@@ -1824,7 +1844,7 @@ function InquiryPreviewSheet({
           {budgetStr ? (
             <div>
               <dt className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1">
-                Budget
+                {t("preview.budget")}
               </dt>
               <dd className="text-sm font-medium text-foreground tnum">
                 {budgetStr}
@@ -1836,7 +1856,7 @@ function InquiryPreviewSheet({
         {inquiry.special_requests ? (
           <div className="mt-7">
             <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-2">
-              Special requests
+              {t("preview.specialRequests")}
             </p>
             <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
               {inquiry.special_requests}
@@ -1847,7 +1867,7 @@ function InquiryPreviewSheet({
         {intakeEntries.length > 0 ? (
           <div className="mt-7">
             <p className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-3">
-              Intake form answers
+              {t("preview.intakeAnswers")}
             </p>
             <dl className="space-y-3">
               {intakeEntries.map(([qid, val]) => (
@@ -1866,7 +1886,7 @@ function InquiryPreviewSheet({
 
         {inquiry.recommended_verification ? (
           <div className="mt-7 p-3 rounded-xl bg-accent/10 text-sm text-foreground">
-            <span className="font-medium">Recommended verification: </span>
+            <span className="font-medium">{t("preview.recommendedVerification")}</span>
             {inquiry.recommended_verification}
           </div>
         ) : null}

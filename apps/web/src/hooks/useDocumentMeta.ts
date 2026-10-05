@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import i18n from "@/i18n";
 
 interface DocumentMeta {
   title: string;
@@ -10,10 +11,9 @@ interface DocumentMeta {
   type?: "website" | "article" | "product";
 }
 
-const FALLBACK_TITLE =
-  "Vendora — Premium Event Planning & Vendor Marketplace";
-const FALLBACK_DESCRIPTION =
-  "Discover trusted vendors, book appointments, manage your event checklist, create stunning invitations, and pay securely — all in one beautiful platform.";
+// The site-wide defaults, in the visitor's language (locales/*/meta.json).
+const fallbackTitle = () => i18n.t("defaultTitle", { ns: "meta" });
+const fallbackDescription = () => i18n.t("defaultDescription", { ns: "meta" });
 // Static branded OG image at /public/og.jpg — used when a page doesn't
 // pass its own image. Must be an absolute path so social crawlers can
 // fetch it.
@@ -72,7 +72,7 @@ function setCanonical(href: string) {
 export function useDocumentMeta(meta: DocumentMeta) {
   useEffect(() => {
     const title = meta.title;
-    const description = meta.description ?? FALLBACK_DESCRIPTION;
+    const description = meta.description ?? fallbackDescription();
     // Always set an OG image — fall back to the branded /og.jpg when
     // the page didn't set one. Social-share unfurls without an image
     // look orphaned.
@@ -100,10 +100,10 @@ export function useDocumentMeta(meta: DocumentMeta) {
 
     return () => {
       // Restore defaults so the next page doesn't accidentally inherit.
-      document.title = FALLBACK_TITLE;
-      setMetaByName("description", FALLBACK_DESCRIPTION);
-      setMetaByProperty("og:title", FALLBACK_TITLE);
-      setMetaByProperty("og:description", FALLBACK_DESCRIPTION);
+      document.title = fallbackTitle();
+      setMetaByName("description", fallbackDescription());
+      setMetaByProperty("og:title", fallbackTitle());
+      setMetaByProperty("og:description", fallbackDescription());
       setMetaByProperty("og:type", "website");
     };
   }, [meta.title, meta.description, meta.image, meta.url, meta.type]);

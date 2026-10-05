@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Store, ArrowUpRight } from "lucide-react";
 import type { VendorCardAttachment } from "@/lib/messageAttachments";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // A vendor profile shared into a conversation — the "introduction" surface.
 // A host viewing a chat with Vendor A can send Vendor B's profile; it renders
@@ -15,7 +17,13 @@ import type { VendorCardAttachment } from "@/lib/messageAttachments";
 // Display fields come from the snapshot stored on the attachment, so the card
 // still reads correctly if the vendor later renames or unpublishes.
 export function SharedVendorCard({ card }: { card: VendorCardAttachment }) {
-  const meta = [card.category, card.location].filter(Boolean).join(" · ");
+  const { t } = useTranslation("messages");
+  const categoryNames = useCategoryNames();
+  // The category is the English name stored on the card; show it in the
+  // viewer's language.
+  const meta = [card.category ? categoryNames.sub(card.category) : null, card.location]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <Link
       to={`/vendors/${card.vendor_id}`}
@@ -36,7 +44,7 @@ export function SharedVendorCard({ card }: { card: VendorCardAttachment }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{card.business_name}</p>
         <p className="text-xs text-muted-foreground truncate">
-          {meta || "View profile"}
+          {meta || t("shared_vendor_card.view_profile")}
         </p>
       </div>
       <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 group-hover:text-accent transition-colors" />

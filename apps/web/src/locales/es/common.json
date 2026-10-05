@@ -171,7 +171,8 @@
       "submit": "Crear cuenta",
       "already_have_account": "¿Ya tienes cuenta?",
       "sign_in": "Iniciar sesión"
-    }
+    },
+    "verify_email_first": "Confirma tu correo antes de {{action}}. Revisa tu bandeja de entrada o usa el aviso de arriba para reenviarlo."
   },
   "sidebar": {
     "customer": {
@@ -182,7 +183,7 @@
     },
     "vendor": {
       "inbox": "Bandeja",
-      "my_vendora": "My Vendora",
+      "my_vendora": "Mi Vendora",
       "overview": "Resumen",
       "calendar": "Calendario",
       "my_profile": "Mi Perfil",
@@ -192,7 +193,7 @@
       "more": "Más",
       "edit_profile": "Editar perfil de marca",
       "verification": "Verificación",
-      "scheduling": "Smart Scheduling",
+      "scheduling": "Agenda inteligente",
       "crm": "Vendora CRM",
       "team": "Conoce al equipo",
       "web_studio": "Estudio web"

@@ -4,6 +4,8 @@
 // SVG so the spike count + check thickness are tweakable in one
 // place without pulling in another icon set.
 
+import { useTranslation } from "react-i18next";
+
 function VerifiedSeal({ className }: { className?: string }) {
   return (
     <svg
@@ -50,13 +52,14 @@ export function StudioVerifiedBadge({
   size?: "default" | "lg";
   showLabel?: boolean;
 }) {
+  const { t } = useTranslation("vendorProfile");
   const iconClass = size === "lg" ? "w-5 h-5" : "w-4 h-4";
 
   if (showLabel) {
     return (
       <span
         className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
-        title="Verified vendor"
+        title={t("verifiedBadge.title")}
         style={{
           background:
             "hsl(var(--pending))",
@@ -65,16 +68,16 @@ export function StudioVerifiedBadge({
         }}
       >
         <VerifiedSeal className={iconClass} />
-        Verified
+        {t("verifiedBadge.label")}
       </span>
     );
   }
 
   return (
     <span
-      title="Verified vendor"
+      title={t("verifiedBadge.title")}
       className="inline-flex items-center justify-center"
-      aria-label="Verified"
+      aria-label={t("verifiedBadge.label")}
     >
       <VerifiedSeal className={iconClass} />
     </span>

@@ -18,6 +18,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Clock, Pencil, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { lazyWithReload } from "@/lib/lazyWithReload";
@@ -125,14 +126,15 @@ function StatusTile({
   otherPartyName: string;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation("reviews");
   const isEvent = row.kind === "event";
   const waiting = isEvent && row.released_at === null;
 
   const stamp = waiting
-    ? `Waiting for ${otherPartyName}`
+    ? t("status.waitingFor", { name: otherPartyName })
     : isEvent
-      ? "Both reviewed · live"
-      : "Live";
+      ? t("status.bothLive")
+      : t("status.live");
 
   const stampColor = waiting ? "text-foreground/60" : "text-accent";
 
@@ -166,7 +168,7 @@ function StatusTile({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium leading-tight">
-              {isEvent ? "Event review submitted" : "Conversation rating submitted"}
+              {isEvent ? t("status.eventSubmitted") : t("status.conversationSubmitted")}
             </p>
             <span className={`text-[11px] font-medium ${stampColor}`}>
               {stamp}
@@ -176,10 +178,10 @@ function StatusTile({
                 type="button"
                 onClick={onEdit}
                 className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-accent hover:underline"
-                aria-label={`Edit (${minutesLeft} ${minutesLeft === 1 ? "minute" : "minutes"} left)`}
+                aria-label={t("status.editLabel", { count: minutesLeft })}
               >
                 <Pencil className="w-3 h-3" />
-                Edit ({minutesLeft}m left)
+                {t("status.editLeft", { count: minutesLeft })}
               </button>
             )}
           </div>
@@ -202,7 +204,7 @@ function StatusTile({
           )}
           {waiting && (
             <p className="text-[11px] text-muted-foreground mt-1.5">
-              Hidden until they review too — or goes live in 14 days.
+              {t("status.hiddenUntil")}
             </p>
           )}
         </div>

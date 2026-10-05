@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "title": "{{title}} — Live on Vendora",
+    "fallbackTitle": "Live stream — Vendora",
+    "description": "Watch this event live on Vendora."
+  },
+  "notFound": {
+    "title": "Live link not found",
+    "body": "This live stream link is invalid or has been removed. Check with the host for an updated link.",
+    "back": "Back to Vendora"
+  },
+  "status": {
+    "replay": "Replay",
+    "live": "Live now",
+    "soon": "Starts soon",
+    "ended": "Stream ended"
+  },
+  "recorded": "Recorded {{when}}",
+  "watching_one": "{{count}} watching",
+  "watching_other": "{{count}} watching",
+  "player": {
+    "endedTitle": "Stream ended",
+    "endedBody": "This event isn't broadcasting anymore. The host didn't enable a recording.",
+    "waitingTitle": "Waiting for stream",
+    "waitingBody": "The host hasn't started broadcasting yet. This page will switch over automatically when they go live."
+  },
+  "archive": {
+    "other": "Other broadcasts",
+    "past": "Past broadcasts"
+  },
+  "footer": "Powered by Vendora · Anyone with this link can watch"
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ export function VendorFaqsManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -82,7 +84,7 @@ export function VendorFaqsManager({
   async function addFaq(e: React.FormEvent) {
     e.preventDefault();
     if (!newQ.trim() || !newA.trim()) {
-      toast.error("Question and answer are required");
+      toast.error(t("faqs.required"));
       return;
     }
     setAdding(true);
@@ -154,11 +156,10 @@ export function VendorFaqsManager({
     return (
       <div>
         <div className="mb-3">
-          <p className="font-label text-muted-foreground">FAQs</p>
+          <p className="font-label text-muted-foreground">{t("faqs.title")}</p>
         </div>
         <p className="text-xs text-muted-foreground italic">
-          FAQs are coming online soon — this section will activate once the
-          server-side update lands.
+          {t("faqs.comingSoon")}
         </p>
       </div>
     );
@@ -167,15 +168,14 @@ export function VendorFaqsManager({
   return (
     <div>
       <div className="mb-3">
-        <p className="font-label text-muted-foreground">FAQs</p>
+        <p className="font-label text-muted-foreground">{t("faqs.title")}</p>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          Common questions hosts ask. Render publicly on your profile +
-          appear in Google's FAQ rich results.
+          {t("faqs.intro")}
         </p>
       </div>
 
       {loading ? (
-        <p className="text-xs text-muted-foreground py-4">Loading…</p>
+        <p className="text-xs text-muted-foreground py-4">{t("common.loading")}</p>
       ) : (
         <ul className="space-y-2 mb-4">
           {faqs.map((f) => (
@@ -223,7 +223,7 @@ export function VendorFaqsManager({
                     className="rounded-full text-xs h-7 text-muted-foreground"
                   >
                     <Trash2 className="w-3 h-3 mr-1" />
-                    Remove
+                    {t("faqs.remove")}
                   </Button>
                 </div>
               )}
@@ -238,12 +238,12 @@ export function VendorFaqsManager({
           className="rounded-sm border border-dashed border-border p-3 space-y-2"
         >
           <Input
-            placeholder="Question (e.g. Do you travel for events?)"
+            placeholder={t("faqs.questionPlaceholder")}
             value={newQ}
             onChange={(e) => setNewQ(e.target.value)}
           />
           <Textarea
-            placeholder="Answer"
+            placeholder={t("faqs.answerPlaceholder")}
             value={newA}
             onChange={(e) => setNewA(e.target.value)}
             rows={2}
@@ -260,7 +260,7 @@ export function VendorFaqsManager({
               ) : (
                 <Plus className="w-3 h-3 mr-1.5" />
               )}
-              Add FAQ
+              {t("faqs.add")}
             </Button>
           </div>
         </form>
@@ -272,6 +272,7 @@ export function VendorFaqsManager({
 // Public-facing read of a vendor's FAQs, including a JSON-LD FAQPage
 // block for rich results. Returns null when there's nothing to show.
 export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [faqs, setFaqs] = useState<Array<{ q: string; a: string }>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -330,10 +331,10 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
         className="font-label mb-3"
         style={{ color: "#14161a", letterSpacing: "0.22em" }}
       >
-        FAQ
+        {t("faq.eyebrow")}
       </p>
       <h2 className="font-editorial text-4xl mb-7 text-foreground">
-        Common questions
+        {t("faq.title")}
       </h2>
       <FaqCardList items={faqs.map((f) => ({ q: f.q, a: f.a }))} />
     </div>

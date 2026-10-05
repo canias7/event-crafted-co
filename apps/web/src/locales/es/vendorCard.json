@@ -1,0 +1,9 @@
+{
+  "noPhotos": "Este anuncio aún no tiene fotos",
+  "save": "Guardar proveedor",
+  "unsave": "Quitar de guardados",
+  "saved": {
+    "signIn": "Inicia sesión para guardar proveedores",
+    "sample": "Este proveedor es un anuncio de muestra. Podrás guardarlo cuando esté publicado."
+  }
+}

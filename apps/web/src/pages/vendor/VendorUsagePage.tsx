@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { UnderConstructionPage } from "@/components/shared/UnderConstruction";
 import { Button } from "@/components/ui/button";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { intlLocale } from "@/lib/intlLocale";
 
 // Usage hub for the vendor: live credit balance, period usage bar,
 // per-action cost reference, recent ledger, and the Stripe customer
@@ -24,29 +26,23 @@ interface LedgerRow {
   note: string | null;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  trial_grant: "Signup trial",
-  monthly_grant: "Monthly grant",
-  topup: "Top-up",
-  consume: "AI action",
-  refund: "Refund",
-  admin_grant: "Admin grant",
-  admin_revoke: "Admin clawback",
-  rollover: "Rollover",
-};
+// Ledger kinds (vendor_credit_transactions.kind) are labelled from
+// locales/<lang>/vendorPlan.json → usage.kinds; an unknown kind shows
+// as stored.
 
 // Snake-case action_types come from the edge functions verbatim
 // (see _shared/credits.ts::CreditAction — the source of truth for
 // what gets written to vendor_credit_transactions.action_type).
-const ACTION_LABEL: Record<string, string> = {
-  hilux_reply: "HILUX reply",
-  hilux_regenerate: "HILUX regenerate",
-  hilux_draft: "HILUX draft reply",
-  hilux_followup: "HILUX follow-up",
-  axion_image: "Axion image",
-  mux_minute: "Mux minute",
-  email_parse: "Email parse",
-};
+// Their labels live in vendorPlan.json → usage.actions.
+const KNOWN_ACTIONS = [
+  "hilux_reply",
+  "hilux_regenerate",
+  "hilux_draft",
+  "hilux_followup",
+  "axion_image",
+  "mux_minute",
+  "email_parse",
+];
 
 // Per-action credit cost — mirrors _shared/credits.ts::CREDIT_COST.
 const ACTION_COST: Record<string, number> = {
@@ -70,36 +66,52 @@ const ACTION_COLOR: Record<string, string> = {
   email_parse: "#10b981",
 };
 
-function formatActionType(action: string | null): string | null {
-  if (!action) return null;
-  return (
-    ACTION_LABEL[action] ??
-    action
-      .split("_")
-      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-      .join(" ")
-  );
+// Fallback label for an action type we don't have copy for yet.
+function titleCaseAction(action: string): string {
+  return action
+    .split("_")
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
 }
 
 function colorFor(action: string): string {
   return ACTION_COLOR[action] ?? "#94a3b8";
 }
 
-const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-function fmtHour(h: number): string {
-  if (h === 0) return "12am";
-  if (h === 12) return "12pm";
-  return h < 12 ? `${h}am` : `${h - 12}pm`;
+// Week starts Monday (index 0) to match the heatmap rows.
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+// Labels shared by the page and the heatmap: action/kind names, short
+// day names and hours, all in the active language.
+function useUsageLabels() {
+  const { t } = useTranslation("vendorPlan");
+  const formatActionType = (action: string | null): string | null => {
+    if (!action) return null;
+    return t(`usage.actions.${action}`, { defaultValue: titleCaseAction(action) });
+  };
+  const kindLabel = (kind: string): string =>
+    t(`usage.kinds.${kind}`, { defaultValue: kind });
+  const dayShort = (dayIdx: number): string => t(`usage.days_short.${DAY_KEYS[dayIdx]}`);
+  const fmtHour = (h: number): string => {
+    if (h === 0) return t("usage.hour_midnight");
+    if (h === 12) return t("usage.hour_noon");
+    return h < 12 ? t("usage.hour_am", { hour: h }) : t("usage.hour_pm", { hour: h - 12 });
+  };
+  return { formatActionType, kindLabel, dayShort, fmtHour };
 }
 
 // Usage is temporarily under construction (front-end only). The full
 // implementation below — VendorUsagePageImpl — and its backend stay
 // intact; re-enable by pointing the default export back at it.
 export default function VendorUsagePage() {
+  // UnderConstructionPage takes the English page title and shows it in
+  // the visitor's language itself.
   return <UnderConstructionPage title="Usage" />;
 }
 
 export function VendorUsagePageImpl() {
+  const { t } = useTranslation("vendorPlan");
+  const { formatActionType, kindLabel, dayShort, fmtHour } = useUsageLabels();
   const { ownListing, user } = useAuth();
   const vendorId = ownListing?.id ?? null;
   const credits = useVendorCredits(user?.id ?? null);
@@ -213,7 +225,7 @@ export function VendorUsagePageImpl() {
   // Per-action breakdown — totals by action_type, plus event count.
   const actionBreakdown = useMemo(() => {
     const agg = new Map<string, { credits: number; count: number }>();
-    for (const known of Object.keys(ACTION_LABEL)) {
+    for (const known of KNOWN_ACTIONS) {
       agg.set(known, { credits: 0, count: 0 });
     }
     for (const row of consume30) {
@@ -227,13 +239,11 @@ export function VendorUsagePageImpl() {
       .map(([action, v]) => ({ action, ...v }))
       .sort((a, b) => {
         if (b.credits !== a.credits) return b.credits - a.credits;
-        return (
-          (ACTION_LABEL[a.action] ?? a.action).localeCompare(
-            ACTION_LABEL[b.action] ?? b.action,
-          )
-        );
+        const label = (action: string) =>
+          KNOWN_ACTIONS.includes(action) ? t(`usage.actions.${action}`) : action;
+        return label(a.action).localeCompare(label(b.action));
       });
-  }, [consume30]);
+  }, [consume30, t]);
 
   // Sum directly from consume30 (not dailyTotals) so a future
   // bucket-misalignment can never make this drift from the action
@@ -306,8 +316,8 @@ export function VendorUsagePageImpl() {
       body: { vendor_id: vendorId ?? null },
     });
     if (error || !data?.url) {
-      toast.error("Couldn't open billing portal", {
-        description: error?.message ?? "Please try again in a moment.",
+      toast.error(t("usage.portal_failed"), {
+        description: error?.message ?? t("usage.try_again"),
       });
       setActingId(null);
       return;
@@ -324,9 +334,9 @@ export function VendorUsagePageImpl() {
           className="px-5 md:px-8 pt-8 pb-6"
           style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-sans">Usage</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-sans">{t("usage.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Your credit balance, AI activity, and billing portal.
+            {t("usage.subtitle")}
           </p>
         </div>
 
@@ -340,7 +350,7 @@ export function VendorUsagePageImpl() {
               <Card className="w-fit max-w-full !p-3 md:!px-5 md:!py-3">
                 <div className="flex items-center gap-3">
                   <p className="font-label text-muted-foreground shrink-0 hidden sm:inline">
-                    Credits
+                    {t("usage.credits_label")}
                   </p>
                   <span className="text-xl md:text-2xl font-semibold tracking-tight tnum leading-none mr-4">
                     {credits.initialized ? credits.balance.toLocaleString() : "—"}
@@ -353,7 +363,7 @@ export function VendorUsagePageImpl() {
                     <Button
                       onClick={openPortal}
                       disabled={!vendorId || actingId !== null}
-                      title={!vendorId ? "Add a listing to manage billing" : undefined}
+                      title={!vendorId ? t("usage.add_listing_for_billing") : undefined}
                       variant="outline"
                       size="sm"
                       className="rounded-full shrink-0"
@@ -367,7 +377,7 @@ export function VendorUsagePageImpl() {
                       ) : (
                         <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                       )}
-                      Manage billing
+                      {t("usage.manage_billing")}
                     </Button>
                   ) : null}
                 </div>
@@ -379,11 +389,17 @@ export function VendorUsagePageImpl() {
                 {credits.monthlyGrant > 0 && usagePct != null ? (
                   <div className="mt-2.5">
                     <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground mb-1">
-                      <span>This billing period</span>
+                      <span>{t("usage.billing_period")}</span>
                       <span className="tnum">
-                        <span className="text-foreground font-medium">{usedThisPeriod.toLocaleString()}</span>
-                        {" / "}
-                        {credits.monthlyGrant.toLocaleString()} used
+                        <Trans
+                          t={t}
+                          i18nKey="usage.period_used"
+                          values={{
+                            used: usedThisPeriod.toLocaleString(),
+                            grant: credits.monthlyGrant.toLocaleString(),
+                          }}
+                          components={{ used: <span className="text-foreground font-medium" /> }}
+                        />
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full bg-foreground/[0.08] overflow-hidden">
@@ -401,17 +417,19 @@ export function VendorUsagePageImpl() {
 
               <Card className="flex-1 flex flex-col">
                 <SectionHeader
-                  title="Activity heatmap"
+                  title={t("usage.heatmap_title")}
                   rightSlot={
                     peakCell ? (
                       <span className="text-xs text-muted-foreground">
-                        Peak{" "}
-                        <span className="text-foreground font-medium tnum">
-                          {DAY_SHORT[peakCell.day]} {fmtHour(peakCell.hour)}
-                        </span>
+                        <Trans
+                          t={t}
+                          i18nKey="usage.peak"
+                          values={{ value: `${dayShort(peakCell.day)} ${fmtHour(peakCell.hour)}` }}
+                          components={{ value: <span className="text-foreground font-medium tnum" /> }}
+                        />
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Local · 30d</span>
+                      <span className="text-xs text-muted-foreground">{t("usage.local_30d")}</span>
                     )
                   }
                 />
@@ -422,12 +440,26 @@ export function VendorUsagePageImpl() {
           {/* Daily spend bar chart — sits to the right of the hero. */}
             <Card className="flex-1 min-w-0">
               <SectionHeader
-                title="Credits used per day"
+                title={t("usage.per_day_title")}
                 rightSlot={
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span><span className="text-foreground font-semibold tnum">{totalSpent30.toLocaleString()}</span> cr · last 30d</span>
+                    <span>
+                      <Trans
+                        t={t}
+                        i18nKey="usage.spent_30d"
+                        values={{ total: totalSpent30.toLocaleString() }}
+                        components={{ n: <span className="text-foreground font-semibold tnum" /> }}
+                      />
+                    </span>
                     {activeDays > 0 ? (
-                      <span><span className="text-foreground font-semibold tnum">{activeDays}</span> active days</span>
+                      <span>
+                        <Trans
+                          t={t}
+                          i18nKey="usage.active_days"
+                          count={activeDays}
+                          components={{ n: <span className="text-foreground font-semibold tnum" /> }}
+                        />
+                      </span>
                     ) : null}
                   </div>
                 }
@@ -463,14 +495,17 @@ export function VendorUsagePageImpl() {
                     }}
                   >
                     <div className="font-medium">
-                      {new Date(dailyTotals[hoveredBarIdx].date + "T00:00:00Z").toLocaleDateString(undefined, {
+                      {new Date(dailyTotals[hoveredBarIdx].date + "T00:00:00Z").toLocaleDateString(intlLocale(), {
                         weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
                       })}
                     </div>
                     <div className="tnum opacity-80">
                       {dailyTotals[hoveredBarIdx].credits === 0
-                        ? "no spend"
-                        : `${dailyTotals[hoveredBarIdx].credits.toLocaleString()} credit${dailyTotals[hoveredBarIdx].credits === 1 ? "" : "s"}`}
+                        ? t("usage.no_spend")
+                        : t("usage.credit_count", {
+                            count: dailyTotals[hoveredBarIdx].credits,
+                            formatted: dailyTotals[hoveredBarIdx].credits.toLocaleString(),
+                          })}
                     </div>
                   </div>
                 ) : null}
@@ -484,7 +519,7 @@ export function VendorUsagePageImpl() {
                   const row = dailyTotals[idx];
                   if (!row) return null;
                   const d = new Date(row.date + "T00:00:00Z");
-                  const label = d.toLocaleDateString(undefined, {
+                  const label = d.toLocaleDateString(intlLocale(), {
                     month: "short",
                     day: "numeric",
                     timeZone: "UTC",
@@ -511,8 +546,8 @@ export function VendorUsagePageImpl() {
               </div>
               {/* hidden anchors so layout doesn't collapse if dailyTotals empty */}
               <div className="hidden">
-                <span>30 days ago</span>
-                <span>Today</span>
+                <span>{t("usage.days_ago_30")}</span>
+                <span>{t("usage.today")}</span>
               </div>
             </Card>
           </div>
@@ -521,7 +556,7 @@ export function VendorUsagePageImpl() {
               row — donut narrow, cost narrow, recent activity wider. */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 items-start">
             <Card className="lg:col-span-1">
-              <SectionHeader title="Where credits went" />
+              <SectionHeader title={t("usage.where_title")} />
               <Donut
                 segments={actionBreakdown
                   .filter((r) => r.credits > 0)
@@ -577,11 +612,11 @@ export function VendorUsagePageImpl() {
                 the server). */}
             <Card className="lg:col-span-1">
               <SectionHeader
-                title="Cost per action"
-                rightSlot={<span className="text-xs text-muted-foreground">Credits charged per call</span>}
+                title={t("usage.cost_title")}
+                rightSlot={<span className="text-xs text-muted-foreground">{t("usage.cost_hint")}</span>}
               />
               <ul className="mt-4 space-y-2.5">
-                {Object.keys(ACTION_LABEL).map((action) => {
+                {KNOWN_ACTIONS.map((action) => {
                   const cost = ACTION_COST[action] ?? 0;
                   return (
                     <li key={action} className="flex items-center justify-between gap-3 py-1.5 border-b border-border last:border-0">
@@ -604,7 +639,7 @@ export function VendorUsagePageImpl() {
                 the page stays put. */}
             <Card className="lg:col-span-2">
               <SectionHeader
-                title="Recent activity"
+                title={t("usage.recent_title")}
                 rightSlot={ledger.length > 10 ? (
                   <button
                     type="button"
@@ -615,18 +650,18 @@ export function VendorUsagePageImpl() {
                         we can't honestly call it "all" — say "recent 25"
                         instead of overstating completeness. */}
                     {activityExpanded
-                      ? "Show less"
+                      ? t("usage.show_less")
                       : ledger.length >= 25
-                        ? "Show recent 25"
-                        : `Show all (${ledger.length})`}
+                        ? t("usage.show_recent_25")
+                        : t("usage.show_all", { count: ledger.length })}
                   </button>
                 ) : undefined}
               />
               {ledgerLoading ? (
-                <p className="text-sm text-muted-foreground mt-4">Loading…</p>
+                <p className="text-sm text-muted-foreground mt-4">{t("usage.loading")}</p>
               ) : ledger.length === 0 ? (
                 <p className="text-sm text-muted-foreground mt-4">
-                  No activity yet. Once you use HILUX or Axion, entries land here.
+                  {t("usage.empty")}
                 </p>
               ) : (
                 <ul
@@ -648,13 +683,13 @@ export function VendorUsagePageImpl() {
                             <p className="text-sm font-medium truncate">
                               {row.kind === "consume" && row.action_type
                                 ? formatActionType(row.action_type)
-                                : KIND_LABEL[row.kind] ?? row.kind}
+                                : kindLabel(row.kind)}
                               {row.kind !== "consume" && row.action_type
                                 ? ` · ${formatActionType(row.action_type)}`
                                 : ""}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              {new Date(row.created_at).toLocaleString(undefined, {
+                              {new Date(row.created_at).toLocaleString(intlLocale(), {
                                 dateStyle: "medium", timeStyle: "short",
                               })}
                               {row.note ? ` — ${row.note}` : ""}
@@ -717,8 +752,15 @@ function SectionHeader({
 // keeps them square at every breakpoint. Color ramp matches the bar
 // chart's orange palette so the two panels feel like a set.
 function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
-  const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
-  const HOUR_LABELS: Record<number, string> = { 0: "12a", 6: "6a", 12: "12p", 18: "6p" };
+  const { t } = useTranslation("vendorPlan");
+  const { dayShort, fmtHour } = useUsageLabels();
+  const DAYS = DAY_KEYS.map((d) => t(`usage.days_initial.${d}`));
+  const HOUR_LABELS: Record<number, string> = {
+    0: t("usage.axis_hours.h0"),
+    6: t("usage.axis_hours.h6"),
+    12: t("usage.axis_hours.h12"),
+    18: t("usage.axis_hours.h18"),
+  };
   const cellColor = (v: number) => {
     if (v === 0 || max === 0) return "rgba(0,0,0,0.05)";
     const ratio = v / max;
@@ -760,7 +802,7 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
                   style={{ background: cellColor(value) }}
                   title={
                     value > 0
-                      ? `${DAY_SHORT[dayIdx]} ${fmtHour(hour)} · ${value} credit${value === 1 ? "" : "s"}`
+                      ? t("usage.heatmap_cell", { day: dayShort(dayIdx), hour: fmtHour(hour), count: value })
                       : undefined
                   }
                 />
@@ -770,7 +812,7 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
         ))}
       </div>
       <div className="flex items-center justify-end gap-1.5 mt-auto pt-3 text-[10px] text-muted-foreground">
-        <span>less</span>
+        <span>{t("usage.less")}</span>
         {swatches.map((c, i) => (
           <span
             key={i}
@@ -778,7 +820,7 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
             style={{ background: c }}
           />
         ))}
-        <span>more</span>
+        <span>{t("usage.more")}</span>
       </div>
     </div>
   );
@@ -795,6 +837,7 @@ function Donut({
   hoveredValue?: number | null;
   onHover?: (key: string | null) => void;
 }) {
+  const { t } = useTranslation("vendorPlan");
   const total = segments.reduce((s, x) => s + x.value, 0);
   const C = 2 * Math.PI * 70;
   let offset = 0;
@@ -844,7 +887,7 @@ function Donut({
         ) : (
           <>
             <span className="text-2xl font-semibold tracking-tight tnum">{centerTotal.toLocaleString()}</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">credits · 30d</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("usage.donut_center")}</span>
           </>
         )}
       </div>

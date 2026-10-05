@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ImagePlus, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
@@ -45,6 +46,7 @@ const EMPTY: ProfileForm = { business_name: "", bio: "", logo_url: null };
 const BIO_MAX = 500;
 
 export default function VendorEditProfilePage() {
+  const { t } = useTranslation("vendorHome");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [initial, setInitial] = useState<ProfileForm>(EMPTY);
@@ -90,7 +92,7 @@ export default function VendorEditProfilePage() {
   async function onPickLogo(file: File) {
     if (!user?.id || logoUploading) return;
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Photo too large — pick a logo under 10 MB.");
+      toast.error(t("edit.toast.photoTooLarge"));
       return;
     }
     setLogoUploading(true);
@@ -109,8 +111,8 @@ export default function VendorEditProfilePage() {
         .getPublicUrl(path);
       set("logo_url", pub.publicUrl);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Please try again.";
-      toast.error(`Couldn't update logo: ${msg}`);
+      const msg = e instanceof Error ? e.message : t("edit.toast.tryAgain");
+      toast.error(t("edit.toast.logoFailed", { message: msg }));
     } finally {
       setLogoUploading(false);
     }
@@ -119,7 +121,7 @@ export default function VendorEditProfilePage() {
   async function save() {
     if (!user?.id || !dirty || saving) return;
     if (!form.business_name.trim()) {
-      toast.error("Business name is required.");
+      toast.error(t("edit.toast.nameRequired"));
       return;
     }
     setSaving(true);
@@ -134,10 +136,10 @@ export default function VendorEditProfilePage() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      toast.error(`Couldn't save: ${error.message}`);
+      toast.error(t("edit.toast.saveFailed", { message: error.message }));
       return;
     }
-    toast.success("Profile saved.");
+    toast.success(t("edit.toast.saved"));
     navigate("/vendor/me");
   }
 
@@ -145,7 +147,7 @@ export default function VendorEditProfilePage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
-        title="Edit profile"
+        title={t("edit.sidebarTitle")}
         backPath="/vendor/me"
       />
       <main className="flex-1 pb-24 lg:pb-0">
@@ -154,14 +156,14 @@ export default function VendorEditProfilePage() {
             <button
               onClick={() => navigate(-1)}
               className="rounded-full w-9 h-9 flex items-center justify-center hover:bg-secondary/60 lg:hidden"
-              aria-label="Back"
+              aria-label={t("edit.back")}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <div>
-              <h1 className="font-editorial text-3xl">Edit profile</h1>
+              <h1 className="font-editorial text-3xl">{t("edit.title")}</h1>
               <p className="text-sm text-muted-foreground">
-                Your brand identity — name, bio, and logo.
+                {t("edit.subtitle")}
               </p>
             </div>
           </div>
@@ -170,7 +172,7 @@ export default function VendorEditProfilePage() {
             disabled={!dirty || saving || loading}
             className="rounded-full"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("edit.save")}
           </Button>
         </div>
 
@@ -227,7 +229,7 @@ export default function VendorEditProfilePage() {
                     disabled={logoUploading}
                   >
                     <ImagePlus className="h-3.5 w-3.5 mr-1" />
-                    {form.logo_url ? "Change logo" : "Upload logo"}
+                    {form.logo_url ? t("edit.changeLogo") : t("edit.uploadLogo")}
                   </Button>
                   {form.logo_url ? (
                     <button
@@ -235,24 +237,24 @@ export default function VendorEditProfilePage() {
                       onClick={() => set("logo_url", null)}
                       className="text-xs text-muted-foreground hover:text-accent"
                     >
-                      Remove
+                      {t("edit.remove")}
                     </button>
                   ) : null}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="business_name">Business name</Label>
+                <Label htmlFor="business_name">{t("edit.businessName")}</Label>
                 <Input
                   id="business_name"
                   value={form.business_name}
                   onChange={(e) => set("business_name", e.target.value)}
-                  placeholder="Your brand"
+                  placeholder={t("edit.businessNamePlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">{t("edit.bio")}</Label>
                 <Textarea
                   id="bio"
                   value={form.bio}
@@ -261,11 +263,11 @@ export default function VendorEditProfilePage() {
                   }
                   rows={6}
                   maxLength={BIO_MAX}
-                  placeholder="A short italic paragraph that introduces your brand."
+                  placeholder={t("edit.bioPlaceholder")}
                   className="resize-none"
                 />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <p>Shows beneath your business name across the marketplace.</p>
+                  <p>{t("edit.bioHint")}</p>
                   <p
                     className={
                       form.bio.length > BIO_MAX - 40

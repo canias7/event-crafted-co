@@ -171,7 +171,8 @@
       "submit": "Create account",
       "already_have_account": "Already have an account?",
       "sign_in": "Sign in"
-    }
+    },
+    "verify_email_first": "Please confirm your email before {{action}}. Check your inbox or use the banner at the top to resend."
   },
   "sidebar": {
     "customer": {

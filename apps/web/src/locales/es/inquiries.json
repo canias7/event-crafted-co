@@ -1,0 +1,42 @@
+{
+  "booking": {
+    "errors": {
+      "not_authorized": "No tienes permiso para marcar esta consulta como reservada.",
+      "not_found": "No se encontró la consulta — actualiza la página e inténtalo de nuevo."
+    },
+    "markedBooked": "Marcada como reservada.",
+    "initialTitle": "¿Trabajaste con {{name}}?",
+    "initialBody": "Si cerraron el trato fuera de la plataforma (sin una propuesta aquí), confírmalo para que se habiliten las reseñas del evento para ambas partes.",
+    "initialCta": "Sí, trabajamos juntos",
+    "waitingTitle": "Esperando a que {{name}} confirme",
+    "waitingBodyVendor": "La marcaste como reservada. Las reseñas del evento se habilitan cuando el proveedor también confirme.",
+    "waitingBodyHost": "La marcaste como reservada. Las reseñas del evento se habilitan cuando el anfitrión también confirme.",
+    "pendingTitle": "{{name}} dice que trabajaron juntos",
+    "pendingBody": "Confirma para habilitar las reseñas del evento para ambas partes.",
+    "pendingCta": "Confirmar",
+    "confirmedTitle": "Reserva confirmada",
+    "confirmedBody": "Las reseñas del evento se habilitan 3 días después de la fecha del evento."
+  },
+  "review": {
+    "hostReview": "Reseña del anfitrión",
+    "vendorChatRating": "Calificación del chat del proveedor",
+    "vendorReview": "Reseña del proveedor",
+    "noWrittenFeedback": "Sin comentarios escritos.",
+    "yourResponse": "Tu respuesta",
+    "editLeft_one": "Editar (queda {{count}} min)",
+    "editLeft_other": "Editar (quedan {{count}} min)",
+    "editWindowClosed": "Plazo de edición cerrado",
+    "editYourResponse": "Edita tu respuesta",
+    "respond": "Responder",
+    "placeholder": "Gracias por tus amables palabras…",
+    "cancel": "Cancelar",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "postResponse": "Publicar respuesta",
+    "toasts": {
+      "editWindowExpired": "El plazo para editar terminó — las respuestas solo se pueden editar durante 10 minutos.",
+      "notAllowed": "Ya no puedes responder a esta reseña.",
+      "saved": "Respuesta guardada"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "sidebarTitle": "Vendor Portal",
+  "title": "Vendora CRM",
+  "subtitle": "Your client book, built from every inquiry — same as the app.",
+  "loading": "Loading your clients…",
+  "gate": {
+    "title": "Know every client.",
+    "body": "Vendora CRM turns your inquiries into a client book — every host you've worked with, their events, your private notes, and follow-up reminders. Included with Pro and Premium plans.",
+    "cta": "✦ Upgrade to Pro"
+  },
+  "list": {
+    "search": "Search clients",
+    "noMatch": "No clients match.",
+    "empty": "As soon as a host sends an inquiry, they'll appear here.",
+    "inquiries_one": "{{count}} inquiry",
+    "inquiries_other": "{{count}} inquiries",
+    "booked_one": " · {{count}} booked",
+    "booked_other": " · {{count}} booked",
+    "selectPrompt": "Select a client to see their record."
+  },
+  "record": {
+    "clientSince": "Client since {{date}}",
+    "nextEvent": " · Next event {{date}}",
+    "openInbox": "Open inbox"
+  },
+  "followUp": {
+    "title": "Follow-up reminder ✦",
+    "scheduled": "We'll ping your phone on {{date}}.",
+    "clear": "Clear",
+    "toast": "We'll remind you on {{date}}.",
+    "options": {
+      "tomorrow": "Tomorrow",
+      "in3Days": "In 3 days",
+      "nextWeek": "Next week",
+      "in2Weeks": "In 2 weeks",
+      "inAMonth": "In a month"
+    }
+  },
+  "notes": {
+    "title": "Private notes ✦",
+    "placeholder": "Add a private note — pricing, preferences, kids' names…",
+    "saving": "Saving…",
+    "save": "Save note",
+    "delete": "Delete note"
+  },
+  "events": {
+    "title": "Events ✦",
+    "empty": "No inquiries on record yet.",
+    "fallback": "Event inquiry",
+    "guests_one": "{{count}} guest",
+    "guests_other": "{{count}} guests",
+    "received": "Received {{date}}",
+    "booked": "Booked",
+    "inquiry": "Inquiry"
+  }
+}

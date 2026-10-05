@@ -1,0 +1,72 @@
+{
+  "loading": "Cargando…",
+  "notFound": "No se encontró la consulta",
+  "host": "Anfitrión",
+  "you": "Tú",
+  "vendoraAi": "Vendora IA",
+  "lead": {
+    "hot": "Prospecto caliente",
+    "warm": "Prospecto tibio",
+    "cold": "Prospecto frío"
+  },
+  "header": {
+    "back": "Volver a la bandeja",
+    "eventInquiry": "Consulta de {{typeLower}}",
+    "inquiry": "Consulta",
+    "details": "Detalles de la consulta",
+    "viewInquiry": "Ver consulta",
+    "reopen": "Reabrir consulta",
+    "close": "Cerrar consulta"
+  },
+  "thread": {
+    "deleted": "Mensaje eliminado",
+    "sentAutomatically": "Enviado automáticamente",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edited": "editado",
+    "read": "Leído · {{time}}",
+    "ended": "Conversación finalizada"
+  },
+  "ended": {
+    "lost": "Conversación finalizada.",
+    "expired": "Conversación finalizada — la consulta venció.",
+    "cancelled": "Conversación finalizada — la consulta se canceló."
+  },
+  "composer": {
+    "pinLocation": "Compartir ubicación",
+    "removeAttachment": "Quitar archivo adjunto",
+    "attachFiles": "Adjuntar archivos",
+    "quickReactions": "Reacciones rápidas",
+    "insertEmoji": "Insertar {{emoji}}",
+    "placeholder": "Mensaje para {{name}}…",
+    "send": "Enviar"
+  },
+  "intake": {
+    "newInquiry": "Nueva consulta",
+    "guests": "Invitados",
+    "location": "Ubicación",
+    "budget": "Presupuesto"
+  },
+  "preview": {
+    "back": "Volver al chat",
+    "eyebrow": "Vista previa de la consulta",
+    "eventDate": "Fecha del evento",
+    "guests": "Invitados",
+    "location": "Ubicación",
+    "budget": "Presupuesto",
+    "specialRequests": "Solicitudes especiales",
+    "intakeAnswers": "Respuestas del cuestionario",
+    "recommendedVerification": "Verificación recomendada: "
+  },
+  "confirmDelete": "¿Eliminar este mensaje? No se puede deshacer.",
+  "toast": {
+    "emptyMessage": "El mensaje no puede estar vacío",
+    "markedBooked": "Marcada como reservada",
+    "markedClosed": "Marcada como cerrada",
+    "reopened": "Reabierta",
+    "maxFiles": "Hasta {{max}} archivos adjuntos por mensaje",
+    "invoiceLoadFailed": "No se pudo cargar esa factura.",
+    "uploadFailed": "No se pudieron subir tus archivos adjuntos — el mensaje no se envió.",
+    "partialUpload": "Archivos adjuntos subidos: {{uploaded}} de {{total}}."
+  }
+}

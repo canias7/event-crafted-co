@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bell, ChevronRight, FileText, Loader2, LogOut, Lock, Mail, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,7 @@ import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/n
 export default function SettingsPage() {
   const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation("settings");
 
   const [deleting, setDeleting] = useState(false);
 
@@ -42,12 +44,12 @@ export default function SettingsPage() {
     const { error } = await supabase.rpc("request_account_deletion");
     if (error) {
       setDeleting(false);
-      toast.error(error.message);
+      toast.error(t("delete.error", { message: error.message }));
       return;
     }
     await supabase.auth.signOut();
     setDeleting(false);
-    toast.success("Account closed. Goodbye for now.");
+    toast.success(t("delete.success"));
     navigate("/", { replace: true });
   }
 
@@ -57,8 +59,8 @@ export default function SettingsPage() {
 
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
-          <h1 className="font-editorial text-3xl">Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your account</p>
+          <h1 className="font-editorial text-3xl">{t("page.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("page.subtitle")}</p>
         </div>
 
         <div className="p-4 md:p-8 max-w-2xl">
@@ -77,13 +79,13 @@ export default function SettingsPage() {
             >
               <SettingRow
                 Icon={Mail}
-                title="Email"
-                subtitle="Email on file for this account"
+                title={t("email.title")}
+                subtitle={t("email.subtitle")}
                 right={
                   <a
                     href="mailto:hello@eventvendora.com"
                     className="text-sm font-medium text-foreground hover:text-accent transition-colors truncate"
-                    title="Contact hello@eventvendora.com to change your email"
+                    title={t("email.change_hint")}
                   >
                     {user?.email ?? ""}
                   </a>
@@ -97,8 +99,8 @@ export default function SettingsPage() {
               <RowDivider />
               <SettingRow
                 Icon={Bell}
-                title="Notifications"
-                subtitle="Pick which emails, pushes, and in-app alerts you get"
+                title={t("notifications_row.title")}
+                subtitle={t("notifications_row.subtitle")}
                 right={
                   <Button
                     variant="outline"
@@ -106,7 +108,7 @@ export default function SettingsPage() {
                     className="rounded-full"
                     onClick={() => navigate("/settings/notifications")}
                   >
-                    Manage
+                    {t("notifications_row.manage")}
                     <ChevronRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
                 }
@@ -117,8 +119,8 @@ export default function SettingsPage() {
                   they're a click away if needed. */}
               <SettingRow
                 Icon={FileText}
-                title="Terms of Service"
-                subtitle="What you agreed to when you signed up"
+                title={t("terms.title")}
+                subtitle={t("terms.subtitle")}
                 right={
                   <Button
                     variant="outline"
@@ -126,7 +128,7 @@ export default function SettingsPage() {
                     className="rounded-full"
                     onClick={() => navigate("/terms")}
                   >
-                    View
+                    {t("view")}
                     <ChevronRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
                 }
@@ -134,8 +136,8 @@ export default function SettingsPage() {
               <RowDivider />
               <SettingRow
                 Icon={Lock}
-                title="Privacy Policy"
-                subtitle="How we handle your data"
+                title={t("privacy.title")}
+                subtitle={t("privacy.subtitle")}
                 right={
                   <Button
                     variant="outline"
@@ -143,7 +145,7 @@ export default function SettingsPage() {
                     className="rounded-full"
                     onClick={() => navigate("/privacy")}
                   >
-                    View
+                    {t("view")}
                     <ChevronRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
                 }
@@ -151,8 +153,8 @@ export default function SettingsPage() {
               <RowDivider />
               <SettingRow
                 Icon={LogOut}
-                title="Sign out"
-                subtitle="Sign out of this device"
+                title={t("sign_out.title")}
+                subtitle={t("sign_out.subtitle")}
                 right={
                   <Button
                     variant="outline"
@@ -164,7 +166,7 @@ export default function SettingsPage() {
                     }}
                   >
                     <LogOut className="w-3.5 h-3.5 mr-1.5" />
-                    Sign out
+                    {t("sign_out.button")}
                   </Button>
                 }
               />
@@ -172,12 +174,12 @@ export default function SettingsPage() {
               <SettingRow
                 Icon={Trash2}
                 tone="destructive"
-                title="Delete account"
-                subtitle={`Permanently removes your profile and everything tied to it${
+                title={t("delete.title")}
+                subtitle={
                   isApprovedVendor
-                    ? " — listings, portfolio, availability"
-                    : ""
-                }`}
+                    ? t("delete.subtitle_vendor")
+                    : t("delete.subtitle")
+                }
                 right={
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -187,18 +189,16 @@ export default function SettingsPage() {
                         className="rounded-full text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                        Delete
+                        {t("delete.button")}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-3xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-editorial text-3xl">
-                          Delete account?
+                          {t("delete.confirm_title")}
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm leading-relaxed">
-                          This will delete your profile and all related
-                          data. You'll be signed out immediately and
-                          won't be able to sign back in with this email.
+                          {t("delete.confirm_body")}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="gap-2 sm:gap-0">
@@ -206,7 +206,7 @@ export default function SettingsPage() {
                           disabled={deleting}
                           className="rounded-full"
                         >
-                          Cancel
+                          {t("delete.cancel")}
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={(e) => {
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                           {deleting && (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           )}
-                          Yes, delete it
+                          {t("delete.confirm")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

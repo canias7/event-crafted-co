@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "sharedPhoto": "Foto compartida",
+    "photos_one": "{{count}} foto",
+    "photos_other": "{{count}} fotos"
+  },
+  "password": {
+    "title": "Se requiere contraseña",
+    "body": "Este enlace compartido está protegido con contraseña.",
+    "label": "Contraseña",
+    "unlock": "Desbloquear",
+    "wrong": "Contraseña incorrecta"
+  },
+  "notFound": {
+    "title": "No encontrado",
+    "body": "Este enlace no existe — es posible que se haya revocado."
+  },
+  "expired": {
+    "title": "Enlace vencido",
+    "body": "El proveedor le puso fecha de vencimiento a este enlace y ya pasó."
+  },
+  "album": {
+    "fallbackName": "Álbum",
+    "images_one": "{{count}} imagen",
+    "images_other": "{{count}} imágenes",
+    "showing": "mostrando {{count}}",
+    "loading": "Cargando…",
+    "loadMore_one": "Cargar más (queda {{count}})",
+    "loadMore_other": "Cargar más (quedan {{count}})"
+  },
+  "image": {
+    "alt": "Imagen compartida",
+    "download": "Descargar",
+    "downloading": "Descargando…",
+    "downloadFailed": "No se pudo descargar.",
+    "downloadError": "No se pudo descargar. Revisa tu conexión e inténtalo de nuevo.",
+    "close": "Cerrar"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import MuxPlayer from "@mux/mux-player-react";
 import {
   Loader2,
@@ -55,8 +56,10 @@ interface ReplayCtx {
   ended_at: string | null;
 }
 
-function fmtDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+// `locale` is undefined in English (the browser's default, as before)
+// and "es-US" in Spanish.
+function fmtDate(iso: string, locale: string | undefined): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -75,8 +78,12 @@ function fmtDuration(seconds: number | null): string {
   return `${h}:${String(mm).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
 }
 
-function fmtWhen(iso: string | null, fallbackIso: string): string {
-  return new Date(iso ?? fallbackIso).toLocaleString(undefined, {
+function fmtWhen(
+  iso: string | null,
+  fallbackIso: string,
+  locale: string | undefined,
+): string {
+  return new Date(iso ?? fallbackIso).toLocaleString(locale, {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -88,6 +95,8 @@ export default function LiveWatchPage() {
   const { token } = useParams();
   const [searchParams] = useSearchParams();
   const replayId = searchParams.get("replay");
+  const { t, i18n } = useTranslation("live");
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
 
   const [ctx, setCtx] = useState<StreamCtx | null>(null);
   const [replayCtx, setReplayCtx] = useState<ReplayCtx | null>(null);
@@ -99,8 +108,8 @@ export default function LiveWatchPage() {
   // broadcast, otherwise the live stream's title.
   const headerTitle = replayCtx?.event_title ?? ctx?.event_title;
   useDocumentMeta({
-    title: headerTitle ? `${headerTitle} — Live on Vendora` : "Live stream — Vendora",
-    description: "Watch this event live on Vendora.",
+    title: headerTitle ? t("meta.title", { title: headerTitle }) : t("meta.fallbackTitle"),
+    description: t("meta.description"),
     type: "website",
   });
 
@@ -235,13 +244,12 @@ export default function LiveWatchPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
-        <h1 className="font-editorial text-3xl mb-2">Live link not found</h1>
+        <h1 className="font-editorial text-3xl mb-2">{t("notFound.title")}</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
-          This live stream link is invalid or has been removed. Check
-          with the host for an updated link.
+          {t("notFound.body")}
         </p>
         <Button asChild className="mt-6 rounded-full" variant="outline">
-          <Link to="/">Back to Vendora</Link>
+          <Link to="/">{t("notFound.back")}</Link>
         </Button>
       </div>
     );
@@ -263,27 +271,27 @@ export default function LiveWatchPage() {
               {isReplay ? (
                 <>
                   <Radio className="w-3 h-3" />
-                  Replay
+                  {t("status.replay")}
                 </>
               ) : isLiveStatus ? (
                 <>
                   <Radio className="w-3 h-3 animate-pulse" />
-                  Live now
+                  {t("status.live")}
                 </>
               ) : showLatestReplay ? (
                 <>
                   <Radio className="w-3 h-3" />
-                  Replay
+                  {t("status.replay")}
                 </>
               ) : isIdle ? (
                 <>
                   <CalendarDays className="w-3 h-3" />
-                  Starts soon
+                  {t("status.soon")}
                 </>
               ) : (
                 <>
                   <Radio className="w-3 h-3" />
-                  Stream ended
+                  {t("status.ended")}
                 </>
               )}
             </p>
@@ -293,14 +301,20 @@ export default function LiveWatchPage() {
             <p className="text-sm text-muted-foreground">
               {isReplay ? (
                 <>
-                  Recorded {fmtWhen(replayCtx!.started_at, replayCtx!.ended_at ?? new Date().toISOString())}
+                  {t("recorded", {
+                    when: fmtWhen(
+                      replayCtx!.started_at,
+                      replayCtx!.ended_at ?? new Date().toISOString(),
+                      dateLocale,
+                    ),
+                  })}
                   {replayCtx!.duration_seconds != null
                     ? ` · ${fmtDuration(replayCtx!.duration_seconds)}`
                     : ""}
                 </>
               ) : (
                 <>
-                  {fmtDate(ctx.event_date)}
+                  {fmtDate(ctx.event_date, dateLocale)}
                   {ctx.event_start_time
                     ? ` · ${ctx.event_start_time.slice(0, 5)}`
                     : ""}
@@ -313,7 +327,7 @@ export default function LiveWatchPage() {
           {!isReplay && (isLiveStatus || isIdle) ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
               <Users className="w-3.5 h-3.5" />
-              {viewerCount === 1 ? "1 watching" : `${viewerCount} watching`}
+              {t("watching", { count: viewerCount })}
             </span>
           ) : null}
         </div>
@@ -341,21 +355,19 @@ export default function LiveWatchPage() {
               {isEnded ? (
                 <>
                   <p className="font-label uppercase tracking-wider text-xs mb-2">
-                    Stream ended
+                    {t("player.endedTitle")}
                   </p>
                   <p className="text-sm text-background/60 max-w-xs text-center">
-                    This event isn't broadcasting anymore. The host
-                    didn't enable a recording.
+                    {t("player.endedBody")}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="font-label uppercase tracking-wider text-xs mb-2">
-                    Waiting for stream
+                    {t("player.waitingTitle")}
                   </p>
                   <p className="text-sm text-background/60 max-w-xs text-center">
-                    The host hasn't started broadcasting yet. This page
-                    will switch over automatically when they go live.
+                    {t("player.waitingBody")}
                   </p>
                 </>
               )}
@@ -371,8 +383,8 @@ export default function LiveWatchPage() {
           <section className="mt-8">
             <h2 className="font-editorial text-2xl mb-3">
               {isReplay || showLatestReplay
-                ? "Other broadcasts"
-                : "Past broadcasts"}
+                ? t("archive.other")
+                : t("archive.past")}
             </h2>
             <div className="space-y-2">
               {otherRecordings.map((r) => (
@@ -385,7 +397,7 @@ export default function LiveWatchPage() {
                     <PlayCircle className="w-5 h-5 text-accent shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">
-                        {fmtWhen(r.started_at, r.created_at)}
+                        {fmtWhen(r.started_at, r.created_at, dateLocale)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {fmtDuration(r.duration_seconds)}
@@ -399,7 +411,7 @@ export default function LiveWatchPage() {
         ) : null}
 
         <p className="text-xs text-muted-foreground mt-8 text-center">
-          Powered by Vendora · Anyone with this link can watch
+          {t("footer")}
         </p>
       </main>
       <Footer />

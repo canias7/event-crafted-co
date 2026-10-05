@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, Edit3, Loader2, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
@@ -32,7 +33,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan } from "@/hooks/useVendorPlan";
 import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
 
 interface VendorRow {
   id: string;
@@ -60,6 +62,7 @@ interface AccountProfile {
 }
 
 export default function VendorMyProfilePage() {
+  const { t } = useTranslation("vendorHome");
   const { user } = useAuth();
   // Paid-tier verification badge on the header logo. Reads from
   // profiles.subscription_tier per the per-user subscription model
@@ -207,7 +210,9 @@ export default function VendorMyProfilePage() {
     if (!primary) return;
     const slugOrId = primary.slug ?? primary.id;
     const url = `${window.location.origin}/vendors/${slugOrId}`;
-    const text = `${primary.business_name ?? "Check out my listing"} on Vendora`;
+    const text = t("profile.shareText", {
+      name: primary.business_name ?? t("profile.shareFallback"),
+    });
     if (
       typeof navigator !== "undefined" &&
       typeof (navigator as Navigator & { share?: unknown }).share === "function"
@@ -225,7 +230,7 @@ export default function VendorMyProfilePage() {
     }
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard.");
+      toast.success(t("profile.linkCopied"));
     } catch {
       toast.info(url);
     }
@@ -240,16 +245,16 @@ export default function VendorMyProfilePage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={vendorNavItems}
-        title="My Profile"
+        title={t("profile.sidebarTitle")}
         backPath="/vendor/me"
       />
       <main className="flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-editorial text-3xl">My Profile</h1>
+              <h1 className="font-editorial text-3xl">{t("profile.title")}</h1>
               <p className="text-sm text-muted-foreground">
-                Your listings — manage your marketplace presence here.
+                {t("profile.subtitle")}
               </p>
             </div>
             <NotificationBell variant="light" />
@@ -263,7 +268,7 @@ export default function VendorMyProfilePage() {
             <HeaderCard
               initials={initials}
               logoUrl={account?.logo_url ?? null}
-              businessName={account?.business_name?.trim() || "Your business"}
+              businessName={account?.business_name?.trim() || t("profile.yourBusiness")}
               bio={account?.bio ?? null}
               memberSince={memberSince}
               verified={!!primary?.verified_at}
@@ -336,6 +341,7 @@ function HeaderCard({
   ratingAvg: number | null;
   onShare: () => void;
 }) {
+  const { t } = useTranslation("vendorHome");
   return (
     <BrandCardShell businessName={businessName} bio={bio}>
       <div className="flex flex-col sm:flex-row gap-5 items-start">
@@ -375,10 +381,10 @@ function HeaderCard({
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-2 max-w-xs">
             <Stat
-              label="Rating"
+              label={t("profile.rating")}
               value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
             />
-            <Stat label="Joined" value={memberSince} />
+            <Stat label={t("profile.joined")} value={memberSince} />
           </div>
         </div>
         <div className="shrink-0 flex flex-col gap-2">
@@ -389,12 +395,12 @@ function HeaderCard({
             onClick={onShare}
           >
             <Share2 className="h-3.5 w-3.5 mr-1" />
-            Share profile
+            {t("profile.share")}
           </Button>
           <Link to="/vendor/edit-profile">
             <Button variant="outline" className="rounded-full" size="sm">
               <Edit3 className="h-3.5 w-3.5 mr-1" />
-              Edit identity
+              {t("profile.editIdentity")}
             </Button>
           </Link>
         </div>
@@ -428,11 +434,12 @@ function ListingsList({
   onAddListing: () => void;
   onEditListing: (vendorId: string) => void;
 }) {
+  const { t } = useTranslation("vendorHome");
   if (listings.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
-        <p className="text-sm text-muted-foreground mb-3">No listing yet.</p>
-        <Button onClick={onAddListing}>Create your listing</Button>
+        <p className="text-sm text-muted-foreground mb-3">{t("profile.noListing")}</p>
+        <Button onClick={onAddListing}>{t("profile.createListing")}</Button>
       </div>
     );
   }
@@ -445,20 +452,22 @@ function ListingsList({
           enforced server-side (trg_enforce_listing_cap). */}
       <div className="flex items-center justify-between gap-3 mb-3">
         <p className="text-xs text-muted-foreground tnum">
-          {listings.length}
-          {listingCap !== null ? ` of ${listingCap}` : ""} listing
-          {listingCap === 1 && listings.length === 1 ? "" : "s"}
+          {listingCap === null
+            ? t("profile.count", { count: listings.length })
+            : listingCap === 1 && listings.length === 1
+              ? t("profile.countOfCapOne", { n: listings.length, cap: listingCap })
+              : t("profile.countOfCap", { n: listings.length, cap: listingCap })}
         </p>
         {underCap ? (
           <Button size="sm" variant="outline" onClick={onAddListing}>
-            New listing
+            {t("profile.newListing")}
           </Button>
         ) : (
           <Link
             to="/vendor/subscription"
             className="text-xs font-medium underline underline-offset-2 text-foreground"
           >
-            Upgrade for more listings
+            {t("profile.upgrade")}
           </Link>
         )}
       </div>
@@ -495,18 +504,22 @@ function ListingDirectoryCard({
   heroUrl: string | null;
   onEdit: (vendorId: string) => void;
 }) {
+  const { t } = useTranslation("vendorHome");
+  const priceLabels = usePriceLabels();
+  const categoryNames = useCategoryNames();
   const [previewOpen, setPreviewOpen] = useState(false);
-  const name = listing.business_name ?? "Listing";
+  const name = listing.business_name ?? t("profile.listing");
   const price =
-    formatListingPrice(listing.price_min_cents, listing.price_max_cents) || null;
+    priceLabels.listingPrice(listing.price_min_cents, listing.price_max_cents) || null;
+  const pricingModels = priceLabels.pricingModels(listing.pricing_models);
   const statusLabel =
     listing.application_status === "approved"
-      ? "Live"
+      ? t("profile.status.live")
       : listing.application_status === "pending"
-        ? "Pending review"
+        ? t("profile.status.pending")
         : listing.application_status === "rejected"
-          ? "Rejected"
-          : "Draft";
+          ? t("profile.status.rejected")
+          : t("profile.status.draft");
   const statusTone =
     listing.application_status === "approved"
       ? "bg-primary text-primary-foreground border-transparent"
@@ -521,7 +534,7 @@ function ListingDirectoryCard({
         type="button"
         onClick={() => setPreviewOpen(true)}
         className="block group text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-sm"
-        aria-label={`Preview ${name}`}
+        aria-label={t("profile.previewAria", { name })}
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-sm mb-3 bg-muted">
           {heroUrl ? (
@@ -533,7 +546,7 @@ function ListingDirectoryCard({
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
-              <span className="text-xs">No listing photos yet</span>
+              <span className="text-xs">{t("profile.noPhotos")}</span>
             </div>
           )}
           <span
@@ -545,14 +558,16 @@ function ListingDirectoryCard({
         <div className="px-1">
           <p className="text-sm font-medium leading-tight line-clamp-1">{name}</p>
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-            {[listing.category, listing.location].filter(Boolean).join(" · ")}
+            {[listing.category ? categoryNames.sub(listing.category) : null, listing.location]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           {price ? (
             <p className="text-xs text-foreground mt-0.5 tnum">{price}</p>
           ) : null}
-          {pricingModelsLabel(listing.pricing_models) && (
+          {pricingModels && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-              {pricingModelsLabel(listing.pricing_models)}
+              {pricingModels}
             </p>
           )}
         </div>
@@ -602,7 +617,9 @@ function ListingPreviewModal({
   price: string | null;
   onEdit: () => void;
 }) {
-  const name = listing.business_name ?? "Listing";
+  const { t } = useTranslation("vendorHome");
+  const categoryNames = useCategoryNames();
+  const name = listing.business_name ?? t("profile.listing");
   const isApproved = listing.application_status === "approved";
   // The iframe cold-boots the whole app, so it's blank for a beat before
   // React mounts. Show a loader over it until onLoad fires.
@@ -628,7 +645,7 @@ function ListingPreviewModal({
             {listing.verified_at ? (
               <CheckCircle2
                 className="w-4 h-4 text-accent shrink-0"
-                aria-label="Verified"
+                aria-label={t("profile.verified")}
               />
             ) : null}
           </div>
@@ -642,12 +659,12 @@ function ListingPreviewModal({
             }}
           >
             <Edit3 className="h-3.5 w-3.5 mr-1" />
-            Edit listing
+            {t("profile.editListing")}
           </Button>
         </div>
 
         <DialogDescription className="sr-only">
-          Preview of how this listing appears to visitors.
+          {t("profile.previewDescription")}
         </DialogDescription>
 
         {/* Body: live public page for approved listings; fallback
@@ -657,12 +674,12 @@ function ListingPreviewModal({
             {!iframeLoaded && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading preview…</p>
+                <p className="text-sm text-muted-foreground">{t("profile.loadingPreview")}</p>
               </div>
             )}
             <iframe
               src={iframeHref}
-              title={`Preview of ${name}`}
+              title={t("profile.previewTitle", { name })}
               onLoad={() => setIframeLoaded(true)}
               className="w-full h-full border-0 bg-background"
               // Same-origin so the public page can use its normal
@@ -681,19 +698,19 @@ function ListingPreviewModal({
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                  No listing photos yet
+                  {t("profile.noPhotos")}
                 </div>
               )}
             </div>
             <div className="px-6 pt-5 pb-6 max-w-3xl mx-auto">
               <p className="font-label text-muted-foreground text-xs mb-1">
-                Preview (not yet published)
+                {t("profile.unpublished")}
               </p>
               <h2 className="font-editorial text-3xl break-words">{name}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {[listing.category, listing.location]
+                {[listing.category ? categoryNames.sub(listing.category) : null, listing.location]
                   .filter(Boolean)
-                  .join(" · ") || "Category and location not set"}
+                  .join(" · ") || t("profile.noCategoryLocation")}
               </p>
               {price ? (
                 <p className="mt-3 text-sm font-medium tnum">{price}</p>
@@ -704,13 +721,11 @@ function ListingPreviewModal({
                 </p>
               ) : (
                 <p className="mt-4 text-sm text-muted-foreground italic">
-                  No description yet — add one in Edit profile so visitors
-                  know what you offer.
+                  {t("profile.noBio")}
                 </p>
               )}
               <p className="mt-6 text-xs text-muted-foreground">
-                The full public layout will appear here once this listing
-                is approved.
+                {t("profile.approvalNote")}
               </p>
             </div>
           </div>

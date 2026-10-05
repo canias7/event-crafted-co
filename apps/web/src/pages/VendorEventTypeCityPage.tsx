@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,17 +19,18 @@ import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
 // vendors who serve the event type with a city filter, and links
 // back to specific category subpages for deeper browsing.
 //
-// Event-type slug → display config below. Add new event types here
-// and to the sitemap edge function in lock-step.
+// Event-type slug → config below. Add new event types here and to the
+// sitemap edge function in lock-step.
+//
+// Each type's words live in locales/<language>/cityPages.json under
+// eventTypes.<slug>: `display` ("Wedding Vendors"), `short` (the title
+// without "Vendors"), `noun` (verbose name used in body copy: "a baby
+// shower" vs the slug) and `description` (one-liner under the title).
+// The top categories' link labels are under topCategories.<name>.
 
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 interface EventTypeConfig {
-  display: string;
-  /** Verbose name used in body copy: "a baby shower" vs the slug. */
-  noun: string;
-  /** One-liner under the title. */
-  description: string;
   /** Vendor categories most relevant to this event type. Used both as
    *  filtering hints and to populate the cross-link rail. */
   topCategories: string[];
@@ -36,66 +38,30 @@ interface EventTypeConfig {
 
 export const eventTypeConfig: Record<string, EventTypeConfig> = {
   wedding: {
-    display: "Wedding Vendors",
-    noun: "a wedding",
-    description:
-      "Hand-vetted photographers, florists, venues, and planners for weddings.",
     topCategories: ["Photographer", "Florist", "Venue", "Catering", "DJ"],
   },
   birthday: {
-    display: "Birthday Party Vendors",
-    noun: "a milestone birthday",
-    description:
-      "From 1st birthdays to 50th milestones — vendors who turn the day into something memorable.",
     topCategories: ["Photographer", "Catering", "DJ", "Venue", "Decorator"],
   },
   "baby-shower": {
-    display: "Baby Shower Vendors",
-    noun: "a baby shower",
-    description:
-      "Photographers, decorators, and caterers who specialize in baby showers and gender reveals.",
     topCategories: ["Photographer", "Florist", "Catering", "Decorator", "Venue"],
   },
   anniversary: {
-    display: "Anniversary Vendors",
-    noun: "an anniversary celebration",
-    description:
-      "Vendors for milestone anniversaries — vow renewals, dinner parties, and family gatherings.",
     topCategories: ["Photographer", "Catering", "Florist", "Venue"],
   },
   "holiday-dinner": {
-    display: "Holiday Dinner Vendors",
-    noun: "a holiday dinner",
-    description:
-      "Caterers, private chefs, decorators, and rental companies for Thanksgiving, Christmas, NYE, and seasonal gatherings.",
     topCategories: ["Catering", "Florist", "Decorator", "DJ"],
   },
   corporate: {
-    display: "Corporate Event Vendors",
-    noun: "a corporate event",
-    description:
-      "Event planners, AV teams, caterers, and venues for galas, retreats, and product launches.",
     topCategories: ["Venue", "Catering", "AV", "Photographer", "Event Planner"],
   },
   graduation: {
-    display: "Graduation Party Vendors",
-    noun: "a graduation party",
-    description:
-      "Photographers, caterers, and decorators for graduation parties and milestones.",
     topCategories: ["Photographer", "Catering", "DJ", "Decorator"],
   },
   bridal: {
-    display: "Bridal Shower Vendors",
-    noun: "a bridal shower",
-    description:
-      "Florists, photographers, and venues for bridal showers and pre-wedding celebrations.",
     topCategories: ["Florist", "Photographer", "Catering", "Venue"],
   },
   engagement: {
-    display: "Engagement Party Vendors",
-    noun: "an engagement party",
-    description:
-      "Hand-vetted vendors for engagement parties — photographers, florists, venues.",
     topCategories: ["Photographer", "Florist", "Venue", "Catering"],
   },
 };
@@ -103,6 +69,7 @@ export const eventTypeConfig: Record<string, EventTypeConfig> = {
 export const allEventTypeSlugs = Object.keys(eventTypeConfig);
 
 export default function VendorEventTypeCityPage() {
+  const { t } = useTranslation("cityPages");
   const { eventTypeSlug, citySlug } = useParams();
   const { vendors, loading } = useVendors();
   const config = eventTypeSlug ? eventTypeConfig[eventTypeSlug] : null;
@@ -136,8 +103,19 @@ export default function VendorEventTypeCityPage() {
 
   const display = matched.length >= 3 ? matched : fallbackInCity;
 
-  const title = `${config.display} in ${cityLabel} — Vendora`;
-  const description = `${config.description} Browse vendors serving ${cityLabel} for ${config.noun}.`;
+  const eventType = {
+    display: t(`eventTypes.${eventTypeSlug}.display`),
+    short: t(`eventTypes.${eventTypeSlug}.short`),
+    noun: t(`eventTypes.${eventTypeSlug}.noun`),
+    description: t(`eventTypes.${eventTypeSlug}.description`),
+  };
+
+  const title = t("eventTypeCity.meta.title", { display: eventType.display, city: cityLabel });
+  const description = t("eventTypeCity.meta.description", {
+    description: eventType.description,
+    city: cityLabel,
+    noun: eventType.noun,
+  });
 
   useDocumentMeta({
     title,
@@ -156,19 +134,22 @@ export default function VendorEventTypeCityPage() {
             className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent transition-colors mb-6"
           >
             <ArrowLeft className="w-3 h-3" />
-            All vendors
+            {t("eventTypeCity.back")}
           </Link>
           <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
             <MapPin className="w-3 h-3" />
             {cityLabel.toUpperCase()}
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-5">
-            {config.display.replace(" Vendors", "")} in{" "}
-            <span className="text-accent">{cityLabel}</span>
+            <Trans
+              t={t}
+              i18nKey="eventTypeCity.title"
+              values={{ eventType: eventType.short, city: cityLabel }}
+              components={{ accent: <span className="text-accent" /> }}
+            />
           </h1>
           <p className="text-base md:text-lg text-foreground max-w-2xl leading-relaxed">
-            {config.description} Showing vendors who serve {cityLabel} for{" "}
-            {config.noun}.
+            {t("eventTypeCity.intro", { description: eventType.description, city: cityLabel, noun: eventType.noun })}
           </p>
         </div>
       </section>
@@ -189,15 +170,14 @@ export default function VendorEventTypeCityPage() {
             <div className="text-center py-16 max-w-md mx-auto">
               <Sparkles className="w-8 h-8 mx-auto text-muted-foreground/40 mb-4" />
               <h2 className="font-editorial text-3xl mb-3">
-                No vendors in {cityLabel} yet for {config.noun}
+                {t("eventTypeCity.empty.title", { city: cityLabel, noun: eventType.noun })}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                We're still building out coverage. Browse all event vendors in
-                Vendora — many travel.
+                {t("eventTypeCity.empty.body")}
               </p>
               <Link to={`/vendors/in/${citySlug}`}>
                 <Button>
-                  All vendors in {cityLabel}
+                  {t("eventTypeCity.empty.cta", { city: cityLabel })}
                 </Button>
               </Link>
             </div>
@@ -205,8 +185,7 @@ export default function VendorEventTypeCityPage() {
             <>
               <div className="flex items-baseline justify-between mb-8">
                 <p className="font-label text-muted-foreground tnum">
-                  {display.length}{" "}
-                  {display.length === 1 ? "vendor" : "vendors"}
+                  {t("vendorCount", { count: display.length })}
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
@@ -230,9 +209,9 @@ export default function VendorEventTypeCityPage() {
       {/* Cross-link rail to specific categories for this event type */}
       <section className="py-12 md:py-16 border-t border-border bg-secondary/20">
         <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-          <p className="font-label text-accent mb-4">Browse by category</p>
+          <p className="font-label text-accent mb-4">{t("eventTypeCity.browseByCategory")}</p>
           <h2 className="font-editorial text-3xl md:text-3xl mb-6">
-            What you might need for {config.noun}
+            {t("eventTypeCity.mightNeed", { noun: eventType.noun })}
           </h2>
           <div className="flex flex-wrap gap-2">
             {config.topCategories.map((cat) => {
@@ -246,7 +225,10 @@ export default function VendorEventTypeCityPage() {
                   to={`/vendors/${slug}/in/${citySlug}`}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background hover:border-foreground/30 transition-colors text-sm"
                 >
-                  {cat}s in {cityLabel}
+                  {t("eventTypeCity.categoryInCity", {
+                    category: t(`topCategories.${cat}`, { defaultValue: `${cat}s` }),
+                    city: cityLabel,
+                  })}
                 </Link>
               );
             })}

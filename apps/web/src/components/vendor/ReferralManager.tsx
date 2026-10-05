@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Loader2, Copy, Mail, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { intlLocale } from "@/lib/intlLocale";
 import {
   Dialog,
   DialogContent,
@@ -27,30 +29,33 @@ interface Referral {
   created_at: string;
 }
 
-const statusBadge: Record<string, { label: string; className: string }> = {
+// Labels: vendorTools referrals.status.<status>.
+const statusBadge: Record<string, { className: string }> = {
   pending: {
-    label: "Sent",
     className: "bg-secondary text-muted-foreground border border-border",
   },
   signed_up: {
-    label: "Signed up",
     className: "bg-accent/15 text-accent border border-accent/30",
   },
   first_booking: {
-    label: "First booking",
     className: "bg-accent text-accent-foreground border border-accent",
   },
   rewarded: {
-    label: "Rewarded",
     className: "bg-foreground text-background border border-foreground",
   },
   expired: {
-    label: "Expired",
     className: "bg-muted text-muted-foreground border border-border",
   },
 };
 
 const refsTable = () => supabase.from("vendor_referrals");
+
+// In Spanish, the site's date format; in English, the browser default
+// as before.
+function shortDate(iso: string) {
+  const locale = intlLocale();
+  return new Date(iso).toLocaleDateString(locale.startsWith("es") ? locale : undefined);
+}
 
 export function ReferralManager({
   vendorId,
@@ -59,6 +64,7 @@ export function ReferralManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [refs, setRefs] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -87,7 +93,7 @@ export function ReferralManager({
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes("@")) {
-      toast.error("Enter a valid email");
+      toast.error(t("referrals.invalidEmail"));
       return;
     }
     setSending(true);
@@ -103,7 +109,7 @@ export function ReferralManager({
     const code = (data as { referral_code: string }).referral_code;
     const link = `${window.location.origin}/signup?ref=${code}`;
     await navigator.clipboard.writeText(link).catch(() => {});
-    toast.success("Referral link copied — send it to your contact");
+    toast.success(t("referrals.linkCopiedSend"));
     setOpen(false);
     setEmail("");
     load();
@@ -112,8 +118,8 @@ export function ReferralManager({
   function copyLink(code: string) {
     const link = `${window.location.origin}/signup?ref=${code}`;
     navigator.clipboard.writeText(link).then(
-      () => toast.success("Link copied"),
-      () => toast.error("Couldn't copy"),
+      () => toast.success(t("common.linkCopied")),
+      () => toast.error(t("referrals.couldntCopy")),
     );
   }
 
@@ -132,11 +138,9 @@ export function ReferralManager({
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <p className="font-label text-muted-foreground">Refer a vendor</p>
+          <p className="font-label text-muted-foreground">{t("referrals.title")}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Invite another vendor — when they sign up + book their first
-            event, you both get 1% off commission for life. (Live once
-            payments ship.)
+            {t("referrals.intro")}
           </p>
         </div>
         {canEdit && (
@@ -148,21 +152,19 @@ export function ReferralManager({
                 className="rounded-full"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Send invite
+                {t("referrals.sendInvite")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Refer a vendor to Vendora</DialogTitle>
+                <DialogTitle>{t("referrals.dialogTitle")}</DialogTitle>
                 <DialogDescription>
-                  We'll generate a unique link tied to your vendor profile.
-                  When they sign up + book their first event, you both get
-                  1% off your platform commission.
+                  {t("referrals.dialogBody")}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={send} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="ref-email">Their email</Label>
+                  <Label htmlFor="ref-email">{t("referrals.theirEmail")}</Label>
                   <Input
                     id="ref-email"
                     type="email"
@@ -180,7 +182,7 @@ export function ReferralManager({
                     onClick={() => setOpen(false)}
                     className="rounded-full"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     type="submit"
@@ -189,7 +191,7 @@ export function ReferralManager({
                     {sending && (
                       <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                     )}
-                    Generate link
+                    {t("referrals.generateLink")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -200,20 +202,20 @@ export function ReferralManager({
 
       {loading ? (
         <div className="text-center text-muted-foreground text-sm py-6">
-          Loading…
+          {t("common.loading")}
         </div>
       ) : refs.length === 0 ? (
         <div className="border border-dashed border-border rounded-sm p-6 text-center">
           <Sparkles className="w-6 h-6 mx-auto text-muted-foreground/40 mb-2" />
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            No referrals sent yet. Refer 3 vendors → 3% off commission for
-            life if they all book.
+            {t("referrals.emptyBody")}
           </p>
         </div>
       ) : (
         <div className="card-soft divide-y divide-border">
           {refs.map((r) => {
-            const badge = statusBadge[r.status] ?? statusBadge.pending;
+            const badgeStatus = statusBadge[r.status] ? r.status : "pending";
+            const badge = statusBadge[badgeStatus];
             return (
               <div
                 key={r.id}
@@ -225,12 +227,16 @@ export function ReferralManager({
                     {r.email}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Sent {new Date(r.created_at).toLocaleDateString()} ·
-                    expires {new Date(r.expires_at).toLocaleDateString()}
+                    {t("referrals.sentExpires", {
+                      sent: shortDate(r.created_at),
+                      expires: shortDate(r.expires_at),
+                    })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge className={badge.className}>{badge.label}</Badge>
+                  <Badge className={badge.className}>
+                    {t(`referrals.status.${badgeStatus}`)}
+                  </Badge>
                   {r.status === "pending" && (
                     <>
                       <Button
@@ -240,7 +246,7 @@ export function ReferralManager({
                         onClick={() => copyLink(r.referral_code)}
                       >
                         <Copy className="w-3 h-3 mr-1" />
-                        Copy link
+                        {t("common.copyLink")}
                       </Button>
                       {canEdit && (
                         <Button
@@ -249,7 +255,7 @@ export function ReferralManager({
                           className="h-7 w-7"
                           disabled={deletingId === r.id}
                           onClick={() => deleteRef(r.id)}
-                          aria-label="Cancel referral"
+                          aria-label={t("referrals.cancelReferral")}
                         >
                           {deletingId === r.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

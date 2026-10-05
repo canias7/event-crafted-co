@@ -6,7 +6,19 @@
 // typography and layout choices rather than loud colors. The job
 // is to look like real business stationery, not a gimmick.
 
+import { useTranslation } from "react-i18next";
 import type { InvoiceTemplate } from "@/data/vendorapayTemplates";
+import { intlLocale } from "@/lib/intlLocale";
+
+// The document chrome (labels and [placeholders]) is translated from
+// locales/<lang>/vendorPayments.json → invoice_preview; amounts stay
+// US-formatted and the template's own text comes translated from
+// vendorapayTemplates.
+function usePreviewText() {
+  const { t } = useTranslation("vendorPayments");
+  return (key: string, options?: Record<string, unknown>) =>
+    t(`invoice_preview.${key}`, options);
+}
 
 const TEXT = "#1a1410";
 const MUTED = "#6b6259";
@@ -14,10 +26,13 @@ const RULE = "#e8e3dd";
 const ACCENT_WARM = "#1a1410";
 const ACCENT_COOL = "#1e2840";
 
+// Amounts keep the US format in English and follow US Spanish in
+// Spanish (same digits: $1,234.00).
 function money(n: number): string {
+  const locale = intlLocale();
   return (
     "$" +
-    n.toLocaleString("en-US", {
+    n.toLocaleString(locale.startsWith("es") ? locale : "en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -54,6 +69,7 @@ export function InvoicePreview({ template }: { template: InvoiceTemplate }) {
 // ----- 1. Classic — serif, thin accent rule, conservative ------------
 
 function Classic({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   const c = compute(tpl);
   return (
     <Sheet>
@@ -63,7 +79,7 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
             style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
             className="text-2xl font-bold tracking-tight"
           >
-            [Your Business Name]
+            {tp("business_name")}
           </h2>
           <p className="text-[11px] mt-1.5" style={{ color: MUTED, letterSpacing: "0.04em" }}>
             {tpl.category}
@@ -74,7 +90,7 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
             className="text-[10px] font-semibold"
             style={{ color: MUTED, letterSpacing: "0.22em" }}
           >
-            INVOICE
+            {tp("invoice")}
           </p>
           <p
             style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
@@ -112,12 +128,13 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
 // ----- 2. Letterhead — bold typography, double-rule signature --------
 
 function Letterhead({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   const c = compute(tpl);
   return (
     <Sheet>
       <header className="text-center">
         <h2 className="text-3xl font-bold tracking-tight" style={{ color: TEXT }}>
-          [Your Business Name]
+          {tp("business_name")}
         </h2>
         <p
           className="text-[10px] font-semibold mt-2"
@@ -134,13 +151,13 @@ function Letterhead({ tpl }: { tpl: InvoiceTemplate }) {
       <div className="flex items-end justify-between mt-6">
         <div>
           <p className="text-[10px] font-semibold" style={{ color: MUTED, letterSpacing: "0.18em" }}>
-            INVOICE
+            {tp("invoice")}
           </p>
           <p className="text-xl font-bold mt-1 tabular-nums">VND-0001</p>
         </div>
         <div className="text-right">
           <p className="text-[10px] font-semibold" style={{ color: MUTED, letterSpacing: "0.18em" }}>
-            AMOUNT DUE
+            {tp("amount_due")}
           </p>
           <p className="text-2xl font-bold mt-1 tabular-nums">{money(c.total)}</p>
         </div>
@@ -169,6 +186,7 @@ function Letterhead({ tpl }: { tpl: InvoiceTemplate }) {
 // ----- 3. Minimal — hairline rules, no chrome ------------------------
 
 function Minimal({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   const c = compute(tpl);
   return (
     <Sheet>
@@ -176,12 +194,12 @@ function Minimal({ tpl }: { tpl: InvoiceTemplate }) {
         className="flex items-center justify-between text-[10px] font-semibold"
         style={{ color: MUTED, letterSpacing: "0.24em" }}
       >
-        <span>INVOICE · VND-0001</span>
+        <span>{tp("invoice")} · VND-0001</span>
         <span>{tpl.category.toUpperCase()}</span>
       </div>
       <hr className="my-5" style={{ border: 0, borderTop: `1px solid ${RULE}` }} />
 
-      <h2 className="text-2xl font-semibold tracking-tight">[Your Business Name]</h2>
+      <h2 className="text-2xl font-semibold tracking-tight">{tp("business_name")}</h2>
 
       <div className="mt-8">
         <MetaRow allCaps />
@@ -205,6 +223,7 @@ function Minimal({ tpl }: { tpl: InvoiceTemplate }) {
 // ----- 4. Sidebar — neutral two-column ------------------------------
 
 function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   const c = compute(tpl);
   return (
     <Sheet padded={false}>
@@ -217,7 +236,7 @@ function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
             className="text-[10px] font-semibold"
             style={{ color: MUTED, letterSpacing: "0.22em" }}
           >
-            INVOICE
+            {tp("invoice")}
           </p>
           <p
             style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
@@ -226,14 +245,14 @@ function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
             VND-0001
           </p>
 
-          <SideMeta label="Bill to" value="[Client Name]" sub="[client@email.com]" />
-          <SideMeta label="Issued" value="[Today]" />
-          <SideMeta label="Due" value="[Due date]" />
-          <SideMeta label="Category" value={tpl.category} />
+          <SideMeta label={tp("bill_to")} value={tp("client_name")} sub={tp("client_email")} />
+          <SideMeta label={tp("issued")} value={tp("today")} />
+          <SideMeta label={tp("due")} value={tp("due_date")} />
+          <SideMeta label={tp("category")} value={tpl.category} />
         </aside>
         <div className="p-7">
           <h2 className="text-xl font-bold tracking-tight" style={{ color: TEXT }}>
-            [Your Business Name]
+            {tp("business_name")}
           </h2>
           <ProjectLine tpl={tpl} />
 
@@ -257,13 +276,14 @@ function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
 // ----- 5. Modern — sans-serif, single thin accent line ---------------
 
 function Modern({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   const c = compute(tpl);
   return (
     <Sheet>
       <header className="flex items-start justify-between gap-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight" style={{ color: ACCENT_COOL }}>
-            [Your Business Name]
+            {tp("business_name")}
           </h2>
           <p
             className="text-[11px] mt-1.5 font-semibold"
@@ -281,7 +301,7 @@ function Modern({ tpl }: { tpl: InvoiceTemplate }) {
             className="text-[10px] font-semibold"
             style={{ color: ACCENT_COOL, letterSpacing: "0.22em" }}
           >
-            INVOICE
+            {tp("invoice")}
           </p>
           <p className="text-lg font-bold mt-1 tabular-nums">VND-0001</p>
         </div>
@@ -334,6 +354,7 @@ function Sheet({
 }
 
 function MetaRow({ allCaps = false }: { allCaps?: boolean } = {}) {
+  const tp = usePreviewText();
   const labelCls = `text-[10px] font-semibold ${
     allCaps ? "tracking-[0.22em]" : "tracking-wider"
   }`;
@@ -345,42 +366,42 @@ function MetaRow({ allCaps = false }: { allCaps?: boolean } = {}) {
   return (
     <div className="grid grid-cols-4 gap-5 text-sm">
       <div>
-        {label("Bill from")}
+        {label(tp("bill_from"))}
         <p className="mt-1.5 font-medium" style={{ color: TEXT }}>
-          [Your Business Name]
+          {tp("business_name")}
         </p>
         <p className="text-xs mt-0.5" style={{ color: MUTED }}>
-          [Street address]
+          {tp("street")}
         </p>
         <p className="text-xs" style={{ color: MUTED }}>
-          [City, ST 00000]
+          {tp("city")}
         </p>
         <p className="text-xs" style={{ color: MUTED }}>
-          [you@business.com]
+          {tp("your_email")}
         </p>
       </div>
       <div>
-        {label("Bill to")}
+        {label(tp("bill_to"))}
         <p className="mt-1.5 font-medium" style={{ color: TEXT }}>
-          [Client Name]
+          {tp("client_name")}
         </p>
         <p className="text-xs mt-0.5" style={{ color: MUTED }}>
-          [client@email.com]
+          {tp("client_email")}
         </p>
         <p className="text-xs" style={{ color: MUTED }}>
-          [Phone]
+          {tp("phone")}
         </p>
       </div>
       <div>
-        {label("Issued")}
+        {label(tp("issued"))}
         <p className="mt-1.5" style={{ color: TEXT }}>
-          [Today]
+          {tp("today")}
         </p>
       </div>
       <div>
-        {label("Due")}
+        {label(tp("due"))}
         <p className="mt-1.5" style={{ color: TEXT }}>
-          [Due date]
+          {tp("due_date")}
         </p>
       </div>
     </div>
@@ -388,6 +409,7 @@ function MetaRow({ allCaps = false }: { allCaps?: boolean } = {}) {
 }
 
 function ProjectLine({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   return (
     <div
       className="mt-6 py-3 px-4 rounded-lg flex items-center gap-3"
@@ -397,7 +419,7 @@ function ProjectLine({ tpl }: { tpl: InvoiceTemplate }) {
         className="text-[10px] font-semibold shrink-0"
         style={{ color: MUTED, letterSpacing: "0.18em" }}
       >
-        PROJECT
+        {tp("project")}
       </span>
       <span className="text-sm" style={{ color: TEXT }}>
         {tpl.projectTitle}
@@ -421,11 +443,12 @@ function ItemsTable({
   head: HeadStyle;
   amountSerif?: boolean;
 }) {
+  const tp = usePreviewText();
   return (
     <table className="w-full text-[13px] mt-7">
       <thead>
         <tr style={{ borderBottom: head.borderBottom }}>
-          {(["Item", "Qty", "Unit price", "Amount"] as const).map((h, i) => (
+          {[tp("item"), tp("qty"), tp("unit_price"), tp("amount")].map((h, i) => (
             <th
               key={h}
               className="py-3 px-2"
@@ -489,16 +512,17 @@ function TotalsBlock({
   totalEmphasis: TotalEmphasis;
   accent?: string;
 }) {
+  const tp = usePreviewText();
   return (
     <div className="mt-5 flex justify-end">
       <div className="w-full max-w-[260px] text-sm space-y-1.5">
         <div className="flex justify-between" style={{ color: MUTED }}>
-          <span>Subtotal</span>
+          <span>{tp("subtotal")}</span>
           <span className="tabular-nums">{money(c.subtotal)}</span>
         </div>
         {c.tax > 0 && (
           <div className="flex justify-between" style={{ color: MUTED }}>
-            <span>Tax ({tpl.taxPct}%)</span>
+            <span>{tp("tax", { pct: tpl.taxPct })}</span>
             <span className="tabular-nums">{money(c.tax)}</span>
           </div>
         )}
@@ -513,7 +537,7 @@ function TotalsBlock({
                   className="text-[10px] font-semibold"
                   style={{ color: MUTED, letterSpacing: "0.18em" }}
                 >
-                  TOTAL DUE
+                  {tp("total_due")}
                 </span>
                 <span
                   className="tabular-nums"
@@ -534,7 +558,7 @@ function TotalsBlock({
                   className="text-[10px] font-bold"
                   style={{ letterSpacing: "0.18em" }}
                 >
-                  TOTAL DUE
+                  {tp("total_due")}
                 </span>
                 <span className="font-bold tabular-nums text-lg">{money(c.total)}</span>
               </div>
@@ -550,7 +574,7 @@ function TotalsBlock({
                   className="text-[10px] font-semibold"
                   style={{ color: accent, letterSpacing: "0.18em" }}
                 >
-                  TOTAL DUE
+                  {tp("total_due")}
                 </span>
                 <span className="font-bold tabular-nums text-lg" style={{ color: accent }}>
                   {money(c.total)}
@@ -568,7 +592,7 @@ function TotalsBlock({
                 className="text-[10px] font-semibold"
                 style={{ color: MUTED, letterSpacing: "0.22em" }}
               >
-                TOTAL DUE
+                {tp("total_due")}
               </span>
               <span className="font-semibold tabular-nums">{money(c.total)}</span>
             </div>
@@ -580,6 +604,7 @@ function TotalsBlock({
 }
 
 function FooterBlocks({ tpl }: { tpl: InvoiceTemplate }) {
+  const tp = usePreviewText();
   if (!tpl.notes && !tpl.paymentTerms) return null;
   return (
     <div
@@ -592,7 +617,7 @@ function FooterBlocks({ tpl }: { tpl: InvoiceTemplate }) {
             className="text-[10px] font-semibold"
             style={{ color: MUTED, letterSpacing: "0.22em" }}
           >
-            NOTES
+            {tp("notes")}
           </p>
           <p className="text-[12px] mt-2 leading-relaxed" style={{ color: TEXT }}>
             {tpl.notes}
@@ -605,7 +630,7 @@ function FooterBlocks({ tpl }: { tpl: InvoiceTemplate }) {
             className="text-[10px] font-semibold"
             style={{ color: MUTED, letterSpacing: "0.22em" }}
           >
-            PAYMENT TERMS
+            {tp("payment_terms")}
           </p>
           <p className="text-[12px] mt-2 leading-relaxed" style={{ color: TEXT }}>
             {tpl.paymentTerms}

@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -19,9 +20,10 @@ const VendorPaymentsPage = lazy(
 // Serves /vendor/overview. The old /vendor/workspace route (payments,
 // invoices, pay links, files, contacts) was removed and now redirects here.
 export default function MyVendoraPage() {
+  const { t } = useTranslation("vendorHome");
   return (
     <div className="flex min-h-screen vendor-canvas my-vendora-cockpit">
-      <DashboardSidebar items={vendorNavItems} title="Vendor Portal" backPath="/" />
+      <DashboardSidebar items={vendorNavItems} title={t("sidebarTitle")} backPath="/" />
       <div className="flex-1 min-w-0 flex flex-col">
         <Suspense fallback={<TabLoadingFallback />}>
           <VendorPaymentsPage embedded />

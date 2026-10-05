@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { eventTypeLabel } from "@vendora/core";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Trash2,
@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { vendorImageUrl } from "@/lib/storage";
+import { usePriceLabels } from "@/lib/priceLabels";
 
 const BUCKET = "vendor-portfolios";
 const MAX_GALLERY = 24;
@@ -58,12 +59,8 @@ interface RealEvent {
   created_at: string;
 }
 
-const EVENT_TYPES = [
-  { value: "wedding", label: "Wedding" },
-  { value: "birthday", label: "Birthday" },
-  { value: "holiday_dinner", label: "Holiday Dinner" },
-  { value: "other", label: "Other" },
-];
+// Labels come from usePriceLabels().eventType.
+const EVENT_TYPES = ["wedding", "birthday", "holiday_dinner", "other"];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventsTable = () => (supabase as any).from("real_events");
@@ -75,6 +72,8 @@ export function RealEventsManager({
   vendorId: string;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("vendorTools");
+  const priceLabels = usePriceLabels();
   const [events, setEvents] = useState<RealEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [editorEvent, setEditorEvent] = useState<RealEvent | null>(null);
@@ -102,7 +101,7 @@ export function RealEventsManager({
     const { data, error } = await eventsTable()
       .insert({
         vendor_id: vendorId,
-        title: "Untitled event",
+        title: t("realEvents.untitled"),
       })
       .select(
         "id, slug, title, intro, story, cover_path, gallery_paths, event_type, event_date, location, host_consent_given_at, published_at, created_at",
@@ -130,12 +129,9 @@ export function RealEventsManager({
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <p className="font-label text-muted-foreground">Real events</p>
+          <p className="font-label text-muted-foreground">{t("realEvents.title")}</p>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-xl">
-            Publish a completed event as a short editorial gallery on
-            Vendora. Becomes social proof on your profile + a discoverable
-            page that ranks for the event type and city. Only public after
-            you confirm the host has given consent.
+            {t("realEvents.intro")}
           </p>
         </div>
         {canEdit && (
@@ -151,24 +147,23 @@ export function RealEventsManager({
             ) : (
               <Plus className="w-3.5 h-3.5 mr-1.5" />
             )}
-            New event
+            {t("realEvents.newEvent")}
           </Button>
         )}
       </div>
 
       {loading ? (
         <div className="text-center text-muted-foreground text-sm py-6">
-          Loading…
+          {t("common.loading")}
         </div>
       ) : events.length === 0 ? (
         <div className="border border-dashed border-border rounded-sm p-10 text-center">
           <Sparkles className="w-7 h-7 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-sm font-medium mb-1">
-            No published events yet
+            {t("realEvents.emptyTitle")}
           </p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            One real-event page does more for you than ten static portfolio
-            shots — hosts get to see the full arc of an evening.
+            {t("realEvents.emptyBody")}
           </p>
         </div>
       ) : (
@@ -188,19 +183,19 @@ export function RealEventsManager({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 text-xs">
-                    No cover yet
+                    {t("realEvents.noCoverYet")}
                   </div>
                 )}
                 <div className="absolute top-2 left-2">
                   {e.published_at && e.host_consent_given_at ? (
                     <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide bg-accent text-accent-foreground rounded-full px-2 py-0.5">
                       <Globe className="w-3 h-3" />
-                      Live
+                      {t("realEvents.live")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide bg-secondary text-muted-foreground rounded-full px-2 py-0.5">
                       <EyeOff className="w-3 h-3" />
-                      Draft
+                      {t("realEvents.draft")}
                     </span>
                   )}
                 </div>
@@ -210,7 +205,7 @@ export function RealEventsManager({
                   {e.title}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                  {eventTypeLabel(e.event_type)}
+                  {priceLabels.eventType(e.event_type)}
                   {e.location ? ` · ${e.location}` : ""}
                 </p>
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
@@ -221,7 +216,7 @@ export function RealEventsManager({
                       onClick={() => setEditorEvent(e)}
                       className="h-7 rounded-full text-xs"
                     >
-                      Edit
+                      {t("realEvents.edit")}
                     </Button>
                   )}
                   {e.slug && e.published_at && e.host_consent_given_at && (
@@ -230,7 +225,7 @@ export function RealEventsManager({
                       className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
                     >
                       <ExternalLink className="w-3 h-3" />
-                      View
+                      {t("realEvents.view")}
                     </Link>
                   )}
                   {canEdit && (
@@ -239,7 +234,7 @@ export function RealEventsManager({
                       size="icon"
                       onClick={() => deleteEvent(e.id)}
                       className="h-7 w-7 ml-auto text-muted-foreground hover:text-destructive"
-                      aria-label="Delete event"
+                      aria-label={t("realEvents.delete")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -277,6 +272,8 @@ function Editor({
   onClose: () => void;
   onSaved: (e: RealEvent) => void;
 }) {
+  const { t } = useTranslation("vendorTools");
+  const priceLabels = usePriceLabels();
   const [title, setTitle] = useState(event.title);
   const [intro, setIntro] = useState(event.intro ?? "");
   const [story, setStory] = useState(event.story ?? "");
@@ -295,11 +292,11 @@ function Editor({
 
   async function uploadOne(file: File): Promise<string | null> {
     if (!ACCEPTED.includes(file.type)) {
-      toast.error(`${file.name}: only JPG, PNG, WEBP`);
+      toast.error(t("realEvents.typeError", { name: file.name }));
       return null;
     }
     if (file.size > MAX_BYTES) {
-      toast.error(`${file.name}: max 5 MB`);
+      toast.error(t("realEvents.sizeError", { name: file.name }));
       return null;
     }
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
@@ -326,7 +323,7 @@ function Editor({
   async function handleGallery(files: FileList) {
     const remaining = MAX_GALLERY - gallery.length;
     if (remaining <= 0) {
-      toast.error(`Max ${MAX_GALLERY} gallery photos`);
+      toast.error(t("realEvents.maxGallery", { max: MAX_GALLERY }));
       return;
     }
     const accepted = Array.from(files).slice(0, remaining);
@@ -349,7 +346,7 @@ function Editor({
   async function save(extra: Partial<RealEvent> = {}) {
     setSaving(true);
     const update = {
-      title: title.trim() || "Untitled event",
+      title: title.trim() || t("realEvents.untitled"),
       intro: intro.trim() || null,
       story: story.trim() || null,
       event_type: eventType,
@@ -380,11 +377,11 @@ function Editor({
 
   async function publish() {
     if (!hostConsent) {
-      toast.error("Mark host consent before publishing");
+      toast.error(t("realEvents.needConsent"));
       return;
     }
     if (!coverPath) {
-      toast.error("Add a cover image first");
+      toast.error(t("realEvents.needCover"));
       return;
     }
     setPublishing(true);
@@ -402,14 +399,14 @@ function Editor({
       published_at: new Date().toISOString(),
     });
     setPublishing(false);
-    if (updated) toast.success("Event published");
+    if (updated) toast.success(t("realEvents.published"));
   }
 
   async function unpublish() {
     setPublishing(true);
     await save({ published_at: null });
     setPublishing(false);
-    toast.success("Event unpublished");
+    toast.success(t("realEvents.unpublished"));
   }
 
   const isLive = Boolean(event.published_at && event.host_consent_given_at);
@@ -419,28 +416,27 @@ function Editor({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            {isLive ? "Edit live event" : "Edit draft"}
+            {isLive ? t("realEvents.editLive") : t("realEvents.editDraft")}
           </DialogTitle>
           <DialogDescription>
-            Tell the story of the evening. Fields auto-save when you tap
-            Save; published events show up at /real-events/{event.slug ?? "…"}.
+            {t("realEvents.editorIntro", { slug: event.slug ?? "…" })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           {/* Cover */}
           <div>
-            <Label>Cover image</Label>
+            <Label>{t("realEvents.coverImage")}</Label>
             <div className="mt-1.5 aspect-[16/9] rounded-sm bg-muted overflow-hidden relative">
               {coverPath ? (
                 <img
                   src={vendorImageUrl(coverPath, { width: 1200 })}
-                  alt="Cover"
+                  alt={t("realEvents.coverAlt")}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-                  No cover
+                  {t("realEvents.noCover")}
                 </div>
               )}
               <Button
@@ -451,7 +447,7 @@ function Editor({
                 onClick={() => coverRef.current?.click()}
               >
                 <Upload className="w-3.5 h-3.5 mr-1.5" />
-                {coverPath ? "Replace" : "Upload"}
+                {coverPath ? t("realEvents.replace") : t("realEvents.upload")}
               </Button>
               <input
                 ref={coverRef}
@@ -469,22 +465,22 @@ function Editor({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="re-type">Event type</Label>
+              <Label htmlFor="re-type">{t("realEvents.eventType")}</Label>
               <Select value={eventType} onValueChange={setEventType}>
                 <SelectTrigger id="re-type" className="mt-1.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {EVENT_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
+                  {EVENT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {priceLabels.eventType(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="re-date">Event date</Label>
+              <Label htmlFor="re-date">{t("realEvents.eventDate")}</Label>
               <Input
                 id="re-date"
                 type="date"
@@ -496,46 +492,46 @@ function Editor({
           </div>
 
           <div>
-            <Label htmlFor="re-title">Title</Label>
+            <Label htmlFor="re-title">{t("realEvents.titleLabel")}</Label>
             <Input
               id="re-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Sarah & Marcus, a brownstone garden wedding"
+              placeholder={t("realEvents.titlePlaceholder")}
               className="mt-1.5"
             />
           </div>
 
           <div>
-            <Label htmlFor="re-location">Location</Label>
+            <Label htmlFor="re-location">{t("realEvents.location")}</Label>
             <Input
               id="re-location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Brooklyn, NY"
+              placeholder={t("realEvents.locationPlaceholder")}
               className="mt-1.5"
             />
           </div>
 
           <div>
-            <Label htmlFor="re-intro">Intro (1 sentence)</Label>
+            <Label htmlFor="re-intro">{t("realEvents.introLabel")}</Label>
             <Input
               id="re-intro"
               value={intro}
               onChange={(e) => setIntro(e.target.value)}
-              placeholder="An intimate 60-guest celebration on a perfect October evening."
+              placeholder={t("realEvents.introPlaceholder")}
               className="mt-1.5"
             />
           </div>
 
           <div>
-            <Label htmlFor="re-story">Story</Label>
+            <Label htmlFor="re-story">{t("realEvents.story")}</Label>
             <Textarea
               id="re-story"
               rows={6}
               value={story}
               onChange={(e) => setStory(e.target.value)}
-              placeholder="A few paragraphs about the day — the design vision, the moments that mattered, what made the event special."
+              placeholder={t("realEvents.storyPlaceholder")}
               className="mt-1.5"
             />
           </div>
@@ -543,7 +539,7 @@ function Editor({
           {/* Gallery */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <Label>Gallery ({gallery.length}/{MAX_GALLERY})</Label>
+              <Label>{t("realEvents.gallery", { n: gallery.length, max: MAX_GALLERY })}</Label>
               <Button
                 type="button"
                 size="sm"
@@ -553,7 +549,7 @@ function Editor({
                 disabled={gallery.length >= MAX_GALLERY}
               >
                 <Upload className="w-3 h-3 mr-1.5" />
-                Add photos
+                {t("realEvents.addPhotos")}
               </Button>
               <input
                 ref={galleryRef}
@@ -571,7 +567,7 @@ function Editor({
             </div>
             {gallery.length === 0 ? (
               <div className="border border-dashed border-border rounded-sm p-6 text-center text-xs text-muted-foreground">
-                No gallery photos yet
+                {t("realEvents.noGallery")}
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -590,7 +586,7 @@ function Editor({
                       type="button"
                       onClick={() => removeGalleryAt(i)}
                       className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/85 text-background flex items-center justify-center opacity-0 group-hover:opacity-100"
-                      aria-label="Remove"
+                      aria-label={t("realEvents.remove")}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -605,11 +601,10 @@ function Editor({
             <div className="min-w-0">
               <p className="text-sm font-medium mb-1 inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
-                Host has given consent
+                {t("realEvents.consentTitle")}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Confirm the host is OK with this event being published
-                publicly. Required before publish.
+                {t("realEvents.consentBody")}
               </p>
             </div>
             <Switch
@@ -626,7 +621,7 @@ function Editor({
             onClick={onClose}
             className="rounded-full"
           >
-            Close
+            {t("common.close")}
           </Button>
           <Button
             type="button"
@@ -636,7 +631,7 @@ function Editor({
             className="rounded-full"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-            Save draft
+            {t("realEvents.saveDraft")}
           </Button>
           {isLive ? (
             <Button
@@ -648,7 +643,7 @@ function Editor({
             >
               {publishing && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
               <EyeOff className="w-3.5 h-3.5 mr-1.5" />
-              Unpublish
+              {t("realEvents.unpublish")}
             </Button>
           ) : (
             <Button
@@ -658,7 +653,7 @@ function Editor({
             >
               {publishing && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
               <Globe className="w-3.5 h-3.5 mr-1.5" />
-              Publish
+              {t("realEvents.publish")}
             </Button>
           )}
         </DialogFooter>

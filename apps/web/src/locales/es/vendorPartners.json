@@ -1,0 +1,74 @@
+{
+  "vendor_fallback": "Proveedor",
+  "time": {
+    "now": "ahora",
+    "minutes": "{{n}} min",
+    "hours": "{{n}} h",
+    "yesterday": "Ayer",
+    "days": "{{n}} d"
+  },
+  "header": {
+    "title": "Bandeja de entrada",
+    "subtitle": "Chatea directamente con otros proveedores, sin anfitriones de por medio."
+  },
+  "list": {
+    "empty_title": "Aún no tienes conversaciones con socios",
+    "empty_body": "Abre el perfil de un proveedor y toca “Escribir al proveedor” para empezar a coordinar directamente.",
+    "you_prefix": "Tú: ",
+    "no_messages": "Aún no hay mensajes",
+    "unread": "Sin leer"
+  },
+  "you": "Tú",
+  "message_deleted": "Mensaje eliminado",
+  "attachment_body": "(archivo adjunto)",
+  "toasts": {
+    "unmuted": "Notificaciones activadas",
+    "muted": "Conversación silenciada",
+    "archived": "Conversación archivada",
+    "reported": "Reporte enviado. Lo revisaremos.",
+    "max_files": "Hasta {{max}} archivos adjuntos por mensaje",
+    "upload_failed": "No se pudieron subir tus archivos adjuntos. El mensaje no se envió.",
+    "empty_message": "El mensaje no puede estar vacío",
+    "v2v_pro_title": "Los mensajes entre proveedores son una función Pro.",
+    "v2v_pro_body": "Mejora a Pro o Premium para iniciar conversaciones con otros proveedores.",
+    "upgrade": "Mejorar plan",
+    "start_failed": "No se pudo iniciar la conversación."
+  },
+  "confirm": {
+    "archive": "¿Ocultar esta conversación de tu lista? Volverá a aparecer si el otro proveedor te escribe de nuevo.",
+    "report": "¿Qué problema tiene esta conversación?",
+    "delete": "¿Eliminar este mensaje? No se puede deshacer."
+  },
+  "chat": {
+    "back": "Volver a las conversaciones",
+    "partner": "Socio",
+    "active_now": "Activo ahora",
+    "v2v_chat": "Chat entre proveedores",
+    "actions": "Acciones de la conversación",
+    "unmute": "Activar notificaciones",
+    "mute": "Silenciar conversación",
+    "archive": "Archivar conversación",
+    "report": "Reportar",
+    "empty": "Aún no hay mensajes. Saluda.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edited": "editado",
+    "contact_flag": "Parece información de contacto — se queda en Vendora.",
+    "pin_location": "Compartir ubicación",
+    "remove_attachment": "Quitar archivo adjunto",
+    "attach_files": "Adjuntar archivos",
+    "quick_reactions": "Reacciones rápidas",
+    "insert_emoji": "Insertar {{emoji}}",
+    "placeholder": "Escribe a {{name}}…",
+    "send": "Enviar"
+  },
+  "find": {
+    "title": "Buscar un proveedor",
+    "subtitle": "Busca cualquier proveedor aprobado por el nombre de su negocio para iniciar un chat.",
+    "placeholder": "Buscar proveedores…",
+    "aria": "Buscar proveedores por nombre del negocio",
+    "no_match": "Ningún proveedor coincide con “{{query}}”.",
+    "hint": "Empieza a escribir: los resultados aparecen a partir de 2 caracteres.",
+    "unnamed": "Proveedor sin nombre"
+  }
+}

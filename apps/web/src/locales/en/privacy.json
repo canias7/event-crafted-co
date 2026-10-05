@@ -1,0 +1,44 @@
+{
+  "page_title": "Privacy Policy — Vendora",
+  "eyebrow": "— LEGAL",
+  "title": "Privacy policy",
+  "last_updated": "Last updated: May 3, 2026",
+  "translation_note": "This translation is for your convenience. If it differs from the English version, the English version prevails.",
+  "intro": "Vendora is a vendor-first event marketplace. This page describes what we collect, how we use it, and the rights you have over your data.",
+  "collect": {
+    "title": "1. What we collect",
+    "account": "<strong>Account info</strong> — your email, password (hashed), and the role you signed up as (host, vendor, or admin).",
+    "profile": "<strong>Profile + event details</strong> — display name, optional phone, event type, date, location, budget range, and any notes you've shared during onboarding.",
+    "vendor_profile": "<strong>Vendor profile</strong> — for vendors, your business name, category, bio, base price, location, service radius, and portfolio images you upload.",
+    "messages": "<strong>Messages and inquiries</strong> — message bodies, inquiry details, status changes, and any reviews you post.",
+    "usage": "<strong>Usage data</strong> — pages visited, features used, approximate location from IP. We do not sell this to third parties."
+  },
+  "use": {
+    "title": "2. How we use it",
+    "operate": "We use your data to operate Vendora — matching hosts with relevant vendors, routing messages between you and a vendor, displaying public vendor profiles in our directory, sending transactional emails (signup confirmation, inquiry receipts), and improving the product.",
+    "ai": "When the AI inquiry agent is enabled, your inquiry details and a vendor's prior messages are sent to Anthropic's Claude API to draft replies. The vendor reviews and approves every reply before it sends — drafts are never sent automatically."
+  },
+  "share": {
+    "title": "3. Who we share with",
+    "vendors": "<strong>Vendors you inquire with</strong> — when you send an inquiry, the vendor sees your event details and display name.",
+    "providers": "<strong>Service providers</strong> — Supabase (hosting and database), and (for AI replies) Anthropic.",
+    "no_sale": "<strong>No advertisers, no data brokers, no resellers.</strong> Vendora does not sell or rent your personal data."
+  },
+  "cookies": {
+    "title": "4. Cookies",
+    "body": "We use essential cookies for authentication and session management. With your consent we may use analytics cookies to understand which features get used. You can change cookie preferences from the banner shown on first visit, or in your browser settings."
+  },
+  "rights": {
+    "title": "5. Your rights",
+    "access": "You can access, correct, export, or delete your data at any time. Most of this is available directly in your account settings; for a full export or deletion request, email <email>hello@eventvendora.com</email>. We respond within 30 days.",
+    "laws": "EU/UK residents have rights under GDPR; California residents have rights under CCPA — both are honored regardless of where you live."
+  },
+  "retention": {
+    "title": "6. Data retention",
+    "body": "We keep account data while your account is active and for 90 days after deletion (in case you change your mind). Anonymized usage data may be kept longer for analytics."
+  },
+  "contact": {
+    "title": "7. Contact",
+    "body": "Questions about this policy or your data: email <email>hello@eventvendora.com</email>."
+  }
+}

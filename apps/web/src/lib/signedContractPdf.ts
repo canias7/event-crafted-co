@@ -1,7 +1,11 @@
 // Build a PDF of a signed contract: the body text, plus a signature
 // block with the signer's name, timestamp, and the drawn signature
 // image when one was captured. Mirrors the on-screen signed state.
+// The labels Vendora adds (not the contract text) follow the page's
+// language (checkout.json → sign.pdf); built on click, so it uses the
+// language in effect at that moment.
 import jsPDF from "jspdf";
+import i18n from "@/i18n";
 
 export interface SignedContractPdfData {
   title: string;
@@ -17,11 +21,15 @@ const MARGIN = 56;
 const TEXT: [number, number, number] = [26, 20, 16];
 const MUTED: [number, number, number] = [107, 98, 89];
 
+function label(key: string, options?: Record<string, unknown>): string {
+  return i18n.t(`sign.pdf.${key}`, { ns: "checkout", ...options });
+}
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString(i18n.resolvedLanguage === "es" ? "es-US" : "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -41,7 +49,7 @@ export function buildSignedContractPdf(c: SignedContractPdfData): jsPDF {
     y += 18;
   }
   doc.setFont("times", "bold").setFontSize(20).setTextColor(...TEXT);
-  doc.text(c.title || "Contract", MARGIN, y);
+  doc.text(c.title || label("title"), MARGIN, y);
   y += 22;
   doc.setDrawColor(232, 227, 221).line(MARGIN, y, PAGE_W - MARGIN, y);
   y += 18;
@@ -68,7 +76,7 @@ export function buildSignedContractPdf(c: SignedContractPdfData): jsPDF {
   doc.setDrawColor(232, 227, 221).line(MARGIN, y, PAGE_W - MARGIN, y);
   y += 22;
   doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(...MUTED);
-  doc.text("ELECTRONICALLY SIGNED", MARGIN, y);
+  doc.text(label("signedHeading"), MARGIN, y);
   y += 8;
 
   if (c.signature_image && c.signature_image.startsWith("data:image")) {
@@ -89,15 +97,16 @@ export function buildSignedContractPdf(c: SignedContractPdfData): jsPDF {
   doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...MUTED);
   doc.text(`${c.signer_name ?? ""}`, MARGIN, y);
   y += 12;
-  doc.text(`Signed ${fmtDate(c.signed_at)}`, MARGIN, y);
+  doc.text(label("signedOn", { date: fmtDate(c.signed_at) }), MARGIN, y);
 
   return doc;
 }
 
 function slug(s: string): string {
-  return (s || "contract").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "contract";
+  const fallback = label("fileFallback");
+  return (s || fallback).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || fallback;
 }
 
 export function downloadSignedContractPdf(c: SignedContractPdfData) {
-  buildSignedContractPdf(c).save(`${slug(c.title)}-signed.pdf`);
+  buildSignedContractPdf(c).save(`${slug(c.title)}-${label("fileSuffix")}.pdf`);
 }

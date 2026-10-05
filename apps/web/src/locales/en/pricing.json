@@ -1,0 +1,19 @@
+{
+  "from": "From {{price}}",
+  "upTo": "Up to {{price}}",
+  "custom": "Custom pricing",
+  "models": {
+    "fixed_packages": "Fixed Packages",
+    "hourly": "Hourly",
+    "per_person": "Per Person",
+    "starting_at": "Starting At",
+    "custom_quote": "Custom Quote"
+  },
+  "eventTypes": {
+    "wedding": "Wedding",
+    "birthday": "Birthday",
+    "holiday_dinner": "Holiday Dinner",
+    "other": "Other",
+    "fallback": "Event"
+  }
+}

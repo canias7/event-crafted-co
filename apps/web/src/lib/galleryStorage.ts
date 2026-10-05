@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import i18n from "@/i18n";
 
 // Gallery caps are STORAGE-BASED (bytes in the vendor-gallery
 // bucket), per the Free / Pro / Premium plan model:
@@ -57,15 +58,15 @@ export async function ensureGalleryCapacity(
   if (status.usedBytes + addBytes <= status.capBytes) return true;
 
   const remaining = Math.max(0, status.capBytes - status.usedBytes);
+  const t = i18n.getFixedT(null, "galleryTools");
   toast.error(
     remaining === 0
-      ? "You've used all your plan's gallery storage."
-      : `Only ${formatBytes(remaining)} of gallery storage left on your plan.`,
+      ? t("storage.full")
+      : t("storage.left", { size: formatBytes(remaining) }),
     {
-      description:
-        "Upgrade your plan or remove some gallery images (emptying Trash frees space too). Listing photos aren't affected.",
+      description: t("storage.description"),
       action: {
-        label: "Upgrade",
+        label: t("storage.upgrade"),
         onClick: () => {
           window.location.href = "/vendor/subscription";
         },

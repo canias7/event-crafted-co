@@ -15,10 +15,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { authErrorText } from "@/components/auth/authErrors";
 
 const APP_SCHEMES: Record<string, string> = {
   vendor: "vendora-vendor",
@@ -26,6 +28,7 @@ const APP_SCHEMES: Record<string, string> = {
 };
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -91,10 +94,10 @@ export default function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(authErrorText(error.message));
       return;
     }
-    toast.success("Password updated — you're signed in");
+    toast.success(t("reset.toast.updated"));
     navigate("/", { replace: true });
   }
 
@@ -104,23 +107,23 @@ export default function ResetPasswordPage() {
       className="pb-px font-medium"
       style={{ borderBottom: "0.5px solid #000", color: "#000" }}
     >
-      Back to sign in
+      {t("shared.back_to_sign_in")}
     </Link>
   );
 
   if (appLink && handOffToApp) {
     return (
       <GlassyAuthShell
-        title="Open the"
-        titleAccent="app."
-        subtitle="Your reset link is ready. Open Vendora to choose a new password — the link stays valid either way."
-        pillLabel="RESET PASSWORD"
+        title={t("reset.app.title")}
+        titleAccent={t("reset.app.title_accent")}
+        subtitle={t("reset.app.subtitle")}
+        pillLabel={t("reset.pill_reset")}
         topRight={backToSignIn}
       >
         <div className="flex flex-col gap-4">
           <a href={appLink} className="block">
             <button type="button" className="auth-submit">
-              Open the Vendora app
+              {t("reset.app.open")}
             </button>
           </a>
           <button
@@ -129,7 +132,7 @@ export default function ResetPasswordPage() {
             className="self-center pb-px font-medium"
             style={{ borderBottom: "0.5px solid #000", color: "#000" }}
           >
-            Reset in this browser instead
+            {t("reset.app.use_browser")}
           </button>
         </div>
       </GlassyAuthShell>
@@ -139,10 +142,10 @@ export default function ResetPasswordPage() {
   if (tokenHash && hasSession === null) {
     return (
       <GlassyAuthShell
-        title="One"
-        titleAccent="moment."
-        subtitle="Checking your reset link."
-        pillLabel="RESET PASSWORD"
+        title={t("reset.checking.title")}
+        titleAccent={t("reset.checking.title_accent")}
+        subtitle={t("reset.checking.subtitle")}
+        pillLabel={t("reset.pill_reset")}
         topRight={backToSignIn}
       >
         <div className="flex justify-center py-4">
@@ -154,10 +157,10 @@ export default function ResetPasswordPage() {
 
   return (
     <GlassyAuthShell
-      title="Pick something"
-      titleAccent="memorable."
-      subtitle="Choose a new password for your Vendora account."
-      pillLabel="NEW PASSWORD"
+      title={t("reset.form.title")}
+      titleAccent={t("reset.form.title_accent")}
+      subtitle={t("reset.form.subtitle")}
+      pillLabel={t("reset.pill_new")}
       topRight={backToSignIn}
     >
       {hasSession === false ? (
@@ -174,12 +177,12 @@ export default function ResetPasswordPage() {
               className="leading-relaxed"
               style={{ fontSize: "14px", color: "#000" }}
             >
-              Your reset link is invalid or has expired.
+              {t("reset.form.invalid_link")}
             </p>
           </div>
           <Link to="/forgot-password" className="block">
             <button type="button" className="auth-submit">
-              Request a new link
+              {t("reset.form.request_new")}
             </button>
           </Link>
         </div>
@@ -195,7 +198,7 @@ export default function ResetPasswordPage() {
                 fontWeight: 500,
               }}
             >
-              New password
+              {t("reset.form.new_password")}
             </div>
             <div className="relative">
               <input
@@ -205,7 +208,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
-                placeholder="At least 8 characters"
+                placeholder={t("reset.form.placeholder")}
                 required
                 autoComplete="new-password"
                 aria-invalid={passwordTooShort || undefined}
@@ -213,7 +216,7 @@ export default function ResetPasswordPage() {
               />
               <button
                 type="button"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("password.hide") : t("password.show")}
                 onClick={() => setShowPassword((v) => !v)}
                 tabIndex={-1}
                 className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-accent transition-colors"
@@ -231,7 +234,7 @@ export default function ResetPasswordPage() {
                 className="mt-1.5"
                 style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
               >
-                Password must be at least 8 characters.
+                {t("reset.form.too_short")}
               </p>
             )}
             <PasswordStrengthMeter password={password} />
@@ -246,7 +249,7 @@ export default function ResetPasswordPage() {
                 fontWeight: 500,
               }}
             >
-              Confirm
+              {t("reset.form.confirm")}
             </div>
             <input
               id="confirm"
@@ -268,7 +271,7 @@ export default function ResetPasswordPage() {
                 className="mt-1.5"
                 style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
               >
-                Passwords don't match.
+                {t("reset.form.mismatch")}
               </p>
             )}
           </div>
@@ -278,7 +281,7 @@ export default function ResetPasswordPage() {
             className="auth-submit mt-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Update password
+            {t("reset.form.submit")}
           </button>
         </form>
       )}

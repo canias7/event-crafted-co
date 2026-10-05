@@ -1,0 +1,42 @@
+{
+  "booking": {
+    "errors": {
+      "not_authorized": "You're not allowed to mark this inquiry as booked.",
+      "not_found": "Inquiry not found — refresh and try again."
+    },
+    "markedBooked": "Marked as booked.",
+    "initialTitle": "Did you work with {{name}}?",
+    "initialBody": "If you closed off-platform (no proposal here), confirm so event reviews can open on both sides.",
+    "initialCta": "Yes, we worked together",
+    "waitingTitle": "Waiting for {{name}} to confirm",
+    "waitingBodyVendor": "You marked this booked. Event reviews open once the vendor confirms too.",
+    "waitingBodyHost": "You marked this booked. Event reviews open once the host confirms too.",
+    "pendingTitle": "{{name}} says you worked together",
+    "pendingBody": "Confirm to unlock event reviews on both sides.",
+    "pendingCta": "Confirm",
+    "confirmedTitle": "Booking confirmed",
+    "confirmedBody": "Event reviews open 3 days after the event date."
+  },
+  "review": {
+    "hostReview": "Host review",
+    "vendorChatRating": "Vendor's chat rating",
+    "vendorReview": "Vendor's review",
+    "noWrittenFeedback": "No written feedback.",
+    "yourResponse": "Your response",
+    "editLeft_one": "Edit ({{count}}m left)",
+    "editLeft_other": "Edit ({{count}}m left)",
+    "editWindowClosed": "Edit window closed",
+    "editYourResponse": "Edit your response",
+    "respond": "Respond",
+    "placeholder": "Thanks for the kind words…",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "save": "Save",
+    "postResponse": "Post response",
+    "toasts": {
+      "editWindowExpired": "Edit window closed — responses can only be edited within 10 minutes.",
+      "notAllowed": "You're no longer allowed to respond to this review.",
+      "saved": "Response saved"
+    }
+  }
+}

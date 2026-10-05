@@ -5,6 +5,7 @@
 // UI currently exposes that path.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Copy, Link2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,13 +28,8 @@ interface Props {
   targetLabel: string;
 }
 
-const EXPIRY_OPTIONS = [
-  { value: "never", label: "Never expires" },
-  { value: "1d", label: "1 day" },
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "custom", label: "Custom date" },
-];
+// Labels live in galleryTools.json under share.expiry.<value>.
+const EXPIRY_OPTIONS = ["never", "1d", "7d", "30d", "custom"];
 
 export function ShareModal({
   open,
@@ -41,6 +37,7 @@ export function ShareModal({
   imageId,
   targetLabel,
 }: Props) {
+  const { t } = useTranslation("galleryTools");
   const [expiry, setExpiry] = useState<string>("never");
   const [customDate, setCustomDate] = useState<string>("");
   const [password, setPassword] = useState("");
@@ -69,12 +66,12 @@ export function ShareModal({
       expires_at = null;
     } else if (expiry === "custom") {
       if (!customDate) {
-        toast.error("Pick an expiry date.");
+        toast.error(t("share.pickExpiry"));
         return;
       }
       const ms = new Date(`${customDate}T23:59:59`).getTime();
       if (Number.isNaN(ms) || ms <= Date.now()) {
-        toast.error("Pick a future date.");
+        toast.error(t("share.pickFuture"));
         return;
       }
       expires_at = new Date(ms).toISOString();
@@ -106,10 +103,10 @@ export function ShareModal({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success("Link copied");
+      toast.success(t("share.copied"));
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Couldn't copy — copy manually");
+      toast.error(t("share.copyFailed"));
     }
   }
 
@@ -119,10 +116,10 @@ export function ShareModal({
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl flex items-center gap-2">
             <Link2 className="w-5 h-5" />
-            Share image
+            {t("share.title")}
           </DialogTitle>
           <DialogDescription>
-            Anyone with this link can view {targetLabel}.
+            {t("share.description", { target: targetLabel })}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,21 +127,21 @@ export function ShareModal({
           <div className="space-y-4">
             <div>
               <Label className="text-xs font-medium text-muted-foreground">
-                Expiry
+                {t("share.expiryLabel")}
               </Label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {EXPIRY_OPTIONS.map((opt) => (
+                {EXPIRY_OPTIONS.map((value) => (
                   <button
-                    key={opt.value}
+                    key={value}
                     type="button"
-                    onClick={() => setExpiry(opt.value)}
+                    onClick={() => setExpiry(value)}
                     className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                      expiry === opt.value
+                      expiry === value
                         ? "border-foreground bg-foreground text-background"
                         : "border-border bg-card hover:bg-secondary/40"
                     }`}
                   >
-                    {opt.label}
+                    {t(`share.expiry.${value}`)}
                   </button>
                 ))}
               </div>
@@ -169,25 +166,25 @@ export function ShareModal({
             </div>
             <div>
               <Label htmlFor="share-password" className="text-xs font-medium text-muted-foreground">
-                Password (optional)
+                {t("share.passwordLabel")}
               </Label>
               <Input
                 id="share-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="No password — anyone with the link gets in"
+                placeholder={t("share.passwordPlaceholder")}
                 className="mt-1"
               />
               <p className="text-[11px] text-muted-foreground mt-1">
-                Viewers will be asked for this before the image loads.
+                {t("share.passwordHint")}
               </p>
             </div>
           </div>
         ) : (
           <div className="space-y-3">
             <Label className="text-xs font-medium text-muted-foreground">
-              Share link
+              {t("share.linkLabel")}
             </Label>
             <div className="flex items-center gap-2">
               <Input value={shareUrl} readOnly className="font-mono text-xs" />
@@ -201,12 +198,11 @@ export function ShareModal({
             </div>
             {password ? (
               <p className="text-xs text-muted-foreground">
-                Password protected — share the link and the password
-                separately.
+                {t("share.protectedNote")}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                No password — anyone with this link can view.
+                {t("share.openNote")}
               </p>
             )}
           </div>
@@ -218,12 +214,12 @@ export function ShareModal({
             onClick={() => onOpenChange(false)}
             className="rounded-full"
           >
-            {token ? "Done" : "Cancel"}
+            {token ? t("share.done") : t("share.cancel")}
           </Button>
           {!token ? (
             <Button onClick={create} disabled={creating} className="rounded-full">
               {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Create link
+              {t("share.create")}
             </Button>
           ) : null}
         </DialogFooter>

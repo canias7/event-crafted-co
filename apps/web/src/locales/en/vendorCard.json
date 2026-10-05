@@ -1,0 +1,9 @@
+{
+  "noPhotos": "No listing photos yet",
+  "save": "Save vendor",
+  "unsave": "Remove from saved",
+  "saved": {
+    "signIn": "Sign in to save vendors",
+    "sample": "This vendor is a sample listing — saving will work once they're live."
+  }
+}

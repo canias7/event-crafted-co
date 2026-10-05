@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CalendarDays,
   CalendarPlus,
@@ -46,42 +47,31 @@ export interface Appointment {
   host_name?: string | null;
 }
 
-const kindLabel: Record<string, string> = {
-  consultation: "Consultation",
-  walkthrough: "Walkthrough",
-  tasting: "Tasting",
-  fitting: "Fitting",
-  phone_call: "Phone call",
-  other: "Meeting",
+// Kinds with their own label (appointments.json kinds.<kind>); any other
+// kind reads as a generic meeting (kinds.other).
+const KNOWN_KINDS = new Set([
+  "consultation",
+  "walkthrough",
+  "tasting",
+  "fitting",
+  "phone_call",
+  "other",
+]);
+
+// Badge labels live in appointments.json under status.<status>.
+const statusBadgeClass: Record<Appointment["status"], string> = {
+  proposed: "bg-secondary text-secondary-foreground border border-border",
+  accepted: "bg-accent/15 text-accent border border-accent/30",
+  declined: "bg-muted text-muted-foreground border border-border",
+  cancelled: "bg-muted text-muted-foreground border border-border",
+  completed: "bg-secondary text-secondary-foreground border border-border",
 };
 
-const statusBadge: Record<
-  Appointment["status"],
-  { label: string; className: string }
-> = {
-  proposed: {
-    label: "Proposed",
-    className:
-      "bg-secondary text-secondary-foreground border border-border",
-  },
-  accepted: {
-    label: "Confirmed",
-    className: "bg-accent/15 text-accent border border-accent/30",
-  },
-  declined: {
-    label: "Declined",
-    className: "bg-muted text-muted-foreground border border-border",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-muted text-muted-foreground border border-border",
-  },
-  completed: {
-    label: "Completed",
-    className:
-      "bg-secondary text-secondary-foreground border border-border",
-  },
-};
+// Strips accents from translated words before they go into a file name
+// (slugForFile keeps only a-z and 0-9).
+function plainText(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
 interface Props {
   appointments: Appointment[];
@@ -89,6 +79,11 @@ interface Props {
 }
 
 export function AppointmentsList({ appointments, onMutate }: Props) {
+  const { t, i18n } = useTranslation("appointments");
+  // Spanish gets US-Spanish date formats; English keeps the shared formatters.
+  const isEs = i18n.resolvedLanguage === "es";
+  const kindText = (kind: string) =>
+    t(KNOWN_KINDS.has(kind) ? `kinds.${kind}` : "kinds.other");
   const [filter, setFilter] = useState<
     "upcoming" | "past" | "needs_response" | "all"
   >("upcoming");
@@ -107,36 +102,36 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
       all: appointments.length,
     };
     for (const a of appointments) {
-      const t = new Date(a.scheduled_at).getTime();
+      const at = new Date(a.scheduled_at).getTime();
       if (a.status === "proposed" && a.proposed_by === "host")
         counts.needs_response++;
-      if ((a.status === "accepted" || a.status === "proposed") && t >= now.getTime())
+      if ((a.status === "accepted" || a.status === "proposed") && at >= now.getTime())
         counts.upcoming++;
-      if (t < now.getTime()) counts.past++;
+      if (at < now.getTime()) counts.past++;
     }
     return [
-      { value: "upcoming", label: "Upcoming", count: counts.upcoming },
+      { value: "upcoming", label: t("filters.upcoming"), count: counts.upcoming },
       {
         value: "needs_response",
-        label: "Needs response",
+        label: t("filters.needs_response"),
         count: counts.needs_response,
       },
-      { value: "past", label: "Past", count: counts.past },
-      { value: "all", label: "All", count: counts.all },
+      { value: "past", label: t("filters.past"), count: counts.past },
+      { value: "all", label: t("filters.all"), count: counts.all },
     ];
-  }, [appointments]);
+  }, [appointments, t]);
 
   const visible = useMemo(() => {
     const now = Date.now();
     return appointments.filter((a) => {
-      const t = new Date(a.scheduled_at).getTime();
+      const at = new Date(a.scheduled_at).getTime();
       switch (filter) {
         case "upcoming":
           return (
-            (a.status === "accepted" || a.status === "proposed") && t >= now
+            (a.status === "accepted" || a.status === "proposed") && at >= now
           );
         case "past":
-          return t < now;
+          return at < now;
         case "needs_response":
           return a.status === "proposed" && a.proposed_by === "host";
         case "all":
@@ -159,7 +154,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
       toast.error(error.message);
       return;
     }
-    toast.success(`Appointment ${status}`);
+    toast.success(t(`statusChanged.${status}`));
     onMutate();
   }
 
@@ -169,10 +164,9 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
         <div className="w-12 h-12 mx-auto rounded-full bg-secondary flex items-center justify-center mb-4">
           <CalendarDays className="w-5 h-5 text-muted-foreground" />
         </div>
-        <h3 className="font-editorial text-2xl mb-2">No appointments yet</h3>
+        <h3 className="font-editorial text-2xl mb-2">{t("list.emptyTitle")}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          When you propose a meeting from an inquiry, it'll show up here
-          once the host responds.
+          {t("list.emptyBody")}
         </p>
       </div>
     );
@@ -201,19 +195,19 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
 
       {visible.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-12">
-          Nothing matches that filter.
+          {t("list.noMatches")}
         </p>
       ) : (
         <div className="space-y-3">
           {visible.map((appt) => {
-            const badge = statusBadge[appt.status];
+            const badgeClass = statusBadgeClass[appt.status];
             const when = new Date(appt.scheduled_at);
             const otherName = appt.host_name;
             // Host-less rows are manual, off-platform entries (personal
             // blocks, external bookings) — render them as "Personal", not
             // as a host meeting.
             const isPersonal = !appt.host_id;
-            const heading = appt.title?.trim() || kindLabel[appt.kind] || "Meeting";
+            const heading = appt.title?.trim() || kindText(appt.kind);
             const needsMyResponse =
               appt.status === "proposed" && appt.proposed_by === "host";
             const canCancel =
@@ -237,24 +231,24 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                       {otherName && (
                         <span className="text-muted-foreground font-normal">
                           {" "}
-                          with {otherName}
+                          {t("list.with", { name: otherName })}
                         </span>
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground tnum">
                       {isPersonal
-                        ? "Off-platform · personal"
+                        ? t("list.personalSubtitle")
                         : appt.proposed_by === "vendor"
-                          ? "Proposed by you"
-                          : "Proposed by the host"}
+                          ? t("list.proposedByYou")
+                          : t("list.proposedByHost")}
                     </p>
                   </div>
                   {isPersonal ? (
                     <Badge className="bg-secondary text-secondary-foreground border border-border">
-                      Personal
+                      {t("list.personal")}
                     </Badge>
                   ) : (
-                    <Badge className={badge.className}>{badge.label}</Badge>
+                    <Badge className={badgeClass}>{t(`status.${appt.status}`)}</Badge>
                   )}
                 </div>
 
@@ -262,13 +256,24 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                   <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5" />
                     <span className="tnum">
-                      {formatDate(when, "short")}
+                      {isEs
+                        ? when.toLocaleDateString("es-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : formatDate(when, "short")}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     <span className="tnum">
-                      {formatTime(when)}
+                      {isEs
+                        ? when.toLocaleTimeString("es-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })
+                        : formatTime(when)}
                       {" · "}
                       {appt.duration_minutes} min
                     </span>
@@ -300,7 +305,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                           className="h-9 text-xs"
                         >
                           <Check className="w-3 h-3 mr-1" />
-                          Accept
+                          {t("list.accept")}
                         </Button>
                         <Button
                           size="sm"
@@ -310,7 +315,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                           className="rounded-full h-8 text-xs"
                         >
                           <X className="w-3 h-3 mr-1" />
-                          Decline
+                          {t("list.decline")}
                         </Button>
                       </>
                     )}
@@ -323,7 +328,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                         className="rounded-full h-8 text-xs"
                       >
                         <CircleCheck className="w-3 h-3 mr-1" />
-                        Mark complete
+                        {t("list.markComplete")}
                       </Button>
                     )}
                     {canCancel && !needsMyResponse && (
@@ -336,27 +341,27 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                             className="rounded-full h-8 text-xs text-muted-foreground"
                           >
                             <XCircle className="w-3 h-3 mr-1" />
-                            Cancel
+                            {t("list.cancel")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
-                              Cancel this appointment?
+                              {t("list.cancelTitle")}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              The other party will be notified.
+                              {t("list.cancelBody")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel className="rounded-full">
-                              Keep it
+                              {t("list.keep")}
                             </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => setStatus(appt, "cancelled")}
                               className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Cancel appointment
+                              {t("list.cancelConfirm")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -367,22 +372,25 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          const kindLabelText =
-                            kindLabel[appt.kind] ?? "Meeting";
+                          const kindLabelText = kindText(appt.kind);
                           const counterparty = otherName
-                            ? ` with ${otherName}`
+                            ? ` ${t("list.with", { name: otherName })}`
                             : "";
                           const summary = `${kindLabelText}${counterparty}`;
                           const desc = [
                             appt.notes,
                             appt.inquiry_id
-                              ? `Linked inquiry: ${window.location.origin}/vendor/inbox/${appt.inquiry_id}`
+                              ? t("ics.linkedInquiry", {
+                                  url: `${window.location.origin}/vendor/inbox/${appt.inquiry_id}`,
+                                })
                               : null,
                           ]
                             .filter(Boolean)
                             .join("\n\n");
                           downloadIcs(
-                            slugForFile(`vendora-${kindLabelText}-${otherName ?? "meeting"}`),
+                            slugForFile(
+                              `vendora-${plainText(kindLabelText)}-${otherName ?? plainText(t("ics.meetingSlug"))}`,
+                            ),
                             [
                               {
                                 uid: `appt-${appt.id}@vendora`,
@@ -398,7 +406,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                         className="rounded-full h-8 text-xs"
                       >
                         <CalendarPlus className="w-3 h-3 mr-1" />
-                        Add to calendar
+                        {t("list.addToCalendar")}
                       </Button>
                     )}
                     {appt.inquiry_id && (
@@ -409,7 +417,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                         className="rounded-full h-8 text-xs ml-auto"
                       >
                         <a href={`/vendor/inbox/${appt.inquiry_id}`}>
-                          Open inquiry
+                          {t("list.openInquiry")}
                           <ChevronRight className="w-3 h-3 ml-1" />
                         </a>
                       </Button>

@@ -8,6 +8,7 @@
 // We truncate the body to two lines so a reply to a long message
 // doesn't blow up the parent bubble height.
 
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 
 interface Props {
@@ -23,6 +24,7 @@ export function MessageReplyContext({
   tone,
   onCancel,
 }: Props) {
+  const { t } = useTranslation("messages");
   const isBubble = tone === "bubble";
 
   // Bubble tone: integrated quote header. Tight left-accent strip, no
@@ -57,14 +59,14 @@ export function MessageReplyContext({
             WebkitBoxOrient: "vertical",
           }}
         >
-          {body || "Message deleted"}
+          {body || t("reply_context.deleted")}
         </p>
       </div>
       {onCancel ? (
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Cancel reply"
+          aria-label={t("reply_context.cancel")}
           className="shrink-0 text-muted-foreground hover:text-accent self-center"
         >
           <X className="w-3.5 h-3.5" />

@@ -1,0 +1,35 @@
+{
+  "notFound": {
+    "title": "Evento no encontrado",
+    "body": "Es posible que este enlace de invitación se haya eliminado o esté mal escrito."
+  },
+  "invited": "Tienes una invitación",
+  "counts": {
+    "going_one": "asistirá",
+    "going_other": "asistirán",
+    "maybe_one": "tal vez",
+    "maybe_other": "tal vez"
+  },
+  "thanks": {
+    "title": "Gracias por tu respuesta.",
+    "body": "El anfitrión verá tu respuesta en su página de eventos."
+  },
+  "form": {
+    "name": "Tu nombre",
+    "namePlaceholder": "Nombre y apellido",
+    "email": "Correo electrónico (opcional)",
+    "emailPlaceholder": "tu@ejemplo.com",
+    "question": "¿Vas a asistir?",
+    "choices": {
+      "going": "Asistiré",
+      "maybe": "Tal vez",
+      "not_going": "No podré ir"
+    },
+    "sending": "Enviando…",
+    "submit": "Enviar respuesta"
+  },
+  "errors": {
+    "nameRequired": "Agrega tu nombre",
+    "submit": "No pudimos enviar tu respuesta. Inténtalo de nuevo."
+  }
+}

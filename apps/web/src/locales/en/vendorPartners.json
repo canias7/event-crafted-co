@@ -1,0 +1,74 @@
+{
+  "vendor_fallback": "Vendor",
+  "time": {
+    "now": "now",
+    "minutes": "{{n}}m",
+    "hours": "{{n}}h",
+    "yesterday": "Yesterday",
+    "days": "{{n}}d"
+  },
+  "header": {
+    "title": "Inbox",
+    "subtitle": "Chat with other vendors directly — no host in the loop."
+  },
+  "list": {
+    "empty_title": "No partner threads yet",
+    "empty_body": "Open a vendor's profile and tap \"Message vendor\" to start coordinating directly.",
+    "you_prefix": "You: ",
+    "no_messages": "No messages yet",
+    "unread": "Unread"
+  },
+  "you": "You",
+  "message_deleted": "Message deleted",
+  "attachment_body": "(attachment)",
+  "toasts": {
+    "unmuted": "Unmuted",
+    "muted": "Muted",
+    "archived": "Thread archived",
+    "reported": "Reported — we'll review.",
+    "max_files": "Up to {{max}} attachments per message",
+    "upload_failed": "Couldn't upload your attachments — message not sent.",
+    "empty_message": "Message can't be empty",
+    "v2v_pro_title": "Vendor-to-vendor messaging is a Pro feature.",
+    "v2v_pro_body": "Upgrade to Pro or Premium to start conversations with other vendors.",
+    "upgrade": "Upgrade",
+    "start_failed": "Couldn't start the thread."
+  },
+  "confirm": {
+    "archive": "Hide this conversation from your list? It'll come back if the other vendor messages you again.",
+    "report": "What's wrong with this conversation?",
+    "delete": "Delete this message? This can't be undone."
+  },
+  "chat": {
+    "back": "Back to threads",
+    "partner": "Partner",
+    "active_now": "Active now",
+    "v2v_chat": "Vendor-to-vendor chat",
+    "actions": "Thread actions",
+    "unmute": "Unmute thread",
+    "mute": "Mute thread",
+    "archive": "Archive thread",
+    "report": "Report",
+    "empty": "No messages yet. Say hi.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edited": "edited",
+    "contact_flag": "Looks like contact info — kept on Vendora.",
+    "pin_location": "Pin location",
+    "remove_attachment": "Remove attachment",
+    "attach_files": "Attach files",
+    "quick_reactions": "Quick reactions",
+    "insert_emoji": "Insert {{emoji}}",
+    "placeholder": "Message {{name}}…",
+    "send": "Send"
+  },
+  "find": {
+    "title": "Find a vendor",
+    "subtitle": "Search any approved vendor by business name to start a chat.",
+    "placeholder": "Search vendors…",
+    "aria": "Search vendors by business name",
+    "no_match": "No vendors match \"{{query}}\".",
+    "hint": "Start typing — results show up after 2 characters.",
+    "unnamed": "Unnamed vendor"
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pause, Play } from "lucide-react";
 
 interface Props {
@@ -24,6 +25,7 @@ function fmtTime(seconds: number): string {
 }
 
 export function AudioBubble({ src, filename }: Props) {
+  const { t } = useTranslation("messages");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0..1
@@ -134,7 +136,7 @@ export function AudioBubble({ src, filename }: Props) {
       <button
         type="button"
         onClick={toggle}
-        aria-label={playing ? "Pause" : "Play"}
+        aria-label={playing ? t("audio.pause") : t("audio.play")}
         className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors"
       >
         {playing ? (
@@ -145,7 +147,7 @@ export function AudioBubble({ src, filename }: Props) {
       </button>
       <div
         role="slider"
-        aria-label="Seek audio"
+        aria-label={t("audio.seek")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progress * 100)}

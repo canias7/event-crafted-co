@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Star,
   Send,
@@ -51,6 +52,7 @@ const STATUS_TONE: Record<ReviewRequest["status"], string> = {
 };
 
 export function ReviewRequestsCard({ vendorId }: { vendorId: string }) {
+  const { t } = useTranslation("vendorTools");
   const [rows, setRows] = useState<ReviewRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendOpen, setSendOpen] = useState(false);
@@ -81,11 +83,10 @@ export function ReviewRequestsCard({ vendorId }: { vendorId: string }) {
         <div>
           <p className="font-label text-muted-foreground inline-flex items-center gap-1.5">
             <Star className="w-3 h-3" />
-            Review requests
+            {t("reviewRequests.title")}
           </p>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            Send past clients a link they can use to leave a review —
-            no account needed on their side.
+            {t("reviewRequests.intro")}
           </p>
         </div>
         <Button
@@ -95,15 +96,15 @@ export function ReviewRequestsCard({ vendorId }: { vendorId: string }) {
           className="rounded-full"
         >
           <Send className="w-3 h-3 mr-1.5" />
-          Request review
+          {t("reviewRequests.request")}
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-xs text-muted-foreground py-4">Loading…</p>
+        <p className="text-xs text-muted-foreground py-4">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
         <p className="text-xs text-muted-foreground italic py-3">
-          No requests yet.
+          {t("reviewRequests.empty")}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -137,6 +138,7 @@ function RequestRow({
   vendorId: string;
   onChange: () => void;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(false);
   const link =
@@ -147,7 +149,7 @@ function RequestRow({
   function copyLink() {
     navigator.clipboard.writeText(link);
     setCopied(true);
-    toast.success("Link copied");
+    toast.success(t("common.linkCopied"));
     setTimeout(() => setCopied(false), 1800);
   }
 
@@ -165,7 +167,7 @@ function RequestRow({
       toast.error(error.message);
       return;
     }
-    toast.success("Marked as re-sent");
+    toast.success(t("reviewRequests.resent"));
     onChange();
   }
 
@@ -178,7 +180,7 @@ function RequestRow({
               {r.recipient_name ?? r.recipient_email}
             </p>
             <Badge variant="outline" className={STATUS_TONE[r.status]}>
-              {r.status}
+              {t(`reviewRequests.status.${r.status}`, { defaultValue: r.status })}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
@@ -186,9 +188,12 @@ function RequestRow({
             {r.recipient_email}
           </p>
           <p className="text-[11px] text-muted-foreground mt-1">
-            Sent {formatDate(r.sent_at)}
+            {t("reviewRequests.sentOn", { date: formatDate(r.sent_at) })}
             {r.send_count > 1 && ` · ${r.send_count}×`}
-            {r.completed_at && ` · completed ${formatDate(r.completed_at)}`}
+            {r.completed_at &&
+              ` · ${t("reviewRequests.completedOn", {
+                date: formatDate(r.completed_at),
+              })}`}
           </p>
         </div>
         {r.status === "sent" && (
@@ -205,7 +210,7 @@ function RequestRow({
               ) : (
                 <Copy className="w-3 h-3 mr-1.5" />
               )}
-              Copy link
+              {t("common.copyLink")}
             </Button>
             <Button
               type="button"
@@ -239,6 +244,7 @@ function SendDialog({
   vendorId: string;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -258,7 +264,7 @@ function SendDialog({
       toast.error(error.message);
       return;
     }
-    toast.success("Request created — copy the link to send it");
+    toast.success(t("reviewRequests.created"));
     setEmail("");
     setName("");
     onOpenChange(false);
@@ -270,17 +276,15 @@ function SendDialog({
       <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            Request a review
+            {t("reviewRequests.dialogTitle")}
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
-            Creates a unique review link for one client. Copy it from
-            the list and paste into your email or text — no account
-            required on their end.
+            {t("reviewRequests.dialogBody")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="rr-email">Client email</Label>
+            <Label htmlFor="rr-email">{t("reviewRequests.clientEmail")}</Label>
             <Input
               id="rr-email"
               type="email"
@@ -291,7 +295,7 @@ function SendDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="rr-name">Client name (optional)</Label>
+            <Label htmlFor="rr-name">{t("reviewRequests.clientName")}</Label>
             <Input
               id="rr-name"
               value={name}
@@ -307,14 +311,14 @@ function SendDialog({
               disabled={submitting}
               className="rounded-full"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={submitting || !email}
             >
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Create link
+              {t("reviewRequests.createLink")}
             </Button>
           </DialogFooter>
         </form>

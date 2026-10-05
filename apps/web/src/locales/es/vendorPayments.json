@@ -1,0 +1,227 @@
+{
+  "header": {
+    "title_overview": "Resumen",
+    "subtitle_pay": "Acepta pagos con tarjeta y sigue tus depósitos desde un solo lugar.",
+    "subtitle_overview": "Tu negocio de un vistazo: saldo, actividad y lo que viene."
+  },
+  "recent": {
+    "title": "Actividad reciente",
+    "subtitle": "Últimas facturas pagadas de todos los anuncios de tu cuenta",
+    "view_all": "Ver todo →",
+    "empty": "Aún no hay facturas pagadas. Cuando tus clientes paguen, aparecerán aquí.",
+    "customer": "Cliente",
+    "invoice": "Factura",
+    "date": "Fecha",
+    "amount": "Monto"
+  },
+  "appointments": {
+    "title": "Próximas citas",
+    "subtitle": "Citas confirmadas y propuestas de todos tus anuncios",
+    "view_all": "Ver todo →",
+    "empty": "No tienes citas próximas. Las citas programadas aparecerán aquí.",
+    "appointment": "Cita",
+    "with": "Con",
+    "when": "Cuándo",
+    "status": "Estado",
+    "confirmed": "Confirmada",
+    "proposed": "Propuesta",
+    "meeting": "Reunión",
+    "kinds": {
+      "consultation": "Asesoría",
+      "walkthrough": "Recorrido",
+      "tasting": "Degustación",
+      "fitting": "Prueba",
+      "phone_call": "Llamada telefónica",
+      "other": "Reunión"
+    }
+  },
+  "revenue": {
+    "title": "Ingresos · últimos 30 días",
+    "subtitle": "Totales diarios de facturas pagadas",
+    "empty": "No hay facturas pagadas en los últimos 30 días"
+  },
+  "leads": {
+    "title": "Consultas",
+    "subtitle": "Consultas recibidas · últimos 30 días",
+    "total": "Total",
+    "empty": "No hay consultas en los últimos 30 días. Las nuevas consultas llegan aquí.",
+    "new": "Nuevas",
+    "active": "Activas",
+    "won": "Ganadas",
+    "lost": "Perdidas",
+    "conversion": "{{rate}}% de conversión · {{won}} de {{total}} ganadas",
+    "period_one": "{{count}} consulta en este periodo",
+    "period_other": "{{count}} consultas en este periodo"
+  },
+  "cashflow": {
+    "title": "Flujo de caja",
+    "subtitle": "Entradas vs. salidas · últimos 30 días",
+    "net": "Neto",
+    "empty": "Sin entradas ni salidas de dinero en los últimos 30 días.",
+    "money_in": "Entradas",
+    "money_out": "Salidas",
+    "margin": "{{pct}}% de margen neto · {{amount}} gastados",
+    "nothing_collected": "{{amount}} gastados, aún sin cobros"
+  },
+  "expenses": {
+    "title": "Gastos operativos",
+    "subtitle": "Últimos 30 días · por concepto",
+    "view_all": "Ver todo →",
+    "empty": "No hay gastos registrados en los últimos 30 días.",
+    "other": "Otros",
+    "expense_count_one": "{{count}} gasto",
+    "expense_count_other": "{{count}} gastos",
+    "item_count_one": "{{count}} concepto",
+    "item_count_other": "{{count}} conceptos",
+    "summary": "{{expenses}} en {{items}}",
+    "grouped_other": "{{n}} agrupados en Otros"
+  },
+  "pay": {
+    "try_again": "Inténtalo de nuevo en un momento.",
+    "onboarding_failed": "No se pudo abrir el registro de VendoraPay",
+    "express_failed": "No se pudo abrir Stripe Express",
+    "connect_title": "Conecta VendoraPay",
+    "connect_body": "Configura los pagos para enviar facturas, aceptar tarjetas y recibir depósitos en tu banco. Verifica tu identidad y tu banco (unos 3 minutos) — te traemos de vuelta aquí.",
+    "connect_button": "Conectar VendoraPay",
+    "payout_method": "Método de depósito",
+    "status": {
+      "connected": "Conectado",
+      "pending": "Pendiente",
+      "action_required": "Acción requerida",
+      "verified": "Verificado",
+      "in_review": "En revisión",
+      "incomplete": "Incompleto"
+    },
+    "bank": "Banco",
+    "bank_connected": "Tu banco está conectado. Adminístralo en el panel de VendoraPay Express.",
+    "add_bank_in_dashboard": "Agrega tu cuenta bancaria en el panel de VendoraPay Express para recibir depósitos.",
+    "link_bank": "Vincula una cuenta bancaria verificada para empezar a recibir depósitos automáticos.",
+    "settle_note": "Los fondos se liquidan 2 días hábiles (T+2) después de cada cobro exitoso.",
+    "manage_bank": "Administrar banco",
+    "add_bank": "Agregar banco",
+    "connect_account": "Conectar cuenta",
+    "verification_title": "Verificación del negocio",
+    "verification_body": "Envía los datos de tu entidad legal y tu número de identificación fiscal (EIN o SSN) para cumplir con la verificación KYC y habilitar los reportes 1099-K.",
+    "verification_note": "Lo exige la regulación federal antes de tu primer depósito.",
+    "update_info": "Actualizar datos",
+    "start_verification": "Iniciar verificación"
+  },
+  "invoice_preview": {
+    "business_name": "[Nombre de tu negocio]",
+    "invoice": "FACTURA",
+    "amount_due": "MONTO A PAGAR",
+    "bill_from": "Facturado por",
+    "bill_to": "Facturar a",
+    "issued": "Emitida",
+    "due": "Vence",
+    "category": "Categoría",
+    "client_name": "[Nombre del cliente]",
+    "client_email": "[cliente@correo.com]",
+    "street": "[Dirección]",
+    "city": "[Ciudad, Estado 00000]",
+    "your_email": "[tu@negocio.com]",
+    "phone": "[Teléfono]",
+    "today": "[Hoy]",
+    "due_date": "[Fecha de vencimiento]",
+    "project": "PROYECTO",
+    "item": "Concepto",
+    "qty": "Cant.",
+    "unit_price": "Precio unitario",
+    "amount": "Monto",
+    "subtotal": "Subtotal",
+    "tax": "Impuesto ({{pct}}%)",
+    "total_due": "TOTAL A PAGAR",
+    "notes": "NOTAS",
+    "payment_terms": "CONDICIONES DE PAGO"
+  },
+  "templates": {
+    "invoice": {
+      "blank_invoice": {
+        "title": "Crea tu propia factura",
+        "category": "Personalizada",
+        "summary": "Empieza con un diseño profesional y limpio, y completa tú los detalles.",
+        "project_title": "[Nombre del proyecto o evento]",
+        "notes": "[Agrega aquí detalles del alcance, notas de entrega o expectativas de calendario para que el destinatario sepa qué incluye.]",
+        "payment_terms": "[Describe aquí tu calendario de pagos, los métodos que aceptas y tu política de cargos por pago tardío. Ejemplo: 50% de anticipo al reservar y el saldo 14 días antes del evento.]",
+        "line_items": {
+          "item1": {
+            "name": "[Servicio o producto 1]",
+            "description": "[Breve descripción de lo que incluye]"
+          },
+          "item2": {
+            "name": "[Servicio o producto 2]",
+            "description": "[Breve descripción de lo que incluye]"
+          },
+          "item3": {
+            "name": "[Servicio o producto 3]",
+            "description": "[Breve descripción de lo que incluye]"
+          }
+        }
+      }
+    },
+    "contract": {
+      "standard_service": {
+        "title": "Contrato de servicios estándar",
+        "category": "General",
+        "summary": "Contrato de servicios general que cubre alcance, pago, cancelación y responsabilidad.",
+        "content": "# Contrato de servicios\n\nEste Contrato de servicios (el \"Contrato\") se celebra entre [Nombre del proveedor] (el \"Proveedor\") y [Nombre del cliente] (el \"Cliente\") para los servicios que se prestarán el [Fecha del evento].\n\n## 1. Servicios\nEl Proveedor se compromete a prestar los servicios descritos en la factura o propuesta adjunta. Cualquier cambio en el alcance debe acordarse por escrito.\n\n## 2. Pago\nSe debe pagar un anticipo no reembolsable del 50% al firmar para apartar la fecha. El saldo restante se paga 14 días antes del evento.\n\n## 3. Cancelación\n- Más de 60 días antes del evento: se retiene el anticipo, sin cargos adicionales.\n- De 30 a 60 días antes del evento: se debe el 50% del total.\n- Menos de 30 días: se debe el saldo total.\n\n## 4. Fuerza mayor\nNinguna de las partes es responsable por no cumplir debido a hechos fuera de su control razonable (desastres naturales, órdenes gubernamentales, etc.).\n\n## 5. Responsabilidad\nLa responsabilidad del Proveedor se limita al monto pagado conforme a este Contrato.\n\n## 6. Firmas\nProveedor: ____________________  Fecha: __________\nCliente: ____________________  Fecha: __________"
+      },
+      "wedding_photography": {
+        "title": "Contrato de fotografía de boda",
+        "category": "Fotografía",
+        "summary": "Horas, entregables, derechos de autor y calendario de pagos para fotógrafos de bodas.",
+        "content": "# Contrato de fotografía de boda\n\nEste Contrato se celebra entre [Fotógrafo] y [Cliente(s)] para servicios de fotografía de boda el [Fecha] en [Lugar].\n\n## Servicios\n- [X] horas de cobertura continua a partir de las [Hora]\n- [Número] imágenes digitales editadas, entregadas en un plazo de [X] semanas\n- Galería en línea para descargar y compartir\n- Autorización de impresión para uso personal\n\n## Calendario de pagos\n- 30% de anticipo al firmar\n- 30% 90 días antes del evento\n- 40% de saldo 14 días antes del evento\n\n## Entrega de imágenes\nLas imágenes editadas se entregarán en una galería en línea en un plazo de [X] semanas. No se incluyen los archivos RAW.\n\n## Derechos de autor\nEl Fotógrafo conserva los derechos de autor. El Cliente recibe una autorización de impresión para uso personal. El uso comercial requiere una licencia aparte.\n\n## Cancelación\nEl anticipo no es reembolsable. Si el Fotógrafo debe cancelar por una emergencia, se proporcionará un reemplazo con la misma experiencia o se hará un reembolso total.\n\n## Aceptación\nAl firmar abajo, ambas partes aceptan estos términos.\n\nFotógrafo: ____________________\nCliente: ____________________\nFecha: __________"
+      },
+      "venue_rental": {
+        "title": "Contrato de renta de salón",
+        "category": "Salón",
+        "summary": "Horario de acceso, capacidad, reglas del salón, requisitos de seguro y depósito por daños.",
+        "content": "# Contrato de renta de salón\n\nEste Contrato se celebra entre [Propietario del salón] (el \"Salón\") y [Cliente] para el uso de [Nombre del salón] el [Fecha].\n\n## Periodo de renta\nAcceso de [Hora de inicio] a [Hora de fin]. El montaje y el desmontaje deben completarse dentro de este horario.\n\n## Capacidad\nMáximo [Número] invitados. El Cliente es responsable de no exceder la capacidad.\n\n## Tarifas\n- Tarifa de renta: $[Monto]\n- Depósito reembolsable por daños: $[Monto]\n- Tarifa de limpieza: $[Monto]\n\n## Reglas del salón\n- No se permiten llamas abiertas, salvo en las áreas designadas\n- La música amplificada debe terminar a las [Hora]\n- Toda la decoración debe retirarse al terminar la renta\n- La carga y descarga de proveedores se hace solo por [Entrada designada]\n\n## Seguro\nEl Cliente debe presentar un comprobante de seguro de responsabilidad civil por $1M que nombre al Salón como asegurado adicional, al menos 14 días antes del evento.\n\n## Cancelación\n- Con más de 90 días de anticipación: reembolso total menos $[Tarifa].\n- Dentro de los 90 días previos: se pierde el depósito.\n\nSalón: ____________________\nCliente: ____________________\nFecha: __________"
+      },
+      "catering_service": {
+        "title": "Contrato de servicio de banquetes",
+        "category": "Banquetes",
+        "summary": "Menú, número garantizado de invitados, horario de servicio, necesidades alimentarias y sobrantes.",
+        "content": "# Contrato de servicio de banquetes\n\nEste Contrato se celebra entre [Proveedor de banquetes] y [Cliente] para servicios de banquetes el [Fecha] en [Lugar].\n\n## Menú\nMenú según lo acordado en la propuesta adjunta. La confirmación final del menú vence 30 días antes del evento.\n\n## Número de invitados\n- Número estimado de invitados: [Número]\n- El número final garantizado de invitados vence [X] días antes del evento\n- Los cargos se basan en el número final garantizado o en la asistencia real, lo que sea mayor\n\n## Servicio\n- El montaje empieza [X] horas antes del evento\n- Servicio durante [X] horas\n- Incluye desmontaje y limpieza\n\n## Pago\n- 25% de anticipo no reembolsable al firmar\n- 50% 60 días antes del evento\n- 25% de saldo más cualquier excedente el día del evento\n\n## Necesidades alimentarias\nEl Proveedor de banquetes atenderá las restricciones alimentarias que se le comuniquen con al menos [X] días de anticipación.\n\n## Sobrantes\nSegún el código de salud local, los invitados no pueden llevarse la comida sobrante, pero sí puede donarse.\n\nProveedor de banquetes: ____________________\nCliente: ____________________\nFecha: __________"
+      },
+      "cancellation_policy": {
+        "title": "Política de cancelación y reembolso",
+        "category": "Política",
+        "summary": "Reembolsos escalonados, cambios de fecha, fuerza mayor y cancelación por parte del proveedor.",
+        "content": "# Política de cancelación y reembolso\n\nEsta Política aplica a todas las reservas con [Nombre del proveedor] (el \"Proveedor\").\n\n## Anticipo\nSe requiere un anticipo no reembolsable del [%] para asegurar la reserva. El anticipo aparta tu fecha y se pierde si cancelas, sin importar cuándo.\n\n## Calendario de cancelación\n- Más de 90 días antes del evento: reembolso total de lo pagado además del anticipo\n- De 60 a 90 días antes del evento: reembolso del 50% de lo pagado además del anticipo\n- De 30 a 59 días antes del evento: reembolso del 25% de lo pagado además del anticipo\n- Menos de 30 días: sin reembolso\n\n## Cambios de fecha\nSe permite un cambio de fecha sin costo adicional, sujeto a la disponibilidad del Proveedor. Los cambios adicionales tienen un cargo administrativo de $[Tarifa].\n\n## Fuerza mayor\nSi el evento no puede realizarse por circunstancias fuera del control de ambas partes (pandemia, desastre natural, orden gubernamental), el Proveedor trabajará de buena fe para reprogramarlo. Los reembolsos no están garantizados en casos de fuerza mayor.\n\n## Cancelación por parte del Proveedor\nSi el Proveedor debe cancelar por cualquier motivo, el Cliente recibe un reembolso total de todos los montos pagados, incluido el anticipo. Cuando sea posible, el Proveedor ayudará a encontrar un reemplazo comparable.\n\nEnterado:\nCliente: ____________________\nFecha: __________"
+      }
+    },
+    "proposal": {
+      "full_wedding": {
+        "title": "Producción completa de boda",
+        "category": "Boda",
+        "summary": "Paquete de foto + video + dron con sesión de compromiso y planificación completa del cronograma.",
+        "content": "# Propuesta de producción de boda — [Nombres de los clientes]\n\nGracias por considerarnos para formar parte del día de tu boda. Este es el paquete que recomendamos para el [Fecha de la boda] en [Lugar].\n\n## Resumen de la cobertura\nUn equipo de producción completo que cubre cada momento, desde la preparación hasta el último baile.\n\n## Qué incluye\n- 10 horas de cobertura fotográfica (fotógrafo principal + segundo fotógrafo)\n- 6 horas de video (edición cinematográfica + video de la ceremonia)\n- Tomas aéreas con dron (si el clima lo permite)\n- Galería en línea para revisar las fotos + entrega del video en USB\n- Sesión de compromiso (1 hora) en el lugar que elijas\n- Reunión previa a la boda y planificación del cronograma\n\n## Inversión\n- Paquete de fotografía: $[Monto]\n- Paquete de video: $[Monto]\n- Cobertura con dron: $[Monto]\n- Sesión de compromiso: incluida\n- **Total: $[Monto]**\n\n## Plan de pagos\n- $[Monto] de anticipo para asegurar la fecha\n- $[Monto] 90 días antes\n- $[Monto] de saldo 14 días antes\n\n## Próximos pasos\nSi todo te parece bien, firma el contrato adjunto y paga el anticipo para asegurar el [Fecha]. ¿Tienes preguntas? Solo responde a esta propuesta.\n\nSaludos cordiales,\n[Tu nombre]"
+      },
+      "corporate_event": {
+        "title": "Cobertura de evento corporativo",
+        "category": "Corporativo",
+        "summary": "Fotos + reel resumen + retratos de ponentes, pensados para marketing y comunicación interna.",
+        "content": "# Propuesta de cobertura de evento corporativo\n\nPreparada para: [Nombre de la empresa]\nEvento: [Título del evento]\nFecha: [Fecha]\n\n## Alcance\nCobertura completa de tu [tipo de evento], pensada para usarse en marketing posterior al evento, comunicación interna y contenido de resumen.\n\n## Entregables\n- 4 horas de fotografía en el lugar\n- 2 horas de clips de video listos para redes sociales\n- Reel resumen del evento de 30 segundos\n- Más de 150 fotos editadas, entregadas en un plazo de 5 días hábiles\n- Corrección de color alineada con tu marca\n- Derechos de uso completos para marketing y uso interno\n\n## Extras (opcionales)\n- Retratos de ponentes: $[Monto]\n- Publicaciones en redes durante el evento: $[Monto]\n- Cobertura extendida (por hora): $[Monto]\n\n## Inversión\n- Paquete base: $[Monto]\n- Con los extras seleccionados: $[Monto]\n\n## Cronograma\n- Aceptación de la propuesta: antes del [Fecha]\n- 50% de anticipo: al aceptar\n- Llamada final de planeación: [Fecha]\n- Entregables: en un plazo de 5 días hábiles después del evento\n\n[Tu nombre]"
+      },
+      "birthday_party": {
+        "title": "Paquete de celebración de cumpleaños",
+        "category": "Eventos privados",
+        "summary": "Coordinación, decoración, fotografía y planificación musical para cumpleaños importantes.",
+        "content": "# Paquete de celebración de cumpleaños — [Nombre del festejado]\n\n¡Hola, [Cliente]!\n\nNos emociona mucho ayudar a que el cumpleaños número [Edad] de [Festejado] sea inolvidable. Esto es lo que proponemos:\n\n## El ambiente\n[Descripción del tema o estilo; por ejemplo, \"una cena elegante con toques divertidos\"]\n\n## Qué incluye\n- 4 horas de coordinación del evento\n- Montaje de decoración personalizada (globos, letreros, decoración de mesas)\n- Fotografía (2 horas de cobertura, más de 75 fotos editadas)\n- Selección de música para la playlist\n- Manejo del cronograma el día del evento\n\n## Inversión\n- Coordinación y ambientación: $[Monto]\n- Fotografía (extra): $[Monto]\n- Decoración y materiales: $[Monto]\n- **Total: $[Monto]**\n\n## Pago\n- 30% para reservar\n- 70% de saldo una semana antes\n\n[Tu nombre]"
+      },
+      "dj_photo_bundle": {
+        "title": "Paquete de DJ + fotografía",
+        "category": "Paquete",
+        "summary": "Música y fotografía combinadas, con descuento por paquete y extras opcionales.",
+        "content": "# Propuesta de paquete de DJ + fotografía\n\nPara: [Nombre del cliente]\nEvento: [Tipo de evento]\nFecha: [Fecha]\n\n## ¿Por qué un paquete?\nUn equipo, un cronograma y un solo contacto: menos estrés para ti y mejor sincronía entre los momentos musicales y la historia visual.\n\n## Servicios de DJ\n- 6 horas de servicio de DJ\n- Desde la hora del cóctel hasta el último baile\n- Micrófono inalámbrico para los brindis\n- Selección de canciones y anuncios personalizados\n\n## Fotografía\n- 6 horas de cobertura (el mismo horario del DJ)\n- Más de 250 fotos editadas\n- Galería en línea con descarga + autorización de impresión\n- Adelanto de imágenes en 48 horas\n\n## Precio del paquete\n- Total por separado: $[Monto]\n- **Precio del paquete: $[Monto] (ahorras $[Monto])**\n\n## Pago\n- $[Monto] para apartar la fecha\n- $[Monto] de saldo 14 días antes\n\n## Extras\n- Iluminación ambiental: $[Monto]\n- Cabina de fotos: $[Monto]\n- Cobertura extendida (por hora): $[Monto]\n\n[Tu nombre]"
+      },
+      "catering_tasting": {
+        "title": "Propuesta de banquete con degustación",
+        "category": "Banquetes",
+        "summary": "Hora del cóctel, cena servida a la mesa y estación de postres, con degustación incluida al reservar.",
+        "content": "# Propuesta de banquete — [Nombre del evento]\n\nGracias por considerarnos para el [Fecha del evento]. Según lo que platicamos, este es el menú que recomendamos para tu [tipo de evento] de [Número de invitados] invitados.\n\n## Hora del cóctel\n- 4 bocadillos a elegir, servidos por meseros\n- Mesa de carnes frías y quesos\n- Barra libre (cerveza, vino, cóctel de la casa)\n\n## Cena servida a la mesa\n- Ensalada de temporada a elegir\n- Dos opciones de plato fuerte (una vegetariana)\n- Guarniciones al centro para compartir\n- Servicio del pastel de bodas (pastel por parte del cliente)\n\n## Postre\n- Estación de postres de medianoche\n- Barra de café, té y espresso\n\n## Servicio\n- Montaje y desmontaje\n- 5 meseros durante 6 horas\n- 2 bartenders\n- Toda la vajilla, mantelería y cristalería\n\n## Inversión\n- Comida por invitado: $[Monto] × [Número de invitados] = $[Subtotal]\n- Paquete de bar: $[Monto]\n- Servicio y renta de equipo: $[Monto]\n- **Subtotal: $[Monto]**\n- Impuestos y cargo por servicio: $[Monto]\n- **Total: $[Monto]**\n\n## Próximos pasos\n- Agenda una degustación (incluida con la reserva)\n- 25% de anticipo para asegurar la fecha\n- Menú final confirmado 30 días antes del evento\n\n[Tu nombre]"
+      }
+    }
+  }
+}

@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Sparkles, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/lib/realtime";
 import { RatingModal } from "@/components/reviews/RatingModal";
@@ -205,6 +206,7 @@ function PromptCard({
   onClick: () => void;
   otherPartyName: string;
 }) {
+  const { t } = useTranslation("reviews");
   const isEvent = kind === "event";
   return (
     <button
@@ -230,17 +232,17 @@ function PromptCard({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-tight">
             {isEvent
-              ? `How was your event with ${otherPartyName}?`
-              : `Rate ${otherPartyName}'s communication`}
+              ? t("eventPrompt", { name: otherPartyName })
+              : t("conversationPrompt", { name: otherPartyName })}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {isEvent
-              ? "Leave an event review — visible once both sides review."
-              : "Quick read on this conversation."}
+              ? t("prompt.eventBody")
+              : t("prompt.conversationBody")}
           </p>
         </div>
         <span className="shrink-0 text-xs font-medium text-foreground underline underline-offset-2">
-          Rate
+          {t("prompt.rate")}
         </span>
       </div>
     </button>

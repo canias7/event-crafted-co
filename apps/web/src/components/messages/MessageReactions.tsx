@@ -3,6 +3,8 @@
 // user has reacted with that emoji — tapping toggles their own
 // reaction off via the parent's onToggle callback.
 
+import { useTranslation } from "react-i18next";
+
 export interface MessageReaction {
   user_id: string;
   emoji: string;
@@ -21,6 +23,7 @@ export function MessageReactions({
   align = "left",
   onToggle,
 }: Props) {
+  const { t } = useTranslation("messages");
   if (reactions.length === 0) return null;
   const byEmoji = new Map<string, { count: number; mine: boolean }>();
   for (const r of reactions) {
@@ -40,8 +43,8 @@ export function MessageReactions({
           type="button"
           aria-label={
             mine
-              ? `Remove your ${emoji} reaction (${count})`
-              : `React with ${emoji} (${count})`
+              ? t("reactions.remove", { emoji, total: count })
+              : t("reactions.add", { emoji, total: count })
           }
           aria-pressed={mine}
           onClick={() => onToggle?.(emoji)}

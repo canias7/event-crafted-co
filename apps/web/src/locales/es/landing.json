@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "vendors": "Proveedores",
+    "explore": "Explorar",
+    "how_it_works": "Cómo funciona",
+    "open_dashboard": "Abrir panel",
+    "login": "Entrar",
+    "signup": "Registrarse"
+  },
+  "hero": {
+    "title": "Donde comienzan<br/>los eventos <gold>inolvidables</gold>",
+    "intro": "El marketplace y la experiencia de organización todo en uno para anfitriones y para los proveedores que hacen realidad cada visión."
+  },
+  "paths": {
+    "host": {
+      "title": "Estoy organizando un evento",
+      "body": "Encuentra y contrata proveedores de confianza para cualquier ocasión"
+    },
+    "vendor": {
+      "title": "Soy proveedor",
+      "body": "Haz que te descubran, conecta con clientes y haz crecer tu negocio"
+    }
+  },
+  "search": {
+    "what_placeholder": "¿Qué estás organizando?",
+    "location_placeholder": "Ubicación",
+    "submit": "Buscar"
+  }
+}

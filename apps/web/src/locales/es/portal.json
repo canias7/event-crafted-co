@@ -1,0 +1,75 @@
+{
+  "sidebar": {
+    "titles": {
+      "vendor_portal": "Portal de proveedores",
+      "customer": "Anfitrión",
+      "events": "Eventos",
+      "account": "Cuenta",
+      "explore": "Explorar",
+      "profile": "Perfil",
+      "my_profile": "Mi perfil",
+      "edit_profile": "Editar perfil"
+    },
+    "nav_label": "Navegación: {{title}}",
+    "primary": "Principal",
+    "logo_label": "Vendora — Eventos, simplificados",
+    "expand": "Expandir barra lateral",
+    "collapse": "Contraer barra lateral",
+    "tier_label": {
+      "free": "Plan Gratis",
+      "starter": "Plan Starter",
+      "pro": "Plan Pro",
+      "studio": "Plan Premium"
+    },
+    "tier_name": {
+      "free": "Gratis",
+      "starter": "Starter",
+      "pro": "Pro",
+      "studio": "Premium"
+    },
+    "plan_badge": "<word>plan</word><chip>{{tier}}</chip>",
+    "credits_one": "{{balance}} crédito",
+    "credits_other": "{{balance}} créditos"
+  },
+  "mobile_nav": {
+    "label": "Navegación principal (móvil)",
+    "more_label": "Más opciones de navegación",
+    "more": "Más"
+  },
+  "error": {
+    "eyebrow": "— Algo salió mal",
+    "title": "Esta página tuvo un problema.",
+    "body": "Registramos el error para poder corregirlo. Primero intenta recargar; si sigue pasando, vuelve al inicio y te llevaremos a un lugar estable.",
+    "reload": "Recargar",
+    "home": "Volver al inicio",
+    "stack": "Detalles para desarrolladores",
+    "report": "Si crees que es un error de la plataforma, escribe a <mailLink>hello@eventvendora.com</mailLink> con los pasos que seguiste."
+  },
+  "route_loading": "Cargando página…",
+  "under_construction": {
+    "title": "En construcción",
+    "title_with_page": "{{title}} — en construcción",
+    "body": "Estamos afinando los detalles. Volverá muy pronto — gracias por tu paciencia.",
+    "pages": {
+      "usage": "Uso"
+    }
+  },
+  "config_error": {
+    "eyebrow": "Vendora · Error de configuración",
+    "title": "Faltan variables de entorno de Supabase",
+    "lead": "La app no puede iniciar porque",
+    "and": "y",
+    "is": "o",
+    "or": "o",
+    "not_set": "no está configurada.",
+    "missing": "no están configuradas.",
+    "local_lead": "Local: copia",
+    "local_to": "a",
+    "local_trail": "con la URL de tu proyecto + la clave anon.",
+    "hosted": "En hosting: configúralas en el entorno de tu despliegue (Lovable / Vercel / etc.) y vuelve a compilar."
+  },
+  "hub_tabs": {
+    "inquiries": "Consultas",
+    "vendors": "Proveedores"
+  }
+}

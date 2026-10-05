@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, MapPin, Search, Store, Users } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Footer } from "@/components/public/Footer";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
@@ -22,6 +23,12 @@ const BRONZE = "#8a6f3e";
 // pages too.
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation("landing");
+  // Log in hides where the two header buttons would cross the 20px page
+  // edge: under 360px in English, under 388px with the wider Spanish labels
+  // (the shorter "Entrar" here, not "Iniciar sesión", is what fits a 390px
+  // phone; measured with Libre Baskerville).
+  const loginHide = i18n.resolvedLanguage === "es" ? "max-[387px]:hidden" : "max-[359px]:hidden";
 
   // How it works used to be a section here; old /#how-it-works links go
   // to its page.
@@ -87,13 +94,13 @@ export default function LandingPage() {
             style={{ color: "rgba(244,241,234,0.85)" }}
           >
             <Link to="/vendors" className="hover:text-white transition-colors">
-              Vendors
+              {t("nav.vendors")}
             </Link>
             <Link to="/explore" className="hover:text-white transition-colors">
-              Explore
+              {t("nav.explore")}
             </Link>
             <Link to="/how-it-works" className="hover:text-white transition-colors">
-              How it works
+              {t("nav.how_it_works")}
             </Link>
           </nav>
           <div className="flex items-center gap-2 text-[13px] sm:gap-3">
@@ -102,27 +109,27 @@ export default function LandingPage() {
                 to={portalPath}
                 className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-3 font-bold text-foreground transition-colors hover:bg-gold-hover sm:px-4"
               >
-                Open dashboard
+                {t("nav.open_dashboard")}
               </Link>
             ) : (
               <>
                 <Link
                   to="/login"
-                  // Hidden on the narrowest phones (under 360px) so the header never
+                  // Hidden on the narrowest phones (see loginHide) so the header never
                   // clips; Sign up links on to log in.
-                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 font-bold transition-colors hover:bg-white/10 max-[359px]:hidden sm:px-4"
+                  className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 font-bold transition-colors hover:bg-white/10 ${loginHide} sm:px-4`}
                   style={{
                     color: CREAM,
                     border: "1px solid rgba(244,241,234,0.35)",
                   }}
                 >
-                  Log in
+                  {t("nav.login")}
                 </Link>
                 <Link
                   to="/signup"
                   className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-3 font-bold text-foreground transition-colors hover:bg-gold-hover sm:px-4"
                 >
-                  Sign up
+                  {t("nav.signup")}
                 </Link>
               </>
             )}
@@ -142,22 +149,20 @@ export default function LandingPage() {
                 fontWeight: 700,
               }}
             >
-              Where{" "}
-              <span
-                className="font-editorial"
-                style={{ color: GOLD }}
-              >
-                unforgettable
-              </span>
-              <br />
-              events begin
+              <Trans
+                t={t}
+                i18nKey="hero.title"
+                components={{
+                  gold: <span className="font-editorial" style={{ color: GOLD }} />,
+                  br: <br />,
+                }}
+              />
             </h1>
             <p
               className="mx-auto mt-5 max-w-lg text-[15px] md:text-base leading-relaxed landing-fadeup hero-intro"
               style={{ color: "rgba(244,241,234,0.75)", animationDelay: "120ms" }}
             >
-              The all-in-one marketplace and planning experience for hosts and
-              the vendors who bring visions to life.
+              {t("hero.intro")}
             </p>
 
             {/* Two paths */}
@@ -181,10 +186,10 @@ export default function LandingPage() {
                 </span>
                 <span className="flex-1">
                   <span className="block text-[14.5px] font-semibold" style={{ color: INK }}>
-                    I'm planning an event
+                    {t("paths.host.title")}
                   </span>
                   <span className="block text-[12.5px] mt-0.5" style={{ color: "rgba(20,22,26,0.6)" }}>
-                    Find and book trusted vendors for any occasion
+                    {t("paths.host.body")}
                   </span>
                 </span>
                 <ArrowRight
@@ -209,10 +214,10 @@ export default function LandingPage() {
                 </span>
                 <span className="flex-1">
                   <span className="block text-[14.5px] font-semibold" style={{ color: CREAM }}>
-                    I'm a vendor
+                    {t("paths.vendor.title")}
                   </span>
                   <span className="block text-[12.5px] mt-0.5" style={{ color: "rgba(244,241,234,0.65)" }}>
-                    Get discovered, connect with clients, grow your business
+                    {t("paths.vendor.body")}
                   </span>
                 </span>
                 <ArrowRight
@@ -236,7 +241,7 @@ export default function LandingPage() {
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  placeholder="What are you planning?"
+                  placeholder={t("search.what_placeholder")}
                   className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
                   style={{ color: INK }}
                 />
@@ -249,7 +254,7 @@ export default function LandingPage() {
                 <input
                   value={loc}
                   onChange={(e) => setLoc(e.target.value)}
-                  placeholder="Location"
+                  placeholder={t("search.location_placeholder")}
                   className="w-full bg-transparent text-[14px] outline-none placeholder:text-placeholder"
                   style={{ color: INK }}
                 />
@@ -258,7 +263,7 @@ export default function LandingPage() {
                 type="submit"
                 className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
               >
-                Search
+                {t("search.submit")}
               </button>
             </form>
           </div>

@@ -14,34 +14,35 @@ export const CONTACT_EMAIL = "hello@eventvendora.com";
 // on ink, champagne labels, white-at-15% hairlines.
 export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
   const { t } = useTranslation();
+  const { t: ts } = useTranslation("shell");
   const dark = tone === "dark";
   const link = `text-sm transition-colors ${dark ? "hover:text-gold" : "hover:text-accent"}`;
 
   const columns: { title: string; links: { label: string; to: string }[] }[] = [
     {
-      title: "For hosts",
+      title: ts("footer.for_hosts"),
       links: [
-        { label: "Plan with Vendora", to: "/for-hosts" },
-        { label: "Browse vendors", to: "/vendors" },
+        { label: ts("footer.plan_with_vendora"), to: "/for-hosts" },
+        { label: ts("footer.browse_vendors"), to: "/vendors" },
         { label: t("footer.by_location"), to: "/vendors/locations" },
-        { label: "Explore", to: "/explore" },
+        { label: ts("footer.explore"), to: "/explore" },
       ],
     },
     {
-      title: "For vendors",
+      title: ts("footer.for_vendors"),
       links: [
-        { label: "Grow with Vendora", to: "/for-vendors" },
-        { label: "List your business", to: "/signup/vendor" },
-        { label: "How it works", to: "/how-it-works" },
+        { label: ts("footer.grow_with_vendora"), to: "/for-vendors" },
+        { label: ts("footer.list_your_business"), to: "/signup/vendor" },
+        { label: ts("footer.how_it_works"), to: "/how-it-works" },
       ],
     },
     {
-      title: "Company",
+      title: ts("footer.company"),
       links: [
-        { label: "Help", to: "/help" },
-        { label: "Status", to: "/status" },
-        { label: "Press", to: "/press" },
-        { label: "Changelog", to: "/changelog" },
+        { label: ts("footer.help"), to: "/help" },
+        { label: ts("footer.status"), to: "/status" },
+        { label: ts("footer.press"), to: "/press" },
+        { label: ts("footer.changelog"), to: "/changelog" },
         { label: t("footer.privacy"), to: "/privacy" },
         { label: t("footer.terms"), to: "/terms" },
       ],
@@ -63,7 +64,7 @@ export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
       <div className="container mx-auto px-5 md:px-8">
         <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-12">
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" aria-label="Vendora home" className="inline-block">
+            <Link to="/" aria-label={ts("footer.home_label")} className="inline-block">
               <VendoraLogo size="md" color={dark ? "#f4f1ea" : "#14161a"} withTagline={dark} />
             </Link>
             <p className="m-0 mt-3 max-w-xs text-sm leading-relaxed">{t("footer.tagline")}</p>

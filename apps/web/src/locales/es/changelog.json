@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "title": "Novedades — lo nuevo en Vendora",
+    "description": "Un registro continuo de las funciones, mejoras y correcciones que lanzamos en Vendora — el mercado y las herramientas de organización para anfitriones y proveedores de eventos."
+  },
+  "eyebrow": "— NOVEDADES",
+  "title": "Lo que hemos estado <gold>lanzando.</gold>",
+  "intro": "Las funciones, mejoras y correcciones que vas a notar, de la más reciente a la más antigua. Sin relleno de marketing, solo el trabajo.",
+  "categories": {
+    "feature": "Nuevo",
+    "improvement": "Mejora",
+    "fix": "Corrección",
+    "security": "Seguridad"
+  },
+  "list_name": "Novedades de Vendora",
+  "entries": {
+    "explore_redesigned": {
+      "title": "Explorar, rediseñado",
+      "description": "Recorre el trabajo de los proveedores en una galería de dos columnas, mira los reels de uno en uno y encuentra a todos los proveedores y a los que guardaste, todo desde una sola página."
+    },
+    "vendors_page_look": {
+      "title": "Un nuevo diseño para la página de proveedores",
+      "description": "Navega por categoría con recuadros de fotos, mantén tus filtros a la vista mientras te desplazas y ve a cada proveedor en una tarjeta más alta."
+    },
+    "host_vendor_pages": {
+      "title": "Páginas para anfitriones y para proveedores",
+      "description": "Lo que Vendora hace por quien organiza un evento y lo que hace por los negocios de eventos ahora tienen cada uno su propia página. La página de inicio es más sencilla."
+    },
+    "how_it_works": {
+      "title": "Cómo funciona, paso a paso",
+      "description": "Una nueva página guía a anfitriones y proveedores por Vendora, desde la primera búsqueda o el primer anuncio hasta una reserva confirmada."
+    },
+    "one_look": {
+      "title": "Un mismo estilo en el sitio web y las apps",
+      "description": "Libre Baskerville en cada palabra, una sola paleta de colores, botones dorados y tarjetas planas, igual en el sitio web que en ambas apps."
+    },
+    "listing_drafts": {
+      "title": "Guarda un anuncio como borrador",
+      "description": "Los proveedores pueden guardar un anuncio a medio terminar y volver más tarde para completarlo."
+    },
+    "block_several_days": {
+      "title": "Bloquea varios días a la vez",
+      "description": "En el calendario de la app para proveedores, elige los días que quieras y bloquéalos de una sola vez."
+    },
+    "unanswered_badge": {
+      "title": "Consultas sin responder, de un vistazo",
+      "description": "La pestaña Inbox de la app para proveedores muestra una insignia con cuántas consultas esperan respuesta."
+    },
+    "password_reset_links": {
+      "title": "Ya funcionan los enlaces para restablecer la contraseña",
+      "description": "El enlace del correo ya no indica que venció cuando sigue vigente."
+    },
+    "vendor_messaging": {
+      "title": "Mensajes entre proveedores",
+      "description": "Los proveedores pueden escribirse directamente para coordinarse en eventos compartidos, del fotógrafo al organizador o del florista al DJ, sin tener que incluir al anfitrión."
+    },
+    "verification_badges": {
+      "title": "Insignias de verificación",
+      "description": "Los proveedores pueden enviar documentos de identidad, de seguro y de licencia comercial para su revisión. Las verificaciones aprobadas aparecen como insignias en su perfil y en sus tarjetas."
+    },
+    "english_spanish": {
+      "title": "Inglés y español",
+      "description": "El sitio web sigue el idioma de tu navegador, inglés o español, y puedes cambiarlo al final de cualquier página."
+    },
+    "city_category_pages": {
+      "title": "Páginas de ciudades y categorías",
+      "description": "Cada ciudad con proveedores tiene su propia página, y las páginas de categorías responden las preguntas más frecuentes."
+    },
+    "faster_page_loads": {
+      "title": "Páginas que cargan más rápido",
+      "description": "Las fotos llegan en formatos modernos y más livianos, y la siguiente página empieza a cargarse en cuanto pasas el cursor sobre su enlace."
+    }
+  }
+}

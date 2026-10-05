@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "Kit de prensa — Vendora",
+    "description": "El logo, los colores, los datos clave y el contacto de prensa de Vendora."
+  },
+  "toast": {
+    "copied": "Correo copiado",
+    "copy_failed": "No se pudo copiar"
+  },
+  "hero": {
+    "eyebrow": "Kit de prensa",
+    "title": "Todo lo que necesitas para <gold>escribir sobre nosotros.</gold>",
+    "body": "Nuestro logo y nuestros colores, la versión corta de lo que hacemos y una persona real a quien puedes escribirle."
+  },
+  "stats": {
+    "categories": "Categorías de proveedor",
+    "languages": "Idiomas",
+    "free_listing": "Para publicar un negocio"
+  },
+  "facts": {
+    "eyebrow": "Datos clave",
+    "title": "La versión de 60 segundos",
+    "items": {
+      "what": {
+        "label": "Qué es",
+        "body": "Un mercado de eventos donde los anfitriones encuentran proveedores, les escriben y los contratan, y guardan en un solo lugar la fecha, los invitados y las notas de cada evento. Bodas, cumpleaños, eventos corporativos, fiestas y más."
+      },
+      "founded": {
+        "label": "Fundación",
+        "body": "2026."
+      },
+      "reviewed": {
+        "label": "Cómo se revisan los proveedores",
+        "body": "El equipo de Vendora revisa cada anuncio antes de publicarlo."
+      },
+      "vendors_get": {
+        "label": "Qué reciben los proveedores",
+        "body": "Un anuncio con fotos de portafolio, paquetes y precios; una sola bandeja para las consultas; propuestas y contratos que los clientes firman en línea; y pagos en línea seguros. El plan Gratis incluye un anuncio."
+      },
+      "finding": {
+        "label": "Cómo encontrar proveedores",
+        "body": "Busca por categoría, ciudad y fecha, con una página para cada ciudad y cada categoría."
+      },
+      "languages": {
+        "label": "Idiomas",
+        "body": "Inglés y español."
+      }
+    }
+  },
+  "brand": {
+    "eyebrow": "Marca",
+    "title": "Logo y colores",
+    "usage": "Usa el logo sobre Tinta (#14161A) o Marfil (#F4F1EA). No lo estires, no le cambies el color, no lo gires ni le agregues efectos. ¿Necesitas un archivo del logo? Escríbenos.",
+    "app_icon": "Ícono de la app ({{size}})",
+    "colours": "Colores",
+    "palette": {
+      "ink": "Tinta",
+      "ivory": "Marfil",
+      "cream": "Crema",
+      "bronze": "Bronce",
+      "champagne": "Champán"
+    }
+  },
+  "contact": {
+    "eyebrow": "Contacto",
+    "title": "Hablemos",
+    "body": "Solicitudes editoriales, entrevistas y consultas sobre alianzas. Leemos cada mensaje."
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function PortfolioUploader({ vendorId }: Props) {
+  const { t } = useTranslation("listingEditor");
   const [images, setImages] = useState<PortfolioImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -39,7 +41,7 @@ export function PortfolioUploader({ vendorId }: Props) {
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) {
-      toast.error(`Couldn't load portfolio: ${error.message}`);
+      toast.error(t("portfolio.loadFailed", { message: error.message }));
       setImages([]);
     } else {
       setImages((data as PortfolioImage[]) ?? []);
@@ -61,16 +63,16 @@ export function PortfolioUploader({ vendorId }: Props) {
     const files = Array.from(fileList);
     const remaining = MAX_IMAGES - images.length;
     if (remaining <= 0) {
-      toast.error(`You can have at most ${MAX_IMAGES} portfolio images.`);
+      toast.error(t("portfolio.maxImages", { max: MAX_IMAGES }));
       return;
     }
     const accepted = files.slice(0, remaining).filter((f) => {
       if (!ACCEPTED.includes(f.type)) {
-        toast.error(`${f.name}: only JPG, PNG, or WEBP`);
+        toast.error(t("portfolio.typeError", { name: f.name }));
         return false;
       }
       if (f.size > MAX_BYTES) {
-        toast.error(`${f.name}: max 5 MB`);
+        toast.error(t("portfolio.sizeError", { name: f.name }));
         return false;
       }
       return true;
@@ -112,9 +114,7 @@ export function PortfolioUploader({ vendorId }: Props) {
 
     setUploading(false);
     if (succeeded > 0) {
-      toast.success(
-        `${succeeded} ${succeeded === 1 ? "image" : "images"} uploaded`,
-      );
+      toast.success(t("portfolio.uploaded", { count: succeeded }));
       load();
     }
   }
@@ -135,7 +135,7 @@ export function PortfolioUploader({ vendorId }: Props) {
       return;
     }
     if (storageErr) {
-      toast.warning("Removed from portfolio (storage cleanup may lag)");
+      toast.warning(t("portfolio.storageLag"));
     }
     setImages((prev) => prev.filter((p) => p.id !== img.id));
   }
@@ -144,9 +144,9 @@ export function PortfolioUploader({ vendorId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <p className="font-label text-muted-foreground">Portfolio images</p>
+          <p className="font-label text-muted-foreground">{t("portfolio.title")}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            JPG, PNG, or WEBP · up to 5 MB each · max {MAX_IMAGES} images
+            {t("portfolio.hint", { max: MAX_IMAGES })}
           </p>
         </div>
         <Button
@@ -160,12 +160,12 @@ export function PortfolioUploader({ vendorId }: Props) {
           {uploading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              Uploading…
+              {t("portfolio.uploading")}
             </>
           ) : (
             <>
               <Upload className="w-3.5 h-3.5 mr-1.5" />
-              Add photos
+              {t("portfolio.addPhotos")}
             </>
           )}
         </Button>
@@ -200,9 +200,9 @@ export function PortfolioUploader({ vendorId }: Props) {
           className="w-full border border-dashed border-border rounded-sm p-10 text-center hover:border-foreground/30 transition-colors"
         >
           <ImageIcon className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-          <p className="text-sm font-medium mb-1">No photos yet</p>
+          <p className="text-sm font-medium mb-1">{t("portfolio.emptyTitle")}</p>
           <p className="text-xs text-muted-foreground">
-            Add 3–5 images that show your range and style.
+            {t("portfolio.emptyBody")}
           </p>
         </button>
       ) : (
@@ -215,7 +215,7 @@ export function PortfolioUploader({ vendorId }: Props) {
               <div className="relative group aspect-square overflow-hidden rounded-sm bg-muted">
                 <img
                   src={thumbnailUrl(img.storage_path)}
-                  alt={img.caption ?? "Portfolio image"}
+                  alt={img.caption ?? t("portfolio.imageAlt")}
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
@@ -224,7 +224,7 @@ export function PortfolioUploader({ vendorId }: Props) {
                   onClick={() => deleteImage(img)}
                   disabled={deletingId === img.id}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-foreground/85 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm disabled:opacity-100"
-                  aria-label="Delete image"
+                  aria-label={t("portfolio.delete")}
                 >
                   {deletingId === img.id ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -249,6 +249,7 @@ function CaptionField({
   img: PortfolioImage;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("listingEditor");
   const [value, setValue] = useState(img.caption ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -292,7 +293,7 @@ function CaptionField({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      placeholder="Alt text / caption (a11y + SEO)"
+      placeholder={t("portfolio.captionPlaceholder")}
       disabled={saving}
       className={`w-full text-xs px-2.5 py-1.5 rounded-sm bg-secondary/50 border ${
         dirty ? "border-accent/40" : "border-transparent"

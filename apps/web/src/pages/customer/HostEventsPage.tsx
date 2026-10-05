@@ -22,6 +22,8 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -65,6 +67,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveBroadcastModal } from "@/components/host/LiveBroadcastModal";
 import { LiveArchiveDialog } from "@/components/host/LiveArchiveDialog";
+import { intlLocale } from "@/lib/intlLocale";
 
 interface HostEvent {
   id: string;
@@ -94,14 +97,23 @@ interface LiveEventData {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventsTable = () => (supabase as any).from("host_events");
 
+// Labels live in locales/<language>/hostEvents.json (eventTypes.<value>);
+// the values are what's stored on host_events.event_type.
 const EVENT_TYPES = [
-  { value: "wedding", label: "Wedding" },
-  { value: "birthday", label: "Birthday" },
-  { value: "anniversary", label: "Anniversary" },
-  { value: "corporate", label: "Corporate" },
-  { value: "holiday_dinner", label: "Holiday dinner" },
-  { value: "other", label: "Other" },
+  "wedding",
+  "birthday",
+  "anniversary",
+  "corporate",
+  "holiday_dinner",
+  "other",
 ];
+
+// Spanish month and weekday names are lowercase ("octubre de 2026");
+// lines and headings that open with one start with a capital, like the
+// English. No change to English, which is already capitalised.
+function capFirst(text: string): string {
+  return text.charAt(0).toLocaleUpperCase(i18n.language) + text.slice(1);
+}
 
 function todayYmd(): string {
   const d = new Date();
@@ -119,12 +131,14 @@ function endOfNextYearYmd(): string {
 
 function fmtDate(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  return capFirst(
+    new Date(y, m - 1, d).toLocaleDateString(intlLocale(), {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }),
+  );
 }
 
 function fmtTimeRange(start: string | null, end: string | null): string | null {
@@ -133,7 +147,7 @@ function fmtTimeRange(start: string | null, end: string | null): string | null {
     const [h, m] = t.split(":").map(Number);
     const d = new Date();
     d.setHours(h, m, 0, 0);
-    return d.toLocaleTimeString(undefined, {
+    return d.toLocaleTimeString(intlLocale(), {
       hour: "numeric",
       minute: "2-digit",
     });
@@ -144,10 +158,13 @@ function fmtTimeRange(start: string | null, end: string | null): string | null {
 
 function eventTypeLabel(type: string | null): string | null {
   if (!type) return null;
-  return EVENT_TYPES.find((t) => t.value === type)?.label ?? type;
+  return EVENT_TYPES.includes(type)
+    ? i18n.t(`eventTypes.${type}`, { ns: "hostEvents" })
+    : type;
 }
 
 export default function HostEventsPage() {
+  const { t } = useTranslation("hostEvents");
   const { user } = useAuth();
   const [events, setEvents] = useState<HostEvent[] | null>(null);
   const [liveByEvent, setLiveByEvent] = useState<Record<string, LiveEventData>>(
@@ -332,10 +349,12 @@ export default function HostEventsPage() {
     });
   }
 
-  const monthLabel = viewMonth.toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = capFirst(
+    viewMonth.toLocaleDateString(intlLocale(), {
+      month: "long",
+      year: "numeric",
+    }),
+  );
 
   const eventDayKeys = useMemo(
     () => new Set((events ?? []).map((e) => e.event_date)),
@@ -365,7 +384,7 @@ export default function HostEventsPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Event deleted");
+    toast.success(t("toasts.deleted"));
     setEvents((prev) => prev?.filter((e) => e.id !== id) ?? null);
   }
 
@@ -373,15 +392,15 @@ export default function HostEventsPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={navItems}
-        title="Events"
+        title={t("title")}
         backPath="/customer/explore"
       />
       <main id="main-content" className="flex-1 pb-24 md:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-editorial text-3xl">Events</h1>
+            <h1 className="font-editorial text-3xl">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Plan your events — weddings, dinners, anything.
+              {t("subtitle")}
             </p>
           </div>
           <NotificationBell variant="light" />
@@ -427,8 +446,8 @@ export default function HostEventsPage() {
                     liveData={liveByEvent[eventsOnSelectedDay[0].id] ?? null}
                     label={
                       selectedDay && nextUp?.event_date === selectedDay
-                        ? "Up next"
-                        : "On this day"
+                        ? t("upNext")
+                        : t("onThisDay")
                     }
                     onEdit={() => setEditing(eventsOnSelectedDay[0])}
                     onDelete={() => setDeleting(eventsOnSelectedDay[0])}
@@ -451,13 +470,13 @@ export default function HostEventsPage() {
                     border: "0.5px solid rgba(0,0,0,0.08)",
                   }}
                 >
-                  Nothing on this day.
+                  {t("nothingOnDay")}
                 </div>
               )}
 
               {past.length > 0 ? (
                 <section>
-                  <h2 className="font-editorial text-2xl mb-3 mt-4">Past</h2>
+                  <h2 className="font-editorial text-2xl mb-3 mt-4">{t("past")}</h2>
                   <div className="space-y-3 opacity-80">
                     {past.map((e) => (
                       <EventCard
@@ -480,7 +499,7 @@ export default function HostEventsPage() {
                   className="px-6"
                 >
                   <Plus className="w-4 h-4 mr-1.5" />
-                  New event
+                  {t("newEvent")}
                 </Button>
               </div>
             </>
@@ -513,14 +532,14 @@ export default function HostEventsPage() {
         <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-editorial text-3xl">
-              Delete event?
+              {t("deleteDialog.title")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed">
-              "{deleting?.title}" will be removed. This can't be undone.
+              {t("deleteDialog.body", { title: deleting?.title ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full">{t("deleteDialog.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -528,7 +547,7 @@ export default function HostEventsPage() {
               }}
               className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("deleteDialog.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -538,6 +557,7 @@ export default function HostEventsPage() {
 }
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
+  const { t } = useTranslation("hostEvents");
   return (
     <div
       className="rounded-2xl p-10 md:p-14 text-center"
@@ -553,23 +573,20 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         <CalendarIcon className="w-6 h-6" />
       </div>
       <h2 className="font-editorial text-3xl mb-2">
-        Plan your first event
+        {t("empty.title")}
       </h2>
       <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-        Add a date, location, and a few details. You'll have a clean
-        timeline of every event you're planning.
+        {t("empty.body")}
       </p>
       <Button
         onClick={onCreate}
       >
         <Plus className="w-4 h-4 mr-1.5" />
-        New event
+        {t("newEvent")}
       </Button>
     </div>
   );
 }
-
-const WEEKDAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 function MonthCalendar({
   monthLabel,
@@ -587,6 +604,9 @@ function MonthCalendar({
   onShiftMonth: (delta: number) => void;
   onSelectDay: (ymd: string, inMonth: boolean) => void;
 }) {
+  const { t } = useTranslation("hostEvents");
+  // Sunday-first initials ("S M T W T F S").
+  const weekdayHeaders = t("weekdays", { returnObjects: true }) as unknown as string[];
   const today = todayYmd();
   return (
     <div
@@ -602,7 +622,7 @@ function MonthCalendar({
           <button
             type="button"
             onClick={() => onShiftMonth(-1)}
-            aria-label="Previous month"
+            aria-label={t("calendar.previousMonth")}
             className="w-9 h-9 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -610,7 +630,7 @@ function MonthCalendar({
           <button
             type="button"
             onClick={() => onShiftMonth(1)}
-            aria-label="Next month"
+            aria-label={t("calendar.nextMonth")}
             className="w-9 h-9 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center"
           >
             <ChevronRight className="h-4 w-4" />
@@ -618,7 +638,7 @@ function MonthCalendar({
         </div>
       </div>
       <div className="grid grid-cols-7 mb-1">
-        {WEEKDAY_HEADERS.map((d, i) => (
+        {weekdayHeaders.map((d, i) => (
           <div
             key={i}
             className="text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground py-1"
@@ -708,7 +728,7 @@ function CalendarCell({
 function UpNextHero({
   event,
   liveData,
-  label = "Up next",
+  label,
   onEdit,
   onDelete,
 }: {
@@ -718,6 +738,7 @@ function UpNextHero({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation("hostEvents");
   const [liveOpen, setLiveOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const time = fmtTimeRange(event.start_time, event.end_time);
@@ -735,11 +756,11 @@ function UpNextHero({
       <div className="flex items-start justify-between gap-3">
         <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-medium text-foreground">
           <Sparkles className="w-3 h-3" />
-          {label}
+          {label ?? t("upNext")}
           {isLive ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 text-destructive-foreground px-2 py-0.5 tracking-normal normal-case text-[10px]">
               <Radio className="w-2.5 h-2.5 animate-pulse" />
-              LIVE
+              {t("card.liveBadge")}
             </span>
           ) : null}
         </span>
@@ -748,7 +769,7 @@ function UpNextHero({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                aria-label="Event actions"
+                aria-label={t("card.actions")}
                 className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-foreground/10 text-foreground -mt-1 -mr-1"
               >
                 <MoreHorizontal className="w-4 h-4" />
@@ -758,7 +779,7 @@ function UpNextHero({
               {onEdit ? (
                 <DropdownMenuItem onClick={onEdit}>
                   <Pencil className="w-4 h-4 mr-2" />
-                  Edit
+                  {t("card.edit")}
                 </DropdownMenuItem>
               ) : null}
               {onDelete ? (
@@ -767,7 +788,7 @@ function UpNextHero({
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  {t("card.delete")}
                 </DropdownMenuItem>
               ) : null}
             </DropdownMenuContent>
@@ -795,7 +816,7 @@ function UpNextHero({
           className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground hover:bg-gold-hover px-4 text-sm font-bold transition h-9"
         >
           <Radio className="w-3.5 h-3.5" />
-          {isLive ? "Manage live" : "Go live"}
+          {isLive ? t("card.manageLive") : t("card.goLive")}
         </button>
         {hasRecordings ? (
           <button
@@ -804,7 +825,7 @@ function UpNextHero({
             className="inline-flex items-center gap-1.5 rounded-full bg-foreground/10 hover:bg-foreground/15 px-4 py-2 text-sm font-medium transition"
           >
             <History className="w-3.5 h-3.5" />
-            Past lives ({liveData?.recordingsCount ?? 0})
+            {t("card.pastLives", { n: liveData?.recordingsCount ?? 0 })}
           </button>
         ) : null}
       </div>
@@ -835,6 +856,7 @@ function EventCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation("hostEvents");
   const [copied, setCopied] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -847,10 +869,10 @@ function EventCard({
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast.success("Invite link copied");
+      toast.success(t("toasts.inviteCopied"));
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      toast.error("Couldn't copy — long-press the link in the menu instead.");
+      toast.error(t("toasts.copyFailed"));
     }
   }
   return (
@@ -868,7 +890,7 @@ function EventCard({
             {isLive ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-destructive text-destructive-foreground px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider">
                 <Radio className="w-2.5 h-2.5 animate-pulse" />
-                Live
+                {t("card.live")}
               </span>
             ) : null}
             {event.event_type ? (
@@ -891,13 +913,13 @@ function EventCard({
             {event.guest_count != null ? (
               <span className="inline-flex items-center gap-1">
                 <Users className="w-3.5 h-3.5" />
-                {event.guest_count} guests
+                {t("card.guests", { count: event.guest_count })}
               </span>
             ) : null}
             {event.going_count != null ? (
               <span className="inline-flex items-center gap-1 font-medium text-foreground">
                 <Check className="w-3.5 h-3.5 text-accent" />
-                {event.going_count} going
+                {t("card.going", { count: event.going_count })}
               </span>
             ) : null}
           </div>
@@ -915,12 +937,12 @@ function EventCard({
               {copied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-accent" />
-                  Copied
+                  {t("card.copied")}
                 </>
               ) : (
                 <>
                   <Share2 className="w-3.5 h-3.5" />
-                  Share invite link
+                  {t("card.shareInvite")}
                 </>
               )}
             </button>
@@ -930,7 +952,7 @@ function EventCard({
               className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground hover:bg-gold-hover px-4 text-xs font-bold transition h-9"
             >
               <Radio className="w-3.5 h-3.5" />
-              {isLive ? "Manage live" : "Go live"}
+              {isLive ? t("card.manageLive") : t("card.goLive")}
             </button>
             {hasRecordings ? (
               <button
@@ -939,7 +961,7 @@ function EventCard({
                 className="inline-flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 px-3 py-1.5 text-xs font-medium transition"
               >
                 <History className="w-3.5 h-3.5" />
-                Past lives ({liveData?.recordingsCount ?? 0})
+                {t("card.pastLives", { n: liveData?.recordingsCount ?? 0 })}
               </button>
             ) : null}
           </div>
@@ -960,7 +982,7 @@ function EventCard({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label="Event actions"
+              aria-label={t("card.actions")}
               className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 text-muted-foreground"
             >
               <MoreHorizontal className="w-4 h-4" />
@@ -969,14 +991,14 @@ function EventCard({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onEdit}>
               <Pencil className="w-4 h-4 mr-2" />
-              Edit
+              {t("card.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={onDelete}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              {t("card.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -1035,6 +1057,7 @@ function EventFormDialog({
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("hostEvents");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   // Track the open<->editing transition so we hydrate the form once
@@ -1065,15 +1088,15 @@ function EventFormDialog({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!hostId) {
-      toast.error("Sign in first");
+      toast.error(t("toasts.signInFirst"));
       return;
     }
     if (!form.title.trim()) {
-      toast.error("Title is required");
+      toast.error(t("toasts.titleRequired"));
       return;
     }
     if (!form.event_date) {
-      toast.error("Date is required");
+      toast.error(t("toasts.dateRequired"));
       return;
     }
     // Hard-cap on date range — browser min/max are soft hints (pasting
@@ -1081,7 +1104,7 @@ function EventFormDialog({
     const minYmd = todayYmd();
     const maxYmd = endOfNextYearYmd();
     if (form.event_date < minYmd || form.event_date > maxYmd) {
-      toast.error("Pick a date between today and the end of next year.");
+      toast.error(t("toasts.dateRange"));
       return;
     }
     setSaving(true);
@@ -1104,7 +1127,7 @@ function EventFormDialog({
       toast.error(result.error.message);
       return;
     }
-    toast.success(editing ? "Event updated" : "Event created");
+    toast.success(editing ? t("toasts.updated") : t("toasts.created"));
     onSaved();
   }
 
@@ -1113,42 +1136,42 @@ function EventFormDialog({
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">
-            {editing ? "Edit event" : "New event"}
+            {editing ? t("form.editTitle") : t("form.newTitle")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t("form.title")}</Label>
             <Input
               id="title"
               value={form.title}
               onChange={(e) => update("title", e.target.value)}
-              placeholder="e.g. Sarah & Marcus's Wedding"
+              placeholder={t("form.titlePlaceholder")}
               autoFocus
               required
             />
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="event_type">Event type</Label>
+              <Label htmlFor="event_type">{t("form.eventType")}</Label>
               <Select
                 value={form.event_type}
                 onValueChange={(v) => update("event_type", v)}
               >
                 <SelectTrigger id="event_type">
-                  <SelectValue placeholder="Pick one (optional)" />
+                  <SelectValue placeholder={t("form.eventTypePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {EVENT_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
+                  {EVENT_TYPES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {t(`eventTypes.${value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="event_date">Date</Label>
+              <Label htmlFor="event_date">{t("form.date")}</Label>
               <Input
                 id="event_date"
                 type="date"
@@ -1162,7 +1185,7 @@ function EventFormDialog({
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start_time">Start time</Label>
+              <Label htmlFor="start_time">{t("form.startTime")}</Label>
               <Input
                 id="start_time"
                 type="time"
@@ -1172,7 +1195,7 @@ function EventFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="end_time">End time</Label>
+              <Label htmlFor="end_time">{t("form.endTime")}</Label>
               <Input
                 id="end_time"
                 type="time"
@@ -1183,16 +1206,16 @@ function EventFormDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location">{t("form.location")}</Label>
             <Input
               id="location"
               value={form.location}
               onChange={(e) => update("location", e.target.value)}
-              placeholder="Venue or address"
+              placeholder={t("form.locationPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="guest_count">Guests</Label>
+            <Label htmlFor="guest_count">{t("form.guests")}</Label>
             <Input
               id="guest_count"
               type="number"
@@ -1202,13 +1225,13 @@ function EventFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("form.notes")}</Label>
             <Textarea
               id="notes"
               rows={3}
               value={form.notes}
               onChange={(e) => update("notes", e.target.value)}
-              placeholder="Anything else worth remembering."
+              placeholder={t("form.notesPlaceholder")}
             />
           </div>
           <DialogFooter className="pt-2 gap-2 sm:gap-0">
@@ -1219,7 +1242,7 @@ function EventFormDialog({
               disabled={saving}
               className="rounded-full"
             >
-              Cancel
+              {t("form.cancel")}
             </Button>
             <Button
               type="submit"
@@ -1227,11 +1250,11 @@ function EventFormDialog({
             >
               {saving
                 ? editing
-                  ? "Saving…"
-                  : "Creating…"
+                  ? t("form.saving")
+                  : t("form.creating")
                 : editing
-                  ? "Save changes"
-                  : "Create event"}
+                  ? t("form.save")
+                  : t("form.create")}
             </Button>
           </DialogFooter>
         </form>

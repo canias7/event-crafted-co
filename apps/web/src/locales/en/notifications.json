@@ -1,0 +1,16 @@
+{
+  "bell": {
+    "label": "Notifications",
+    "label_unread": "Notifications, {{unread}} unread",
+    "title": "Notifications",
+    "mark_all_read": "Mark all read",
+    "loading": "Loading…",
+    "empty_title": "You're all caught up",
+    "empty_body": "We'll let you know when something happens.",
+    "today": "Today",
+    "earlier": "Earlier"
+  },
+  "mobile": {
+    "open_inbox": "Open inbox"
+  }
+}

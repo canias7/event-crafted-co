@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Film, Grid3x3, MessageCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ import {
   MediaComposerModal,
 } from "@/components/host/Composers";
 import { MediaLightbox } from "@/components/host/MediaLightbox";
+import { intlLocale } from "@/lib/intlLocale";
 
 type Tab = "grid" | "reels" | "buzz";
 
@@ -41,6 +43,7 @@ type LightboxMedia =
   | { kind: "reel"; video_url: string; caption: string | null; created_at: string };
 
 export function HostContentSection({ userId }: { userId: string }) {
+  const { t } = useTranslation("hostTools");
   const [tab, setTab] = useState<Tab>("grid");
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<PostRow[]>([]);
@@ -82,34 +85,34 @@ export function HostContentSection({ userId }: { userId: string }) {
   }, [load]);
 
   async function remove(table: "posts" | "reels" | "buzz", id: string) {
-    if (!window.confirm("Delete this? Can't be undone.")) return;
+    if (!window.confirm(t("content.confirmDelete"))) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from(table).delete().eq("id", id);
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success("Deleted.");
+    toast.success(t("content.deleted"));
     load();
   }
 
   const TABS: Array<{ id: Tab; label: string; icon: typeof Grid3x3 }> = [
-    { id: "grid", label: `Posts · ${posts.length}`, icon: Grid3x3 },
-    { id: "reels", label: `Reels · ${reels.length}`, icon: Film },
-    { id: "buzz", label: `Buzz · ${buzz.length}`, icon: MessageCircle },
+    { id: "grid", label: t("content.tabs.posts", { n: posts.length }), icon: Grid3x3 },
+    { id: "reels", label: t("content.tabs.reels", { n: reels.length }), icon: Film },
+    { id: "buzz", label: t("content.tabs.buzz", { n: buzz.length }), icon: MessageCircle },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-1 overflow-x-auto">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.id;
+          {TABS.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
             return (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={item.id}
+                onClick={() => setTab(item.id)}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                   active
                     ? "bg-foreground text-background"
@@ -117,7 +120,7 @@ export function HostContentSection({ userId }: { userId: string }) {
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {t.label}
+                {item.label}
               </button>
             );
           })}
@@ -129,7 +132,11 @@ export function HostContentSection({ userId }: { userId: string }) {
           className="rounded-full"
         >
           <Plus className="h-4 w-4 mr-1" />
-          {tab === "grid" ? "New post" : tab === "reels" ? "New reel" : "New buzz"}
+          {tab === "grid"
+            ? t("content.newPost")
+            : tab === "reels"
+              ? t("content.newReel")
+              : t("content.newBuzz")}
         </Button>
       </div>
 
@@ -189,8 +196,9 @@ function PostsGrid({
   onOpen: (m: LightboxMedia) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation("hostTools");
   if (posts.length === 0) {
-    return <Empty msg="No posts yet — tap New post to create one." />;
+    return <Empty msg={t("content.emptyPosts")} />;
   }
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
@@ -211,7 +219,7 @@ function PostsGrid({
             <div className="relative aspect-square overflow-hidden rounded-md bg-secondary/40">
               <img
                 src={p.image_url}
-                alt={p.caption ?? "Post"}
+                alt={p.caption ?? t("content.postAlt")}
                 className="w-full h-full object-cover transition group-hover:scale-[1.02]"
                 loading="lazy"
               />
@@ -222,7 +230,7 @@ function PostsGrid({
               </p>
             ) : null}
           </button>
-          <DeleteBadge onDelete={() => onDelete(p.id)} label="Delete post" />
+          <DeleteBadge onDelete={() => onDelete(p.id)} label={t("content.deletePost")} />
         </div>
       ))}
     </div>
@@ -238,8 +246,9 @@ function ReelsGrid({
   onOpen: (m: LightboxMedia) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation("hostTools");
   if (reels.length === 0) {
-    return <Empty msg="No reels yet — tap New reel to upload a video." />;
+    return <Empty msg={t("content.emptyReels")} />;
   }
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
@@ -261,7 +270,7 @@ function ReelsGrid({
               {r.thumbnail_url ? (
                 <img
                   src={r.thumbnail_url}
-                  alt={r.caption ?? "Reel"}
+                  alt={r.caption ?? t("content.reelLabel")}
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
@@ -272,7 +281,7 @@ function ReelsGrid({
                   preload="metadata"
                   muted
                   playsInline
-                  aria-label={r.caption ?? "Reel"}
+                  aria-label={r.caption ?? t("content.reelLabel")}
                 />
               )}
               <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-black/55 text-white">
@@ -285,7 +294,7 @@ function ReelsGrid({
               </p>
             ) : null}
           </button>
-          <DeleteBadge onDelete={() => onDelete(r.id)} label="Delete reel" />
+          <DeleteBadge onDelete={() => onDelete(r.id)} label={t("content.deleteReel")} />
         </div>
       ))}
     </div>
@@ -299,8 +308,9 @@ function BuzzList({
   buzz: BuzzRow[];
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation("hostTools");
   if (buzz.length === 0) {
-    return <Empty msg="No buzz yet — tap New buzz to share a thought." />;
+    return <Empty msg={t("content.emptyBuzz")} />;
   }
   return (
     <div className="space-y-3 max-w-2xl">
@@ -308,9 +318,9 @@ function BuzzList({
         <div key={b.id} className="card-soft p-4 relative group">
           <p className="text-sm text-foreground whitespace-pre-wrap">{b.body}</p>
           <p className="mt-2 text-xs text-muted-foreground">
-            {new Date(b.created_at).toLocaleDateString()}
+            {new Date(b.created_at).toLocaleDateString(intlLocale())}
           </p>
-          <DeleteBadge onDelete={() => onDelete(b.id)} label="Delete buzz" />
+          <DeleteBadge onDelete={() => onDelete(b.id)} label={t("content.deleteBuzz")} />
         </div>
       ))}
     </div>

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Share2, Copy, Check, Download, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ export function VendorShareKit({
   slug: string | null;
   businessName: string;
 }) {
+  const { t } = useTranslation("vendorTools");
   const [open, setOpen] = useState(false);
 
   if (!slug) {
@@ -32,10 +34,10 @@ export function VendorShareKit({
         size="sm"
         className="rounded-full"
         disabled
-        title="Set a URL slug first"
+        title={t("shareKit.setSlugFirst")}
       >
         <Share2 className="w-3.5 h-3.5 mr-1.5" />
-        Share kit
+        {t("shareKit.title")}
       </Button>
     );
   }
@@ -50,7 +52,7 @@ export function VendorShareKit({
         onClick={() => setOpen(true)}
       >
         <Share2 className="w-3.5 h-3.5 mr-1.5" />
-        Share kit
+        {t("shareKit.title")}
       </Button>
       <ShareKitDialog
         open={open}
@@ -73,6 +75,7 @@ function ShareKitDialog({
   slug: string;
   businessName: string;
 }) {
+  const { t } = useTranslation("vendorTools");
   const url = typeof window !== "undefined"
     ? `${window.location.origin}/v/${slug}`
     : `https://eventvendora.com/v/${slug}`;
@@ -82,7 +85,7 @@ function ShareKitDialog({
   function copyText(text: string, key: "url" | "embed") {
     navigator.clipboard.writeText(text);
     setCopied(key);
-    toast.success("Copied");
+    toast.success(t("shareKit.copied"));
     setTimeout(() => setCopied(null), 1800);
   }
 
@@ -101,8 +104,8 @@ function ShareKitDialog({
     URL.revokeObjectURL(blobUrl);
   }
 
-  const embedSnippet = `<a href="${url}" rel="noreferrer">Book ${businessName} on Vendora</a>`;
-  const shareTitle = `${businessName} on Vendora`;
+  const embedSnippet = `<a href="${url}" rel="noreferrer">${t("shareKit.embedText", { name: businessName })}</a>`;
+  const shareTitle = t("shareKit.shareTitle", { name: businessName });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,12 +113,10 @@ function ShareKitDialog({
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl inline-flex items-center gap-2">
             <QrCode className="w-5 h-5" />
-            Share kit
+            {t("shareKit.title")}
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
-            Drop this on a business card, in your Instagram bio, or in
-            an email signature — the QR scans straight to your Vendora
-            profile.
+            {t("shareKit.intro")}
           </DialogDescription>
         </DialogHeader>
 
@@ -134,7 +135,7 @@ function ShareKitDialog({
 
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-              Profile link
+              {t("shareKit.profileLink")}
             </p>
             <div className="flex gap-2 min-w-0">
               <code className="flex-1 min-w-0 text-xs bg-secondary rounded-sm px-2.5 py-2 truncate font-mono">
@@ -158,7 +159,7 @@ function ShareKitDialog({
 
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-              Embed for your site
+              {t("shareKit.embed")}
             </p>
             <div className="flex gap-2 min-w-0">
               <code className="flex-1 min-w-0 text-xs bg-secondary rounded-sm px-2.5 py-2 truncate font-mono">
@@ -189,7 +190,7 @@ function ShareKitDialog({
               onClick={downloadQr}
             >
               <Download className="w-3.5 h-3.5 mr-1.5" />
-              Download QR
+              {t("shareKit.downloadQr")}
             </Button>
             <a
               href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareTitle)}`}
@@ -197,7 +198,7 @@ function ShareKitDialog({
               rel="noreferrer"
               className="inline-flex items-center text-xs font-medium border border-border rounded-full px-3 py-1.5 hover:border-foreground/30 transition-colors"
             >
-              Share on X
+              {t("shareKit.shareX")}
             </a>
             <a
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
@@ -205,13 +206,13 @@ function ShareKitDialog({
               rel="noreferrer"
               className="inline-flex items-center text-xs font-medium border border-border rounded-full px-3 py-1.5 hover:border-foreground/30 transition-colors"
             >
-              Share on Facebook
+              {t("shareKit.shareFacebook")}
             </a>
             <a
               href={`mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(url)}`}
               className="inline-flex items-center text-xs font-medium border border-border rounded-full px-3 py-1.5 hover:border-foreground/30 transition-colors"
             >
-              Email
+              {t("shareKit.email")}
             </a>
           </div>
         </div>

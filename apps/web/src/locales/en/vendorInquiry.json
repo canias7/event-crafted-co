@@ -1,0 +1,72 @@
+{
+  "loading": "Loading…",
+  "notFound": "Inquiry not found",
+  "host": "Host",
+  "you": "You",
+  "vendoraAi": "Vendora AI",
+  "lead": {
+    "hot": "Hot lead",
+    "warm": "Warm lead",
+    "cold": "Cold lead"
+  },
+  "header": {
+    "back": "Back to inbox",
+    "eventInquiry": "{{type}} inquiry",
+    "inquiry": "Inquiry",
+    "details": "Inquiry details",
+    "viewInquiry": "View inquiry",
+    "reopen": "Reopen inquiry",
+    "close": "Close inquiry"
+  },
+  "thread": {
+    "deleted": "Message deleted",
+    "sentAutomatically": "Sent automatically",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edited": "edited",
+    "read": "Read · {{time}}",
+    "ended": "Conversation ended"
+  },
+  "ended": {
+    "lost": "Conversation ended.",
+    "expired": "Conversation ended — inquiry expired.",
+    "cancelled": "Conversation ended — inquiry cancelled."
+  },
+  "composer": {
+    "pinLocation": "Pin location",
+    "removeAttachment": "Remove attachment",
+    "attachFiles": "Attach files",
+    "quickReactions": "Quick reactions",
+    "insertEmoji": "Insert {{emoji}}",
+    "placeholder": "Message {{name}}…",
+    "send": "Send"
+  },
+  "intake": {
+    "newInquiry": "New inquiry",
+    "guests": "Guests",
+    "location": "Location",
+    "budget": "Budget"
+  },
+  "preview": {
+    "back": "Back to chat",
+    "eyebrow": "Inquiry preview",
+    "eventDate": "Event date",
+    "guests": "Guests",
+    "location": "Location",
+    "budget": "Budget",
+    "specialRequests": "Special requests",
+    "intakeAnswers": "Intake form answers",
+    "recommendedVerification": "Recommended verification: "
+  },
+  "confirmDelete": "Delete this message? This can't be undone.",
+  "toast": {
+    "emptyMessage": "Message can't be empty",
+    "markedBooked": "Marked as booked",
+    "markedClosed": "Marked as closed",
+    "reopened": "Reopened",
+    "maxFiles": "Up to {{max}} attachments per message",
+    "invoiceLoadFailed": "Couldn't load that invoice.",
+    "uploadFailed": "Couldn't upload your attachments — message not sent.",
+    "partialUpload": "{{uploaded}} of {{total}} attachments uploaded."
+  }
+}

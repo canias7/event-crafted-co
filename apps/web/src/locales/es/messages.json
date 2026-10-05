@@ -1,0 +1,62 @@
+{
+  "audio": {
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "seek": "Posición del audio"
+  },
+  "actions": {
+    "react": "Reaccionar",
+    "react_with": "Reaccionar con {{emoji}}",
+    "more": "Más",
+    "reply": "Responder"
+  },
+  "reactions": {
+    "remove": "Quitar tu reacción {{emoji}} ({{total}})",
+    "add": "Reaccionar con {{emoji}} ({{total}})"
+  },
+  "reply_context": {
+    "deleted": "Mensaje eliminado",
+    "cancel": "Cancelar respuesta"
+  },
+  "pin_location": {
+    "title": "Enviar una ubicación",
+    "description": "Comparte la dirección del lugar en el chat con un enlace al mapa.",
+    "address": "Dirección",
+    "placeholder": "p. ej., 123 Main St, Brooklyn, NY",
+    "cancel": "Cancelar",
+    "pin": "Enviar"
+  },
+  "share_vendor": {
+    "trigger": "Compartir el perfil de un proveedor",
+    "title": "Compartir un proveedor",
+    "subtitle": "Envía el perfil de un proveedor a esta conversación.",
+    "search_placeholder": "Buscar proveedores…",
+    "search_label": "Buscar proveedores por nombre del negocio",
+    "min_chars": "Escribe al menos {{min}} caracteres.",
+    "no_results": "Ningún proveedor aprobado coincide con “{{query}}”.",
+    "vendor_fallback": "Proveedor",
+    "shared": "Compartiste {{name}}",
+    "shared_fallback": "un proveedor"
+  },
+  "shared_vendor_card": {
+    "view_profile": "Ver perfil"
+  },
+  "typing": "Escribiendo",
+  "voice": {
+    "record": "Grabar mensaje de voz",
+    "stop": "Detener grabación",
+    "cancel": "Cancelar grabación",
+    "unsupported": "Este navegador no permite grabar mensajes de voz",
+    "no_audio": "No se captó audio — mantén presionado para grabar",
+    "mic_error": "No se pudo acceder al micrófono",
+    "mic_error_detail": "No se pudo acceder al micrófono: {{message}}"
+  },
+  "thread": {
+    "today": "Hoy",
+    "yesterday": "Ayer"
+  },
+  "attachments": {
+    "bad_type": "{{name}}: solo se aceptan JPG, PNG, WEBP, PDF o audio",
+    "too_large": "{{name}}: máximo 10 MB"
+  }
+}

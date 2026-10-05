@@ -1,0 +1,70 @@
+{
+  "page_title": "Ayuda — Vendora",
+  "eyebrow": "— AYUDA",
+  "title": "¿Cómo podemos ayudarte?",
+  "intro": "Abajo encontrarás las preguntas frecuentes. Para cualquier otra cosa, escríbenos — leemos todos los correos.",
+  "email_card": {
+    "title": "Soporte por correo",
+    "reply_time": "{{email}} · normalmente respondemos en menos de 24 horas",
+    "open": "Abrir →"
+  },
+  "faq": {
+    "vendors": {
+      "title": "Proveedores",
+      "items": {
+        "approval": {
+          "q": "¿Cuánto tarda la aprobación de un anuncio?",
+          "a": "La mayoría de los anuncios enviados se revisan en menos de 24 horas en días hábiles. Recibirás un correo cuando tu anuncio esté publicado."
+        },
+        "photos": {
+          "q": "¿Por qué mis fotos tardan en subirse?",
+          "a": "Cada foto se redimensiona y se comprime en tu navegador antes de subirse, para mantener bajos los costos de almacenamiento. Con 100 fotos, esto suele tardar entre 10 y 15 segundos. Si se queda en el mismo número por más de un minuto, actualiza la página e inténtalo de nuevo — los campos de texto de tu borrador se guardan automáticamente."
+        },
+        "downgrade": {
+          "q": "¿Qué pasa con mi anuncio si cambio a un plan inferior?",
+          "a": "Tu ciclo actual sigue pagado hasta que termina. El nuevo nivel entra en vigor en la siguiente renovación — los créditos, los espacios para anuncios y las funciones se ajustan en ese momento. Un cambio de nivel nunca afecta tus fotos ni tu contenido existentes."
+        },
+        "pause": {
+          "q": "¿Puedo pausar mi anuncio temporalmente?",
+          "a": "Todavía no con un solo interruptor — pero puedes bloquear un rango de fechas completo desde la página Calendario y los anfitriones te verán como no disponible esos días. La pausa completa está en nuestros planes."
+        },
+        "blocked_title": {
+          "q": "¿Los anfitriones ven el título que le pongo a una fecha bloqueada?",
+          "a": "No. Los títulos son privados. Los anfitriones solo ven que la fecha no está disponible — tu nota (\"Cumpleaños de Christian\", etc.) nunca sale de tu lado de la app."
+        }
+      }
+    },
+    "hosts": {
+      "title": "Anfitriones",
+      "items": {
+        "message": {
+          "q": "¿Cómo le escribo a un proveedor después de enviar una consulta?",
+          "a": "Abre la consulta desde tu Bandeja. Cuando el proveedor responda, la conversación queda ahí — recibirás una notificación cuando conteste."
+        },
+        "payment_info": {
+          "q": "¿Se comparte mi información de pago con los proveedores?",
+          "a": "No. Los proveedores nunca ven los datos de tu tarjeta ni de tu banco. Los pagos pasan por VendoraPay, nuestro procesador de pagos de marca blanca."
+        }
+      }
+    },
+    "billing": {
+      "title": "Facturación",
+      "items": {
+        "invoice": {
+          "q": "¿Cómo descargo una factura?",
+          "a": "Página Suscripción del proveedor → panel Facturación → haz clic en Ver junto a cualquier factura para abrir el PDF seguro de la factura. Clic derecho → Guardar para descargarla."
+        },
+        "card": {
+          "q": "¿Dónde actualizo mi tarjeta?",
+          "a": "Página Suscripción → panel Facturación → Actualizar. Se abre la página segura del método de pago."
+        }
+      }
+    }
+  },
+  "legal": {
+    "eyebrow": "— LEGAL",
+    "terms": "Términos del servicio",
+    "privacy": "Política de privacidad",
+    "refund": "Solicitar un reembolso"
+  }
+}

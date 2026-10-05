@@ -5,6 +5,7 @@
 // entirely when there's nothing to show.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TeamMember {
@@ -31,6 +32,7 @@ function externalHref(link: string): string {
 }
 
 export function VendorTeamPublic({ userId }: { userId: string }) {
+  const { t } = useTranslation("vendorProfile");
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [ownerHides, setOwnerHides] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -72,9 +74,9 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
 
   return (
     <div>
-      <p className="font-label text-accent mb-4">The people behind the details</p>
+      <p className="font-label text-accent mb-4">{t("team.eyebrow")}</p>
       <h2 className="font-editorial text-4xl mb-6">
-        Meet the Team <span className="text-accent">✦</span>
+        {t("team.title")} <span className="text-accent">✦</span>
       </h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {members.map((m) => {
@@ -113,14 +115,14 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
                   <div className="mt-3 space-y-1.5">
                     {m.specialty && (
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-foreground font-medium">Specialty:</span>{" "}
+                        <span className="text-foreground font-medium">{t("team.specialty")}</span>{" "}
                         {m.specialty}
                       </p>
                     )}
                     {m.years_with_business && (
                       <p className="text-xs text-muted-foreground">
                         <span className="text-foreground font-medium">
-                          With the business:
+                          {t("team.tenure")}
                         </span>{" "}
                         {m.years_with_business}
                       </p>
@@ -148,7 +150,7 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
                     onClick={() => setExpanded(open ? null : m.id)}
                     className="mt-3 text-xs font-medium text-foreground hover:text-accent transition-colors"
                   >
-                    {open ? "Show less" : "View bio →"}
+                    {open ? t("team.showLess") : t("team.viewBio")}
                   </button>
                 )}
               </div>

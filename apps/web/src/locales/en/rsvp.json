@@ -1,0 +1,35 @@
+{
+  "notFound": {
+    "title": "Event not found",
+    "body": "This invite link may have been removed or mistyped."
+  },
+  "invited": "You're invited",
+  "counts": {
+    "going_one": "going",
+    "going_other": "going",
+    "maybe_one": "maybe",
+    "maybe_other": "maybe"
+  },
+  "thanks": {
+    "title": "Thanks for RSVPing.",
+    "body": "The host will see your response on their events page."
+  },
+  "form": {
+    "name": "Your name",
+    "namePlaceholder": "First + last",
+    "email": "Email (optional)",
+    "emailPlaceholder": "you@example.com",
+    "question": "Are you going?",
+    "choices": {
+      "going": "Going",
+      "maybe": "Maybe",
+      "not_going": "Can't make it"
+    },
+    "sending": "Sending…",
+    "submit": "Send RSVP"
+  },
+  "errors": {
+    "nameRequired": "Please add your name",
+    "submit": "{{message}}"
+  }
+}

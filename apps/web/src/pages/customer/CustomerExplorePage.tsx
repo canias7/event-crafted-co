@@ -10,16 +10,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { Film, Grid3x3, Heart, MessageCircle, Store } from "lucide-react";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { customerNavItems } from "@/data/navItems";
-import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
+import { CATEGORY_GROUPS, findGroupByName, groupOfSub } from "@/data/categoryTaxonomy";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { supabase } from "@/integrations/supabase/client";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { usePriceLabels } from "@/lib/priceLabels";
+import { intlLocale } from "@/lib/intlLocale";
 
 type Tab = "listing" | "grid" | "reels" | "buzz";
 
@@ -62,14 +66,16 @@ interface ListingRow {
   hero_url?: string | null;
 }
 
-const TABS: Array<{ id: Tab; label: string; icon: typeof Store }> = [
-  { id: "listing", label: "Listings", icon: Store },
-  { id: "grid", label: "Posts", icon: Grid3x3 },
-  { id: "reels", label: "Reels", icon: Film },
-  { id: "buzz", label: "Buzz", icon: MessageCircle },
+// Tab labels live in hostExplore.json (tabs.<id>).
+const TABS: Array<{ id: Tab; icon: typeof Store }> = [
+  { id: "listing", icon: Store },
+  { id: "grid", icon: Grid3x3 },
+  { id: "reels", icon: Film },
+  { id: "buzz", icon: MessageCircle },
 ];
 
 export default function CustomerExplorePage() {
+  const { t } = useTranslation("hostExplore");
   const [tab, setTab] = useState<Tab>("listing");
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<PostRow[]>([]);
@@ -155,28 +161,28 @@ export default function CustomerExplorePage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar
         items={customerNavItems}
-        title="Explore"
+        title={t("title")}
         backPath="/customer/explore"
       />
       <main id="main-content" className="flex-1 min-w-0 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-editorial text-3xl">Explore</h1>
+              <h1 className="font-editorial text-3xl">{t("title")}</h1>
               <p className="text-sm text-muted-foreground">
-                Browse approved vendors, posts, reels, and buzz.
+                {t("subtitle")}
               </p>
             </div>
             <NotificationBell variant="light" />
           </div>
           <div className="flex gap-1 overflow-x-auto">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.id;
+            {TABS.map((item) => {
+              const Icon = item.icon;
+              const active = tab === item.id;
               return (
                 <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
+                  key={item.id}
+                  onClick={() => setTab(item.id)}
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                     active
                       ? "bg-foreground text-background"
@@ -184,7 +190,7 @@ export default function CustomerExplorePage() {
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {t.label}
+                  {t(`tabs.${item.id}`)}
                 </button>
               );
             })}
@@ -239,9 +245,21 @@ function ListingsFeed({
   savedIds: Set<string>;
   onToggleSave: (vendorId: string) => void;
 }) {
+  const { t } = useTranslation("hostExplore");
+  const categoryNames = useCategoryNames();
   if (listings.length === 0) {
-    return <EmptyMsg msg="No listings yet — check back soon." />;
+    return <EmptyMsg msg={t("empty.listings")} />;
   }
+
+  // Group and sub-category keys stay English (they match the taxonomy
+  // and the DB); only the headings and chips are translated.
+  const groupLabel = (name: string) => {
+    if (name === "Other") return t("other");
+    const group = findGroupByName(name);
+    return group ? categoryNames.group(group.slug, name) : name;
+  };
+  const subLabel = (name: string) =>
+    name === "Other" ? t("other") : categoryNames.sub(name);
 
   // Bucket listings by top-level category group, then by sub-category.
   // Mirrors host-mobile/(host)/explore.tsx ListingFeed.
@@ -276,14 +294,14 @@ function ListingsFeed({
           scrollable on mobile so all groups stay reachable in one row. */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
         <CategoryChip
-          label="All"
+          label={t("allCategories")}
           active={category == null}
           onPress={() => onCategoryChange(null)}
         />
         {orderedGroups.map((g) => (
           <CategoryChip
             key={g}
-            label={g}
+            label={groupLabel(g)}
             active={category === g}
             onPress={() => onCategoryChange(g)}
           />
@@ -303,7 +321,7 @@ function ListingsFeed({
         ];
         return (
           <div key={groupName}>
-            <h2 className="font-editorial text-2xl mb-4">{groupName}</h2>
+            <h2 className="font-editorial text-2xl mb-4">{groupLabel(groupName)}</h2>
             <div className="space-y-6">
               {orderedSubs.map((subName) => {
                 const rows = subs.get(subName) ?? [];
@@ -311,7 +329,7 @@ function ListingsFeed({
                 return (
                   <div key={subName}>
                     <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                      {subName}
+                      {subLabel(subName)}
                     </h3>
                     <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                       {rows.map((l) => (
@@ -366,6 +384,11 @@ function ListingCard({
   saved: boolean;
   onToggleSave: () => void;
 }) {
+  const { t } = useTranslation("hostExplore");
+  const categoryNames = useCategoryNames();
+  const priceLabels = usePriceLabels();
+  const price = priceLabels.listingPrice(l.price_min_cents, l.price_max_cents);
+  const models = priceLabels.pricingModels(l.pricing_models);
   return (
     <div className="relative w-64 shrink-0">
       <Link
@@ -376,7 +399,7 @@ function ListingCard({
           {l.hero_url ? (
             <img
               src={l.hero_url}
-              alt={l.business_name ?? "Vendor"}
+              alt={l.business_name ?? t("vendorFallback")}
               className="w-full h-full object-cover transition group-hover:scale-[1.02]"
               loading="lazy"
             />
@@ -388,20 +411,20 @@ function ListingCard({
         </div>
         <div className="p-3">
           <p className="text-xs uppercase tracking-widest text-muted-foreground truncate">
-            {l.category ?? "Vendor"}
+            {l.category ? categoryNames.sub(l.category) : (l.category ?? t("vendorFallback"))}
           </p>
           <h3 className="mt-1 font-bold text-foreground truncate">
-            {l.business_name ?? "Vendor"}
+            {l.business_name ?? t("vendorFallback")}
           </h3>
           <p className="text-xs text-muted-foreground truncate">
             {l.location ?? ""}
-            {formatListingPrice(l.price_min_cents, l.price_max_cents)
-              ? ` · ${formatListingPrice(l.price_min_cents, l.price_max_cents)}`
+            {price
+              ? ` · ${price}`
               : ""}
           </p>
-          {pricingModelsLabel(l.pricing_models) ? (
+          {models ? (
             <p className="text-xs text-muted-foreground truncate">
-              {pricingModelsLabel(l.pricing_models)}
+              {models}
             </p>
           ) : null}
         </div>
@@ -413,7 +436,7 @@ function ListingCard({
           e.stopPropagation();
           onToggleSave();
         }}
-        aria-label={saved ? "Remove from favorites" : "Save vendor"}
+        aria-label={saved ? t("removeFavorite") : t("saveVendor")}
         className="absolute top-2 right-2 rounded-full bg-background/90 backdrop-blur p-1.5 shadow-soft hover:bg-background"
       >
         <Heart
@@ -425,7 +448,8 @@ function ListingCard({
 }
 
 function FeedAuthorHeader({ author }: { author: Author | null }) {
-  const name = author?.display_name ?? "Host";
+  const { t } = useTranslation("hostExplore");
+  const name = author?.display_name ?? t("hostFallback");
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <div className="h-9 w-9 overflow-hidden rounded-full bg-secondary/60 flex items-center justify-center text-sm font-semibold text-muted-foreground shrink-0">
@@ -447,8 +471,9 @@ function FeedAuthorHeader({ author }: { author: Author | null }) {
 }
 
 function PostsFeed({ posts }: { posts: PostRow[] }) {
+  const { t } = useTranslation("hostExplore");
   if (posts.length === 0) {
-    return <EmptyMsg msg="No posts yet." />;
+    return <EmptyMsg msg={t("empty.posts")} />;
   }
   // Instagram-style card column. Mirrors host-mobile/(host)/explore.tsx
   // PostGrid: author header, 4:5 image, caption + timestamp below.
@@ -463,7 +488,7 @@ function PostsFeed({ posts }: { posts: PostRow[] }) {
           <div className="aspect-[4/5] bg-secondary/40">
             <img
               src={p.image_url}
-              alt={p.caption ?? "Post"}
+              alt={p.caption ?? t("postAlt")}
               className="w-full h-full object-cover"
               loading="lazy"
             />
@@ -485,8 +510,9 @@ function PostsFeed({ posts }: { posts: PostRow[] }) {
 }
 
 function ReelsFeed({ reels }: { reels: ReelRow[] }) {
+  const { t } = useTranslation("hostExplore");
   if (reels.length === 0) {
-    return <EmptyMsg msg="No reels yet." />;
+    return <EmptyMsg msg={t("empty.reels")} />;
   }
   return (
     <div className="space-y-5 max-w-xl mx-auto">
@@ -506,7 +532,7 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
               controls
               preload="metadata"
               playsInline
-              aria-label={r.caption ?? "Reel"}
+              aria-label={r.caption ?? t("reelLabel")}
             />
           </div>
           {r.caption ? (
@@ -523,8 +549,9 @@ function ReelsFeed({ reels }: { reels: ReelRow[] }) {
 }
 
 function BuzzFeed({ buzz }: { buzz: BuzzRow[] }) {
+  const { t } = useTranslation("hostExplore");
   if (buzz.length === 0) {
-    return <EmptyMsg msg="No buzz yet." />;
+    return <EmptyMsg msg={t("empty.buzz")} />;
   }
   return (
     <div className="space-y-3 max-w-2xl mx-auto">
@@ -542,11 +569,11 @@ function BuzzFeed({ buzz }: { buzz: BuzzRow[] }) {
               />
             ) : (
               <div className="h-8 w-8 rounded-full bg-secondary/60 flex items-center justify-center text-sm font-medium text-muted-foreground">
-                {b.author?.display_name?.[0]?.toUpperCase() ?? "H"}
+                {b.author?.display_name?.[0]?.toUpperCase() ?? t("hostFallback").charAt(0)}
               </div>
             )}
             <p className="text-sm font-medium text-foreground">
-              {b.author?.display_name ?? "Host"}
+              {b.author?.display_name ?? t("hostFallback")}
             </p>
             <span className="text-xs text-muted-foreground ml-auto">
               {timeAgo(b.created_at)}
@@ -568,11 +595,13 @@ function EmptyMsg({ msg }: { msg: string }) {
 }
 
 function timeAgo(iso: string): string {
+  const tr = (key: string, n?: number) =>
+    i18n.t(`time.${key}`, { ns: "hostExplore", n });
   const t = new Date(iso).getTime();
   const diff = (Date.now() - t) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
-  return new Date(iso).toLocaleDateString();
+  if (diff < 60) return tr("justNow");
+  if (diff < 3600) return tr("minutes", Math.floor(diff / 60));
+  if (diff < 86400) return tr("hours", Math.floor(diff / 3600));
+  if (diff < 604800) return tr("days", Math.floor(diff / 86400));
+  return new Date(iso).toLocaleDateString(intlLocale());
 }

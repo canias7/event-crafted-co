@@ -22,6 +22,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -34,23 +35,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-const ERROR_LABELS: Record<string, string> = {
-  min_messages_required:
-    "Chat with this vendor a bit more before leaving a rating.",
-  no_accepted_proposal:
-    "Event reviews open after both sides confirm the booking — or once a proposal is accepted.",
-  event_too_recent:
-    "Hold off until 3 days after the event so the dust settles.",
-  no_event_date:
-    "Set an event date on the inquiry first.",
-  not_authorized: "You're not allowed to review this inquiry.",
-  host_mismatch: "Inquiry mismatch — refresh and try again.",
-  vendor_mismatch: "Inquiry mismatch — refresh and try again.",
-  edit_window_expired:
-    "Edits are only allowed in the first 10 minutes after submission.",
-  invalid_rating: "Pick a star count between 1 and 5.",
-  not_found: "Review not found — it may have been removed.",
-};
+// Reason codes raised server-side, with friendly copy in reviews.json
+// (errors.<code>); anything else shows the raw message.
+const ERROR_CODES = [
+  "min_messages_required",
+  "no_accepted_proposal",
+  "event_too_recent",
+  "no_event_date",
+  "not_authorized",
+  "host_mismatch",
+  "vendor_mismatch",
+  "edit_window_expired",
+  "invalid_rating",
+  "not_found",
+];
 
 interface EditingReview {
   id: string;
@@ -86,6 +84,7 @@ export function RatingModal({
   onSuccess,
   editing,
 }: Props) {
+  const { t } = useTranslation("reviews");
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [body, setBody] = useState("");
@@ -108,7 +107,7 @@ export function RatingModal({
 
   async function submit() {
     if (rating < 1) {
-      toast.error("Tap a star first.");
+      toast.error(t("modal.toasts.tapStar"));
       return;
     }
     setSubmitting(true);
@@ -139,15 +138,17 @@ export function RatingModal({
     }
     setSubmitting(false);
     if (errorCode) {
-      toast.error(ERROR_LABELS[errorCode] ?? errorCode);
+      toast.error(
+        ERROR_CODES.includes(errorCode) ? t(`errors.${errorCode}`) : errorCode,
+      );
       return;
     }
     toast.success(
       isEditing
-        ? "Review updated."
+        ? t("modal.toasts.updated")
         : isEvent
-          ? "Review submitted. It'll go live once the other side reviews too (or in 14 days)."
-          : "Rating submitted.",
+          ? t("modal.toasts.eventSubmitted")
+          : t("modal.toasts.conversationSubmitted"),
     );
     setRating(0);
     setBody("");
@@ -162,18 +163,18 @@ export function RatingModal({
           <DialogTitle className="font-editorial text-2xl">
             {isEditing
               ? isEvent
-                ? "Edit your event review"
-                : "Edit your conversation rating"
+                ? t("modal.editEventTitle")
+                : t("modal.editConversationTitle")
               : isEvent
-                ? `How was your event with ${otherPartyName}?`
-                : `Rate ${otherPartyName}'s communication`}
+                ? t("eventPrompt", { name: otherPartyName })
+                : t("conversationPrompt", { name: otherPartyName })}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Edits are only allowed in the first 10 minutes after submission."
+              ? t("modal.editDescription")
               : isEvent
-                ? "Your review goes live once both sides review — or after 14 days."
-                : "Quick read on how this conversation went so far."}
+                ? t("modal.eventDescription")
+                : t("modal.conversationDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,7 +182,7 @@ export function RatingModal({
           <div
             className="flex items-center justify-center gap-1.5 py-2"
             role="radiogroup"
-            aria-label="Star rating"
+            aria-label={t("modal.starRating")}
           >
             {[1, 2, 3, 4, 5].map((n) => {
               const lit = (hovered || rating) >= n;
@@ -191,7 +192,7 @@ export function RatingModal({
                   type="button"
                   role="radio"
                   aria-checked={rating === n}
-                  aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                  aria-label={t("modal.stars", { count: n })}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
                   onClick={() => setRating(n)}
@@ -224,7 +225,7 @@ export function RatingModal({
 
           <div>
             <label className="text-xs font-medium text-muted-foreground">
-              {isEvent ? "What stood out?" : "Anything to add? (optional)"}
+              {isEvent ? t("modal.eventLabel") : t("modal.conversationLabel")}
             </label>
             <Textarea
               value={body}
@@ -232,8 +233,8 @@ export function RatingModal({
               rows={4}
               placeholder={
                 isEvent
-                  ? "Tell other hosts what made this vendor great (or not)."
-                  : "Responsive, professional, easy to work with..."
+                  ? t("modal.eventPlaceholder")
+                  : t("modal.conversationPlaceholder")
               }
               className="mt-1"
             />
@@ -247,7 +248,7 @@ export function RatingModal({
             disabled={submitting}
             className="rounded-full"
           >
-            Cancel
+            {t("modal.cancel")}
           </Button>
           <Button
             onClick={submit}
@@ -255,7 +256,7 @@ export function RatingModal({
             className="rounded-full"
           >
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {isEditing ? "Save edit" : "Submit"}
+            {isEditing ? t("modal.saveEdit") : t("modal.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -61,6 +61,7 @@ export function MobileNav({ items }: MobileNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { t: tp } = useTranslation("portal");
   const { signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -86,7 +87,7 @@ export function MobileNav({ items }: MobileNavProps) {
   return (
     <nav
       className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 pointer-events-none"
-      aria-label="Mobile primary"
+      aria-label={tp("mobile_nav.label")}
     >
       <div className="pointer-events-auto mx-auto max-w-md flex items-center justify-between h-16 px-2 rounded-full bg-card/95 backdrop-blur shadow-soft border border-border">
         {primaryItems.map((item) => {
@@ -118,7 +119,7 @@ export function MobileNav({ items }: MobileNavProps) {
             <button
               type="button"
               className="flex items-center justify-center rounded-full w-12 h-12 text-muted-foreground hover:text-accent transition-colors"
-              aria-label="More navigation"
+              aria-label={tp("mobile_nav.more_label")}
             >
               <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -128,7 +129,7 @@ export function MobileNav({ items }: MobileNavProps) {
             className="rounded-t-3xl max-h-[85vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]"
           >
             <SheetHeader className="text-left mb-2">
-              <SheetTitle className="font-display text-lg">More</SheetTitle>
+              <SheetTitle className="font-display text-lg">{tp("mobile_nav.more")}</SheetTitle>
             </SheetHeader>
             {overflowItems.length > 0 && (
               <div className="grid grid-cols-2 gap-2 py-2">
@@ -152,7 +153,9 @@ export function MobileNav({ items }: MobileNavProps) {
                       {item.icon ? (
                         <item.icon className="w-4 h-4" aria-hidden="true" />
                       ) : null}
-                      <span className="truncate">{t(item.labelKey)}</span>
+                      {/* Wraps rather than cutting off: two columns leave
+                          about 115px for a label on a 390px phone. */}
+                      <span className="min-w-0 leading-snug">{t(item.labelKey)}</span>
                     </Link>
                   );
                 })}

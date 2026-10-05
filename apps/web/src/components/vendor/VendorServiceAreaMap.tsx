@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Circle, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Circle, Marker, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Compass } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
 // Small map showing the vendor's service coverage — the marker is
@@ -29,13 +30,8 @@ interface CoverageRow {
 
 const MILES_TO_METERS = 1609.34;
 
-export function VendorServiceAreaMap({
-  vendorId,
-  category,
-}: {
-  vendorId: string;
-  category: string;
-}) {
+export function VendorServiceAreaMap({ vendorId }: { vendorId: string }) {
+  const { t, i18n } = useTranslation("vendorProfile");
   const [data, setData] = useState<CoverageRow | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -96,17 +92,15 @@ export function VendorServiceAreaMap({
     <div>
       <p className="font-label text-accent mb-3 inline-flex items-center gap-1.5">
         <Compass className="w-3 h-3" />
-        Service area
+        {t("serviceArea.eyebrow")}
       </p>
-      <h2 className="font-editorial text-3xl mb-2">Where {category.toLowerCase()}s travel</h2>
+      <h2 className="font-editorial text-3xl mb-2">
+        {t("serviceArea.title")}
+      </h2>
       <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-        {data.location ? (
-          <>
-            Based in {data.location}. Travels up to {radiusMiles} miles for events.
-          </>
-        ) : (
-          <>Travels up to {radiusMiles} miles for events.</>
-        )}
+        {data.location
+          ? t("serviceArea.basedIn", { location: data.location, miles: radiusMiles })
+          : t("serviceArea.travels", { miles: radiusMiles })}
       </p>
       <div
         className="h-64 rounded-sm overflow-hidden border border-border"
@@ -118,7 +112,16 @@ export function VendorServiceAreaMap({
           scrollWheelZoom={false}
           style={{ height: "100%", width: "100%" }}
           attributionControl={false}
+          zoomControl={false}
         >
+          {/* Leaflet's own zoom buttons, with their labels in the visitor's
+              language (remounted when it changes). */}
+          <ZoomControl
+            key={i18n.language}
+            position="topleft"
+            zoomInTitle={t("serviceArea.zoomIn")}
+            zoomOutTitle={t("serviceArea.zoomOut")}
+          />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
@@ -131,7 +134,7 @@ export function VendorServiceAreaMap({
               fillOpacity: 0.12,
             }}
           />
-          <Marker position={center} icon={markerIcon} />
+          <Marker key={i18n.language} position={center} icon={markerIcon} alt={t("serviceArea.marker")} />
         </MapContainer>
       </div>
     </div>

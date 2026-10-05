@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
+import { authErrorText } from "@/components/auth/authErrors";
 
 interface LoginPageProps {
   // When set, the form is themed for that role and the success redirect
@@ -19,6 +20,7 @@ type Step = "credentials" | "code";
 
 export default function LoginPage({ role }: LoginPageProps = {}) {
   const { t } = useTranslation();
+  const { t: tAuth } = useTranslation("auth");
   const navigate = useNavigate();
   const location = useLocation();
   // Honor a return URL passed via either ?next= or location.state.from
@@ -48,19 +50,19 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
 
   const heading =
     role === "host"
-      ? "Host sign in"
+      ? tAuth("login_chooser.host_title")
       : role === "vendor"
-        ? "Vendor sign in"
+        ? tAuth("login_chooser.vendor_title")
         : t("auth.login.title");
   const subheading =
     role === "host"
-      ? "Welcome back, host."
+      ? tAuth("login.welcome_host")
       : role === "vendor"
-        ? "Welcome back, vendor."
+        ? tAuth("login.welcome_vendor")
         : t("auth.login.subtitle");
   const otherSideHref = role === "host" ? "/login/vendor" : "/login/host";
   const otherSideLabel =
-    role === "host" ? "Sign in as a vendor" : "Sign in as a host";
+    role === "host" ? tAuth("login.as_vendor") : tAuth("login.as_host");
 
   async function onSubmitCredentials(e: React.FormEvent) {
     e.preventDefault();
@@ -80,32 +82,28 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         tags: { area: "auth", step: "request" },
         extra: { message: error.message, role: role ?? "unknown" },
       });
-      toast.error(error.message);
+      toast.error(authErrorText(error.message));
       return;
     }
     const r = data as { ok?: boolean; reason?: string } | null;
     if (!r?.ok) {
       if (r?.reason === "banned") {
-        toast.error(
-          "This account is suspended. Contact support if you think that's a mistake.",
-        );
+        toast.error(tAuth("login.toast.suspended"));
       } else if (r?.reason === "not_confirmed") {
-        toast.error(
-          "Your application is still under review. We'll email you the moment it's approved.",
-        );
+        toast.error(tAuth("login.toast.under_review"));
       } else if (r?.reason === "invalid_credentials") {
-        toast.error("Email or password is incorrect.");
+        toast.error(tAuth("login.toast.invalid_credentials"));
       } else {
         Sentry.captureMessage("signin-2fa request returned unknown reason", {
           level: "warning",
           tags: { area: "auth", step: "request" },
           extra: { reason: r?.reason ?? null, role: role ?? "unknown" },
         });
-        toast.error("Couldn't start sign-in. Please try again.");
+        toast.error(tAuth("login.toast.start_failed"));
       }
       return;
     }
-    toast.success("We emailed you a 6-digit code.");
+    toast.success(tAuth("login.toast.code_sent"));
     setCode("");
     setStep("code");
   }
@@ -126,7 +124,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         tags: { area: "auth", step: "verify" },
         extra: { message: error.message, role: role ?? "unknown" },
       });
-      toast.error(error.message);
+      toast.error(authErrorText(error.message));
       return;
     }
     const r = data as {
@@ -138,17 +136,17 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     if (!r?.ok) {
       setLoading(false);
       const reason = r?.reason ?? "unknown";
-      if (reason === "invalid_code") toast.error("That code is incorrect.");
-      else if (reason === "expired") toast.error("That code expired. Request a new one.");
-      else if (reason === "too_many_attempts") toast.error("Too many attempts. Request a new code.");
-      else if (reason === "no_pending_code") toast.error("No pending code. Start over.");
+      if (reason === "invalid_code") toast.error(tAuth("login.toast.invalid_code"));
+      else if (reason === "expired") toast.error(tAuth("login.toast.code_expired"));
+      else if (reason === "too_many_attempts") toast.error(tAuth("login.toast.too_many_attempts"));
+      else if (reason === "no_pending_code") toast.error(tAuth("login.toast.no_pending_code"));
       else {
         Sentry.captureMessage("signin-2fa verify returned unknown reason", {
           level: "warning",
           tags: { area: "auth", step: "verify" },
           extra: { reason, role: role ?? "unknown" },
         });
-        toast.error("Couldn't verify code.");
+        toast.error(tAuth("login.toast.verify_failed"));
       }
       return;
     }
@@ -160,7 +158,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         tags: { area: "auth", step: "verify" },
         extra: { role: role ?? "unknown" },
       });
-      toast.error("Couldn't sign you in. Please try again.");
+      toast.error(tAuth("login.toast.sign_in_failed"));
       return;
     }
     const { data: signInData, error: signInError } =
@@ -170,7 +168,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       });
     setLoading(false);
     if (signInError || !signInData.user) {
-      toast.error(signInError?.message ?? "Couldn't sign you in. Please try again.");
+      toast.error(
+        signInError?.message != null
+          ? authErrorText(signInError.message)
+          : tAuth("login.toast.sign_in_failed"),
+      );
       return;
     }
 
@@ -210,9 +212,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     if (role === "vendor" && !isAdmin) {
       if (isHostProfile && !isTeamMember) {
         await supabase.auth.signOut();
-        toast.error(
-          "This email is registered as a host. Sign in on the host side instead.",
-        );
+        toast.error(tAuth("login.toast.registered_as_host"));
         setLoading(false);
         return;
       }
@@ -220,8 +220,8 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         await supabase.auth.signOut();
         toast.error(
           profileStatus === "rejected"
-            ? "Your vendor application wasn't approved. Reach out to support if you think this is a mistake."
-            : "Your vendor application is still under review. We'll email you the moment it's approved.",
+            ? tAuth("login.toast.vendor_rejected")
+            : tAuth("login.toast.vendor_under_review"),
         );
         setLoading(false);
         return;
@@ -232,9 +232,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
     // can't slip in via the host side.
     if (role === "host" && !isAdmin && isVendorProfile) {
       await supabase.auth.signOut();
-      toast.error(
-        "This email is registered as a vendor. Sign in on the vendor side instead.",
-      );
+      toast.error(tAuth("login.toast.registered_as_vendor"));
       setLoading(false);
       return;
     }
@@ -283,26 +281,34 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           role: role ?? "unknown",
         },
       });
-      toast.error("Couldn't resend the code. Try again.");
+      toast.error(tAuth("login.toast.resend_failed"));
       return;
     }
     setResendCooldown(30);
-    toast.success("We sent a new code.");
+    toast.success(tAuth("login.toast.resent"));
   }
 
   const isHost = role === "host";
-  const pillLabel = isHost ? "HOST SIGN IN" : role === "vendor" ? "VENDOR SIGN IN" : "SIGN IN";
-  const accentWord = isHost ? "host." : role === "vendor" ? "vendor." : "Vendora.";
+  const pillLabel = isHost
+    ? tAuth("login.pill_host")
+    : role === "vendor"
+      ? tAuth("login.pill_vendor")
+      : tAuth("login.pill_default");
+  const accentWord = isHost
+    ? tAuth("shared.accent_host")
+    : role === "vendor"
+      ? tAuth("shared.accent_vendor")
+      : tAuth("login.accent_default");
 
   if (step === "code") {
     return (
       <GlassyAuthShell
-        title="Check your"
-        titleAccent="email."
-        subtitle={`We sent a 6-digit code to ${email}. It expires in 10 minutes.`}
+        title={tAuth("shared.check_your")}
+        titleAccent={tAuth("shared.email_accent")}
+        subtitle={tAuth("login.code.subtitle", { email })}
         pillLabel={pillLabel}
         topRight={
-          <span className="opacity-60">2-step verification</span>
+          <span className="opacity-60">{tAuth("login.code.two_step")}</span>
         }
       >
         <form onSubmit={onSubmitCode} className="flex flex-col gap-4">
@@ -311,7 +317,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
               className="uppercase mb-1.5"
               style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
             >
-              6-digit code
+              {tAuth("login.code.label")}
             </div>
             <input
               className="auth-input text-center font-mono"
@@ -334,11 +340,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Verifying…
+                {tAuth("login.code.verifying")}
               </>
             ) : (
               <>
-                Sign in
+                {tAuth("login.code.submit")}
                 <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
@@ -354,7 +360,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
               className="pb-0.5 font-medium disabled:opacity-50"
               style={{ borderBottom: "0.5px solid currentColor" }}
             >
-              ← Use a different account
+              {tAuth("login.code.different_account")}
             </button>
             <button
               type="button"
@@ -363,7 +369,9 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
               className="pb-0.5 font-medium disabled:opacity-50"
               style={{ borderBottom: "0.5px solid currentColor" }}
             >
-              {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend code"}
+              {resendCooldown > 0
+                ? tAuth("login.code.resend_wait", { seconds: resendCooldown })
+                : tAuth("login.code.resend")}
             </button>
           </div>
         </form>
@@ -373,20 +381,20 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
 
   return (
     <GlassyAuthShell
-      title="Welcome back,"
+      title={tAuth("login.title")}
       titleAccent={accentWord}
-      subtitle="Sign in to manage your events with Vendora."
+      subtitle={tAuth("login.subtitle")}
       pillLabel={pillLabel}
       topRight={
         <>
           <span>
-            <span style={{ opacity: 0.6 }}>New here? </span>
+            <span style={{ opacity: 0.6 }}>{tAuth("login.new_here")}{" "}</span>
             <Link
               to="/signup"
               className="pb-px font-medium"
               style={{ borderBottom: "0.5px solid #000" }}
             >
-              Create an account
+              {tAuth("login.create_account")}
             </Link>
           </span>
         </>
@@ -394,7 +402,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
       belowCardLink={
         role ? (
           <div>
-            <span style={{ opacity: 0.6 }}>On the other side? </span>
+            <span style={{ opacity: 0.6 }}>{tAuth("shared.other_side")}{" "}</span>
             <Link
               to={otherSideHref}
               className="font-medium pb-px"
@@ -425,7 +433,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={tAuth("shared.email_placeholder")}
           />
         </div>
         <div>
@@ -456,7 +464,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             />
             <button
               type="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? tAuth("password.hide") : tAuth("password.show")}
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
               className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-foreground/55 hover:text-accent transition-colors"
@@ -473,11 +481,11 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Sending code…
+              {tAuth("login.sending_code")}
             </>
           ) : (
             <>
-              Continue
+              {tAuth("login.continue")}
               <ArrowRight className="w-3.5 h-3.5" />
             </>
           )}
@@ -486,7 +494,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           className="text-center font-serif italic"
           style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
         >
-          We'll email you a 6-digit code to confirm it's you.
+          {tAuth("login.code_note")}
         </p>
       </form>
     </GlassyAuthShell>

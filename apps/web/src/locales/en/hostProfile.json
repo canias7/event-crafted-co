@@ -1,0 +1,24 @@
+{
+  "title": "Profile",
+  "subtitle": "Your account at a glance.",
+  "hostFallback": "Host",
+  "changePhoto": "Change profile photo",
+  "ratings_one": "{{count}} rating",
+  "ratings_other": "{{count}} ratings",
+  "verifiedHost": "Verified Host",
+  "memberSince": "Member since {{year}}",
+  "stats": {
+    "posts": "Posts",
+    "reels": "Reels",
+    "buzz": "Buzz",
+    "ratings": "Ratings"
+  },
+  "accountSettings": "Account settings",
+  "logOut": "Log out",
+  "toasts": {
+    "photoTooLarge": "Photo too large — pick a photo under 10 MB.",
+    "photoUpdated": "Photo updated.",
+    "photoFailed": "Couldn't update photo: {{message}}",
+    "tryAgain": "Please try again."
+  }
+}

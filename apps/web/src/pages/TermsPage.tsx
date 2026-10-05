@@ -1,163 +1,134 @@
 import { useEffect } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 
 export default function TermsPage() {
+  // The terms' words are in locales/<language>/terms.json.
+  const { t, i18n } = useTranslation("terms");
+  // Translated terms say the English ones prevail; English doesn't.
+  const isTranslation = (i18n.resolvedLanguage ?? "en") !== "en";
+
   useEffect(() => {
-    document.title = "Terms of Service — Vendora";
+    document.title = t("page_title");
     return () => {
-      document.title = "Vendora — Premium Event Planning & Vendor Marketplace";
+      document.title = t("defaultTitle", { ns: "meta" });
     };
-  }, []);
+  }, [t]);
+
+  // A sentence with bold words (<strong>) or the email link (<email>).
+  const rich = (key: string) => (
+    <Trans
+      t={t}
+      i18nKey={key}
+      components={{
+        strong: <strong />,
+        email: (
+          <a
+            href="mailto:hello@eventvendora.com"
+            className="text-gold font-medium hover:text-white"
+          />
+        ),
+      }}
+    />
+  );
 
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PublicNav tone="dark" />
 
       <article id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-gold mb-3">— LEGAL</p>
+        <p className="font-label text-gold mb-3">{t("eyebrow")}</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
-          Terms of service
+          {t("title")}
         </h1>
-        <p className="text-sm text-[#f4f1ea]/80 mb-12">
-          Last updated: May 3, 2026
+        <p className={`text-sm text-[#f4f1ea]/80 ${isTranslation ? "mb-2" : "mb-12"}`}>
+          {t("last_updated")}
         </p>
+        {isTranslation && (
+          <p className="text-sm text-[#f4f1ea]/80 mb-12">
+            {t("translation_note")}
+          </p>
+        )}
 
         <div className="space-y-8 leading-relaxed">
           <p>
-            By using Vendora, you agree to these terms. If you don't, please
-            don't use the platform. We may update these terms; meaningful
-            changes will be announced via email and a banner notice 30 days
-            before they take effect.
+            {t("intro")}
           </p>
 
-          <Section title="1. Eligibility">
+          <Section title={t("eligibility.title")}>
             <p>
-              You must be at least 18 years old and able to enter a binding
-              contract in your jurisdiction. Vendors must be a legitimate
-              business — sole proprietors, LLCs, corporations.
+              {t("eligibility.body")}
             </p>
           </Section>
 
-          <Section title="2. Your account">
+          <Section title={t("account.title")}>
             <p>
-              You're responsible for keeping your password safe and for any
-              activity under your account. Tell us immediately at{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="text-gold font-medium hover:text-white"
-              >
-                hello@eventvendora.com
-              </a>{" "}
-              if you suspect unauthorized access.
+              {rich("account.body")}
             </p>
           </Section>
 
-          <Section title="3. For hosts">
+          <Section title={t("hosts.title")}>
             <p>
-              Browsing Vendora and sending inquiries is free for hosts. When
-              you book a vendor, you contract directly with that vendor —
-              Vendora is the introduction layer, not the contracting party.
-              Payment terms, cancellation policies, and deliverables are
-              between you and the vendor.
+              {t("hosts.body")}
             </p>
           </Section>
 
-          <Section title="4. For vendors">
+          <Section title={t("vendors.title")}>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>
-                Vendora charges <strong>3% on confirmed bookings</strong>{" "}
-                ("won" inquiries). No listing fees, no monthly minimums.
-              </li>
-              <li>
-                Membership is <strong>month-to-month</strong>; you can pause
-                or leave any time without penalty.
-              </li>
-              <li>
-                Vendor profiles, portfolios, and reviews are{" "}
-                <strong>your data</strong>. You can export your reviews at
-                any time, including if you leave the platform.
-              </li>
-              <li>
-                We do not accept money to influence search ranking. Sort
-                order is determined by fit and quality signals only.
-              </li>
-              <li>
-                You're responsible for delivering the services you describe
-                in your profile and quotes.
-              </li>
+              <li>{rich("vendors.commission")}</li>
+              <li>{rich("vendors.membership")}</li>
+              <li>{rich("vendors.your_data")}</li>
+              <li>{t("vendors.ranking")}</li>
+              <li>{t("vendors.delivery")}</li>
             </ul>
           </Section>
 
-          <Section title="5. Prohibited conduct">
+          <Section title={t("conduct.title")}>
             <p>
-              You agree not to: scrape vendor data, attempt to circumvent
-              Vendora's commission by transacting off-platform after an
-              introduction, post false or misleading reviews, harass other
-              users, or use the platform for anything illegal.
+              {t("conduct.body")}
             </p>
           </Section>
 
-          <Section title="6. Content + intellectual property">
+          <Section title={t("content.title")}>
             <p>
-              You retain ownership of everything you upload (portfolio images,
-              messages, reviews). By posting, you grant Vendora a worldwide,
-              royalty-free license to display it within the platform and (for
-              vendors) in editorial features that promote your business.
+              {t("content.body")}
             </p>
           </Section>
 
-          <Section title="7. AI-assisted replies">
+          <Section title={t("ai.title")}>
             <p>
-              When the AI inquiry agent is active, vendors review and approve
-              every drafted reply before it sends. Vendora is not responsible
-              for the content of vendor messages, AI-drafted or otherwise.
+              {t("ai.body")}
             </p>
           </Section>
 
-          <Section title="8. Disclaimers">
+          <Section title={t("disclaimers.title")}>
             <p>
-              Vendora is provided "as is." We don't guarantee any specific
-              vendor's availability, quality, or performance — vendors are
-              independent businesses. Reviews are user-submitted opinion.
+              {t("disclaimers.body")}
             </p>
           </Section>
 
-          <Section title="9. Limitation of liability">
+          <Section title={t("liability.title")}>
             <p>
-              To the fullest extent permitted by law, Vendora's liability is
-              limited to fees you've paid us in the 12 months prior to a
-              claim. We're not liable for indirect, consequential, or punitive
-              damages.
+              {t("liability.body")}
             </p>
           </Section>
 
-          <Section title="10. Termination">
+          <Section title={t("termination.title")}>
             <p>
-              You can close your account anytime from your settings. We can
-              suspend accounts that violate these terms with notice (or
-              without notice for severe violations).
+              {t("termination.body")}
             </p>
           </Section>
 
-          <Section title="11. Governing law">
+          <Section title={t("law.title")}>
             <p>
-              These terms are governed by the laws of the State of New York,
-              without regard to conflict-of-law principles. Disputes are
-              resolved in courts located in New York County.
+              {t("law.body")}
             </p>
           </Section>
 
-          <Section title="12. Contact">
+          <Section title={t("contact.title")}>
             <p>
-              Questions about these terms:{" "}
-              <a
-                href="mailto:hello@eventvendora.com"
-                className="text-gold font-medium hover:text-white"
-              >
-                hello@eventvendora.com
-              </a>
-              .
+              {rich("contact.body")}
             </p>
           </Section>
         </div>

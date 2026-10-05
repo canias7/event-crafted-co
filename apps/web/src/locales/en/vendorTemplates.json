@@ -1,0 +1,55 @@
+{
+  "sidebarTitle": "Vendor Portal",
+  "title": "Templates",
+  "subtitle": "Save replies you send often, then drop them into any chat.",
+  "new": "New",
+  "listing": "Listing",
+  "untitledListing": "Untitled listing",
+  "empty": {
+    "title": "No templates yet",
+    "body": "Save your most-used replies — they'll appear in the Templates menu inside every inquiry chat.",
+    "writeFirst": "Write your first",
+    "useStarters": "Use 3 starter templates"
+  },
+  "edit": "Edit",
+  "delete": "Delete",
+  "dialog": {
+    "newTitle": "New template",
+    "editTitle": "Edit template",
+    "description": "Templates are private to this listing.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Thanks for reaching out",
+    "body": "Body",
+    "bodyPlaceholder": "What should this template say?",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "confirmDelete": {
+    "title": "Delete this template?",
+    "body": "You can always write a new one later.",
+    "cancel": "Cancel",
+    "confirm": "Delete"
+  },
+  "toast": {
+    "needListing": "Create a listing first to start saving templates.",
+    "required": "Name and body are both required",
+    "saved": "Template saved",
+    "updated": "Template updated",
+    "deleted": "Template deleted",
+    "starters": "Added 3 starter templates"
+  },
+  "starters": {
+    "thanks": {
+      "name": "Thanks for reaching out",
+      "body": "Hi! Thanks so much for reaching out — I'd love to hear more about your event. Could you share the date, the headcount, and roughly the budget you have in mind?"
+    },
+    "proposal": {
+      "name": "Send proposal",
+      "body": "I've put together a proposal based on what you shared. Let me know if anything needs tweaking — happy to adjust!"
+    },
+    "unavailable": {
+      "name": "Date unavailable",
+      "body": "Unfortunately I'm already booked on that date. If you have any flexibility, I'd be happy to share what's still open nearby. Either way — thanks for thinking of me!"
+    }
+  }
+}

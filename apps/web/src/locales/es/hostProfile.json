@@ -1,0 +1,24 @@
+{
+  "title": "Perfil",
+  "subtitle": "Tu cuenta de un vistazo.",
+  "hostFallback": "Anfitrión",
+  "changePhoto": "Cambiar foto de perfil",
+  "ratings_one": "{{count}} reseña",
+  "ratings_other": "{{count}} reseñas",
+  "verifiedHost": "Anfitrión verificado",
+  "memberSince": "Miembro desde {{year}}",
+  "stats": {
+    "posts": "Fotos",
+    "reels": "Reels",
+    "buzz": "Buzz",
+    "ratings": "Reseñas"
+  },
+  "accountSettings": "Configuración de la cuenta",
+  "logOut": "Cerrar sesión",
+  "toasts": {
+    "photoTooLarge": "La foto es demasiado grande — elige una de menos de 10 MB.",
+    "photoUpdated": "Foto actualizada.",
+    "photoFailed": "No se pudo actualizar la foto: {{message}}",
+    "tryAgain": "Inténtalo de nuevo."
+  }
+}

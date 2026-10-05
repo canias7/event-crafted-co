@@ -1,0 +1,80 @@
+{
+  "title": "Eventos",
+  "subtitle": "Planea tus eventos — bodas, cenas, lo que sea.",
+  "upNext": "Próximo",
+  "onThisDay": "Este día",
+  "nothingOnDay": "No hay nada este día.",
+  "past": "Pasados",
+  "newEvent": "Nuevo evento",
+  "eventTypes": {
+    "wedding": "Boda",
+    "birthday": "Cumpleaños",
+    "anniversary": "Aniversario",
+    "corporate": "Corporativo",
+    "holiday_dinner": "Cena de fiestas",
+    "other": "Otro"
+  },
+  "weekdays": ["D", "L", "M", "M", "J", "V", "S"],
+  "calendar": {
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
+  },
+  "empty": {
+    "title": "Planea tu primer evento",
+    "body": "Agrega una fecha, una ubicación y algunos detalles. Tendrás una cronología clara de cada evento que estés planeando."
+  },
+  "card": {
+    "actions": "Acciones del evento",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "liveBadge": "EN VIVO",
+    "live": "En vivo",
+    "goLive": "Transmitir en vivo",
+    "manageLive": "Administrar transmisión",
+    "pastLives": "Transmisiones anteriores ({{n}})",
+    "guests_one": "{{count}} invitado",
+    "guests_other": "{{count}} invitados",
+    "going_one": "{{count}} asistirá",
+    "going_other": "{{count}} asistirán",
+    "copied": "Copiado",
+    "shareInvite": "Compartir enlace de invitación"
+  },
+  "deleteDialog": {
+    "title": "¿Eliminar evento?",
+    "body": "Se eliminará \"{{title}}\". No se puede deshacer.",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar"
+  },
+  "form": {
+    "newTitle": "Nuevo evento",
+    "editTitle": "Editar evento",
+    "title": "Título",
+    "titlePlaceholder": "p. ej., Boda de Sarah y Marcus",
+    "eventType": "Tipo de evento",
+    "eventTypePlaceholder": "Elige uno (opcional)",
+    "date": "Fecha",
+    "startTime": "Hora de inicio",
+    "endTime": "Hora de fin",
+    "location": "Ubicación",
+    "locationPlaceholder": "Lugar o dirección",
+    "guests": "Invitados",
+    "notes": "Notas",
+    "notesPlaceholder": "Cualquier otra cosa que quieras recordar.",
+    "cancel": "Cancelar",
+    "saving": "Guardando…",
+    "creating": "Creando…",
+    "save": "Guardar cambios",
+    "create": "Crear evento"
+  },
+  "toasts": {
+    "deleted": "Evento eliminado",
+    "inviteCopied": "Enlace de invitación copiado",
+    "copyFailed": "No se pudo copiar — mantén presionado el enlace en el menú.",
+    "signInFirst": "Primero inicia sesión",
+    "titleRequired": "El título es obligatorio",
+    "dateRequired": "La fecha es obligatoria",
+    "dateRange": "Elige una fecha entre hoy y el final del próximo año.",
+    "updated": "Evento actualizado",
+    "created": "Evento creado"
+  }
+}

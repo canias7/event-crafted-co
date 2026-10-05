@@ -8,6 +8,7 @@
 // linkifying we already do. No special card render needed.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MapPin } from "lucide-react";
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function PinLocationDialog({
   defaultAddress,
   onSend,
 }: Props) {
+  const { t } = useTranslation("messages");
   const [address, setAddress] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -66,20 +68,20 @@ export function PinLocationDialog({
         <DialogHeader>
           <DialogTitle className="font-editorial text-2xl inline-flex items-center gap-2">
             <MapPin className="w-5 h-5 text-accent" />
-            Pin a location
+            {t("pin_location.title")}
           </DialogTitle>
           <DialogDescription>
-            Drops the venue address into the chat with a tappable map link.
+            {t("pin_location.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="pt-1">
           <label className="text-xs font-medium text-muted-foreground">
-            Address
+            {t("pin_location.address")}
           </label>
           <Input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="e.g. 123 Main St, Brooklyn, NY"
+            placeholder={t("pin_location.placeholder")}
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -96,7 +98,7 @@ export function PinLocationDialog({
             onClick={() => onOpenChange(false)}
             className="rounded-full"
           >
-            Cancel
+            {t("pin_location.cancel")}
           </Button>
           <Button
             onClick={send}
@@ -104,7 +106,7 @@ export function PinLocationDialog({
             className="rounded-full"
           >
             <MapPin className="w-4 h-4 mr-1.5" />
-            Pin
+            {t("pin_location.pin")}
           </Button>
         </DialogFooter>
       </DialogContent>

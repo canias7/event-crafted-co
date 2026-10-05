@@ -3,6 +3,7 @@
 // simple. "I'm planning an event" on the home page leads here.
 
 import { CalendarDays, CreditCard, FileText, MessageCircle, Search, Star } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
 import { Picture } from "@/components/shared/Picture";
@@ -12,59 +13,56 @@ import media from "@/assets/vendor-photographer.jpg?as=picture";
 import designDecor from "@/assets/vendor-florist.jpg?as=picture";
 import weddingImg from "@/assets/hero/wedding.jpg?as=picture";
 
+// Text lives in locales/<lang>/forHosts.json, keyed by these ids.
 const STEPS = [
-  { title: "Discover", body: "Find the perfect vendors for your unique vision.", image: venues },
-  { title: "Connect", body: "Message, compare, and get custom quotes.", image: media },
-  { title: "Plan", body: "Keep each event's date, guests and notes in one place.", image: designDecor },
-  { title: "Book", body: "Secure your vendors and relax, knowing you're in good hands.", image: weddingImg },
+  { id: "discover", image: venues },
+  { id: "connect", image: media },
+  { id: "plan", image: designDecor },
+  { id: "book", image: weddingImg },
 ];
 
-const EVENT_TYPES = [
-  "Weddings",
-  "Birthdays",
-  "Corporate events",
-  "Parties & celebrations",
-  "Social gatherings",
-  "and more…",
-];
+const EVENT_TYPES = ["weddings", "birthdays", "corporate", "parties", "social", "more"];
 
 const TOOLS = [
-  { icon: Search, title: "Smart search", body: "Find the right vendors faster." },
-  { icon: MessageCircle, title: "Messaging", body: "All your conversations in one place." },
-  { icon: CalendarDays, title: "Availability", body: "Pick your date to see who's free." },
-  { icon: FileText, title: "Quotes & proposals", body: "Compare and decide with confidence." },
-  { icon: CreditCard, title: "Contracts & payments", body: "Sign and pay securely online." },
-  { icon: Star, title: "Reviews", body: "Real feedback from real clients." },
+  { id: "search", icon: Search },
+  { id: "messaging", icon: MessageCircle },
+  { id: "availability", icon: CalendarDays },
+  { id: "quotes", icon: FileText },
+  { id: "payments", icon: CreditCard },
+  { id: "reviews", icon: Star },
 ];
 
 export default function ForHostsPage() {
+  const { t } = useTranslation("forHosts");
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PhotoHero
         photo={dinner}
-        eyebrow="For hosts"
+        eyebrow={t("hero.eyebrow")}
         title={
-          <>
-            Plan with confidence. <span className="font-editorial text-gold">Enjoy</span> every moment.
-          </>
+          <Trans
+            t={t}
+            i18nKey="hero.title"
+            components={{ gold: <span className="font-editorial text-gold" /> }}
+          />
         }
-        sub="Find trusted vendors, compare quotes and keep every detail of your event in one place."
-        primary={{ label: "Find vendors", to: "/vendors" }}
-        secondary={{ label: "How it works", to: "/how-it-works#for-hosts" }}
+        sub={t("hero.sub")}
+        primary={{ label: t("hero.primary"), to: "/vendors" }}
+        secondary={{ label: t("hero.secondary"), to: "/how-it-works#for-hosts" }}
       />
 
       <main id="main-content">
         {/* Steps */}
         <section className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-          <p className="m-0 text-center font-label text-gold">How it works</p>
+          <p className="m-0 text-center font-label text-gold">{t("steps.eyebrow")}</p>
           <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[42px]">
-            Four steps to your event.
+            {t("steps.title")}
           </h2>
 
           <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_260px] lg:gap-12">
             <ol className="m-0 grid list-none grid-cols-2 gap-x-5 gap-y-10 p-0 md:grid-cols-4">
               {STEPS.map((s, i) => (
-                <li key={s.title} className="text-center">
+                <li key={s.id} className="text-center">
                   {/* Arch-top photo */}
                   <div
                     className="mx-auto aspect-[3/4] w-full max-w-[190px] overflow-hidden bg-white/[0.03]"
@@ -79,23 +77,25 @@ export default function ForHostsPage() {
                     </div>
                   </div>
                   <p className="m-0 mt-4 text-[16px] font-bold">
-                    {i + 1}. {s.title}
+                    {i + 1}. {t(`steps.items.${s.id}.title`)}
                   </p>
-                  <p className="m-0 mx-auto mt-1.5 max-w-[220px] text-[13.5px] leading-relaxed">{s.body}</p>
+                  <p className="m-0 mx-auto mt-1.5 max-w-[220px] text-[13.5px] leading-relaxed">
+                    {t(`steps.items.${s.id}.body`)}
+                  </p>
                 </li>
               ))}
             </ol>
 
             <div className="self-start rounded-2xl border border-white/15 bg-white/[0.03] p-6">
               <p className="m-0 text-[22px] font-bold leading-snug">
-                Every event.
+                {t("event_types.title_line1")}
                 <br />
-                Every type. <span className="text-gold">✦</span>
+                {t("event_types.title_line2")} <span className="text-gold">✦</span>
               </p>
               <ul className="m-0 mt-4 list-none space-y-2.5 p-0">
-                {EVENT_TYPES.map((t) => (
-                  <li key={t} className="border-b border-white/15 pb-2.5 text-[14px] last:border-0 last:pb-0">
-                    {t}
+                {EVENT_TYPES.map((type) => (
+                  <li key={type} className="border-b border-white/15 pb-2.5 text-[14px] last:border-0 last:pb-0">
+                    {t(`event_types.items.${type}`)}
                   </li>
                 ))}
               </ul>
@@ -106,21 +106,21 @@ export default function ForHostsPage() {
         {/* Tools */}
         <section className="border-t border-white/15">
           <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-            <p className="m-0 text-center font-label text-gold">Everything you need, all in one place</p>
+            <p className="m-0 text-center font-label text-gold">{t("tools.eyebrow")}</p>
             <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
-              Powerful tools. Seamless experience.
+              {t("tools.title")}
             </h2>
             <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
-              {TOOLS.map((t) => (
-                <div key={t.title} className="text-center">
+              {TOOLS.map((tool) => (
+                <div key={tool.id} className="text-center">
                   <span
                     className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
                     style={{ border: "1px solid rgba(201,168,106,0.4)" }}
                   >
-                    <t.icon className="h-5 w-5 text-gold" aria-hidden />
+                    <tool.icon className="h-5 w-5 text-gold" aria-hidden />
                   </span>
-                  <p className="m-0 mt-3 text-[14px] font-bold">{t.title}</p>
-                  <p className="m-0 mt-1 text-[13px] leading-relaxed">{t.body}</p>
+                  <p className="m-0 mt-3 text-[14px] font-bold">{t(`tools.items.${tool.id}.title`)}</p>
+                  <p className="m-0 mt-1 text-[13px] leading-relaxed">{t(`tools.items.${tool.id}.body`)}</p>
                 </div>
               ))}
             </div>
@@ -130,11 +130,13 @@ export default function ForHostsPage() {
         <div className="border-t border-white/15">
           <ClosingBand
             title={
-              <>
-                Let's make something <span className="font-editorial text-gold">unforgettable.</span>
-              </>
+              <Trans
+                t={t}
+                i18nKey="closing.title"
+                components={{ gold: <span className="font-editorial text-gold" /> }}
+              />
             }
-            cta={{ label: "Find vendors", to: "/vendors" }}
+            cta={{ label: t("closing.cta"), to: "/vendors" }}
           />
         </div>
       </main>

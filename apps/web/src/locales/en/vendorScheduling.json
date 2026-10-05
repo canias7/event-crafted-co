@@ -1,0 +1,121 @@
+{
+  "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  "time": {
+    "am": "AM",
+    "pm": "PM"
+  },
+  "duration": {
+    "minutes": "{{minutes}} min",
+    "hours_one": "{{count}} hr",
+    "hours_other": "{{count}} hrs"
+  },
+  "buffers": {
+    "none": "None",
+    "m30": "30 min",
+    "h1": "1 hour",
+    "h2": "2 hours",
+    "d1": "1 day"
+  },
+  "notices": {
+    "none": "None",
+    "h24": "24 hours",
+    "h48": "48 hours",
+    "w1": "1 week"
+  },
+  "noLimit": "No limit",
+  "defaults": {
+    "autoReply": "Thanks so much for reaching out! We got your inquiry and will reply personally within a few hours.",
+    "confirm": "You're booked! We're looking forward to it — details below.",
+    "reminder": "Friendly reminder about our upcoming appointment!",
+    "followup": "Just following up — any questions I can answer?",
+    "review": "It was a pleasure being part of your event! If you have a minute, we'd love a review — it helps other hosts find us."
+  },
+  "toasts": {
+    "saved": "Your scheduling setup is live.",
+    "typeNameRequired": "Give the appointment type a name — e.g., Consultation call.",
+    "proCap": "Pro includes up to {{cap}} appointment types — Premium has no limit.",
+    "freeCap": "Free includes one appointment type — Pro unlocks up to 5.",
+    "promoted": "Openings promoted — they now show as last-minute availability on your public listing."
+  },
+  "header": {
+    "title": "Smart Scheduling",
+    "subtitle": "Working hours, appointment types, and automations — same setup as the app."
+  },
+  "loading": "Loading…",
+  "types": {
+    "title": "Appointment types",
+    "body": "What can hosts book with you? Give each a name and a length.",
+    "usagePro": "({{used}}/{{cap}} on Pro)",
+    "usageFree": "({{used}}/{{cap}} on Free)",
+    "off": "off",
+    "minutes": "{{minutes}} minutes",
+    "delete": "Delete {{name}}",
+    "placeholder": "e.g., Consultation call",
+    "add": "Add"
+  },
+  "hours": {
+    "title": "Your working hours",
+    "body": "When can appointments happen?",
+    "unavailable": "Unavailable"
+  },
+  "rules": {
+    "title": "Booking rules",
+    "buffer": "Buffer between appointments",
+    "notice": "Minimum notice",
+    "maxPerDay": "Max appointments per day"
+  },
+  "auto": {
+    "title": "Automated messages",
+    "body": "Vendora sends these for you, in your words.",
+    "send": "Send",
+    "instantReply": {
+      "title": "Instant inquiry reply",
+      "sub": "Sent the moment a new inquiry lands."
+    },
+    "confirmations": {
+      "title": "Booking confirmations",
+      "sub": "Sent when you confirm an appointment."
+    },
+    "reminders": {
+      "title": "Reminders",
+      "sub": "Sent before upcoming appointments."
+    },
+    "followups": {
+      "title": "Follow-ups",
+      "sub": "Sent after an appointment passes."
+    },
+    "reviews": {
+      "title": "Review requests",
+      "sub": "Sent after a booked event wraps."
+    },
+    "altDates": {
+      "title": "Suggest alternative dates",
+      "sub": "When someone asks for a date you're booked, your instant reply offers your nearest open dates."
+    },
+    "fill": {
+      "title": "Fill Your Calendar — open-date alerts",
+      "sub": "Get notified about unbooked upcoming dates. Nothing is ever promoted without your approval."
+    },
+    "hoursBefore": "{{hours}}h before",
+    "daysAfter_one": "{{count}} day after",
+    "daysAfter_other": "{{count}} days after"
+  },
+  "fill": {
+    "title": "Fill your calendar",
+    "openDates_one": "{{count}} open date coming up:",
+    "openDates_other": "{{count}} open dates coming up:",
+    "more": "+{{more}} more",
+    "promote": "Promote openings",
+    "notNow": "Not now"
+  },
+  "upsell": {
+    "premiumTitle": "Put it on autopilot",
+    "premiumBody": "Your hours and rules are set — Premium makes Vendora work them for you: instant inquiry replies, confirmations, reminders, follow-ups, review requests, and Fill Your Calendar open-date alerts.",
+    "upgradePremium": "Upgrade to Premium",
+    "proTitle": "Work less. Book more.",
+    "proBody": "Pro unlocks the scheduling controls — working hours, buffers, minimum notice, daily limits, and up to 5 appointment types. Premium adds the automations that answer, remind, follow up, and fill your calendar for you.",
+    "seePlans": "See plans"
+  },
+  "save": "Save scheduling setup",
+  "saving": "Saving…"
+}

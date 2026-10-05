@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { CATEGORY_FAQS } from "@/data/categoryFaqs";
 import { citySlugify, citySlugDisplay } from "@/lib/citySlug";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
 import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
@@ -52,7 +54,9 @@ const heroByGroup: Record<string, PictureSource> = {
 
 // Single source of truth lives in categoryTaxonomy.CATEGORY_GROUPS;
 // this object adapts that list to the page-config shape used here +
-// in PublicNav + VendorBrowsePage.
+// in PublicNav + VendorBrowsePage. Text here is English (and `name` is
+// a lookup key); pages show it in the visitor's language through
+// useCategoryNames().
 export const categoryConfig: Record<string, CategoryConfig> =
   Object.fromEntries(
     CATEGORY_GROUPS.map((g) => [
@@ -74,16 +78,25 @@ export const allCategorySlugs = Object.keys(categoryConfig);
 const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 
 export default function VendorCategoryPage() {
+  const { t } = useTranslation("categoryPage");
+  const categoryNames = useCategoryNames();
   const { slug } = useParams();
   const config = slug ? categoryConfig[slug] : null;
   const { vendors, loading } = useVendors();
   const [activeSubs, setActiveSubs] = useState<Set<string>>(new Set());
 
+  // The group's name and copy in the visitor's language. `display` and
+  // `name` are the same group name today, so one translation covers both.
+  const groupName = config && slug ? categoryNames.group(slug, config.display) : "";
+  const groupNameLower = groupName.toLowerCase();
+  const groupDescription = config && slug ? categoryNames.groupDescription(slug, config.description) : undefined;
+  const groupLongCopy = config && slug ? categoryNames.groupLongCopy(slug, config.longCopy) : "";
+
   useDocumentMeta({
     title: config
-      ? `${config.display} on Vendora — ${config.description}`
-      : "Vendor category — Vendora",
-    description: config?.description,
+      ? t("meta.title", { name: groupName, description: groupDescription })
+      : t("meta.fallbackTitle"),
+    description: groupDescription,
     // Picture object → use the JPG fallback as the social-share image
     // (modern crawlers pick AVIF/WebP from <source> in the page itself).
     image: config?.hero?.img.src,
@@ -145,20 +158,20 @@ export default function VendorCategoryPage() {
         <section className="pt-32 pb-16 md:pt-40 md:pb-24 border-b border-border">
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
-              {config.display.toUpperCase()}
+              {groupName.toUpperCase()}
             </p>
             <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
-              {config.display} — coming soon
+              {t("comingSoon.title", { name: groupName })}
             </h1>
             <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10">
-              {config.longCopy}
+              {groupLongCopy}
             </p>
             <Link
               to="/vendors"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Browse other vendors
+              {t("comingSoon.browseOther")}
             </Link>
           </div>
         </section>
@@ -192,7 +205,7 @@ export default function VendorCategoryPage() {
                     : "bg-background border-border text-muted-foreground hover:border-foreground/40"
                 }`}
               >
-                All
+                {t("all")}
               </button>
               {config.subs.map((sub) => {
                 const active = activeSubs.has(sub);
@@ -207,7 +220,7 @@ export default function VendorCategoryPage() {
                         : "bg-background border-border text-foreground hover:border-foreground/40"
                     }`}
                   >
-                    {sub}
+                    {categoryNames.sub(sub)}
                   </button>
                 );
               })}
@@ -216,14 +229,11 @@ export default function VendorCategoryPage() {
 
           <div className="flex items-end justify-between mb-8">
             <p className="font-label text-muted-foreground">
-              {filtered.length}{" "}
-              {filtered.length === 1
-                ? config.name.toLowerCase()
-                : config.display.toLowerCase()}
+              {t("count", { count: filtered.length, name: groupNameLower })}
             </p>
             <Link to="/vendors">
               <Button variant="ghost" size="sm" className="rounded-full">
-                Browse all categories
+                {t("browseAllCategories")}
               </Button>
             </Link>
           </div>
@@ -241,15 +251,14 @@ export default function VendorCategoryPage() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <p className="font-editorial text-2xl mb-2">
-                No {config.display.toLowerCase()} on Vendora yet
+                {t("empty.title", { name: groupNameLower })}
               </p>
               <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                We're hand-selecting new vendors weekly. Check back soon, or
-                browse our other categories.
+                {t("empty.body")}
               </p>
               <Link to="/vendors" className="inline-block mt-6">
                 <Button variant="outline" className="rounded-full">
-                  Browse all vendors
+                  {t("empty.cta")}
                 </Button>
               </Link>
             </div>
@@ -269,7 +278,8 @@ export default function VendorCategoryPage() {
       {/* FAQ — also serialized as FAQPage JSON-LD below */}
       <FaqSection
         items={faqs}
-        title={`Booking ${config.display.toLowerCase()} on Vendora`}
+        title={t("faq.title", { name: groupNameLower })}
+        eyebrow={t("faq.eyebrow")}
       />
 
       {/* "Other categories" cross-link section pulled — page ends
@@ -280,8 +290,8 @@ export default function VendorCategoryPage() {
         data={{
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: `${config.display} on Vendora`,
-          description: config.description,
+          name: t("meta.listName", { name: groupName }),
+          description: groupDescription,
           numberOfItems: filtered.length,
           itemListElement: filtered.slice(0, 25).map((v, i) => ({
             "@type": "ListItem",

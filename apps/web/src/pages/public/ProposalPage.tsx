@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Check, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,11 +127,12 @@ function parseProposal(body: string): Block[] {
   return blocks;
 }
 
-function fmtDate(iso: string | null): string {
+// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -141,6 +143,8 @@ function fmtDate(iso: string | null): string {
 
 export default function ProposalPage() {
   const { token } = useParams<{ token: string }>();
+  const { t, i18n } = useTranslation("checkout");
+  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -179,11 +183,11 @@ export default function ProposalPage() {
     });
     setAccepting(false);
     if (error) {
-      toast.error("Couldn't record your acceptance. Please try again.");
+      toast.error(t("proposal.toast.error"));
       return;
     }
     if (data === "accepted") {
-      toast.success("Accepted — thank you!");
+      toast.success(t("proposal.toast.accepted"));
       setProposal((p) =>
         p
           ? {
@@ -218,10 +222,10 @@ export default function ProposalPage() {
       >
         <div>
           <h1 style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: C.ink }} className="text-3xl mb-2">
-            Proposal not found
+            {t("proposal.notFound.title")}
           </h1>
           <p style={{ color: C.sub }} className="text-sm">
-            This link is invalid or has expired.
+            {t("proposal.notFound.body")}
           </p>
         </div>
       </div>
@@ -249,8 +253,8 @@ export default function ProposalPage() {
         >
           <FileText className="w-4 h-4" />
           {proposal.vendor_business_name
-            ? `${proposal.vendor_business_name} · Proposal`
-            : "Proposal"}
+            ? t("proposal.headerVendor", { vendor: proposal.vendor_business_name })
+            : t("proposal.header")}
         </div>
 
         <div
@@ -396,10 +400,10 @@ export default function ProposalPage() {
                 </div>
                 <div>
                   <p style={{ color: C.ink }} className="font-semibold">
-                    Accepted by {proposal.accepted_name}
+                    {t("proposal.acceptedBy", { name: proposal.accepted_name ?? "" })}
                   </p>
                   <p style={{ color: C.sub }} className="text-sm">
-                    {fmtDate(proposal.accepted_at)}
+                    {fmtDate(proposal.accepted_at, dateLocale)}
                   </p>
                 </div>
               </div>
@@ -410,16 +414,16 @@ export default function ProposalPage() {
                 style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", fontSize: 23, fontWeight: 700 }}
                 className="text-center mb-1.5"
               >
-                Ready to move forward?
+                {t("proposal.cta.title")}
               </h3>
               <p style={{ color: C.footSub }} className="text-center text-[13px] mb-5">
-                Accept and we'll send the agreement and invoice.
+                {t("proposal.cta.body")}
               </p>
               <div style={{ maxWidth: 420, margin: "0 auto" }}>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Type your full name to accept"
+                  placeholder={t("proposal.cta.namePlaceholder")}
                   className="placeholder:text-gray-400"
                   style={{
                     width: "100%",
@@ -441,7 +445,7 @@ export default function ProposalPage() {
                     onChange={(e) => setAgreed(e.target.checked)}
                     className="mt-0.5"
                   />
-                  <span>I've reviewed this proposal and I'm ready to proceed.</span>
+                  <span>{t("proposal.cta.agree")}</span>
                 </label>
                 <button
                   type="button"
@@ -458,7 +462,7 @@ export default function ProposalPage() {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  Accept proposal
+                  {t("proposal.cta.accept")}
                 </button>
               </div>
             </div>
@@ -467,14 +471,16 @@ export default function ProposalPage() {
               style={{ background: C.soft, borderTop: `1px solid ${C.border}`, padding: "24px 42px" }}
             >
               <p style={{ color: C.sub }} className="text-sm">
-                This proposal is {proposal.status} and can no longer be accepted.
+                {t([`proposal.closed.${proposal.status}`, "proposal.closed.other"], {
+                  status: proposal.status,
+                })}
               </p>
             </div>
           )}
         </div>
 
         <p style={{ color: "#a39e95" }} className="text-center text-[11px] mt-4">
-          Powered by Vendora
+          {t("proposal.poweredBy")}
         </p>
       </div>
     </div>

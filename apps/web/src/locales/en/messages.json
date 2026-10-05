@@ -1,0 +1,62 @@
+{
+  "audio": {
+    "play": "Play",
+    "pause": "Pause",
+    "seek": "Seek audio"
+  },
+  "actions": {
+    "react": "React",
+    "react_with": "React with {{emoji}}",
+    "more": "More",
+    "reply": "Reply"
+  },
+  "reactions": {
+    "remove": "Remove your {{emoji}} reaction ({{total}})",
+    "add": "React with {{emoji}} ({{total}})"
+  },
+  "reply_context": {
+    "deleted": "Message deleted",
+    "cancel": "Cancel reply"
+  },
+  "pin_location": {
+    "title": "Pin a location",
+    "description": "Drops the venue address into the chat with a tappable map link.",
+    "address": "Address",
+    "placeholder": "e.g. 123 Main St, Brooklyn, NY",
+    "cancel": "Cancel",
+    "pin": "Pin"
+  },
+  "share_vendor": {
+    "trigger": "Share a vendor profile",
+    "title": "Share a vendor",
+    "subtitle": "Send a vendor's profile into this conversation.",
+    "search_placeholder": "Search vendors…",
+    "search_label": "Search vendors by business name",
+    "min_chars": "Type at least {{min}} characters.",
+    "no_results": "No approved vendors match “{{query}}”.",
+    "vendor_fallback": "Vendor",
+    "shared": "Shared {{name}}",
+    "shared_fallback": "vendor"
+  },
+  "shared_vendor_card": {
+    "view_profile": "View profile"
+  },
+  "typing": "Typing",
+  "voice": {
+    "record": "Record voice message",
+    "stop": "Stop recording",
+    "cancel": "Cancel recording",
+    "unsupported": "Voice recording isn't supported in this browser",
+    "no_audio": "No audio captured — hold to record",
+    "mic_error": "Couldn't access mic",
+    "mic_error_detail": "{{message}}"
+  },
+  "thread": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "attachments": {
+    "bad_type": "{{name}}: only JPG, PNG, WEBP, PDF, or audio",
+    "too_large": "{{name}}: max 10 MB"
+  }
+}
