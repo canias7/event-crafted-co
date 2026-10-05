@@ -312,8 +312,12 @@ function SingleImageView({ image }: { image: ImageRow }) {
             try {
               await downloadCrossOrigin(image.image_url);
             } catch (err) {
+              // English keeps the helper's own message; Spanish swaps
+              // it for a translated line (the helper's text is English).
               toast.error(
-                err instanceof Error ? err.message : "Couldn't download.",
+                err instanceof Error
+                  ? t("image.downloadError", { message: err.message })
+                  : t("image.downloadFailed"),
               );
             } finally {
               setDownloading(false);
@@ -326,7 +330,7 @@ function SingleImageView({ image }: { image: ImageRow }) {
           ) : (
             <Download className="w-4 h-4" />
           )}
-          {downloading ? "Downloading…" : "Download"}
+          {downloading ? t("image.downloading") : t("image.download")}
         </button>
       </div>
     </div>
@@ -352,13 +356,14 @@ function AlbumView({
   lightboxIdx: number | null;
   setLightboxIdx: (n: number | null) => void;
 }) {
+  const { t } = useTranslation("gallery");
   return (
     <div>
       <h1 className="font-editorial text-3xl mb-2">{albumName}</h1>
       <p className="text-sm text-muted-foreground mb-8">
-        {total} image{total === 1 ? "" : "s"}
+        {t("album.images", { count: total })}
         {hasMore || images.length < total ? (
-          <span className="opacity-70"> · showing {images.length}</span>
+          <span className="opacity-70"> · {t("album.showing", { count: images.length })}</span>
         ) : null}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

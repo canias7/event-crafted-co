@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "title": "Estado del sistema — Vendora",
+    "description": "Estado en tiempo real de los servicios principales de Vendora — base de datos, autenticación, funciones edge y almacenamiento."
+  },
+  "eyebrow": "— ESTADO",
+  "title": "Cómo está <gold>funcionando el sistema.</gold>",
+  "overall": {
+    "operational": "Todos los sistemas están operativos",
+    "degraded": "Degradación parcial",
+    "down": "Interrupción del servicio",
+    "checking": "Ejecutando comprobaciones…"
+  },
+  "refresh_note": "Se comprueba cada 60 s · última actualización: hace un momento",
+  "refresh": "Actualizar",
+  "labels": {
+    "checking": "Comprobando",
+    "operational": "Operativo",
+    "degraded": "Degradado",
+    "down": "Caído"
+  },
+  "services": {
+    "supabase-db": {
+      "label": "Base de datos",
+      "description": "Lecturas de Postgres a través de la API de Supabase"
+    },
+    "supabase-auth": {
+      "label": "Autenticación",
+      "description": "Inicio de sesión + endpoints de sesión"
+    },
+    "edge-functions": {
+      "label": "Funciones edge",
+      "description": "Mapa del sitio, feeds de calendario, correo transaccional"
+    },
+    "storage": {
+      "label": "Almacenamiento",
+      "description": "Entrega de imágenes y archivos"
+    }
+  },
+  "notes": {
+    "function_url_unknown": "URL de la función desconocida",
+    "storage_url_unknown": "URL del almacenamiento desconocida",
+    "storage_returned": "el almacenamiento respondió {{status}}",
+    "ping_threw": "la comprobación falló"
+  },
+  "footnote": "Las comprobaciones se ejecutan desde tu navegador, así que reflejan la ruta entre tú y Vendora — no solo nuestra infraestructura. Si aquí ves rojo pero la publicación de estado de nuestro equipo dice verde, probablemente se trate de un problema de red entre tú y el nodo edge de Supabase más cercano."
+}

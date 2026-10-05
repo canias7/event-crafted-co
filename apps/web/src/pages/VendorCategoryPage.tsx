@@ -158,20 +158,20 @@ export default function VendorCategoryPage() {
         <section className="pt-32 pb-16 md:pt-40 md:pb-24 border-b border-border">
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <p className="font-label text-accent tracking-[0.4em] mb-4 inline-flex items-center gap-2">
-              {config.display.toUpperCase()}
+              {groupName.toUpperCase()}
             </p>
             <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
-              {config.display} — coming soon
+              {t("comingSoon.title", { name: groupName })}
             </h1>
             <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-10">
-              {config.longCopy}
+              {groupLongCopy}
             </p>
             <Link
               to="/vendors"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Browse other vendors
+              {t("comingSoon.browseOther")}
             </Link>
           </div>
         </section>
@@ -205,7 +205,7 @@ export default function VendorCategoryPage() {
                     : "bg-background border-border text-muted-foreground hover:border-foreground/40"
                 }`}
               >
-                All
+                {t("all")}
               </button>
               {config.subs.map((sub) => {
                 const active = activeSubs.has(sub);
@@ -220,7 +220,7 @@ export default function VendorCategoryPage() {
                         : "bg-background border-border text-foreground hover:border-foreground/40"
                     }`}
                   >
-                    {sub}
+                    {categoryNames.sub(sub)}
                   </button>
                 );
               })}
@@ -229,14 +229,11 @@ export default function VendorCategoryPage() {
 
           <div className="flex items-end justify-between mb-8">
             <p className="font-label text-muted-foreground">
-              {filtered.length}{" "}
-              {filtered.length === 1
-                ? config.name.toLowerCase()
-                : config.display.toLowerCase()}
+              {t("count", { count: filtered.length, name: groupNameLower })}
             </p>
             <Link to="/vendors">
               <Button variant="ghost" size="sm" className="rounded-full">
-                Browse all categories
+                {t("browseAllCategories")}
               </Button>
             </Link>
           </div>
