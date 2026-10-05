@@ -1,8 +1,22 @@
-import i18n from "i18next";
+import i18n, { type Resource } from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import en from "@/locales/en/common.json";
-import es from "@/locales/es/common.json";
+
+// Every JSON file under locales/<language>/ is a namespace:
+// locales/es/explore.json is the "explore" namespace in Spanish, read
+// with useTranslation("explore"). "common" is the default. Add a page's
+// strings as its own file in BOTH en/ and es/; nothing to register here.
+const localeFiles = import.meta.glob<{ default: Record<string, unknown> }>(
+  "./locales/*/*.json",
+  { eager: true },
+);
+const resources: Resource = {};
+for (const [path, file] of Object.entries(localeFiles)) {
+  const match = path.match(/\/locales\/([^/]+)\/([^/]+)\.json$/);
+  if (!match) continue;
+  const [, language, namespace] = match;
+  (resources[language] ??= {})[namespace] = file.default;
+}
 
 // i18n setup. Detection chain runs in order:
 //   1. ?lang=es querystring  (sticky for testing)
@@ -27,10 +41,8 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: {
-      en: { common: en },
-      es: { common: es },
-    },
+    resources,
+    ns: Object.keys(resources.en ?? {}),
     fallbackLng: "en",
     supportedLngs: SUPPORTED_LANGUAGES,
     nonExplicitSupportedLngs: true, // accept "es-MX" → "es"
@@ -44,5 +56,19 @@ i18n
     },
     react: { useSuspense: false },
   });
+
+// Keep <html lang> in step with the chosen language, for screen readers,
+// spell-check and the browser's own translate prompt, and swap the
+// site-wide default tab title (pages without their own title show it).
+const defaultTitles = Object.values(resources)
+  .map((r) => (r.meta as { defaultTitle?: string } | undefined)?.defaultTitle)
+  .filter(Boolean);
+const followLanguage = (language: string) => {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = language.split("-")[0];
+  if (defaultTitles.includes(document.title)) document.title = i18n.t("defaultTitle", { ns: "meta" });
+};
+i18n.on("languageChanged", followLanguage);
+if (i18n.resolvedLanguage) followLanguage(i18n.resolvedLanguage);
 
 export default i18n;

@@ -1,0 +1,87 @@
+{
+  "all": "Todas las categorías",
+  "groups": {
+    "venues": {
+      "name": "Espacios para eventos",
+      "description": "Salones de eventos, espacios al aire libre, comedores privados y espacios corporativos o de conferencias.",
+      "longCopy": "El espacio marca el tono antes de que lleguen los invitados. Los espacios de Vendora van desde lofts de diseño y haciendas históricas hasta jardines al aire libre, salones privados de restaurantes y espacios corporativos o de conferencias, cada uno elegido por su personalidad y su fiabilidad."
+    },
+    "food-beverage": {
+      "name": "Comida y bebida",
+      "description": "Banquetes, barras móviles, mesas de postres y camiones de comida para eventos de cualquier tamaño.",
+      "longCopy": "Desde menús de degustación emplatados hasta banquetes al centro, barras móviles y mesas de postres: la comida y la bebida de tu evento en manos de equipos que se lo toman en serio."
+    },
+    "entertainment": {
+      "name": "Entretenimiento",
+      "description": "DJs, música en vivo, artistas y presentadores que animan la sala.",
+      "longCopy": "La música y los espectáculos marcan la energía. El entretenimiento de Vendora cubre todo el evento, de la ceremonia a la última canción, con DJs seleccionados, bandas y ensambles en vivo, artistas y presentadores que mantienen el evento a tiempo y animado."
+    },
+    "media": {
+      "name": "Foto y video",
+      "description": "Fotografía, video y cabinas de fotos: quienes documentan la noche.",
+      "longCopy": "Desde fotografía documental editorial hasta películas cinematográficas del evento y cabinas de fotos al aire libre, Foto y video reúne a todos los que trabajan con una cámara. Combina distintos tipos de cobertura para documentar todo el evento."
+    },
+    "design-decor": {
+      "name": "Diseño y decoración",
+      "description": "Coordinadores, floristas, equipos de belleza, renta de decoración y servicios de arreglo personal.",
+      "longCopy": "La parte visual y de producción: organizadores y coordinadores del día, floristas, renta de decoración, peinado y maquillaje, y arreglo personal. Los equipos que convierten una sala en un escenario."
+    },
+    "rentals": {
+      "name": "Rentas",
+      "description": "Mobiliario, carpas, iluminación y audiovisuales, pistas de baile y escenarios, y transporte.",
+      "longCopy": "La infraestructura del día del evento: mobiliario, carpas, iluminación y audiovisuales, pistas de baile y escenarios, y transporte para invitados. Coordinado con tu organizador para que las entregas lleguen a tiempo."
+    },
+    "experiences": {
+      "name": "Experiencias",
+      "description": "Catas, torcedores de puros, carritos de café y otras experiencias especiales.",
+      "longCopy": "Los detalles memorables: catas de vino y whisky, torcedores de puros, carritos de café y servicios especiales que convierten una cena en una historia."
+    },
+    "corporate-services": {
+      "name": "Servicios corporativos",
+      "description": "Personal, conferencistas y presentadores, seguridad y valet para eventos corporativos y grandes.",
+      "longCopy": "Lo esencial para empresas: personal de servicio, conferencistas y presentadores profesionales, seguridad con licencia y valet para eventos con acceso controlado, programas con horario o logística a gran escala."
+    }
+  },
+  "subs": {
+    "Event Venues": "Salones de eventos",
+    "Outdoor Spaces": "Espacios al aire libre",
+    "Private Dining Spaces": "Comedores privados",
+    "Corporate / Conference Spaces": "Espacios corporativos y de conferencias",
+    "Catering": "Banquetes",
+    "Bartending / Mobile Bars": "Bartenders y barras móviles",
+    "Desserts & Cakes": "Postres y pasteles",
+    "Food Trucks / Specialty": "Camiones de comida y especialidades",
+    "DJs": "DJs",
+    "Live Music": "Música en vivo",
+    "Performers": "Artistas",
+    "Hosts / MCs": "Presentadores y maestros de ceremonias",
+    "Photography": "Fotografía",
+    "Videography": "Video",
+    "Photo Booths": "Cabinas de fotos",
+    "Event Coordinators": "Coordinadores de eventos",
+    "Florists": "Floristas",
+    "Beauty": "Belleza",
+    "Decor Rentals": "Renta de decoración",
+    "Grooming Services": "Arreglo personal",
+    "Furniture Rentals": "Renta de mobiliario",
+    "Tents & Outdoor": "Carpas y exteriores",
+    "Lighting & AV Equipment": "Iluminación y equipo audiovisual",
+    "Dance Floors & Staging": "Pistas de baile y escenarios",
+    "Transportation": "Transporte",
+    "Tastings": "Catas",
+    "Specialty Services": "Servicios especiales",
+    "Staffing": "Personal",
+    "Speakers / Hosts": "Conferencistas y presentadores",
+    "Security": "Seguridad",
+    "Valet": "Valet"
+  },
+  "browse": {
+    "Photography": "Fotografía",
+    "Venues": "Espacios",
+    "Catering": "Banquetes",
+    "Beauty": "Belleza",
+    "Planning": "Organización",
+    "Decor & florals": "Decoración y flores",
+    "Entertainment": "Entretenimiento"
+  }
+}

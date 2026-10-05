@@ -1,0 +1,19 @@
+{
+  "from": "Desde {{price}}",
+  "upTo": "Hasta {{price}}",
+  "custom": "Precio a la medida",
+  "models": {
+    "fixed_packages": "Paquetes fijos",
+    "hourly": "Por hora",
+    "per_person": "Por persona",
+    "starting_at": "Desde",
+    "custom_quote": "Cotización a la medida"
+  },
+  "eventTypes": {
+    "wedding": "Boda",
+    "birthday": "Cumpleaños",
+    "holiday_dinner": "Cena de fiestas",
+    "other": "Otro",
+    "fallback": "Evento"
+  }
+}
