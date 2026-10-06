@@ -7,6 +7,7 @@ import { Link, Navigate } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { AuthTopBar } from "@/components/auth/AuthTopBar";
 
 export default function LoginRoleChooserPage() {
   // Already authenticated? Skip the chooser and drop them in the
@@ -87,29 +88,19 @@ export default function LoginRoleChooserPage() {
       {/* No floating particles: scattered glowing dots read as
           snowflakes rather than as brand. */}
 
-      {/* Top-left wordmark */}
-      <Link
-        to="/"
-        className="absolute z-[3] font-editorial"
-        style={{ top: "32px", left: "40px", fontSize: "26px", color: "#000" }}
-      >
-        Vendora
-      </Link>
-
-      {/* Top-right new-account CTA */}
-      <div
-        className="absolute z-[3] text-[13px]"
-        style={{ top: "36px", right: "40px", color: "#000" }}
-      >
-        {t("login_chooser.new_to_vendora")}{" "}
-        <Link
-          to="/signup"
-          className="font-medium pb-px"
-          style={{ borderBottom: "0.5px solid #000" }}
-        >
-          {t("login_chooser.sign_up")}
-        </Link>
-      </div>
+      {/* Top bar: the same logo, in the same place, as every other page */}
+      <AuthTopBar>
+        <span>
+          {t("login_chooser.new_to_vendora")}{" "}
+          <Link
+            to="/signup"
+            className="font-medium pb-px"
+            style={{ borderBottom: "0.5px solid #000" }}
+          >
+            {t("login_chooser.sign_up")}
+          </Link>
+        </span>
+      </AuthTopBar>
 
       {/* Centered chooser */}
       <div

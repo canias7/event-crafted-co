@@ -11,9 +11,7 @@
 // and ring alone — keep it that way.
 
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { VendoraLogo } from "@/components/shared/VendoraLogo";
+import { AuthTopBar } from "@/components/auth/AuthTopBar";
 
 interface Props {
   /** Sans-serif headline (e.g. "Welcome back,") */
@@ -41,7 +39,6 @@ export function GlassyAuthShell({
   belowCardLink,
   children,
 }: Props) {
-  const { t } = useTranslation("auth");
   return (
     <div
       className="relative min-h-screen overflow-hidden"
@@ -137,37 +134,8 @@ export function GlassyAuthShell({
           wrong season and the wrong brand. The glows, grid and ring
           carry the depth on their own. */}
 
-      {/* TOP BAR */}
-      <div
-        className="absolute top-0 left-0 right-0 z-[3] flex items-center justify-between"
-        style={{ padding: "28px 40px" }}
-      >
-        <div className="flex items-center gap-3.5">
-          <Link to="/" aria-label={t("shell.logo_label")}>
-            <VendoraLogo size="md" color="#000" />
-          </Link>
-          <div
-            style={{
-              width: "0.5px",
-              height: "18px",
-              background: "rgba(0,0,0,0.2)",
-            }}
-          />
-          <div
-            className="uppercase"
-            style={{
-              fontSize: "10px",
-              letterSpacing: "2px",
-              opacity: 0.55,
-            }}
-          >
-            {t("shell.marketplace")}
-          </div>
-        </div>
-        <div className="flex items-center gap-6 text-[13px]">
-          {topRight}
-        </div>
-      </div>
+      {/* TOP BAR: the same logo, in the same place, as every other page */}
+      <AuthTopBar>{topRight}</AuthTopBar>
 
       {/* MAIN */}
       <div

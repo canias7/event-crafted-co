@@ -35,9 +35,9 @@ function dashboardLabel(t?: (key: string) => string) {
 
 const CREAM = "#f4f1ea";
 
-// `tone="overlay"` sits the nav on a dark photo hero (vendors page),
-// matching the landing page header: in flow instead of fixed, no glass,
-// cream links with a gold underline on the current page, gold Sign up.
+// `tone="overlay"` sits the nav on a dark photo hero (the home and
+// vendors pages): in flow instead of fixed, no glass, cream links with a
+// gold underline on the current page, gold Sign up.
 // `tone="dark"` is the same look as a sticky solid ink bar, for the dark
 // pages (Explore, How it works).
 export function PublicNav({
@@ -101,21 +101,19 @@ export function PublicNav({
       }
       aria-label={ts("nav.aria_label")}
     >
-      <div
-        className={`container mx-auto flex items-center justify-between px-5 md:px-8 ${
-          dark ? "h-16" : overlay ? "h-20 md:h-24" : "h-16"
-        }`}
-      >
+      {/* One height and one logo in every tone, so the logo sits in the
+          same spot on every page: the full lockup, 20px down on phones and
+          28px from tablet up, at the page container's edge. The sign-in
+          pages' AuthTopBar matches it. */}
+      <div className="container mx-auto flex h-20 items-center justify-between px-5 md:h-24 md:px-8">
         <Link to="/" aria-label={ts("nav.logo_label")}>
-          <VendoraLogo
-            size="md"
-            color={overlay ? CREAM : "#000"}
-            withTagline={overlay && !dark}
-          />
+          <VendoraLogo size="md" color={overlay ? CREAM : "#000"} withTagline />
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
+        {/* Desktop nav, from 1024px: below that the full logo plus the
+            links and buttons don't fit (in Spanish they need about 860px),
+            so tablets get the menu button like phones. */}
+        <div className="hidden lg:flex items-center gap-8">
           {/* Vendors → dropdown of all categories */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -210,7 +208,7 @@ export function PublicNav({
           </Link>
         </div>
 
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden lg:flex items-center gap-1">
           {session && profile ? (
             <>
               <NotificationBell variant={overlay ? "dark" : "light"} />
@@ -312,7 +310,7 @@ export function PublicNav({
 
         {/* Mobile toggle */}
         <button
-          className={`md:hidden p-2 ${overlay ? "text-[#f4f1ea]" : "text-foreground"}`}
+          className={`lg:hidden p-2 ${overlay ? "text-[#f4f1ea]" : "text-foreground"}`}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
           aria-expanded={mobileOpen}
@@ -334,8 +332,8 @@ export function PublicNav({
           animate={{ opacity: 1, y: 0 }}
           className={
             overlay
-              ? "md:hidden mx-5 mb-4 rounded-3xl bg-background px-4 pb-4 shadow-lifted"
-              : "md:hidden bg-background border-b border-border px-4 pb-4"
+              ? "lg:hidden mx-5 mb-4 rounded-3xl bg-background px-4 pb-4 shadow-lifted md:mx-8"
+              : "lg:hidden bg-background border-b border-border px-4 pb-4"
           }
         >
           {/* Vendors expandable section */}

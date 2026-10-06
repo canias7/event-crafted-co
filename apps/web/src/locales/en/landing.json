@@ -1,12 +1,4 @@
 {
-  "nav": {
-    "vendors": "Vendors",
-    "explore": "Explore",
-    "how_it_works": "How it works",
-    "open_dashboard": "Open dashboard",
-    "login": "Log in",
-    "signup": "Sign up"
-  },
   "hero": {
     "title": "Where <gold>unforgettable</gold><br/>events begin",
     "intro": "The all-in-one marketplace and planning experience for hosts and the vendors who bring visions to life."

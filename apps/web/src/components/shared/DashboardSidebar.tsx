@@ -290,13 +290,16 @@ export function DashboardSidebar({
           </button>
         </div>
       ) : (
-        <div className="p-6 border-b border-[rgba(0,0,0,0.08)] flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <Link to={backPath} aria-label={tp("sidebar.logo_label")}>
-              <VendoraLogo size="md" color="currentColor" />
-            </Link>
+        <div className="px-5 py-6 border-b border-[rgba(0,0,0,0.08)]">
+          {/* The full logo on its own row (the small size fits the 256px
+              sidebar); the plan or area label and the collapse button
+              sit under it. */}
+          <Link to={backPath} aria-label={tp("sidebar.logo_label")}>
+            <VendoraLogo size="sm" color="currentColor" withTagline />
+          </Link>
+          <div className="mt-3 flex items-center justify-between gap-3">
             {isVendorSide ? (
-              <p className="mt-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="flex min-w-0 items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 {/* "Free plan" / "plan Gratis": the chip and the word swap
                     places by language. */}
                 <Trans
@@ -320,19 +323,19 @@ export function DashboardSidebar({
                 />
               </p>
             ) : (
-              <p className="font-label text-muted-foreground mt-2 truncate">
+              <p className="min-w-0 truncate font-label text-muted-foreground">
                 {subLabel}
               </p>
             )}
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              aria-label={tp("sidebar.collapse")}
+              className="w-7 h-7 rounded-md text-muted-foreground hover:text-accent hover:bg-secondary/50 flex items-center justify-center transition-colors shrink-0"
+            >
+              <PanelLeftClose className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setCollapsed(true)}
-            aria-label={tp("sidebar.collapse")}
-            className="w-7 h-7 rounded-md text-muted-foreground hover:text-accent hover:bg-secondary/50 flex items-center justify-center transition-colors shrink-0"
-          >
-            <PanelLeftClose className="w-3.5 h-3.5" />
-          </button>
         </div>
       )}
       {/* "Become a vendor" CTA removed — vendors sign up through the

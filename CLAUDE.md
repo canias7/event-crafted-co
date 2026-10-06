@@ -67,6 +67,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - Labels and buttons are bold. Baskerville only has 400 and 700, plus 400 italic, so `font-medium` renders as regular and `font-semibold` as bold.
 - `.font-editorial` is a custom utility, emitted after Tailwind's core utilities. It beats `not-italic`/`font-normal` on the same element, so don't combine them expecting the core class to win.
 - The logo wordmark (`VendoraLogo`) is italic regular. Leave it.
+- **Top-left logo (owner's call):** every page shows the full lockup, "vendora" plus EVENTS, SIMPLIFIED, in the same spot: the page container's edge, 20px down on phones and 28px from tablet up. Public pages get it from `PublicNav` (any tone; its desktop links show from 1024px, the menu button below), sign-in pages from `AuthTopBar`. Don't give a page its own header or logo. The tagline is champagne on dark and bronze on light; the portal sidebar uses the small size so it fits.
 
 **Components** (same standard on the website and in both apps; app tokens live in each app's `lib/ui.ts`)
 

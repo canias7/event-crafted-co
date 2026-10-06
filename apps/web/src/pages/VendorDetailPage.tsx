@@ -929,7 +929,7 @@ export default function VendorDetailPage() {
 
             {/* Sticky inquiry sidebar */}
             <aside className="lg:col-span-1">
-              <div className="lg:sticky lg:top-24 space-y-4">
+              <div className="lg:sticky lg:top-32 space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <p className="font-label text-muted-foreground mb-2">{t("pricing.eyebrow")}</p>
                   <p className="font-editorial text-4xl mb-1 tnum">
@@ -1196,7 +1196,7 @@ function VendorDetailSkeleton({ preview = false }: { preview?: boolean }) {
             </div>
 
             <aside className="lg:col-span-1">
-              <div className="lg:sticky lg:top-24 space-y-4">
+              <div className="lg:sticky lg:top-32 space-y-4">
                 <Skeleton className="h-[420px] w-full rounded-sm" />
                 <Skeleton className="h-20 w-full rounded-sm" />
               </div>

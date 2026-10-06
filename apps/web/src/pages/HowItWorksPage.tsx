@@ -147,7 +147,7 @@ export default function HowItWorksPage() {
         </div>
 
         {/* ═══════ FOR HOSTS ═══════ */}
-        <section id="for-hosts" className="container mx-auto scroll-mt-20 px-5 py-14 md:px-8 md:py-20">
+        <section id="for-hosts" className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
           <p className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: GOLD }}>
             {t("hosts.eyebrow")}
           </p>
@@ -180,9 +180,9 @@ export default function HowItWorksPage() {
         </section>
 
         {/* ═══════ FOR VENDORS ═══════ */}
-        <section id="for-vendors" className="scroll-mt-16 border-y border-white/15">
+        <section id="for-vendors" className="scroll-mt-20 border-y border-white/15 md:scroll-mt-24">
           <div className="container mx-auto grid gap-10 px-5 py-14 md:px-8 md:py-20 lg:grid-cols-2 lg:gap-14">
-            <div className="overflow-hidden rounded-3xl border border-white/15 lg:sticky lg:top-24 lg:self-start">
+            <div className="overflow-hidden rounded-3xl border border-white/15 lg:sticky lg:top-32 lg:self-start">
               <Picture
                 source={makeup}
                 alt={t("vendors.image_alt")}
@@ -229,7 +229,7 @@ export default function HowItWorksPage() {
         </section>
 
         {/* ═══════ FAQ ═══════ */}
-        <section id="faq" className="container mx-auto scroll-mt-20 px-5 py-14 md:px-8 md:py-20">
+        <section id="faq" className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
           <p className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: GOLD }}>
             {t("faq.eyebrow")}
           </p>

@@ -212,7 +212,7 @@ export default function PublicGallerySharePage() {
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
-      <main className="pt-24 pb-16 px-5 md:px-8 max-w-6xl mx-auto">
+      <main className="pt-28 pb-16 px-5 md:pt-32 md:px-8 max-w-6xl mx-auto">
         {state.status === "loading" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
