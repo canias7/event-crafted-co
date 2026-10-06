@@ -1,12 +1,4 @@
 {
-  "nav": {
-    "vendors": "Proveedores",
-    "explore": "Explorar",
-    "how_it_works": "Cómo funciona",
-    "open_dashboard": "Abrir panel",
-    "login": "Entrar",
-    "signup": "Registrarse"
-  },
   "hero": {
     "title": "Donde comienzan<br/>los eventos <gold>inolvidables</gold>",
     "intro": "El marketplace y la experiencia de organización todo en uno para anfitriones y para los proveedores que hacen realidad cada visión."

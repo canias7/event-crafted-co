@@ -125,12 +125,15 @@ export default function PressPage() {
           <p className="mb-3 font-label text-gold">{t("brand.eyebrow")}</p>
           <h2 className="mb-8 font-editorial text-4xl">{t("brand.title")}</h2>
 
-          <div className="mb-6 grid gap-3 sm:grid-cols-2">
-            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#14161a] p-10">
+          <div className="mb-6 grid gap-3 md:grid-cols-2">
+            {/* The full lockup on both, as in every page's header. It is
+                259px wide: one tile per row below 768px, 24px sides on
+                phones so it fits a 360px screen. */}
+            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#14161a] px-6 py-10 md:p-10">
               <VendoraLogo size="md" color="#f4f1ea" withTagline />
             </div>
-            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#f4f1ea] p-10">
-              <VendoraLogo size="md" color="#14161a" />
+            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#f4f1ea] px-6 py-10 md:p-10">
+              <VendoraLogo size="md" color="#14161a" withTagline />
             </div>
           </div>
 

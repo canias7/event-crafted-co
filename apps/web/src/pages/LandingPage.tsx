@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, MapPin, Search, Store, Users } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
-import { useAuth } from "@/hooks/useAuth";
 import { Footer } from "@/components/public/Footer";
-import { VendoraLogo } from "@/components/shared/VendoraLogo";
+import { PublicNav } from "@/components/public/PublicNav";
 import { Picture } from "@/components/shared/Picture";
 // vite-imagetools `?as=picture` (see vite.config.ts) → AVIF + WebP + JPG
 // at 640/1024/1600, same pattern VendorCard uses for the browse grid.
@@ -23,12 +22,7 @@ const BRONZE = "#8a6f3e";
 // pages too.
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation("landing");
-  // Log in hides where the two header buttons would cross the 20px page
-  // edge: under 360px in English, under 388px with the wider Spanish labels
-  // (the shorter "Entrar" here, not "Iniciar sesión", is what fits a 390px
-  // phone; measured with Libre Baskerville).
-  const loginHide = i18n.resolvedLanguage === "es" ? "max-[387px]:hidden" : "max-[359px]:hidden";
+  const { t } = useTranslation("landing");
 
   // How it works used to be a section here; old /#how-it-works links go
   // to its page.
@@ -37,15 +31,8 @@ export default function LandingPage() {
       navigate("/how-it-works", { replace: true });
     }
   }, [navigate]);
-  const { session, hasVendorAccess, hasHostAccess } = useAuth();
   const [q, setQ] = useState("");
   const [loc, setLoc] = useState("");
-
-  const portalPath = hasVendorAccess
-    ? "/vendor/me"
-    : hasHostAccess
-      ? "/customer/explore"
-      : null;
 
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -84,57 +71,8 @@ export default function LandingPage() {
           }}
         />
 
-        {/* NAV (overlaid) */}
-        <header className="relative z-20 flex items-center justify-between px-5 py-5 md:px-8 md:py-7">
-          <Link to="/" aria-label="Vendora">
-            <VendoraLogo size="md" color={CREAM} withTagline />
-          </Link>
-          <nav
-            className="hidden md:flex items-center gap-8 text-[13px]"
-            style={{ color: "rgba(244,241,234,0.85)" }}
-          >
-            <Link to="/vendors" className="hover:text-white transition-colors">
-              {t("nav.vendors")}
-            </Link>
-            <Link to="/explore" className="hover:text-white transition-colors">
-              {t("nav.explore")}
-            </Link>
-            <Link to="/how-it-works" className="hover:text-white transition-colors">
-              {t("nav.how_it_works")}
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2 text-[13px] sm:gap-3">
-            {session && portalPath ? (
-              <Link
-                to={portalPath}
-                className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-3 font-bold text-foreground transition-colors hover:bg-gold-hover sm:px-4"
-              >
-                {t("nav.open_dashboard")}
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  // Hidden on the narrowest phones (see loginHide) so the header never
-                  // clips; Sign up links on to log in.
-                  className={`inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 font-bold transition-colors hover:bg-white/10 ${loginHide} sm:px-4`}
-                  style={{
-                    color: CREAM,
-                    border: "1px solid rgba(244,241,234,0.35)",
-                  }}
-                >
-                  {t("nav.login")}
-                </Link>
-                <Link
-                  to="/signup"
-                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-3 font-bold text-foreground transition-colors hover:bg-gold-hover sm:px-4"
-                >
-                  {t("nav.signup")}
-                </Link>
-              </>
-            )}
-          </div>
-        </header>
+        {/* NAV (overlaid): the same header as every other public page. */}
+        <PublicNav tone="overlay" />
 
         {/* HERO CONTENT */}
         <div className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24">

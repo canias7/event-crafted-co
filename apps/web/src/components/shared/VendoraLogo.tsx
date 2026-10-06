@@ -50,10 +50,15 @@ export function VendoraMark({
   );
 }
 
+// Name colours that mean the logo sits on a dark surface.
+const ON_DARK_NAME_COLORS = new Set(["#f4f1ea", "#fff", "#ffffff", "white"]);
+
 // The horizontal lockup from the brand sheet: gold V · hairline
 // divider · lowercase serif "vendora" (+ optional gold small-caps
-// tagline). Used in every top-left logo position (public nav,
-// dashboard sidebar, landing header, auth shell).
+// tagline). Every top-left logo shows the full lockup, tagline included,
+// at size md (the public header, the sign-in pages); the portal sidebar
+// uses sm to fit. It never wraps or shrinks, so it looks the same on
+// every page.
 export function VendoraLogo({
   size = "md",
   color = "#14161a",
@@ -66,17 +71,21 @@ export function VendoraLogo({
   withTagline?: boolean;
   className?: string;
 }) {
+  // Tagline sizes in px, half the name; set inline because .font-label
+  // carries its own size and is emitted after Tailwind's text-[…] classes.
   const dims = {
-    sm: { mark: 20, name: "text-[19px]", tag: "text-[7px]", gap: "gap-1.5" },
-    md: { mark: 26, name: "text-[24px]", tag: "text-[8.5px]", gap: "gap-2" },
-    lg: { mark: 36, name: "text-[32px]", tag: "text-[11px]", gap: "gap-2.5" },
+    sm: { mark: 20, name: "text-[19px]", tag: 9.5, gap: "gap-1.5" },
+    md: { mark: 26, name: "text-[24px]", tag: 12, gap: "gap-2" },
+    lg: { mark: 36, name: "text-[32px]", tag: 16, gap: "gap-2.5" },
   }[size];
 
   const name =
     color === "currentColor" || !color ? undefined : color;
+  // Gold text is champagne on dark surfaces and bronze on light ones.
+  const onDark = ON_DARK_NAME_COLORS.has((color ?? "").toLowerCase());
 
   return (
-    <span className={cn("inline-flex items-center", dims.gap, className)}>
+    <span className={cn("inline-flex shrink-0 items-center", dims.gap, className)}>
       <VendoraMark size={dims.mark} variant="gold" />
       <span
         aria-hidden
@@ -94,8 +103,12 @@ export function VendoraLogo({
         </span>
         {withTagline ? (
           <span
-            className={cn("font-label mt-1", dims.tag)}
-            style={{ color: "#c9a86a", letterSpacing: "0.32em" }}
+            className="font-label mt-1 whitespace-nowrap"
+            style={{
+              color: onDark ? "#c9a86a" : "#8a6f3e",
+              fontSize: dims.tag,
+              letterSpacing: "0.32em",
+            }}
           >
             Events, simplified
           </span>
