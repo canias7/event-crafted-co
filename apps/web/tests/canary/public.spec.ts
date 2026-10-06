@@ -157,9 +157,10 @@ test.describe("public site", () => {
     // NotFound deliberately console.errors the bad path.
     testInfo.annotations.push({ type: "guard:off", description: "NotFound logs the missing route by design" });
     await page.goto("/canary-route-that-does-not-exist", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "404" })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText("Page not found")).toBeVisible();
-    await page.getByRole("link", { name: /Return to Home/i }).click();
+    // Dark 404: a small "404" label over the "Page not found" title.
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("404", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: /Back to home/i }).click();
     await expect(page).toHaveURL(`${BASE_URL}/`);
   });
 
