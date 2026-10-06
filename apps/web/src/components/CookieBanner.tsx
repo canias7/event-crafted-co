@@ -28,6 +28,9 @@ export function CookieBanner() {
       STORAGE_KEY,
       JSON.stringify({ choice, decidedAt: new Date().toISOString() }),
     );
+    // Lets analytics on the open page start right away (the homepage test
+    // counts a visit seen before the choice was made).
+    window.dispatchEvent(new CustomEvent("vendora:cookie-consent", { detail: choice }));
     setOpen(false);
   }
 
