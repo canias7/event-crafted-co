@@ -1,0 +1,108 @@
+{
+  "showcase": {
+    "eyebrow": "Every event",
+    "title": "Every detail.\nAll in one place.",
+    "body": "Discover trusted event vendors for unforgettable celebrations.",
+    "cta": "Explore vendors",
+    "tiles": {
+      "venues": {
+        "title": "Venues",
+        "body": "Find the perfect space"
+      },
+      "food": {
+        "title": "Food & beverages",
+        "body": "Catering for every occasion"
+      },
+      "entertainment": {
+        "title": "Entertainment",
+        "body": "Make it unforgettable"
+      },
+      "decor": {
+        "title": "Design & decor",
+        "body": "Bring your vision to life"
+      },
+      "media": {
+        "title": "Media & photography",
+        "body": "Capture every moment"
+      }
+    }
+  },
+  "planning": {
+    "eyebrow": "What are you planning?",
+    "title": "Let's bring it to life.",
+    "body": "No matter the occasion, find trusted vendors to make it extraordinary.",
+    "cta": "Start planning",
+    "tablist": "Event types",
+    "previous": "Previous event type",
+    "next": "Next event type",
+    "vendorsFor": "Vendors for this event",
+    "types": {
+      "wedding": {
+        "tab": "Weddings",
+        "eyebrow": "Weddings",
+        "headline": "Romantic. Elegant. Effortless.",
+        "body": "From stunning venues to unforgettable details, find the perfect vendors for your special day.",
+        "explore": "Explore wedding vendors"
+      },
+      "birthday": {
+        "tab": "Birthdays",
+        "eyebrow": "Birthdays",
+        "headline": "Joyful. Personal. Unforgettable.",
+        "body": "A venue that fits the party, a cake worth the candles and entertainment that keeps everyone dancing.",
+        "explore": "Explore birthday vendors"
+      },
+      "corporate": {
+        "tab": "Corporate",
+        "eyebrow": "Corporate events",
+        "headline": "Polished. Seamless. On brand.",
+        "body": "Conference spaces, catering, AV and staff for meetings, launches and company celebrations.",
+        "explore": "Explore corporate vendors"
+      },
+      "private": {
+        "tab": "Private events",
+        "eyebrow": "Private events",
+        "headline": "Intimate. Exclusive. Yours.",
+        "body": "Engagements, anniversaries and private dinners, with the vendors to make them feel effortless.",
+        "explore": "Explore private event vendors"
+      },
+      "babyShower": {
+        "tab": "Baby showers",
+        "eyebrow": "Baby showers",
+        "headline": "Sweet. Soft. Memorable.",
+        "body": "Desserts, decor, florals and a beautiful space to welcome the newest guest of honor.",
+        "explore": "Explore baby shower vendors"
+      },
+      "other": {
+        "tab": "Other",
+        "eyebrow": "Dinners & holiday parties",
+        "headline": "Warm. Festive. Together.",
+        "body": "Holiday parties, dinners and seasonal gatherings: find the space, the food and the music.",
+        "explore": "Explore vendors for your gathering"
+      }
+    }
+  },
+  "howItWorks": {
+    "eyebrow": "How Event Vendora works",
+    "title": "Plan. Connect.\nCelebrate.",
+    "body": "We make it easy to find and book trusted event vendors, so you can focus on what matters most: unforgettable moments.",
+    "cta": "Get started",
+    "steps": {
+      "explore": {
+        "title": "Explore",
+        "body": "Find trusted vendors in your area, from venues to florists."
+      },
+      "connect": {
+        "title": "Connect",
+        "body": "View vendor details, check availability and reach out directly."
+      },
+      "celebrate": {
+        "title": "Celebrate",
+        "body": "Bring your event together with the perfect team."
+      }
+    },
+    "chat": {
+      "question": "Hi! Is June 14 still open?",
+      "answer": "It is! I'd love to hear more about your event."
+    }
+  }
+}

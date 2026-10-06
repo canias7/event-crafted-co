@@ -4,6 +4,7 @@ import { ArrowRight, MapPin, Search, Store, Users } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { PublicNav } from "@/components/public/PublicNav";
+import { HomeExperimentSection } from "@/components/home/HomeExperimentSection";
 import { Picture } from "@/components/shared/Picture";
 // vite-imagetools `?as=picture` (see vite.config.ts) → AVIF + WebP + JPG
 // at 640/1024/1600, same pattern VendorCard uses for the browse grid.
@@ -207,6 +208,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Homepage A/B/C test: one of three sections for each visitor. */}
+      <HomeExperimentSection />
 
       <Footer tone="dark" />
 

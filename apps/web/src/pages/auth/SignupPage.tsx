@@ -8,6 +8,7 @@ import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { authErrorText } from "@/components/auth/authErrors";
+import { logHomeEvent } from "@/lib/homeExperiment";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
@@ -78,6 +79,10 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       captcha.reset();
       return;
     }
+
+    // An account was created: count it for the homepage test version this
+    // visitor saw (nothing is sent if they never got one).
+    logHomeEvent("signup", role);
 
     // Vendors always land on the "Application received" page. Their
     // application is hand-reviewed and they have NO portal access until
