@@ -16,12 +16,12 @@ import { useTranslation } from "react-i18next";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { useCategoryNames } from "@/lib/categoryNames";
 import { HomeSectionIntro, HomeSectionShell, type TrackHomeEvent } from "./HomeSectionShell";
-import weddingImg from "@/assets/hero/wedding.jpg?as=picture";
-import birthdayImg from "@/assets/vendora-hero-birthday.jpg?as=picture";
-import corporateImg from "@/assets/hero/corporate.jpg?as=picture";
-import privateImg from "@/assets/hero/engagement.jpg?as=picture";
-import babyShowerImg from "@/assets/categories/decor.jpg?as=picture";
-import dinnerImg from "@/assets/vendora-hero-dinner.jpg?as=picture";
+import weddingImg from "@/assets/photos/33.webp?as=picture";
+import birthdayImg from "@/assets/photos/37.webp?as=picture";
+import corporateImg from "@/assets/photos/49.webp?as=picture";
+import privateImg from "@/assets/photos/42.webp?as=picture";
+import babyShowerImg from "@/assets/photos/43.webp?as=picture";
+import otherImg from "@/assets/photos/48.webp?as=picture";
 
 // Homepage test, version B: "What are you planning?". Picking an event
 // type shows its photo, a line about it and the vendor categories it
@@ -65,20 +65,19 @@ const EVENT_TYPES: {
     key: "private",
     icon: Wine,
     image: privateImg,
-    position: "object-[60%_40%]",
     subs: ["Private Dining Spaces", "Catering", "Bartending / Mobile Bars", "Live Music", "Florists", "Photography"],
   },
   {
     key: "babyShower",
     icon: Baby,
     image: babyShowerImg,
-    position: "object-[50%_62%]",
+    position: "object-[50%_25%]",
     subs: ["Desserts & Cakes", "Decor Rentals", "Florists", "Event Venues", "Catering", "Photography"],
   },
   {
     key: "other",
     icon: Ellipsis,
-    image: dinnerImg,
+    image: otherImg,
     subs: ["Private Dining Spaces", "Catering", "Bartending / Mobile Bars", "Live Music", "Decor Rentals", "Tastings"],
   },
 ];

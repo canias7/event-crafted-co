@@ -7,18 +7,18 @@ import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
 import { Picture } from "@/components/shared/Picture";
-import dinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
-import venues from "@/assets/vendor-venue.jpg?as=picture";
-import media from "@/assets/vendor-photographer.jpg?as=picture";
-import designDecor from "@/assets/vendor-florist.jpg?as=picture";
-import weddingImg from "@/assets/hero/wedding.jpg?as=picture";
+import heroPhoto from "@/assets/photos/47.webp?as=picture";
+import discoverPhoto from "@/assets/photos/44.webp?as=picture";
+import connectPhoto from "@/assets/photos/17.webp?as=picture";
+import planPhoto from "@/assets/photos/22.webp?as=picture";
+import bookPhoto from "@/assets/photos/34.webp?as=picture";
 
 // Text lives in locales/<lang>/forHosts.json, keyed by these ids.
 const STEPS = [
-  { id: "discover", image: venues },
-  { id: "connect", image: media },
-  { id: "plan", image: designDecor },
-  { id: "book", image: weddingImg },
+  { id: "discover", image: discoverPhoto },
+  { id: "connect", image: connectPhoto },
+  { id: "plan", image: planPhoto },
+  { id: "book", image: bookPhoto },
 ];
 
 const EVENT_TYPES = ["weddings", "birthdays", "corporate", "parties", "social", "more"];
@@ -37,7 +37,8 @@ export default function ForHostsPage() {
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PhotoHero
-        photo={dinner}
+        photo={heroPhoto}
+        position="object-[50%_30%]"
         eyebrow={t("hero.eyebrow")}
         title={
           <Trans

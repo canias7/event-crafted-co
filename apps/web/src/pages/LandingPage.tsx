@@ -6,9 +6,9 @@ import { Footer } from "@/components/public/Footer";
 import { PublicNav } from "@/components/public/PublicNav";
 import { HomeExperimentSection } from "@/components/home/HomeExperimentSection";
 import { Picture } from "@/components/shared/Picture";
-// vite-imagetools `?as=picture` (see vite.config.ts) → AVIF + WebP + JPG
-// at 640/1024/1600, same pattern VendorCard uses for the browse grid.
-import heroCinematic from "@/assets/vendora-hero-cinematic.jpg?as=picture";
+// The site's photos are the owner's pictures, numbered as in the "Photos"
+// tab of the page walkthrough doc (vite-imagetools makes AVIF/WebP/JPG).
+import heroPhoto from "@/assets/photos/39.webp?as=picture";
 
 // ── Palette (matches the mobile apps) ──────────────────────────────
 const INK = "#14161a";
@@ -50,7 +50,7 @@ export default function LandingPage() {
         {/* Backdrop photo + slow drift */}
         <div className="absolute inset-0 landing-kenburns">
           <Picture
-            source={heroCinematic}
+            source={heroPhoto}
             alt=""
             sizes="100vw"
             className="h-full w-full object-cover"

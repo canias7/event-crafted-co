@@ -6,7 +6,7 @@ import { CalendarDays, CreditCard, FileText, MessageCircle, Search, Star } from 
 import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
-import planner from "@/assets/hero/wedding.jpg?as=picture";
+import heroPhoto from "@/assets/photos/27.webp?as=picture";
 
 // Text lives in locales/<lang>/forVendors.json, keyed by these ids.
 const STEPS = ["discovered", "inquiries", "book", "grow"];
@@ -25,7 +25,8 @@ export default function ForVendorsPage() {
   return (
     <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PhotoHero
-        photo={planner}
+        photo={heroPhoto}
+        position="object-[50%_22%]"
         eyebrow={t("hero.eyebrow")}
         title={
           <Trans

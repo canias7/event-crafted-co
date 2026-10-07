@@ -18,12 +18,14 @@ import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
 import { useCategoryNames } from "@/lib/categoryNames";
 
-import vendorPhotographer from "@/assets/vendor-photographer.jpg?as=picture";
-import vendorFlorist from "@/assets/vendor-florist.jpg?as=picture";
-import vendorCatering from "@/assets/vendor-catering.jpg?as=picture";
-import vendorDj from "@/assets/vendor-dj.jpg?as=picture";
-import vendorVenue from "@/assets/vendor-venue.jpg?as=picture";
-import vendorMakeup from "@/assets/vendor-makeup.jpg?as=picture";
+import venuesPhoto from "@/assets/photos/54.webp?as=picture";
+import foodPhoto from "@/assets/photos/15.webp?as=picture";
+import entertainmentPhoto from "@/assets/photos/31.webp?as=picture";
+import mediaPhoto from "@/assets/photos/51.webp?as=picture";
+import decorPhoto from "@/assets/photos/28.webp?as=picture";
+import rentalsPhoto from "@/assets/photos/32.webp?as=picture";
+import experiencesPhoto from "@/assets/photos/56.webp?as=picture";
+import corporatePhoto from "@/assets/photos/55.webp?as=picture";
 
 interface CategoryConfig {
   /** Group name — also the schema lookup key in categoryAttributes. */
@@ -38,18 +40,17 @@ interface CategoryConfig {
   comingSoon?: boolean;
 }
 
-// Hero image per group slug. Re-uses the existing imagetools-bundled
-// vendor-* assets — closest visual match per group, swap later when
-// per-group editorial heroes are commissioned.
+// Photo per group: the share image of its category page and the faint
+// backdrop of its city pages (/vendors/in/:city/:category).
 const heroByGroup: Record<string, PictureSource> = {
-  venues: vendorVenue,
-  "food-beverage": vendorCatering,
-  entertainment: vendorDj,
-  media: vendorPhotographer,
-  "design-decor": vendorFlorist,
-  rentals: vendorVenue,
-  experiences: vendorMakeup,
-  "corporate-services": vendorVenue,
+  venues: venuesPhoto,
+  "food-beverage": foodPhoto,
+  entertainment: entertainmentPhoto,
+  media: mediaPhoto,
+  "design-decor": decorPhoto,
+  rentals: rentalsPhoto,
+  experiences: experiencesPhoto,
+  "corporate-services": corporatePhoto,
 };
 
 // Single source of truth lives in categoryTaxonomy.CATEGORY_GROUPS;
@@ -66,7 +67,7 @@ export const categoryConfig: Record<string, CategoryConfig> =
         display: g.name,
         description: g.description,
         longCopy: g.longCopy,
-        hero: heroByGroup[g.slug] ?? vendorVenue,
+        hero: heroByGroup[g.slug] ?? venuesPhoto,
         subs: g.subs,
       },
     ]),

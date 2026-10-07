@@ -13,6 +13,7 @@ const INK = "#14161a";
 // shadow as the landing hero.
 export function PhotoHero({
   photo,
+  position = "object-center",
   eyebrow,
   title,
   sub,
@@ -20,6 +21,8 @@ export function PhotoHero({
   secondary,
 }: {
   photo: PictureSource;
+  /** Which part of the photo stays in frame, e.g. "object-[50%_25%]". */
+  position?: string;
   eyebrow: string;
   title: ReactNode;
   sub: string;
@@ -35,7 +38,7 @@ export function PhotoHero({
           sizes="100vw"
           loading="eager"
           fetchPriority="high"
-          className="h-full w-full object-cover"
+          className={`h-full w-full object-cover ${position}`}
         />
       </div>
       <div

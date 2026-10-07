@@ -4,15 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { BROWSE_CATEGORIES } from "@/data/browseCategories";
 import { HomeSectionIntro, HomeSectionShell, type TrackHomeEvent } from "./HomeSectionShell";
-import venuesImg from "@/assets/categories/venues.jpg?as=picture";
-import cateringImg from "@/assets/categories/catering.jpg?as=picture";
-import entertainmentImg from "@/assets/categories/entertainment.jpg?as=picture";
-import decorImg from "@/assets/categories/decor.jpg?as=picture";
-import photographyImg from "@/assets/categories/photography.jpg?as=picture";
+import venuesImg from "@/assets/photos/54.webp?as=picture";
+import foodImg from "@/assets/photos/01.webp?as=picture";
+import entertainmentImg from "@/assets/photos/31.webp?as=picture";
+import decorImg from "@/assets/photos/04.webp?as=picture";
+import mediaImg from "@/assets/photos/08.webp?as=picture";
 
 // Homepage test, version A: the main vendor categories as tall photo
-// tiles (the owner's category photos), each opening the vendors page
-// filtered to it, as its photo tile there does.
+// tiles, each opening the vendors page filtered to it.
 const TILES: {
   key: "venues" | "food" | "entertainment" | "decor" | "media";
   /** The vendors page's browse category it opens. */
@@ -23,10 +22,10 @@ const TILES: {
   position: string;
 }[] = [
   { key: "venues", browse: "Venues", image: venuesImg, icon: Landmark, position: "object-[50%_50%]" },
-  { key: "food", browse: "Catering", image: cateringImg, icon: UtensilsCrossed, position: "object-[42%_50%]" },
-  { key: "entertainment", browse: "Entertainment", image: entertainmentImg, icon: Music, position: "object-[55%_50%]" },
-  { key: "decor", browse: "Decor & florals", image: decorImg, icon: Flower2, position: "object-[38%_50%]" },
-  { key: "media", browse: "Photography", image: photographyImg, icon: Camera, position: "object-[30%_50%]" },
+  { key: "food", browse: "Catering", image: foodImg, icon: UtensilsCrossed, position: "object-[40%_50%]" },
+  { key: "entertainment", browse: "Entertainment", image: entertainmentImg, icon: Music, position: "object-[35%_50%]" },
+  { key: "decor", browse: "Decor & florals", image: decorImg, icon: Flower2, position: "object-[60%_50%]" },
+  { key: "media", browse: "Photography", image: mediaImg, icon: Camera, position: "object-[50%_50%]" },
 ];
 
 function vendorsLink(browse: string): string {
