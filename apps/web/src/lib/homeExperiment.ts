@@ -3,22 +3,32 @@ import i18n from "@/i18n";
 
 // The homepage A/B/C test: the section under the hero comes in three
 // versions (A: category showcase, B: "What are you planning?",
-// C: how it works). A visitor gets one at random on their first visit,
-// about a third each, and keeps it on every return visit (localStorage).
+// C: how it works). A visitor gets one at random the first time they see
+// the homepage, about a third each, and keeps it on every return visit
+// (localStorage).
 //
 // Preview any version with ?home=a, ?home=b or ?home=c on the homepage:
-// that shows it without touching the visitor's own version and logs
-// nothing. Results: the admin panel's "Homepage test" page.
+// that shows it without giving the visitor a version and records nothing.
+//
+// Recorded only for visitors who chose "Accept all" in the cookie banner,
+// in home_experiment_events:
+//   visit         got a version (once per visitor)
+//   view          scrolled down to the section (once per browser session)
+//   click/select  a tile, event type, category chip, link or main button
+//   signup_start  opened a sign-up form
+// A completed registration is the account itself: sign-up saves the
+// visitor's version with the new account (user metadata "home_test"), and
+// the admin "A/B testing" page counts those accounts, vendors and hosts
+// apart. Results: admin.eventvendora.com → A/B testing.
 
 export const HOME_EXPERIMENT = "home_section_v1";
 export const HOME_VARIANTS = ["a", "b", "c"] as const;
 export type HomeVariant = (typeof HOME_VARIANTS)[number];
 
-/** view: saw the section · click: followed a link in it · select: picked
- *  an event type (B) · signup: created an account later. */
-export type HomeEvent = "view" | "click" | "select" | "signup";
+export type HomeEvent = "visit" | "view" | "click" | "select" | "signup_start";
 
 const STORAGE_KEY = "vendora.home-test";
+const COUNTED_KEY = "vendora.home-test.counted";
 const CONSENT_KEY = "vendora.cookie-consent";
 
 interface Assignment {
@@ -93,12 +103,7 @@ export function analyticsAllowed(): boolean {
   }
 }
 
-/** Records an event for the visitor's version. Fire-and-forget: does
- *  nothing without a version or without analytics consent, and never
- *  throws. */
-export function logHomeEvent(event: HomeEvent, detail?: string): void {
-  const assignment = storedAssignment();
-  if (!assignment || !analyticsAllowed()) return;
+function send(assignment: Assignment, event: HomeEvent, detail?: string): void {
   // The table isn't in the generated Supabase types.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   void (supabase as any)
@@ -115,4 +120,48 @@ export function logHomeEvent(event: HomeEvent, detail?: string): void {
       () => undefined,
       () => undefined,
     );
+}
+
+/** Records which version this visitor got, once per visitor, as soon as
+ *  they have a version and analytics consent. */
+export function recordHomeVisit(): void {
+  const assignment = storedAssignment();
+  if (!assignment || !analyticsAllowed()) return;
+  try {
+    if (localStorage.getItem(COUNTED_KEY) === assignment.visitorId) return;
+    localStorage.setItem(COUNTED_KEY, assignment.visitorId);
+  } catch {
+    return;
+  }
+  send(assignment, "visit");
+}
+
+/** Records an event for the visitor's version. Fire-and-forget: does
+ *  nothing without a version or without analytics consent, and never
+ *  throws. */
+export function logHomeEvent(event: Exclude<HomeEvent, "visit">, detail?: string): void {
+  const assignment = storedAssignment();
+  if (!assignment || !analyticsAllowed()) return;
+  recordHomeVisit();
+  send(assignment, event, detail);
+}
+
+/** Saved with a new account at sign-up (user metadata "home_test") so the
+ *  account counts as a registration for this visitor's version. Null
+ *  without a version or without analytics consent. */
+export function homeTestForSignup(): {
+  experiment: string;
+  variant: HomeVariant;
+  visitor_id: string;
+} | null {
+  const assignment = storedAssignment();
+  if (!assignment || !analyticsAllowed()) return null;
+  recordHomeVisit();
+  return { experiment: HOME_EXPERIMENT, variant: assignment.variant, visitor_id: assignment.visitorId };
+}
+
+// Accepting analytics cookies on any page counts the version this visitor
+// already got (the cookie banner announces the choice).
+if (typeof window !== "undefined") {
+  window.addEventListener("vendora:cookie-consent", () => recordHomeVisit());
 }
