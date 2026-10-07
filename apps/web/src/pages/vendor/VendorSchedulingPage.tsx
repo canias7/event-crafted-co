@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import { Loader2, Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,9 +83,9 @@ interface PromoSuggestion {
 const PRO_TYPE_CAP = 5;
 
 export default function VendorSchedulingPage() {
-  const { t, i18n } = useTranslation("vendorScheduling");
-  // Spanish dates use US-Spanish formats; English keeps the browser default.
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
+  const { t } = useTranslation("vendorScheduling");
+  // Dates follow the site language; English keeps the browser default.
+  const dateLocale = siteLocaleOr(undefined);
   const dayLabels = t("days", { returnObjects: true }) as string[];
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;

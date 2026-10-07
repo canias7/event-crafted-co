@@ -949,8 +949,28 @@
   }
 }
 
-/* Spanish uses sentence case ("Cena de fiestas · 12 invitados"), so
-   Tailwind's `capitalize` only title-cases in English. */
-html:lang(es) .capitalize {
+/* Spanish and Russian use sentence case ("Cena de fiestas · 12
+   invitados"), so Tailwind's `capitalize` only title-cases in English. */
+html:not(:lang(en)) .capitalize {
   text-transform: none;
+}
+
+/* Russian has long words ("конфиденциальности") that don't fit a phone
+   screen at headline sizes: hyphenate them, and break one that still
+   doesn't fit rather than push the page sideways. */
+html:lang(ru) :is(h1, h2, h3, h4, h5, h6, .font-editorial, .font-display) {
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* On phones the page heroes and the sign-in / sign-up headlines step
+   down a size in Russian, so words like «незабываемые» and
+   «возвращением» fit whole. Their inline sizes are set for English. */
+@media (max-width: 480px) {
+  html:lang(ru) h1.hero-headline {
+    font-size: 34px !important;
+  }
+  html:lang(ru) .auth-headline {
+    font-size: 36px !important;
+  }
 }

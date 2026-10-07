@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import { Check, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -127,7 +128,8 @@ function parseProposal(body: string): Block[] {
   return blocks;
 }
 
-// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+// `locale` is "en-US" in English (as before), "es-US" in Spanish and
+// "ru-RU" in Russian.
 function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -143,8 +145,8 @@ function fmtDate(iso: string | null, locale: string): string {
 
 export default function ProposalPage() {
   const { token } = useParams<{ token: string }>();
-  const { t, i18n } = useTranslation("checkout");
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
+  const { t } = useTranslation("checkout");
+  const dateLocale = siteLocaleOr("en-US");
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");

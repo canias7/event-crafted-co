@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import MuxPlayer from "@mux/mux-player-react";
 import {
   Loader2,
@@ -56,8 +57,8 @@ interface ReplayCtx {
   ended_at: string | null;
 }
 
-// `locale` is undefined in English (the browser's default, as before)
-// and "es-US" in Spanish.
+// `locale` is undefined in English (the browser's default, as before),
+// "es-US" in Spanish and "ru-RU" in Russian.
 function fmtDate(iso: string, locale: string | undefined): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(locale, {
     weekday: "long",
@@ -95,8 +96,8 @@ export default function LiveWatchPage() {
   const { token } = useParams();
   const [searchParams] = useSearchParams();
   const replayId = searchParams.get("replay");
-  const { t, i18n } = useTranslation("live");
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
+  const { t } = useTranslation("live");
+  const dateLocale = siteLocaleOr(undefined);
 
   const [ctx, setCtx] = useState<StreamCtx | null>(null);
   const [replayCtx, setReplayCtx] = useState<ReplayCtx | null>(null);

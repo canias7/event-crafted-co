@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { intlLocale } from "@/lib/intlLocale";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import {
   Dialog,
   DialogContent,
@@ -50,11 +50,10 @@ const statusBadge: Record<string, { className: string }> = {
 
 const refsTable = () => supabase.from("vendor_referrals");
 
-// In Spanish, the site's date format; in English, the browser default
-// as before.
+// In Spanish and Russian, the site's date format; in English, the
+// browser default as before.
 function shortDate(iso: string) {
-  const locale = intlLocale();
-  return new Date(iso).toLocaleDateString(locale.startsWith("es") ? locale : undefined);
+  return new Date(iso).toLocaleDateString(siteLocaleOr(undefined));
 }
 
 export function ReferralManager({

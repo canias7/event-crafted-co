@@ -27,7 +27,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { loadStripe, type Stripe as StripeJs } from "@stripe/stripe-js";
+import { loadStripe, type Stripe as StripeJs, type StripeElementLocale } from "@stripe/stripe-js";
 import { Check, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +63,9 @@ const WEB_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
 // so we don't reinitialize Stripe.js on every render. Keyed cache because
 // the key arrives asynchronously from the edge function.
 const stripeCache = new Map<string, Promise<StripeJs | null>>();
+
+// Stripe's names for the site's languages (Latin American Spanish).
+const STRIPE_LOCALES: Record<string, StripeElementLocale> = { es: "es-419", ru: "ru" };
 function stripeFor(pk: string): Promise<StripeJs | null> {
   let p = stripeCache.get(pk);
   if (!p) {
@@ -401,7 +404,7 @@ export default function PayLinkCheckoutPage() {
               clientSecret,
               // Card form labels and Stripe's own error messages in the
               // page's language ("auto", the default, in English).
-              locale: i18n.resolvedLanguage === "es" ? "es-419" : "auto",
+              locale: STRIPE_LOCALES[i18n.resolvedLanguage ?? "en"] ?? "auto",
               fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" }],
               appearance: {
                 theme: "stripe",

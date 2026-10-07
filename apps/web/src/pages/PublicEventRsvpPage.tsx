@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import { Calendar as CalendarIcon, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,8 +23,8 @@ interface EventDetail {
   maybe_count: number;
 }
 
-// `locale` is undefined in English (the browser's default, as before)
-// and "es-US" in Spanish.
+// `locale` is undefined in English (the browser's default, as before),
+// "es-US" in Spanish and "ru-RU" in Russian.
 function fmtDate(ymd: string, locale: string | undefined): string {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(locale, {
@@ -55,8 +56,8 @@ function fmtTimeRange(
 
 export default function PublicEventRsvpPage() {
   const { token } = useParams<{ token: string }>();
-  const { t, i18n } = useTranslation("rsvp");
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
+  const { t } = useTranslation("rsvp");
+  const dateLocale = siteLocaleOr(undefined);
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);

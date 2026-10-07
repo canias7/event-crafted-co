@@ -14,6 +14,10 @@
   },
   "list_name": "Novedades de Vendora",
   "entries": {
+    "russian": {
+      "title": "Ahora en ruso",
+      "description": "El sitio web ahora también está en ruso. Sigue el idioma de tu navegador y puedes cambiarlo al final de cualquier página."
+    },
     "explore_redesigned": {
       "title": "Explorar, rediseñado",
       "description": "Recorre el trabajo de los proveedores en una galería de dos columnas, mira los reels de uno en uno y encuentra a todos los proveedores y a los que guardaste, todo desde una sola página."

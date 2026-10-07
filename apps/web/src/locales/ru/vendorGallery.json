@@ -1,0 +1,170 @@
+{
+  "header": {
+    "title": "Галерея",
+    "subtitle": "Ваша медиатека. Загрузите один раз — используйте во всех объявлениях.",
+    "storageUsedOf": "Занято {{used}} из {{cap}}",
+    "storageUsed": "Занято {{used}}",
+    "upgrade": "Улучшить тариф"
+  },
+  "tabs": {
+    "all": "Все",
+    "uncategorized": "Без альбома",
+    "newAlbum": "Новый альбом",
+    "smart": "Подборки",
+    "last7": "Последние 7 дней",
+    "last30": "Последние 30 дней",
+    "portraits": "Вертикальные",
+    "landscapes": "Горизонтальные",
+    "large": "Большие (>5 МБ)",
+    "trash": "Корзина"
+  },
+  "toolbar": {
+    "searchPlaceholder": "Поиск по подписи или имени файла",
+    "sort": "Сортировка: {{label}}",
+    "sortShort": {
+      "newest": "новые",
+      "oldest": "старые",
+      "name_asc": "А→Я",
+      "name_desc": "Я→А"
+    },
+    "sortOptions": {
+      "newest": "Сначала новые",
+      "oldest": "Сначала старые",
+      "name_asc": "По имени А→Я",
+      "name_desc": "По имени Я→А"
+    },
+    "shape": "Форма: {{label}}",
+    "shapes": {
+      "portrait": "Вертикальные",
+      "landscape": "Горизонтальные",
+      "square": "Квадратные"
+    },
+    "anyShape": "Любая форма",
+    "format": "Формат: {{label}}",
+    "anyFormat": "Любой формат",
+    "any": "все",
+    "dates": "Даты: {{label}}",
+    "dateFrom": "от {{date}}",
+    "dateTo": "до {{date}}",
+    "from": "От",
+    "to": "До",
+    "clear": "Сбросить",
+    "density": {
+      "compact": "Мелкая сетка",
+      "medium": "Средняя сетка",
+      "large": "Крупная сетка"
+    },
+    "view": {
+      "grid": "Сетка",
+      "list": "Список",
+      "calendar": "Календарь"
+    },
+    "cancel": "Отмена",
+    "select": "Выбрать",
+    "upload": "Загрузить"
+  },
+  "status": {
+    "loading": "Загрузка…",
+    "trashEmpty": "Корзина пуста",
+    "noMatches": "Ничего не найдено",
+    "imageCount_one": "{{count}} изображение",
+    "imageCount_few": "{{count}} изображения",
+    "imageCount_many": "{{count}} изображений",
+    "imageCount_other": "{{count}} изображения",
+    "autoDelete": "Через 30 дней файлы удаляются автоматически"
+  },
+  "album": {
+    "zipping": "Архивация {{done}}/{{total}}",
+    "download": "Скачать альбом",
+    "rename": "Переименовать",
+    "delete": "Удалить альбом"
+  },
+  "bulk": {
+    "selected_one": "Выбрано: {{count}}",
+    "selected_few": "Выбрано: {{count}}",
+    "selected_many": "Выбрано: {{count}}",
+    "selected_other": "Выбрано: {{count}}",
+    "restore": "Восстановить",
+    "moveTo": "Переместить в",
+    "downloadZip": "Скачать ZIP",
+    "deleteForever": "Удалить навсегда",
+    "delete": "Удалить"
+  },
+  "empty": {
+    "trashTitle": "Корзина пуста",
+    "trashBody": "Удалённые изображения хранятся здесь 30 дней, а затем удаляются навсегда.",
+    "noFilterMatches": "Нет изображений, подходящих под фильтры",
+    "dropHere": "Перетащите изображения сюда или нажмите, чтобы загрузить",
+    "formats": "JPG, PNG, WebP. До 20 МБ каждое."
+  },
+  "tile": {
+    "imageAlt": "Изображение из галереи",
+    "albumCover": "Обложка альбома",
+    "select": "Выбрать",
+    "deselect": "Снять выбор",
+    "deletePermanently": "Удалить навсегда",
+    "moveToTrash": "Переместить в корзину"
+  },
+  "list": {
+    "filename": "Имя файла",
+    "album": "Альбом",
+    "uploaded": "Загружено",
+    "size": "Размер"
+  },
+  "toasts": {
+    "imagesOnly": "Выбирайте только файлы изображений.",
+    "tooBig": "«{{name}}» больше 20 МБ. Попробуйте файл поменьше.",
+    "uploadPartial": "Загружено: {{uploaded}}, с ошибкой: {{failed}}. Подробности в консоли.",
+    "added_one": "Добавлено {{count}} изображение.",
+    "added_few": "Добавлено {{count}} изображения.",
+    "added_many": "Добавлено {{count}} изображений.",
+    "added_other": "Добавлено {{count}} изображения.",
+    "deleted": "Удалено.",
+    "movedToTrashSingle": "Перемещено в корзину. Восстановить можно в течение 30 дней.",
+    "permanentlyDeleted_one": "{{count}} изображение удалено навсегда.",
+    "permanentlyDeleted_few": "{{count}} изображения удалены навсегда.",
+    "permanentlyDeleted_many": "{{count}} изображений удалено навсегда.",
+    "permanentlyDeleted_other": "{{count}} изображения удалено навсегда.",
+    "movedToTrash_one": "{{count}} изображение перемещено в корзину.",
+    "movedToTrash_few": "{{count}} изображения перемещены в корзину.",
+    "movedToTrash_many": "{{count}} изображений перемещено в корзину.",
+    "movedToTrash_other": "{{count}} изображения перемещено в корзину.",
+    "restored_one": "{{count}} изображение восстановлено.",
+    "restored_few": "{{count}} изображения восстановлены.",
+    "restored_many": "{{count}} изображений восстановлено.",
+    "restored_other": "{{count}} изображения восстановлено.",
+    "movedToAlbum_one": "{{count}} изображение перемещено в альбом.",
+    "movedToAlbum_few": "{{count}} изображения перемещены в альбом.",
+    "movedToAlbum_many": "{{count}} изображений перемещено в альбом.",
+    "movedToAlbum_other": "{{count}} изображения перемещено в альбом.",
+    "movedToUncategorized_one": "{{count}} изображение перемещено в «Без альбома».",
+    "movedToUncategorized_few": "{{count}} изображения перемещены в «Без альбома».",
+    "movedToUncategorized_many": "{{count}} изображений перемещено в «Без альбома».",
+    "movedToUncategorized_other": "{{count}} изображения перемещено в «Без альбома».",
+    "albumEmpty": "В этом альбоме нет изображений.",
+    "albumZipCap": "В ZIP-архив альбома помещается не больше 50 изображений (в этом альбоме: {{size}}). Скачивайте частями через «Выбрать» и «Скачать ZIP».",
+    "downloaded_one": "Скачано {{count}} изображение.",
+    "downloaded_few": "Скачано {{count}} изображения.",
+    "downloaded_many": "Скачано {{count}} изображений.",
+    "downloaded_other": "Скачано {{count}} изображения.",
+    "zipFailed": "Не удалось создать ZIP-архив.",
+    "zipCap": "В один ZIP-архив помещается не больше 50 изображений (выбрано: {{size}}). Скачивайте небольшими частями.",
+    "albumCreated": "Альбом создан.",
+    "renamed": "Альбом переименован.",
+    "albumDeleted": "Альбом удалён.",
+    "coverUpdated": "Обложка обновлена.",
+    "reorderFailed": "Не удалось изменить порядок: {{message}}"
+  },
+  "confirm": {
+    "deleteOne": "Удалить навсегда? Это действие нельзя отменить.",
+    "deleteMany_one": "Удалить навсегда {{count}} изображение? Это действие нельзя отменить.",
+    "deleteMany_few": "Удалить навсегда {{count}} изображения? Это действие нельзя отменить.",
+    "deleteMany_many": "Удалить навсегда {{count}} изображений? Это действие нельзя отменить.",
+    "deleteMany_other": "Удалить навсегда {{count}} изображения? Это действие нельзя отменить.",
+    "deleteAlbum": "Удалить альбом «{{name}}»? Изображения останутся — они переместятся в «Без альбома»."
+  },
+  "prompt": {
+    "newAlbum": "Название нового альбома",
+    "renameAlbum": "Переименовать альбом"
+  }
+}

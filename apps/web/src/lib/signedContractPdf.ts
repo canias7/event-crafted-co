@@ -3,7 +3,8 @@
 // image when one was captured. Mirrors the on-screen signed state.
 // The labels Vendora adds (not the contract text) follow the page's
 // language (checkout.json → sign.pdf); built on click, so it uses the
-// language in effect at that moment.
+// language in effect at that moment. jsPDF's built-in fonts only draw
+// Latin letters, so a Russian page gets the English labels.
 import jsPDF from "jspdf";
 import i18n from "@/i18n";
 
@@ -21,15 +22,19 @@ const MARGIN = 56;
 const TEXT: [number, number, number] = [26, 20, 16];
 const MUTED: [number, number, number] = [107, 98, 89];
 
+function pdfLanguage(): "en" | "es" {
+  return (i18n.resolvedLanguage ?? "en").startsWith("es") ? "es" : "en";
+}
+
 function label(key: string, options?: Record<string, unknown>): string {
-  return i18n.t(`sign.pdf.${key}`, { ns: "checkout", ...options });
+  return i18n.t(`sign.pdf.${key}`, { ns: "checkout", lng: pdfLanguage(), ...options });
 }
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(i18n.resolvedLanguage === "es" ? "es-US" : "en-US", {
+  return d.toLocaleString(pdfLanguage() === "es" ? "es-US" : "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, Check, Inbox, Sparkles, MessageCircle, Star, Calendar } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { es as esLocale } from "date-fns/locale";
+import { formatDistanceToNow, type Locale } from "date-fns";
+import { es, ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime";
@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 const notifTable = () => supabase.from("notifications");
+
+const TIME_LOCALES: Record<string, Locale | undefined> = { es, ru };
 
 function isToday(iso: string): boolean {
   const d = new Date(iso);
@@ -62,9 +64,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
   const { t, i18n } = useTranslation("notifications");
   // "time ago" text follows the site language (English stays date-fns'
   // default locale).
-  const timeLocale = (i18n.resolvedLanguage ?? i18n.language ?? "en").startsWith("es")
-    ? esLocale
-    : undefined;
+  const timeLocale = TIME_LOCALES[(i18n.resolvedLanguage ?? i18n.language ?? "en").split("-")[0]];
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);

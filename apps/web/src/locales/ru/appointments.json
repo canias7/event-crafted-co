@@ -1,0 +1,80 @@
+{
+  "kinds": {
+    "consultation": "Консультация",
+    "walkthrough": "Осмотр площадки",
+    "tasting": "Дегустация",
+    "fitting": "Примерка",
+    "phone_call": "Звонок",
+    "other": "Встреча"
+  },
+  "kindOptions": {
+    "consultation": "Консультация",
+    "walkthrough": "Осмотр площадки",
+    "tasting": "Дегустация",
+    "fitting": "Примерка",
+    "phone_call": "Звонок",
+    "other": "Другое"
+  },
+  "status": {
+    "proposed": "Предложена",
+    "accepted": "Подтверждена",
+    "declined": "Отклонена",
+    "cancelled": "Отменена",
+    "completed": "Завершена"
+  },
+  "statusChanged": {
+    "proposed": "Встреча предложена",
+    "accepted": "Встреча принята",
+    "declined": "Встреча отклонена",
+    "cancelled": "Встреча отменена",
+    "completed": "Встреча завершена"
+  },
+  "filters": {
+    "upcoming": "Предстоящие",
+    "needs_response": "Ждут ответа",
+    "past": "Прошедшие",
+    "all": "Все"
+  },
+  "list": {
+    "emptyTitle": "Встреч пока нет",
+    "emptyBody": "Когда вы предложите встречу из заявки, она появится здесь после ответа организатора.",
+    "noMatches": "По этому фильтру ничего не найдено.",
+    "with": "— {{name}}",
+    "personalSubtitle": "Вне платформы · личное",
+    "proposedByYou": "Предложено вами",
+    "proposedByHost": "Предложено организатором",
+    "personal": "Личное",
+    "accept": "Принять",
+    "decline": "Отклонить",
+    "markComplete": "Завершить",
+    "cancel": "Отменить",
+    "cancelTitle": "Отменить встречу?",
+    "cancelBody": "Другая сторона получит уведомление.",
+    "keep": "Не отменять",
+    "cancelConfirm": "Отменить встречу",
+    "addToCalendar": "Добавить в календарь",
+    "openInquiry": "Открыть заявку"
+  },
+  "ics": {
+    "linkedInquiry": "Связанная заявка: {{url}}",
+    "meetingSlug": "vstrecha"
+  },
+  "propose": {
+    "signInFirst": "Сначала войдите",
+    "pickDateTime": "Выберите дату и время",
+    "pickFuture": "Выберите дату и время в будущем.",
+    "proposed": "Встреча предложена",
+    "title": "Предложить встречу",
+    "descriptionVendor": "Предложите время встречи — организатор примет или отклонит его.",
+    "descriptionHost": "Предложите время встречи — подрядчик примет или отклонит его.",
+    "kind": "Тип",
+    "duration": "Длительность (мин)",
+    "when": "Когда",
+    "location": "Место",
+    "locationPlaceholder": "Адрес, ссылка на Zoom или номер телефона",
+    "notes": "Примечания (необязательно)",
+    "notesPlaceholder": "Что подготовить или взять с собой.",
+    "cancel": "Отмена",
+    "send": "Отправить предложение"
+  }
+}

@@ -144,7 +144,7 @@ export function GlassyAuthShell({
       >
         {/* Headlines */}
         <h1
-          className="text-black m-0 text-center"
+          className="auth-headline text-black m-0 w-full text-center"
           style={{
             fontSize: "46px",
             fontWeight: 700,
@@ -156,7 +156,7 @@ export function GlassyAuthShell({
           {title}
         </h1>
         <h1
-          className="font-editorial text-black m-0 text-center"
+          className="auth-headline font-editorial text-black m-0 w-full text-center"
           style={{
             fontSize: "50px",
             fontWeight: 700,

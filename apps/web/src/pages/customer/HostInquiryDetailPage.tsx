@@ -57,7 +57,7 @@ import {
   type VendorCardAttachment,
 } from "@/lib/messageAttachments";
 import { customerNavItems as navItems } from "@/data/navItems";
-import { intlLocale } from "@/lib/intlLocale";
+import { intlLocale, moneyLocale } from "@/lib/intlLocale";
 
 interface Inquiry {
   id: string;
@@ -132,7 +132,7 @@ function fmtClock(iso: string): string {
 }
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(moneyLocale())}`;
 }
 
 // localStorage key for the in-flight draft, scoped per inquiry so two
@@ -719,7 +719,7 @@ export default function HostInquiryDetailPage() {
   if (notFound) {
     return (
       <div className="flex min-h-screen vendor-canvas">
-        <main className="flex-1 pb-20 lg:pb-0 p-8">
+        <main className="min-w-0 flex-1 pb-20 lg:pb-0 p-8">
           <Link
             to="/customer/inquiries"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent mb-8"

@@ -243,7 +243,7 @@ export default function VendorTemplatesPage() {
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title={t("sidebarTitle")} backPath="/" />
 
-      <main id="main-content" className="flex-1 pb-24 lg:pb-0">
+      <main id="main-content" className="min-w-0 flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="font-editorial text-3xl">{t("title")}</h1>

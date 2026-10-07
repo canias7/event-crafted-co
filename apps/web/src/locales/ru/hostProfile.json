@@ -1,0 +1,26 @@
+{
+  "title": "Профиль",
+  "subtitle": "Краткая сводка по аккаунту.",
+  "hostFallback": "Организатор",
+  "changePhoto": "Сменить фото профиля",
+  "ratings_one": "{{count}} оценка",
+  "ratings_few": "{{count}} оценки",
+  "ratings_many": "{{count}} оценок",
+  "ratings_other": "{{count}} оценки",
+  "verifiedHost": "Проверенный организатор",
+  "memberSince": "На Vendora с {{year}} года",
+  "stats": {
+    "posts": "Фото",
+    "reels": "Ролики",
+    "buzz": "Заметки",
+    "ratings": "Оценки"
+  },
+  "accountSettings": "Настройки аккаунта",
+  "logOut": "Выйти",
+  "toasts": {
+    "photoTooLarge": "Фото слишком большое — выберите файл до 10 МБ.",
+    "photoUpdated": "Фото обновлено.",
+    "photoFailed": "Не удалось обновить фото: {{message}}",
+    "tryAgain": "Попробуйте ещё раз."
+  }
+}

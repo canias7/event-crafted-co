@@ -63,7 +63,7 @@ import {
 import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { intlLocale } from "@/lib/intlLocale";
+import { intlLocale, moneyLocale } from "@/lib/intlLocale";
 
 interface Inquiry {
   id: string;
@@ -129,7 +129,7 @@ function draftKey(inquiryId: string | undefined): string | null {
 }
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(moneyLocale())}`;
 }
 
 export default function InquiryDetailPage() {

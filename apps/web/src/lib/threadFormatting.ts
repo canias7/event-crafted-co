@@ -14,7 +14,7 @@
 // the browser-default date format it always had.
 
 import i18n from "@/i18n";
-import { intlLocale } from "@/lib/intlLocale";
+import { siteLocaleOr } from "@/lib/intlLocale";
 
 export const QUICK_EMOJIS = [
   "👍",
@@ -60,8 +60,7 @@ export function daySeparator(iso: string): string {
     d.getDate() === yesterday.getDate()
   )
     return i18n.t("thread.yesterday", { ns: "messages" });
-  const locale = intlLocale();
-  return d.toLocaleDateString(locale.startsWith("es") ? locale : undefined, {
+  return d.toLocaleDateString(siteLocaleOr(undefined), {
     weekday: "long",
     month: "short",
     day: "numeric",

@@ -62,8 +62,11 @@ export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
       }}
     >
       <div className="container mx-auto px-5 md:px-8">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-12">
-          <div className="col-span-2 md:col-span-1">
+        {/* On tablets the brand block takes its own row, so the three
+            link columns have room for long words (Russian
+            «Конфиденциальность»); from 1024px it's four columns. */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 md:gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+          <div className="col-span-2 md:col-span-3 lg:col-span-1">
             <Link to="/" aria-label={ts("footer.home_label")} className="inline-block">
               <VendoraLogo size="md" color={dark ? "#f4f1ea" : "#14161a"} withTagline={dark} />
             </Link>

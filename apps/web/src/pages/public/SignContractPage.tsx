@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import { Check, Loader2, FileSignature, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +29,8 @@ interface SignContract {
   has_fixed_recipient: boolean;
 }
 
-// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+// `locale` is "en-US" in English (as before), "es-US" in Spanish and
+// "ru-RU" in Russian.
 function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -44,8 +46,8 @@ function fmtDate(iso: string | null, locale: string): string {
 
 export default function SignContractPage() {
   const { token } = useParams<{ token: string }>();
-  const { t, i18n } = useTranslation("checkout");
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
+  const { t } = useTranslation("checkout");
+  const dateLocale = siteLocaleOr("en-US");
   const [contract, setContract] = useState<SignContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [signerName, setSignerName] = useState("");

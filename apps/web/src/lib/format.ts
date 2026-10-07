@@ -3,9 +3,10 @@
 // import these still work — but new code should.
 //
 // Locale follows the site language (see intlLocale): US Spanish when
-// the site is in Spanish, the browser's English variant otherwise.
+// the site is in Spanish, Russian in Russian, the browser's English
+// variant otherwise. Money keeps the US format in Russian (moneyLocale).
 
-import { intlLocale } from "@/lib/intlLocale";
+import { intlLocale, moneyLocale, siteLocaleOr } from "@/lib/intlLocale";
 
 // ─── Dates ───
 
@@ -62,6 +63,16 @@ export function formatDateTime(
   return `${formatDate(d, "short")} · ${formatTime(d)}`;
 }
 
+/** A duration in minutes: "30 min" in English and Spanish, "30 мин" in
+ *  Russian. English keeps "min" whatever the browser's English. */
+export function formatMinutes(minutes: number): string {
+  return new Intl.NumberFormat(siteLocaleOr("en-US"), {
+    style: "unit",
+    unit: "minute",
+    unitDisplay: "short",
+  }).format(minutes);
+}
+
 // ─── Relative ───
 
 const SECOND = 1000;
@@ -115,7 +126,7 @@ export function formatCents(
   opts: { fallback?: string; currency?: string } = {},
 ): string {
   if (cents == null) return opts.fallback ?? "—";
-  return new Intl.NumberFormat(intlLocale(), {
+  return new Intl.NumberFormat(moneyLocale(), {
     style: "currency",
     currency: opts.currency ?? "USD",
     minimumFractionDigits: 0,

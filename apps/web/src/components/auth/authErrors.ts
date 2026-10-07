@@ -3,7 +3,7 @@
 //
 // English keeps the server's own wording exactly: every English entry
 // under "server_errors" in locales/en/auth.json is "{{message}}", so only
-// Spanish swaps in a translation. Messages we don't recognise pass
+// Spanish and Russian swap in a translation. Messages we don't recognise pass
 // through unchanged.
 
 import i18n from "@/i18n";

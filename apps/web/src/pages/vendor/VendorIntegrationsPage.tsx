@@ -209,7 +209,7 @@ export default function VendorIntegrationsPage() {
         title="Vendor Portal"
         backPath="/settings"
       />
-      <main className="flex-1 pb-24 lg:pb-0">
+      <main className="min-w-0 flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <button
             type="button"
@@ -243,9 +243,12 @@ export default function VendorIntegrationsPage() {
                         border: "0.5px solid rgba(0,0,0,0.08)",
                       }}
                     >
-                      <div className="flex items-center gap-4 p-4 md:p-5">
+                      {/* On phones the buttons drop below the description
+                          (lined up with it), so a long label (Russian
+                          «Подключить») doesn't squeeze the text. */}
+                      <div className="flex flex-wrap items-center gap-4 p-4 md:flex-nowrap md:p-5">
                         {c.brand}
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1 basis-[calc(100%-3.75rem)] md:basis-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-[15px] font-semibold leading-tight">
                               {c.name}
@@ -267,13 +270,15 @@ export default function VendorIntegrationsPage() {
                               : t(`connectors.${c.id}.description`)}
                           </p>
                         </div>
-                        <ConnectorActionButton
-                          connector={c}
-                          acting={actingId === c.id}
-                          onVendorapayConnect={handleVendorapayConnect}
-                          onVendorapayDisconnect={handleVendorapayDisconnect}
-                          vendorapayConnected={vendorapayConnected}
-                        />
+                        <div className="pl-[3.75rem] md:pl-0">
+                          <ConnectorActionButton
+                            connector={c}
+                            acting={actingId === c.id}
+                            onVendorapayConnect={handleVendorapayConnect}
+                            onVendorapayDisconnect={handleVendorapayDisconnect}
+                            vendorapayConnected={vendorapayConnected}
+                          />
+                        </div>
                       </div>
                     </div>
                   );

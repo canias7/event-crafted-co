@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import {
   ChevronLeft,
   ChevronRight,
@@ -195,14 +196,13 @@ export default function VendorAppointmentsPage({
   hideLegend?: boolean;
 } = {}) {
   const { user } = useAuth();
-  const { t, i18n } = useTranslation("vendorAppointments");
-  // Spanish dates use US-Spanish formats; English keeps the browser default.
-  const isEs = i18n.resolvedLanguage === "es";
-  const dateLocale = isEs ? "es-US" : undefined;
-  // Spanish month and weekday names are lowercase; capitalize them where
-  // they start a heading or a line.
+  const { t } = useTranslation("vendorAppointments");
+  // Dates follow the site language; English keeps the browser default.
+  const dateLocale = siteLocaleOr(undefined);
+  // Spanish and Russian month and weekday names are lowercase; capitalize
+  // them where they start a heading or a line (English already is).
   const capFirst = (text: string) =>
-    isEs && text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+    text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 
   // Two modes:
   //  - Standalone /vendor/appointments page: works on the listing the

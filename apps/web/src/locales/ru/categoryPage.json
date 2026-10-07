@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "title": "{{name}} на Vendora — {{description}}",
+    "fallbackTitle": "Категория подрядчиков — Vendora",
+    "listName": "{{name}} на Vendora"
+  },
+  "comingSoon": {
+    "title": "{{name}} — скоро",
+    "browseOther": "Посмотреть других подрядчиков"
+  },
+  "all": "Все",
+  "count_one": "{{count}} подрядчик · {{name}}",
+  "count_few": "{{count}} подрядчика · {{name}}",
+  "count_many": "{{count}} подрядчиков · {{name}}",
+  "count_other": "{{count}} подрядчика · {{name}}",
+  "browseAllCategories": "Все категории",
+  "empty": {
+    "title": "В категории «{{name}}» на Vendora пока нет подрядчиков",
+    "body": "Каждую неделю мы вручную отбираем новых подрядчиков. Загляните позже или посмотрите другие категории.",
+    "cta": "Смотреть всех подрядчиков"
+  },
+  "faq": {
+    "eyebrow": "Вопросы и ответы",
+    "title": "Как забронировать на Vendora: {{name}}"
+  }
+}

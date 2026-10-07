@@ -248,7 +248,7 @@ export default function VendorMyProfilePage() {
         title={t("profile.sidebarTitle")}
         backPath="/vendor/me"
       />
-      <main className="flex-1 pb-24 lg:pb-0">
+      <main className="min-w-0 flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
