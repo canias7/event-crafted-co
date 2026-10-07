@@ -4,3 +4,5 @@
 20261004130000_pin_function_search_path.sql
 # Homepage A/B/C test: events table + admin summary functions.
 20261006120000_home_experiment_events.sql
+# Homepage A/B/C test: visit + sign-up-start events, registrations from accounts.
+20261007120000_home_experiment_registrations.sql

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import {
   analyticsAllowed,
   homeAssignment,
   logHomeEvent,
   previewVariant,
+  recordHomeVisit,
   type HomeVariant,
 } from "@/lib/homeExperiment";
 import { CategoryShowcaseSection } from "./CategoryShowcaseSection";
@@ -15,15 +16,18 @@ import type { TrackHomeEvent } from "./HomeSectionShell";
 const VIEWED_KEY = "vendora.home-test.viewed";
 
 // The section right under the homepage hero: the visitor's homepage-test
-// version (see lib/homeExperiment). It records a "view" once per browser
-// session when at least a quarter of it is on screen, and every click or
-// pick inside it, both only with analytics consent. ?home=a|b|c previews a
-// version and records nothing.
+// version (see lib/homeExperiment). With analytics consent it records that
+// the visitor got this version, a "view" once per browser session when the
+// section's top has scrolled a quarter of the way up the screen (the same
+// for all three, however tall each is), and every click or pick inside it.
+// ?home=a|b|c previews a version: no version is given, nothing is recorded.
 export function HomeExperimentSection() {
   const { search } = useLocation();
   const preview = previewVariant(search);
-  const [assigned] = useState<HomeVariant>(() => homeAssignment().variant);
-  const variant = preview ?? assigned;
+  // The visitor's own version, picked the first time they see the real
+  // homepage.
+  const own = useRef<HomeVariant | null>(null);
+  const variant = preview ?? (own.current ??= homeAssignment().variant);
   const ref = useRef<HTMLDivElement>(null);
 
   const track = useCallback<TrackHomeEvent>(
@@ -32,6 +36,10 @@ export function HomeExperimentSection() {
     },
     [preview],
   );
+
+  useEffect(() => {
+    if (!preview) recordHomeVisit();
+  }, [preview]);
 
   useEffect(() => {
     const el = ref.current;
@@ -61,7 +69,7 @@ export function HomeExperimentSection() {
           logView();
         }
       },
-      { threshold: 0.25 },
+      { rootMargin: "0px 0px -25% 0px" },
     );
     observer.observe(el);
     // Seen before choosing in the cookie banner: count it once they accept.
