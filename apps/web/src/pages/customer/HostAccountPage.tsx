@@ -140,7 +140,7 @@ export default function HostAccountPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {savedVendors.map((v) => (
                   <VendorCard key={v.id} vendor={v} />
                 ))}

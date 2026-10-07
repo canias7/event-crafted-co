@@ -76,6 +76,7 @@ import { BlurhashImage } from "@/components/gallery/BlurhashImage";
 import { Lightbox } from "@/components/gallery/Lightbox";
 import { useRealtime } from "@/lib/realtime";
 import { formatFileSize } from "@/lib/format";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -1977,9 +1978,9 @@ function ListView({
   onOpen: (idx: number) => void;
   onDelete: (id: string) => void;
 }) {
-  const { t, i18n } = useTranslation("vendorGallery");
-  // Spanish dates use US-Spanish formats; English keeps the browser default.
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
+  const { t } = useTranslation("vendorGallery");
+  // Dates follow the site language; English keeps the browser default.
+  const dateLocale = siteLocaleOr(undefined);
   const albumById = useMemo(() => {
     const m: Record<string, string> = {};
     for (const a of albums) m[a.id] = a.name;
@@ -2094,9 +2095,7 @@ function CalendarView({
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const { t, i18n } = useTranslation("vendorGallery");
-  // Spanish dates use US-Spanish formats; English keeps the browser default.
-  const isEs = i18n.resolvedLanguage === "es";
+  const { t } = useTranslation("vendorGallery");
   const groups = useMemo(() => {
     const m = new Map<string, GalleryRow[]>();
     for (const r of rows) {
@@ -2113,14 +2112,13 @@ function CalendarView({
     <div className="space-y-6">
       {groups.map(([key, items]) => {
         const [year, month] = key.split("-");
+        // Dates follow the site language; English keeps the browser default.
         const monthName = new Date(Number(year), Number(month) - 1).toLocaleDateString(
-          isEs ? "es-US" : undefined,
+          siteLocaleOr(undefined),
           { month: "long", year: "numeric" },
         );
-        // Spanish month names are lowercase; capitalize the heading.
-        const label = isEs
-          ? monthName.charAt(0).toUpperCase() + monthName.slice(1)
-          : monthName;
+        // Spanish and Russian month names are lowercase; capitalize the heading.
+        const label = monthName.charAt(0).toUpperCase() + monthName.slice(1);
         return (
           <div key={key}>
             <h3 className="font-editorial text-xl mb-3 sticky top-0 bg-background/30 backdrop-blur-md py-1 z-10">

@@ -12,7 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { downloadIcs, slugForFile } from "@/lib/ics";
-import { formatDate, formatTime } from "@/lib/format";
+import { formatDate, formatMinutes, formatTime } from "@/lib/format";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -79,9 +79,7 @@ interface Props {
 }
 
 export function AppointmentsList({ appointments, onMutate }: Props) {
-  const { t, i18n } = useTranslation("appointments");
-  // Spanish gets US-Spanish date formats; English keeps the shared formatters.
-  const isEs = i18n.resolvedLanguage === "es";
+  const { t } = useTranslation("appointments");
   const kindText = (kind: string) =>
     t(KNOWN_KINDS.has(kind) ? `kinds.${kind}` : "kinds.other");
   const [filter, setFilter] = useState<
@@ -181,7 +179,7 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
             size="sm"
             variant="ghost"
             onClick={() => setFilter(opt.value)}
-            className={`rounded-full whitespace-nowrap h-8 text-xs ${
+            className={`shrink-0 rounded-full whitespace-nowrap h-8 text-xs ${
               filter === opt.value
                 ? "bg-foreground text-background hover:bg-foreground/90"
                 : "bg-secondary/60 text-muted-foreground hover:text-accent"
@@ -255,27 +253,14 @@ export function AppointmentsList({ appointments, onMutate }: Props) {
                 <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground mb-3">
                   <div className="flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5" />
-                    <span className="tnum">
-                      {isEs
-                        ? when.toLocaleDateString("es-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : formatDate(when, "short")}
-                    </span>
+                    <span className="tnum">{formatDate(when, "short")}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     <span className="tnum">
-                      {isEs
-                        ? when.toLocaleTimeString("es-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : formatTime(when)}
+                      {formatTime(when)}
                       {" · "}
-                      {appt.duration_minutes} min
+                      {formatMinutes(appt.duration_minutes)}
                     </span>
                   </div>
                   {appt.location && (

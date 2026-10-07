@@ -14,7 +14,7 @@ import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems } from "@/data/navItems";
 import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { useRealtime } from "@/lib/realtime";
-import { intlLocale } from "@/lib/intlLocale";
+import { intlLocale, moneyLocale, siteIsEnglish, siteLocaleOr } from "@/lib/intlLocale";
 
 interface Balance {
   available_cents: number;
@@ -23,15 +23,19 @@ interface Balance {
   onboarded: boolean;
 }
 
-// Money and dates follow the site language (US Spanish in Spanish);
-// English keeps the fixed US format these cards always used.
-function usLocale(): string {
-  const locale = intlLocale();
-  return locale.startsWith("es") ? locale : "en-US";
+// Money and dates follow the site language (US Spanish in Spanish;
+// Russian dates in Russian, with money in the US format: see
+// moneyLocale). English keeps the fixed US format these cards always used.
+function cardMoneyLocale(): string {
+  return siteIsEnglish() ? "en-US" : moneyLocale();
+}
+
+function cardDateLocale(): string {
+  return siteLocaleOr("en-US");
 }
 
 function formatMoney(cents: number, currency = "usd"): string {
-  return new Intl.NumberFormat(usLocale(), {
+  return new Intl.NumberFormat(cardMoneyLocale(), {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(cents / 100);
@@ -39,7 +43,7 @@ function formatMoney(cents: number, currency = "usd"): string {
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(usLocale(), {
+  return new Date(iso).toLocaleDateString(cardDateLocale(), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -173,7 +177,7 @@ export default function VendorPaymentsPage(
 
 
   const body = (
-    <main className="flex-1 pb-24 lg:pb-0">
+    <main className="min-w-0 flex-1 pb-24 lg:pb-0">
         <div
           className={`backdrop-blur-md px-5 md:px-8 sticky top-0 z-40 border-b border-border ${
             embedded ? "pt-5 pb-3" : "py-5"
@@ -634,7 +638,7 @@ function OverviewRevenueChart({
   previousTotal: number;
 }) {
   const { t } = useTranslation("vendorPayments");
-  const dateLoc = usLocale();
+  const dateLoc = cardDateLocale();
   // Guard against an empty series on first render (state initializes to
   // [] before the useEffect query resolves). The chart math below
   // dereferences pts[0] unconditionally, so an empty input would crash
@@ -1172,7 +1176,7 @@ function formatMoneyCompact(cents: number, currency: string): string {
   // currency symbol correctly for any currency instead of the old
   // string-replace hack that only worked for a leading "$".
   if (Math.abs(v) < 1_000) return formatMoney(cents, currency);
-  return new Intl.NumberFormat(usLocale(), {
+  return new Intl.NumberFormat(cardMoneyLocale(), {
     style: "currency",
     currency: currency.toUpperCase(),
     notation: "compact",

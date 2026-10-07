@@ -38,7 +38,7 @@ import {
 } from "@/data/categoryTaxonomy";
 import { BROWSE_CATEGORIES } from "@/data/browseCategories";
 import { useCategoryNames } from "@/lib/categoryNames";
-import { intlLocale } from "@/lib/intlLocale";
+import { siteLocaleOr } from "@/lib/intlLocale";
 
 // Sub-name → group-slug. Used to deep-link from a single-sub filter to
 // the parent group page (e.g. "Photography" → "/vendors/category/media").
@@ -219,10 +219,10 @@ export default function VendorBrowsePage() {
       ? vendors.filter((v) => unavailableIds.has(v.id)).length
       : 0;
 
-  // Dates follow the site language in Spanish ("5 de dic de 2026"); in
-  // English they keep the browser's default locale, as before.
-  const siteLocale = intlLocale();
-  const dateLocale = siteLocale.startsWith("es") ? siteLocale : undefined;
+  // Dates follow the site language in Spanish ("5 de dic de 2026") and
+  // Russian ("5 дек. 2026 г."); in English they keep the browser's
+  // default locale, as before.
+  const dateLocale = siteLocaleOr(undefined);
 
   const activeTile = TILES.find((tile) => sameSet(activeCategories, tile.subs));
   const pill =

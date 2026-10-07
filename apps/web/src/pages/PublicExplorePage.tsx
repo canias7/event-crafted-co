@@ -718,7 +718,7 @@ function VendorsGrid({
     return <>{empty ?? <Empty title={t("empty.vendors")} body={t("empty.tryAnother")} />}</>;
   }
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {list.map((v, i) => (
         <div key={v.id} className="min-w-0">
           <VendorCard vendor={v} eager={i < 4} tone="dark" tall />

@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
+import { siteLocaleOr } from "@/lib/intlLocale";
 import type { TFunction } from "i18next";
 import { Check, CreditCard, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -62,7 +63,8 @@ function formatMoney(cents: number, currency = "usd"): string {
   }).format(cents / 100);
 }
 
-// `locale` is "en-US" in English (as before) and "es-US" in Spanish.
+// `locale` is "en-US" in English (as before), "es-US" in Spanish and
+// "ru-RU" in Russian.
 function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(locale, {
@@ -89,8 +91,8 @@ export default function InvoiceCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const flow = searchParams.get("status");
-  const { t, i18n } = useTranslation("checkout");
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : "en-US";
+  const { t } = useTranslation("checkout");
+  const dateLocale = siteLocaleOr("en-US");
 
   const [invoice, setInvoice] = useState<InvoiceDetails | null>(null);
   const [loading, setLoading] = useState(true);

@@ -14,6 +14,10 @@
   },
   "list_name": "Vendora changelog",
   "entries": {
+    "russian": {
+      "title": "Now in Russian",
+      "description": "The website is also in Russian now. It follows your browser's language, and you can switch at the bottom of any page."
+    },
     "explore_redesigned": {
       "title": "Explore, redesigned",
       "description": "Browse vendors' work in a two-column gallery, watch reels one at a time, and find every vendor and the ones you've saved, all from one page."

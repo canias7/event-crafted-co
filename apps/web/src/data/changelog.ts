@@ -6,10 +6,10 @@
 // chars) and descriptions to one or two sentences — the tone is
 // "things you'll notice," not engineering specifics.
 //
-// Each entry's words live in BOTH locales/en/changelog.json and
-// locales/es/changelog.json, under entries.<id>.title and
-// entries.<id>.description. A new entry needs its id here and its
-// title + description in both files; take all three out together.
+// Each entry's words live in every language's changelog.json
+// (locales/en/, locales/es/ and locales/ru/), under entries.<id>.title
+// and entries.<id>.description. A new entry needs its id here and its
+// title + description in each file; take them all out together.
 //
 // Categories:
 //   feature  — new surface, new capability
@@ -27,6 +27,7 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  { id: "russian", date: "2026-10-07", category: "feature" },
   { id: "explore_redesigned", date: "2026-10-04", category: "improvement" },
   { id: "vendors_page_look", date: "2026-10-04", category: "improvement" },
   { id: "host_vendor_pages", date: "2026-10-04", category: "feature" },

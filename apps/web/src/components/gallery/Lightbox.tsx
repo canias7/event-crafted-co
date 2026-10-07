@@ -22,6 +22,7 @@ import { ShareModal } from "@/components/gallery/ShareModal";
 import type { SanitizedExif } from "@/lib/galleryImage";
 import { downloadCrossOrigin } from "@/lib/downloadImage";
 import { formatFileSize } from "@/lib/format";
+import { siteLocaleOr } from "@/lib/intlLocale";
 
 interface Img {
   id: string;
@@ -63,9 +64,9 @@ export function Lightbox({
   onSetAsCover,
   isAlbumCover,
 }: Props) {
-  const { t, i18n } = useTranslation("galleryTools");
-  // Spanish dates use US-Spanish formats; English keeps the browser default.
-  const dateLocale = i18n.resolvedLanguage === "es" ? "es-US" : undefined;
+  const { t } = useTranslation("galleryTools");
+  // Dates follow the site language; English keeps the browser default.
+  const dateLocale = siteLocaleOr(undefined);
   const row = rows[index];
   const [panelOpen, setPanelOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

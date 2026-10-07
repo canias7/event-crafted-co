@@ -1,0 +1,19 @@
+{
+  "from": "От {{price}}",
+  "upTo": "До {{price}}",
+  "custom": "Цена по запросу",
+  "models": {
+    "fixed_packages": "Фиксированные пакеты",
+    "hourly": "Почасовая оплата",
+    "per_person": "За человека",
+    "starting_at": "Стартовая цена",
+    "custom_quote": "Индивидуальная смета"
+  },
+  "eventTypes": {
+    "wedding": "Свадьба",
+    "birthday": "День рождения",
+    "holiday_dinner": "Праздничный ужин",
+    "other": "Другое",
+    "fallback": "Мероприятие"
+  }
+}

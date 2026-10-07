@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "sharedPhoto": "Фотография",
+    "photos_one": "{{count}} фото",
+    "photos_few": "{{count}} фото",
+    "photos_many": "{{count}} фото",
+    "photos_other": "{{count}} фото"
+  },
+  "password": {
+    "title": "Нужен пароль",
+    "body": "Эта ссылка защищена паролем.",
+    "label": "Пароль",
+    "unlock": "Открыть",
+    "wrong": "Неверный пароль"
+  },
+  "notFound": {
+    "title": "Не найдено",
+    "body": "Такой ссылки не существует — возможно, доступ по ней отозван."
+  },
+  "expired": {
+    "title": "Срок действия ссылки истёк",
+    "body": "Подрядчик ограничил срок действия этой ссылки, и он уже истёк."
+  },
+  "album": {
+    "fallbackName": "Альбом",
+    "images_one": "{{count}} изображение",
+    "images_few": "{{count}} изображения",
+    "images_many": "{{count}} изображений",
+    "images_other": "{{count}} изображения",
+    "showing": "показано {{count}}",
+    "loading": "Загрузка…",
+    "loadMore_one": "Загрузить ещё (осталось {{count}})",
+    "loadMore_few": "Загрузить ещё (осталось {{count}})",
+    "loadMore_many": "Загрузить ещё (осталось {{count}})",
+    "loadMore_other": "Загрузить ещё (осталось {{count}})"
+  },
+  "image": {
+    "alt": "Изображение",
+    "download": "Скачать",
+    "downloading": "Скачивание…",
+    "downloadFailed": "Не удалось скачать.",
+    "downloadError": "Не удалось скачать: {{message}}",
+    "close": "Закрыть"
+  }
+}

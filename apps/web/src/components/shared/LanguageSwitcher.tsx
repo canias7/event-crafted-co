@@ -39,7 +39,7 @@ export function LanguageSwitcher({
         aria-label={t("language_switcher.label")}
       >
         <Globe className="w-3.5 h-3.5" />
-        {LANGUAGE_LABELS[current]}
+        <span lang={current}>{LANGUAGE_LABELS[current]}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {SUPPORTED_LANGUAGES.map((lang) => (
@@ -48,7 +48,10 @@ export function LanguageSwitcher({
             onClick={() => void changeLanguage(lang)}
             className="text-sm cursor-pointer"
           >
-            <span className="flex-1">{LANGUAGE_LABELS[lang]}</span>
+            {/* Each name in its own language, marked so screen readers say it right. */}
+            <span className="flex-1" lang={lang}>
+              {LANGUAGE_LABELS[lang]}
+            </span>
             {current === lang && <Check className="w-3.5 h-3.5 ml-2" />}
           </DropdownMenuItem>
         ))}

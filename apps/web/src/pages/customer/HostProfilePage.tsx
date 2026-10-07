@@ -214,7 +214,7 @@ export default function HostProfilePage() {
         title={t("title")}
         backPath="/customer/explore"
       />
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="min-w-0 flex-1 pb-20 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-editorial text-3xl">{t("title")}</h1>

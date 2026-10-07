@@ -103,18 +103,20 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 
 **Typechecking the apps:** `npx tsc --noEmit -p .` stops at the TS5101 `baseUrl` deprecation and never checks types. Run `npx tsc --noEmit -p . --ignoreDeprecations 6.0` and compare the error list with `main` (Oct 2026: vendor-mobile 47, host-mobile 19 existing errors, mostly unresolved `@expo/vector-icons` types).
 
-## Website languages (English + Spanish)
+## Website languages (English, Spanish, Russian)
 
-The whole website (`apps/web`: public pages, sign-in, host and vendor portals) is in English and Spanish (Oct 2026). Any text you add or change needs both.
+The whole website (`apps/web`: public pages, sign-in, host and vendor portals) is in English, Spanish and Russian (Oct 2026). Any text you add or change needs all three.
 
-- Strings live in `apps/web/src/locales/en/<namespace>.json` and `locales/es/<namespace>.json`, loaded automatically by `src/i18n.ts`. Keep the two files' keys identical. Read them with `useTranslation("<namespace>")` (or `i18n.t(key, { ns })` outside components). A changelog entry needs its text in both `changelog.json` files.
-- English ships in the main bundle; Spanish is its own chunk (`src/locales/es.ts`), fetched only when someone reads the site in Spanish, and `main.tsx` renders after `i18nReady` so the first paint is already Spanish. To switch language in code, use `changeLanguage()` from `@/i18n`, which fetches the strings first.
+- Strings live in `apps/web/src/locales/<language>/<namespace>.json` (`en/`, `es/`, `ru/`), loaded automatically by `src/i18n.ts`. Keep the files' keys identical, except Russian plurals: where English has `key_one`/`key_other`, Russian has `key_one`/`key_few`/`key_many`/`key_other`, each with `{{count}}`. Read them with `useTranslation("<namespace>")` (or `i18n.t(key, { ns })` outside components). A changelog entry needs its text in every `changelog.json`.
+- English ships in the main bundle; Spanish and Russian are a chunk each (`src/locales/es.ts`, `ru.ts`), fetched only when someone reads the site in that language, and `main.tsx` renders after `i18nReady` so the first paint is already in it. To switch language in code, use `changeLanguage()` from `@/i18n`, which fetches the strings first. Adding a language: a `locales/<code>/` folder, a `locales/<code>.ts`, and entries in `LAZY_LANGUAGES`, `SUPPORTED_LANGUAGES` and `LANGUAGE_LABELS`.
 - Spanish is neutral Latin American with "tú". Words: vendor = proveedor, host = anfitrión, listing = anuncio, inquiry = consulta, quote = cotización, proposal = propuesta, deposit = anticipo, dashboard = panel.
-- Dates, times and numbers: pass `intlLocale()` from `@/lib/intlLocale` (US Spanish, "7:05 p.m."), never bare `i18n.language` ("es" gives "19:05" and "1234 US$").
+- Russian uses polite «вы» (lowercase), sentence case and «ёлочки» quotes. Words: vendor = подрядчик, host = организатор, listing = объявление, inquiry = заявка, quote = смета, proposal = предложение, contract = договор, invoice = счёт, deposit = предоплата, dashboard = панель, Explore = Обзор, venue = площадка, vendor application = анкета. Vendora, Pro and Premium stay in Latin letters and "Vendora" isn't declined («на Vendora»). Russian can't decline a business name or a city inside a sentence, so phrase around `{{name}}` («{{city}}: 12 подрядчиков»).
+- Dates, times and numbers: pass `intlLocale()` from `@/lib/intlLocale` (US Spanish "7:05 p.m.", Russian "19:05", "5 окт. 2026 г."), never bare `i18n.language` ("es" gives "19:05" and "1234 US$"). Where English keeps its own format (the browser default, or a fixed "en-US"), use `siteLocaleOr(...)`. Money keeps the US format on the Russian site ($1,234.50, like listings, PDFs and Stripe receipts): `formatCents()` or `moneyLocale()`.
+- Libre Baskerville has no Cyrillic letters, so Russian text shows in the fallback serif (Georgia on Apple and Windows, Noto Serif on Android). Don't add a font without asking the owner. Russian words run long and Noto Serif is wide: check a 360px phone, and use `min-w-0`, `shrink-0` and wrapping rather than fixed widths. Headlines in Russian hyphenate (`index.css`), and the page heroes and sign-in titles step down a size on phones.
 - Category names: `useCategoryNames()`; prices and event types: `usePriceLabels()`. Values saved to the database, URLs and filters stay English.
 - `<Trans>` tags must not be named after HTML void elements (`link`, `br`, `img`, `input`, `hr`…): use `<helpLink>`, `<gold>` and so on.
-- Tailwind's `capitalize` is switched off in Spanish (`index.css`), since Spanish uses sentence case; write Spanish labels in sentence case.
-- Stays English on purpose: what vendors and hosts typed, chat messages the site writes on someone's behalf, contract/invoice PDFs, server emails, the mobile apps and the admin panel.
+- Tailwind's `capitalize` is switched off in every language but English (`index.css`), since Spanish and Russian use sentence case; write their labels in sentence case.
+- Stays English on purpose: what vendors and hosts typed, chat messages the site writes on someone's behalf, contract/invoice PDFs, server emails, the mobile apps and the admin panel. (The signed-contract PDF from the sign page has Spanish labels in Spanish but English in Russian: jsPDF's built-in fonts have no Cyrillic.)
 
 ## Mobile apps (host-mobile + vendor-mobile)
 

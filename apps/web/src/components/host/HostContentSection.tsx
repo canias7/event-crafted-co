@@ -105,7 +105,7 @@ export function HostContentSection({ userId }: { userId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex min-w-0 max-w-full gap-1 overflow-x-auto">
           {TABS.map((item) => {
             const Icon = item.icon;
             const active = tab === item.id;
@@ -113,7 +113,7 @@ export function HostContentSection({ userId }: { userId: string }) {
               <button
                 key={item.id}
                 onClick={() => setTab(item.id)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
                   active
                     ? "bg-foreground text-background"
                     : "bg-white border border-border text-foreground hover:bg-muted"

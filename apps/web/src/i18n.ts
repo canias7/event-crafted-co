@@ -7,29 +7,32 @@ import type { LanguageBundle } from "./locales/bundle";
 // Every JSON file under locales/<language>/ is a namespace:
 // locales/es/explore.json is the "explore" namespace in Spanish, read
 // with useTranslation("explore"). "common" is the default. Add a page's
-// strings as its own file in BOTH en/ and es/; nothing to register here.
+// strings as its own file in EVERY language folder (en/, es/, ru/);
+// nothing to register here.
 //
 // English is bundled with the app (it's the default and the fallback).
 // Other languages are a chunk each (locales/<language>.ts), fetched the
 // first time someone reads the site in that language, so English
-// visitors don't download the Spanish text.
+// visitors don't download the Spanish or Russian text.
 const LAZY_LANGUAGES: Record<string, () => Promise<{ default: LanguageBundle }>> = {
   es: () => import("./locales/es"),
+  ru: () => import("./locales/ru"),
 };
 
 // i18n setup. Detection chain runs in order:
-//   1. ?lang=es querystring  (sticky for testing)
+//   1. ?lang=es / ?lang=ru querystring  (sticky for testing)
 //   2. localStorage('vendora-lang')
 //   3. navigator.language (browser / OS preferred)
 //   4. <html lang="…">
 // Fallback: English.
 
-export const SUPPORTED_LANGUAGES = ["en", "es"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "es", "ru"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: "English",
   es: "Español",
+  ru: "Русский",
 };
 
 i18n
@@ -40,7 +43,7 @@ i18n
     ns: Object.keys(english),
     fallbackLng: "en",
     supportedLngs: SUPPORTED_LANGUAGES,
-    nonExplicitSupportedLngs: true, // accept "es-MX" → "es"
+    nonExplicitSupportedLngs: true, // accept "es-MX" → "es", "ru-RU" → "ru"
     defaultNS: "common",
     interpolation: { escapeValue: false }, // React handles escaping
     detection: {
@@ -97,7 +100,7 @@ i18n.on("languageChanged", (language) => {
 });
 
 /** Resolves once the visitor's language is ready to show: straight away
- *  for English, after its chunk for Spanish. main.tsx renders after it,
+ *  for English, after its chunk for Spanish or Russian. main.tsx renders after it,
  *  so the first paint is in the right language. Never rejects; after a
  *  few seconds it stops waiting (the page shows in English and switches
  *  when the strings arrive). */

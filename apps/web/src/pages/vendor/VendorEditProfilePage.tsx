@@ -150,9 +150,9 @@ export default function VendorEditProfilePage() {
         title={t("edit.sidebarTitle")}
         backPath="/vendor/me"
       />
-      <main className="flex-1 pb-24 lg:pb-0">
+      <main className="min-w-0 flex-1 pb-24 lg:pb-0">
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={() => navigate(-1)}
               className="rounded-full w-9 h-9 flex items-center justify-center hover:bg-secondary/60 lg:hidden"
@@ -160,7 +160,7 @@ export default function VendorEditProfilePage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <div>
+            <div className="min-w-0">
               <h1 className="font-editorial text-3xl">{t("edit.title")}</h1>
               <p className="text-sm text-muted-foreground">
                 {t("edit.subtitle")}
@@ -170,7 +170,7 @@ export default function VendorEditProfilePage() {
           <Button
             onClick={save}
             disabled={!dirty || saving || loading}
-            className="rounded-full"
+            className="shrink-0 rounded-full"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("edit.save")}
           </Button>

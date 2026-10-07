@@ -23,7 +23,7 @@ const InquiryFormModal = lazyWithReload(() =>
   })),
 );
 import { customerNavItems as navItems } from "@/data/navItems";
-import { intlLocale } from "@/lib/intlLocale";
+import { intlLocale, moneyLocale } from "@/lib/intlLocale";
 
 interface InquiryRow {
   id: string;
@@ -57,7 +57,7 @@ const statusStyles: Record<string, string> = {
 const LABELLED_STATUSES = ["new", "replied", "won", "lost", "expired"];
 
 function fmtMoney(c: number | null) {
-  return c == null ? "—" : `$${(c / 100).toLocaleString(intlLocale())}`;
+  return c == null ? "—" : `$${(c / 100).toLocaleString(moneyLocale())}`;
 }
 
 const AVATAR_COLORS = [
@@ -282,7 +282,7 @@ export default function InquiriesPage() {
                     else next.set("filter", opt.value);
                     setParams(next, { replace: true });
                   }}
-                  className={`rounded-full whitespace-nowrap h-9 text-xs ${
+                  className={`shrink-0 rounded-full whitespace-nowrap h-9 text-xs ${
                     statusFilter === opt.value
                       ? "bg-foreground text-background hover:bg-foreground/90"
                       : "bg-secondary/60 text-muted-foreground hover:text-accent"
@@ -320,7 +320,7 @@ export default function InquiriesPage() {
                       ? t("list.empty.noSearchBody")
                       : t("list.empty.noFilterBody")}
                 </p>
-                <div className="flex gap-2 justify-center">
+                <div className="flex flex-wrap gap-2 justify-center">
                   {rows.length === 0 && (
                     <>
                       <Link to="/customer/explore">

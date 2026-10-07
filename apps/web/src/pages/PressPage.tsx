@@ -22,7 +22,7 @@ const spring = { type: "spring" as const, duration: 0.6, bounce: 0 };
 // brand.palette.<id>).
 const STATS: Array<{ id: string; value: string }> = [
   { id: "categories", value: "31" },
-  { id: "languages", value: "2" },
+  { id: "languages", value: "3" },
   { id: "free_listing", value: "$0" },
 ];
 
@@ -96,7 +96,10 @@ export default function PressPage() {
                 className="text-center md:text-left"
               >
                 <p className="mb-1 font-editorial text-4xl tnum md:text-5xl">{s.value}</p>
-                <p className="text-xs uppercase tracking-[0.2em]">{t(`stats.${s.id}`)}</p>
+                {/* Hyphenate long words (Russian «подрядчиков») so they stay in their third of a phone screen. */}
+                <p className="text-xs uppercase tracking-[0.2em] hyphens-auto [overflow-wrap:anywhere]">
+                  {t(`stats.${s.id}`)}
+                </p>
               </motion.div>
             ))}
           </div>
