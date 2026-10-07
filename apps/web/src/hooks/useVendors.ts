@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { vendorImageUrl } from "@/lib/storage";
+import { vendorStandInPhoto } from "@/lib/vendorStandInPhoto";
 
 export interface Vendor {
   id: string;
@@ -17,6 +18,9 @@ export interface Vendor {
   pricingModels?: string[] | null;
   distance: string;
   availability: string;
+  /** Link-preview photo (URL) for the vendor's kind of business, one of
+   *  the site's photos (lib/vendorStandInPhoto). Pages show the vendor's
+   *  own photos instead (heroImageUrl) or a plain placeholder. */
   image: string;
   /** Vendor-uploaded hero — first portfolio image as a public URL.
    *  When present, the directory card and the listing detail page
@@ -49,54 +53,6 @@ export interface Vendor {
    *  into the cache so consumers don't need a second roundtrip. */
   ownerUserId?: string | null;
 }
-
-// Sub-category → bundled image key. Maps every sub in
-// categoryTaxonomy.ts to its best-fit hero so cards in the same
-// browse view don't repeat. The image keys are defined in
-// VendorCard.tsx (imageMap) — adding a new key requires importing
-// the asset there too. Falls back to "vendor-venue" when no entry
-// exists.
-export const categoryImageFallback: Record<string, string> = {
-  // Venues — varied venue + setting imagery
-  "Event Venues": "vendor-venue",
-  "Outdoor Spaces": "feature-lounge",
-  "Private Dining Spaces": "hero-dinner",
-  "Corporate / Conference Spaces": "hero-corporate",
-  // Food & Beverage — food, cocktails, cakes, street food
-  Catering: "vendor-catering",
-  "Bartending / Mobile Bars": "hero-nye",
-  "Desserts & Cakes": "hero-birthday",
-  "Food Trucks / Specialty": "hero-fiesta",
-  // Entertainment — performance + stage energy
-  DJs: "vendor-dj",
-  "Live Music": "hero-cinematic",
-  Performers: "hero-gala",
-  "Hosts / MCs": "hero-wedding",
-  // Media — coverage / event documentation
-  Photography: "vendor-photographer",
-  Videography: "feature-florals",
-  "Photo Booths": "hero-engagement",
-  // Design & Decor — florals, beauty, styling
-  "Event Coordinators": "feature-lounge",
-  Florists: "vendor-florist",
-  Beauty: "vendor-makeup",
-  "Decor Rentals": "feature-florals",
-  "Grooming Services": "hero-corporate",
-  // Rentals — infrastructure
-  "Furniture Rentals": "feature-lounge",
-  "Tents & Outdoor": "hero-beach",
-  "Lighting & AV Equipment": "hero-cinematic",
-  "Dance Floors & Staging": "hero-gala",
-  Transportation: "hero-nye",
-  // Experiences
-  Tastings: "hero-dinner",
-  "Specialty Services": "hero-fiesta",
-  // Corporate Services
-  Staffing: "feature-lounge",
-  "Speakers / Hosts": "hero-corporate",
-  Security: "hero-cinematic",
-  Valet: "hero-nye",
-};
 
 interface VendorProfileRow {
   id: string;
@@ -156,7 +112,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     pricingModels: row.pricing_models,
     distance: row.location ?? "",
     availability: row.verified_at ? "available" : "limited",
-    image: categoryImageFallback[row.category] ?? "vendor-venue",
+    image: vendorStandInPhoto(row.category).img.src,
     location: row.location ?? undefined,
     responderTier: row.responder_tier ?? null,
     introVideoUrl: row.intro_video_url ?? null,
@@ -273,8 +229,7 @@ async function fetchVendors(): Promise<Vendor[]> {
         // Batch-fetch hero photos — first portfolio image per vendor
         // (lowest display_order, earliest created_at) so the
         // directory card matches what the vendor actually uploaded.
-        // No image → fall back to the per-category stock art via
-        // categoryImageFallback (already in `v.image`).
+        // No image → the card shows a plain placeholder.
         const { data: photos } = await supabase
           .from("vendor_portfolio_images")
           .select("vendor_id, storage_path, display_order, created_at")

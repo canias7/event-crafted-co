@@ -16,26 +16,21 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    // vite-imagetools: lets us write `import x from './foo.jpg?w=800;1600&format=avif;webp;jpg&as=picture'`
+    // vite-imagetools: lets us write `import x from './foo.webp?w=800;1122&format=webp;jpg&as=picture'`
     // and get back a <picture>-ready object with srcset + format fallbacks
-    // generated at build time. Cuts hero JPEG payload by ~60% with AVIF.
+    // generated at build time.
     imagetools({
       defaultDirectives: (url) => {
-        // Auto-pictureify images in four asset families:
-        //   /assets/hero/*       — landing slideshow + featured imagery
-        //   /assets/vendora-*    — feature shots used on landing + press kit
-        //   /assets/vendor-*     — category fallback images on cards
-        //   /assets/categories/* — the category tiles on the vendors page
-        // Each gets AVIF + WebP + JPG variants at 640/1024/1600 widths.
-        if (
-          /\/assets\/hero\//.test(url.pathname) ||
-          /\/assets\/categories\//.test(url.pathname) ||
-          /\/assets\/vendora-/.test(url.pathname) ||
-          /\/assets\/vendor-/.test(url.pathname)
-        ) {
+        // Auto-pictureify the site's photos, /assets/photos/NN.webp: the
+        // owner's pictures, numbered as in the "Photos" tab of the page
+        // walkthrough doc. Each gets WebP + JPG variants at 480/800 and its
+        // full 1122px width (imagetools never upscales). No AVIF: for these
+        // pictures it came out ~40% larger than WebP at the same quality,
+        // and it's the slowest step of the build.
+        if (/\/assets\/photos\//.test(url.pathname)) {
           return new URLSearchParams({
-            format: "avif;webp;jpg",
-            w: "640;1024;1600",
+            format: "webp;jpg",
+            w: "480;800;1122",
             as: "picture",
             quality: "72",
           });

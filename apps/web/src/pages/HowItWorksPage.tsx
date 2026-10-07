@@ -14,12 +14,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import heroCinematic from "@/assets/vendora-hero-cinematic.jpg?as=picture";
-import florist from "@/assets/vendor-florist.jpg?as=picture";
-import photographer from "@/assets/vendor-photographer.jpg?as=picture";
-import dinner from "@/assets/vendora-hero-dinner.jpg?as=picture";
-import makeup from "@/assets/vendor-makeup.jpg?as=picture";
-import wedding from "@/assets/hero/wedding.jpg?as=picture";
+import heroPhoto from "@/assets/photos/11.webp?as=picture";
+import inspirationPhoto from "@/assets/photos/25.webp?as=picture";
+import meetPhoto from "@/assets/photos/07.webp?as=picture";
+import conversationPhoto from "@/assets/photos/13.webp?as=picture";
+import vendorsPhoto from "@/assets/photos/14.webp?as=picture";
+import closingPhoto from "@/assets/photos/10.webp?as=picture";
 
 const INK = "#14161a";
 const CREAM = "#f4f1ea";
@@ -37,9 +37,9 @@ type Step = {
 // hosts.steps.<id> and vendors.steps.<id>; these lists keep the order
 // and the photos.
 const HOST_STEPS: { id: string; image?: PictureSource }[] = [
-  { id: "inspiration", image: florist },
-  { id: "meet", image: photographer },
-  { id: "conversation", image: dinner },
+  { id: "inspiration", image: inspirationPhoto },
+  { id: "meet", image: meetPhoto },
+  { id: "conversation", image: conversationPhoto },
   { id: "plan" },
   { id: "book" },
 ];
@@ -112,7 +112,7 @@ export default function HowItWorksPage() {
           </div>
           <div className="overflow-hidden rounded-3xl border border-white/15">
             <Picture
-              source={heroCinematic}
+              source={heroPhoto}
               alt={t("hero.image_alt")}
               sizes="(min-width: 1024px) 55vw, 100vw"
               loading="eager"
@@ -184,7 +184,7 @@ export default function HowItWorksPage() {
           <div className="container mx-auto grid gap-10 px-5 py-14 md:px-8 md:py-20 lg:grid-cols-2 lg:gap-14">
             <div className="overflow-hidden rounded-3xl border border-white/15 lg:sticky lg:top-32 lg:self-start">
               <Picture
-                source={makeup}
+                source={vendorsPhoto}
                 alt={t("vendors.image_alt")}
                 sizes="(min-width: 1024px) 50vw, 100vw"
                 className="aspect-[4/3] h-full w-full object-cover lg:aspect-[4/5]"
@@ -257,7 +257,7 @@ export default function HowItWorksPage() {
         {/* ═══════ CLOSING CTA ═══════ */}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0">
-            <Picture source={wedding} alt="" sizes="100vw" className="h-full w-full object-cover" />
+            <Picture source={closingPhoto} alt="" sizes="100vw" className="h-full w-full object-cover" />
           </div>
           <div className="absolute inset-0" style={{ background: "rgba(10,11,14,0.62)" }} />
           <div className="relative container mx-auto px-5 py-20 text-center md:px-8 md:py-28">

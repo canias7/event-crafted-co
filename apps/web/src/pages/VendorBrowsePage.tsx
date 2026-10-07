@@ -17,14 +17,14 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand } from "@/components/public/PhotoHero";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
-import heroGala from "@/assets/vendora-hero-gala.jpg?as=picture";
-import tilePhotography from "@/assets/categories/photography.jpg?as=picture";
-import tileVenues from "@/assets/categories/venues.jpg?as=picture";
-import tileCatering from "@/assets/categories/catering.jpg?as=picture";
-import tileBeauty from "@/assets/categories/beauty.jpg?as=picture";
-import tilePlanning from "@/assets/categories/planning.jpg?as=picture";
-import tileDecor from "@/assets/categories/decor.jpg?as=picture";
-import tileEntertainment from "@/assets/categories/entertainment.jpg?as=picture";
+import heroPhoto from "@/assets/photos/53.webp?as=picture";
+import tilePhotography from "@/assets/photos/06.webp?as=picture";
+import tileVenues from "@/assets/photos/12.webp?as=picture";
+import tileCatering from "@/assets/photos/16.webp?as=picture";
+import tileBeauty from "@/assets/photos/19.webp?as=picture";
+import tilePlanning from "@/assets/photos/24.webp?as=picture";
+import tileDecor from "@/assets/photos/03.webp?as=picture";
+import tileEntertainment from "@/assets/photos/30.webp?as=picture";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
@@ -258,7 +258,7 @@ export default function VendorBrowsePage() {
       <section className="relative overflow-hidden" style={{ backgroundColor: INK }}>
         <div className="absolute inset-0">
           <Picture
-            source={heroGala}
+            source={heroPhoto}
             alt=""
             sizes="100vw"
             loading="eager"
