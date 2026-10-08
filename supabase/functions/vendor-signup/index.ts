@@ -206,6 +206,44 @@ async function sendCodeEmail(email: string, code: string): Promise<boolean> {
   return true;
 }
 
+// Leaked-password check (Have I Been Pwned range API, k-anonymity): only
+// the first 5 hex chars of the SHA-1 leave this server. Mirrors Supabase
+// Auth's leaked-password protection so a weak password is caught BEFORE a
+// code is sent. Fails open if the lookup is unreachable (Auth still checks
+// at account creation).
+async function isLeakedPassword(password: string): Promise<boolean> {
+  try {
+    const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(password));
+    const hex = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${hex.slice(0, 5)}`, {
+      headers: { "Add-Padding": "true" },
+    });
+    if (!res.ok) return false;
+    const suffix = hex.slice(5);
+    return (await res.text()).split("\n").some((line) => {
+      const [s, count] = line.trim().split(":");
+      return s === suffix && Number(count) > 0;
+    });
+  } catch {
+    return false;
+  }
+}
+
+const PASSWORD_RULES_MSG =
+  "Choose a stronger password: 8+ characters with upper- and lowercase letters, a number and a symbol.";
+const LEAKED_PASSWORD_MSG =
+  "That password has appeared in a data breach. Choose a different one you don't use anywhere else.";
+
+// Returns a user-facing problem, or null when the password is acceptable.
+async function passwordProblem(password: string): Promise<string | null> {
+  if (
+    password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) ||
+    !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)
+  ) return PASSWORD_RULES_MSG;
+  if (await isLeakedPassword(password)) return LEAKED_PASSWORD_MSG;
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -219,9 +257,20 @@ serve(async (req) => {
   const action = String(body.action ?? "");
   const sb = admin();
 
+  // Checks a password before any code is sent (the app calls this when the
+  // password is entered, and /request repeats it when a password is sent).
+  if (action === "check_password") {
+    const problem = await passwordProblem(String(body.password ?? ""));
+    return json(problem ? { ok: false, reason: problem } : { ok: true }, 200);
+  }
+
   if (action === "request") {
     const email = String(body.email ?? "").trim().toLowerCase();
     if (!email) return json({ error: "email required" }, 400);
+    if (body.password !== undefined) {
+      const problem = await passwordProblem(String(body.password));
+      if (problem) return json({ ok: false, reason: problem }, 200);
+    }
 
     // If there's already a confirmed user with this email, swap the
     // 6-digit code for a "you already have an account" email and
