@@ -25,6 +25,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { passwordProblem } from "@/lib/password";
 import { supabase } from "@/lib/supabase";
 
 const CREAM = "#f4f1ea";
@@ -63,7 +64,7 @@ const REASON_COPY: Record<string, string> = {
   too_many_attempts:
     "Too many wrong tries. Hit Resend code to start a new attempt.",
   wrong_code: "That code didn't match. Try again or resend.",
-  weak_password: "Password must be at least 8 characters.",
+  weak_password: "Choose a stronger password: 8+ characters with upper- and lowercase letters, a number and a symbol.",
 };
 
 export default function SignupScreen() {
@@ -162,7 +163,7 @@ export default function SignupScreen() {
     await sendCode();
   }
 
-  const formValid = email.trim() && password.length >= 8;
+  const formValid = email.trim() && passwordProblem(password) === null;
   const codeValid = code.length === 6;
 
   return (
@@ -243,7 +244,7 @@ export default function SignupScreen() {
                     secureTextEntry={!showPassword}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="At least 8 characters"
+                    placeholder="8+ characters, Aa, 1 and !"
                     placeholderTextColor={PLACEHOLDER}
                     style={{ fontFamily: SERIF,
                       backgroundColor: INPUT_BG,
@@ -275,6 +276,11 @@ export default function SignupScreen() {
                     </Text>
                   </Pressable>
                 </View>
+                {password.length > 0 && passwordProblem(password) ? (
+                  <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 13, marginTop: 6 }}>
+                    {passwordProblem(password)}
+                  </Text>
+                ) : null}
               </View>
             </>
           ) : (
