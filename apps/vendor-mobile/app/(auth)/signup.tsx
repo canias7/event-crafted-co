@@ -37,6 +37,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { CATEGORY_GROUPS } from "@vendora/core";
+import { passwordProblem } from "@/lib/password";
 import { supabase } from "@/lib/supabase";
 
 // Same palette as welcome.tsx — the two screens must read as one flow.
@@ -86,7 +87,7 @@ export default function VendorSignupScreen() {
   // Code screen
   const [code, setCode] = useState("");
 
-  const step1Valid = email.trim().length > 0 && password.length >= 8;
+  const step1Valid = email.trim().length > 0 && passwordProblem(password) === null;
   const step2Valid = businessName.trim().length > 0 && category.length > 0;
   const codeValid = code.length === 6;
 
@@ -174,7 +175,7 @@ export default function VendorSignupScreen() {
       } else if (data.reason === "no_pending_code") {
         setError("We couldn't find a pending code. Hit Resend code.");
       } else if (data.reason === "weak_password") {
-        setError("Password must be at least 8 characters.");
+        setError(passwordProblem(password) ?? "Choose a stronger password.");
       } else {
         setError(data.reason ?? "Verification failed.");
       }
@@ -392,7 +393,7 @@ function AccountStep(p: AccountStepProps) {
               secureTextEntry={!p.showPassword}
               value={p.password}
               onChangeText={p.setPassword}
-              placeholder="At least 8 characters"
+              placeholder="8+ characters, Aa, 1 and !"
               placeholderTextColor={SUBTLE}
               selectionColor={GOLD}
               keyboardAppearance="dark"
@@ -409,6 +410,11 @@ function AccountStep(p: AccountStepProps) {
               </Text>
             </TouchableOpacity>
           </View>
+          {p.password.length > 0 && passwordProblem(p.password) ? (
+            <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 13, marginTop: 6 }}>
+              {passwordProblem(p.password)}
+            </Text>
+          ) : null}
         </View>
 
         {p.error ? <Text style={errorText}>{p.error}</Text> : null}

@@ -368,6 +368,20 @@ serve(async (req) => {
       user_metadata: userMeta,
     });
     if (createErr) {
+      // Supabase Auth's password rules (character mix + leaked-password
+      // check) reject the password. That's the user's to fix: keep the
+      // code valid so they can retry with a stronger password. The reason
+      // is a sentence because installed apps display unknown reasons as-is.
+      if (
+        (createErr as { code?: string }).code === "weak_password" ||
+        /password/i.test(createErr.message ?? "")
+      ) {
+        return json({
+          ok: false,
+          reason:
+            "Choose a stronger password: use upper- and lowercase letters, a number and a symbol, and avoid common passwords.",
+        }, 200);
+      }
       // ATO defense: the old fallback called updateUserById with the
       // attacker-supplied password whenever createUser said the email
       // existed. Combined with /request's lack of rate-limiting, that
