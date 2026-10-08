@@ -223,7 +223,7 @@ export default function ProposalPage() {
         className="flex items-center justify-center px-6 text-center"
       >
         <div>
-          <h1 style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: C.ink }} className="text-3xl mb-2">
+          <h1 style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: C.ink }} className="text-3xl mb-2">
             {t("proposal.notFound.title")}
           </h1>
           <p style={{ color: C.sub }} className="text-sm">
@@ -271,7 +271,7 @@ export default function ProposalPage() {
           <div style={{ padding: "38px 42px" }}>
             <h1
               style={{
-                fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif",
+                fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif",
                 fontSize: 33,
                 fontWeight: 700,
                 letterSpacing: "-0.4px",
@@ -357,7 +357,7 @@ export default function ProposalPage() {
                     {b.amount ? (
                       <div
                         style={{
-                          fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif",
+                          fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif",
                           fontSize: 30,
                           fontWeight: 700,
                           color: C.ink,
@@ -413,7 +413,7 @@ export default function ProposalPage() {
           ) : isOpen ? (
             <div style={{ background: C.foot, color: C.footInk, padding: "30px 42px 38px" }}>
               <h3
-                style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", fontSize: 23, fontWeight: 700 }}
+                style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", fontSize: 23, fontWeight: 700 }}
                 className="text-center mb-1.5"
               >
                 {t("proposal.cta.title")}

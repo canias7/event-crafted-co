@@ -73,7 +73,7 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
       <header className="flex items-start justify-between gap-6 mb-2">
         <div>
           <h2
-            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif" }}
             className="text-2xl font-bold tracking-tight"
           >
             {tp("business_name")}
@@ -90,7 +90,7 @@ function Classic({ tpl }: { tpl: InvoiceTemplate }) {
             {tp("invoice")}
           </p>
           <p
-            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif" }}
             className="text-2xl mt-1 tabular-nums"
           >
             VND-0001
@@ -236,7 +236,7 @@ function Sidebar({ tpl }: { tpl: InvoiceTemplate }) {
             {tp("invoice")}
           </p>
           <p
-            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif" }}
             className="text-xl italic mt-1 tabular-nums"
           >
             VND-0001
@@ -538,7 +538,7 @@ function TotalsBlock({
                 </span>
                 <span
                   className="tabular-nums"
-                  style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", fontSize: 20, fontWeight: 700 }}
+                  style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", fontSize: 20, fontWeight: 700 }}
                 >
                   {money(c.total)}
                 </span>

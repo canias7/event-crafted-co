@@ -101,8 +101,10 @@
 
   body {
     @apply text-foreground font-sans antialiased;
-    /* Brand rule: Libre Baskerville for all text, as in the apps. */
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    /* Brand rule: Libre Baskerville for all text, as in the apps. It has
+       no Cyrillic letters, so PT Serif draws Russian (loaded only on the
+       Russian site, see i18n.ts). */
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Cream base matching the apps' PAGE (#f4f1ea), with champagne
@@ -120,7 +122,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     text-wrap: balance;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -281,7 +283,7 @@
   }
 
   .font-display {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -290,7 +292,7 @@
   /* Title style. Brand rule: titles are bold and upright everywhere,
      like the apps' screen titles (this used to be an italic cut). */
   .font-editorial {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-style: normal;
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -298,13 +300,13 @@
   }
 
   .font-body {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-weight: 400;
     line-height: 1.6;
   }
 
   .font-label {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-weight: 700;
     letter-spacing: 0.06em;
     font-size: 0.75rem;
@@ -496,7 +498,7 @@
     color: hsl(var(--foreground));
   }
   .my-vendora-cockpit .cockpit-stat-value {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     font-size: 32px;
     font-weight: 700;
@@ -618,7 +620,7 @@
 
   /* Tabular money: the brand serif with tabular figures. */
   .my-vendora-cockpit .cockpit-money {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-variant-numeric: lining-nums tabular-nums;
     font-weight: 700;
     color: hsl(var(--foreground));
@@ -639,7 +641,7 @@
   .my-vendora-cockpit h1,
   .my-vendora-cockpit h2,
   .my-vendora-cockpit h3 {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     color: hsl(var(--foreground));
     letter-spacing: -0.3px;
     font-weight: 700;
@@ -679,7 +681,7 @@
   /* Existing `.font-editorial` inside the cockpit uses the same
      display serif so the surface speaks one voice. */
   .my-vendora-cockpit .font-editorial {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif !important;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif !important;
     font-style: normal;
     font-feature-settings: "tnum" 1, "lnum" 1;
     letter-spacing: -0.3px;
@@ -695,7 +697,7 @@
     box-shadow: none;
   }
   .my-vendora-cockpit .cockpit-chart-title {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-size: 20px;
     font-weight: 700;
     color: hsl(var(--foreground));
@@ -802,7 +804,7 @@
     color: hsl(var(--foreground));
   }
   .my-vendora-cockpit .cockpit-page-title {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-size: 32px;
     font-weight: 700;
     color: hsl(var(--foreground));
@@ -852,7 +854,7 @@
     margin-bottom: 4px;
   }
   .my-vendora-cockpit .cockpit-kpi-value {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-variant-numeric: tabular-nums;
     font-size: 30px;
     font-weight: 700;
@@ -942,7 +944,7 @@
     background: transparent;
   }
   .my-vendora-cockpit .cockpit-data-card-header h3 {
-    font-family: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.2px;
