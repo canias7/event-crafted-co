@@ -686,7 +686,7 @@ function OverviewRevenueChart({
         <div>
           <div
             className="text-[22px] font-semibold leading-tight"
-            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             {t("revenue.title")}
           </div>
@@ -697,7 +697,7 @@ function OverviewRevenueChart({
         <div className="text-right">
           <div
             className="text-[28px] font-semibold leading-none"
-            style={{ fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#14161a" }}
           >
             {formatMoney(total, currency)}
           </div>

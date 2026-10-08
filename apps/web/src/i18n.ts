@@ -111,6 +111,20 @@ export const i18nReady = new Promise<void>((resolve) => {
   setTimeout(resolve, 4000);
 });
 
+// Libre Baskerville has no Cyrillic letters; PT Serif (next in every font
+// stack) draws Russian. Only the Russian site loads it, so English and
+// Spanish visitors don't fetch it.
+export const PT_SERIF_CSS =
+  "https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap";
+function loadCyrillicFont() {
+  if (document.getElementById("pt-serif-font")) return;
+  const link = document.createElement("link");
+  link.id = "pt-serif-font";
+  link.rel = "stylesheet";
+  link.href = PT_SERIF_CSS;
+  document.head.appendChild(link);
+}
+
 // Keep <html lang> in step with the chosen language, for screen readers,
 // spell-check and the browser's own translate prompt, and swap the
 // site-wide default title and description (pages that don't set their
@@ -129,6 +143,7 @@ const DEFAULT_META_TAGS: [selector: string, key: MetaKey][] = [
 const followLanguage = (language: string) => {
   if (typeof document === "undefined") return;
   document.documentElement.lang = baseLanguage(language);
+  if (baseLanguage(language) === "ru") loadCyrillicFont();
   if (metaDefaults("defaultTitle").includes(document.title)) {
     document.title = i18n.t("defaultTitle", { ns: "meta" });
   }

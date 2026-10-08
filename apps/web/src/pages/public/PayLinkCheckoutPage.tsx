@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { PT_SERIF_CSS } from "@/i18n";
 import type { TFunction } from "i18next";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe, type Stripe as StripeJs, type StripeElementLocale } from "@stripe/stripe-js";
@@ -405,7 +406,11 @@ export default function PayLinkCheckoutPage() {
               // Card form labels and Stripe's own error messages in the
               // page's language ("auto", the default, in English).
               locale: STRIPE_LOCALES[i18n.resolvedLanguage ?? "en"] ?? "auto",
-              fonts: [{ cssSrc: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" }],
+              fonts: [
+                { cssSrc: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" },
+                // Cyrillic letters for the Russian card form.
+                { cssSrc: PT_SERIF_CSS },
+              ],
               appearance: {
                 theme: "stripe",
                 variables: {
@@ -414,7 +419,7 @@ export default function PayLinkCheckoutPage() {
                   colorText: "#14161a",
                   colorTextSecondary: "#14161a",
                   colorDanger: "#b23a34",
-                  fontFamily: "'Libre Baskerville', Georgia, 'Times New Roman', serif",
+                  fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif",
                   borderRadius: "12px",
                 },
               },

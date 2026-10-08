@@ -16,8 +16,9 @@ export default {
     extend: {
       fontFamily: {
         // Brand rule: Libre Baskerville for all text, so `sans` points at it too.
-        sans: ['Libre Baskerville', 'Georgia', 'Times New Roman', 'serif'],
-        serif: ['Libre Baskerville', 'Georgia', 'Times New Roman', 'serif'],
+        // PT Serif draws the Cyrillic letters Baskerville lacks (Russian).
+        sans: ['Libre Baskerville', 'PT Serif', 'Georgia', 'Times New Roman', 'serif'],
+        serif: ['Libre Baskerville', 'PT Serif', 'Georgia', 'Times New Roman', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
