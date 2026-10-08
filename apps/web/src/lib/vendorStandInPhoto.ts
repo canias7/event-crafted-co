@@ -17,8 +17,12 @@ import p35 from "@/assets/photos/35.webp?as=picture";
 import p50 from "@/assets/photos/50.webp?as=picture";
 import p51 from "@/assets/photos/51.webp?as=picture";
 import p53 from "@/assets/photos/53.webp?as=picture";
-import p54 from "@/assets/photos/54.webp?as=picture";
-import p57 from "@/assets/photos/57.webp?as=picture";
+import p56 from "@/assets/photos/56.webp?as=picture";
+import p58 from "@/assets/photos/58.webp?as=picture";
+import p59 from "@/assets/photos/59.webp?as=picture";
+import p60 from "@/assets/photos/60.webp?as=picture";
+import p61 from "@/assets/photos/61.webp?as=picture";
+import p62 from "@/assets/photos/62.webp?as=picture";
 
 // The photo a vendor profile shares in link previews and structured data,
 // by the vendor's sub-category: one of the owner's pictures that matches
@@ -27,10 +31,10 @@ import p57 from "@/assets/photos/57.webp?as=picture";
 // photos, or a plain placeholder.
 const BY_SUB: Record<string, PictureSource> = {
   // Venues
-  "Event Venues": p53,
-  "Outdoor Spaces": p54,
-  "Private Dining Spaces": p12,
-  "Corporate / Conference Spaces": p53,
+  "Event Venues": p58,
+  "Outdoor Spaces": p59,
+  "Private Dining Spaces": p56,
+  "Corporate / Conference Spaces": p12,
   // Food & Beverage
   Catering: p16,
   "Bartending / Mobile Bars": p35,
@@ -52,14 +56,14 @@ const BY_SUB: Record<string, PictureSource> = {
   "Decor Rentals": p05,
   "Grooming Services": p20,
   // Rentals
-  "Furniture Rentals": p53,
-  "Tents & Outdoor": p54,
-  "Lighting & AV Equipment": p32,
-  "Dance Floors & Staging": p31,
+  "Furniture Rentals": p60,
+  "Tents & Outdoor": p60,
+  "Lighting & AV Equipment": p61,
+  "Dance Floors & Staging": p61,
   Transportation: p35,
   // Experiences
   Tastings: p14,
-  "Specialty Services": p57,
+  "Specialty Services": p62,
   // Corporate Services
   Staffing: p23,
   "Speakers / Hosts": p12,

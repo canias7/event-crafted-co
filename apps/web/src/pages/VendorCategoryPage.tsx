@@ -18,13 +18,13 @@ import { Picture, type PictureSource } from "@/components/shared/Picture";
 import { CATEGORY_GROUPS, groupOfSub } from "@/data/categoryTaxonomy";
 import { useCategoryNames } from "@/lib/categoryNames";
 
-import venuesPhoto from "@/assets/photos/54.webp?as=picture";
+import venuesPhoto from "@/assets/photos/59.webp?as=picture";
 import foodPhoto from "@/assets/photos/15.webp?as=picture";
 import entertainmentPhoto from "@/assets/photos/31.webp?as=picture";
 import mediaPhoto from "@/assets/photos/51.webp?as=picture";
 import decorPhoto from "@/assets/photos/28.webp?as=picture";
-import rentalsPhoto from "@/assets/photos/01.webp?as=picture";
-import experiencesPhoto from "@/assets/photos/56.webp?as=picture";
+import rentalsPhoto from "@/assets/photos/60.webp?as=picture";
+import experiencesPhoto from "@/assets/photos/62.webp?as=picture";
 import corporatePhoto from "@/assets/photos/23.webp?as=picture";
 
 interface CategoryConfig {

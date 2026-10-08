@@ -19,7 +19,7 @@ import inspirationPhoto from "@/assets/photos/25.webp?as=picture";
 import meetPhoto from "@/assets/photos/07.webp?as=picture";
 import conversationPhoto from "@/assets/photos/44.webp?as=picture";
 import vendorsPhoto from "@/assets/photos/14.webp?as=picture";
-import closingPhoto from "@/assets/photos/04.webp?as=picture";
+import closingPhoto from "@/assets/photos/61.webp?as=picture";
 
 const INK = "#14161a";
 const CREAM = "#f4f1ea";

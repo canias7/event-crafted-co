@@ -19,7 +19,7 @@ import { ClosingBand } from "@/components/public/PhotoHero";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import heroPhoto from "@/assets/photos/53.webp?as=picture";
 import tilePhotography from "@/assets/photos/06.webp?as=picture";
-import tileVenues from "@/assets/photos/12.webp?as=picture";
+import tileVenues from "@/assets/photos/58.webp?as=picture";
 import tileCatering from "@/assets/photos/16.webp?as=picture";
 import tileBeauty from "@/assets/photos/19.webp?as=picture";
 import tilePlanning from "@/assets/photos/24.webp?as=picture";
