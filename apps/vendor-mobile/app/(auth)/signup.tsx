@@ -91,10 +91,22 @@ export default function VendorSignupScreen() {
   const step2Valid = businessName.trim().length > 0 && category.length > 0;
   const codeValid = code.length === 6;
 
-  function continueToBusiness() {
+  async function continueToBusiness() {
     setError(null);
     if (!step1Valid) {
-      setError("Please complete every field. Password needs 8+ characters.");
+      setError(passwordProblem(password) ?? "Please complete every field.");
+      return;
+    }
+    // The server also checks the password against known data breaches
+    // (only the server can), so a weak one never reaches the code step.
+    setSubmitting(true);
+    const { data } = await supabase.functions.invoke<{ ok?: boolean; reason?: string }>(
+      "vendor-signup",
+      { body: { action: "check_password", password } },
+    );
+    setSubmitting(false);
+    if (data?.ok === false) {
+      setError(data.reason ?? "Choose a stronger password.");
       return;
     }
     setStep("business");
@@ -114,6 +126,7 @@ export default function VendorSignupScreen() {
       body: {
         action: "request",
         email: cleanEmail,
+        password,
         businessName: businessName.trim(),
         category,
       },
@@ -129,6 +142,8 @@ export default function VendorSignupScreen() {
       // ok:true so the API can't be used to enumerate accounts.
       // Any other ok:false here is genuinely something else.
       setError(data.reason ?? "Couldn't send code.");
+      // A password problem belongs on the password screen.
+      if (/password/i.test(data.reason ?? "")) setStep("account");
       return;
     }
     if (data?.error) {

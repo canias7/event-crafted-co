@@ -85,7 +85,7 @@ export default function SignupScreen() {
     const cleanEmail = email.trim().toLowerCase();
     const { data, error } = await supabase.functions.invoke<SignupResponse>(
       "host-signup",
-      { body: { action: "request", email: cleanEmail } },
+      { body: { action: "request", email: cleanEmail, password } },
     );
     setSubmitting(false);
     if (error) {
