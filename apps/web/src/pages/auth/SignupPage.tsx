@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +8,6 @@ import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { authErrorText } from "@/components/auth/authErrors";
-import { homeTestForSignup, logHomeEvent } from "@/lib/homeExperiment";
 
 // `role` decides what the user is signing up as. Default "host" keeps
 // the existing behavior (post-signup → /customer/onboarding). When
@@ -32,12 +31,6 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
   // No bot-check by default; only shown if the server still demands one.
   const captcha = useCaptchaFallback();
 
-  // Opening the form is a started registration for the homepage test
-  // version this visitor got (nothing is sent without one).
-  useEffect(() => {
-    logHomeEvent("signup_start", role);
-  }, [role]);
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!adult) {
@@ -49,7 +42,6 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
       return;
     }
     setLoading(true);
-    const homeTest = homeTestForSignup();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -64,9 +56,6 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
           display_name: name,
           intended_role: role,
           ...(role === "vendor" ? { vendor_business_name: name } : {}),
-          // The homepage test version this visitor got: the admin A/B
-          // testing page counts the new account as a registration for it.
-          ...(homeTest ? { home_test: homeTest } : {}),
         },
       },
     });

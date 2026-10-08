@@ -3,13 +3,9 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/** Logs a click or a pick inside a homepage-test section. */
-export type TrackHomeEvent = (event: "click" | "select", detail: string) => void;
-
-// The frame every homepage-test version shares (the section right under
-// the hero): ink page, the intro on the left and the version's visual on
-// the right from 1280px; stacked below that, where the visual gets the
-// full width (five tiles or six tabs don't fit beside the intro at 1024).
+// The frame of the section right under the homepage hero: ink page, the
+// intro on the left and the visual on the right from 1280px; stacked below
+// that, where the visual gets the full width.
 export function HomeSectionShell({
   labelledBy,
   intro,
@@ -33,7 +29,7 @@ export function HomeSectionShell({
 }
 
 // The intro column: gold eyebrow, title, a short gold rule, one line of
-// copy and the version's call to action.
+// copy and the call to action.
 export function HomeSectionIntro({
   id,
   eyebrow,
@@ -41,7 +37,6 @@ export function HomeSectionIntro({
   body,
   cta,
   to,
-  onCta,
 }: {
   id: string;
   eyebrow: string;
@@ -49,7 +44,6 @@ export function HomeSectionIntro({
   body: string;
   cta: string;
   to: string;
-  onCta: () => void;
 }) {
   return (
     <div className="max-w-md">
@@ -61,7 +55,7 @@ export function HomeSectionIntro({
       <span aria-hidden className="mt-6 block h-px w-12 bg-gold/60" />
       <p className="m-0 mt-6 text-[16px] leading-relaxed text-[#f4f1ea]/80">{body}</p>
       <Button asChild size="lg" className="mt-8">
-        <Link to={to} onClick={onCta}>
+        <Link to={to}>
           {cta}
           <ArrowRight aria-hidden />
         </Link>

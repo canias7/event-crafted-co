@@ -4,7 +4,7 @@ import { ArrowRight, MapPin, Search, Store, Users } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { PublicNav } from "@/components/public/PublicNav";
-import { HomeExperimentSection } from "@/components/home/HomeExperimentSection";
+import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { Picture } from "@/components/shared/Picture";
 // The site's photos are the owner's pictures, numbered as in the "Photos"
 // tab of the page walkthrough doc (vite-imagetools makes AVIF/WebP/JPG).
@@ -210,8 +210,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Homepage A/B/C test: one of three sections for each visitor. */}
-      <HomeExperimentSection />
+      {/* Plan. Connect. Celebrate. */}
+      <HowItWorksSection />
 
       <Footer tone="dark" />
 

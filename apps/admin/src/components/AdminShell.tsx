@@ -6,7 +6,6 @@ import {
   ChevronRight,
   DollarSign,
   FileCheck2,
-  FlaskConical,
   LayoutDashboard,
   Mail,
   ShieldCheck,
@@ -31,7 +30,6 @@ const NAV: Array<{
   { to: "/reviews", label: "Reviews", icon: Star },
   { to: "/costs", label: "Costs", icon: DollarSign },
   { to: "/emails", label: "Emails", icon: Mail },
-  { to: "/homepage-test", label: "A/B testing", icon: FlaskConical },
   { to: "/workspace", label: "Workspace", icon: Briefcase },
 ];
 

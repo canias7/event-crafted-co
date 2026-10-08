@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { describeVerdict, loadHomeTest, pct, verdict, type VariantStats } from "@/lib/homeTest";
 
 type Counts = {
   pendingApplications: number;
@@ -56,64 +54,7 @@ export function DashboardPage() {
         <Stat label="Vendor listings" value={counts?.totalVendors} />
         <Stat label="Reviews" value={counts?.totalReviews} />
       </div>
-      <HomeTestCard />
     </div>
-  );
-}
-
-// Which homepage version is winning, at a glance; the full comparison is
-// on the A/B testing page.
-function HomeTestCard() {
-  const [stats, setStats] = useState<VariantStats[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    loadHomeTest("all")
-      .then((s) => alive && setStats(s))
-      .catch((e: Error) => alive && setError(e.message));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const result = stats ? verdict(stats) : null;
-  const words = result ? describeVerdict(result) : null;
-  const leader = result && (result.status === "early" || result.status === "leading" || result.status === "winner") ? result.leader : null;
-
-  return (
-    <Link
-      to="/homepage-test"
-      className="mt-3 block rounded-lg border border-ink/10 bg-white p-4 transition-colors hover:border-ink/30"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-wide text-ink/50">Homepage A/B test</p>
-        <span className="text-xs text-ink/50">See the comparison →</span>
-      </div>
-      {error ? (
-        <p className="mt-2 text-sm text-red-700">{error}</p>
-      ) : words && stats ? (
-        <>
-          <p className="mt-2 font-semibold">{words.title}</p>
-          <p className="mt-0.5 text-sm text-ink/70">{words.detail}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {stats.map((s) => (
-              <span
-                key={s.variant}
-                className={`rounded px-2 py-1 font-mono text-xs ${
-                  leader === s.variant ? "bg-emerald-100 text-emerald-800" : "bg-ink/5 text-ink/70"
-                }`}
-              >
-                {s.variant.toUpperCase()} · {s.visitors.toLocaleString()} visitors · {s.registrations.toLocaleString()}{" "}
-                registered ({pct(s.registrations, s.visitors)})
-              </span>
-            ))}
-          </div>
-        </>
-      ) : (
-        <p className="mt-2 text-sm text-ink/50">Loading…</p>
-      )}
-    </Link>
   );
 }
 

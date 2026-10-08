@@ -7,11 +7,11 @@ import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
 import { Picture } from "@/components/shared/Picture";
-import heroPhoto from "@/assets/photos/47.webp?as=picture";
-import discoverPhoto from "@/assets/photos/44.webp?as=picture";
+import heroPhoto from "@/assets/photos/45.webp?as=picture";
+import discoverPhoto from "@/assets/photos/08.webp?as=picture";
 import connectPhoto from "@/assets/photos/17.webp?as=picture";
 import planPhoto from "@/assets/photos/22.webp?as=picture";
-import bookPhoto from "@/assets/photos/34.webp?as=picture";
+import bookPhoto from "@/assets/photos/26.webp?as=picture";
 
 // Text lives in locales/<lang>/forHosts.json, keyed by these ids.
 const STEPS = [
