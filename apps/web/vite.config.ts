@@ -27,6 +27,16 @@ export default defineConfig(({ mode }) => ({
         // full 1122px width (imagetools never upscales). No AVIF: for these
         // pictures it came out ~40% larger than WebP at the same quality,
         // and it's the slowest step of the build.
+        // The home hero's own photo (1920px wide) gets the same treatment
+        // at hero widths.
+        if (/\/assets\/vendora-hero-cinematic\./.test(url.pathname)) {
+          return new URLSearchParams({
+            format: "webp;jpg",
+            w: "640;1024;1600;1920",
+            as: "picture",
+            quality: "72",
+          });
+        }
         if (/\/assets\/photos\//.test(url.pathname)) {
           return new URLSearchParams({
             format: "webp;jpg",

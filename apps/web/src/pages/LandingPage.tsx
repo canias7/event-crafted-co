@@ -8,7 +8,8 @@ import { HomeExperimentSection } from "@/components/home/HomeExperimentSection";
 import { Picture } from "@/components/shared/Picture";
 // The site's photos are the owner's pictures, numbered as in the "Photos"
 // tab of the page walkthrough doc (vite-imagetools makes AVIF/WebP/JPG).
-import heroPhoto from "@/assets/photos/39.webp?as=picture";
+// The home hero keeps its original sunset-reception photo (owner's call).
+import heroPhoto from "@/assets/vendora-hero-cinematic.jpg?as=picture";
 
 // ── Palette (matches the mobile apps) ──────────────────────────────
 const INK = "#14161a";
