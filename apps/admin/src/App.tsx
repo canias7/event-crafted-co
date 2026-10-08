@@ -16,7 +16,6 @@ import { EmailScrapingPage } from "./pages/EmailScrapingPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { CostsPage } from "./pages/CostsPage";
 import { EmailsPage } from "./pages/EmailsPage";
-import { HomepageTestPage } from "./pages/HomepageTestPage";
 
 export default function App() {
   return (
@@ -40,7 +39,6 @@ export default function App() {
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/costs" element={<CostsPage />} />
               <Route path="/emails" element={<EmailsPage />} />
-              <Route path="/homepage-test" element={<HomepageTestPage />} />
               <Route path="/workspace" element={<WorkspacePage />} />
               <Route path="/workspace/email-leads" element={<EmailLeadsPage />} />
               <Route path="/workspace/templates" element={<TemplatesPage />} />

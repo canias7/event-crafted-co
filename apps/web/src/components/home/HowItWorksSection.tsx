@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { CalendarCheck, Heart, Search, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Picture } from "@/components/shared/Picture";
-import { HomeSectionIntro, HomeSectionShell, type TrackHomeEvent } from "./HomeSectionShell";
+import { HomeSectionIntro, HomeSectionShell } from "./HomeSectionShell";
 import floralsImg from "@/assets/photos/29.webp?as=picture";
 import foodImg from "@/assets/photos/18.webp?as=picture";
 import beautyImg from "@/assets/photos/21.webp?as=picture";
@@ -10,7 +10,7 @@ import decorImg from "@/assets/photos/57.webp?as=picture";
 import connectImg from "@/assets/photos/05.webp?as=picture";
 import celebrateImg from "@/assets/photos/35.webp?as=picture";
 
-// Homepage test, version C: "Plan. Connect. Celebrate." Three steps, each
+// The homepage section under the hero: "Plan. Connect. Celebrate." Three steps, each
 // on a photo: a wall of vendors to explore, a vendor setting a table with
 // a quick exchange about availability, and the toast at the end.
 const PHOTO = "absolute inset-0 h-full w-full object-cover";
@@ -52,7 +52,7 @@ const STEPS: { key: "explore" | "connect" | "celebrate"; number: string; icon: L
   { key: "celebrate", number: "03", icon: Heart },
 ];
 
-export function HowItWorksSection({ onTrack }: { onTrack: TrackHomeEvent }) {
+export function HowItWorksSection() {
   const { t } = useTranslation("homeSections");
   const visuals: Record<(typeof STEPS)[number]["key"], ReactNode> = {
     explore: <ExploreVisual />,
@@ -73,7 +73,6 @@ export function HowItWorksSection({ onTrack }: { onTrack: TrackHomeEvent }) {
           body={t("howItWorks.body")}
           cta={t("howItWorks.cta")}
           to="/signup"
-          onCta={() => onTrack("click", "cta")}
         />
       }
     >

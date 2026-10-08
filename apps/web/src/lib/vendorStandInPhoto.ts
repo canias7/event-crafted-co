@@ -6,21 +6,18 @@ import p08 from "@/assets/photos/08.webp?as=picture";
 import p12 from "@/assets/photos/12.webp?as=picture";
 import p14 from "@/assets/photos/14.webp?as=picture";
 import p16 from "@/assets/photos/16.webp?as=picture";
+import p18 from "@/assets/photos/18.webp?as=picture";
 import p20 from "@/assets/photos/20.webp?as=picture";
 import p23 from "@/assets/photos/23.webp?as=picture";
 import p24 from "@/assets/photos/24.webp?as=picture";
 import p27 from "@/assets/photos/27.webp?as=picture";
-import p30 from "@/assets/photos/30.webp?as=picture";
 import p31 from "@/assets/photos/31.webp?as=picture";
 import p32 from "@/assets/photos/32.webp?as=picture";
 import p35 from "@/assets/photos/35.webp?as=picture";
-import p46 from "@/assets/photos/46.webp?as=picture";
 import p50 from "@/assets/photos/50.webp?as=picture";
 import p51 from "@/assets/photos/51.webp?as=picture";
-import p52 from "@/assets/photos/52.webp?as=picture";
 import p53 from "@/assets/photos/53.webp?as=picture";
 import p54 from "@/assets/photos/54.webp?as=picture";
-import p55 from "@/assets/photos/55.webp?as=picture";
 import p57 from "@/assets/photos/57.webp?as=picture";
 
 // The photo a vendor profile shares in link previews and structured data,
@@ -33,14 +30,14 @@ const BY_SUB: Record<string, PictureSource> = {
   "Event Venues": p53,
   "Outdoor Spaces": p54,
   "Private Dining Spaces": p12,
-  "Corporate / Conference Spaces": p55,
+  "Corporate / Conference Spaces": p53,
   // Food & Beverage
   Catering: p16,
-  "Bartending / Mobile Bars": p52,
+  "Bartending / Mobile Bars": p35,
   "Desserts & Cakes": p50,
-  "Food Trucks / Specialty": p46,
+  "Food Trucks / Specialty": p18,
   // Entertainment
-  DJs: p30,
+  DJs: p32,
   "Live Music": p31,
   Performers: p31,
   "Hosts / MCs": p32,
@@ -65,7 +62,7 @@ const BY_SUB: Record<string, PictureSource> = {
   "Specialty Services": p57,
   // Corporate Services
   Staffing: p23,
-  "Speakers / Hosts": p55,
+  "Speakers / Hosts": p12,
   Security: p24,
   Valet: p12,
 };
