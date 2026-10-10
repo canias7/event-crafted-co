@@ -20,7 +20,10 @@
     },
     "chat": {
       "question": "Hi! Is June 14 still open?",
-      "answer": "It is! I'd love to hear more about your event."
+      "answer": "It is! I'd love to hear more about your event.",
+      "details": "A garden wedding, about 120 guests.",
+      "quote": "Lovely! I'll send you a quote today.",
+      "thanks": "Perfect, thank you!"
     }
   }
 }

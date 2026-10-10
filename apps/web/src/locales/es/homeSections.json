@@ -20,7 +20,10 @@
     },
     "chat": {
       "question": "¡Hola! ¿Sigue libre el 14 de junio?",
-      "answer": "¡Sí! Me encantaría saber más de tu evento."
+      "answer": "¡Sí! Me encantaría saber más de tu evento.",
+      "details": "Una boda en jardín, unos 120 invitados.",
+      "quote": "¡Qué lindo! Hoy mismo te envío una cotización.",
+      "thanks": "¡Perfecto, gracias!"
     }
   }
 }
