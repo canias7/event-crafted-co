@@ -6,28 +6,20 @@
 // the only thing a vendor actually came here to do. The sequence is gone —
 // the screen is what it used to spend fifteen seconds arriving at.
 //
-// Light theme. This screen used to be near-black (#0d0f13) with a dark hero
-// whose baked gradient dissolved into the page colour. The whole auth flow now
-// matches the cream design system the rest of the app uses, so the hero is a
-// photo in a rounded band with a hard bottom edge — no baked fade to line up
-// with, and no seam to get wrong. The photo is the website's home hero (the
-// sunset reception, owner's call), cut to the band's 1800x1057 with a light
-// shade across the top so the status bar's white icons stay readable.
+// Dark, like the website's home page (owner's call, Oct 2026): the site's
+// hero photo (the sunset reception) fills the screen, dimmed by the same two
+// scrims the web uses — a top-to-bottom shade, darkest at the bottom where
+// the cards and buttons sit, and a vignette that darkens the edges. Text is
+// cream, accents champagne, and the cards are see-through (white at 6% with a
+// white-at-15% hairline), as on the dark public pages.
 //
-// Layout: hero band, logo badge straddling its lower edge, wordmark, tagline,
-// gold divider, three value cards, and the auth pills.
-//
-// Fits one screen, no scrolling. Everything below the hero is fixed
-// height by design, so the hero absorbs whatever is left over — on a
-// tall phone it gets its natural aspect, on a short one it shrinks
-// rather than pushing the buttons off the bottom. The ScrollView stays
-// as a safety net for very small devices and large accessibility text.
+// Layout: logo badge, wordmark and tagline in the upper part of the screen;
+// gold divider, three value cards and the auth pills at the bottom. Fits one
+// screen; the ScrollView stays as a safety net for very small devices and
+// large accessibility text.
 //
 // Typography: the whole screen is serif. Hierarchy comes from size and
-// weight rather than from switching typeface, so the brand voice carries
-// all the way down the page instead of stopping at the tagline. Only
-// works because this is a marketing page with very little text — the
-// signed-in app stays sans, where serif at 13-14pt would cost legibility.
+// weight rather than from switching typeface.
 
 import {
   Image,
@@ -42,23 +34,18 @@ import {
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
-const SERIF_ITALIC = "LibreBaskerville-Italic";
 
-// Cream design-system tokens — same values as the signed-in app.
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
+// Dark-page tokens, as on the website's dark public pages.
 const INK = "#14161a";
-// Secondary text is the same black as headings; hierarchy comes from
-// size, weight and family instead. The old value was a cool blue-grey
-// (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
+const CREAM = "#f4f1ea";
+const CREAM_DIM = "rgba(244,241,234,0.8)";
 const GOLD = "#c9a86a";
-const BRONZE = "#8a6f3e";
+const HAIRLINE = "rgba(255,255,255,0.15)";
+const GLASS = "rgba(255,255,255,0.06)";
 
 const TAGLINE_LINES = ["for those who plan,", "and those who shine."];
 
@@ -92,71 +79,60 @@ export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 
-  // Height of everything under the hero, measured from the rendered
-  // screen. The hero takes the remainder so the page never scrolls.
   const available = height - insets.top - insets.bottom;
-  // Short phones (iPhone SE and friends) cannot fit the roomy layout no
-  // matter how small the hero gets, so everything below it steps down a
-  // size rather than the page starting to scroll.
+  // Short phones (iPhone SE and friends) step everything down a size rather
+  // than starting to scroll.
   const compact = available < 720;
-  // Measured from the rendered screen, not estimated.
-  const BELOW_HERO = compact ? 560 : 566;
-  // Natural aspect (asset is 1800x1057) is the ceiling — never upscale
-  // or stretch it; 132 is the floor before the band stops reading as a
-  // photo.
-  const heroHeight = Math.max(
-    compact ? 104 : 132,
-    Math.min(Math.round(width * (1057 / 1800)), available - BELOW_HERO),
-  );
-  // One Text (not per-character any more), so RN can shrink it itself —
-  // adjustsFontSizeToFit handles narrow screens.
   const wordmarkSize = Math.min(compact ? 40 : 46, width * (compact ? 0.108 : 0.118));
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAGE }}>
+    <View style={{ flex: 1, backgroundColor: INK }}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Backdrop: the photo, then the web hero's two scrims. Plain numeric
+          sizes only — the styling interop on this screen has mishandled
+          derived constraints (left/right: 0, aspectRatio) on device. */}
+      <Image
+        source={require("../../assets/welcome-hero.jpg")}
+        style={{ position: "absolute", top: 0, left: 0, width, height }}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+      />
+      <Svg width={width} height={height} style={{ position: "absolute", top: 0, left: 0 }}>
+        <Defs>
+          <LinearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#0a0b0e" stopOpacity={0.62} />
+            <Stop offset="0.36" stopColor="#0a0b0e" stopOpacity={0.4} />
+            <Stop offset="0.6" stopColor="#0a0b0e" stopOpacity={0.72} />
+            <Stop offset="1" stopColor="#100e0a" stopOpacity={0.94} />
+          </LinearGradient>
+          <RadialGradient id="vignette" cx="50%" cy="40%" rx="75%" ry="60%" fx="50%" fy="40%">
+            <Stop offset="0.4" stopColor="#08090c" stopOpacity={0} />
+            <Stop offset="1" stopColor="#08090c" stopOpacity={0.6} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width={width} height={height} fill="url(#shade)" />
+        <Rect x="0" y="0" width={width} height={height} fill="url(#vignette)" />
+      </Svg>
 
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
+          justifyContent: "space-between",
+          paddingTop: insets.top + (compact ? 28 : 56),
           paddingBottom: Math.max(insets.bottom + 8, 16),
+          paddingHorizontal: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero band. Explicit numeric width AND height — nothing else. This
-            style has failed on device in fancier forms: with left+right:0 the
-            width constraint was dropped and the image laid out at its
-            intrinsic size, and aspectRatio fared no better. The styling
-            interop on this screen demonstrably mishandles derived
-            constraints, so the image box stays plain numbers. */}
-        <View
-          style={{
-            width: width,
-            height: heroHeight,
-            borderBottomLeftRadius: 24,
-            borderBottomRightRadius: 24,
-            overflow: "hidden",
-            backgroundColor: SURFACE,
-          }}
-        >
-          <Image
-            source={require("../../assets/welcome-hero.jpg")}
-            style={{ width: width, height: heroHeight }}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-        </View>
-
-        <View style={{ paddingHorizontal: 20 }}>
-          {/* Logo badge straddling the hero's lower edge. */}
+        <View>
           <View
             style={{
               alignSelf: "center",
-              marginTop: -(BADGE / 2),
               width: BADGE,
               height: BADGE,
               borderRadius: BADGE / 2,
-              backgroundColor: CARD,
+              backgroundColor: "rgba(20,22,26,0.55)",
               borderWidth: 1,
               borderColor: GOLD,
               alignItems: "center",
@@ -165,12 +141,7 @@ export default function WelcomeScreen() {
           >
             <Image
               source={require("../../assets/v-mark.png")}
-              style={{
-                width: 36,
-                height: 36,
-                tintColor: GOLD,
-                resizeMode: "contain",
-              }}
+              style={{ width: 36, height: 36, tintColor: GOLD, resizeMode: "contain" }}
             />
           </View>
 
@@ -178,11 +149,11 @@ export default function WelcomeScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
             style={{
-              marginTop: 10,
+              marginTop: 12,
               fontFamily: SERIF,
               fontSize: wordmarkSize,
               lineHeight: wordmarkSize * 1.1,
-              color: INK,
+              color: CREAM,
               textAlign: "center",
               letterSpacing: -0.5,
             }}
@@ -198,7 +169,7 @@ export default function WelcomeScreen() {
                   fontFamily: SERIF,
                   fontSize: compact ? 13.5 : 15,
                   lineHeight: compact ? 19 : 21,
-                  color: BRONZE,
+                  color: GOLD,
                   textAlign: "center",
                 }}
               >
@@ -206,25 +177,26 @@ export default function WelcomeScreen() {
               </Text>
             ))}
           </View>
+        </View>
 
+        <View style={{ marginTop: 24 }}>
           {/* Divider — the same gold ✦ every other auth screen uses. */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              marginTop: compact ? 9 : 12,
               marginBottom: compact ? 11 : 16,
             }}
           >
-            <View style={{ width: 54, height: 1, backgroundColor: BORDER }} />
+            <View style={{ width: 54, height: 1, backgroundColor: HAIRLINE }} />
             <MaterialCommunityIcons
               name="star-four-points"
               size={16}
               color={GOLD}
               style={{ marginHorizontal: 12 }}
             />
-            <View style={{ width: 54, height: 1, backgroundColor: BORDER }} />
+            <View style={{ width: 54, height: 1, backgroundColor: HAIRLINE }} />
           </View>
 
           {/* Three value cards. No chevrons: these are informational, and a
@@ -236,9 +208,9 @@ export default function WelcomeScreen() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: CARD,
+                backgroundColor: GLASS,
                 borderWidth: 1,
-                borderColor: BORDER,
+                borderColor: HAIRLINE,
                 borderRadius: 20,
                 padding: compact ? 9 : 11,
                 marginBottom: compact ? 6 : 8,
@@ -249,27 +221,19 @@ export default function WelcomeScreen() {
                   width: compact ? 36 : 42,
                   height: compact ? 36 : 42,
                   borderRadius: 12,
-                  backgroundColor: SURFACE,
+                  backgroundColor: "rgba(201,168,106,0.14)",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <MaterialCommunityIcons name={p.icon} size={compact ? 18 : 21} color={BRONZE} />
+                <MaterialCommunityIcons name={p.icon} size={compact ? 18 : 21} color={GOLD} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text
-                  style={{
-                    fontFamily: SERIF_BOLD,
-                    color: INK,
-                    fontSize: 18,
-                  }}
-                >
-                  {p.title}
-                </Text>
+                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 18 }}>{p.title}</Text>
                 <Text
                   style={{
                     fontFamily: SERIF,
-                    color: INK_DIM,
+                    color: CREAM_DIM,
                     fontSize: compact ? 11.5 : 12.5,
                     lineHeight: compact ? 15 : 17,
                     marginTop: 1,
@@ -283,9 +247,7 @@ export default function WelcomeScreen() {
 
           {/* Plain style objects only — NOT the function form. NativeWind's
               global component interop silently discarded function-form style
-              props on device: the pills rendered as bare unstyled text while
-              every statically-styled sibling was fine. TouchableOpacity gives
-              the press feedback the function form existed for. */}
+              props on device. TouchableOpacity gives the press feedback. */}
           <TouchableOpacity
             onPress={() => router.push("/(auth)/signup")}
             accessibilityRole="button"
@@ -299,11 +261,10 @@ export default function WelcomeScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
-              Sign up
-            </Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>Sign up</Text>
           </TouchableOpacity>
 
+          {/* Secondary on dark: see-through with the white hairline. */}
           <TouchableOpacity
             onPress={() => router.push("/(auth)/login")}
             accessibilityRole="button"
@@ -313,29 +274,23 @@ export default function WelcomeScreen() {
               height: compact ? 44 : 52,
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: BORDER,
-              backgroundColor: "#ffffff",
+              borderColor: "rgba(255,255,255,0.3)",
+              backgroundColor: "rgba(255,255,255,0.08)",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
-              Sign in
-            </Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16 }}>Sign in</Text>
           </TouchableOpacity>
 
           {/* No social-auth row: Google / Apple / Facebook sign-in isn't
-              implemented anywhere in this project (mobile or web), and
-              rendering buttons that do nothing is worse than omitting them —
-              Apple also rejects non-functional UI. Adding it is real work:
-              OAuth clients per provider, redirect handling, and Apple requires
-              Sign in with Apple once any other third-party option is
-              offered. */}
+              implemented anywhere in this project, and buttons that do
+              nothing are worse than none (Apple also rejects them). */}
 
           <Text
             style={{
               fontFamily: SERIF,
-              color: INK_DIM,
+              color: CREAM_DIM,
               fontSize: compact ? 10.5 : 11.5,
               lineHeight: compact ? 14 : 16,
               textAlign: "center",
@@ -344,14 +299,14 @@ export default function WelcomeScreen() {
           >
             By continuing, you agree to our{" "}
             <Text
-              style={{ fontFamily: SERIF_BOLD, color: BRONZE}}
+              style={{ fontFamily: SERIF_BOLD, color: GOLD }}
               onPress={() => void Linking.openURL(TERMS_URL)}
             >
               Terms of Service
             </Text>{" "}
             and{" "}
             <Text
-              style={{ fontFamily: SERIF_BOLD, color: BRONZE}}
+              style={{ fontFamily: SERIF_BOLD, color: GOLD }}
               onPress={() => void Linking.openURL(PRIVACY_URL)}
             >
               Privacy Policy
