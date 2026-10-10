@@ -92,6 +92,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - The language switcher lives only in the footer's bottom bar, never in the nav (owner's call): any public page needs the footer so it has one.
 - Pop-up menus stay light. The brand red is too faint on ink for text, so put it on a cream pill.
 - Sign-in pages and the signed-in portals keep the light style for now.
+- The vendor app's welcome screen is dark too (owner's call, Oct 2026): the web home hero photo fills the screen under the same two scrims (top-to-bottom shade, edge vignette, via `react-native-svg`), with cream text, champagne accents and see-through cards. The app's other sign-in screens stay light.
 
 **Deliberately different (don't "fix")**
 
