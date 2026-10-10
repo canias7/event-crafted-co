@@ -1,88 +1,58 @@
-// Small password strength meter. Shows a 4-segment bar that fills
-// based on basic heuristics (length + character-class diversity)
-// and a one-word label below. Doesn't BLOCK anything — purely
-// informational. Server-side rejection (e.g. Supabase's leaked-
-// password HIBP check) still gates the actual save if enabled in
-// the dashboard.
+// Password strength bar for sign-up and password reset. Four segments, one
+// per rule Supabase Auth enforces (8+ characters, upper- and lowercase
+// letters, a number, a symbol), champagne when met; the line under it names
+// what's still missing. Same rules as the apps (lib/password.ts there).
+// Supabase also rejects passwords found in data breaches; that check can
+// only run on the server, at sign-up.
 
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-interface Props {
-  password: string;
-}
-
-interface Scored {
-  level: 0 | 1 | 2 | 3 | 4;
-  /** Key under password.strength in the auth namespace. */
-  labelKey: string;
-  color: string;
-}
-
-function score(pw: string): Scored {
-  if (!pw)
-    return { level: 0, labelKey: "", color: "transparent" };
-
-  let s = 0;
-  // Length contributes most.
-  if (pw.length >= 8) s += 1;
-  if (pw.length >= 12) s += 1;
-  if (pw.length >= 16) s += 1;
-  // Character-class diversity.
-  let classes = 0;
-  if (/[a-z]/.test(pw)) classes += 1;
-  if (/[A-Z]/.test(pw)) classes += 1;
-  if (/[0-9]/.test(pw)) classes += 1;
-  if (/[^A-Za-z0-9]/.test(pw)) classes += 1;
-  if (classes >= 3) s += 1;
-  if (classes === 4) s += 1;
-  // Penalize repeats / sequences.
-  if (/(.)\1\1/.test(pw)) s -= 1;
-  if (/(?:0123|1234|2345|3456|4567|5678|6789|abcd|qwer|asdf)/i.test(pw))
-    s -= 1;
-
-  const level = Math.max(0, Math.min(4, s)) as Scored["level"];
-  const labelKeys = ["too_short", "weak", "fair", "strong", "very_strong"];
-  const colors = [
-    "#dc2626", // red — too short
-    "#dc2626", // red — weak
-    "#f59e0b", // amber — fair
-    "#16a34a", // green — strong
-    "#16a34a", // green — very strong
+export function passwordChecks(pw: string): boolean[] {
+  return [
+    pw.length >= 8,
+    /[a-z]/.test(pw) && /[A-Z]/.test(pw),
+    /[0-9]/.test(pw),
+    /[^A-Za-z0-9]/.test(pw),
   ];
-  return { level, labelKey: labelKeys[level], color: colors[level] };
 }
 
-export function PasswordStrengthMeter({ password }: Props) {
-  const { t } = useTranslation("auth");
-  const { level, labelKey, color } = useMemo(() => score(password), [password]);
+const RULE_KEYS = ["length", "case", "number", "symbol"] as const;
 
+/** Key (under password.rules) of the first unmet rule, or null when all pass. */
+export function passwordProblemKey(pw: string): (typeof RULE_KEYS)[number] | null {
+  const i = passwordChecks(pw).findIndex((ok) => !ok);
+  return i === -1 ? null : RULE_KEYS[i];
+}
+
+export function PasswordStrengthMeter({ password }: { password: string }) {
+  const { t } = useTranslation("auth");
   if (!password) return null;
+  const met = passwordChecks(password).filter(Boolean).length;
+  const problem = passwordProblemKey(password);
 
   return (
-    <div className="mt-1.5" aria-live="polite">
-      <div className="flex items-center gap-1">
+    <div className="mt-2" aria-live="polite">
+      <div
+        className="flex items-center gap-1"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={4}
+        aria-valuenow={met}
+        aria-label={t("password.rules.meter_label")}
+      >
         {[0, 1, 2, 3].map((i) => (
           <span
             key={i}
-            className="flex-1 h-1 rounded-full transition-colors"
-            style={{
-              background: i < level ? color : "rgba(0,0,0,0.08)",
-            }}
+            className={`h-1 flex-1 rounded-full transition-colors ${i < met ? "bg-gold" : "bg-muted"}`}
             aria-hidden
           />
         ))}
       </div>
-      <p
-        className="mt-1"
-        style={{
-          fontSize: "11px",
-          color,
-          fontWeight: 500,
-        }}
-      >
-        {t(`password.strength.${labelKey}`)}
-      </p>
+      {problem ? (
+        <p className="mt-1.5 text-[13px] text-accent">{t(`password.rules.${problem}`)}</p>
+      ) : (
+        <p className="mt-1.5 text-[13px] font-bold text-foreground">{t("password.rules.ok")}</p>
+      )}
     </div>
   );
 }

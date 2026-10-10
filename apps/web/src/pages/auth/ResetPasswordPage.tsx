@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
-import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { PasswordStrengthMeter, passwordProblemKey } from "@/components/auth/PasswordStrengthMeter";
 import { authErrorText } from "@/components/auth/authErrors";
 
 const APP_SCHEMES: Record<string, string> = {
@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
   const passwordMismatch =
     confirm.length > 0 && password.length >= 8 && password !== confirm;
   const formValid =
-    password.length >= 8 && confirm.length >= 8 && password === confirm;
+    passwordProblemKey(password) === null && password === confirm;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
