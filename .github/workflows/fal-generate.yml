@@ -53,22 +53,33 @@ jobs:
           jq '.input' fal/request.json > "$RUNNER_TEMP/input.json"
           echo "Model: $MODEL"
 
-          SUBMIT=$(curl -fsS -X POST "https://queue.fal.run/$MODEL" \
+          # Report fal's own error text as an annotation (readable without
+          # the raw log), never the key.
+          CODE=$(curl -sS -o "$RUNNER_TEMP/submit.json" -w '%{http_code}' -X POST "https://queue.fal.run/$MODEL" \
             -H "Authorization: Key $FAL_KEY" -H "Content-Type: application/json" \
             --data @"$RUNNER_TEMP/input.json")
+          if [ "$CODE" -ge 300 ]; then
+            echo "::error::fal rejected the request (HTTP $CODE): $(head -c 900 "$RUNNER_TEMP/submit.json" | tr '\n' ' ')"
+            exit 1
+          fi
+          SUBMIT=$(cat "$RUNNER_TEMP/submit.json")
           STATUS_URL=$(echo "$SUBMIT" | jq -r '.status_url')
           RESPONSE_URL=$(echo "$SUBMIT" | jq -r '.response_url')
           echo "Request: $(echo "$SUBMIT" | jq -r '.request_id')"
 
           for i in $(seq 1 220); do
-            STATUS=$(curl -fsS "$STATUS_URL" -H "Authorization: Key $FAL_KEY" | jq -r '.status')
+            STATUS=$(curl -sS "$STATUS_URL" -H "Authorization: Key $FAL_KEY" | jq -r '.status // "UNKNOWN"')
             echo "[$i] $STATUS"
             [ "$STATUS" = "COMPLETED" ] && break
             sleep 10
           done
           [ "$STATUS" = "COMPLETED" ] || { echo "::error::fal did not finish in time ($STATUS)"; exit 1; }
 
-          curl -fsS "$RESPONSE_URL" -H "Authorization: Key $FAL_KEY" > "$OUT/result.json"
+          curl -sS "$RESPONSE_URL" -H "Authorization: Key $FAL_KEY" > "$OUT/result.json"
+          if jq -e '.detail' "$OUT/result.json" >/dev/null 2>&1; then
+            echo "::error::fal failed: $(head -c 900 "$OUT/result.json" | tr '\n' ' ')"
+            exit 1
+          fi
           # Download every media file the result links to.
           n=0
           for url in $(jq -r '.. | .url? // empty' "$OUT/result.json" | sort -u); do
