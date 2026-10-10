@@ -24,7 +24,7 @@ import tileCatering from "@/assets/photos/16.webp?as=picture";
 import tileBeauty from "@/assets/photos/19.webp?as=picture";
 import tilePlanning from "@/assets/photos/24.webp?as=picture";
 import tileDecor from "@/assets/photos/03.webp?as=picture";
-import tileEntertainment from "@/assets/photos/32.webp?as=picture";
+import tileEntertainment from "@/assets/photos/63.webp?as=picture";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
