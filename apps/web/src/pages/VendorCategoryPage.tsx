@@ -25,7 +25,7 @@ import mediaPhoto from "@/assets/photos/51.webp?as=picture";
 import decorPhoto from "@/assets/photos/28.webp?as=picture";
 import rentalsPhoto from "@/assets/photos/60.webp?as=picture";
 import experiencesPhoto from "@/assets/photos/62.webp?as=picture";
-import corporatePhoto from "@/assets/photos/23.webp?as=picture";
+import corporatePhoto from "@/assets/photos/65.webp?as=picture";
 
 interface CategoryConfig {
   /** Group name — also the schema lookup key in categoryAttributes. */
