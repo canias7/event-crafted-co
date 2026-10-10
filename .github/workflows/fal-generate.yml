@@ -1,0 +1,96 @@
+name: fal Generate
+
+# Generates images or video with fal.ai using the FAL_KEY repo secret, which
+# only a workflow run can read. A Claude session (which has no secrets)
+# drives it the same way it drives OTA updates: push a branch named
+# `trigger-fal/<tag>` that contains `fal/request.json`; this workflow sends
+# the request to fal's queue, waits for the result, downloads the media and
+# commits it back to that same branch under `fal/out/<tag>/`, where the
+# session fetches it.
+#
+# fal/request.json:
+#   {
+#     "model": "fal-ai/<model id>",        // fal endpoint, e.g. a text-to-video model
+#     "input": { "prompt": "...", ... }    // passed to the model as-is
+#   }
+#
+# Secret: FAL_KEY (FAL_API_KEY is accepted too).
+# The trigger branches can be deleted after use (the owner deletes them;
+# Claude's git credential can't).
+
+on:
+  push:
+    branches: ["trigger-fal/**"]
+    paths: ["fal/request.json"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fal-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send the request to fal and wait for it
+        env:
+          FAL_KEY: ${{ secrets.FAL_KEY || secrets.FAL_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FAL_KEY:-}" ]; then
+            echo "::error::No FAL_KEY (or FAL_API_KEY) repo secret is set."
+            exit 1
+          fi
+          TAG="${GITHUB_REF_NAME#trigger-fal/}"
+          OUT="fal/out/$TAG"
+          mkdir -p "$OUT"
+          MODEL=$(jq -r '.model' fal/request.json)
+          jq '.input' fal/request.json > "$RUNNER_TEMP/input.json"
+          echo "Model: $MODEL"
+
+          SUBMIT=$(curl -fsS -X POST "https://queue.fal.run/$MODEL" \
+            -H "Authorization: Key $FAL_KEY" -H "Content-Type: application/json" \
+            --data @"$RUNNER_TEMP/input.json")
+          STATUS_URL=$(echo "$SUBMIT" | jq -r '.status_url')
+          RESPONSE_URL=$(echo "$SUBMIT" | jq -r '.response_url')
+          echo "Request: $(echo "$SUBMIT" | jq -r '.request_id')"
+
+          for i in $(seq 1 220); do
+            STATUS=$(curl -fsS "$STATUS_URL" -H "Authorization: Key $FAL_KEY" | jq -r '.status')
+            echo "[$i] $STATUS"
+            [ "$STATUS" = "COMPLETED" ] && break
+            sleep 10
+          done
+          [ "$STATUS" = "COMPLETED" ] || { echo "::error::fal did not finish in time ($STATUS)"; exit 1; }
+
+          curl -fsS "$RESPONSE_URL" -H "Authorization: Key $FAL_KEY" > "$OUT/result.json"
+          # Download every media file the result links to.
+          n=0
+          for url in $(jq -r '.. | .url? // empty' "$OUT/result.json" | sort -u); do
+            n=$((n+1))
+            name=$(basename "${url%%\?*}")
+            curl -fsSL "$url" -o "$OUT/$n-$name"
+          done
+          echo "Downloaded $n file(s)"
+          ls -la "$OUT"
+          {
+            echo "## fal result ($MODEL)"
+            echo '```json'
+            head -c 4000 "$OUT/result.json"
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the result to the trigger branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fal/out
+          git commit -m "fal result for ${GITHUB_REF_NAME}" || exit 0
+          git push origin "HEAD:${GITHUB_REF_NAME}"

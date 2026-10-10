@@ -23,6 +23,7 @@ What Claude does NOT have direct shell access to:
 - **`EXPO_TOKEN`** — lives only as a GitHub Actions repo secret, readable by the `mobile-ota.yml` workflow when it runs. Not in the shell env (deliberately — same model as Vercel deploy tokens). To OTA mobile apps, push a `trigger-ota/*` branch and the workflow uses the secret. Do not loop "where is the token" — it's NOT in `~/.expo`, `~/.config/eas-cli*`, env vars, or any dotfile. The trigger-branch CI dance IS the access path.
 - **`eas login` session** — sandbox can't `eas login`. The CLI is installed but unauth'd. Use the trigger-branch path below.
 - **`RESEND_API_KEY`** — Supabase Edge Functions secret, set via Supabase dashboard. Not in shell. Operator action to set.
+- **`FAL_KEY`** (fal.ai, image/video generation) — GitHub Actions repo secret, not in the shell. To generate: push a `trigger-fal/<tag>` branch with `fal/request.json` (`{"model": "fal-ai/...", "input": {...}}`); `.github/workflows/fal-generate.yml` calls fal, downloads the media and commits it back to that branch under `fal/out/<tag>/`. Fetch the branch to get the files. Generations cost money: only run what the owner asked for.
 
 ## Workflow preferences
 
