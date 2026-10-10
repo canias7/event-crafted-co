@@ -38,6 +38,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { passwordProblem } from "@/lib/password";
+import { PasswordMeter } from "@/components/PasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
@@ -428,11 +429,7 @@ function AccountStep(p: AccountStepProps) {
               </Text>
             </TouchableOpacity>
           </View>
-          {p.password.length > 0 && passwordProblem(p.password) ? (
-            <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 13, marginTop: 6 }}>
-              {passwordProblem(p.password)}
-            </Text>
-          ) : null}
+          <PasswordMeter password={p.password} />
         </View>
 
         {p.error ? <Text style={errorText}>{p.error}</Text> : null}

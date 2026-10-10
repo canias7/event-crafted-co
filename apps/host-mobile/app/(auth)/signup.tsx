@@ -27,6 +27,7 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { passwordProblem } from "@/lib/password";
+import { PasswordMeter } from "@/components/PasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
@@ -284,11 +285,7 @@ export default function SignupScreen() {
                       </Text>
                     </Pressable>
                   </View>
-                  {password.length > 0 && passwordProblem(password) ? (
-                    <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 13, marginTop: 6 }}>
-                      {passwordProblem(password)}
-                    </Text>
-                  ) : null}
+                  <PasswordMeter password={password} />
                 </View>
               </>
             ) : (
