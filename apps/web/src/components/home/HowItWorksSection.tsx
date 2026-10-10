@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { CalendarCheck, Heart, Search, type LucideIcon } from "lucide-react";
+import { CalendarCheck, CheckCheck, Heart, Paperclip, Search, Send, Smile, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Picture } from "@/components/shared/Picture";
+import { intlLocale } from "@/lib/intlLocale";
 import { HomeSectionIntro, HomeSectionShell } from "./HomeSectionShell";
 import floralsImg from "@/assets/photos/29.webp?as=picture";
 import foodImg from "@/assets/photos/18.webp?as=picture";
@@ -27,8 +28,9 @@ function ExploreVisual() {
   );
 }
 
-// Who sends each line of the Connect chat: the host's messages are outgoing
-// (ink, right), the vendor's replies incoming (cream, left).
+// Who sends each line of the Connect chat, seen from the host's side as in
+// the real inbox: the host's own messages on the right, the vendor's on the
+// left.
 const CHAT: { key: string; from: "host" | "vendor" }[] = [
   { key: "question", from: "host" },
   { key: "answer", from: "vendor" },
@@ -37,24 +39,57 @@ const CHAT: { key: string; from: "host" | "vendor" }[] = [
   { key: "thanks", from: "host" },
 ];
 
-const BUBBLE = "max-w-[85%] rounded-2xl px-3 py-2 shadow-soft";
-const HOST_BUBBLE = `${BUBBLE} self-end rounded-br-md border border-white/20 bg-[#14161a] text-[#f4f1ea]`;
-const VENDOR_BUBBLE = `${BUBBLE} self-start rounded-bl-md bg-[#f4f1ea] text-[#14161a]`;
+// Same bubbles as the inquiry thread (HostInquiryDetailPage): the host's
+// in cream with a hairline and a squared bottom-right corner, the vendor's
+// on the muted surface with a squared bottom-left corner.
+const HOST_BUBBLE = "self-end rounded-2xl rounded-br-sm border border-border bg-card";
+const VENDOR_BUBBLE = "rounded-2xl rounded-bl-sm border border-transparent bg-muted";
 const POP = "animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-300 ease-out";
+const TYPE_MS = 38;
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// The chat plays itself: "typing" dots, then the next message pops in, until
-// the thread is done; it holds, clears and starts over. It only runs while
-// it's on screen, and shows the whole thread, still, to visitors who turn
-// motion off.
-function ConnectVisual({ lines }: { lines: string[] }) {
+function VendorAvatar({ initial, size }: { initial: string; size: "sm" | "md" }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold text-foreground ${
+        size === "md" ? "h-8 w-8 text-[12px]" : "h-5 w-5 text-[9px]"
+      }`}
+      style={{ background: "rgba(0,0,0,0.08)" }}
+    >
+      {initial}
+    </span>
+  );
+}
+
+// A miniature of Vendora's inbox that plays a host–vendor conversation: the
+// thread header, the host's messages typed into the message bar and sent,
+// the vendor's replies after the "typing" dots, and "Read" at the end. It
+// holds, clears and starts over; it runs only while on screen, and shows the
+// finished thread, still, to visitors who turn motion off.
+function ConnectVisual({
+  lines,
+  vendorName,
+  subtitle,
+  placeholder,
+  readLabel,
+}: {
+  lines: string[];
+  vendorName: string;
+  subtitle: string;
+  placeholder: string;
+  readLabel: string;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [still] = useState(prefersReducedMotion);
   const [onScreen, setOnScreen] = useState(false);
-  const [shown, setShown] = useState(still ? lines.length : 1);
-  const [typing, setTyping] = useState(false);
+  // Messages sent so far; the next one is CHAT[sent].
+  const [sent, setSent] = useState(still ? lines.length : 1);
+  // How much of the next host message is in the message bar.
+  const [typed, setTyped] = useState(0);
+  const [vendorTyping, setVendorTyping] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
@@ -67,26 +102,41 @@ function ConnectVisual({ lines }: { lines: string[] }) {
 
   useEffect(() => {
     if (still || !onScreen) return;
+    const next = CHAT[sent];
     let timer: number;
     if (clearing) {
       timer = window.setTimeout(() => {
-        setShown(0);
+        setSent(0);
+        setTyped(0);
         setClearing(false);
       }, 450);
-    } else if (typing) {
-      timer = window.setTimeout(() => {
-        setTyping(false);
-        setShown((n) => n + 1);
-      }, 1100);
-    } else if (shown < lines.length) {
-      timer = window.setTimeout(() => setTyping(true), shown === 0 ? 500 : 900);
-    } else {
+    } else if (!next) {
       timer = window.setTimeout(() => setClearing(true), 4500);
+    } else if (next.from === "host") {
+      const text = lines[sent];
+      timer =
+        typed < text.length
+          ? window.setTimeout(() => setTyped((n) => n + 1), typed === 0 ? 700 : TYPE_MS)
+          : window.setTimeout(() => {
+              setSent((n) => n + 1);
+              setTyped(0);
+            }, 350);
+    } else if (!vendorTyping) {
+      timer = window.setTimeout(() => setVendorTyping(true), 600);
+    } else {
+      timer = window.setTimeout(() => {
+        setVendorTyping(false);
+        setSent((n) => n + 1);
+      }, 1400);
     }
     return () => window.clearTimeout(timer);
-  }, [still, onScreen, shown, typing, clearing, lines.length]);
+  }, [still, onScreen, sent, typed, vendorTyping, clearing, lines]);
 
-  const next = CHAT[shown];
+  const next = CHAT[sent];
+  const draft = next?.from === "host" ? lines[sent].slice(0, typed) : "";
+  const initial = vendorName.charAt(0).toUpperCase();
+  const done = sent >= lines.length;
+
   return (
     <>
       <span
@@ -94,31 +144,85 @@ function ConnectVisual({ lines }: { lines: string[] }) {
         className="absolute inset-0 bg-white/[0.03]"
         style={{ backgroundImage: "radial-gradient(120% 90% at 85% 100%, rgba(201,168,106,0.16), transparent 65%)" }}
       />
-      {/* Bottom-anchored, so each new message pushes the older ones up and
-          out under the step number; kept above the step's badge, which
-          overlaps the card's bottom edge. */}
+      {/* The inbox window, light as in the portals, below the step number
+          and above the step's badge, which overlaps the card's bottom edge. */}
       <div
         ref={box}
         aria-hidden
-        className={`absolute inset-x-3 bottom-9 top-12 flex flex-col justify-end gap-1.5 overflow-hidden text-[12px] leading-snug transition-opacity duration-300 sm:top-14 sm:text-[11px] lg:inset-x-4 lg:text-[12.5px] md:top-[4.5rem] ${clearing ? "opacity-0" : "opacity-100"}`}
-        style={{ maskImage: "linear-gradient(to bottom, transparent 0, #000 44px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, #000 44px)" }}
+        className="absolute inset-x-3 bottom-9 top-14 z-10 flex flex-col overflow-hidden rounded-xl bg-background text-foreground shadow-soft lg:inset-x-4 md:top-[4.5rem]"
       >
-        {CHAT.slice(0, shown).map((line, i) => (
-          <span key={line.key} className={`${line.from === "host" ? HOST_BUBBLE : VENDOR_BUBBLE} ${still ? "" : POP}`}>
-            {lines[i]}
+        <div
+          className="flex shrink-0 items-center gap-2 px-3 py-2"
+          style={{ background: "rgba(255,255,255,0.85)", borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
+        >
+          <span className="relative shrink-0">
+            <VendorAvatar initial={initial} size="md" />
+            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
           </span>
-        ))}
-        {typing && next && (
-          <span className={`${next.from === "host" ? HOST_BUBBLE : VENDOR_BUBBLE} ${POP} flex h-8 shrink-0 items-center gap-1`}>
-            {[0, 150, 300].map((delay) => (
-              <span
-                key={delay}
-                className={`h-1.5 w-1.5 animate-bounce rounded-full ${next.from === "host" ? "bg-[#f4f1ea]/70" : "bg-[#14161a]/50"}`}
-                style={{ animationDelay: `${delay}ms` }}
-              />
-            ))}
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-[12px] font-bold">{vendorName}</span>
+            <span className="block truncate text-[10px]">{subtitle}</span>
           </span>
-        )}
+        </div>
+
+        <div
+          className={`flex min-h-0 flex-1 flex-col justify-end gap-1 overflow-hidden px-3 py-2 text-[11.5px] leading-snug transition-opacity duration-300 ${
+            clearing ? "opacity-0" : "opacity-100"
+          }`}
+          style={{ maskImage: "linear-gradient(to bottom, transparent 0, #000 20px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, #000 20px)" }}
+        >
+          {CHAT.slice(0, sent).map((line, i) => {
+            const tail = CHAT[i + 1]?.from !== line.from;
+            return line.from === "host" ? (
+              <span key={line.key} className={`max-w-[85%] px-3 py-1.5 ${HOST_BUBBLE} ${still ? "" : POP}`}>
+                {lines[i]}
+              </span>
+            ) : (
+              <span key={line.key} className={`flex items-end gap-1.5 ${still ? "" : POP}`}>
+                {tail ? <VendorAvatar initial={initial} size="sm" /> : <span className="w-5 shrink-0" />}
+                <span className={`max-w-[85%] px-3 py-1.5 ${VENDOR_BUBBLE}`}>{lines[i]}</span>
+              </span>
+            );
+          })}
+          {vendorTyping ? (
+            <span className={`flex shrink-0 items-end gap-1.5 ${POP}`}>
+              <span className="w-5 shrink-0" />
+              <span className={`inline-flex items-end gap-1 px-3 py-2 ${VENDOR_BUBBLE}`}>
+                {[0, 0.2, 0.4].map((delay) => (
+                  <span
+                    key={delay}
+                    className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/40"
+                    style={{ animationDelay: `${delay}s` }}
+                  />
+                ))}
+              </span>
+            </span>
+          ) : null}
+          {done ? (
+            <span className={`flex shrink-0 items-center justify-end gap-1 pr-1 text-[10px] ${still ? "" : POP}`}>
+              <CheckCheck className="h-3 w-3" />
+              {readLabel}
+            </span>
+          ) : null}
+        </div>
+
+        {/* The message bar: the host's next message is typed here, then sent. */}
+        <div className="flex shrink-0 items-center gap-1 px-2 pb-2">
+          <span className="flex min-w-0 flex-1 items-center gap-1 rounded-3xl border border-border bg-background py-1 pl-2 pr-1 shadow-soft">
+            <Paperclip className="h-3.5 w-3.5 shrink-0 text-foreground/50" />
+            <Smile className="h-3.5 w-3.5 shrink-0 text-foreground/50" />
+            <span className={`min-w-0 flex-1 truncate px-1 text-[11px] ${draft ? "text-foreground" : "text-placeholder"}`}>
+              {draft || placeholder}
+            </span>
+            <span
+              className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                draft ? "bg-foreground text-background" : "bg-muted text-foreground/50"
+              }`}
+            >
+              <Send className="h-3 w-3" />
+            </span>
+          </span>
+        </div>
       </div>
     </>
   );
@@ -134,7 +238,17 @@ export function HowItWorksSection() {
   const { t } = useTranslation("homeSections");
   const visuals: Record<(typeof STEPS)[number]["key"], ReactNode> = {
     explore: <ExploreVisual />,
-    connect: <ConnectVisual lines={CHAT.map((line) => t(`howItWorks.chat.${line.key}`))} />,
+    connect: (
+      <ConnectVisual
+        lines={CHAT.map((line) => t(`howItWorks.chat.${line.key}`))}
+        vendorName={t("howItWorks.chat.vendorName")}
+        subtitle={t("howItWorks.chat.subtitle")}
+        placeholder={t("howItWorks.chat.placeholder", { name: t("howItWorks.chat.vendorName") })}
+        readLabel={t("howItWorks.chat.read", {
+          time: new Date(2026, 5, 14, 19, 5).toLocaleTimeString(intlLocale(), { hour: "numeric", minute: "2-digit" }),
+        })}
+      />
+    ),
     celebrate: (
       <Picture source={celebrateImg} alt="" sizes={SIZES} className={`${PHOTO} object-[55%_35%]`} />
     ),
@@ -159,7 +273,12 @@ export function HowItWorksSection() {
           const Icon = step.icon;
           return (
             <li key={step.key}>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/15 min-[360px]:aspect-[16/10] sm:aspect-[4/5]">
+              <div
+                className={`relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/15 sm:aspect-[4/5] ${
+                  // The inbox needs the height; the photo cards go wider on phones.
+                  step.key === "connect" ? "" : "min-[360px]:aspect-[16/10]"
+                }`}
+              >
                 {visuals[step.key]}
                 <span
                   aria-hidden
