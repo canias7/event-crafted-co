@@ -41,6 +41,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 // Same palette as welcome / signup / login.
 const PAGE = "#f4f1ea";
@@ -88,6 +89,7 @@ function one(v: unknown): string | null {
 }
 
 export default function ResetPasswordScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [state, setState] = useState<State>("loading");
   const [password, setPassword] = useState("");
@@ -283,9 +285,10 @@ export default function ResetPasswordScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
         <ScrollView
+          {...keyboard.scrollProps}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingTop: 16,

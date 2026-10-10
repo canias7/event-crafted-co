@@ -8,6 +8,7 @@
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
   Pressable,
   Text,
@@ -19,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 const CREAM = "#f4f1ea";
 const INK = "#14161a";
@@ -35,6 +37,7 @@ const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function ForgotPasswordScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -69,144 +72,150 @@ export default function ForgotPasswordScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
-        <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Feather name="chevron-left" size={26} color={INK} />
-          </Pressable>
-        </View>
+        <ScrollView
+          {...keyboard.scrollProps}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
+            <Pressable onPress={() => router.back()} hitSlop={8}>
+              <Feather name="chevron-left" size={26} color={INK} />
+            </Pressable>
+          </View>
 
-        {!sent ? (
-          <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
-            <Text
-              style={{
-                fontFamily: SERIF_BOLD,
-                fontSize: 36,
-                color: INK,
-                letterSpacing: -1,
-              }}
-            >
-              Forgot your password?
-            </Text>
-            <Text
-              style={{ fontFamily: SERIF,
-                marginTop: 10,
-                color: INK_DIM,
-                fontSize: 15,
-                lineHeight: 22,
-              }}
-            >
-              Enter your email and we'll send a reset link. Tap it on
-              this device to pick a new password.
-            </Text>
-
-            <View style={{ marginTop: 24 }}>
+          {!sent ? (
+            <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
               <Text
-                style={{ fontFamily: SERIF_BOLD,
-                  color: INK_DIM,
-                  fontSize: 12,
-                  letterSpacing: 0.8,
+                style={{
+                  fontFamily: SERIF_BOLD,
+                  fontSize: 36,
+                  color: INK,
+                  letterSpacing: -1,
                 }}
               >
-                EMAIL
+                Forgot your password?
               </Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-                returnKeyType="send"
-                onSubmitEditing={onSubmit}
-                placeholder="you@example.com"
-                placeholderTextColor={PLACEHOLDER}
+              <Text
                 style={{ fontFamily: SERIF,
-                  marginTop: 6,
-                  backgroundColor: INPUT_BG,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: INK_BORDER,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  color: INK,
-                  fontSize: 16,
+                  marginTop: 10,
+                  color: INK_DIM,
+                  fontSize: 15,
+                  lineHeight: 22,
                 }}
-              />
-            </View>
+              >
+                Enter your email and we'll send a reset link. Tap it on
+                this device to pick a new password.
+              </Text>
 
-            {error ? (
+              <View style={{ marginTop: 24 }}>
+                <Text
+                  style={{ fontFamily: SERIF_BOLD,
+                    color: INK_DIM,
+                    fontSize: 12,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  EMAIL
+                </Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  returnKeyType="send"
+                  onSubmitEditing={onSubmit}
+                  placeholder="you@example.com"
+                  placeholderTextColor={PLACEHOLDER}
+                  style={{ fontFamily: SERIF,
+                    marginTop: 6,
+                    backgroundColor: INPUT_BG,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: INK_BORDER,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    color: INK,
+                    fontSize: 16,
+                  }}
+                />
+              </View>
+
+              {error ? (
+                <Text
+                  style={{ fontFamily: SERIF,
+                    marginTop: 12,
+                    color: ERROR,
+                    fontSize: 13,
+                  }}
+                >
+                  {error}
+                </Text>
+              ) : null}
+
+              <Pressable
+                onPress={onSubmit}
+                disabled={submitting || !email.trim()}
+                style={{
+                  marginTop: 20,
+                  backgroundColor: submitting || !email.trim() ? GOLD_MUTED : GOLD,
+                  borderRadius: 999,
+                  height: 52,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                  {submitting ? "Sending…" : "Send reset link"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
+              <Text
+                style={{
+                  fontFamily: SERIF_BOLD,
+                  fontSize: 36,
+                  color: INK,
+                  letterSpacing: -1,
+                }}
+              >
+                Check your email
+              </Text>
               <Text
                 style={{ fontFamily: SERIF,
                   marginTop: 12,
-                  color: ERROR,
-                  fontSize: 13,
+                  fontSize: 15,
+                  color: INK_DIM,
+                  lineHeight: 22,
                 }}
               >
-                {error}
+                If an account exists for{" "}
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{email}</Text>,
+                you'll get a reset link within a minute. Open it on this
+                device to set a new password.
               </Text>
-            ) : null}
 
-            <Pressable
-              onPress={onSubmit}
-              disabled={submitting || !email.trim()}
-              style={{
-                marginTop: 20,
-                backgroundColor: submitting || !email.trim() ? GOLD_MUTED : GOLD,
-                borderRadius: 999,
-                height: 52,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
-                {submitting ? "Sending…" : "Send reset link"}
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
-            <Text
-              style={{
-                fontFamily: SERIF_BOLD,
-                fontSize: 36,
-                color: INK,
-                letterSpacing: -1,
-              }}
-            >
-              Check your email
-            </Text>
-            <Text
-              style={{ fontFamily: SERIF,
-                marginTop: 12,
-                fontSize: 15,
-                color: INK_DIM,
-                lineHeight: 22,
-              }}
-            >
-              If an account exists for{" "}
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{email}</Text>,
-              you'll get a reset link within a minute. Open it on this
-              device to set a new password.
-            </Text>
-
-            <Pressable
-              onPress={() => router.replace("/(auth)/login")}
-              style={{
-                marginTop: 24,
-                backgroundColor: GOLD,
-                borderRadius: 999,
-                height: 52,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
-                Back to sign in
-              </Text>
-            </Pressable>
-          </View>
-        )}
+              <Pressable
+                onPress={() => router.replace("/(auth)/login")}
+                style={{
+                  marginTop: 24,
+                  backgroundColor: GOLD,
+                  borderRadius: 999,
+                  height: 52,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                  Back to sign in
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

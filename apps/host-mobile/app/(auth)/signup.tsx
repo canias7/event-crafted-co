@@ -17,6 +17,7 @@
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
   Pressable,
   Text,
@@ -27,6 +28,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { passwordProblem } from "@/lib/password";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 const CREAM = "#f4f1ea";
 const INK = "#14161a";
@@ -68,6 +70,7 @@ const REASON_COPY: Record<string, string> = {
 };
 
 export default function SignupScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("form");
   const [email, setEmail] = useState("");
@@ -169,185 +172,191 @@ export default function SignupScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
+        behavior="padding"
+        style={{ flex: 1 }}
       >
-        <Pressable
-          onPress={() => {
-            if (stage === "code") {
-              setStage("form");
-              setCode("");
-              setError(null);
-              setInfo(null);
-            } else {
-              router.back();
-            }
-          }}
-          hitSlop={12}
-          style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+        <ScrollView
+          {...keyboard.scrollProps}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
-            ← Back
-          </Text>
-        </Pressable>
-
-        <View style={{ marginTop: 24 }}>
-          <Text
-            style={{
-              fontFamily: SERIF_BOLD,
-              fontSize: 36,
-              color: INK,
-              letterSpacing: -1,
-            }}
-          >
-            {stage === "form" ? "Plan your event" : "Enter your code"}
-          </Text>
-          <Text
-            style={{
-              marginTop: 8,
-              fontSize: 15,
-              color: INK_DIM,
-              fontFamily: SERIF_ITALIC,
-            }}
-          >
-            {stage === "form"
-              ? "Create an account to message vendors and book events."
-              : `We sent a 6-digit code to ${email.trim().toLowerCase()}.`}
-          </Text>
-        </View>
-
-        <View style={{ marginTop: 32, gap: 16 }}>
-          {stage === "form" ? (
-            <>
-              <Field
-                label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoComplete="email"
-                autoCapitalize="none"
-              />
-              <View>
-                <Text
-                  style={{ fontFamily: SERIF_BOLD,
-                    marginBottom: 6,
-                    fontSize: 12,
-                    color: INK_DIM,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  PASSWORD
-                </Text>
-                <View style={{ position: "relative" }}>
-                  <TextInput
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="8+ characters, Aa, 1 and !"
-                    placeholderTextColor={PLACEHOLDER}
-                    style={{ fontFamily: SERIF,
-                      backgroundColor: INPUT_BG,
-                      borderColor: INK_BORDER,
-                      borderWidth: 1,
-                      borderRadius: 12,
-                      paddingHorizontal: 16,
-                      paddingVertical: 16,
-                      paddingRight: 64,
-                      fontSize: 16,
-                      color: INK,
-                    }}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    hitSlop={8}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: 0,
-                      bottom: 0,
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                      style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}
-                    >
-                      {showPassword ? "Hide" : "Show"}
-                    </Text>
-                  </Pressable>
-                </View>
-                {password.length > 0 && passwordProblem(password) ? (
-                  <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 13, marginTop: 6 }}>
-                    {passwordProblem(password)}
-                  </Text>
-                ) : null}
-              </View>
-            </>
-          ) : (
-            <Field
-              label="Code"
-              placeholder="123456"
-              value={code}
-              onChangeText={(v) => setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-              keyboardType="number-pad"
-              autoCapitalize="none"
-            />
-          )}
-
-          {error ? (
-            <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text>
-          ) : null}
-          {info && !error ? (
-            <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14 }}>{info}</Text>
-          ) : null}
-
           <Pressable
-            onPress={stage === "form" ? sendCode : verifyAndSignIn}
-            disabled={
-              submitting || (stage === "form" ? !formValid : !codeValid)
-            }
-            style={{
-              marginTop: 8,
-              backgroundColor: submitting || (stage === "form" ? !formValid : !codeValid) ? GOLD_MUTED : GOLD,
-              borderRadius: 999,
-              height: 52,
-              alignItems: "center",
-              justifyContent: "center",
+            onPress={() => {
+              if (stage === "code") {
+                setStage("form");
+                setCode("");
+                setError(null);
+                setInfo(null);
+              } else {
+                router.back();
+              }
             }}
+            hitSlop={12}
+            style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
-              {submitting
-                ? stage === "form"
-                  ? "Sending…"
-                  : "Verifying…"
-                : stage === "form"
-                  ? "Sign up"
-                  : "Verify"}
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
+              ← Back
             </Text>
           </Pressable>
 
-          {stage === "code" ? (
-            <Pressable
-              onPress={resend}
-              disabled={submitting}
-              style={{ alignItems: "center", paddingVertical: 8 }}
+          <View style={{ marginTop: 24 }}>
+            <Text
+              style={{
+                fontFamily: SERIF_BOLD,
+                fontSize: 36,
+                color: INK,
+                letterSpacing: -1,
+              }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14,}}>
-                Resend code
+              {stage === "form" ? "Plan your event" : "Enter your code"}
+            </Text>
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 15,
+                color: INK_DIM,
+                fontFamily: SERIF_ITALIC,
+              }}
+            >
+              {stage === "form"
+                ? "Create an account to message vendors and book events."
+                : `We sent a 6-digit code to ${email.trim().toLowerCase()}.`}
+            </Text>
+          </View>
+
+          <View style={{ marginTop: 32, gap: 16 }}>
+            {stage === "form" ? (
+              <>
+                <Field
+                  label="Email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                />
+                <View>
+                  <Text
+                    style={{ fontFamily: SERIF_BOLD,
+                      marginBottom: 6,
+                      fontSize: 12,
+                      color: INK_DIM,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    PASSWORD
+                  </Text>
+                  <View style={{ position: "relative" }}>
+                    <TextInput
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="8+ characters, Aa, 1 and !"
+                      placeholderTextColor={PLACEHOLDER}
+                      style={{ fontFamily: SERIF,
+                        backgroundColor: INPUT_BG,
+                        borderColor: INK_BORDER,
+                        borderWidth: 1,
+                        borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 16,
+                        paddingRight: 64,
+                        fontSize: 16,
+                        color: INK,
+                      }}
+                    />
+                    <Pressable
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={8}
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: 0,
+                        bottom: 0,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {password.length > 0 && passwordProblem(password) ? (
+                    <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 13, marginTop: 6 }}>
+                      {passwordProblem(password)}
+                    </Text>
+                  ) : null}
+                </View>
+              </>
+            ) : (
+              <Field
+                label="Code"
+                placeholder="123456"
+                value={code}
+                onChangeText={(v) => setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+                keyboardType="number-pad"
+                autoCapitalize="none"
+              />
+            )}
+
+            {error ? (
+              <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text>
+            ) : null}
+            {info && !error ? (
+              <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14 }}>{info}</Text>
+            ) : null}
+
+            <Pressable
+              onPress={stage === "form" ? sendCode : verifyAndSignIn}
+              disabled={
+                submitting || (stage === "form" ? !formValid : !codeValid)
+              }
+              style={{
+                marginTop: 8,
+                backgroundColor: submitting || (stage === "form" ? !formValid : !codeValid) ? GOLD_MUTED : GOLD,
+                borderRadius: 999,
+                height: 52,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                {submitting
+                  ? stage === "form"
+                    ? "Sending…"
+                    : "Verifying…"
+                  : stage === "form"
+                    ? "Sign up"
+                    : "Verify"}
               </Text>
             </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => router.replace("/(auth)/login")}
-              style={{ marginTop: 12, alignItems: "center" }}
-            >
-              <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
-                Already have an account?{" "}
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Log in</Text>
-              </Text>
-            </Pressable>
-          )}
-        </View>
+
+            {stage === "code" ? (
+              <Pressable
+                onPress={resend}
+                disabled={submitting}
+                style={{ alignItems: "center", paddingVertical: 8 }}
+              >
+                <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14,}}>
+                  Resend code
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => router.replace("/(auth)/login")}
+                style={{ marginTop: 12, alignItems: "center" }}
+              >
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
+                  Already have an account?{" "}
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Log in</Text>
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

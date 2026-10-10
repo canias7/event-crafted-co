@@ -3207,7 +3207,7 @@ function CenterModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}
       >
         <Pressable

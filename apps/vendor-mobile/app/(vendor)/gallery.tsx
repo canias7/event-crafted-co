@@ -1304,7 +1304,7 @@ function CenterModal({ visible, onClose, title, children }: { visible: boolean; 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", paddingHorizontal: 24 }}
       >
         <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 24, maxHeight: "70%" }}>

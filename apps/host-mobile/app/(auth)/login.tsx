@@ -4,6 +4,7 @@
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
   Pressable,
   Text,
@@ -13,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 const CREAM = "#f4f1ea";
 const INK = "#14161a";
@@ -33,6 +35,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 type Step = "credentials" | "code";
 
 export default function LoginScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
@@ -154,250 +157,256 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
+        behavior="padding"
+        style={{ flex: 1 }}
       >
-        <Pressable
-          onPress={() => (step === "credentials" ? router.back() : setStep("credentials"))}
-          hitSlop={12}
-          style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+        <ScrollView
+          {...keyboard.scrollProps}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
-            ← Back
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={() => (step === "credentials" ? router.back() : setStep("credentials"))}
+            hitSlop={12}
+            style={{ alignSelf: "flex-start", paddingVertical: 8 }}
+          >
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
+              ← Back
+            </Text>
+          </Pressable>
 
-        {step === "credentials" ? (
-          <>
-            <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  fontFamily: SERIF_BOLD,
-                  fontSize: 36,
-                  color: INK,
-                  letterSpacing: -1,
-                }}
-              >
-                Welcome back
-              </Text>
-              <Text
-                style={{
-                  marginTop: 8,
-                  fontSize: 15,
-                  color: INK_DIM,
-                  fontFamily: SERIF_ITALIC,
-                }}
-              >
-                Log in to plan your next event.
-              </Text>
-            </View>
-
-            <View style={{ marginTop: 32, gap: 16 }}>
-              <Field
-                label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoComplete="email"
-                autoCapitalize="none"
-              />
-
-              <View>
+          {step === "credentials" ? (
+            <>
+              <View style={{ marginTop: 24 }}>
                 <Text
-                  style={{ fontFamily: SERIF_BOLD,
-                    marginBottom: 6,
-                    fontSize: 12,
-                    color: INK_DIM,
-                    letterSpacing: 0.5,
+                  style={{
+                    fontFamily: SERIF_BOLD,
+                    fontSize: 36,
+                    color: INK,
+                    letterSpacing: -1,
                   }}
                 >
-                  PASSWORD
+                  Welcome back
                 </Text>
-                <View style={{ position: "relative" }}>
+                <Text
+                  style={{
+                    marginTop: 8,
+                    fontSize: 15,
+                    color: INK_DIM,
+                    fontFamily: SERIF_ITALIC,
+                  }}
+                >
+                  Log in to plan your next event.
+                </Text>
+              </View>
+
+              <View style={{ marginTop: 32, gap: 16 }}>
+                <Field
+                  label="Email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                />
+
+                <View>
+                  <Text
+                    style={{ fontFamily: SERIF_BOLD,
+                      marginBottom: 6,
+                      fontSize: 12,
+                      color: INK_DIM,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    PASSWORD
+                  </Text>
+                  <View style={{ position: "relative" }}>
+                    <TextInput
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor={PLACEHOLDER}
+                      autoComplete="current-password"
+                      style={{ fontFamily: SERIF,
+                        backgroundColor: INPUT_BG,
+                        borderColor: INK_BORDER,
+                        borderWidth: 1,
+                        borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 16,
+                        paddingRight: 64,
+                        fontSize: 16,
+                        color: INK,
+                      }}
+                    />
+                    <Pressable
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={8}
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: 0,
+                        bottom: 0,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}>
+                        {showPassword ? "Hide" : "Show"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
+
+                <Pressable
+                  onPress={onSubmitCredentials}
+                  disabled={submitting || !email || !password}
+                  style={{
+                    marginTop: 8,
+                    backgroundColor: submitting || !email || !password ? GOLD_MUTED : GOLD,
+                    borderRadius: 999,
+                    height: 52,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                    {submitting ? "Sending code…" : "Continue"}
+                  </Text>
+                </Pressable>
+                <Text
+                  style={{ fontFamily: SERIF,
+                    marginTop: 4,
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: INK_DIM,
+                  }}
+                >
+                  We'll email you a 6-digit code to confirm it's you.
+                </Text>
+
+                <Pressable
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                  style={{ marginTop: 12, alignItems: "center" }}
+                >
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>
+                    Forgot your password?
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => router.replace("/(auth)/signup")}
+                  style={{ marginTop: 12, alignItems: "center" }}
+                >
+                  <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
+                    New here?{" "}
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Create an account</Text>
+                  </Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={{ marginTop: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: SERIF_BOLD,
+                    fontSize: 36,
+                    color: INK,
+                    letterSpacing: -1,
+                  }}
+                >
+                  Check your email
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 8,
+                    fontSize: 15,
+                    color: INK_DIM,
+                    fontFamily: SERIF_ITALIC,
+                  }}
+                >
+                  We sent a 6-digit code to {email}. It expires in 10 minutes.
+                </Text>
+              </View>
+
+              <View style={{ marginTop: 32, gap: 16 }}>
+                <View>
+                  <Text
+                    style={{ fontFamily: SERIF_BOLD,
+                      marginBottom: 6,
+                      fontSize: 12,
+                      color: INK_DIM,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    6-DIGIT CODE
+                  </Text>
                   <TextInput
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="••••••••"
+                    inputMode="numeric"
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    value={code}
+                    onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+                    maxLength={6}
+                    placeholder="••••••"
                     placeholderTextColor={PLACEHOLDER}
-                    autoComplete="current-password"
-                    style={{ fontFamily: SERIF,
+                    autoFocus
+                    style={{
                       backgroundColor: INPUT_BG,
                       borderColor: INK_BORDER,
                       borderWidth: 1,
                       borderRadius: 12,
-                      paddingHorizontal: 16,
-                      paddingVertical: 16,
-                      paddingRight: 64,
-                      fontSize: 16,
+                      paddingVertical: 20,
+                      fontSize: 28,
+                      textAlign: "center",
+                      letterSpacing: 12,
                       color: INK,
+                      fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
                     }}
                   />
-                  <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    hitSlop={8}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: 0,
-                      bottom: 0,
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}>
-                      {showPassword ? "Hide" : "Show"}
+                </View>
+
+                {info && !error ? <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14 }}>{info}</Text> : null}
+                {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
+
+                <Pressable
+                  onPress={onSubmitCode}
+                  disabled={submitting || code.length !== 6}
+                  style={{
+                    marginTop: 8,
+                    backgroundColor: submitting || code.length !== 6 ? GOLD_MUTED : GOLD,
+                    borderRadius: 999,
+                    height: 52,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                    {submitting ? "Verifying…" : "Sign in"}
+                  </Text>
+                </Pressable>
+
+                <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
+                  <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
+                    <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
+                      ← Use a different account
+                    </Text>
+                  </Pressable>
+                  <Pressable disabled={submitting} onPress={onSubmitCredentials}>
+                    <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
+                      Resend code
                     </Text>
                   </Pressable>
                 </View>
               </View>
-
-              {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
-
-              <Pressable
-                onPress={onSubmitCredentials}
-                disabled={submitting || !email || !password}
-                style={{
-                  marginTop: 8,
-                  backgroundColor: submitting || !email || !password ? GOLD_MUTED : GOLD,
-                  borderRadius: 999,
-                  height: 52,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
-                  {submitting ? "Sending code…" : "Continue"}
-                </Text>
-              </Pressable>
-              <Text
-                style={{ fontFamily: SERIF,
-                  marginTop: 4,
-                  textAlign: "center",
-                  fontSize: 12,
-                  color: INK_DIM,
-                }}
-              >
-                We'll email you a 6-digit code to confirm it's you.
-              </Text>
-
-              <Pressable
-                onPress={() => router.push("/(auth)/forgot-password")}
-                style={{ marginTop: 12, alignItems: "center" }}
-              >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>
-                  Forgot your password?
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.replace("/(auth)/signup")}
-                style={{ marginTop: 12, alignItems: "center" }}
-              >
-                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
-                  New here?{" "}
-                  <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Create an account</Text>
-                </Text>
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  fontFamily: SERIF_BOLD,
-                  fontSize: 36,
-                  color: INK,
-                  letterSpacing: -1,
-                }}
-              >
-                Check your email
-              </Text>
-              <Text
-                style={{
-                  marginTop: 8,
-                  fontSize: 15,
-                  color: INK_DIM,
-                  fontFamily: SERIF_ITALIC,
-                }}
-              >
-                We sent a 6-digit code to {email}. It expires in 10 minutes.
-              </Text>
-            </View>
-
-            <View style={{ marginTop: 32, gap: 16 }}>
-              <View>
-                <Text
-                  style={{ fontFamily: SERIF_BOLD,
-                    marginBottom: 6,
-                    fontSize: 12,
-                    color: INK_DIM,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  6-DIGIT CODE
-                </Text>
-                <TextInput
-                  inputMode="numeric"
-                  keyboardType="number-pad"
-                  autoComplete="one-time-code"
-                  value={code}
-                  onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
-                  maxLength={6}
-                  placeholder="••••••"
-                  placeholderTextColor={PLACEHOLDER}
-                  autoFocus
-                  style={{
-                    backgroundColor: INPUT_BG,
-                    borderColor: INK_BORDER,
-                    borderWidth: 1,
-                    borderRadius: 12,
-                    paddingVertical: 20,
-                    fontSize: 28,
-                    textAlign: "center",
-                    letterSpacing: 12,
-                    color: INK,
-                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-                  }}
-                />
-              </View>
-
-              {info && !error ? <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14 }}>{info}</Text> : null}
-              {error ? <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 14 }}>{error}</Text> : null}
-
-              <Pressable
-                onPress={onSubmitCode}
-                disabled={submitting || code.length !== 6}
-                style={{
-                  marginTop: 8,
-                  backgroundColor: submitting || code.length !== 6 ? GOLD_MUTED : GOLD,
-                  borderRadius: 999,
-                  height: 52,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
-                  {submitting ? "Verifying…" : "Sign in"}
-                </Text>
-              </Pressable>
-
-              <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
-                <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
-                  <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
-                    ← Use a different account
-                  </Text>
-                </Pressable>
-                <Pressable disabled={submitting} onPress={onSubmitCredentials}>
-                  <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
-                    Resend code
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </>
-        )}
+            </>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

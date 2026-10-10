@@ -494,7 +494,7 @@ export default function FoodListingScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
         <View
           style={{
