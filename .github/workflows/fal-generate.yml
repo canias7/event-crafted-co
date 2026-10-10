@@ -50,7 +50,21 @@ jobs:
           OUT="fal/out/$TAG"
           mkdir -p "$OUT"
           MODEL=$(jq -r '.model' fal/request.json)
-          jq '.input' fal/request.json > "$RUNNER_TEMP/input.json"
+          # Any input value written as "file:<path>" (a file committed on the
+          # trigger branch) is sent inline as a data URI, for images fal
+          # can't download from where they're hosted.
+          python3 - "$RUNNER_TEMP/input.json" <<'PY'
+          import base64, json, mimetypes, sys
+          def inline(v):
+              if isinstance(v, dict): return {k: inline(x) for k, x in v.items()}
+              if isinstance(v, list): return [inline(x) for x in v]
+              if isinstance(v, str) and v.startswith("file:"):
+                  path = v[5:]
+                  mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
+                  return f"data:{mime};base64," + base64.b64encode(open(path, "rb").read()).decode()
+              return v
+          json.dump(inline(json.load(open("fal/request.json"))["input"]), open(sys.argv[1], "w"))
+          PY
           echo "Model: $MODEL"
 
           # Report fal's own error text as an annotation (readable without
