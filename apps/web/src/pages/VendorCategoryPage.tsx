@@ -20,7 +20,7 @@ import { useCategoryNames } from "@/lib/categoryNames";
 
 import venuesPhoto from "@/assets/photos/59.webp?as=picture";
 import foodPhoto from "@/assets/photos/15.webp?as=picture";
-import entertainmentPhoto from "@/assets/photos/31.webp?as=picture";
+import entertainmentPhoto from "@/assets/photos/64.webp?as=picture";
 import mediaPhoto from "@/assets/photos/51.webp?as=picture";
 import decorPhoto from "@/assets/photos/28.webp?as=picture";
 import rentalsPhoto from "@/assets/photos/60.webp?as=picture";
