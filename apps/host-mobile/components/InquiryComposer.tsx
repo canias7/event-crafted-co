@@ -126,7 +126,7 @@ export function InquiryComposer({
     >
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior="padding"
           style={{ flex: 1 }}
         >
           <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">

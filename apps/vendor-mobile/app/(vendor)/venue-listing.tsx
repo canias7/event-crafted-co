@@ -668,7 +668,7 @@ export default function VenueListingScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
         {/* Header: back · New listing · Save draft */}
         <View

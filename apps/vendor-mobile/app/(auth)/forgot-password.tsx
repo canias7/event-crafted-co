@@ -25,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 // Same palette as welcome / signup / login.
 const PAGE = "#f4f1ea";
@@ -50,6 +51,7 @@ const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 export default function ForgotPasswordScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -85,9 +87,10 @@ export default function ForgotPasswordScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
         <ScrollView
+          {...keyboard.scrollProps}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingTop: 16,

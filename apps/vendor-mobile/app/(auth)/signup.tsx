@@ -39,6 +39,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { passwordProblem } from "@/lib/password";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 // Same palette as welcome.tsx — the two screens must read as one flow.
 const PAGE = "#f4f1ea";
@@ -69,6 +70,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 type Step = "account" | "business" | "code" | "done";
 
 export default function VendorSignupScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [step, setStep] = useState<Step>("account");
   const [submitting, setSubmitting] = useState(false);
@@ -217,10 +219,11 @@ export default function VendorSignupScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         style={{ flex: 1 }}
       >
         <ScrollView
+          {...keyboard.scrollProps}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingTop: 16,

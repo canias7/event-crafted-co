@@ -24,6 +24,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
   Pressable,
   Text,
@@ -35,6 +36,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 const CREAM = "#f4f1ea";
 const INK = "#14161a";
@@ -73,6 +75,7 @@ function one(v: unknown): string | null {
 }
 
 export default function ResetPasswordScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [state, setState] = useState<State>("loading");
   const [password, setPassword] = useState("");
@@ -266,120 +269,126 @@ export default function ResetPasswordScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
-        <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
-          <Text
-            style={{
-              fontFamily: SERIF_BOLD,
-              fontSize: 36,
-              color: INK,
-              letterSpacing: -1,
-            }}
-          >
-            {state === "done" ? "Password updated" : "Set a new password"}
-          </Text>
-          {state === "done" ? (
+        <ScrollView
+          {...keyboard.scrollProps}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
             <Text
-              style={{ fontFamily: SERIF,
-                marginTop: 12,
-                color: INK_DIM,
-                fontSize: 15,
-                lineHeight: 22,
+              style={{
+                fontFamily: SERIF_BOLD,
+                fontSize: 36,
+                color: INK,
+                letterSpacing: -1,
               }}
             >
-              You're signed in. Sending you to your inbox…
+              {state === "done" ? "Password updated" : "Set a new password"}
             </Text>
-          ) : (
-            <>
+            {state === "done" ? (
               <Text
                 style={{ fontFamily: SERIF,
-                  marginTop: 10,
+                  marginTop: 12,
                   color: INK_DIM,
                   fontSize: 15,
                   lineHeight: 22,
                 }}
               >
-                Pick a password you don't use elsewhere. At least 8
-                characters.
+                You're signed in. Sending you to your inbox…
               </Text>
-
-              <View style={{ marginTop: 24 }}>
+            ) : (
+              <>
                 <Text
-                  style={{ fontFamily: SERIF_BOLD,
+                  style={{ fontFamily: SERIF,
+                    marginTop: 10,
                     color: INK_DIM,
-                    fontSize: 12,
-                    letterSpacing: 0.8,
+                    fontSize: 15,
+                    lineHeight: 22,
                   }}
                 >
-                  NEW PASSWORD
+                  Pick a password you don't use elsewhere. At least 8
+                  characters.
                 </Text>
-                <View
-                  style={{
-                    marginTop: 6,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: INPUT_BG,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: INK_BORDER,
-                    paddingRight: 8,
-                  }}
-                >
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoComplete="password-new"
-                    placeholder="••••••••"
-                    placeholderTextColor={PLACEHOLDER}
-                    style={{ fontFamily: SERIF,
-                      flex: 1,
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      color: INK,
-                      fontSize: 16,
+
+                <View style={{ marginTop: 24 }}>
+                  <Text
+                    style={{ fontFamily: SERIF_BOLD,
+                      color: INK_DIM,
+                      fontSize: 12,
+                      letterSpacing: 0.8,
                     }}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    hitSlop={8}
-                    style={{ paddingHorizontal: 8 }}
                   >
-                    <Feather
-                      name={showPassword ? "eye-off" : "eye"}
-                      size={18}
-                      color={INK_DIM}
+                    NEW PASSWORD
+                  </Text>
+                  <View
+                    style={{
+                      marginTop: 6,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: INPUT_BG,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: INK_BORDER,
+                      paddingRight: 8,
+                    }}
+                  >
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoComplete="password-new"
+                      placeholder="••••••••"
+                      placeholderTextColor={PLACEHOLDER}
+                      style={{ fontFamily: SERIF,
+                        flex: 1,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        color: INK,
+                        fontSize: 16,
+                      }}
                     />
-                  </Pressable>
+                    <Pressable
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={8}
+                      style={{ paddingHorizontal: 8 }}
+                    >
+                      <Feather
+                        name={showPassword ? "eye-off" : "eye"}
+                        size={18}
+                        color={INK_DIM}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
 
-              {error ? (
-                <Text style={{ fontFamily: SERIF, marginTop: 12, color: ERROR, fontSize: 13 }}>
-                  {error}
-                </Text>
-              ) : null}
+                {error ? (
+                  <Text style={{ fontFamily: SERIF, marginTop: 12, color: ERROR, fontSize: 13 }}>
+                    {error}
+                  </Text>
+                ) : null}
 
-              <Pressable
-                onPress={onSubmit}
-                disabled={state === "submitting" || password.length < 8}
-                style={{
-                  marginTop: 20,
-                  backgroundColor: state === "submitting" || password.length < 8 ? GOLD_MUTED : GOLD,
-                  borderRadius: 999,
-                  height: 52,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
-                  {state === "submitting" ? "Saving…" : "Save password"}
-                </Text>
-              </Pressable>
-            </>
-          )}
-        </View>
+                <Pressable
+                  onPress={onSubmit}
+                  disabled={state === "submitting" || password.length < 8}
+                  style={{
+                    marginTop: 20,
+                    backgroundColor: state === "submitting" || password.length < 8 ? GOLD_MUTED : GOLD,
+                    borderRadius: 999,
+                    height: 52,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                    {state === "submitting" ? "Saving…" : "Save password"}
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

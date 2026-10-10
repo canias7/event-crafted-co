@@ -23,6 +23,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 
 // Same palette as welcome.tsx / signup.tsx.
 const PAGE = "#f4f1ea";
@@ -51,6 +52,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 type Step = "credentials" | "code";
 
 export default function LoginScreen() {
+  const keyboard = useKeyboardReveal();
   const router = useRouter();
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
@@ -199,10 +201,11 @@ export default function LoginScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         style={{ flex: 1 }}
       >
         <ScrollView
+          {...keyboard.scrollProps}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingTop: 16,

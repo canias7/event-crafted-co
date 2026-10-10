@@ -23,6 +23,7 @@ import p59 from "@/assets/photos/59.webp?as=picture";
 import p60 from "@/assets/photos/60.webp?as=picture";
 import p61 from "@/assets/photos/61.webp?as=picture";
 import p62 from "@/assets/photos/62.webp?as=picture";
+import p63 from "@/assets/photos/63.webp?as=picture";
 import p67 from "@/assets/photos/67.webp?as=picture";
 
 // The photo a vendor profile shares in link previews and structured data,
@@ -42,10 +43,10 @@ const BY_SUB: Record<string, PictureSource> = {
   "Desserts & Cakes": p50,
   "Food Trucks / Specialty": p18,
   // Entertainment
-  DJs: p32,
+  DJs: p63,
   "Live Music": p31,
   Performers: p31,
-  "Hosts / MCs": p31,
+  "Hosts / MCs": p32,
   // Media
   Photography: p08,
   Videography: p51,

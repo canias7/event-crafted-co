@@ -9,8 +9,10 @@
 // Light theme. This screen used to be near-black (#0d0f13) with a dark hero
 // whose baked gradient dissolved into the page colour. The whole auth flow now
 // matches the cream design system the rest of the app uses, so the hero is a
-// bright, warm photo in a rounded band with a hard bottom edge — no baked
-// fade to line up with, and no seam to get wrong.
+// photo in a rounded band with a hard bottom edge — no baked fade to line up
+// with, and no seam to get wrong. The photo is the website's home hero (the
+// sunset reception, owner's call), cut to the band's 1800x1057 with a light
+// shade across the top so the status bar's white icons stay readable.
 //
 // Layout: hero band, logo badge straddling its lower edge, wordmark, tagline,
 // gold divider, three value cards, and the auth pills.
@@ -112,7 +114,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: PAGE }}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <ScrollView
         contentContainerStyle={{
@@ -138,7 +140,7 @@ export default function WelcomeScreen() {
           }}
         >
           <Image
-            source={require("../../assets/welcome-hero-light.jpg")}
+            source={require("../../assets/welcome-hero.jpg")}
             style={{ width: width, height: heroHeight }}
             resizeMode="cover"
             accessibilityIgnoresInvertColors
