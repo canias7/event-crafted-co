@@ -23,7 +23,11 @@
       "answer": "¡Sí! Me encantaría saber más de tu evento.",
       "details": "Una boda en jardín, unos 120 invitados.",
       "quote": "¡Qué lindo! Hoy mismo te envío una cotización.",
-      "thanks": "¡Perfecto, gracias!"
+      "thanks": "¡Perfecto, gracias!",
+      "vendorName": "Golden Hour Florals",
+      "subtitle": "Consulta de boda · 14 jun",
+      "placeholder": "Escríbele a {{name}}…",
+      "read": "Leído · {{time}}"
     }
   }
 }

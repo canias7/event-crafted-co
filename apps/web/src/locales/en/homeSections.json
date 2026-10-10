@@ -23,7 +23,11 @@
       "answer": "It is! I'd love to hear more about your event.",
       "details": "A garden wedding, about 120 guests.",
       "quote": "Lovely! I'll send you a quote today.",
-      "thanks": "Perfect, thank you!"
+      "thanks": "Perfect, thank you!",
+      "vendorName": "Golden Hour Florals",
+      "subtitle": "Wedding inquiry · Jun 14",
+      "placeholder": "Message {{name}}…",
+      "read": "Read · {{time}}"
     }
   }
 }
