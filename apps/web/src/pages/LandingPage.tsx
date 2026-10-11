@@ -5,11 +5,21 @@ import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { PublicNav } from "@/components/public/PublicNav";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
-import { Picture } from "@/components/shared/Picture";
-// The site's photos are the owner's pictures, numbered as in the "Photos"
-// tab of the page walkthrough doc (vite-imagetools makes AVIF/WebP/JPG).
-// The home hero keeps its original sunset-reception photo (owner's call).
-import heroPhoto from "@/assets/vendora-hero-cinematic.jpg?as=picture";
+// The hero's background is a video of one venue through the evening (owner's
+// call, Oct 2026): made with fal from the owner's photos of it, sunset →
+// blue hour → the darkest night, slowed 2× and then played back in reverse
+// so the loop never jumps. Its first frame doubles as the poster and as
+// the still for visitors who'd rather not have motion.
+import heroVideo from "@/assets/hero-video/hero-day.mp4";
+import heroPoster from "@/assets/hero-video/hero-day-poster.webp";
+
+// No video for reduced motion or Data Saver: the still instead.
+function heroVideoWanted(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+  return !connection?.saveData;
+}
 
 // ── Palette (matches the mobile apps) ──────────────────────────────
 const INK = "#14161a";
@@ -33,6 +43,7 @@ export default function LandingPage() {
       navigate("/how-it-works", { replace: true });
     }
   }, [navigate]);
+  const [playVideo] = useState(heroVideoWanted);
   const [q, setQ] = useState("");
   const [loc, setLoc] = useState("");
 
@@ -48,15 +59,25 @@ export default function LandingPage() {
     <div className="min-h-screen text-foreground" style={{ backgroundColor: INK }}>
       {/* ═══════════════ HERO — cinematic full-bleed ═══════════════ */}
       <section className="relative overflow-hidden" style={{ backgroundColor: INK }}>
-        {/* Backdrop photo + slow drift */}
-        <div className="absolute inset-0 landing-kenburns">
-          <Picture
-            source={heroPhoto}
-            alt=""
-            sizes="100vw"
-            className="h-full w-full object-cover"
+        {/* Backdrop: the looping venue video, or its first frame with the
+            slow drift when motion is off. */}
+        {playVideo ? (
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            src={heroVideo}
+            poster={heroPoster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden
           />
-        </div>
+        ) : (
+          <div className="absolute inset-0 landing-kenburns">
+            <img src={heroPoster} alt="" className="h-full w-full object-cover" />
+          </div>
+        )}
         {/* Scrims — readable text, luxe vignette */}
         <div
           className="absolute inset-0"
