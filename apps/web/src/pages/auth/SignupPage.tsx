@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { TurnstileWidget, useCaptchaFallback } from "@/components/auth/TurnstileWidget";
-import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { PasswordStrengthMeter, passwordProblemKey } from "@/components/auth/PasswordStrengthMeter";
 import { authErrorText } from "@/components/auth/authErrors";
 
 // `role` decides what the user is signing up as. Default "host" keeps
@@ -39,6 +39,11 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
     }
     if (captcha.blocked) {
       toast.error(tAuth("captcha.complete"));
+      return;
+    }
+    const pwProblem = passwordProblemKey(password);
+    if (pwProblem) {
+      toast.error(tAuth(`password.rules.${pwProblem}`));
       return;
     }
     setLoading(true);
@@ -274,7 +279,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
         ) : null}
         <button
           type="submit"
-          disabled={loading || !adult || captcha.blocked}
+          disabled={loading || !adult || captcha.blocked || passwordProblemKey(password) !== null}
           className="auth-submit mt-2"
         >
           {loading ? (

@@ -9,3 +9,13 @@ export function passwordProblem(pw: string): string | null {
   if (!/[^A-Za-z0-9]/.test(pw)) return "Add a symbol, like ! or #.";
   return null;
 }
+
+// The four rules as separate checks, for the strength bar.
+export function passwordChecks(pw: string): boolean[] {
+  return [
+    pw.length >= 8,
+    /[a-z]/.test(pw) && /[A-Z]/.test(pw),
+    /[0-9]/.test(pw),
+    /[^A-Za-z0-9]/.test(pw),
+  ];
+}
