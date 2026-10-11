@@ -1,9 +1,9 @@
 {
   "model": "minimax/h3/image-to-video",
   "input": {
-    "prompt": "Locked-off static camera, no camera movement, no zoom, no pan. Outdoor wedding reception in the early evening: long candlelit dinner tables under hanging white flower installations and trees. The natural light changes slowly and continuously: the deep blue sky softens and a gentle rose and amber afterglow spreads low along the horizon behind the trees, while the sky above stays a calm evening blue; the ambient light on the tables, chairs and flowers shifts subtly with it, and the warm candlelight and glowing lanterns stay the main light. A gentle breeze slightly pushes the leaves and the hanging flowers so they sway softly, and the candle flames flicker and lean in the same light wind. Photorealistic, natural light, identical composition and objects throughout.",
-    "image_url": "file:fal/in/03-late-blue-hour.jpg",
-    "end_image_url": "file:fal/in/04-early-evening.jpg",
+    "prompt": "Locked-off static camera, no camera movement, no zoom, no pan. Outdoor wedding reception: long candlelit dinner tables under hanging white flower installations and trees, the same venue throughout. The first hint of pre-dawn: the sky begins to turn a deep dawn blue. The natural light changes slowly and continuously from the first frame to the last. A gentle breeze slightly pushes the leaves and the hanging flowers so they sway softly, and the candle flames flicker and lean in the same light wind. Photorealistic, natural light, identical composition and objects throughout.",
+    "image_url": "file:fal/in/07-deep-night.jpg",
+    "end_image_url": "file:fal/in/09-before-dawn.jpg",
     "duration": 5,
     "resolution": "2K",
     "prompt_expansion_mode": "disabled"
