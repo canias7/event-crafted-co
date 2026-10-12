@@ -18,13 +18,16 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { AuthBackdrop } from "@/components/AuthBackdrop";
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
+const CREAM = "#14161a";
+const CREAM_DEEP = "rgba(255,255,255,0.08)";
+const INK = "#f4f1ea";
+// Labels on gold buttons stay ink.
+const INK_ON_GOLD = "#14161a";
 const GOLD = "#c9a86a";
-const INK_DIM = "#14161a";
-const INK_BORDER = "#e6e1d5";
+const INK_DIM = "#f4f1ea";
+const INK_BORDER = "rgba(255,255,255,0.15)";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -293,7 +296,8 @@ export default function WelcomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: CREAM }}>
-      <StatusBar barStyle="dark-content" backgroundColor={CREAM} />
+      <AuthBackdrop />
+      <StatusBar barStyle="light-content" backgroundColor={CREAM} />
 
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         {/* Upper text area — non-interactive on purpose. */}
@@ -425,7 +429,7 @@ export default function WelcomeScreen() {
         >
           <Text
             style={{
-              color: INK,
+              color: INK_ON_GOLD,
               fontSize: 16,
               fontFamily: SERIF_BOLD,
             }}
@@ -443,7 +447,7 @@ export default function WelcomeScreen() {
             borderRadius: 999,
             // Secondary: white fill with a 1px hairline — the standard
             // secondary pill. No shadow anywhere in this palette.
-            backgroundColor: "#ffffff",
+            backgroundColor: "rgba(255,255,255,0.06)",
             borderWidth: 1,
             borderColor: INK_BORDER,
             alignItems: "center",

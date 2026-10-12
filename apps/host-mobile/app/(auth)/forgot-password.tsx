@@ -21,17 +21,20 @@ import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
+import { AuthBackdrop } from "@/components/AuthBackdrop";
 
-const CREAM = "#f4f1ea";
-const INK = "#14161a";
+const CREAM = "#14161a";
+const INK = "#f4f1ea";
+// Labels on gold buttons stay ink.
+const INK_ON_GOLD = "#14161a";
 const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded.
 const GOLD_MUTED = "#e0d2b0";
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const INK_BORDER = "#e6e1d5";
-const INPUT_BG = "#fbf9f4";
-const ERROR = "#b23a34";
+const INK_DIM = "#f4f1ea";
+const PLACEHOLDER = "#a39a88";
+const INK_BORDER = "rgba(255,255,255,0.15)";
+const INPUT_BG = "rgba(255,255,255,0.05)";
+const ERROR = "#e0716a";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -70,6 +73,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
+      <AuthBackdrop />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -167,7 +171,7 @@ export default function ForgotPasswordScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
                   {submitting ? "Sending…" : "Send reset link"}
                 </Text>
               </Pressable>
@@ -209,7 +213,7 @@ export default function ForgotPasswordScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
                   Back to sign in
                 </Text>
               </Pressable>

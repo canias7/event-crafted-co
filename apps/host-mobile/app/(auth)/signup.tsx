@@ -30,18 +30,21 @@ import { passwordProblem } from "@/lib/password";
 import { PasswordMeter } from "@/components/PasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
+import { AuthBackdrop } from "@/components/AuthBackdrop";
 
-const CREAM = "#f4f1ea";
-const INK = "#14161a";
+const CREAM = "#14161a";
+const INK = "#f4f1ea";
+// Labels on gold buttons stay ink.
+const INK_ON_GOLD = "#14161a";
 const GOLD = "#c9a86a";
 // Disabled fill for the gold pill — solid, not faded.
 const GOLD_MUTED = "#e0d2b0";
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const INK_BORDER = "#e6e1d5";
-const INPUT_BG = "#fbf9f4";
-const ERROR = "#b23a34";
-const BRONZE = "#8a6f3e";
+const INK_DIM = "#f4f1ea";
+const PLACEHOLDER = "#a39a88";
+const INK_BORDER = "rgba(255,255,255,0.15)";
+const INPUT_BG = "rgba(255,255,255,0.05)";
+const ERROR = "#e0716a";
+const BRONZE = "#c9a86a";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -172,6 +175,7 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
+      <AuthBackdrop />
       <KeyboardAvoidingView
         behavior="padding"
         style={{ flex: 1 }}
@@ -320,7 +324,7 @@ export default function SignupScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16,}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
                 {submitting
                   ? stage === "form"
                     ? "Sending…"
