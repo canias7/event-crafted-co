@@ -76,8 +76,6 @@
     "dismiss": "Cerrar"
   },
   "email_menu": {
-    "gmail": "Abrir en Gmail",
-    "outlook": "Abrir en Outlook",
     "app": "Abrir mi app de correo",
     "copy": "Copiar dirección",
     "copied": "Dirección de correo copiada"

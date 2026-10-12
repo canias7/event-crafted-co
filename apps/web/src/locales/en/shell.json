@@ -76,8 +76,6 @@
     "dismiss": "Dismiss"
   },
   "email_menu": {
-    "gmail": "Open in Gmail",
-    "outlook": "Open in Outlook",
     "app": "Open my email app",
     "copy": "Copy address",
     "copied": "Email address copied"
