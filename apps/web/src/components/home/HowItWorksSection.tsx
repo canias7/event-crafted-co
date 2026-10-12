@@ -144,15 +144,16 @@ function ConnectVisual({
         className="absolute inset-0 bg-white/[0.03]"
         style={{ backgroundImage: "radial-gradient(120% 90% at 85% 100%, rgba(201,168,106,0.16), transparent 65%)" }}
       />
-      {/* The inbox window, light as in the portals, below the step number
-          and above the step's badge, which overlaps the card's bottom edge. */}
+      {/* The inbox fills the whole card, light as in the portals. Its header
+          leaves room at the top for the step number; the message bar sits
+          clear of the step's badge, which overlaps the card's bottom edge. */}
       <div
         ref={box}
         aria-hidden
-        className="absolute inset-x-3 bottom-9 top-14 z-10 flex flex-col overflow-hidden rounded-xl bg-background text-foreground shadow-soft lg:inset-x-4 md:top-[4.5rem]"
+        className="absolute inset-0 z-10 flex flex-col overflow-hidden bg-background text-foreground"
       >
         <div
-          className="flex shrink-0 items-center gap-2 px-3 py-2"
+          className="flex shrink-0 items-center gap-2 px-4 pb-2.5 pt-14 md:pt-[4.75rem]"
           style={{ background: "rgba(255,255,255,0.85)", borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
         >
           <span className="relative shrink-0">
@@ -207,7 +208,7 @@ function ConnectVisual({
         </div>
 
         {/* The message bar: the host's next message is typed here, then sent. */}
-        <div className="flex shrink-0 items-center gap-1 px-2 pb-2">
+        <div className="flex shrink-0 items-center gap-1 px-3 pb-8">
           <span className="flex min-w-0 flex-1 items-center gap-1 rounded-3xl border border-border bg-background py-1 pl-2 pr-1 shadow-soft">
             <Paperclip className="h-3.5 w-3.5 shrink-0 text-foreground/50" />
             <Smile className="h-3.5 w-3.5 shrink-0 text-foreground/50" />
@@ -290,12 +291,18 @@ export function HowItWorksSection() {
                 />
                 <span
                   aria-hidden
-                  className="absolute left-4 top-2 font-editorial text-[48px] leading-none text-[#f4f1ea]/35 md:text-[64px]"
+                  className={`absolute left-4 top-2 z-20 font-editorial text-[48px] leading-none md:text-[64px] ${
+                    // Champagne, still see-through (owner's pick): with a soft
+                    // shadow over the photos so it reads on busy pictures, and
+                    // as bronze on the light inbox.
+                    step.key === "connect" ? "text-accent/50" : "text-gold/80"
+                  }`}
+                  style={step.key === "connect" ? undefined : { textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}
                 >
                   {step.number}
                 </span>
               </div>
-              <span className="relative -mt-6 ml-5 flex h-12 w-12 items-center justify-center rounded-full border border-gold/50 bg-[#14161a] text-gold">
+              <span className="relative z-20 -mt-6 ml-5 flex h-12 w-12 items-center justify-center rounded-full border border-gold/50 bg-[#14161a] text-gold">
                 <Icon aria-hidden className="h-5 w-5" strokeWidth={1.75} />
               </span>
               <h3 className="m-0 mt-4 font-label tracking-[0.3em] text-gold">
