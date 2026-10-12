@@ -55,7 +55,6 @@ import {
   HelpPage,
   HowItWorksPage,
   ForVendorsPage,
-  ChangelogPage,
   StatusPage,
   PressPage,
   SettingsPage,
@@ -157,7 +156,8 @@ const App = () => (
               {/* Stripe redirect target for purchases started in the
                   mobile apps — deep-links back into the app. */}
               <Route path="/mobile/checkout-return" element={<MobileCheckoutReturnPage />} />
-              <Route path="/changelog" element={<ChangelogPage />} />
+              {/* The Changelog page was removed (owner's call, Oct 2026). */}
+              <Route path="/changelog" element={<Navigate to="/" replace />} />
               <Route path="/status" element={<StatusPage />} />
               <Route path="/press" element={<PressPage />} />
               {/* My Space (AI super-agents) was removed; old links go home. */}

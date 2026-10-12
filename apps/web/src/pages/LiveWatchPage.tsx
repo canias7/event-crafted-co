@@ -352,13 +352,13 @@ export default function LiveWatchPage() {
               style={{ width: "100%", height: "100%", aspectRatio: "16 / 9" }}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-background/85">
+            <div className="w-full h-full flex flex-col items-center justify-center text-[#f4f1ea]/85">
               {isEnded ? (
                 <>
                   <p className="font-label uppercase tracking-wider text-xs mb-2">
                     {t("player.endedTitle")}
                   </p>
-                  <p className="text-sm text-background/60 max-w-xs text-center">
+                  <p className="text-sm text-[#f4f1ea]/60 max-w-xs text-center">
                     {t("player.endedBody")}
                   </p>
                 </>
@@ -367,7 +367,7 @@ export default function LiveWatchPage() {
                   <p className="font-label uppercase tracking-wider text-xs mb-2">
                     {t("player.waitingTitle")}
                   </p>
-                  <p className="text-sm text-background/60 max-w-xs text-center">
+                  <p className="text-sm text-[#f4f1ea]/60 max-w-xs text-center">
                     {t("player.waitingBody")}
                   </p>
                 </>

@@ -160,7 +160,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
   const triggerColor =
     variant === "light"
       ? "text-muted-foreground hover:text-accent"
-      : "text-background/85 hover:text-background";
+      : "text-[#f4f1ea]/85 hover:text-[#f4f1ea]";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

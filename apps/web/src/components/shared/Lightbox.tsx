@@ -63,13 +63,13 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
           e.stopPropagation();
           onClose();
         }}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-background/10 hover:bg-background/20 text-background flex items-center justify-center transition-colors"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-[#f4f1ea] flex items-center justify-center transition-colors"
         aria-label={t("lightbox.close")}
       >
         <X className="w-5 h-5" />
       </button>
 
-      <div className="absolute top-4 left-4 text-background/70 text-xs tnum">
+      <div className="absolute top-4 left-4 text-[#f4f1ea]/70 text-xs tnum">
         {index + 1} / {images.length}
       </div>
 
@@ -80,7 +80,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
             e.stopPropagation();
             onIndexChange(index - 1);
           }}
-          className="absolute left-4 md:left-8 w-12 h-12 rounded-full bg-background/10 hover:bg-background/20 text-background flex items-center justify-center transition-colors"
+          className="absolute left-4 md:left-8 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-[#f4f1ea] flex items-center justify-center transition-colors"
           aria-label={t("lightbox.previous")}
         >
           <ChevronLeft className="w-6 h-6" />
@@ -93,7 +93,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
             e.stopPropagation();
             onIndexChange(index + 1);
           }}
-          className="absolute right-4 md:right-8 w-12 h-12 rounded-full bg-background/10 hover:bg-background/20 text-background flex items-center justify-center transition-colors"
+          className="absolute right-4 md:right-8 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-[#f4f1ea] flex items-center justify-center transition-colors"
           aria-label={t("lightbox.next")}
         >
           <ChevronRight className="w-6 h-6" />
@@ -112,7 +112,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
         {(current.caption || current.href) && (
           <div className="mt-4 text-center max-w-xl">
             {current.caption && (
-              <p className="text-background text-sm leading-relaxed">
+              <p className="text-[#f4f1ea] text-sm leading-relaxed">
                 {current.caption}
               </p>
             )}
@@ -121,7 +121,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
                 href={current.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-block mt-2 text-xs text-background/70 hover:text-background underline"
+                className="inline-block mt-2 text-xs text-[#f4f1ea]/70 hover:text-[#f4f1ea] underline"
               >
                 {t("lightbox.openSource")}
               </a>

@@ -1548,7 +1548,7 @@ export default function VendorGalleryPage() {
                   <button
                     type="button"
                     onClick={bulkRestore}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 text-[#f4f1ea] text-xs px-3 py-1.5"
                   >
                     <Undo2 className="w-3.5 h-3.5" />
                     {t("bulk.restore")}
@@ -1559,7 +1559,7 @@ export default function VendorGalleryPage() {
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 text-[#f4f1ea] text-xs px-3 py-1.5"
                         >
                           <MoveRight className="w-3.5 h-3.5" />
                           {t("bulk.moveTo")}
@@ -1586,7 +1586,7 @@ export default function VendorGalleryPage() {
                       type="button"
                       onClick={bulkDownloadZip}
                       disabled={zipping}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-background/15 hover:bg-background/25 text-background text-xs px-3 py-1.5 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 text-[#f4f1ea] text-xs px-3 py-1.5 disabled:opacity-60"
                     >
                       {zipping ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
