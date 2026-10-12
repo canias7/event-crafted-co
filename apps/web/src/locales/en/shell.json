@@ -3,8 +3,6 @@
     "aria_label": "Public",
     "logo_label": "Vendora — Events, simplified",
     "all_vendors": "All vendors",
-    "browse_by_location": "Browse by location",
-    "by_location": "By location",
     "categories": "Categories",
     "soon": "Soon",
     "explore": "Explore",
@@ -19,7 +17,6 @@
     "for_hosts": "For hosts",
     "for_vendors": "For vendors",
     "company": "Company",
-    "plan_with_vendora": "Plan with Vendora",
     "browse_vendors": "Browse vendors",
     "explore": "Explore",
     "grow_with_vendora": "Grow with Vendora",
@@ -49,7 +46,6 @@
     },
     "pages": {
       "browse_vendors": "Browse vendors",
-      "browse_by_location": "Browse by location",
       "explore": "Explore",
       "inbox": "Inbox",
       "events": "Events",
@@ -61,8 +57,7 @@
       "settings": "Settings"
     },
     "hints": {
-      "directory": "Directory",
-      "cities": "Cities"
+      "directory": "Directory"
     },
     "open_search": "Open search",
     "search": "Search"

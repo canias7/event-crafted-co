@@ -1,16 +1,7 @@
 {
   "hero": {
     "eyebrow": "Cómo funciona Vendora",
-    "title": "Tu visión.<br/>Las personas indicadas.<br/>Un evento <gold>inolvidable</gold>.",
-    "intro": "Descubre proveedores, conoce su trabajo e inicia una conversación. Luego planea y contrata todo en un solo lugar.",
-    "explore_vendors": "Explorar proveedores",
-    "im_a_vendor": "Soy proveedor",
-    "image_alt": "Invitados conversando en una cena en el jardín bajo una pérgola cubierta de enredaderas"
-  },
-  "jump": {
-    "planning": "Estoy organizando un evento",
-    "vendor": "Soy proveedor",
-    "questions": "Preguntas"
+    "im_a_vendor": "Soy proveedor"
   },
   "hosts": {
     "eyebrow": "Para anfitriones",
@@ -65,39 +56,6 @@
       }
     }
   },
-  "vendors": {
-    "eyebrow": "Para proveedores",
-    "title": "Convierte tu talento en reservas.",
-    "intro": "Fotógrafos, organizadores, servicios de banquetes, floristas, salones y más. Así pasas del registro a tus primeras reservas.",
-    "image_alt": "Un chef decorando canapés",
-    "cta": "Únete como proveedor",
-    "steps": {
-      "profile": {
-        "title": "Crea tu perfil",
-        "body": "Regístrate como proveedor y presenta tu negocio: categoría, ubicación, precios y servicios. El plan Gratis incluye un anuncio."
-      },
-      "showcase": {
-        "title": "Muestra tu trabajo",
-        "body": "Agrega fotos a tu portafolio para que los anfitriones vean lo que haces."
-      },
-      "approved": {
-        "title": "Obtén tu aprobación y haz que te descubran",
-        "body": "Cada anuncio se revisa antes de publicarse. Después, los anfitriones te encuentran en las búsquedas, en Explorar y en las páginas de categorías."
-      },
-      "inquiries": {
-        "title": "Responde consultas",
-        "body": "Los anfitriones te escriben con su fecha y los detalles. Responde, chatea y envía propuestas desde una sola bandeja de entrada."
-      },
-      "paid": {
-        "title": "Cierra reservas y cobra",
-        "body": "Convierte conversaciones en reservas con contratos y pagos en línea."
-      },
-      "grow": {
-        "title": "Haz crecer tu negocio",
-        "body": "Reúne reseñas, mide el rendimiento de tu anuncio y sigue construyendo tu marca."
-      }
-    }
-  },
   "faq": {
     "eyebrow": "Preguntas frecuentes",
     "title": "Algunas cosas que quizá te preguntes.",
@@ -127,9 +85,5 @@
         "a": "Visita el <help>Centro de ayuda</help> o escribe a <email>hello@eventvendora.com</email>. Cada mensaje lo lee una persona real."
       }
     }
-  },
-  "closing": {
-    "title": "Hagamos algo <gold>inolvidable.</gold>",
-    "cta": "Explorar proveedores"
   }
 }

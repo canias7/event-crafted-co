@@ -53,5 +53,8 @@
     "title": "Are you a <gold>vendor?</gold>",
     "sub": "Get discovered by people planning events like yours. The Free plan includes one listing.",
     "cta": "List your business — free"
+  },
+  "locations": {
+    "title": "Browse by location"
   }
 }

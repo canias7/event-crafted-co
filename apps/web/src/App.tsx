@@ -44,7 +44,6 @@ import { RouteFallback } from "@/components/shared/RouteFallback";
 // uses to warm chunks on hover/visibility.
 import {
   VendorBrowsePage,
-  VendorLocationsPage,
   VendorCityPage,
   VendorCityCategoryPage,
   VendorEventTypeCityPage,
@@ -55,7 +54,6 @@ import {
   TermsPage,
   HelpPage,
   HowItWorksPage,
-  ForHostsPage,
   ForVendorsPage,
   ChangelogPage,
   StatusPage,
@@ -113,7 +111,8 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/explore" element={<PublicExplorePage />} />
               <Route path="/vendors" element={<VendorBrowsePage />} />
-              <Route path="/vendors/locations" element={<VendorLocationsPage />} />
+              {/* By location is a section of the Vendors page now. */}
+              <Route path="/vendors/locations" element={<Navigate to={{ pathname: "/vendors", hash: "#locations" }} replace />} />
               <Route path="/vendors/in/:citySlug" element={<VendorCityPage />} />
               <Route path="/vendors/category/:slug" element={<VendorCategoryPage />} />
               {/* Programmatic SEO: city × category cross-product. */}
@@ -150,7 +149,8 @@ const App = () => (
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
-              <Route path="/for-hosts" element={<ForHostsPage />} />
+              {/* "Plan with Vendora" (For hosts) and How it works are one page now. */}
+              <Route path="/for-hosts" element={<Navigate to="/how-it-works" replace />} />
               <Route path="/for-vendors" element={<ForVendorsPage />} />
               <Route path="/pay/link/:slug" element={<PayLinkCheckoutPage />} />
               <Route path="/pay/invoice/:slug" element={<InvoiceCheckoutPage />} />

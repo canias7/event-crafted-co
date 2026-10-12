@@ -37,12 +37,12 @@ export default function ForVendorsPage() {
         }
         sub={t("hero.sub")}
         primary={{ label: t("hero.primary"), to: "/signup/vendor" }}
-        secondary={{ label: t("hero.secondary"), to: "/how-it-works#for-vendors" }}
+        secondary={{ label: t("hero.secondary"), to: "#steps" }}
       />
 
       <main id="main-content">
         {/* Steps */}
-        <section className="container mx-auto px-5 py-16 md:px-8 md:py-24">
+        <section id="steps" className="container mx-auto scroll-mt-24 px-5 py-16 md:px-8 md:py-24">
           <p className="m-0 text-center font-label text-gold">{t("steps.eyebrow")}</p>
           <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[42px]">
             {t("steps.title")}

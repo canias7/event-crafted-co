@@ -1,16 +1,7 @@
 {
   "hero": {
     "eyebrow": "How Vendora works",
-    "title": "Your vision.<br/>The right people.<br/>An <gold>unforgettable</gold> event.",
-    "intro": "Discover vendors, explore their work and start a conversation. Then plan and book it all in one place.",
-    "explore_vendors": "Explore vendors",
-    "im_a_vendor": "I'm a vendor",
-    "image_alt": "Guests talking at a garden dinner under a vine-covered pergola"
-  },
-  "jump": {
-    "planning": "I'm planning an event",
-    "vendor": "I'm a vendor",
-    "questions": "Questions"
+    "im_a_vendor": "I'm a vendor"
   },
   "hosts": {
     "eyebrow": "For hosts",
@@ -65,39 +56,6 @@
       }
     }
   },
-  "vendors": {
-    "eyebrow": "For vendors",
-    "title": "Turn your craft into bookings.",
-    "intro": "Photographers, planners, caterers, florists, venues and more. Here's how you go from sign-up to booked.",
-    "image_alt": "A chef garnishing canapés",
-    "cta": "Join as a vendor",
-    "steps": {
-      "profile": {
-        "title": "Create your profile",
-        "body": "Sign up as a vendor and introduce your business: category, location, pricing and services. The Free plan includes one listing."
-      },
-      "showcase": {
-        "title": "Showcase your work",
-        "body": "Add portfolio photos so hosts can see what you do."
-      },
-      "approved": {
-        "title": "Get approved and discovered",
-        "body": "Every listing is reviewed before it goes live. Then hosts find you in search, on Explore and on category pages."
-      },
-      "inquiries": {
-        "title": "Answer inquiries",
-        "body": "Hosts message you with their date and details. Reply, chat and send proposals from one inbox."
-      },
-      "paid": {
-        "title": "Book and get paid",
-        "body": "Turn conversations into bookings with contracts and online payments."
-      },
-      "grow": {
-        "title": "Grow your business",
-        "body": "Collect reviews, track how your listing performs and keep building your brand."
-      }
-    }
-  },
   "faq": {
     "eyebrow": "FAQ",
     "title": "A few things you might be wondering.",
@@ -127,9 +85,5 @@
         "a": "Visit the <help>Help centre</help> or email <email>hello@eventvendora.com</email>. Real people read every message."
       }
     }
-  },
-  "closing": {
-    "title": "Let's make something <gold>unforgettable.</gold>",
-    "cta": "Explore vendors"
   }
 }

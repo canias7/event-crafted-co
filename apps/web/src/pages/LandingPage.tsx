@@ -29,9 +29,9 @@ const BRONZE = "#8a6f3e";
 
 // Home page, kept simple on purpose: the cinematic hero (headline, the
 // two paths, search) and the footer. What Vendora does for each side
-// lives on its own page: "I'm planning an event" leads to /for-hosts and
-// "I'm a vendor" to /for-vendors. Explore and How it works have their own
-// pages too.
+// lives on its own page: "I'm planning an event" leads to How it works
+// (the hosts' page) and "I'm a vendor" to /for-vendors. Explore has its
+// own page too.
 export default function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation("landing");
@@ -137,7 +137,7 @@ export default function LandingPage() {
               style={{ animationDelay: "220ms" }}
             >
               <Link
-                to="/for-hosts"
+                to="/how-it-works"
                 className="group flex items-center gap-4 rounded-2xl p-4 text-left transition-colors"
                 style={{
                   backgroundColor: "rgba(244,241,234,0.94)",

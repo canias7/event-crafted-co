@@ -24,11 +24,9 @@ export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
     {
       title: ts("footer.for_hosts"),
       links: [
-        { label: ts("footer.plan_with_vendora"), to: "/for-hosts" },
+        { label: ts("footer.how_it_works"), to: "/how-it-works" },
         { label: ts("footer.explore"), to: "/explore" },
         { label: ts("footer.browse_vendors"), to: "/vendors" },
-        { label: t("footer.by_location"), to: "/vendors/locations" },
-        { label: ts("footer.how_it_works"), to: "/how-it-works" },
       ],
     },
     {
