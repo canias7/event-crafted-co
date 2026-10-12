@@ -282,9 +282,9 @@ export default function VendorBrowsePage() {
               className="hero-headline m-0 mx-auto max-w-3xl lg:mx-0"
               style={{
                 color: CREAM,
-                fontSize: "clamp(40px, 6.4vw, 72px)",
+                fontSize: "clamp(2.5rem, 6.4vw, 4.5rem)",
                 lineHeight: 1.04,
-                letterSpacing: "-1.5px",
+                letterSpacing: "-0.09375rem",
               }}
             >
               <Trans

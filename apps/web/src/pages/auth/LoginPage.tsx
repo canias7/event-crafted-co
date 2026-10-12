@@ -315,13 +315,13 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           <div>
             <div
               className="uppercase mb-1.5"
-              style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+              style={{ fontSize: "0.6875rem", letterSpacing: "0.09375rem", opacity: 0.65, fontWeight: 500 }}
             >
               {tAuth("login.code.label")}
             </div>
             <input
               className="auth-input text-center font-mono"
-              style={{ height: "52px", fontSize: "22px", letterSpacing: "0.4em" }}
+              style={{ height: "3.25rem", fontSize: "1.375rem", letterSpacing: "0.4em" }}
               inputMode="numeric"
               autoComplete="one-time-code"
               value={code}
@@ -351,7 +351,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           </button>
           <div
             className="flex items-center justify-between"
-            style={{ fontSize: "12px", opacity: 0.7 }}
+            style={{ fontSize: "0.75rem", opacity: 0.7 }}
           >
             <button
               type="button"
@@ -418,7 +418,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         <div>
           <div
             className="uppercase mb-1.5"
-            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+            style={{ fontSize: "0.6875rem", letterSpacing: "0.09375rem", opacity: 0.65, fontWeight: 500 }}
           >
             {t("auth.common.email")}
           </div>
@@ -440,14 +440,14 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
           <div className="flex items-center justify-between mb-1.5">
             <div
               className="uppercase"
-              style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
+              style={{ fontSize: "0.6875rem", letterSpacing: "0.09375rem", opacity: 0.65, fontWeight: 500 }}
             >
               {t("auth.common.password")}
             </div>
             <Link
               to="/forgot-password"
               className="pb-0.5"
-              style={{ fontSize: "11px", opacity: 0.7, borderBottom: "0.5px solid currentColor" }}
+              style={{ fontSize: "0.6875rem", opacity: 0.7, borderBottom: "0.5px solid currentColor" }}
             >
               {t("auth.login.forgot")}
             </Link>
@@ -492,7 +492,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         </button>
         <p
           className="text-center font-serif italic"
-          style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
+          style={{ fontSize: "0.78125rem", opacity: 0.55, marginTop: "0.375rem", lineHeight: 1.5 }}
         >
           {tAuth("login.code_note")}
         </p>

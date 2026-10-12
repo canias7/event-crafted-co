@@ -77,12 +77,12 @@ export default function ForgotPasswordPage() {
             style={{
               background: "rgba(0,0,0,0.035)",
               border: "0.5px solid rgba(0,0,0,0.3)",
-              padding: "16px 18px",
+              padding: "1rem 1.125rem",
             }}
           >
             <p
               className="leading-relaxed"
-              style={{ fontSize: "14px", color: "#000" }}
+              style={{ fontSize: "0.875rem", color: "#000" }}
             >
               {t("auth.forgot.sent_lead")}{" "}
               <span className="font-medium">{email}</span>{" "}
@@ -101,8 +101,8 @@ export default function ForgotPasswordPage() {
             <div
               className="uppercase mb-1.5"
               style={{
-                fontSize: "11px",
-                letterSpacing: "1.5px",
+                fontSize: "0.6875rem",
+                letterSpacing: "0.09375rem",
                 opacity: 0.65,
                 fontWeight: 500,
               }}

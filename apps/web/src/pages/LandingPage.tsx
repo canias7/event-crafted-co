@@ -104,9 +104,9 @@ export default function LandingPage() {
               className="m-0 landing-fadeup hero-headline"
               style={{
                 color: CREAM,
-                fontSize: "clamp(42px, 7vw, 76px)",
+                fontSize: "clamp(2.625rem, 7vw, 4.75rem)",
                 lineHeight: 1.04,
-                letterSpacing: "-1.5px",
+                letterSpacing: "-0.09375rem",
                 fontWeight: 700,
               }}
             >

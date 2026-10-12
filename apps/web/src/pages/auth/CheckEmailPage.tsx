@@ -65,8 +65,8 @@ export default function CheckEmailPage() {
         <div
           className="flex items-center justify-center"
           style={{
-            width: 56,
-            height: 56,
+            width: "3.5rem",
+            height: "3.5rem",
             borderRadius: "50%",
             background: "rgba(0,0,0,0.08)",
             color: "#18181b",
@@ -102,7 +102,7 @@ export default function CheckEmailPage() {
 
         <p
           className="text-center font-serif italic"
-          style={{ fontSize: "12.5px", opacity: 0.7, lineHeight: 1.5 }}
+          style={{ fontSize: "0.78125rem", opacity: 0.7, lineHeight: 1.5 }}
         >
           <Trans
             i18nKey={isVendor ? "check_email.questions" : "check_email.not_received"}
