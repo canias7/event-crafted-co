@@ -629,7 +629,7 @@ export default function VendorSubscriptionPage() {
                 className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
                 style={{
                   background:
-                    "radial-gradient(circle, rgba(0,0,0,0.08) 0%, transparent 70%)",
+                    "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
                 }}
               />
               <div className="relative flex items-start justify-between gap-6 flex-wrap">
@@ -639,7 +639,7 @@ export default function VendorSubscriptionPage() {
                     style={{
                       background:
                         "linear-gradient(135deg, #c9a86a 0%, #e9dcc0 100%)",
-                      color: "#14161a",
+                      color: "#f4f1ea",
                     }}
                   >
                     <Flame className="w-3 h-3" />
@@ -740,7 +740,7 @@ export default function VendorSubscriptionPage() {
                         {tier.wasMonthly && offerActive && !isCurrent && (
                           <span
                             className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
-                            style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
+                            style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
                           >
                             {t("subscription.save_pct", {
                               pct: Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100),

@@ -213,8 +213,8 @@ export default function PublicEventRsvpPage() {
           <div
             className="rounded-2xl p-6 text-center"
             style={{
-              background: "rgba(0,0,0,0.08)",
-              border: "0.5px solid rgba(0,0,0,0.32)",
+              background: "rgba(255,255,255,0.08)",
+              border: "0.5px solid rgba(255,255,255,0.3)",
             }}
           >
             <p className="font-editorial text-2xl">{t("thanks.title")}</p>
@@ -271,12 +271,12 @@ export default function PublicEventRsvpPage() {
                     className={`rounded-full py-2.5 text-sm font-medium transition ${
                       status === s
                         ? "bg-foreground text-background"
-                        : "bg-white border border-border text-foreground hover:bg-muted"
+                        : "bg-card border border-border text-foreground hover:bg-muted"
                     }`}
                     style={
                       status === s
                         ? undefined
-                        : { border: "0.5px solid rgba(0,0,0,0.15)" }
+                        : { border: "0.5px solid rgba(255,255,255,0.15)" }
                     }
                   >
                     {t(`form.choices.${s}`)}

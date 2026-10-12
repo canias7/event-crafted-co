@@ -1303,7 +1303,7 @@ export default function VendorAppointmentsPage({
                         ? t("day.alreadyBookedTitle")
                         : undefined
                     }
-                    className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-foreground px-4 text-xs font-bold disabled:bg-gold-muted h-9 hover:bg-gold-hover"
+                    className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-ink px-4 text-xs font-bold disabled:bg-gold-muted h-9 hover:bg-gold-hover"
                   >
                     {isSelectedBlocked ? (
                       <XIcon className="h-3.5 w-3.5" />
@@ -1374,7 +1374,7 @@ export default function VendorAppointmentsPage({
                     setAListingId(selectedListingId);
                     setAddOpen(true);
                   }}
-                  className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-foreground px-4 text-xs font-bold hover:bg-gold-hover h-9"
+                  className="inline-flex justify-center items-center gap-1 rounded-full bg-gold text-ink px-4 text-xs font-bold hover:bg-gold-hover h-9"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   {t("appointments.add")}

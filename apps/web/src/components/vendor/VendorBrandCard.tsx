@@ -125,7 +125,7 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
               the dark logo backdrop. */}
           {studioVerified ? (
             <div
-              className="absolute -right-2 -top-2 rounded-full bg-white p-[2px]"
+              className="absolute -right-2 -top-2 rounded-full bg-background p-[2px]"
               aria-hidden
             >
               <StudioVerifiedBadge />

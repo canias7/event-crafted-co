@@ -158,7 +158,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       style={{
-        background: "rgba(0,0,0,0.55)",
+        background: "rgba(255,255,255,0.3)",
         backdropFilter: "blur(28px) saturate(140%)",
         WebkitBackdropFilter: "blur(28px) saturate(140%)",
       }}
@@ -167,13 +167,13 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
         className="relative rounded-2xl p-6 w-full max-w-md"
         style={{
           background: "rgba(255,255,255,0.97)",
-          border: "0.5px solid rgba(0,0,0,0.08)",
+          border: "0.5px solid rgba(255,255,255,0.08)",
         }}
       >
         <button
           onClick={onCancel}
           aria-label={t("common.close")}
-          className="absolute top-3 right-3 w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>
@@ -238,7 +238,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
             <rect
               width={viewport}
               height={viewport}
-              fill="rgba(0,0,0,0.45)"
+              fill="rgba(255,255,255,0.3)"
               mask="url(#logo-crop-hole)"
             />
             <circle
@@ -246,7 +246,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
               cy={viewport / 2}
               r={radius}
               fill="none"
-              stroke="rgba(0,0,0,0.25)"
+              stroke="rgba(255,255,255,0.25)"
               strokeWidth="1.5"
             />
           </svg>

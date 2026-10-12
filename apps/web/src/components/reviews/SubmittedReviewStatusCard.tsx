@@ -157,9 +157,9 @@ function StatusTile({
           className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
           style={{
             background: waiting
-              ? "rgba(0,0,0,0.04)"
-              : "rgba(0,0,0,0.08)",
-            color: waiting ? "#8a6f3e" : "#14161a",
+              ? "rgba(255,255,255,0.04)"
+              : "rgba(255,255,255,0.08)",
+            color: waiting ? "#c9a86a" : "#f4f1ea",
           }}
           aria-hidden
         >

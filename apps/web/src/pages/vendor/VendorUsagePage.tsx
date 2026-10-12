@@ -57,10 +57,10 @@ const ACTION_COST: Record<string, number> = {
 
 // Distinct colors per action for the donut + segment bars.
 const ACTION_COLOR: Record<string, string> = {
-  hilux_reply: "#52525b",
-  hilux_regenerate: "#3f3f46",
-  hilux_draft: "#71717a",
-  hilux_followup: "#14161a",
+  hilux_reply: "#c9a86a",
+  hilux_regenerate: "#8a6f3e",
+  hilux_draft: "#e0d2b0",
+  hilux_followup: "#f4f1ea",
   axion_image: "#9333ea",
   mux_minute: "#06b6d4",
   email_parse: "#10b981",
@@ -332,7 +332,7 @@ export function VendorUsagePageImpl() {
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
-          style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
+          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-sans">{t("usage.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -369,7 +369,7 @@ export function VendorUsagePageImpl() {
                       className="rounded-full shrink-0"
                       style={{
                         background: "rgba(255,255,255,0.6)",
-                        borderColor: "rgba(0,0,0,0.3)",
+                        borderColor: "rgba(255,255,255,0.3)",
                       }}
                     >
                       {actingId === "portal" ? (
@@ -407,7 +407,7 @@ export function VendorUsagePageImpl() {
                         className="h-full rounded-full transition-all"
                         style={{
                           width: `${usagePct}%`,
-                          background: "linear-gradient(90deg, #52525b 0%, #14161a 100%)",
+                          background: "linear-gradient(90deg, #8a6f3e 0%, #c9a86a 100%)",
                         }}
                       />
                     </div>
@@ -478,8 +478,8 @@ export function VendorUsagePageImpl() {
                         style={{
                           height: d.credits > 0 ? `${Math.max(heightPct, 4)}%` : "4px",
                           background: d.credits > 0
-                            ? "linear-gradient(180deg, #52525b 0%, #14161a 100%)"
-                            : "rgba(0,0,0,0.08)",
+                            ? "linear-gradient(180deg, #c9a86a 0%, #8a6f3e 100%)"
+                            : "rgba(255,255,255,0.08)",
                           opacity: hoveredBarIdx === null || active ? 1 : 0.55,
                         }}
                       />
@@ -591,7 +591,7 @@ export function VendorUsagePageImpl() {
                       <span
                         className="w-2.5 h-2.5 rounded-sm shrink-0 transition-transform"
                         style={{
-                          background: idle ? "rgba(0,0,0,0.12)" : colorFor(row.action),
+                          background: idle ? "rgba(255,255,255,0.12)" : colorFor(row.action),
                           transform: active ? "scale(1.25)" : undefined,
                         }}
                       />
@@ -762,19 +762,19 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
     18: t("usage.axis_hours.h18"),
   };
   const cellColor = (v: number) => {
-    if (v === 0 || max === 0) return "rgba(0,0,0,0.05)";
+    if (v === 0 || max === 0) return "rgba(255,255,255,0.05)";
     const ratio = v / max;
-    if (ratio > 0.75) return "#14161a";
-    if (ratio > 0.5) return "#52525b";
-    if (ratio > 0.25) return "rgba(0,0,0,0.55)";
-    return "rgba(0,0,0,0.28)";
+    if (ratio > 0.75) return "#f4f1ea";
+    if (ratio > 0.5) return "#c9a86a";
+    if (ratio > 0.25) return "rgba(255,255,255,0.3)";
+    return "rgba(255,255,255,0.15)";
   };
   const swatches = [
-    "rgba(0,0,0,0.05)",
-    "rgba(0,0,0,0.28)",
-    "rgba(0,0,0,0.55)",
-    "#52525b",
-    "#14161a",
+    "rgba(255,255,255,0.05)",
+    "rgba(255,255,255,0.15)",
+    "rgba(255,255,255,0.3)",
+    "#8a6f3e",
+    "#f4f1ea",
   ];
   return (
     <div className="mt-4 flex-1 flex flex-col">
@@ -846,7 +846,7 @@ function Donut({
   return (
     <div className="relative mt-5 mx-auto" style={{ width: 180, height: 180 }}>
       <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-        <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="22" />
+        <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="22" />
         {segments.map((seg) => {
           const segLen = total > 0 ? (seg.value / total) * C : 0;
           const dash = `${segLen} ${C - segLen}`;

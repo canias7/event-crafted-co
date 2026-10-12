@@ -372,14 +372,14 @@ function FieldEditor({
                 style={
                   active
                     ? {
-                        background: "rgba(0,0,0,0.08)",
-                        color: "#14161a",
-                        border: "0.5px solid rgba(0,0,0,0.45)",
+                        background: "rgba(255,255,255,0.08)",
+                        color: "#f4f1ea",
+                        border: "0.5px solid rgba(255,255,255,0.3)",
                       }
                     : {
                         background: "rgba(255,255,255,0.55)",
                         color: "rgba(26,22,18,0.65)",
-                        border: "0.5px solid rgba(0,0,0,0.1)",
+                        border: "0.5px solid rgba(255,255,255,0.1)",
                         backdropFilter: "blur(6px)",
                       }
                 }
@@ -397,9 +397,9 @@ function FieldEditor({
               onClick={() => onToggleTag(opt)}
               className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
               style={{
-                background: "rgba(0,0,0,0.08)",
-                color: "#14161a",
-                border: "0.5px solid rgba(0,0,0,0.45)",
+                background: "rgba(255,255,255,0.08)",
+                color: "#f4f1ea",
+                border: "0.5px solid rgba(255,255,255,0.3)",
               }}
               title={t("attributes.customEntry")}
             >
@@ -483,7 +483,7 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
         style={{
           background: "transparent",
           color: "rgba(26,22,18,0.55)",
-          border: "0.5px dashed rgba(0,0,0,0.4)",
+          border: "0.5px dashed rgba(255,255,255,0.3)",
         }}
         aria-label={t("attributes.addCustomAria")}
       >

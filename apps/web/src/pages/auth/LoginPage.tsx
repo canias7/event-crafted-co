@@ -392,7 +392,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             <Link
               to="/signup"
               className="pb-px font-medium"
-              style={{ borderBottom: "0.5px solid #000" }}
+              style={{ borderBottom: "0.5px solid currentColor" }}
             >
               {tAuth("login.create_account")}
             </Link>
@@ -406,7 +406,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             <Link
               to={otherSideHref}
               className="font-medium pb-px"
-              style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+              style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
             >
               {otherSideLabel}
             </Link>

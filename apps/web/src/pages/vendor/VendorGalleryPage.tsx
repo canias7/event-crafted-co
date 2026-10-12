@@ -1788,7 +1788,7 @@ function AlbumTab({
       className={`shrink-0 inline-flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 text-xs font-medium transition-colors ${
         active
           ? "bg-foreground text-background"
-          : "bg-white border border-border text-foreground hover:bg-muted"
+          : "bg-card border border-border text-foreground hover:bg-muted"
       }`}
     >
       {coverUrl ? (

@@ -70,7 +70,7 @@ export function PhotoHero({
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
           <Link
             to={primary.to}
-            className="inline-flex h-[52px] items-center gap-2 rounded-full bg-gold px-7 text-[15px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+            className="inline-flex h-[52px] items-center gap-2 rounded-full bg-gold px-7 text-[15px] font-bold text-ink transition-colors hover:bg-gold-hover"
           >
             {primary.label} <ArrowRight className="h-4 w-4" />
           </Link>
@@ -113,7 +113,7 @@ export function ClosingBand({
       )}
       <Link
         to={cta.to}
-        className="mt-8 inline-flex h-[52px] items-center gap-2 rounded-full bg-gold px-7 text-[15px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+        className="mt-8 inline-flex h-[52px] items-center gap-2 rounded-full bg-gold px-7 text-[15px] font-bold text-ink transition-colors hover:bg-gold-hover"
       >
         {cta.label} <ArrowRight className="h-4 w-4" />
       </Link>

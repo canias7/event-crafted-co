@@ -41,11 +41,14 @@ const CREAM = "#f4f1ea";
 // `tone="dark"` is the same look as a sticky solid ink bar, for the dark
 // pages (Explore, How it works).
 export function PublicNav({
-  tone = "light",
+  tone: toneProp = "dark",
 }: { tone?: "light" | "overlay" | "dark" } = {}) {
+  // The site is dark everywhere (owner's call, Oct 2026): "light" now
+  // draws the dark bar too, so no page shows a light header.
+  const tone = toneProp === "light" ? "dark" : toneProp;
   const dark = tone === "dark";
   // Cream-on-dark styling, shared by the overlay and dark tones.
-  const overlay = tone !== "light";
+  const overlay = true;
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
@@ -278,7 +281,7 @@ export function PublicNav({
               </Link>
               <Link
                 to="/signup"
-                className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-4 font-bold text-foreground transition-colors hover:bg-gold-hover"
+                className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-4 font-bold text-ink transition-colors hover:bg-gold-hover"
               >
                 {t("nav.signup")}
               </Link>

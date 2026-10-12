@@ -88,7 +88,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
             aria-hidden
             style={{
               background:
-                "radial-gradient(circle at 80% 20%, rgba(0,0,0,0.08), transparent 60%)",
+                "radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08), transparent 60%)",
             }}
           />
           <p className="relative font-label text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-2 pl-14 sm:pl-16">
@@ -130,7 +130,7 @@ function BrandCanvas() {
         aria-hidden
         style={{
           background:
-            "radial-gradient(circle at 18% 22%, rgba(0,0,0,0.05), transparent 55%)",
+            "radial-gradient(circle at 18% 22%, rgba(255,255,255,0.05), transparent 55%)",
         }}
       />
       {[32, 48, 62, 76].map((top, i) => (
@@ -141,7 +141,7 @@ function BrandCanvas() {
           style={{
             top: `${top}%`,
             height: "1.5px",
-            background: `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,${0.06 - i * 0.01}) 50%, rgba(0,0,0,0) 100%)`,
+            background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(0,0,0,${0.06 - i * 0.01}) 50%, rgba(255,255,255,0) 100%)`,
           }}
         />
       ))}

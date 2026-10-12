@@ -102,8 +102,8 @@ export function ListingPicker({
               <span
                 className="w-9 h-9 rounded-full shrink-0 overflow-hidden inline-flex items-center justify-center text-xs font-medium"
                 style={{
-                  background: "rgba(0,0,0,0.08)",
-                  color: "#14161a",
+                  background: "rgba(255,255,255,0.08)",
+                  color: "#f4f1ea",
                 }}
               >
                 {selected?.logo_url ? (

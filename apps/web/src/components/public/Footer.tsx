@@ -14,7 +14,9 @@ export { CONTACT_EMAIL };
 // For hosts / For vendors / Company links. `tone="dark"` for the dark
 // pages (home, Explore, How it works, For hosts, For vendors): cream text
 // on ink, champagne labels, white-at-15% hairlines.
-export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
+// Always dark now (owner's call, Oct 2026); `tone` is kept for old call sites.
+export function Footer(_props: { tone?: "light" | "dark" } = {}) {
+  const tone = "dark";
   const { t } = useTranslation();
   const { t: ts } = useTranslation("shell");
   const dark = tone === "dark";

@@ -364,7 +364,7 @@ export function ChatSendPicker({
     <>
       {/* Only the "+" logo opens the menu — the "Send" text is a plain
           label and intentionally not part of the trigger's hit target. */}
-      <div className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full pl-1.5 pr-3 py-1.5">
+      <div className="inline-flex items-center gap-1.5 text-xs font-bold bg-card border border-border rounded-full pl-1.5 pr-3 py-1.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -458,7 +458,7 @@ export function ChatSendPicker({
                       : void sendProposal()
                   }
                   disabled={sendingDoc}
-                  className="inline-flex justify-center items-center gap-1.5 text-sm font-bold rounded-full bg-gold text-foreground px-4 disabled:bg-gold-muted h-9 hover:bg-gold-hover"
+                  className="inline-flex justify-center items-center gap-1.5 text-sm font-bold rounded-full bg-gold text-ink px-4 disabled:bg-gold-muted h-9 hover:bg-gold-hover"
                 >
                   {sendingDoc ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

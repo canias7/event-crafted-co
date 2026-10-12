@@ -109,7 +109,7 @@ export function ShareVendorButton({
           type="button"
           disabled={disabled}
           aria-label={t("share_vendor.trigger")}
-          className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+          className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted text-muted-foreground disabled:opacity-50"
         >
           <Store className="w-4 h-4" />
         </button>

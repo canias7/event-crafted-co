@@ -124,9 +124,9 @@ export function BookingConfirmationCard({
           style={{
             background:
               state === "confirmed"
-                ? "rgba(0,0,0,0.08)"
-                : "rgba(0,0,0,0.04)",
-            color: state === "confirmed" ? "#14161a" : "#8a6f3e",
+                ? "rgba(255,255,255,0.08)"
+                : "rgba(255,255,255,0.04)",
+            color: state === "confirmed" ? "#f4f1ea" : "#c9a86a",
           }}
           aria-hidden
         >

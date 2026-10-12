@@ -940,8 +940,8 @@ export default function VendorPartnersPage() {
                           <span
                             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold self-center"
                             style={{
-                              background: "rgba(0,0,0,0.08)",
-                              color: "#14161a",
+                              background: "rgba(255,255,255,0.08)",
+                              color: "#f4f1ea",
                             }}
                             aria-hidden
                           >
@@ -1182,7 +1182,7 @@ function PartnerChatPane(props: {
         className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.85)",
-          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
+          borderBottom: "0.5px solid rgba(255,255,255,0.08)",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
@@ -1190,7 +1190,7 @@ function PartnerChatPane(props: {
             type="button"
             onClick={onBack}
             aria-label={t("chat.back")}
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-card border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -1206,8 +1206,8 @@ function PartnerChatPane(props: {
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
                 style={{
-                  background: "rgba(0,0,0,0.08)",
-                  color: "#14161a",
+                  background: "rgba(255,255,255,0.08)",
+                  color: "#f4f1ea",
                 }}
                 aria-hidden
               >
@@ -1244,7 +1244,7 @@ function PartnerChatPane(props: {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label={t("chat.actions")}
-                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
+                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-card border border-border text-foreground hover:bg-muted"
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -1336,8 +1336,8 @@ function PartnerChatPane(props: {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(0,0,0,0.08)",
-                            color: "#14161a",
+                            background: "rgba(255,255,255,0.08)",
+                            color: "#f4f1ea",
                           }}
                           aria-hidden
                         >
@@ -1421,7 +1421,7 @@ function PartnerChatPane(props: {
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
-                                  className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
+                                  className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-ink hover:bg-gold-hover h-9"
                                 >
                                   {t("chat.save")}
                                 </button>
@@ -1499,7 +1499,7 @@ function PartnerChatPane(props: {
         className="sticky bottom-24 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.92)",
-          borderTop: "0.5px solid rgba(0,0,0,0.08)",
+          borderTop: "0.5px solid rgba(255,255,255,0.08)",
         }}
         onDragOver={(e) => {
           if (Array.from(e.dataTransfer.types).includes("Files")) {
@@ -1524,7 +1524,7 @@ function PartnerChatPane(props: {
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-card border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <MapPin className="w-3.5 h-3.5 text-accent" />
               {t("chat.pin_location")}
@@ -1577,7 +1577,7 @@ function PartnerChatPane(props: {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || pendingFiles.length >= MAX_FILES}
                 aria-label={t("chat.attach_files")}
-                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted text-muted-foreground disabled:opacity-50"
               >
                 <Paperclip className="w-4 h-4" />
               </button>
@@ -1595,7 +1595,7 @@ function PartnerChatPane(props: {
                     type="button"
                     disabled={sending}
                     aria-label={t("chat.quick_reactions")}
-                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted text-muted-foreground disabled:opacity-50"
                   >
                     <Smile className="w-4 h-4" />
                   </button>
@@ -1789,7 +1789,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
     <aside
       className="hidden lg:flex flex-col w-80 shrink-0 border-l p-4 gap-3 overflow-hidden"
       style={{
-        borderColor: "rgba(0,0,0,0.08)",
+        borderColor: "rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.4)",
       }}
     >
@@ -1858,7 +1858,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                     className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     style={{
                       background: "rgba(255,255,255,0.6)",
-                      border: "0.5px solid rgba(0,0,0,0.08)",
+                      border: "0.5px solid rgba(255,255,255,0.08)",
                     }}
                   >
                     {r.logo_url ? (
@@ -1871,8 +1871,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                       <span
                         className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
                         style={{
-                          background: "rgba(0,0,0,0.08)",
-                          color: "#14161a",
+                          background: "rgba(255,255,255,0.08)",
+                          color: "#f4f1ea",
                         }}
                       >
                         {initial}

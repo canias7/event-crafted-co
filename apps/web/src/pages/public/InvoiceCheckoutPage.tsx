@@ -299,7 +299,7 @@ export default function InvoiceCheckoutPage() {
       {/* Document — A4-friendly width, white card on the canvas. */}
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-8 print:py-0 print:px-0 print:max-w-none">
         <article
-          className="invoice-doc bg-white rounded-2xl print:rounded-none shadow-[0_24px_60px_-30px_rgba(26,20,16,0.25)] print:shadow-none p-8 sm:p-12 print:p-0"
+          className="surface-light invoice-doc bg-white rounded-2xl print:rounded-none shadow-[0_24px_60px_-30px_rgba(26,20,16,0.25)] print:shadow-none p-8 sm:p-12 print:p-0"
           style={{ border: "0.5px solid rgba(0,0,0,0.06)" }}
         >
           {/* Header — vendor brand on the left, INVOICE block on the right */}

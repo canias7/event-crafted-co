@@ -5,6 +5,9 @@
 // card, below-card link slot). Page-specific content (form fields,
 // copy, role-specific labels) goes through props.
 //
+// Dark like the rest of the site (owner's call, Oct 2026): cream text,
+// champagne accents, see-through card and fields, a gold submit pill.
+//
 // Deliberately undecorated: this used to scatter four-point stars and
 // eight glowing drifting dots across the canvas, which read as
 // snowflakes rather than as brand. Depth comes from the glows, grid
@@ -42,7 +45,7 @@ export function GlassyAuthShell({
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: "transparent", color: "#000" }}
+      style={{ background: "transparent", color: "#f4f1ea" }}
     >
       {/* GLOWS */}
       <div
@@ -55,7 +58,7 @@ export function GlassyAuthShell({
           width: "1100px",
           height: "850px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.007) 32%, rgba(0,0,0,0.004) 58%, transparent 78%)",
+            "radial-gradient(ellipse at center, rgba(201,168,106,0.07) 0%, rgba(201,168,106,0.035) 32%, rgba(201,168,106,0.015) 58%, transparent 78%)",
         }}
       />
       <div
@@ -67,7 +70,7 @@ export function GlassyAuthShell({
           width: "680px",
           height: "580px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.007) 42%, transparent 72%)",
+            "radial-gradient(ellipse at center, rgba(201,168,106,0.05) 0%, rgba(201,168,106,0.025) 42%, transparent 72%)",
         }}
       />
       <div
@@ -79,7 +82,7 @@ export function GlassyAuthShell({
           width: "480px",
           height: "480px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.01) 0%, transparent 65%)",
+            "radial-gradient(ellipse at center, rgba(201,168,106,0.04) 0%, transparent 65%)",
         }}
       />
 
@@ -107,7 +110,7 @@ export function GlassyAuthShell({
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
+              "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -124,7 +127,7 @@ export function GlassyAuthShell({
           left: "50%",
           width: "640px",
           height: "640px",
-          border: "0.5px dashed rgba(0,0,0,0.045)",
+          border: "0.5px dashed rgba(255,255,255,0.08)",
           borderRadius: "50%",
         }}
       />
@@ -144,7 +147,7 @@ export function GlassyAuthShell({
       >
         {/* Headlines */}
         <h1
-          className="auth-headline text-black m-0 w-full text-center"
+          className="auth-headline text-foreground m-0 w-full text-center"
           style={{
             fontSize: "46px",
             fontWeight: 700,
@@ -156,7 +159,7 @@ export function GlassyAuthShell({
           {title}
         </h1>
         <h1
-          className="auth-headline font-editorial text-black m-0 w-full text-center"
+          className="auth-headline font-editorial text-foreground m-0 w-full text-center"
           style={{
             fontSize: "50px",
             fontWeight: 700,
@@ -171,7 +174,7 @@ export function GlassyAuthShell({
         </h1>
         <p
           className="font-serif italic m-0 text-center mb-9"
-          style={{ fontSize: "16px", opacity: 0.7 }}
+          style={{ fontSize: "16px", opacity: 0.85 }}
         >
           {subtitle}
         </p>
@@ -181,10 +184,10 @@ export function GlassyAuthShell({
           className="w-full"
           style={{
             maxWidth: "420px",
-            background: "rgba(255,255,255,0.4)",
+            background: "rgba(255,255,255,0.04)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
-            border: "0.5px solid rgba(0,0,0,0.15)",
+            border: "1px solid rgba(255,255,255,0.15)",
             borderRadius: "18px",
             padding: "28px 28px 24px",
           }}
@@ -196,7 +199,7 @@ export function GlassyAuthShell({
               gap: "8px",
               marginBottom: "22px",
               paddingBottom: "18px",
-              borderBottom: "0.5px solid rgba(0,0,0,0.08)",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
             }}
           >
             <span
@@ -204,8 +207,8 @@ export function GlassyAuthShell({
               style={{
                 width: 6,
                 height: 6,
-                background: "#18181b",
-                boxShadow: "0 0 6px rgba(0,0,0,0.25)",
+                background: "#c9a86a",
+                boxShadow: "0 0 6px rgba(201,168,106,0.5)",
               }}
             />
             <span
@@ -213,7 +216,7 @@ export function GlassyAuthShell({
               style={{
                 fontSize: "10px",
                 letterSpacing: "2px",
-                opacity: 0.75,
+                opacity: 0.85,
               }}
             >
               {pillLabel}
@@ -264,42 +267,42 @@ export function GlassyAuthShell({
           right: 0;
           bottom: -2px;
           height: 0.5px;
-          background: linear-gradient(to right, transparent, #18181b, transparent);
+          background: linear-gradient(to right, transparent, #c9a86a, transparent);
         }
         /* Glassy form input — used by children forms */
         .auth-input {
           width: 100%;
           height: 44px;
           padding: 0 16px;
-          background: rgba(255,255,255,0.55);
+          background: rgba(255,255,255,0.05);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
-          border: 0.5px solid rgba(0,0,0,0.15);
-          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 12px;
           font-size: 14px;
-          color: #000;
+          color: #f4f1ea;
           outline: none;
           transition: all 0.2s;
           font-family: inherit;
         }
         .auth-input:focus {
-          border-color: rgba(0,0,0,0.65);
-          background: rgba(255,255,255,0.75);
-          box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+          border-color: rgba(201,168,106,0.8);
+          background: rgba(255,255,255,0.08);
+          box-shadow: 0 0 0 3px rgba(201,168,106,0.18);
         }
         .auth-input::placeholder {
-          color: rgba(0,0,0,0.35);
+          color: rgba(244,241,234,0.6);
         }
         .auth-submit {
           width: 100%;
           height: 46px;
-          background: #000;
-          color: #fff;
+          background: #c9a86a;
+          color: #14161a;
           border: none;
           border-radius: 999px;
           font-size: 13px;
           letter-spacing: 0.3px;
-          font-weight: 500;
+          font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
           display: inline-flex;
@@ -307,15 +310,12 @@ export function GlassyAuthShell({
           justify-content: center;
           gap: 8px;
           font-family: inherit;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.18);
         }
         .auth-submit:hover:not(:disabled) {
-          background: #1a1a1a;
-          box-shadow: 0 6px 28px rgba(0,0,0,0.3);
-          transform: translateY(-1px);
+          background: #bd9a5b;
         }
         .auth-submit:disabled {
-          opacity: 0.6;
+          background: #e0d2b0;
           cursor: not-allowed;
         }
       `}</style>

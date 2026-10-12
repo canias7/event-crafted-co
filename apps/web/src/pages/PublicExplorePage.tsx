@@ -557,7 +557,7 @@ function ReelsView({
           <button
             type="button"
             onClick={onBrowseFeed}
-            className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+            className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-ink transition-colors hover:bg-gold-hover"
           >
             {t("browseFeed")} <ArrowRight className="h-4 w-4" />
           </button>
@@ -662,7 +662,7 @@ function ReelsView({
           </button>
           <Link
             to={href}
-            className="ml-auto inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-4 text-[13px] font-bold text-foreground transition-colors hover:bg-gold-hover md:ml-0"
+            className="ml-auto inline-flex h-9 items-center whitespace-nowrap rounded-full bg-gold px-4 text-[13px] font-bold text-ink transition-colors hover:bg-gold-hover md:ml-0"
           >
             {t("post.viewProfile")}
           </Link>
@@ -746,13 +746,13 @@ function SavedView({
       <Empty title={t("saved.signedOutTitle")} body={t("saved.signedOutBody")}>
         <Link
           to="/login"
-          className="inline-flex h-11 items-center rounded-full border border-border bg-white px-5 text-[14px] font-bold text-foreground transition-colors hover:border-foreground/30"
+          className="inline-flex h-11 items-center rounded-full border border-border bg-card px-5 text-[14px] font-bold text-foreground transition-colors hover:border-foreground/30"
         >
           {t("saved.logIn")}
         </Link>
         <Link
           to="/signup"
-          className="inline-flex h-11 items-center rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+          className="inline-flex h-11 items-center rounded-full bg-gold px-5 text-[14px] font-bold text-ink transition-colors hover:bg-gold-hover"
         >
           {t("saved.signUp")}
         </Link>
@@ -786,7 +786,7 @@ function SavedView({
             <button
               type="button"
               onClick={onBrowse}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-ink transition-colors hover:bg-gold-hover"
             >
               {t("browseFeed")} <ArrowRight className="h-4 w-4" />
             </button>

@@ -32,7 +32,7 @@ export default function SignupRoleChooserPage() {
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: "transparent", color: "#000" }}
+      style={{ background: "transparent", color: "#f4f1ea" }}
     >
       {/* Ambient glow — primary upper-left blob */}
       <div
@@ -45,7 +45,7 @@ export default function SignupRoleChooserPage() {
           width: "900px",
           height: "700px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.025) 30%, rgba(0,0,0,0.012) 55%, transparent 75%)",
+            "radial-gradient(ellipse at center, rgba(201,168,106,0.120) 0%, rgba(201,168,106,0.062) 30%, rgba(201,168,106,0.030) 55%, transparent 75%)",
         }}
       />
 
@@ -59,7 +59,7 @@ export default function SignupRoleChooserPage() {
           width: "700px",
           height: "600px",
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.025) 40%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(201,168,106,0.100) 0%, rgba(201,168,106,0.062) 40%, transparent 70%)",
         }}
       />
 
@@ -87,7 +87,7 @@ export default function SignupRoleChooserPage() {
             width: "150%",
             height: "800px",
             backgroundImage:
-              "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
+              "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
             transformOrigin: "center bottom",
@@ -105,7 +105,7 @@ export default function SignupRoleChooserPage() {
           <Link
             to="/login"
             className="font-medium pb-px"
-            style={{ borderBottom: "0.5px solid #000" }}
+            style={{ borderBottom: "0.5px solid currentColor" }}
           >
             {t("signup_chooser.sign_in")}
           </Link>
@@ -121,8 +121,8 @@ export default function SignupRoleChooserPage() {
         <div
           className="inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 mb-7"
           style={{
-            border: "0.5px solid rgba(0,0,0,0.7)",
-            background: "rgba(255,255,255,0.55)",
+            border: "0.5px solid rgba(255,255,255,0.4)",
+            background: "rgba(255,255,255,0.05)",
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
           }}
@@ -132,12 +132,12 @@ export default function SignupRoleChooserPage() {
             style={{
               width: 6,
               height: 6,
-              background: "#18181b",
-              boxShadow: "0 0 8px rgba(0,0,0,0.25)",
+              background: "#c9a86a",
+              boxShadow: "0 0 8px rgba(201,168,106,0.5)",
             }}
           />
           <span
-            className="uppercase font-semibold text-black"
+            className="uppercase font-semibold text-foreground"
             style={{ fontSize: "11px", letterSpacing: "2.5px" }}
           >
             {t("signup_chooser.pill")}
@@ -145,7 +145,7 @@ export default function SignupRoleChooserPage() {
         </div>
 
         <h1
-          className="text-black m-0 text-center"
+          className="text-foreground m-0 text-center"
           style={{
             fontSize: "48px",
             fontWeight: 700,
@@ -156,7 +156,7 @@ export default function SignupRoleChooserPage() {
           {t("signup_chooser.title")}
         </h1>
         <h1
-          className="font-editorial text-black mt-2 mb-4 text-center"
+          className="font-editorial text-foreground mt-2 mb-4 text-center"
           style={{
             fontSize: "48px",
             lineHeight: 1.1,
@@ -169,7 +169,7 @@ export default function SignupRoleChooserPage() {
           className="text-center mb-11"
           style={{
             fontSize: "14px",
-            color: "#000",
+            color: "#f4f1ea",
             opacity: 0.7,
             maxWidth: "460px",
             lineHeight: 1.6,
@@ -203,7 +203,7 @@ export default function SignupRoleChooserPage() {
           style={{
             fontSize: "10px",
             letterSpacing: "1.5px",
-            color: "#000",
+            color: "#f4f1ea",
             opacity: 0.7,
           }}
         >
@@ -212,7 +212,7 @@ export default function SignupRoleChooserPage() {
             style={{
               width: 5,
               height: 5,
-              background: "#18181b",
+              background: "#c9a86a",
               boxShadow: "0 0 6px rgba(0,0,0,0.25)",
             }}
           />
@@ -240,8 +240,8 @@ export default function SignupRoleChooserPage() {
           transition: all 0.3s ease;
         }
         .signup-card:hover {
-          background: rgba(255,255,255,0.55) !important;
-          border-color: rgba(0,0,0,0.6) !important;
+          background: rgba(255,255,255,0.05) !important;
+          border-color: rgba(255,255,255,0.4) !important;
           transform: translateY(-2px);
           box-shadow: 0 8px 30px rgba(0,0,0,0.12);
         }
@@ -267,10 +267,10 @@ function RoleCard({
       className="signup-card group flex items-center cursor-pointer"
       style={{
         padding: "22px 24px",
-        background: "rgba(255,255,255,0.35)",
+        background: "rgba(255,255,255,0.05)",
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
-        border: "0.5px solid rgba(0,0,0,0.18)",
+        border: "0.5px solid rgba(255,255,255,0.15)",
         borderRadius: "14px",
         gap: "18px",
       }}
@@ -281,8 +281,8 @@ function RoleCard({
           width: 44,
           height: 44,
           borderRadius: "50%",
-          background: "rgba(255,255,255,0.5)",
-          border: "0.5px solid rgba(0,0,0,0.15)",
+          background: "rgba(255,255,255,0.05)",
+          border: "0.5px solid rgba(255,255,255,0.15)",
         }}
       >
         {icon}
@@ -290,11 +290,11 @@ function RoleCard({
       <div className="flex-1">
         <div
           className="font-editorial"
-          style={{ fontSize: "20px", color: "#000", marginBottom: "3px" }}
+          style={{ fontSize: "20px", color: "#f4f1ea", marginBottom: "3px" }}
         >
           {title}
         </div>
-        <div style={{ fontSize: "12px", color: "#000", opacity: 0.65 }}>
+        <div style={{ fontSize: "12px", color: "#f4f1ea", opacity: 0.65 }}>
           {subtitle}
         </div>
       </div>
@@ -304,7 +304,7 @@ function RoleCard({
           width: 32,
           height: 32,
           borderRadius: "50%",
-          border: "0.5px solid rgba(0,0,0,0.25)",
+          border: "0.5px solid rgba(255,255,255,0.4)",
         }}
       >
         <ArrowRight className="w-3.5 h-3.5" />

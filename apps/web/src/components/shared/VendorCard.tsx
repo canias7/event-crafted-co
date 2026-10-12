@@ -105,7 +105,7 @@ export function VendorCard({ vendor, eager = false, tone = "light", tall = false
         >
           <Heart
             className={`w-4 h-4 transition-colors ${
-              saved ? "fill-accent text-accent" : "text-foreground"
+              saved ? "fill-accent text-accent" : "text-ink"
             }`}
           />
         </button>

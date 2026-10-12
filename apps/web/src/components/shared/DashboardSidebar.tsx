@@ -264,12 +264,12 @@ export function DashboardSidebar({
         // through. Hairline right border tinted amber so it blends
         // into the warm gradient instead of cutting a hard grey line.
         background: "transparent",
-        borderRight: "0.5px solid rgba(0,0,0,0.08)",
+        borderRight: "0.5px solid rgba(255,255,255,0.08)",
       }}
       aria-label={tp("sidebar.nav_label", { title: titleText })}
     >
       {collapsed ? (
-        <div className="px-2 py-4 border-b border-[rgba(0,0,0,0.08)] flex flex-col items-center gap-3">
+        <div className="px-2 py-4 border-b border-[rgba(255,255,255,0.08)] flex flex-col items-center gap-3">
           <Link
             to={backPath}
             title={tp("sidebar.logo_label")}
@@ -287,7 +287,7 @@ export function DashboardSidebar({
           </button>
         </div>
       ) : (
-        <div className="px-5 py-6 border-b border-[rgba(0,0,0,0.08)]">
+        <div className="px-5 py-6 border-b border-[rgba(255,255,255,0.08)]">
           {/* The full logo on its own row (the small size fits the 256px
               sidebar); the plan or area label and the collapse button
               sit under it. */}

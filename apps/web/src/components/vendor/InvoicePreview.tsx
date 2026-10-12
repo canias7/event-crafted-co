@@ -339,7 +339,7 @@ function Sheet({
 }) {
   return (
     <div
-      className={`bg-white rounded-2xl ${padded ? "p-8 sm:p-10" : "p-0"}`}
+      className={`surface-light bg-white rounded-2xl ${padded ? "p-8 sm:p-10" : "p-0"}`}
       style={{
         border: `0.5px solid ${RULE}`,
         boxShadow: "0 16px 40px -28px rgba(26,20,16,0.30)",
