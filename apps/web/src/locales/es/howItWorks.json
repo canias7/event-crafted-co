@@ -47,10 +47,10 @@
       },
       "book": {
         "title": "Contrata con confianza",
-        "body": "Cuando llegue el momento, tu proveedor te envía una propuesta. Revísala, fírmala y paga en línea de forma segura.",
+        "body": "Cuando llegue el momento, tu proveedor te envía una propuesta. Revísala y fírmala en línea, y luego acuerda el pago directamente con tu proveedor.",
         "points": [
           "Propuestas y contratos que puedes firmar en línea",
-          "Pagos seguros en línea",
+          "Pago acordado directamente con tu proveedor",
           "Deja una reseña después de tu evento"
         ]
       }
@@ -73,8 +73,8 @@
         "a": "El equipo de Vendora revisa cada anuncio antes de que aparezca. Los proveedores que además verifican sus documentos muestran una insignia de verificado en su perfil."
       },
       "booking": {
-        "q": "¿Cómo funcionan las reservas y los pagos?",
-        "a": "Tu proveedor te envía una propuesta. Puedes revisarla y firmarla en línea, y luego pagar de forma segura a través de Vendora."
+        "q": "¿Cómo funcionan las reservas?",
+        "a": "Tu proveedor te envía una propuesta que puedes revisar y firmar en línea. El pago se acuerda directamente entre tú y tu proveedor: por ahora, Vendora no recibe pagos de los anfitriones."
       },
       "join": {
         "q": "¿Puedo unirme como proveedor?",

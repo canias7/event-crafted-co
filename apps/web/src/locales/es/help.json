@@ -42,8 +42,8 @@
           "a": "Abre la consulta desde tu Bandeja. Cuando el proveedor responda, la conversación queda ahí — recibirás una notificación cuando conteste."
         },
         "payment_info": {
-          "q": "¿Se comparte mi información de pago con los proveedores?",
-          "a": "No. Los proveedores nunca ven los datos de tu tarjeta ni de tu banco. Los pagos pasan por VendoraPay, nuestro procesador de pagos de marca blanca."
+          "q": "¿Pago a través de Vendora?",
+          "a": "Por ahora no. Acuerdas el pago directamente con tu proveedor, así que Vendora nunca ve los datos de tu tarjeta ni de tu banco."
         }
       }
     },

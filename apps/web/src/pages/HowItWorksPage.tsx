@@ -8,7 +8,7 @@
 // forHosts.json (hero, event types, tools, closing).
 
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, Check, CreditCard, FileText, MessageCircle, Search, Star } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, FileSignature, FileText, MessageCircle, Search, Star } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
@@ -54,7 +54,7 @@ const TOOLS = [
   { id: "messaging", icon: MessageCircle },
   { id: "availability", icon: CalendarDays },
   { id: "quotes", icon: FileText },
-  { id: "payments", icon: CreditCard },
+  { id: "payments", icon: FileSignature },
   { id: "reviews", icon: Star },
 ];
 

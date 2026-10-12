@@ -47,10 +47,10 @@
       },
       "book": {
         "title": "Book with confidence",
-        "body": "When you're ready, your vendor sends a proposal. Review it, sign and pay securely online.",
+        "body": "When you're ready, your vendor sends a proposal. Review it and sign it online, then arrange payment directly with your vendor.",
         "points": [
           "Proposals and contracts you can sign online",
-          "Secure online payments",
+          "Payment arranged directly with your vendor",
           "Leave a review after your event"
         ]
       }
@@ -73,8 +73,8 @@
         "a": "Every listing is reviewed by the Vendora team before it appears. Vendors who also verify their documents show a verified badge on their profile."
       },
       "booking": {
-        "q": "How does booking and payment work?",
-        "a": "Your vendor sends you a proposal. You can review and sign it online, then pay securely through Vendora."
+        "q": "How does booking work?",
+        "a": "Your vendor sends you a proposal, which you can review and sign online. Payment is arranged directly between you and your vendor: Vendora doesn't take payments from hosts at this time."
       },
       "join": {
         "q": "Can I join as a vendor?",

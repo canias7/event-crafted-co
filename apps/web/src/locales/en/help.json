@@ -42,8 +42,8 @@
           "a": "Open the inquiry from your Inbox. Once the vendor responds, the conversation lives there — you'll get a notification when they reply."
         },
         "payment_info": {
-          "q": "Is my payment information shared with vendors?",
-          "a": "No. Vendors never see your card or bank details. Payments flow through VendoraPay, our white-labeled processor."
+          "q": "Do I pay through Vendora?",
+          "a": "Not at this time. You arrange payment directly with your vendor, so Vendora never sees your card or bank details."
         }
       }
     },
