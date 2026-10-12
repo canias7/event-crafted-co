@@ -291,14 +291,14 @@ export default function PublicExplorePage() {
         <div className="pt-8">
           {tab === "feed" &&
             (loading ? (
-              <div className="grid gap-x-6 gap-y-10 md:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i}>
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-10 w-10 rounded-full bg-white/10" />
                       <Skeleton className="h-4 w-40 bg-white/10" />
                     </div>
-                    <Skeleton className="mt-3 aspect-[4/5] w-full rounded-2xl bg-white/10 md:aspect-[4/3]" />
+                    <Skeleton className="mt-3 aspect-square w-full rounded-2xl bg-white/10 md:aspect-[4/3]" />
                   </div>
                 ))}
               </div>
@@ -306,7 +306,7 @@ export default function PublicExplorePage() {
               <Empty title={t("empty.feed")} body={t("empty.tryAnother")} />
             ) : (
               <>
-                <div className="grid gap-x-6 gap-y-10 md:grid-cols-2">
+                <div className="grid gap-x-6 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
                   {visibleFeed.slice(0, shown).map((item, i) => (
                     <FeedPost
                       key={item.key}
@@ -486,7 +486,7 @@ function FeedPost({
           src={item.image}
           alt={item.caption ?? t("post.workBy", { name })}
           loading={eager ? "eager" : "lazy"}
-          className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] md:aspect-[4/3]"
+          className="aspect-square w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] md:aspect-[4/3]"
         />
       </Link>
 
@@ -709,7 +709,7 @@ function VendorsGrid({
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[4/5] w-full rounded-2xl bg-white/10" />
+          <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-white/10" />
         ))}
       </div>
     );
@@ -721,7 +721,7 @@ function VendorsGrid({
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {list.map((v, i) => (
         <div key={v.id} className="min-w-0">
-          <VendorCard vendor={v} eager={i < 4} tone="dark" tall />
+          <VendorCard vendor={v} eager={i < 4} tone="dark" />
         </div>
       ))}
     </div>
@@ -763,7 +763,7 @@ function SavedView({
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[4/5] w-full rounded-2xl bg-white/10" />
+          <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-white/10" />
         ))}
       </div>
     );
