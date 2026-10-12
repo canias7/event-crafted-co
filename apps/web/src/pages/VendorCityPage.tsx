@@ -84,7 +84,7 @@ export default function VendorCityPage() {
     type: "website",
   });
 
-  if (!citySlug) return <Navigate to="/vendors/locations" replace />;
+  if (!citySlug) return <Navigate to="/vendors#locations" replace />;
   if (!loading && inCity.length === 0) {
     return (
       <div className="min-h-screen public-canvas">
@@ -100,7 +100,7 @@ export default function VendorCityPage() {
             <p className="text-muted-foreground mb-8">
               {t("city.empty.body", { city: cityLabel })}
             </p>
-            <Link to="/vendors/locations">
+            <Link to="/vendors#locations">
               <Button variant="outline" className="rounded-full">
                 {t("city.empty.cta")}
               </Button>
@@ -120,7 +120,7 @@ export default function VendorCityPage() {
       <section className="border-b border-border pt-32 pb-12 md:pb-16">
         <div className="container mx-auto px-5 md:px-8 max-w-5xl">
           <Link
-            to="/vendors/locations"
+            to="/vendors#locations"
             className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-accent transition-colors mb-8"
           >
             <ArrowLeft className="w-3.5 h-3.5" />

@@ -1,12 +1,17 @@
-// How it works — a step-by-step walk through Vendora for hosts and for
-// vendors. Dark page (ink, cream text, champagne gold) per the owner's
-// mockup. Every step describes something the product does today.
+// How it works: everything a host needs on one page. This page and
+// "Plan with Vendora" (/for-hosts, which now redirects here) were merged
+// on the owner's call, Oct 2026. Vendors have their own page, For vendors.
+// Dark page (ink, cream text, champagne gold). Every step describes
+// something the product does today.
+//
+// Text: howItWorks.json (hero eyebrow, the five steps, FAQ) and
+// forHosts.json (hero, event types, tools, closing).
 
 import { Link } from "react-router-dom";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, CreditCard, FileText, MessageCircle, Search, Star } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
-import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
+import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 import {
   Accordion,
@@ -14,12 +19,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import heroPhoto from "@/assets/photos/11.webp?as=picture";
+import heroPhoto from "@/assets/photos/45.webp?as=picture";
 import inspirationPhoto from "@/assets/photos/25.webp?as=picture";
 import meetPhoto from "@/assets/photos/07.webp?as=picture";
 import conversationPhoto from "@/assets/photos/44.webp?as=picture";
-import vendorsPhoto from "@/assets/photos/14.webp?as=picture";
-import closingPhoto from "@/assets/photos/61.webp?as=picture";
 import { EmailMenu } from "@/components/shared/EmailMenu";
 
 const INK = "#14161a";
@@ -35,8 +38,7 @@ type Step = {
 };
 
 // Step text lives in locales/<lang>/howItWorks.json under
-// hosts.steps.<id> and vendors.steps.<id>; these lists keep the order
-// and the photos.
+// hosts.steps.<id>; this list keeps the order and the photos.
 const HOST_STEPS: { id: string; image?: PictureSource }[] = [
   { id: "inspiration", image: inspirationPhoto },
   { id: "meet", image: meetPhoto },
@@ -45,7 +47,16 @@ const HOST_STEPS: { id: string; image?: PictureSource }[] = [
   { id: "book" },
 ];
 
-const VENDOR_STEPS = ["profile", "showcase", "approved", "inquiries", "paid", "grow"];
+const EVENT_TYPES = ["weddings", "birthdays", "corporate", "parties", "social", "more"];
+
+const TOOLS = [
+  { id: "search", icon: Search },
+  { id: "messaging", icon: MessageCircle },
+  { id: "availability", icon: CalendarDays },
+  { id: "quotes", icon: FileText },
+  { id: "payments", icon: CreditCard },
+  { id: "reviews", icon: Star },
+];
 
 const FAQ_IDS = ["find", "contact", "checked", "booking", "join", "other"];
 
@@ -62,8 +73,11 @@ const FAQ_LINKS = {
 
 const num = (i: number) => String(i + 1).padStart(2, "0");
 
+const EYEBROW = "m-0 text-[11px] font-bold uppercase tracking-[0.22em]";
+
 export default function HowItWorksPage() {
   const { t } = useTranslation("howItWorks");
+  const { t: th } = useTranslation("forHosts");
   const hostSteps: Step[] = HOST_STEPS.map(({ id, image }) => ({
     title: t(`hosts.steps.${id}.title`),
     body: t(`hosts.steps.${id}.body`),
@@ -73,83 +87,26 @@ export default function HowItWorksPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: INK, color: CREAM }}>
-      <PublicNav tone="dark" />
+      <PhotoHero
+        photo={heroPhoto}
+        position="object-[50%_30%]"
+        eyebrow={t("hero.eyebrow")}
+        title={
+          <Trans
+            t={th}
+            i18nKey="hero.title"
+            components={{ gold: <span className="font-editorial text-gold" /> }}
+          />
+        }
+        sub={th("hero.sub")}
+        primary={{ label: th("hero.primary"), to: "/vendors" }}
+        secondary={{ label: t("hero.im_a_vendor"), to: "/for-vendors" }}
+      />
 
       <main id="main-content">
-        {/* ═══════ HERO ═══════ */}
-        <section className="container mx-auto grid items-center gap-10 px-5 py-12 md:px-8 md:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-14">
-          <div>
-            <p className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: GOLD }}>
-              {t("hero.eyebrow")}
-            </p>
-            <h1
-              className="m-0 mt-4"
-              style={{ fontSize: "clamp(36px, 4.4vw, 54px)", lineHeight: 1.08, letterSpacing: "-1px" }}
-            >
-              <Trans
-                t={t}
-                i18nKey="hero.title"
-                components={{ gold: <span style={{ color: GOLD }} />, br: <br /> }}
-              />
-            </h1>
-            <p className="m-0 mt-5 max-w-md text-[16px] leading-relaxed md:text-lg" style={{ color: SOFT }}>
-              {t("hero.intro")}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <Link
-                to="/vendors"
-                className="inline-flex h-[52px] items-center gap-2 rounded-full bg-gold px-7 text-[15px] font-bold text-foreground transition-colors hover:bg-gold-hover"
-              >
-                {t("hero.explore_vendors")} <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="#for-vendors"
-                className="inline-flex items-center gap-1.5 text-[15px] font-bold transition-colors hover:text-gold"
-                style={{ color: GOLD }}
-              >
-                {t("hero.im_a_vendor")} <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-          <div className="overflow-hidden rounded-3xl border border-white/15">
-            <Picture
-              source={heroPhoto}
-              alt={t("hero.image_alt")}
-              sizes="(min-width: 1024px) 55vw, 100vw"
-              loading="eager"
-              fetchPriority="high"
-              className="aspect-[16/10] h-full w-full object-cover"
-            />
-          </div>
-        </section>
-
-        {/* Jump links */}
-        <div className="container mx-auto px-5 md:px-8">
-          <div className="flex flex-wrap gap-2 border-t border-white/15 pt-8">
-            <a
-              href="#for-hosts"
-              className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-[14px] font-bold transition-colors hover:border-white/40"
-            >
-              {t("jump.planning")}
-            </a>
-            <a
-              href="#for-vendors"
-              className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-[14px] font-bold transition-colors hover:border-white/40"
-            >
-              {t("jump.vendor")}
-            </a>
-            <a
-              href="#faq"
-              className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-[14px] font-bold transition-colors hover:border-white/40"
-            >
-              {t("jump.questions")}
-            </a>
-          </div>
-        </div>
-
-        {/* ═══════ FOR HOSTS ═══════ */}
-        <section id="for-hosts" className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
-          <p className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: GOLD }}>
+        {/* ═══════ THE STEPS ═══════ */}
+        <section id="steps" className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
+          <p className={EYEBROW} style={{ color: GOLD }}>
             {t("hosts.eyebrow")}
           </p>
           <h2 className="m-0 mt-3 text-[30px] leading-tight md:text-[42px]">
@@ -180,99 +137,90 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        {/* ═══════ FOR VENDORS ═══════ */}
-        <section id="for-vendors" className="scroll-mt-20 border-y border-white/15 md:scroll-mt-24">
-          <div className="container mx-auto grid gap-10 px-5 py-14 md:px-8 md:py-20 lg:grid-cols-2 lg:gap-14">
-            <div className="overflow-hidden rounded-3xl border border-white/15 lg:sticky lg:top-32 lg:self-start">
-              <Picture
-                source={vendorsPhoto}
-                alt={t("vendors.image_alt")}
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="aspect-[4/3] h-full w-full object-cover lg:aspect-[4/5]"
-              />
-            </div>
-            <div>
-              <p className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: GOLD }}>
-                {t("vendors.eyebrow")}
-              </p>
-              <h2 className="m-0 mt-3 text-[30px] leading-tight md:text-[42px]">
-                {t("vendors.title")}
-              </h2>
-              <p className="m-0 mt-3 max-w-xl text-[15px] leading-relaxed md:text-base" style={{ color: SOFT }}>
-                {t("vendors.intro")}
-              </p>
-              <ol className="m-0 mt-8 list-none space-y-6 p-0">
-                {VENDOR_STEPS.map((id, i) => (
-                  <li key={id} className="flex gap-4">
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-[15px] font-bold"
-                      style={{ borderColor: GOLD, color: GOLD }}
-                    >
-                      {num(i)}
-                    </span>
-                    <div className="pt-1.5">
-                      <h3 className="m-0 text-[18px] leading-snug">{t(`vendors.steps.${id}.title`)}</h3>
-                      <p className="m-0 mt-1 text-[14.5px] leading-relaxed" style={{ color: SOFT }}>
-                        {t(`vendors.steps.${id}.body`)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              <Link
-                to="/signup/vendor"
-                className="mt-9 inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
-              >
-                {t("vendors.cta")} <ArrowRight className="h-4 w-4" />
-              </Link>
+        {/* ═══════ EVERY EVENT ═══════ */}
+        <section className="border-t border-white/15">
+          <div className="container mx-auto flex flex-col gap-6 px-5 py-14 md:px-8 md:py-16 lg:flex-row lg:items-center lg:gap-12">
+            <p className="m-0 shrink-0 text-[26px] font-bold leading-snug md:text-[30px]">
+              {th("event_types.title_line1")} {th("event_types.title_line2")}{" "}
+              <span className="text-gold">✦</span>
+            </p>
+            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+              {EVENT_TYPES.map((type) => (
+                <li
+                  key={type}
+                  className="inline-flex h-11 items-center rounded-full border border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold"
+                >
+                  {th(`event_types.items.${type}`)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ═══════ TOOLS ═══════ */}
+        <section className="border-t border-white/15">
+          <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
+            <p className="m-0 text-center font-label text-gold">{th("tools.eyebrow")}</p>
+            <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
+              {th("tools.title")}
+            </h2>
+            <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
+              {TOOLS.map((tool) => (
+                <div key={tool.id} className="text-center">
+                  <span
+                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
+                    style={{ border: "1px solid rgba(201,168,106,0.4)" }}
+                  >
+                    <tool.icon className="h-5 w-5 text-gold" aria-hidden />
+                  </span>
+                  <p className="m-0 mt-3 text-[14px] font-bold">{th(`tools.items.${tool.id}.title`)}</p>
+                  <p className="m-0 mt-1 text-[13px] leading-relaxed">{th(`tools.items.${tool.id}.body`)}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* ═══════ FAQ ═══════ */}
-        <section id="faq" className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
-          <p className="m-0 text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: GOLD }}>
-            {t("faq.eyebrow")}
-          </p>
-          <h2 className="m-0 mt-3 text-[30px] leading-tight md:text-[42px]">
-            {t("faq.title")}
-          </h2>
-          <Accordion type="single" collapsible className="mt-8 space-y-3">
-            {FAQ_IDS.map((id) => (
-              <AccordionItem
-                key={id}
-                value={id}
-                className="rounded-xl border border-white/15 px-5 data-[state=open]:border-white/30"
-              >
-                <AccordionTrigger className="py-4 text-left text-[16px] font-bold hover:no-underline [&>svg]:text-gold">
-                  {t(`faq.items.${id}.q`)}
-                </AccordionTrigger>
-                <AccordionContent className="pb-5 text-[15px] leading-relaxed" style={{ color: SOFT }}>
-                  <Trans t={t} i18nKey={`faq.items.${id}.a`} components={FAQ_LINKS} />
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+        <section id="faq" className="border-t border-white/15">
+          <div className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
+            <p className={EYEBROW} style={{ color: GOLD }}>
+              {t("faq.eyebrow")}
+            </p>
+            <h2 className="m-0 mt-3 text-[30px] leading-tight md:text-[42px]">
+              {t("faq.title")}
+            </h2>
+            <Accordion type="single" collapsible className="mt-8 space-y-3">
+              {FAQ_IDS.map((id) => (
+                <AccordionItem
+                  key={id}
+                  value={id}
+                  className="rounded-xl border border-white/15 px-5 data-[state=open]:border-white/30"
+                >
+                  <AccordionTrigger className="py-4 text-left text-[16px] font-bold hover:no-underline [&>svg]:text-gold">
+                    {t(`faq.items.${id}.q`)}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-5 text-[15px] leading-relaxed" style={{ color: SOFT }}>
+                    <Trans t={t} i18nKey={`faq.items.${id}.a`} components={FAQ_LINKS} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </section>
 
-        {/* ═══════ CLOSING CTA ═══════ */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0">
-            <Picture source={closingPhoto} alt="" sizes="100vw" className="h-full w-full object-cover" />
-          </div>
-          <div className="absolute inset-0" style={{ background: "rgba(10,11,14,0.62)" }} />
-          <div className="relative container mx-auto px-5 py-20 text-center md:px-8 md:py-28">
-            <h2 className="hero-headline m-0 mx-auto max-w-2xl text-[32px] leading-tight md:text-[48px]">
-              <Trans t={t} i18nKey="closing.title" components={{ gold: <span style={{ color: GOLD }} /> }} />
-            </h2>
-            <Link
-              to="/vendors"
-              className="mt-8 inline-flex h-[52px] items-center gap-2 rounded-full bg-gold px-7 text-[15px] font-bold text-foreground transition-colors hover:bg-gold-hover"
-            >
-              {t("closing.cta")} <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
+        <div className="border-t border-white/15">
+          <ClosingBand
+            title={
+              <Trans
+                t={th}
+                i18nKey="closing.title"
+                components={{ gold: <span className="font-editorial text-gold" /> }}
+              />
+            }
+            cta={{ label: th("closing.cta"), to: "/vendors" }}
+          />
+        </div>
       </main>
 
       <Footer tone="dark" />

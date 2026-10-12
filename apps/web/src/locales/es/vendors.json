@@ -53,5 +53,8 @@
     "title": "¿Eres <gold>proveedor?</gold>",
     "sub": "Haz que te descubran personas que organizan eventos como los tuyos. El plan Gratis incluye un anuncio.",
     "cta": "Publica tu negocio — gratis"
+  },
+  "locations": {
+    "title": "Explora por ubicación"
   }
 }

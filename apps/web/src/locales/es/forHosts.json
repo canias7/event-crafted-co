@@ -1,32 +1,8 @@
 {
   "hero": {
-    "eyebrow": "Para anfitriones",
     "title": "Planea con confianza. <gold>Disfruta</gold> cada momento.",
     "sub": "Encuentra proveedores de confianza, compara cotizaciones y ten cada detalle de tu evento en un solo lugar.",
-    "primary": "Buscar proveedores",
-    "secondary": "Cómo funciona"
-  },
-  "steps": {
-    "eyebrow": "Cómo funciona",
-    "title": "Cuatro pasos hacia tu evento.",
-    "items": {
-      "discover": {
-        "title": "Descubre",
-        "body": "Encuentra a los proveedores perfectos para tu visión única."
-      },
-      "connect": {
-        "title": "Conecta",
-        "body": "Envía mensajes, compara y recibe cotizaciones personalizadas."
-      },
-      "plan": {
-        "title": "Planea",
-        "body": "Guarda la fecha, los invitados y las notas de cada evento en un solo lugar."
-      },
-      "book": {
-        "title": "Contrata",
-        "body": "Asegura a tus proveedores y relájate: estás en buenas manos."
-      }
-    }
+    "primary": "Buscar proveedores"
   },
   "event_types": {
     "title_line1": "Cada evento.",

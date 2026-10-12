@@ -1,32 +1,8 @@
 {
   "hero": {
-    "eyebrow": "For hosts",
     "title": "Plan with confidence. <gold>Enjoy</gold> every moment.",
     "sub": "Find trusted vendors, compare quotes and keep every detail of your event in one place.",
-    "primary": "Find vendors",
-    "secondary": "How it works"
-  },
-  "steps": {
-    "eyebrow": "How it works",
-    "title": "Four steps to your event.",
-    "items": {
-      "discover": {
-        "title": "Discover",
-        "body": "Find the perfect vendors for your unique vision."
-      },
-      "connect": {
-        "title": "Connect",
-        "body": "Message, compare, and get custom quotes."
-      },
-      "plan": {
-        "title": "Plan",
-        "body": "Keep each event's date, guests and notes in one place."
-      },
-      "book": {
-        "title": "Book",
-        "body": "Secure your vendors and relax, knowing you're in good hands."
-      }
-    }
+    "primary": "Find vendors"
   },
   "event_types": {
     "title_line1": "Every event.",

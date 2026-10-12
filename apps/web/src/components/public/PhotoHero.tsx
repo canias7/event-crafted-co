@@ -5,8 +5,10 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Picture, type PictureSource } from "@/components/shared/Picture";
 
 const INK = "#14161a";
+const SECONDARY =
+  "inline-flex h-11 items-center gap-1.5 text-[15px] font-bold text-[#f4f1ea] transition-colors hover:text-gold";
 
-// Dark photo header for the For hosts and For vendors pages, in the
+// Dark photo header for the How it works and For vendors pages, in the
 // landing page's style (it fades into the ink page below): the overlaid nav, an eyebrow, a headline with one
 // gold word (pass it in `title`), a line of copy, a gold button and a
 // quiet link. The headline and copy get the same readability halo and
@@ -72,12 +74,16 @@ export function PhotoHero({
           >
             {primary.label} <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link
-            to={secondary.to}
-            className="inline-flex h-11 items-center gap-1.5 text-[15px] font-bold text-[#f4f1ea] transition-colors hover:text-gold"
-          >
-            {secondary.label} <ArrowRight className="h-4 w-4" />
-          </Link>
+          {/* "#steps" jumps down the same page; anything else is a route. */}
+          {secondary.to.startsWith("#") ? (
+            <a href={secondary.to} className={SECONDARY}>
+              {secondary.label} <ArrowRight className="h-4 w-4" />
+            </a>
+          ) : (
+            <Link to={secondary.to} className={SECONDARY}>
+              {secondary.label} <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       </div>
     </section>
@@ -85,7 +91,7 @@ export function PhotoHero({
 }
 
 // Dark closing band with one headline and one gold button, used at the
-// end of the For hosts and For vendors pages.
+// end of the How it works and For vendors pages.
 export function ClosingBand({
   title,
   sub,

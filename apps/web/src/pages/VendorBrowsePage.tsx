@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Search, Store, X, ArrowRight, MapPin, CalendarDays, SlidersHorizontal } from "lucide-react";
@@ -28,6 +28,7 @@ import tileEntertainment from "@/assets/photos/63.webp?as=picture";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVendors, type Vendor } from "@/hooks/useVendors";
+import { normalizeLocation } from "@/lib/location";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
@@ -201,7 +202,8 @@ export default function VendorBrowsePage() {
       .filter(
         (v) =>
           loc === "" ||
-          (v.location ?? v.distance ?? "").toLowerCase().includes(loc),
+          (v.location ?? v.distance ?? "").toLowerCase().includes(loc) ||
+          normalizeLocation(v.location ?? v.distance ?? "").toLowerCase().includes(loc),
       )
       .filter(
         (v) =>
@@ -213,6 +215,35 @@ export default function VendorBrowsePage() {
       .filter((v) => !unavailableIds.has(v.id))
       .sort(sortOptions[sort]);
   }, [vendors, search, activeCategories, sort, unavailableIds, locationFilter]);
+
+  // By location (this used to be its own page, /vendors/locations): every
+  // city with vendors, A to Z, with how many. Picking one filters the list.
+  const cities = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const v of vendors) {
+      const label = normalizeLocation(v.location ?? v.distance ?? "");
+      if (label) counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return Array.from(counts, ([label, count]) => ({ label, count })).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+  }, [vendors]);
+
+  // Old links to the locations page arrive as /vendors#locations.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === "#locations" && cities.length > 0) {
+      document.getElementById("locations")?.scrollIntoView({ block: "start" });
+    }
+  }, [hash, cities.length]);
+
+  function pickCity(label: string) {
+    const same = locationFilter.trim().toLowerCase() === label.toLowerCase();
+    setLocationFilter(same ? "" : label);
+    if (!same) {
+      document.getElementById("vendor-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
 
   const hiddenByDate =
     dateFilter && unavailableIds.size > 0
@@ -448,6 +479,35 @@ export default function VendorBrowsePage() {
             })}
           </div>
         </section>
+
+        {/* ═══════ BROWSE BY LOCATION — one pill per city ═══════ */}
+        {cities.length > 0 && (
+          <section id="locations" className="container mx-auto scroll-mt-24 px-5 pt-12 md:px-8 md:pt-16">
+            <h2 className="m-0 text-[26px] leading-tight md:text-[34px]">{t("locations.title")}</h2>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {cities.map((c) => {
+                const selected = locationFilter.trim().toLowerCase() === c.label.toLowerCase();
+                return (
+                  <button
+                    key={c.label}
+                    type="button"
+                    onClick={() => pickCity(c.label)}
+                    aria-pressed={selected}
+                    className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-[14px] font-bold transition-colors ${
+                      selected
+                        ? "border-[#f4f1ea] bg-[#f4f1ea] text-[#14161a]"
+                        : "border-white/15 bg-white/[0.04] text-[#f4f1ea] hover:border-white/40"
+                    }`}
+                  >
+                    <MapPin className={`h-4 w-4 shrink-0 ${selected ? "text-[#14161a]" : "text-gold"}`} aria-hidden />
+                    {c.label}
+                    <span className="font-normal">{c.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ═══════ RESULTS ═══════ */}
         <section id="vendor-results" className="scroll-mt-2 pt-12 md:pt-16">

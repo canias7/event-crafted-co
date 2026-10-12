@@ -7,18 +7,16 @@ import { test, expect } from "@playwright/test";
 
 // Public routes that should render a real page (or a real error state).
 // Redirect-only paths (/vendor-apply, /board/:token,
-// /accept-planning-invite/:token) and removed routes (/vendors/map) are
-// intentionally excluded — their redirect behavior, where relevant, is
-// covered elsewhere.
+// /accept-planning-invite/:token, /vendors/locations, /for-hosts) and
+// removed routes (/vendors/map) are intentionally excluded — their
+// redirect behavior, where relevant, is covered elsewhere.
 const publicRoutes = [
   // Marketing / discovery
   "/",
   "/vendors",
-  "/vendors/locations",
   "/vendors/category/media",
   "/explore",
   "/how-it-works",
-  "/for-hosts",
   "/for-vendors",
   // Auth
   "/login",

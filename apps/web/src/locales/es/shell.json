@@ -3,8 +3,6 @@
     "aria_label": "Sitio público",
     "logo_label": "Vendora — Eventos, simplificados",
     "all_vendors": "Todos los proveedores",
-    "browse_by_location": "Ver por ubicación",
-    "by_location": "Por ubicación",
     "categories": "Categorías",
     "soon": "Pronto",
     "explore": "Explorar",
@@ -19,7 +17,6 @@
     "for_hosts": "Para anfitriones",
     "for_vendors": "Para proveedores",
     "company": "Empresa",
-    "plan_with_vendora": "Planea con Vendora",
     "browse_vendors": "Ver proveedores",
     "explore": "Explorar",
     "grow_with_vendora": "Crece con Vendora",
@@ -49,7 +46,6 @@
     },
     "pages": {
       "browse_vendors": "Ver proveedores",
-      "browse_by_location": "Ver por ubicación",
       "explore": "Explorar",
       "inbox": "Bandeja de entrada",
       "events": "Eventos",
@@ -61,8 +57,7 @@
       "settings": "Configuración"
     },
     "hints": {
-      "directory": "Directorio",
-      "cities": "Ciudades"
+      "directory": "Directorio"
     },
     "open_search": "Abrir búsqueda",
     "search": "Buscar"

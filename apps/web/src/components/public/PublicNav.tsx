@@ -138,11 +138,6 @@ export function PublicNav({
                   {ts("nav.all_vendors")}
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/vendors/locations" className="cursor-pointer">
-                  {ts("nav.browse_by_location")}
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 {ts("nav.categories")}
@@ -358,13 +353,6 @@ export function PublicNav({
                 className="block py-2 text-sm font-medium text-foreground"
               >
                 {ts("nav.all_vendors")}
-              </Link>
-              <Link
-                to="/vendors/locations"
-                onClick={() => setMobileOpen(false)}
-                className="block py-2 text-sm text-muted-foreground"
-              >
-                {ts("nav.by_location")}
               </Link>
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-3 mb-1">
                 {ts("nav.categories")}

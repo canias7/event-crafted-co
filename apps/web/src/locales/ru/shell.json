@@ -3,8 +3,6 @@
     "aria_label": "Навигация по сайту",
     "logo_label": "Vendora — мероприятия без хлопот",
     "all_vendors": "Все подрядчики",
-    "browse_by_location": "Подрядчики по городам",
-    "by_location": "По городам",
     "categories": "Категории",
     "soon": "Скоро",
     "explore": "Обзор",
@@ -19,7 +17,6 @@
     "for_hosts": "Для организаторов",
     "for_vendors": "Для подрядчиков",
     "company": "Компания",
-    "plan_with_vendora": "Планируйте с Vendora",
     "browse_vendors": "Каталог подрядчиков",
     "explore": "Обзор",
     "grow_with_vendora": "Развивайтесь с Vendora",
@@ -49,7 +46,6 @@
     },
     "pages": {
       "browse_vendors": "Каталог подрядчиков",
-      "browse_by_location": "Подрядчики по городам",
       "explore": "Обзор",
       "inbox": "Входящие",
       "events": "Мероприятия",
@@ -61,8 +57,7 @@
       "settings": "Настройки"
     },
     "hints": {
-      "directory": "Каталог",
-      "cities": "Города"
+      "directory": "Каталог"
     },
     "open_search": "Открыть поиск",
     "search": "Поиск"

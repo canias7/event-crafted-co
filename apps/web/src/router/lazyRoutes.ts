@@ -20,8 +20,6 @@ import { lazyWithReload } from "@/lib/lazyWithReload";
 const importVendorBrowse = () => import("@/pages/VendorBrowsePage");
 export const VendorBrowsePage = lazyWithReload(importVendorBrowse);
 
-const importVendorLocations = () => import("@/pages/VendorLocationsPage");
-export const VendorLocationsPage = lazyWithReload(importVendorLocations);
 
 const importVendorCity = () => import("@/pages/VendorCityPage");
 export const VendorCityPage = lazyWithReload(importVendorCity);
@@ -65,8 +63,6 @@ const importHelp = () => import("@/pages/HelpPage");
 export const HelpPage = lazyWithReload(importHelp);
 const importHowItWorks = () => import("@/pages/HowItWorksPage");
 export const HowItWorksPage = lazyWithReload(importHowItWorks);
-const importForHosts = () => import("@/pages/ForHostsPage");
-export const ForHostsPage = lazyWithReload(importForHosts);
 const importForVendors = () => import("@/pages/ForVendorsPage");
 export const ForVendorsPage = lazyWithReload(importForVendors);
 
@@ -185,12 +181,10 @@ export const InquiryDetailPage = lazyWithReload(importInquiryDetail);
 const ROUTE_IMPORTERS: Array<{ pattern: string; importer: () => Promise<unknown> }> = [
   // Static public
   { pattern: "/vendors", importer: importVendorBrowse },
-  { pattern: "/vendors/locations", importer: importVendorLocations },
   { pattern: "/privacy", importer: importPrivacy },
   { pattern: "/terms", importer: importTerms },
   { pattern: "/help", importer: importHelp },
   { pattern: "/how-it-works", importer: importHowItWorks },
-  { pattern: "/for-hosts", importer: importForHosts },
   { pattern: "/for-vendors", importer: importForVendors },
   { pattern: "/pay/link/:slug", importer: importPayLinkCheckout },
   { pattern: "/pay/invoice/:slug", importer: importInvoiceCheckout },

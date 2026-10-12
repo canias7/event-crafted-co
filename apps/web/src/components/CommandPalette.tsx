@@ -38,7 +38,6 @@ interface NavTarget {
 
 const PUBLIC_NAV: NavTarget[] = [
   { labelKey: "browse_vendors", hintKey: "directory", path: "/vendors", icon: Store },
-  { labelKey: "browse_by_location", hintKey: "cities", path: "/vendors/locations", icon: Store },
 ];
 
 // Mirrors mobile host bottom nav (Explore / Inbox / Events / Profile).
