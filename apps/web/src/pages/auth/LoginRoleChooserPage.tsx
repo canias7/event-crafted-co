@@ -32,8 +32,8 @@ export default function LoginRoleChooserPage() {
           top: "30%",
           left: "35%",
           transform: "translate(-50%, -50%)",
-          width: "900px",
-          height: "700px",
+          width: "56.25rem",
+          height: "43.75rem",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.025) 30%, rgba(0,0,0,0.012) 55%, transparent 75%)",
         }}
@@ -46,8 +46,8 @@ export default function LoginRoleChooserPage() {
         style={{
           bottom: 0,
           right: "-10%",
-          width: "700px",
-          height: "600px",
+          width: "43.75rem",
+          height: "37.5rem",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.025) 40%, transparent 70%)",
         }}
@@ -59,7 +59,7 @@ export default function LoginRoleChooserPage() {
         className="pointer-events-none absolute z-0 inset-x-0"
         style={{
           bottom: 0,
-          height: "500px",
+          height: "31.25rem",
           perspective: "800px",
           overflow: "hidden",
           WebkitMaskImage:
@@ -75,7 +75,7 @@ export default function LoginRoleChooserPage() {
             bottom: 0,
             left: "-25%",
             width: "150%",
-            height: "800px",
+            height: "50rem",
             backgroundImage:
               "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
@@ -105,7 +105,7 @@ export default function LoginRoleChooserPage() {
       {/* Centered chooser */}
       <div
         className="relative z-[2] flex flex-col items-center justify-center px-6 md:px-10"
-        style={{ minHeight: "720px", padding: "130px 40px 100px" }}
+        style={{ minHeight: "45rem", padding: "8.125rem 2.5rem 6.25rem" }}
       >
         {/* Pulse pill */}
         <div
@@ -128,7 +128,7 @@ export default function LoginRoleChooserPage() {
           />
           <span
             className="uppercase font-semibold text-black"
-            style={{ fontSize: "11px", letterSpacing: "2.5px" }}
+            style={{ fontSize: "0.6875rem", letterSpacing: "0.15625rem" }}
           >
             {t("login_chooser.pill")}
           </span>
@@ -137,10 +137,10 @@ export default function LoginRoleChooserPage() {
         <h1
           className="text-black m-0 text-center"
           style={{
-            fontSize: "48px",
+            fontSize: "3rem",
             fontWeight: 700,
             lineHeight: 1.1,
-            letterSpacing: "-1.2px",
+            letterSpacing: "-0.075rem",
           }}
         >
           {t("login_chooser.title")}
@@ -148,7 +148,7 @@ export default function LoginRoleChooserPage() {
         <h1
           className="font-editorial text-black mt-2 mb-4 text-center"
           style={{
-            fontSize: "48px",
+            fontSize: "3rem",
             lineHeight: 1.1,
             letterSpacing: "-0.8px",
           }}
@@ -159,7 +159,7 @@ export default function LoginRoleChooserPage() {
         {/* Role cards */}
         <div
           className="w-full flex flex-col gap-3.5"
-          style={{ maxWidth: "520px" }}
+          style={{ maxWidth: "32.5rem" }}
         >
           <RoleCard
             to="/login/host"
@@ -223,20 +223,20 @@ function RoleCard({
       to={to}
       className="login-card group flex items-center gap-4.5 cursor-pointer"
       style={{
-        padding: "22px 24px",
+        padding: "1.375rem 1.5rem",
         background: "rgba(255,255,255,0.35)",
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         border: "0.5px solid rgba(0,0,0,0.18)",
-        borderRadius: "14px",
-        gap: "18px",
+        borderRadius: "0.875rem",
+        gap: "1.125rem",
       }}
     >
       <div
         className="flex items-center justify-center shrink-0"
         style={{
-          width: 44,
-          height: 44,
+          width: "2.75rem",
+          height: "2.75rem",
           borderRadius: "50%",
           background: "rgba(255,255,255,0.5)",
           border: "0.5px solid rgba(0,0,0,0.15)",
@@ -247,19 +247,19 @@ function RoleCard({
       <div className="flex-1">
         <div
           className="font-editorial"
-          style={{ fontSize: "20px", color: "#000", marginBottom: "3px" }}
+          style={{ fontSize: "1.25rem", color: "#000", marginBottom: "0.1875rem" }}
         >
           {title}
         </div>
-        <div style={{ fontSize: "12px", color: "#000", opacity: 0.65 }}>
+        <div style={{ fontSize: "0.75rem", color: "#000", opacity: 0.65 }}>
           {subtitle}
         </div>
       </div>
       <div
         className="flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
         style={{
-          width: 32,
-          height: 32,
+          width: "2rem",
+          height: "2rem",
           borderRadius: "50%",
           border: "0.5px solid rgba(0,0,0,0.25)",
         }}
