@@ -6,3 +6,5 @@
 20261006120000_home_experiment_events.sql
 # Homepage A/B/C test: visit + sign-up-start events, registrations from accounts.
 20261007120000_home_experiment_registrations.sql
+# Vendors can pause a listing: vendor_profiles.paused_at.
+20261012120000_vendor_listing_pause.sql
