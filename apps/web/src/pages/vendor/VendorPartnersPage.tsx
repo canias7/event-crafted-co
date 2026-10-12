@@ -1735,6 +1735,7 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
         .from("vendor_profiles")
         .select("id, user_id, business_name, category, location, logo_url")
         .eq("application_status", "approved")
+        .is("paused_at", null)
         .ilike("business_name", `%${q}%`)
         .order("business_name", { ascending: true })
         .limit(15);

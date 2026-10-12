@@ -115,7 +115,9 @@ export default function VendorDetailPage() {
     window.scrollTo({ top: 0 });
   }, [id, slug]);
   const { session, profile, isApprovedVendor, loading: authLoading } = useAuth();
-  const { vendors, loading: vendorsLoading } = useVendors();
+  // allVendors: a paused listing still opens here (it's only hidden from
+  // browsing); its page says it isn't taking new inquiries.
+  const { allVendors: vendors, loading: vendorsLoading } = useVendors();
   const { isSaved, toggle: toggleSave } = useSavedVendors();
   const [signinPromptOpen, setSigninPromptOpen] = useState(false);
   const [inquiryFormOpen, setInquiryFormOpen] = useState(false);
@@ -375,7 +377,7 @@ export default function VendorDetailPage() {
   }, [vendor, reviewsAvg, reviewsCount]);
 
   function handleInquiryClick(packageId?: string) {
-    if (authLoading) return;
+    if (authLoading || vendor?.paused) return;
     if (!session || !profile) {
       setSigninPromptOpen(true);
       return;
@@ -907,7 +909,13 @@ export default function VendorDetailPage() {
                       {/* Inquiries are host → vendor only. Vendors don't
                           see "Send Inquiry" — they reach other vendors via
                           "Message vendor" below. */}
-                      {!isApprovedVendor && (
+                      {vendor.paused && (
+                        <div className="rounded-xl border border-border bg-muted px-4 py-3 text-sm">
+                          <p className="m-0 font-bold">{t("paused.title")}</p>
+                          <p className="m-0 mt-1">{t("paused.body")}</p>
+                        </div>
+                      )}
+                      {!isApprovedVendor && !vendor.paused && (
                         <Button
                           onClick={() => handleInquiryClick()}
                           disabled={authLoading}
@@ -1000,7 +1008,7 @@ export default function VendorDetailPage() {
 
       {/* Mobile sticky inquiry bar — keeps Send Inquiry one tap away.
           Hidden for vendors (inquiries are host → vendor only). */}
-      {!isPreview && !isApprovedVendor && (
+      {!isPreview && !isApprovedVendor && !vendor.paused && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-label text-muted-foreground text-[10px] tracking-[0.2em]">

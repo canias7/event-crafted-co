@@ -26,7 +26,7 @@
         },
         "pause": {
           "q": "¿Puedo pausar mi anuncio temporalmente?",
-          "a": "Todavía no con un solo interruptor — pero puedes bloquear un rango de fechas completo desde la página Calendario y los anfitriones te verán como no disponible esos días. La pausa completa está en nuestros planes."
+          "a": "Sí. En el sitio web, ve a Mi perfil, abre el anuncio y elige Pausar anuncio. En la app para proveedores, toca el botón de pausa en la tarjeta del anuncio, en Perfil. Mientras esté en pausa, el anuncio no aparece en las búsquedas ni al explorar, y su página les indica a los anfitriones que no estás recibiendo consultas nuevas. Tus conversaciones, tu calendario y tus reseñas no cambian. Elige Reactivar anuncio cuando quieras volver a estar activo."
         },
         "blocked_title": {
           "q": "¿Los anfitriones ven el título que le pongo a una fecha bloqueada?",

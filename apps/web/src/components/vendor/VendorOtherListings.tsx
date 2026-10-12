@@ -52,6 +52,7 @@ export function VendorOtherListings({ vendorId }: { vendorId: string }) {
         )
         .eq("user_id", ownerId)
         .eq("application_status", "approved")
+        .is("paused_at", null)
         .neq("id", vendorId)
         .order("created_at", { ascending: false });
       if (cancelled) return;

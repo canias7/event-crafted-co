@@ -168,6 +168,7 @@ export default function ExploreScreen() {
             "id, image_url, caption, created_at, vendor_id, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
           )
           .eq("vendor.application_status", "approved")
+          .is("vendor.paused_at", null)
           .order("created_at", { ascending: false })
           .limit(100),
         supabase
@@ -176,6 +177,7 @@ export default function ExploreScreen() {
             "id, video_url, thumbnail_url, caption, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
           )
           .eq("vendor.application_status", "approved")
+          .is("vendor.paused_at", null)
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
@@ -184,6 +186,7 @@ export default function ExploreScreen() {
             "id, body, created_at, vendor:vendor_profiles!inner(business_name, logo_url, application_status)",
           )
           .eq("vendor.application_status", "approved")
+          .is("vendor.paused_at", null)
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
@@ -192,6 +195,7 @@ export default function ExploreScreen() {
             "id, business_name, category, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
+          .is("paused_at", null)
           // Only show listings that are actually publish-ready —
           // same four fields the listing builder requires. Admin can
           // approve a half-baked row but the marketplace shouldn't
@@ -208,6 +212,7 @@ export default function ExploreScreen() {
             "vendor_id, storage_path, display_order, vendor:vendor_profiles!inner(application_status)",
           )
           .eq("vendor.application_status", "approved")
+          .is("vendor.paused_at", null)
           .order("display_order", { ascending: true })
           .order("created_at", { ascending: true })
           .limit(500),

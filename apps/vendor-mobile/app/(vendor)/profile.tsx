@@ -153,7 +153,7 @@ export default function ProfileScreen() {
         supabase
           .from("vendor_profiles")
           .select(
-            "id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, verified_at, application_status, slug, logo_url, created_at",
+            "id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, verified_at, application_status, slug, logo_url, created_at, paused_at",
           )
           .eq("user_id", user.id)
           .order("created_at", { ascending: true }),
@@ -904,7 +904,11 @@ function ListingCard({
   const status = listing.application_status ?? "draft";
   const isApproved = status === "approved";
   const isPending = status === "pending";
-  const meta = statusMeta(status);
+  // Paused (owner's call, Oct 2026): still approved, but hidden from
+  // browsing and not taking new inquiries until the vendor resumes it.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isPaused = isApproved && !!(listing as any).paused_at;
+  const meta = isPaused ? { label: "Paused", bg: SURFACE, fg: INK } : statusMeta(status);
 
   // Cover = first portfolio image (the gallery photos for this listing).
   useEffect(() => {
@@ -932,6 +936,38 @@ function ListingCard({
       cancelled = true;
     };
   }, [listing.id]);
+
+  async function togglePause() {
+    const pausing = !isPaused;
+    const apply = async () => {
+      setBusy(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("vendor_profiles")
+        .update({ paused_at: pausing ? new Date().toISOString() : null })
+        .eq("id", listing.id);
+      setBusy(false);
+      if (error) {
+        dialog.show({
+          icon: "alert-circle",
+          title: pausing ? "Couldn't pause listing" : "Couldn't resume listing",
+          message: error.message,
+        });
+      } else onChanged();
+    };
+    if (!pausing) {
+      await apply();
+      return;
+    }
+    dialog.show({
+      icon: "pause-circle",
+      title: "Pause this listing?",
+      message:
+        "It's hidden from search and browsing, and your page tells hosts you're not taking new inquiries. Your chats, calendar and reviews stay as they are. Resume anytime.",
+      confirmLabel: "Pause",
+      onConfirm: apply,
+    });
+  }
 
   async function unpublish() {
     dialog.show({
@@ -1072,6 +1108,9 @@ function ListingCard({
           }}
         >
           {/* No edit button: tapping the card already opens the editor. */}
+          {isApproved ? (
+            <CardAction icon={isPaused ? "play" : "pause"} onPress={togglePause} disabled={busy} />
+          ) : null}
           {isApproved ? (
             <CardAction icon="eye-off" onPress={unpublish} disabled={busy} />
           ) : null}

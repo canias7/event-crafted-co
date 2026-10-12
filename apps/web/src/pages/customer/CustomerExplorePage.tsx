@@ -116,6 +116,7 @@ export default function CustomerExplorePage() {
             "id, business_name, category, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, bio, logo_url, slug",
           )
           .eq("application_status", "approved")
+          .is("paused_at", null)
           .not("location", "is", null)
           .not("category", "is", null)
           .or("price_min_cents.gt.0,custom_pricing.eq.true")
@@ -127,6 +128,7 @@ export default function CustomerExplorePage() {
             "vendor_id, storage_path, display_order, vendor:vendor_profiles!inner(application_status)",
           )
           .eq("vendor.application_status", "approved")
+          .is("vendor.paused_at", null)
           .order("display_order", { ascending: true })
           .limit(300),
       ]);

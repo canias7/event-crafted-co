@@ -26,7 +26,7 @@
         },
         "pause": {
           "q": "Can I pause my listing temporarily?",
-          "a": "Not yet as a single switch — but you can block out an entire date range from the Calendar page and hosts will see you as unavailable for those days. Full pause is on the roadmap."
+          "a": "Yes. On the website, go to My Profile, open the listing and choose Pause listing. In the vendor app, tap the pause button on the listing's card in Profile. While it's paused, the listing is hidden from search and browsing, and its page tells hosts you're not taking new inquiries. Your conversations, calendar and reviews stay as they are. Choose Resume listing whenever you're ready to go live again."
         },
         "blocked_title": {
           "q": "Do hosts see the title I add to a blocked date?",

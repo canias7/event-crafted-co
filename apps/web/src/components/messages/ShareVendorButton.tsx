@@ -66,6 +66,7 @@ export function ShareVendorButton({
         .from("vendor_profiles")
         .select("id, business_name, category, location, logo_url")
         .eq("application_status", "approved")
+        .is("paused_at", null)
         .ilike("business_name", `%${q}%`)
         .order("business_name", { ascending: true })
         .limit(10);

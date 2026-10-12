@@ -279,5 +279,9 @@
       "sendFailed": "Couldn't send inquiry: {{message}}",
       "sent": "Inquiry sent — vendor will reply soon"
     }
+  },
+  "paused": {
+    "title": "Taking a break",
+    "body": "This vendor isn't taking new inquiries right now. Check back soon."
   }
 }
