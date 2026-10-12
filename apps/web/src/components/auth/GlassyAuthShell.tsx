@@ -52,8 +52,8 @@ export function GlassyAuthShell({
           top: "32%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "68.75rem",
-          height: "53.125rem",
+          width: "1100px",
+          height: "850px",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.007) 32%, rgba(0,0,0,0.004) 58%, transparent 78%)",
         }}
@@ -62,10 +62,10 @@ export function GlassyAuthShell({
         aria-hidden
         className="pointer-events-none absolute z-0"
         style={{
-          bottom: "-7.5rem",
+          bottom: "-120px",
           right: "-8%",
-          width: "42.5rem",
-          height: "36.25rem",
+          width: "680px",
+          height: "580px",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.007) 42%, transparent 72%)",
         }}
@@ -76,8 +76,8 @@ export function GlassyAuthShell({
         style={{
           top: "65%",
           left: "-8%",
-          width: "30rem",
-          height: "30rem",
+          width: "480px",
+          height: "480px",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.01) 0%, transparent 65%)",
         }}
@@ -89,7 +89,7 @@ export function GlassyAuthShell({
         className="pointer-events-none absolute z-0 inset-x-0"
         style={{
           bottom: 0,
-          height: "23.75rem",
+          height: "380px",
           perspective: "800px",
           overflow: "hidden",
           WebkitMaskImage:
@@ -105,7 +105,7 @@ export function GlassyAuthShell({
             bottom: 0,
             left: "-25%",
             width: "150%",
-            height: "50rem",
+            height: "800px",
             backgroundImage:
               "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
@@ -122,8 +122,8 @@ export function GlassyAuthShell({
         style={{
           top: "50%",
           left: "50%",
-          width: "40rem",
-          height: "40rem",
+          width: "640px",
+          height: "640px",
           border: "0.5px dashed rgba(0,0,0,0.045)",
           borderRadius: "50%",
         }}
@@ -140,17 +140,17 @@ export function GlassyAuthShell({
       {/* MAIN */}
       <div
         className="relative z-[2] flex flex-col items-center justify-center"
-        style={{ padding: "8.125rem 2.5rem 4rem", minHeight: "100vh" }}
+        style={{ padding: "130px 40px 64px", minHeight: "100vh" }}
       >
         {/* Headlines */}
         <h1
           className="auth-headline text-black m-0 w-full text-center"
           style={{
-            fontSize: "2.875rem",
+            fontSize: "46px",
             fontWeight: 700,
             lineHeight: 1.02,
-            letterSpacing: "-0.075rem",
-            marginBottom: "0.125rem",
+            letterSpacing: "-1.2px",
+            marginBottom: "2px",
           }}
         >
           {title}
@@ -158,11 +158,11 @@ export function GlassyAuthShell({
         <h1
           className="auth-headline font-editorial text-black m-0 w-full text-center"
           style={{
-            fontSize: "3.125rem",
+            fontSize: "50px",
             fontWeight: 700,
             lineHeight: 1.02,
             letterSpacing: "-0.7px",
-            marginBottom: "1rem",
+            marginBottom: "16px",
           }}
         >
           <span className="auth-underline-shimmer relative inline-block">
@@ -171,7 +171,7 @@ export function GlassyAuthShell({
         </h1>
         <p
           className="font-serif italic m-0 text-center mb-9"
-          style={{ fontSize: "1rem", opacity: 0.7 }}
+          style={{ fontSize: "16px", opacity: 0.7 }}
         >
           {subtitle}
         </p>
@@ -180,22 +180,22 @@ export function GlassyAuthShell({
         <div
           className="w-full"
           style={{
-            maxWidth: "26.25rem",
+            maxWidth: "420px",
             background: "rgba(255,255,255,0.4)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             border: "0.5px solid rgba(0,0,0,0.15)",
-            borderRadius: "1.125rem",
-            padding: "1.75rem 1.75rem 1.5rem",
+            borderRadius: "18px",
+            padding: "28px 28px 24px",
           }}
         >
           {/* Pill header */}
           <div
             className="flex items-center justify-center"
             style={{
-              gap: "0.5rem",
-              marginBottom: "1.375rem",
-              paddingBottom: "1.125rem",
+              gap: "8px",
+              marginBottom: "22px",
+              paddingBottom: "18px",
               borderBottom: "0.5px solid rgba(0,0,0,0.08)",
             }}
           >
@@ -211,8 +211,8 @@ export function GlassyAuthShell({
             <span
               className="uppercase font-medium"
               style={{
-                fontSize: "0.625rem",
-                letterSpacing: "0.125rem",
+                fontSize: "10px",
+                letterSpacing: "2px",
                 opacity: 0.75,
               }}
             >
@@ -226,7 +226,7 @@ export function GlassyAuthShell({
         {belowCardLink && (
           <div
             className="text-center flex flex-col gap-1.5"
-            style={{ marginTop: "1.5rem", fontSize: "0.8125rem" }}
+            style={{ marginTop: "24px", fontSize: "13px" }}
           >
             {belowCardLink}
           </div>

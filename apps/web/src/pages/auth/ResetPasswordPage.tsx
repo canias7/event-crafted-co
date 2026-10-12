@@ -170,12 +170,12 @@ export default function ResetPasswordPage() {
             style={{
               background: "rgba(220,38,38,0.06)",
               border: "0.5px solid rgba(220,38,38,0.3)",
-              padding: "1rem 1.125rem",
+              padding: "16px 18px",
             }}
           >
             <p
               className="leading-relaxed"
-              style={{ fontSize: "0.875rem", color: "#000" }}
+              style={{ fontSize: "14px", color: "#000" }}
             >
               {t("reset.form.invalid_link")}
             </p>
@@ -192,8 +192,8 @@ export default function ResetPasswordPage() {
             <div
               className="uppercase mb-1.5"
               style={{
-                fontSize: "0.6875rem",
-                letterSpacing: "0.09375rem",
+                fontSize: "11px",
+                letterSpacing: "1.5px",
                 opacity: 0.65,
                 fontWeight: 500,
               }}
@@ -232,7 +232,7 @@ export default function ResetPasswordPage() {
               <p
                 id="pw-error"
                 className="mt-1.5"
-                style={{ fontSize: "0.75rem", color: "rgb(220,38,38)" }}
+                style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
               >
                 {t("reset.form.too_short")}
               </p>
@@ -243,8 +243,8 @@ export default function ResetPasswordPage() {
             <div
               className="uppercase mb-1.5"
               style={{
-                fontSize: "0.6875rem",
-                letterSpacing: "0.09375rem",
+                fontSize: "11px",
+                letterSpacing: "1.5px",
                 opacity: 0.65,
                 fontWeight: 500,
               }}
@@ -269,7 +269,7 @@ export default function ResetPasswordPage() {
               <p
                 id="confirm-error"
                 className="mt-1.5"
-                style={{ fontSize: "0.75rem", color: "rgb(220,38,38)" }}
+                style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
               >
                 {t("reset.form.mismatch")}
               </p>

@@ -58,7 +58,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen text-foreground" style={{ backgroundColor: INK }}>
       {/* ═══════════════ HERO — cinematic full-bleed ═══════════════ */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: INK }}>
+      {/* On big desktop screens the video fills the whole window (owner's
+          call); the words and buttons keep their normal size, centred in it. */}
+      <section
+        className="relative flex flex-col overflow-hidden min-[1600px]:min-h-svh"
+        style={{ backgroundColor: INK }}
+      >
         {/* Backdrop: the looping venue video, or its first frame with the
             slow drift when motion is off. */}
         {playVideo ? (
@@ -98,15 +103,15 @@ export default function LandingPage() {
         <PublicNav tone="overlay" />
 
         {/* HERO CONTENT */}
-        <div className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24 min-[1600px]:my-auto">
           <div className="mx-auto max-w-3xl text-center">
             <h1
               className="m-0 landing-fadeup hero-headline"
               style={{
                 color: CREAM,
-                fontSize: "clamp(2.625rem, 7vw, 4.75rem)",
+                fontSize: "clamp(42px, 7vw, 76px)",
                 lineHeight: 1.04,
-                letterSpacing: "-0.09375rem",
+                letterSpacing: "-1.5px",
                 fontWeight: 700,
               }}
             >

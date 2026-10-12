@@ -42,8 +42,8 @@ export default function SignupRoleChooserPage() {
           top: "30%",
           left: "35%",
           transform: "translate(-50%, -50%)",
-          width: "56.25rem",
-          height: "43.75rem",
+          width: "900px",
+          height: "700px",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.025) 30%, rgba(0,0,0,0.012) 55%, transparent 75%)",
         }}
@@ -56,8 +56,8 @@ export default function SignupRoleChooserPage() {
         style={{
           bottom: 0,
           right: "-10%",
-          width: "43.75rem",
-          height: "37.5rem",
+          width: "700px",
+          height: "600px",
           background:
             "radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.025) 40%, transparent 70%)",
         }}
@@ -69,7 +69,7 @@ export default function SignupRoleChooserPage() {
         className="pointer-events-none absolute z-0 inset-x-0"
         style={{
           bottom: 0,
-          height: "31.25rem",
+          height: "500px",
           perspective: "800px",
           overflow: "hidden",
           WebkitMaskImage:
@@ -85,7 +85,7 @@ export default function SignupRoleChooserPage() {
             bottom: 0,
             left: "-25%",
             width: "150%",
-            height: "50rem",
+            height: "800px",
             backgroundImage:
               "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
@@ -115,7 +115,7 @@ export default function SignupRoleChooserPage() {
       {/* Centered chooser */}
       <div
         className="relative z-[2] flex flex-col items-center justify-center px-6 md:px-10"
-        style={{ minHeight: "45rem", padding: "8.125rem 2.5rem 6.25rem" }}
+        style={{ minHeight: "720px", padding: "130px 40px 100px" }}
       >
         {/* Pulse pill */}
         <div
@@ -138,7 +138,7 @@ export default function SignupRoleChooserPage() {
           />
           <span
             className="uppercase font-semibold text-black"
-            style={{ fontSize: "0.6875rem", letterSpacing: "0.15625rem" }}
+            style={{ fontSize: "11px", letterSpacing: "2.5px" }}
           >
             {t("signup_chooser.pill")}
           </span>
@@ -147,10 +147,10 @@ export default function SignupRoleChooserPage() {
         <h1
           className="text-black m-0 text-center"
           style={{
-            fontSize: "3rem",
+            fontSize: "48px",
             fontWeight: 700,
             lineHeight: 1.1,
-            letterSpacing: "-0.075rem",
+            letterSpacing: "-1.2px",
           }}
         >
           {t("signup_chooser.title")}
@@ -158,7 +158,7 @@ export default function SignupRoleChooserPage() {
         <h1
           className="font-editorial text-black mt-2 mb-4 text-center"
           style={{
-            fontSize: "3rem",
+            fontSize: "48px",
             lineHeight: 1.1,
             letterSpacing: "-0.8px",
           }}
@@ -168,10 +168,10 @@ export default function SignupRoleChooserPage() {
         <p
           className="text-center mb-11"
           style={{
-            fontSize: "0.875rem",
+            fontSize: "14px",
             color: "#000",
             opacity: 0.7,
-            maxWidth: "28.75rem",
+            maxWidth: "460px",
             lineHeight: 1.6,
           }}
         >
@@ -181,7 +181,7 @@ export default function SignupRoleChooserPage() {
         {/* Role cards */}
         <div
           className="w-full flex flex-col gap-3.5"
-          style={{ maxWidth: "32.5rem" }}
+          style={{ maxWidth: "520px" }}
         >
           <RoleCard
             to="/signup/host"
@@ -201,8 +201,8 @@ export default function SignupRoleChooserPage() {
         <div
           className="mt-12 inline-flex items-center gap-2"
           style={{
-            fontSize: "0.625rem",
-            letterSpacing: "0.09375rem",
+            fontSize: "10px",
+            letterSpacing: "1.5px",
             color: "#000",
             opacity: 0.7,
           }}
@@ -266,20 +266,20 @@ function RoleCard({
       to={to}
       className="signup-card group flex items-center cursor-pointer"
       style={{
-        padding: "1.375rem 1.5rem",
+        padding: "22px 24px",
         background: "rgba(255,255,255,0.35)",
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         border: "0.5px solid rgba(0,0,0,0.18)",
-        borderRadius: "0.875rem",
-        gap: "1.125rem",
+        borderRadius: "14px",
+        gap: "18px",
       }}
     >
       <div
         className="flex items-center justify-center shrink-0"
         style={{
-          width: "2.75rem",
-          height: "2.75rem",
+          width: 44,
+          height: 44,
           borderRadius: "50%",
           background: "rgba(255,255,255,0.5)",
           border: "0.5px solid rgba(0,0,0,0.15)",
@@ -290,19 +290,19 @@ function RoleCard({
       <div className="flex-1">
         <div
           className="font-editorial"
-          style={{ fontSize: "1.25rem", color: "#000", marginBottom: "0.1875rem" }}
+          style={{ fontSize: "20px", color: "#000", marginBottom: "3px" }}
         >
           {title}
         </div>
-        <div style={{ fontSize: "0.75rem", color: "#000", opacity: 0.65 }}>
+        <div style={{ fontSize: "12px", color: "#000", opacity: 0.65 }}>
           {subtitle}
         </div>
       </div>
       <div
         className="flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
         style={{
-          width: "2rem",
-          height: "2rem",
+          width: 32,
+          height: 32,
           borderRadius: "50%",
           border: "0.5px solid rgba(0,0,0,0.25)",
         }}

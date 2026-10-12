@@ -45,8 +45,7 @@ export function VendoraMark({
       width={size}
       height={size}
       className={cn("shrink-0 object-contain", className)}
-      // rem so the mark grows with the page on big screens (index.css).
-      style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }}
+      style={{ width: size, height: size }}
     />
   );
 }
@@ -107,7 +106,7 @@ export function VendoraLogo({
             className="font-label mt-1 whitespace-nowrap"
             style={{
               color: onDark ? "#c9a86a" : "#8a6f3e",
-              fontSize: `${dims.tag / 16}rem`,
+              fontSize: dims.tag,
               letterSpacing: "0.32em",
             }}
           >

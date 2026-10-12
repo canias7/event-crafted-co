@@ -976,13 +976,3 @@ html:lang(ru) :is(h1, h2, h3, h4, h5, h6, .font-editorial, .font-display) {
     font-size: 36px !important;
   }
 }
-
-/* Big screens get the laptop layout, scaled up (owner's call, Oct 2026).
-   From 1440px the root font size grows with the window (16px at 1440,
-   ~21px at 1920, ~28px at 2560, then stays), and postcss.config.js turns
-   pixel sizes into rem, so the whole page grows as one. */
-@media (min-width: 1440px) {
-  html {
-    font-size: min(calc(100vw / 90), 28.4444px);
-  }
-}
