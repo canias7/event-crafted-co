@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Instagram, Mail } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
+import { EmailMenu } from "@/components/public/EmailMenu";
 
 export const INSTAGRAM_URL = "https://www.instagram.com/event_vendora/";
 export const INSTAGRAM_HANDLE = "@event_vendora";
@@ -81,13 +82,13 @@ export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
                 <Instagram className={`h-4 w-4 ${dark ? "text-gold" : "text-accent"}`} aria-hidden />
                 {INSTAGRAM_HANDLE}
               </a>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className={`inline-flex items-center gap-2 [overflow-wrap:anywhere] ${link}`}
+              <EmailMenu
+                email={CONTACT_EMAIL}
+                className={`inline-flex items-center gap-2 text-left [overflow-wrap:anywhere] ${link}`}
               >
                 <Mail className={`h-4 w-4 shrink-0 ${dark ? "text-gold" : "text-accent"}`} aria-hidden />
                 {CONTACT_EMAIL}
-              </a>
+              </EmailMenu>
             </div>
           </div>
 
