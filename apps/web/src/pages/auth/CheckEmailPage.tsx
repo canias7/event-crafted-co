@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassyAuthShell } from "@/components/auth/GlassyAuthShell";
 import { authErrorText } from "@/components/auth/authErrors";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 export default function CheckEmailPage() {
   const { t } = useTranslation("auth");
@@ -108,11 +109,7 @@ export default function CheckEmailPage() {
             ns="auth"
             components={{
               emailLink: (
-                <a
-                  href="mailto:hello@eventvendora.com"
-                  className="font-medium pb-px"
-                  style={{ borderBottom: "0.5px solid currentColor" }}
-                />
+                <EmailMenu className="font-medium pb-px border-b-[0.5px] border-current" />
               ),
             }}
           />

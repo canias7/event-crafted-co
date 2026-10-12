@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Instagram, Mail } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
-import { EmailMenu } from "@/components/public/EmailMenu";
+import { EmailMenu } from "@/components/shared/EmailMenu";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 export const INSTAGRAM_URL = "https://www.instagram.com/event_vendora/";
 export const INSTAGRAM_HANDLE = "@event_vendora";
-export const CONTACT_EMAIL = "hello@eventvendora.com";
+export { CONTACT_EMAIL };
 
 // The site footer on every public page: logo, Instagram and email, then
 // For hosts / For vendors / Company links. `tone="dark"` for the dark
@@ -83,7 +84,6 @@ export function Footer({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
                 {INSTAGRAM_HANDLE}
               </a>
               <EmailMenu
-                email={CONTACT_EMAIL}
                 className={`inline-flex items-center gap-2 text-left [overflow-wrap:anywhere] ${link}`}
               >
                 <Mail className={`h-4 w-4 shrink-0 ${dark ? "text-gold" : "text-accent"}`} aria-hidden />

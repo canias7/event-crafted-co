@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 // Error codes from claim_vendor_listing that have their own message
 // (claim.json → toast.<code>); anything else gets toast.fallback.
@@ -220,7 +221,7 @@ export default function ClaimVendorPage() {
             t={t}
             i18nKey="notYours"
             components={{
-              mail: <a href="mailto:hello@eventvendora.com" className="text-accent underline" />,
+              mail: <EmailMenu className="text-accent underline" />,
             }}
           />
         </p>

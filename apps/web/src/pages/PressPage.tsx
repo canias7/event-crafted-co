@@ -4,13 +4,13 @@
 // came off in Oct 2026 and are tracked in the owner's "Press page — to
 // work on later" doc until they're real.
 
-import { Download, Mail, Copy, Check } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { Download, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
-import { CONTACT_EMAIL, Footer } from "@/components/public/Footer";
+import { Footer } from "@/components/public/Footer";
+import { EmailMenu } from "@/components/shared/EmailMenu";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { VendoraLogo } from "@/components/shared/VendoraLogo";
 import { Button } from "@/components/ui/button";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -38,30 +38,19 @@ const PALETTE = [
 
 export default function PressPage() {
   const { t } = useTranslation("press");
-  const [copied, setCopied] = useState(false);
 
   useDocumentMeta({
     title: t("meta.title"),
     description: t("meta.description"),
   });
 
-  async function copyEmail() {
-    try {
-      await navigator.clipboard.writeText(CONTACT_EMAIL);
-      setCopied(true);
-      toast.success(t("toast.copied"));
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error(t("toast.copy_failed"));
-    }
-  }
-
   const emailButton = (
-    <Button type="button" onClick={copyEmail}>
-      {copied ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Mail className="mr-1.5 h-3.5 w-3.5" />}
-      {CONTACT_EMAIL}
-      <Copy className="ml-1.5 h-3 w-3" />
-    </Button>
+    <EmailMenu subject="Press inquiry" asChild>
+      <Button type="button">
+        <Mail className="mr-1.5 h-3.5 w-3.5" />
+        {CONTACT_EMAIL}
+      </Button>
+    </EmailMenu>
   );
 
   return (

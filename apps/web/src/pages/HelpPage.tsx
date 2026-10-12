@@ -11,7 +11,9 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Mail, FileText, Lock, MessageCircle } from "lucide-react";
 import { PublicNav } from "@/components/public/PublicNav";
-import { CONTACT_EMAIL, Footer } from "@/components/public/Footer";
+import { Footer } from "@/components/public/Footer";
+import { EmailMenu } from "@/components/shared/EmailMenu";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 const INK = "#14161a";
 
@@ -53,25 +55,27 @@ export default function HelpPage() {
         </p>
 
         {/* Primary contact card */}
-        <a
-          href={`mailto:${CONTACT_EMAIL}?subject=Vendora%20support%20request`}
-          className="block rounded-2xl border border-white/15 bg-white/[0.03] hover:border-white/40 p-5 mb-10 transition-colors"
+        <EmailMenu subject="Vendora support request" asChild>
+        <button
+          type="button"
+          className="block w-full text-left rounded-2xl border border-white/15 bg-white/[0.03] hover:border-white/40 p-5 mb-10 transition-colors"
         >
-          <div className="flex items-center gap-4">
+          <span className="flex items-center gap-4">
             <span className="w-11 h-11 rounded-xl bg-gold/15 text-gold inline-flex items-center justify-center shrink-0">
               <Mail className="w-5 h-5" />
             </span>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold">{t("email_card.title")}</p>
-              <p className="text-sm text-[#f4f1ea]/80">
+            <span className="block flex-1 min-w-0">
+              <span className="block font-semibold">{t("email_card.title")}</span>
+              <span className="block text-sm text-[#f4f1ea]/80">
                 {t("email_card.reply_time", { email: CONTACT_EMAIL })}
-              </p>
-            </div>
+              </span>
+            </span>
             <span className="text-xs font-bold text-gold">
               {t("email_card.open")}
             </span>
-          </div>
-        </a>
+          </span>
+        </button>
+        </EmailMenu>
 
         {FAQ_SECTIONS.map((section) => (
           <FAQSection
@@ -108,13 +112,13 @@ export default function HelpPage() {
               </Link>
             </li>
             <li>
-              <a
-                href={`mailto:${CONTACT_EMAIL}?subject=Refund%20request`}
+              <EmailMenu
+                subject="Refund request"
                 className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
               >
                 <MessageCircle className="w-4 h-4" />
                 {t("legal.refund")}
-              </a>
+              </EmailMenu>
             </li>
           </ul>
         </section>

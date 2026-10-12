@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 // Account & data deletion instructions. Linked from the Google Play
 // "Data safety" form (account deletion URL) and the App Store / web
@@ -66,10 +67,7 @@ export default function AccountDeletionPage() {
                 components={{
                   ...strong,
                   mail: (
-                    <a
-                      href="mailto:hello@eventvendora.com?subject=Delete%20my%20account"
-                      className="text-accent font-medium"
-                    />
+                    <EmailMenu subject="Delete my account" className="text-accent font-medium" />
                   ),
                 }}
               />
@@ -112,10 +110,7 @@ export default function AccountDeletionPage() {
                 ns="auth"
                 components={{
                   mail: (
-                    <a
-                      href="mailto:hello@eventvendora.com"
-                      className="text-accent font-medium"
-                    />
+                    <EmailMenu className="text-accent font-medium" />
                   ),
                   privacy: <a href="/privacy" className="text-accent font-medium" />,
                 }}

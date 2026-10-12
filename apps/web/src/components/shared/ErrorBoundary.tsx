@@ -7,6 +7,7 @@ import {
   reloadBustingCache,
   shouldAutoReload,
 } from "@/lib/chunkReload";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 // Top-level error boundary. Without this, a render error inside any
 // route would replace the whole app with a blank screen — which is what
@@ -157,10 +158,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   t={t}
                   components={{
                     mailLink: (
-                      <a
-                        href="mailto:hello@eventvendora.com"
-                        className="text-accent hover:underline"
-                      />
+                      <EmailMenu className="text-accent hover:underline" />
                     ),
                   }}
                 />

@@ -3,10 +3,6 @@
     "title": "Kit de prensa — Vendora",
     "description": "El logo, los colores, los datos clave y el contacto de prensa de Vendora."
   },
-  "toast": {
-    "copied": "Correo copiado",
-    "copy_failed": "No se pudo copiar"
-  },
   "hero": {
     "eyebrow": "Kit de prensa",
     "title": "Todo lo que necesitas para <gold>escribir sobre nosotros.</gold>",

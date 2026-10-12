@@ -20,6 +20,7 @@ import meetPhoto from "@/assets/photos/07.webp?as=picture";
 import conversationPhoto from "@/assets/photos/44.webp?as=picture";
 import vendorsPhoto from "@/assets/photos/14.webp?as=picture";
 import closingPhoto from "@/assets/photos/61.webp?as=picture";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 const INK = "#14161a";
 const CREAM = "#f4f1ea";
@@ -56,7 +57,7 @@ const FAQ_LINKS = {
   explore: <Link to="/explore" className={FAQ_LINK} />,
   signup: <Link to="/signup/vendor" className={FAQ_LINK} />,
   help: <Link to="/help" className={FAQ_LINK} />,
-  email: <a href="mailto:hello@eventvendora.com" className={FAQ_LINK} />,
+  email: <EmailMenu className={FAQ_LINK} />,
 };
 
 const num = (i: number) => String(i + 1).padStart(2, "0");
