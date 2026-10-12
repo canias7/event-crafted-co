@@ -490,8 +490,8 @@ function ConversationRow({
           <span
             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold"
             style={{
-              background: "rgba(0,0,0,0.08)",
-              color: "#14161a",
+              background: "rgba(255,255,255,0.08)",
+              color: "#f4f1ea",
             }}
             aria-hidden
           >

@@ -218,7 +218,7 @@ export default function SignContractPage() {
                       <img
                         src={contract.signature_image}
                         alt={t("sign.signatureAlt")}
-                        className="mt-2 h-14 bg-white rounded border border-border"
+                        className="surface-light mt-2 h-14 bg-white rounded border border-border"
                       />
                     ) : (
                       <p

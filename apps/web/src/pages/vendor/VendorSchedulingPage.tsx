@@ -284,7 +284,7 @@ export default function VendorSchedulingPage() {
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
-          style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
+          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
             {t("header.title")} <span className="text-accent">✦</span>
@@ -366,7 +366,7 @@ export default function VendorSchedulingPage() {
                   <button
                     onClick={() => void addType()}
                     disabled={addingType}
-                    className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold px-4 text-sm font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-9"
+                    className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold px-4 text-sm font-bold text-ink hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-9"
                   >
                     <Plus className="h-4 w-4" /> {t("types.add")}
                   </button>
@@ -580,7 +580,7 @@ export default function VendorSchedulingPage() {
                           <div className="mt-3 flex gap-2">
                             <button
                               onClick={() => void decideSuggestion(sug, "approved")}
-                              className="inline-flex justify-center items-center rounded-full bg-gold px-5 text-sm font-bold text-foreground hover:bg-gold-hover h-9"
+                              className="inline-flex justify-center items-center rounded-full bg-gold px-5 text-sm font-bold text-ink hover:bg-gold-hover h-9"
                             >
                               {t("fill.promote")}
                             </button>
@@ -602,7 +602,7 @@ export default function VendorSchedulingPage() {
                       </p>
                       <Link
                         to="/vendor/subscription"
-                        className="inline-flex justify-center items-center mt-4 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
+                        className="inline-flex justify-center items-center mt-4 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
                       >
                         ✦ {t("upsell.upgradePremium")}
                       </Link>
@@ -612,7 +612,7 @@ export default function VendorSchedulingPage() {
                   <button
                     onClick={() => void save()}
                     disabled={saving}
-                    className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
+                    className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-ink hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
                   >
                     {saving ? t("saving") : t("save")}
                   </button>
@@ -626,7 +626,7 @@ export default function VendorSchedulingPage() {
                   </p>
                   <Link
                     to="/vendor/subscription"
-                    className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
+                    className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
                   >
                     ✦ {t("upsell.seePlans")}
                   </Link>

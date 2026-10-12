@@ -16,14 +16,14 @@ const buttonVariants = cva(
         // Primary: champagne fill, ink label. Disabled is solid muted
         // gold with the label still ink, not a faded button.
         default:
-          "bg-gold text-foreground hover:bg-gold-hover disabled:bg-gold-muted disabled:opacity-100",
+          "bg-gold text-ink hover:bg-gold-hover disabled:bg-gold-muted disabled:opacity-100",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         // Secondary: white pill with the hairline border.
         outline:
-          "border border-border bg-white text-foreground hover:bg-muted",
+          "border border-border bg-card text-foreground hover:bg-muted",
         secondary:
-          "border border-border bg-white text-foreground hover:bg-muted",
+          "border border-border bg-card text-foreground hover:bg-muted",
         // Quiet: the label alone.
         ghost: "text-foreground hover:bg-muted",
         link: "text-foreground underline-offset-4 hover:text-accent hover:underline",

@@ -80,7 +80,7 @@ export function SignaturePad({
 
   return (
     <div>
-      <div className="relative rounded-lg border border-border bg-white overflow-hidden">
+      <div className="relative rounded-lg surface-light border border-border bg-white overflow-hidden">
         <canvas
           ref={canvasRef}
           onPointerDown={start}

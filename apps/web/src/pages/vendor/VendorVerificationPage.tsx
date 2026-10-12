@@ -203,7 +203,7 @@ export default function VendorVerificationPage() {
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
-          style={{ borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
+          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
             {t("title")} <span className="text-accent">✦</span>
@@ -227,7 +227,7 @@ export default function VendorVerificationPage() {
               </p>
               <Link
                 to="/vendor/subscription"
-                className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
+                className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
               >
                 {t("gate.cta")}
               </Link>
@@ -327,7 +327,7 @@ export default function VendorVerificationPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-foreground hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
+                className="inline-flex justify-center items-center w-full rounded-full bg-gold text-[15px] font-bold text-ink hover:bg-gold-hover transition-colors disabled:bg-gold-muted h-[52px]"
               >
                 {submitting ? t("submitting") : t("submit")}
               </button>
@@ -438,7 +438,7 @@ function StatusCard({ request, onEdit }: { request: RequestRow; onEdit: () => vo
       {s === "needs_info" || s === "rejected" ? (
         <button
           onClick={onEdit}
-          className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-foreground hover:bg-gold-hover h-11"
+          className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
         >
           {t("status.resubmit")}
         </button>

@@ -227,7 +227,7 @@ export default function LandingPage() {
               </div>
               <button
                 type="submit"
-                className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+                className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full bg-gold px-7 text-[14px] font-bold text-ink transition-colors hover:bg-gold-hover"
               >
                 {t("search.submit")}
               </button>

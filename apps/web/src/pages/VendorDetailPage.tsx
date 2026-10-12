@@ -686,7 +686,7 @@ export default function VendorDetailPage() {
                     <button
                       type="button"
                       onClick={() => setLightboxIndex(0)}
-                      className="absolute bottom-3 right-3 md:bottom-4 md:right-4 inline-flex items-center gap-1.5 rounded-full bg-white text-foreground px-4 py-2 md:px-4 md:py-2.5 text-sm font-bold shadow-soft ring-1 ring-foreground/10 hover:bg-white/90 transition-colors"
+                      className="absolute bottom-3 right-3 md:bottom-4 md:right-4 inline-flex items-center gap-1.5 rounded-full bg-white text-ink px-4 py-2 md:px-4 md:py-2.5 text-sm font-bold shadow-soft ring-1 ring-foreground/10 hover:bg-white/90 transition-colors"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       {t("portfolio.seeAll", { total: portfolioItems.length })}

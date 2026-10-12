@@ -60,7 +60,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 
 - **No grey text.** Text is ink or bronze. Don't use Tailwind palette colours (`slate`, `zinc`, `gray`, `emerald`, `rose`, `sky`…) or one-off hexes. Grey icons are fine.
 - **Status language:** done = ink pill (`bg-primary text-primary-foreground`), waiting = bronze on gold tint (`bg-pending text-accent`), problem = red on its tint (`bg-destructive/10 text-destructive`), neutral = `bg-muted text-foreground`. Lead temperature: hot red, warm gold, cold neutral. Verified marks are bronze. Money in is bronze, money out ink.
-- **Links hover to bronze** (`hover:text-accent`), never `hover:text-foreground`, which changes nothing now that text is ink.
+- **Links hover to the accent** (`hover:text-accent`, champagne on the dark site), never `hover:text-foreground`.
 - **Green is only for live signals:** online and "active now" dots, the status page's "operational". The green "Active now" text in both apps stays (owner's call).
 - Fields on dark surfaces keep a light placeholder.
 
@@ -87,19 +87,17 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - **Spacing:** anything 12 or more sits on the 4px grid. Page edge is 20px on phones and 32px from tablet up (web `px-5 md:px-8`; `.container` defaults to the same). 12 between stacked cards, 24 to 32 between sections.
 - **Inputs:** white, 1px hairline, 12px corners, 44px tall on the web.
 
-**Public pages are dark** (owner's call, Oct 2026): home, vendors, By location, Explore, How it works, For hosts / For vendors, Help, Status, Press, Changelog, Privacy and Terms. The city, category and vendor profile pages are still light; the owner is reviewing pages one by one.
-- Ink page (`style={{ backgroundColor: "#14161a" }}`) with cream text (`text-[#f4f1ea]`, `/80` for secondary).
-- Champagne for labels, links and accents (`text-gold`, hover to white), never bronze on ink.
-- White-at-15% hairlines; cards `border-white/15 bg-white/[0.03]`.
-- `PublicNav tone="dark"` (or `"overlay"` over a photo) and `<Footer tone="dark" />`.
+**The whole website is dark** (owner's call, Oct 2026): public pages, sign-in, the host and vendor portals, everything in `apps/web`.
+- The colour tokens in `apps/web/src/index.css` are the dark palette: `background` ink, `foreground` cream, `card` and `popover` a step lighter, `border` white at 15%, `accent` champagne (gold text on dark), `primary` cream with an ink label (selected / done), `pending` a dark gold tint, `destructive` a lifted red that reads on ink. Token-styled pages follow them. The table above still gives the brand colours; on the web, bronze text becomes champagne and ink fills become cream.
+- Text on a gold or cream fill uses `text-ink` (`#14161a`, fixed); never `text-foreground` there, which is cream now.
+- Pages built before this use their own classes: ink page (`#14161a`), cream text (`text-[#f4f1ea]`, `/80` for secondary), champagne labels (`text-gold`), cards `border-white/15 bg-white/[0.03]`. Both read the same.
+- Don't add light surfaces (`bg-white`, `text-black`, cream hexes). The exception is paper: invoices, contracts, proposals and signature pads stay white, wrapped in `.surface-light`, which puts the light tokens back inside.
+- `PublicNav` and `Footer` always draw dark; their `tone` props are kept only so old call sites compile.
 - The language switcher lives only in the footer's bottom bar, never in the nav (owner's call): any public page needs the footer so it has one.
-- Pop-up menus stay light. The brand red is too faint on ink for text, so put it on a cream pill.
-- Sign-in pages and the signed-in portals keep the light style for now.
 - The vendor app's welcome screen is dark too (owner's call, Oct 2026): the web home hero photo fills the screen under the same two scrims (top-to-bottom shade, edge vignette, via `react-native-svg`), with cream text, champagne accents and see-through cards. The app's other sign-in screens stay light.
 
 **Deliberately different (don't "fix")**
 
-- Sign-in area colours (`GlassyAuthShell`, `pages/auth`), pending a redesign.
 - Proposal and invoice document palettes, media players' black backgrounds, and avatar colour palettes.
 - The vendor app's calendar block mode marks picked days in gold, not ink, so they don't read as booked.
 

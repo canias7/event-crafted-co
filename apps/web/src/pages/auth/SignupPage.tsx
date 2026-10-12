@@ -130,7 +130,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             <Link
               to="/login"
               className="pb-px font-medium"
-              style={{ borderBottom: "0.5px solid #000" }}
+              style={{ borderBottom: "0.5px solid currentColor" }}
             >
               {t("auth.signup.sign_in")}
             </Link>
@@ -143,7 +143,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
           <Link
             to={otherSidePath}
             className="font-medium pb-px"
-            style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+            style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
           >
             {otherSideLabel}
           </Link>
@@ -234,14 +234,14 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             style={{
               width: 16,
               height: 16,
-              border: "0.5px solid rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,255,255,0.4)",
               borderRadius: "3px",
-              background: adult ? "#000" : "rgba(255,255,255,0.6)",
+              background: adult ? "#c9a86a" : "rgba(255,255,255,0.06)",
               marginTop: "1px",
               padding: 0,
             }}
           >
-            {adult && <Check className="w-3 h-3 text-white" />}
+            {adult && <Check className="w-3 h-3 text-ink" />}
           </button>
           <span
             className="leading-relaxed cursor-pointer select-none"

@@ -13,10 +13,10 @@ export function AuthTopBar({ children }: { children?: ReactNode }) {
     <div className="absolute inset-x-0 top-0 z-[3]">
       <div className="container mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 pt-5 md:px-8 md:pt-7">
         <Link to="/" aria-label={t("shell.logo_label")}>
-          <VendoraLogo size="md" color="#000" withTagline />
+          <VendoraLogo size="md" color="#f4f1ea" withTagline />
         </Link>
         {children ? (
-          <div className="flex items-center gap-6 text-[13px]" style={{ color: "#000" }}>
+          <div className="flex items-center gap-6 text-[13px]" style={{ color: "#f4f1ea" }}>
             {children}
           </div>
         ) : null}

@@ -130,7 +130,7 @@ export default function HowItWorksPage() {
           <div className="mt-8">
             <Link
               to="/vendors"
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-foreground transition-colors hover:bg-gold-hover"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-gold px-5 text-[14px] font-bold text-ink transition-colors hover:bg-gold-hover"
             >
               {t("hosts.cta")} <ArrowRight className="h-4 w-4" />
             </Link>

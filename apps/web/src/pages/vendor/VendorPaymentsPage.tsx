@@ -686,7 +686,7 @@ function OverviewRevenueChart({
         <div>
           <div
             className="text-[22px] font-semibold leading-tight"
-            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#f4f1ea" }}
           >
             {t("revenue.title")}
           </div>
@@ -697,7 +697,7 @@ function OverviewRevenueChart({
         <div className="text-right">
           <div
             className="text-[28px] font-semibold leading-none"
-            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#14161a" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#f4f1ea" }}
           >
             {formatMoney(total, currency)}
           </div>
@@ -785,8 +785,8 @@ function OverviewRevenueChart({
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
               <defs>
                 <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8a6f3e" stopOpacity={hasData ? 0.18 : 0.08} />
-                  <stop offset="100%" stopColor="#8a6f3e" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#c9a86a" stopOpacity={hasData ? 0.18 : 0.08} />
+                  <stop offset="100%" stopColor="#c9a86a" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {/* Horizontal grid lines + y-axis tick labels */}
@@ -794,8 +794,8 @@ function OverviewRevenueChart({
                 const yy = PAD_T + plotH - t * plotH;
                 return (
                   <g key={t}>
-                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(0, 0, 0,0.06)" strokeWidth="1" />
-                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#14161a">
+                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#f4f1ea">
                       {hasData ? (t === 0 ? "$0" : formatMoneyCompact(plotMax * t, currency)) : ""}
                     </text>
                   </g>
@@ -805,7 +805,7 @@ function OverviewRevenueChart({
               <path
                 d={linePath}
                 fill="none"
-                stroke="#8a6f3e"
+                stroke="#c9a86a"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -813,8 +813,8 @@ function OverviewRevenueChart({
               />
               {showHover ? (
                 <>
-                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#8a6f3e" strokeOpacity="0.45" strokeWidth="1" />
-                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#8a6f3e" strokeWidth="2.5" />
+                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#c9a86a" strokeOpacity="0.45" strokeWidth="1" />
+                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#c9a86a" strokeWidth="2.5" />
                 </>
               ) : null}
               {/* Hit-test rect — captures pointer moves and converts
@@ -838,8 +838,8 @@ function OverviewRevenueChart({
                   left: `${(hoverX / W) * 100}%`,
                   top: `${(hoverY / H) * 100}%`,
                   transform: "translate(-50%, calc(-100% - 12px))",
-                  background: "#14161a",
-                  color: "#fff",
+                  background: "#f4f1ea",
+                  color: "#14161a",
                   boxShadow: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
                 }}
               >
@@ -920,8 +920,8 @@ function OverviewLeadsCard({
   const { t } = useTranslation("vendorPayments");
   const rows: Array<{ label: string; count: number; color: string }> = [
     { label: t("leads.new"),    count: leads.new,    color: "#c9a86a" }, // champagne — new, needs a reply
-    { label: t("leads.active"), count: leads.active, color: "#8a6f3e" }, // bronze — in conversation
-    { label: t("leads.won"),    count: leads.won,    color: "#14161a" }, // ink — converted
+    { label: t("leads.active"), count: leads.active, color: "#c9a86a" }, // bronze — in conversation
+    { label: t("leads.won"),    count: leads.won,    color: "#f4f1ea" }, // ink — converted
     { label: t("leads.lost"),   count: leads.lost,   color: "#d9d1bf" }, // sand — lost/expired
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
@@ -950,7 +950,7 @@ function OverviewLeadsCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(0,0,0, 0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255,255,255,0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
@@ -994,8 +994,8 @@ function OverviewCashflowCard({
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: t("cashflow.money_in"),  value: moneyIn,  color: "#8a6f3e" }, // bronze
-    { label: t("cashflow.money_out"), value: moneyOut, color: "#14161a" }, // ink
+    { label: t("cashflow.money_in"),  value: moneyIn,  color: "#c9a86a" }, // bronze
+    { label: t("cashflow.money_out"), value: moneyOut, color: "#f4f1ea" }, // ink
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -1030,7 +1030,7 @@ function OverviewCashflowCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(0,0,0, 0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255,255,255,0.12)" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.value > 0 ? 1 : 0 }}
@@ -1075,7 +1075,7 @@ function OverviewExpensesCard({
   const { t } = useTranslation("vendorPayments");
   // Brand ramp (ink → bronze → champagne → sand) so a vendor scanning
   // the page picks up category rank by tone.
-  const palette = ["#14161a", "#8a6f3e", "#c9a86a", "#d9d1bf"];
+  const palette = ["#f4f1ea", "#c9a86a", "#c9a86a", "#d9d1bf"];
   const rows = expenses.topCategories.map((c, i) => ({
     ...c, color: palette[i] ?? "#ece7db",
   }));
@@ -1118,7 +1118,7 @@ function OverviewExpensesCard({
             <svg viewBox="0 0 100 100" className="w-[110px] h-[110px] shrink-0 -rotate-90" aria-hidden>
               {/* Faint background ring so the donut feels seated even
                   when one segment dominates the total. */}
-              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth={RING_W} />
+              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={RING_W} />
               {rows.map((r) => {
                 const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
                 const offset = dashOffset;

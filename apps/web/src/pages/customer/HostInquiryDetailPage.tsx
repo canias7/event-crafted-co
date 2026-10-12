@@ -795,14 +795,14 @@ export default function HostInquiryDetailPage() {
         className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.85)",
-          borderBottom: "0.5px solid rgba(0,0,0,0.08)",
+          borderBottom: "0.5px solid rgba(255,255,255,0.08)",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
           <Link
             to="/customer/inquiries"
             aria-label={t("detail.backToInquiries")}
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-card border border-border text-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -817,7 +817,7 @@ export default function HostInquiryDetailPage() {
             ) : (
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
+                style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
                 aria-hidden
               >
                 {vendorInitial}
@@ -849,7 +849,7 @@ export default function HostInquiryDetailPage() {
             type="button"
             onClick={() => setSummaryOpen(true)}
             aria-label={t("detail.detailsLabel")}
-            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-border text-foreground hover:bg-muted"
+            className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-full bg-card border border-border text-foreground hover:bg-muted"
           >
             <Info className="w-4 h-4" />
           </button>
@@ -951,8 +951,8 @@ export default function HostInquiryDetailPage() {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(0,0,0,0.08)",
-                            color: "#14161a",
+                            background: "rgba(255,255,255,0.08)",
+                            color: "#f4f1ea",
                           }}
                           aria-hidden
                         >
@@ -1048,7 +1048,7 @@ export default function HostInquiryDetailPage() {
                                 <button
                                   type="button"
                                   onClick={() => saveEdit(m.id)}
-                                  className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-foreground hover:bg-gold-hover h-9"
+                                  className="inline-flex justify-center items-center text-xs font-bold rounded-full px-4 bg-gold text-ink hover:bg-gold-hover h-9"
                                 >
                                   {t("detail.save")}
                                 </button>
@@ -1184,7 +1184,7 @@ export default function HostInquiryDetailPage() {
         <div className="sticky bottom-20 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
             background: "rgba(255,255,255,0.92)",
-            borderTop: "0.5px solid rgba(0,0,0,0.08)",
+            borderTop: "0.5px solid rgba(255,255,255,0.08)",
           }}
         >
           {inquiry.status === "lost"
@@ -1202,7 +1202,7 @@ export default function HostInquiryDetailPage() {
         className="sticky bottom-20 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.92)",
-          borderTop: "0.5px solid rgba(0,0,0,0.08)",
+          borderTop: "0.5px solid rgba(255,255,255,0.08)",
         }}
       >
         <div className="max-w-3xl mx-auto space-y-2">
@@ -1212,7 +1212,7 @@ export default function HostInquiryDetailPage() {
             <button
               type="button"
               onClick={() => setAppointmentModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-white border border-border rounded-full px-3 py-1.5 hover:bg-muted"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-card border border-border rounded-full px-3 py-1.5 hover:bg-muted"
             >
               <CalendarDays className="w-3.5 h-3.5 text-foreground" />
               {t("detail.proposeMeeting")}
@@ -1265,7 +1265,7 @@ export default function HostInquiryDetailPage() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || pendingFiles.length >= MAX_FILES}
                 aria-label={t("detail.attachFiles")}
-                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted text-muted-foreground disabled:opacity-50"
               >
                 <Paperclip className="w-4 h-4" />
               </button>
@@ -1287,7 +1287,7 @@ export default function HostInquiryDetailPage() {
                     type="button"
                     disabled={sending}
                     aria-label={t("detail.quickReactions")}
-                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 text-muted-foreground disabled:opacity-50"
+                    className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted text-muted-foreground disabled:opacity-50"
                   >
                     <Smile className="w-4 h-4" />
                   </button>
@@ -1412,7 +1412,7 @@ function InquirySummarySheet({
           type="button"
           onClick={onClose}
           aria-label={t("detail.summary.close")}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white border border-border text-foreground hover:bg-muted inline-flex items-center justify-center"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-card border border-border text-foreground hover:bg-muted inline-flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>

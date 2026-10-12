@@ -28,6 +28,8 @@ export default {
         foreground: "hsl(var(--foreground))",
         placeholder: "hsl(var(--placeholder))",
         pending: "hsl(var(--pending))",
+        // Ink #14161a, fixed: the label on gold buttons and cream fills.
+        ink: "#14161a",
         // Champagne: the primary button fill (ink label), plus ornament.
         gold: {
           DEFAULT: "hsl(var(--gold))",
@@ -85,9 +87,9 @@ export default {
       // Two shadows only. Cards are flat (hairline border, no shadow).
       boxShadow: {
         // Floating things: menus, popovers, toasts, sticky bars.
-        soft: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
+        soft: "0 6px 18px -8px hsl(0 0% 0% / 0.5)",
         // Modals and sheets.
-        lifted: "0 24px 48px -18px hsl(220 14% 9% / 0.35)",
+        lifted: "0 24px 48px -18px hsl(0 0% 0% / 0.7)",
       },
       keyframes: {
         "accordion-down": {

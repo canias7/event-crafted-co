@@ -467,7 +467,7 @@ export default function HostEventsPage() {
                   className="rounded-2xl p-6 text-center text-sm text-muted-foreground"
                   style={{
                     background: "rgba(255,255,255,0.5)",
-                    border: "0.5px solid rgba(0,0,0,0.08)",
+                    border: "0.5px solid rgba(255,255,255,0.08)",
                   }}
                 >
                   {t("nothingOnDay")}
@@ -568,7 +568,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     >
       <div
         className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(0,0,0,0.08)", color: "#14161a" }}
+        style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
       >
         <CalendarIcon className="w-6 h-6" />
       </div>
@@ -703,7 +703,7 @@ function CalendarCell({
             : selected
               ? "bg-foreground text-background"
               : isToday
-                ? "bg-white ring-1 ring-foreground/30 hover:bg-muted text-foreground"
+                ? "bg-card ring-1 ring-foreground/30 hover:bg-muted text-foreground"
                 : `hover:bg-muted ${!inMonth ? "text-muted-foreground/50" : "text-foreground"}`
         }`}
       >
@@ -715,8 +715,8 @@ function CalendarCell({
               background: selected
                 ? "rgba(255,255,255,0.85)"
                 : disabled
-                  ? "rgba(0,0,0,0.08)"
-                  : "#14161a",
+                  ? "rgba(255,255,255,0.08)"
+                  : "#f4f1ea",
             }}
           />
         ) : null}
@@ -813,7 +813,7 @@ function UpNextHero({
         <button
           type="button"
           onClick={() => setLiveOpen(true)}
-          className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground hover:bg-gold-hover px-4 text-sm font-bold transition h-9"
+          className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-ink hover:bg-gold-hover px-4 text-sm font-bold transition h-9"
         >
           <Radio className="w-3.5 h-3.5" />
           {isLive ? t("card.manageLive") : t("card.goLive")}
@@ -949,7 +949,7 @@ function EventCard({
             <button
               type="button"
               onClick={() => setLiveOpen(true)}
-              className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-foreground hover:bg-gold-hover px-4 text-xs font-bold transition h-9"
+              className="inline-flex justify-center items-center gap-1.5 rounded-full bg-gold text-ink hover:bg-gold-hover px-4 text-xs font-bold transition h-9"
             >
               <Radio className="w-3.5 h-3.5" />
               {isLive ? t("card.manageLive") : t("card.goLive")}
@@ -983,7 +983,7 @@ function EventCard({
             <button
               type="button"
               aria-label={t("card.actions")}
-              className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 text-muted-foreground"
+              className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted text-muted-foreground"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>

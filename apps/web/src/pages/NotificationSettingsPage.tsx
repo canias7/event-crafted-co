@@ -140,15 +140,15 @@ export default function NotificationSettingsPage() {
                     {i > 0 ? (
                       <div
                         className="h-px"
-                        style={{ background: "rgba(0,0,0,0.08)" }}
+                        style={{ background: "rgba(255,255,255,0.08)" }}
                       />
                     ) : null}
                     <div className="flex items-center gap-4 px-4 md:px-5 py-4">
                       <div
                         className="w-10 h-10 rounded-xl inline-flex items-center justify-center shrink-0"
                         style={{
-                          background: "rgba(0,0,0,0.14)",
-                          color: "#14161a",
+                          background: "rgba(255,255,255,0.14)",
+                          color: "#f4f1ea",
                         }}
                       >
                         <Bell className="w-4 h-4" />

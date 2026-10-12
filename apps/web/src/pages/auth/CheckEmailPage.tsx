@@ -55,7 +55,7 @@ export default function CheckEmailPage() {
         <Link
           to="/login"
           className="pb-px font-medium"
-          style={{ borderBottom: "0.5px solid #000" }}
+          style={{ borderBottom: "0.5px solid currentColor" }}
         >
           {t("shared.back_to_sign_in")}
         </Link>
@@ -68,8 +68,8 @@ export default function CheckEmailPage() {
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "rgba(0,0,0,0.08)",
-            color: "#18181b",
+            background: "rgba(201,168,106,0.15)",
+            color: "#c9a86a",
           }}
         >
           <Mail className="w-6 h-6" />

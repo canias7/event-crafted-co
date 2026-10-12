@@ -105,7 +105,7 @@ export default function ResetPasswordPage() {
     <Link
       to="/login"
       className="pb-px font-medium"
-      style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+      style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
     >
       {t("shared.back_to_sign_in")}
     </Link>
@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
             type="button"
             onClick={() => setHandOffToApp(false)}
             className="self-center pb-px font-medium"
-            style={{ borderBottom: "0.5px solid #000", color: "#000" }}
+            style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
           >
             {t("reset.app.use_browser")}
           </button>
@@ -175,7 +175,7 @@ export default function ResetPasswordPage() {
           >
             <p
               className="leading-relaxed"
-              style={{ fontSize: "14px", color: "#000" }}
+              style={{ fontSize: "14px", color: "#f4f1ea" }}
             >
               {t("reset.form.invalid_link")}
             </p>
@@ -232,7 +232,7 @@ export default function ResetPasswordPage() {
               <p
                 id="pw-error"
                 className="mt-1.5"
-                style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
+                style={{ fontSize: "12px", color: "hsl(var(--destructive))" }}
               >
                 {t("reset.form.too_short")}
               </p>
@@ -269,7 +269,7 @@ export default function ResetPasswordPage() {
               <p
                 id="confirm-error"
                 className="mt-1.5"
-                style={{ fontSize: "12px", color: "rgb(220,38,38)" }}
+                style={{ fontSize: "12px", color: "hsl(var(--destructive))" }}
               >
                 {t("reset.form.mismatch")}
               </p>

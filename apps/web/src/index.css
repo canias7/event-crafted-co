@@ -6,71 +6,72 @@
 
 @layer base {
   :root {
-    /* Vendora — the ivory / charcoal / champagne-gold system the
-       mobile apps ship with, brought back to the web so both surfaces
-       read as one brand. Ivory canvas, warm cream cards, bronze-gold
-       accent (deep enough to stay legible as text on cream). */
-    --background: 42 31% 94%;
-    --foreground: 220 14% 9%;
+    /* Vendora is dark everywhere (owner's call, Oct 2026): ink page,
+       cream text, champagne accents, white-at-15% hairlines, the same
+       look the public pages already had. Every token-styled page and
+       component follows these values. Text on a gold or cream fill uses
+       `text-ink` (#14161a), which never changes. */
+    --background: 220 13% 9%;
+    --foreground: 43 32% 94%;
 
-    --card: 43 47% 97%;
-    --card-foreground: 220 14% 9%;
+    /* Cards and fields: white at ~3-5% over ink. */
+    --card: 220 10% 12%;
+    --card-foreground: 43 32% 94%;
 
-    --popover: 43 47% 97%;
-    --popover-foreground: 220 14% 9%;
+    /* Menus, popovers and dialogs: a step lighter than cards. */
+    --popover: 222 9% 15%;
+    --popover-foreground: 43 32% 94%;
 
-    --primary: 220 14% 9%;
-    --primary-foreground: 0 0% 100%;
+    /* Selected / done: cream fill with an ink label. */
+    --primary: 43 32% 94%;
+    --primary-foreground: 220 13% 9%;
 
-    --secondary: 42 31% 91%;
-    --secondary-foreground: 220 14% 9%;
+    /* Chips, neutral pills, hovers: white at ~8%. */
+    --secondary: 220 7% 17%;
+    --secondary-foreground: 43 32% 94%;
 
-    --muted: 42 31% 89%;
-    /* Secondary text is ink, not grey — the app's "black or bronze
-       everywhere" rule. Kept as its own token so it can diverge again. */
-    --muted-foreground: 220 14% 9%;
+    --muted: 220 7% 17%;
+    /* Secondary text: cream at ~85%, never grey. */
+    --muted-foreground: 42 22% 84%;
 
-    /* Placeholder text — warm and lighter than typed text, but still
-       4.5:1+ on cream fields. Same value as the app's PLACEHOLDER. */
-    --placeholder: 38 14% 40%;
+    /* Placeholder: light enough to read on dark fields. */
+    --placeholder: 39 12% 62%;
 
-    /* Accent = champagne bronze (the app's gold text tone #8a6f3e).
-       Used for links, focus rings, badges, labels, the ✦ accents. */
-    --accent: 39 38% 39%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent = champagne on dark (links, labels, badges, the ✦). */
+    --accent: 39 47% 60%;
+    --accent-foreground: 220 13% 9%;
 
-    /* The apps' red (#b23a34), for errors, delete and overdue. */
-    --destructive: 3 55% 45%;
+    /* Red, lifted so it reads on ink (errors, delete, problems). */
+    --destructive: 3 62% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Status language shared with the apps: done = ink pill (primary),
-       waiting = bronze on this gold tint (#f2e7cb), problem = destructive. */
-    --pending: 43 60% 87%;
+    /* Waiting: champagne text on a dark gold tint. */
+    --pending: 40 24% 20%;
 
-    /* Champagne (#c9a86a): the primary button fill (with an ink label),
-       plus ornament and fills such as unread dots. Hover is a step darker;
-       disabled is solid muted gold (#e0d2b0) with the label still ink. */
+    /* Champagne (#c9a86a): the primary button fill (ink label), ornament
+       and unread dots. Hover a step darker; disabled solid muted gold
+       with the label still ink. */
     --gold: 39 47% 60%;
     --gold-hover: 39 47% 55%;
     --gold-muted: 42 44% 78%;
 
-    --border: 35 25% 25% / 0.12;
-    --input: 42 31% 91%;
-    --ring: 39 38% 39% / 0.6;
+    --border: 0 0% 100% / 0.15;
+    --input: 220 7% 17%;
+    --ring: 39 47% 60% / 0.6;
 
     --radius: 0.75rem;
 
-    --shadow-sm: 220 14% 9% / 0.03;
-    --shadow-md: 220 14% 9% / 0.06;
+    --shadow-sm: 0 0% 0% / 0.25;
+    --shadow-md: 0 0% 0% / 0.4;
 
-    --sidebar-background: 43 47% 97%;
-    --sidebar-foreground: 220 14% 9%;
-    --sidebar-primary: 220 14% 9%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 42 31% 91%;
-    --sidebar-accent-foreground: 220 14% 9%;
-    --sidebar-border: 35 25% 25% / 0.12;
-    --sidebar-ring: 39 38% 39% / 0.6;
+    --sidebar-background: 220 11% 11%;
+    --sidebar-foreground: 43 32% 94%;
+    --sidebar-primary: 43 32% 94%;
+    --sidebar-primary-foreground: 220 13% 9%;
+    --sidebar-accent: 220 7% 17%;
+    --sidebar-accent-foreground: 43 32% 94%;
+    --sidebar-border: 0 0% 100% / 0.15;
+    --sidebar-ring: 39 47% 60% / 0.6;
 
     /* Custom tokens */
     --font-size-hero: clamp(2.75rem, 9vw, 6rem);
@@ -84,6 +85,34 @@
   /* Dark palette dropped — the app ships a single light palette for
      everyone. If we ever bring dark back, redefine .dark here and
      restore the ThemeProvider + inline pre-paint script. */
+}
+
+/* Paper surfaces on the dark site: invoices, contracts, proposals and
+   signature pads stay white like the document they print as. Inside, the
+   tokens go back to the light palette so their text stays ink. */
+.surface-light {
+  --background: 42 31% 94%;
+  --foreground: 220 14% 9%;
+  --card: 43 47% 97%;
+  --card-foreground: 220 14% 9%;
+  --popover: 43 47% 97%;
+  --popover-foreground: 220 14% 9%;
+  --primary: 220 14% 9%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 42 31% 91%;
+  --secondary-foreground: 220 14% 9%;
+  --muted: 42 31% 89%;
+  --muted-foreground: 220 14% 9%;
+  --placeholder: 38 14% 40%;
+  --accent: 39 38% 39%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 3 55% 45%;
+  --pending: 43 60% 87%;
+  --border: 35 25% 25% / 0.12;
+  --input: 42 31% 91%;
+  --ring: 39 38% 39% / 0.6;
+  color: hsl(var(--foreground));
+  color-scheme: light;
 }
 
 @layer base {
@@ -107,8 +136,8 @@
     font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Cream base matching the apps' PAGE (#f4f1ea), with champagne
-       washes kept to a whisper in opposite corners. The washes used to
+    /* Ink base (the site is dark everywhere), with champagne washes
+       kept to a whisper in opposite corners. The washes used to
        run 0.18 alpha over a warmer base, which read as tan next to the
        app's flat cream. The drifting orbs (AmbientBackground, fixed at
        z-index:-1) animate above this static base; page content paints
@@ -117,8 +146,10 @@
       radial-gradient(ellipse 1000px 720px at 20% 10%, rgba(201, 168, 106, 0.04) 0%, rgba(201, 168, 106, 0) 55%),
       radial-gradient(ellipse 920px 700px at 84% 90%, rgba(190, 155, 92, 0.035) 0%, rgba(190, 155, 92, 0) 55%),
       radial-gradient(ellipse 1100px 800px at 55% 45%, rgba(201, 168, 106, 0.02) 0%, rgba(201, 168, 106, 0) 62%),
-      linear-gradient(180deg, #f8f5ef 0%, #f4f1e9 100%);
+      linear-gradient(180deg, #14161a 0%, #14161a 100%);
     background-attachment: fixed;
+    background-color: #14161a;
+    color-scheme: dark;
   }
 
   h1, h2, h3, h4, h5, h6 {

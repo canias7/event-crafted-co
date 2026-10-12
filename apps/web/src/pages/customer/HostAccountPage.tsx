@@ -134,7 +134,7 @@ export default function HostAccountPage() {
                 </p>
                 <Link
                   to="/customer/explore"
-                  className="inline-flex justify-center items-center gap-2 rounded-full bg-gold text-foreground px-5 text-sm font-bold hover:bg-gold-hover transition-colors h-11"
+                  className="inline-flex justify-center items-center gap-2 rounded-full bg-gold text-ink px-5 text-sm font-bold hover:bg-gold-hover transition-colors h-11"
                 >
                   {t("saved.browse")}
                 </Link>

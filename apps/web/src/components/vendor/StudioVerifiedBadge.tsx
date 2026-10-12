@@ -17,7 +17,7 @@ function VerifiedSeal({ className }: { className?: string }) {
       <defs>
         <linearGradient id="vendora-verified-grad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#c9a86a" />
-          <stop offset="100%" stopColor="#8a6f3e" />
+          <stop offset="100%" stopColor="#c9a86a" />
         </linearGradient>
       </defs>
       {/* 16-point starburst. Outer points at r=30 from center, inner

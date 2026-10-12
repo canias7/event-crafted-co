@@ -66,10 +66,10 @@ const CONNECTORS: Connector[] = [
     name: "VendoraPay",
     category: "payments",
     brand: (
-      <BrandMark bg="rgba(0,0,0,0.08)">
+      <BrandMark bg="rgba(255,255,255,0.08)">
         <span
           className="font-bold text-lg tracking-tight"
-          style={{ color: "#14161a" }}
+          style={{ color: "#f4f1ea" }}
         >
           V
         </span>
@@ -240,7 +240,7 @@ export default function VendorIntegrationsPage() {
                       className="rounded-2xl overflow-hidden"
                       style={{
                         background: "rgba(255,255,255,0.6)",
-                        border: "0.5px solid rgba(0,0,0,0.08)",
+                        border: "0.5px solid rgba(255,255,255,0.08)",
                       }}
                     >
                       {/* On phones the buttons drop below the description

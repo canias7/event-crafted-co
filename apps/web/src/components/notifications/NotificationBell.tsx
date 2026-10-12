@@ -175,7 +175,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
         >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-gold text-foreground text-[10px] font-bold flex items-center justify-center tnum">
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-gold text-ink text-[10px] font-bold flex items-center justify-center tnum">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
