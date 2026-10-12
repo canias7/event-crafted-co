@@ -292,9 +292,12 @@ export function HowItWorksSection() {
                 <span
                   aria-hidden
                   className={`absolute left-4 top-2 z-20 font-editorial text-[48px] leading-none md:text-[64px] ${
-                    // On the light inbox the number is ink; on the photos, cream.
-                    step.key === "connect" ? "text-[#14161a]/15" : "text-[#f4f1ea]/35"
+                    // Champagne, still see-through (owner's pick): with a soft
+                    // shadow over the photos so it reads on busy pictures, and
+                    // as bronze on the light inbox.
+                    step.key === "connect" ? "text-accent/50" : "text-gold/80"
                   }`}
+                  style={step.key === "connect" ? undefined : { textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}
                 >
                   {step.number}
                 </span>
