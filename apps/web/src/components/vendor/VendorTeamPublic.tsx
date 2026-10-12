@@ -76,7 +76,7 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
     <div>
       <p className="font-label text-accent mb-4">{t("team.eyebrow")}</p>
       <h2 className="font-editorial text-4xl mb-6">
-        {t("team.title")} <span className="text-accent">✦</span>
+        {t("team.title")}
       </h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {members.map((m) => {
@@ -129,7 +129,7 @@ export function VendorTeamPublic({ userId }: { userId: string }) {
                     )}
                     {m.fun_fact && (
                       <p className="text-xs text-muted-foreground italic">
-                        ✦ {m.fun_fact}
+                        {m.fun_fact}
                       </p>
                     )}
                     {m.link_url && (

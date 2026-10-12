@@ -6,7 +6,7 @@
   "gate": {
     "title": "Conoce a cada cliente.",
     "body": "Vendora CRM convierte tus consultas en una cartera de clientes — cada anfitrión con el que has trabajado, sus eventos, tus notas privadas y tus recordatorios de seguimiento. Incluido en los planes Pro y Premium.",
-    "cta": "✦ Mejora a Pro"
+    "cta": "Mejora a Pro"
   },
   "list": {
     "search": "Buscar clientes",
@@ -24,7 +24,7 @@
     "openInbox": "Abrir bandeja"
   },
   "followUp": {
-    "title": "Recordatorio de seguimiento ✦",
+    "title": "Recordatorio de seguimiento",
     "scheduled": "Te avisaremos en tu teléfono el {{date}}.",
     "clear": "Quitar",
     "toast": "Te lo recordaremos el {{date}}.",
@@ -37,14 +37,14 @@
     }
   },
   "notes": {
-    "title": "Notas privadas ✦",
+    "title": "Notas privadas",
     "placeholder": "Agrega una nota privada — precios, preferencias, nombres de los niños…",
     "saving": "Guardando…",
     "save": "Guardar nota",
     "delete": "Eliminar nota"
   },
   "events": {
-    "title": "Eventos ✦",
+    "title": "Eventos",
     "empty": "Aún no hay consultas registradas.",
     "fallback": "Consulta de evento",
     "guests_one": "{{count}} invitado",

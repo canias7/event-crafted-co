@@ -5,7 +5,7 @@
 // something the product does today.
 //
 // Text: howItWorks.json (hero eyebrow, the five steps, FAQ) and
-// forHosts.json (hero, event types, tools, closing).
+// forHosts.json (hero, tools, closing).
 
 import { Link } from "react-router-dom";
 import { ArrowRight, CalendarDays, Check, FileSignature, FileText, MessageCircle, Search, Star } from "lucide-react";
@@ -46,8 +46,6 @@ const HOST_STEPS: { id: string; image?: PictureSource }[] = [
   { id: "plan" },
   { id: "book" },
 ];
-
-const EVENT_TYPES = ["weddings", "birthdays", "corporate", "parties", "social", "more"];
 
 const TOOLS = [
   { id: "search", icon: Search },
@@ -134,26 +132,6 @@ export default function HowItWorksPage() {
             >
               {t("hosts.cta")} <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
-        </section>
-
-        {/* ═══════ EVERY EVENT ═══════ */}
-        <section className="border-t border-white/15">
-          <div className="container mx-auto flex flex-col gap-6 px-5 py-14 md:px-8 md:py-16 lg:flex-row lg:items-center lg:gap-12">
-            <p className="m-0 shrink-0 text-[26px] font-bold leading-snug md:text-[30px]">
-              {th("event_types.title_line1")} {th("event_types.title_line2")}{" "}
-              <span className="text-gold">✦</span>
-            </p>
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-              {EVENT_TYPES.map((type) => (
-                <li
-                  key={type}
-                  className="inline-flex h-11 items-center rounded-full border border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold"
-                >
-                  {th(`event_types.items.${type}`)}
-                </li>
-              ))}
-            </ul>
           </div>
         </section>
 

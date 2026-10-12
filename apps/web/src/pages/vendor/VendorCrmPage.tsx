@@ -134,7 +134,7 @@ export default function VendorCrmPage() {
           style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
-            {t("title")} <span className="text-accent">✦</span>
+            {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t("subtitle")}

@@ -6,10 +6,10 @@
   "gate": {
     "title": "Verifícate. Genera confianza.",
     "body": "La insignia de verificado les muestra a los anfitriones que detrás de tu perfil hay una persona y un negocio reales. Solicitarla está incluido en los planes Pro y Premium — nuestro equipo siempre revisa cada aprobación.",
-    "cta": "✦ Mejora tu plan para solicitarla"
+    "cta": "Mejora tu plan para solicitarla"
   },
   "identity": {
-    "title": "Identidad ✦",
+    "title": "Identidad",
     "hint": "Tus datos legales son privados — solo se usan para verificar tu identidad.",
     "firstName": "Nombre legal",
     "firstNamePlaceholder": "María",
@@ -22,7 +22,7 @@
     "fileTypes": "JPG, PNG o PDF"
   },
   "business": {
-    "title": "Negocio ✦",
+    "title": "Negocio",
     "name": "Nombre del negocio o nombre público",
     "category": "Categoría del negocio",
     "email": "Correo del negocio",
