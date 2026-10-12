@@ -11,8 +11,8 @@
   "remove": "Remove",
   "add": "Add team member",
   "form": {
-    "editTitle": "Edit member ✦",
-    "newTitle": "New member ✦",
+    "editTitle": "Edit member",
+    "newTitle": "New member",
     "fullName": "Full name *",
     "role": "Role — e.g., Lead planner *",
     "bio": "Short bio (up to 300 characters) *",

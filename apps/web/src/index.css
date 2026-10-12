@@ -37,7 +37,7 @@
     /* Placeholder: light enough to read on dark fields. */
     --placeholder: 39 12% 62%;
 
-    /* Accent = champagne on dark (links, labels, badges, the ✦). */
+    /* Accent = champagne on dark (links, labels, badges). */
     --accent: 39 47% 60%;
     --accent-foreground: 220 13% 9%;
 

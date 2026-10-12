@@ -4,18 +4,6 @@
     "sub": "Find trusted vendors, compare quotes and keep every detail of your event in one place.",
     "primary": "Find vendors"
   },
-  "event_types": {
-    "title_line1": "Every event.",
-    "title_line2": "Every type.",
-    "items": {
-      "weddings": "Weddings",
-      "birthdays": "Birthdays",
-      "corporate": "Corporate events",
-      "parties": "Parties & celebrations",
-      "social": "Social gatherings",
-      "more": "and more…"
-    }
-  },
   "tools": {
     "eyebrow": "Everything you need, all in one place",
     "title": "Powerful tools. Seamless experience.",

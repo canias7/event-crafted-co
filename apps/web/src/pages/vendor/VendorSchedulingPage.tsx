@@ -287,7 +287,7 @@ export default function VendorSchedulingPage() {
           style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
-            {t("header.title")} <span className="text-accent">✦</span>
+            {t("header.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t("header.subtitle")}
@@ -303,7 +303,7 @@ export default function VendorSchedulingPage() {
             <>
               {/* Appointment types — every plan */}
               <section className="card-soft p-6">
-                <p className="font-label text-accent">{t("types.title")} ✦</p>
+                <p className="font-label text-accent">{t("types.title")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {t("types.body")}
                   {!premium ? (
@@ -377,7 +377,7 @@ export default function VendorSchedulingPage() {
                 <>
                   {/* Working hours */}
                   <section className="card-soft p-6">
-                    <p className="font-label text-accent">{t("hours.title")} ✦</p>
+                    <p className="font-label text-accent">{t("hours.title")}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {t("hours.body")}
                     </p>
@@ -438,7 +438,7 @@ export default function VendorSchedulingPage() {
 
                   {/* Booking rules */}
                   <section className="card-soft p-6">
-                    <p className="font-label text-accent">{t("rules.title")} ✦</p>
+                    <p className="font-label text-accent">{t("rules.title")}</p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-3">
                       <RuleSelect
                         label={t("rules.buffer")}
@@ -468,7 +468,7 @@ export default function VendorSchedulingPage() {
                     <>
                       {/* Automated messages */}
                       <section className="card-soft p-6">
-                        <p className="font-label text-accent">{t("auto.title")} ✦</p>
+                        <p className="font-label text-accent">{t("auto.title")}</p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {t("auto.body")}
                         </p>
@@ -559,7 +559,7 @@ export default function VendorSchedulingPage() {
                           key={sug.id}
                           className="card-soft border border-accent/40 bg-accent/5 p-6"
                         >
-                          <p className="font-label text-accent">{t("fill.title")} ✦</p>
+                          <p className="font-label text-accent">{t("fill.title")}</p>
                           <p className="mt-2 text-sm">
                             <strong>
                               {t("fill.openDates", { count: sug.open_dates.length })}
@@ -596,7 +596,7 @@ export default function VendorSchedulingPage() {
                     </>
                   ) : (
                     <section className="card-soft border border-accent/40 bg-accent/5 p-6">
-                      <p className="font-label text-accent">{t("upsell.premiumTitle")} ✦</p>
+                      <p className="font-label text-accent">{t("upsell.premiumTitle")}</p>
                       <p className="mt-2 text-sm text-muted-foreground">
                         {t("upsell.premiumBody")}
                       </p>
@@ -604,7 +604,7 @@ export default function VendorSchedulingPage() {
                         to="/vendor/subscription"
                         className="inline-flex justify-center items-center mt-4 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
                       >
-                        ✦ {t("upsell.upgradePremium")}
+                        {t("upsell.upgradePremium")}
                       </Link>
                     </section>
                   )}
@@ -628,7 +628,7 @@ export default function VendorSchedulingPage() {
                     to="/vendor/subscription"
                     className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
                   >
-                    ✦ {t("upsell.seePlans")}
+                    {t("upsell.seePlans")}
                   </Link>
                 </section>
               )}

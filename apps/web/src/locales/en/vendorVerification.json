@@ -6,10 +6,10 @@
   "gate": {
     "title": "Get verified. Build trust.",
     "body": "The verified badge tells hosts a real person and a real business are behind your profile. Applying is included with Pro and Premium plans — approval is always reviewed by our team.",
-    "cta": "✦ Upgrade to apply"
+    "cta": "Upgrade to apply"
   },
   "identity": {
-    "title": "Identity ✦",
+    "title": "Identity",
     "hint": "Your legal details stay private — only used to verify your identity.",
     "firstName": "Legal first name",
     "firstNamePlaceholder": "Jessica",
@@ -22,7 +22,7 @@
     "fileTypes": "JPG, PNG, or PDF"
   },
   "business": {
-    "title": "Business ✦",
+    "title": "Business",
     "name": "Business / Display name",
     "category": "Business category",
     "email": "Business email",

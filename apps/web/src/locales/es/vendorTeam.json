@@ -11,8 +11,8 @@
   "remove": "Quitar",
   "add": "Agregar integrante",
   "form": {
-    "editTitle": "Editar integrante ✦",
-    "newTitle": "Nuevo integrante ✦",
+    "editTitle": "Editar integrante",
+    "newTitle": "Nuevo integrante",
     "fullName": "Nombre completo *",
     "role": "Puesto — p. ej., Organizadora principal *",
     "bio": "Biografía breve (hasta 300 caracteres) *",

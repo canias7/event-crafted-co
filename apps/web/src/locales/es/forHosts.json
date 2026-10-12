@@ -4,18 +4,6 @@
     "sub": "Encuentra proveedores de confianza, compara cotizaciones y ten cada detalle de tu evento en un solo lugar.",
     "primary": "Buscar proveedores"
   },
-  "event_types": {
-    "title_line1": "Cada evento.",
-    "title_line2": "Cada ocasión.",
-    "items": {
-      "weddings": "Bodas",
-      "birthdays": "Cumpleaños",
-      "corporate": "Eventos corporativos",
-      "parties": "Fiestas y celebraciones",
-      "social": "Reuniones sociales",
-      "more": "y más…"
-    }
-  },
   "tools": {
     "eyebrow": "Todo lo que necesitas, en un solo lugar",
     "title": "Herramientas potentes. Una experiencia fluida.",
