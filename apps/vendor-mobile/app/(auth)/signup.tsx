@@ -41,28 +41,29 @@ import { passwordProblem } from "@/lib/password";
 import { PasswordMeter } from "@/components/PasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
+import { AuthBackdrop } from "@/components/AuthBackdrop";
 
 // Same palette as welcome.tsx — the two screens must read as one flow.
-const PAGE = "#f4f1ea";
-const SHEET = "#fbf9f4";
-const SURFACE = "#ece7db";
-const INK = "#14161a";
+const PAGE = "#14161a";
+const SHEET = "#1b1d21";
+const SURFACE = "rgba(255,255,255,0.08)";
+const INK = "#f4f1ea";
 const INK_ON_GOLD = "#14161a";
 const GOLD = "#c9a86a";
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
-const BRONZE = "#8a6f3e";
+const BRONZE = "#c9a86a";
 const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const SUBTLE = "#746a58";
-const BORDER = "#e6e1d5";
-const FIELD_BG = "#fbf9f4";
-const FIELD_BORDER = "#e6e1d5";
-const ERROR = "#b23a34";
+const INK_DIM = "#f4f1ea";
+const SUBTLE = "#a39a88";
+const BORDER = "rgba(255,255,255,0.15)";
+const FIELD_BG = "rgba(255,255,255,0.05)";
+const FIELD_BORDER = "rgba(255,255,255,0.15)";
+const ERROR = "#e0716a";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -218,7 +219,8 @@ export default function VendorSignupScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
-      <StatusBar barStyle="dark-content" backgroundColor={PAGE} />
+      <AuthBackdrop />
+      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
       <KeyboardAvoidingView
         behavior="padding"
         style={{ flex: 1 }}

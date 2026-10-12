@@ -1,7 +1,7 @@
 // Shared glassy shell for the auth form pages (/login/host,
 // /login/vendor, /signup/host, /signup/vendor, /forgot-password,
-// /reset-password). Renders the canvas (soft glows, perspective grid,
-// orbital ring, top bar, centered headline + subtitle, glassy form
+// /reset-password). Renders the canvas (AuthBackdrop: ombre, turning
+// rings, grid floor), the top bar, centered headline + subtitle, glassy form
 // card, below-card link slot). Page-specific content (form fields,
 // copy, role-specific labels) goes through props.
 //
@@ -15,6 +15,7 @@
 
 import { ReactNode } from "react";
 import { AuthTopBar } from "@/components/auth/AuthTopBar";
+import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 
 interface Props {
   /** Sans-serif headline (e.g. "Welcome back,") */
@@ -47,90 +48,7 @@ export function GlassyAuthShell({
       className="relative min-h-screen overflow-hidden"
       style={{ background: "transparent", color: "#f4f1ea" }}
     >
-      {/* GLOWS */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0"
-        style={{
-          top: "32%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "1100px",
-          height: "850px",
-          background:
-            "radial-gradient(ellipse at center, rgba(201,168,106,0.07) 0%, rgba(201,168,106,0.035) 32%, rgba(201,168,106,0.015) 58%, transparent 78%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0"
-        style={{
-          bottom: "-120px",
-          right: "-8%",
-          width: "680px",
-          height: "580px",
-          background:
-            "radial-gradient(ellipse at center, rgba(201,168,106,0.05) 0%, rgba(201,168,106,0.025) 42%, transparent 72%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0"
-        style={{
-          top: "65%",
-          left: "-8%",
-          width: "480px",
-          height: "480px",
-          background:
-            "radial-gradient(ellipse at center, rgba(201,168,106,0.04) 0%, transparent 65%)",
-        }}
-      />
-
-      {/* GRID FLOOR */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0 inset-x-0"
-        style={{
-          bottom: 0,
-          height: "380px",
-          perspective: "800px",
-          overflow: "hidden",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, transparent 0%, #000 38%, #000 100%)",
-          maskImage:
-            "linear-gradient(to bottom, transparent 0%, #000 38%, #000 100%)",
-        }}
-      >
-        <div
-          className="auth-grid-scroll"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: "-25%",
-            width: "150%",
-            height: "800px",
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-            transform: "rotateX(75deg)",
-            transformOrigin: "center bottom",
-          }}
-        />
-      </div>
-
-      {/* SLOWLY-ROTATING ORBITAL RING */}
-      <div
-        aria-hidden
-        className="auth-ring pointer-events-none absolute z-0"
-        style={{
-          top: "50%",
-          left: "50%",
-          width: "640px",
-          height: "640px",
-          border: "0.5px dashed rgba(255,255,255,0.08)",
-          borderRadius: "50%",
-        }}
-      />
+      <AuthBackdrop />
 
       {/* No star or drifting-particle decorations: scattered glowing
           dots plus four-point stars read as snowflakes, which is the
@@ -239,20 +157,6 @@ export function GlassyAuthShell({
 
       {/* KEYFRAMES — namespaced to the auth shell */}
       <style>{`
-        @keyframes authGridScroll {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 60px; }
-        }
-        .auth-grid-scroll {
-          animation: authGridScroll 5s linear infinite;
-        }
-        @keyframes authRotSlow {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        .auth-ring {
-          animation: authRotSlow 80s linear infinite;
-        }
         @keyframes authPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }

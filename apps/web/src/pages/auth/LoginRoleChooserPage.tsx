@@ -8,6 +8,7 @@ import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthTopBar } from "@/components/auth/AuthTopBar";
+import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 
 export default function LoginRoleChooserPage() {
   // Already authenticated? Skip the chooser and drop them in the
@@ -24,66 +25,7 @@ export default function LoginRoleChooserPage() {
       className="relative min-h-screen overflow-hidden"
       style={{ background: "transparent", color: "#f4f1ea" }}
     >
-      {/* Ambient glow — primary upper-left blob */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0"
-        style={{
-          top: "30%",
-          left: "35%",
-          transform: "translate(-50%, -50%)",
-          width: "900px",
-          height: "700px",
-          background:
-            "radial-gradient(ellipse at center, rgba(201,168,106,0.120) 0%, rgba(201,168,106,0.062) 30%, rgba(201,168,106,0.030) 55%, transparent 75%)",
-        }}
-      />
-
-      {/* Secondary glow — bottom-right */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0"
-        style={{
-          bottom: 0,
-          right: "-10%",
-          width: "700px",
-          height: "600px",
-          background:
-            "radial-gradient(ellipse at center, rgba(201,168,106,0.100) 0%, rgba(201,168,106,0.062) 40%, transparent 70%)",
-        }}
-      />
-
-      {/* Perspective grid — scrolling toward horizon */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute z-0 inset-x-0"
-        style={{
-          bottom: 0,
-          height: "500px",
-          perspective: "800px",
-          overflow: "hidden",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, transparent 0%, #000 35%, #000 100%)",
-          maskImage:
-            "linear-gradient(to bottom, transparent 0%, #000 35%, #000 100%)",
-        }}
-      >
-        <div
-          className="login-grid-scroll"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: "-25%",
-            width: "150%",
-            height: "800px",
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-            transform: "rotateX(75deg)",
-            transformOrigin: "center bottom",
-          }}
-        />
-      </div>
+      <AuthBackdrop />
 
       {/* No floating particles: scattered glowing dots read as
           snowflakes rather than as brand. */}

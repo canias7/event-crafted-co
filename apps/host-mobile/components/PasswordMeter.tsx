@@ -1,14 +1,14 @@
 import { Text, View } from "react-native";
 import { passwordChecks, passwordProblem } from "@/lib/password";
 
-// Strength bar under the sign-up password field: one segment per rule
+// Strength bar under the sign-up password field (dark sign-up screens): one segment per rule
 // (8+ characters, upper- and lowercase, a number, a symbol), champagne when
 // met. The line under it names what's still missing. A breach-list check
 // runs on the server when the user continues, so the "ready" line says so.
 const GOLD = "#c9a86a";
-const SURFACE = "#ece7db";
-const INK = "#14161a";
-const BRONZE = "#8a6f3e";
+const SURFACE = "rgba(255,255,255,0.12)";
+const INK = "#f4f1ea";
+const BRONZE = "#c9a86a";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
