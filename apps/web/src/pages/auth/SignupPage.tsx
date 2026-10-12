@@ -154,7 +154,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
         <div>
           <div
             className="uppercase mb-1.5"
-            style={{ fontSize: "0.6875rem", letterSpacing: "0.09375rem", opacity: 0.65, fontWeight: 500 }}
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
           >
             {isVendor ? tAuth("signup.business_name") : t("auth.signup.name_label")}
           </div>
@@ -169,7 +169,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
         <div>
           <div
             className="uppercase mb-1.5"
-            style={{ fontSize: "0.6875rem", letterSpacing: "0.09375rem", opacity: 0.65, fontWeight: 500 }}
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
           >
             {t("auth.common.email")}
           </div>
@@ -190,7 +190,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
         <div>
           <div
             className="uppercase mb-1.5"
-            style={{ fontSize: "0.6875rem", letterSpacing: "0.09375rem", opacity: 0.65, fontWeight: 500 }}
+            style={{ fontSize: "11px", letterSpacing: "1.5px", opacity: 0.65, fontWeight: 500 }}
           >
             {t("auth.common.password")}
           </div>
@@ -223,7 +223,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
         </div>
         <div
           className="flex items-start pt-1"
-          style={{ gap: "0.5rem", fontSize: "0.75rem", opacity: 0.8 }}
+          style={{ gap: "8px", fontSize: "12px", opacity: 0.8 }}
         >
           <button
             type="button"
@@ -232,10 +232,10 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             onClick={() => setAdult((v) => !v)}
             className="shrink-0 inline-flex items-center justify-center cursor-pointer"
             style={{
-              width: "1rem",
-              height: "1rem",
+              width: 16,
+              height: 16,
               border: "0.5px solid rgba(0,0,0,0.3)",
-              borderRadius: "0.1875rem",
+              borderRadius: "3px",
               background: adult ? "#000" : "rgba(255,255,255,0.6)",
               marginTop: "1px",
               padding: 0,

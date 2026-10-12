@@ -103,8 +103,6 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - Proposal and invoice document palettes, media players' black backgrounds, and avatar colour palettes.
 - The vendor app's calendar block mode marks picked days in gold, not ink, so they don't read as booked.
 
-**Big screens (owner's call, Oct 2026):** a desktop shows the laptop layout, scaled up. From 1440px wide the root font size grows with the window (`index.css`, capped at 2560px), and a small PostCSS plugin in `apps/web/postcss.config.js` turns every CSS px length above 1px into rem, so Tailwind's `text-[11px]` and friends scale too. Inline `style` px values don't go through PostCSS: write sizes there in rem (`"0.6875rem"`, or `` `${n / 16}rem` ``) so they scale with the rest. Media-query breakpoints stay px.
-
 **When changing UI:** keep text at 4.5:1 contrast or better. Baskerville is wider than a sans, so check phone width (390px) for sideways overflow.
 
 **Typechecking the apps:** `npx tsc --noEmit -p .` stops at the TS5101 `baseUrl` deprecation and never checks types. Run `npx tsc --noEmit -p . --ignoreDeprecations 6.0` and compare the error list with `main` (Oct 2026: vendor-mobile 47, host-mobile 19 existing errors, mostly unresolved `@expo/vector-icons` types).

@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
             </p>
             <h1
               className="m-0 mt-4"
-              style={{ fontSize: "clamp(2.25rem, 4.4vw, 3.375rem)", lineHeight: 1.08, letterSpacing: "-1px" }}
+              style={{ fontSize: "clamp(36px, 4.4vw, 54px)", lineHeight: 1.08, letterSpacing: "-1px" }}
             >
               <Trans
                 t={t}

@@ -55,7 +55,7 @@ export function PhotoHero({
         <p className="m-0 font-label text-gold">{eyebrow}</p>
         <h1
           className="hero-headline m-0 mx-auto mt-4 max-w-3xl text-[#f4f1ea]"
-          style={{ fontSize: "clamp(2.25rem, 5.6vw, 4rem)", lineHeight: 1.06, letterSpacing: "-1px" }}
+          style={{ fontSize: "clamp(36px, 5.6vw, 64px)", lineHeight: 1.06, letterSpacing: "-1px" }}
         >
           {title}
         </h1>
