@@ -21,6 +21,7 @@ import {
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 // Account settings — rowed-card layout. Each row is icon + title +
 // subtitle on the left, value or action pill on the right, divided by
@@ -82,13 +83,15 @@ export default function SettingsPage() {
                 title={t("email.title")}
                 subtitle={t("email.subtitle")}
                 right={
-                  <a
-                    href="mailto:hello@eventvendora.com"
-                    className="text-sm font-medium text-foreground hover:text-accent transition-colors truncate"
-                    title={t("email.change_hint")}
-                  >
-                    {user?.email ?? ""}
-                  </a>
+                  <EmailMenu align="end" asChild>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-foreground hover:text-accent transition-colors truncate"
+                      title={t("email.change_hint")}
+                    >
+                      {user?.email ?? ""}
+                    </button>
+                  </EmailMenu>
                 }
               />
               {/* Notifications — collapsed into a single row that links

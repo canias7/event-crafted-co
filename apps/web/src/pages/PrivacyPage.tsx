@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
+import { EmailMenu } from "@/components/shared/EmailMenu";
 
 export default function PrivacyPage() {
   // The policy's words are in locales/<language>/privacy.json.
@@ -24,10 +25,7 @@ export default function PrivacyPage() {
       components={{
         strong: <strong />,
         email: (
-          <a
-            href="mailto:hello@eventvendora.com"
-            className="text-gold font-medium hover:text-white"
-          />
+          <EmailMenu className="text-gold font-medium hover:text-white" />
         ),
       }}
     />
