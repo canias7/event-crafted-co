@@ -42,9 +42,6 @@ export function Footer(_props: { tone?: "light" | "dark" } = {}) {
       title: ts("footer.company"),
       links: [
         { label: ts("footer.help"), to: "/help" },
-        { label: ts("footer.status"), to: "/status" },
-        { label: ts("footer.press"), to: "/press" },
-        { label: ts("footer.changelog"), to: "/changelog" },
         { label: t("footer.privacy"), to: "/privacy" },
         { label: t("footer.terms"), to: "/terms" },
       ],

@@ -44,16 +44,16 @@ export function CookieBanner() {
           transition={{ duration: 0.3 }}
           className="fixed bottom-4 left-4 right-4 md:left-6 md:right-auto md:max-w-md z-50"
         >
-          <div className="bg-foreground text-background rounded-2xl shadow-lifted p-5 relative">
+          <div className="bg-popover text-foreground border border-border rounded-2xl shadow-lifted p-5 relative">
             <button
               onClick={() => decide("essential")}
               aria-label={t("cookies.dismiss")}
-              className="absolute top-3 right-3 text-background/60 hover:text-background"
+              className="absolute top-3 right-3 text-foreground/70 hover:text-foreground"
             >
               <X className="w-4 h-4" />
             </button>
             <p className="font-display text-base mb-2">{t("cookies.title")}</p>
-            <p className="text-xs text-background/75 leading-relaxed mb-4">
+            <p className="text-xs text-foreground/85 leading-relaxed mb-4">
               <Trans
                 t={t}
                 i18nKey="cookies.body"
@@ -80,7 +80,7 @@ export function CookieBanner() {
                 size="sm"
                 variant="ghost"
                 onClick={() => decide("essential")}
-                className="text-background hover:bg-background/10 hover:text-background flex-1"
+                className="flex-1"
               >
                 {t("cookies.essential_only")}
               </Button>
