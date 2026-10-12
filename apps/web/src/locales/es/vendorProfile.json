@@ -279,5 +279,9 @@
       "sendFailed": "No se pudo enviar la consulta: {{message}}",
       "sent": "Consulta enviada — el proveedor te responderá pronto"
     }
+  },
+  "paused": {
+    "title": "Tomando un descanso",
+    "body": "Este proveedor no está recibiendo consultas nuevas por ahora. Vuelve pronto."
   }
 }

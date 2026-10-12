@@ -25,7 +25,8 @@
       "live": "Live",
       "pending": "Pending review",
       "rejected": "Rejected",
-      "draft": "Draft"
+      "draft": "Draft",
+      "paused": "Paused"
     },
     "previewAria": "Preview {{name}}",
     "noPhotos": "No listing photos yet",
@@ -37,7 +38,14 @@
     "unpublished": "Preview (not yet published)",
     "noCategoryLocation": "Category and location not set",
     "noBio": "No description yet — add one in Edit profile so visitors know what you offer.",
-    "approvalNote": "The full public layout will appear here once this listing is approved."
+    "approvalNote": "The full public layout will appear here once this listing is approved.",
+    "pause": {
+      "pause": "Pause listing",
+      "resume": "Resume listing",
+      "pausedToast": "Listing paused. It's hidden from browsing until you resume it.",
+      "resumedToast": "Listing is live again.",
+      "failed": "Couldn't update the listing. Try again."
+    }
   },
   "edit": {
     "sidebarTitle": "Edit profile",

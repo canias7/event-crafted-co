@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, Edit3, Loader2, Share2, User } from "lucide-react";
+import { CheckCircle2, Edit3, Loader2, Pause, Play, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -52,6 +52,8 @@ interface VendorRow {
   application_status: string | null;
   slug: string | null;
   created_at: string | null;
+  // Set while the vendor has paused the listing (hidden from browsing).
+  paused_at: string | null;
 }
 
 interface AccountProfile {
@@ -104,7 +106,7 @@ export default function VendorMyProfilePage() {
     const { data: vps } = await supabase
       .from("vendor_profiles")
       .select(
-        "id, business_name, category, location, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, logo_url, verified_at, application_status, slug, created_at",
+        "id, business_name, category, location, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, logo_url, verified_at, application_status, slug, created_at, paused_at",
       )
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
@@ -288,6 +290,11 @@ export default function VendorMyProfilePage() {
                 listingCap={listingCap}
                 onAddListing={openListingWizard}
                 onEditListing={setEditingVendorId}
+                onPausedChange={(vendorId, pausedAt) =>
+                  setListings((prev) =>
+                    prev.map((x) => (x.id === vendorId ? { ...x, paused_at: pausedAt } : x)),
+                  )
+                }
               />
             )}
           </div>
@@ -426,6 +433,7 @@ function ListingsList({
   listingCap,
   onAddListing,
   onEditListing,
+  onPausedChange,
 }: {
   listings: VendorRow[];
   heroByListing: Record<string, string>;
@@ -433,6 +441,7 @@ function ListingsList({
   listingCap: number | null;
   onAddListing: () => void;
   onEditListing: (vendorId: string) => void;
+  onPausedChange: (vendorId: string, pausedAt: string | null) => void;
 }) {
   const { t } = useTranslation("vendorHome");
   if (listings.length === 0) {
@@ -478,6 +487,7 @@ function ListingsList({
             listing={l}
             heroUrl={heroByListing[l.id] ?? null}
             onEdit={onEditListing}
+            onPausedChange={(pausedAt) => onPausedChange(l.id, pausedAt)}
           />
         ))}
       </div>
@@ -499,10 +509,12 @@ function ListingDirectoryCard({
   listing,
   heroUrl,
   onEdit,
+  onPausedChange,
 }: {
   listing: VendorRow;
   heroUrl: string | null;
   onEdit: (vendorId: string) => void;
+  onPausedChange: (pausedAt: string | null) => void;
 }) {
   const { t } = useTranslation("vendorHome");
   const priceLabels = usePriceLabels();
@@ -512,16 +524,19 @@ function ListingDirectoryCard({
   const price =
     priceLabels.listingPrice(listing.price_min_cents, listing.price_max_cents) || null;
   const pricingModels = priceLabels.pricingModels(listing.pricing_models);
-  const statusLabel =
-    listing.application_status === "approved"
+  const paused = listing.application_status === "approved" && !!listing.paused_at;
+  const statusLabel = paused
+    ? t("profile.status.paused")
+    : listing.application_status === "approved"
       ? t("profile.status.live")
       : listing.application_status === "pending"
         ? t("profile.status.pending")
         : listing.application_status === "rejected"
           ? t("profile.status.rejected")
           : t("profile.status.draft");
-  const statusTone =
-    listing.application_status === "approved"
+  const statusTone = paused
+    ? "bg-muted text-foreground border-transparent"
+    : listing.application_status === "approved"
       ? "bg-primary text-primary-foreground border-transparent"
       : listing.application_status === "rejected"
         ? "bg-destructive/10 text-destructive border-destructive/30"
@@ -581,6 +596,7 @@ function ListingDirectoryCard({
         statusTone={statusTone}
         price={price}
         onEdit={() => onEdit(listing.id)}
+        onPausedChange={onPausedChange}
       />
     </>
   );
@@ -607,6 +623,7 @@ function ListingPreviewModal({
   statusTone,
   price,
   onEdit,
+  onPausedChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -616,6 +633,7 @@ function ListingPreviewModal({
   statusTone: string;
   price: string | null;
   onEdit: () => void;
+  onPausedChange: (pausedAt: string | null) => void;
 }) {
   const { t } = useTranslation("vendorHome");
   const categoryNames = useCategoryNames();
@@ -626,6 +644,26 @@ function ListingPreviewModal({
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const publicHref = `/vendors/${listing.slug ?? listing.id}`;
   const iframeHref = `${publicHref}?preview=1`;
+
+  // Pause / resume: a paused listing stays approved but is hidden from
+  // browsing, and its page says it isn't taking new inquiries.
+  const [savingPause, setSavingPause] = useState(false);
+  async function togglePause() {
+    const next = listing.paused_at ? null : new Date().toISOString();
+    setSavingPause(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("vendor_profiles")
+      .update({ paused_at: next })
+      .eq("id", listing.id);
+    setSavingPause(false);
+    if (error) {
+      toast.error(t("profile.pause.failed"));
+      return;
+    }
+    onPausedChange(next);
+    toast.success(next ? t("profile.pause.pausedToast") : t("profile.pause.resumedToast"));
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -649,18 +687,36 @@ function ListingPreviewModal({
               />
             ) : null}
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="rounded-full shrink-0 mr-8"
-            onClick={() => {
-              onOpenChange(false);
-              onEdit();
-            }}
-          >
-            <Edit3 className="h-3.5 w-3.5 mr-1" />
-            {t("profile.editListing")}
-          </Button>
+          <div className="flex items-center gap-2 shrink-0 mr-8">
+            {isApproved && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                disabled={savingPause}
+                onClick={() => void togglePause()}
+              >
+                {listing.paused_at ? (
+                  <Play className="h-3.5 w-3.5 mr-1" />
+                ) : (
+                  <Pause className="h-3.5 w-3.5 mr-1" />
+                )}
+                {listing.paused_at ? t("profile.pause.resume") : t("profile.pause.pause")}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              onClick={() => {
+                onOpenChange(false);
+                onEdit();
+              }}
+            >
+              <Edit3 className="h-3.5 w-3.5 mr-1" />
+              {t("profile.editListing")}
+            </Button>
+          </div>
         </div>
 
         <DialogDescription className="sr-only">

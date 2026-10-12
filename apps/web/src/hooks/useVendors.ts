@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { vendorImageUrl } from "@/lib/storage";
 import { vendorStandInPhoto } from "@/lib/vendorStandInPhoto";
@@ -35,6 +35,9 @@ export interface Vendor {
   slug?: string | null;
   /** True when this vendor came from the live DB; false for sampleData fallback. */
   isReal: boolean;
+  // The vendor paused this listing: hidden from browsing, its page says
+  // it isn't taking new inquiries.
+  paused?: boolean;
   /** Approved verification kinds (identity / insurance / business_license) — public-safe. */
   verifiedKinds?: string[];
   /** True when subscription_tier is 'pro' or 'studio' (Premium).
@@ -70,6 +73,7 @@ interface VendorProfileRow {
   portfolio_summary: string | null;
   verified_at: string | null;
   insured_at: string | null;
+  paused_at: string | null;
   responder_tier: "fast" | "standard" | null;
   intro_video_url: string | null;
   slug: string | null;
@@ -126,6 +130,7 @@ function normalizeDb(row: VendorProfileRow): Vendor {
     // buys ELIGIBILITY to apply, not the badge itself.
     studioVerified: !!row.verified_at,
     insured: !!row.insured_at,
+    paused: !!row.paused_at,
   };
 }
 
@@ -159,7 +164,7 @@ async function fetchVendors(): Promise<Vendor[]> {
       const { data, error } = await (supabase as any)
         .from("vendor_profiles")
         .select(
-          "id, user_id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, service_radius_miles, portfolio_summary, verified_at, insured_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
+          "id, user_id, business_name, category, bio, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, location, service_radius_miles, portfolio_summary, verified_at, insured_at, paused_at, responder_tier, intro_video_url, slug, instagram_handle, tiktok_handle, brand:vendor_brands!vendor_profiles_user_id_fkey(business_name, bio, subscription_tier)",
         )
         .eq("application_status", "approved")
         .order("verified_at", { ascending: false, nullsFirst: false });
@@ -287,7 +292,10 @@ export function useVendors() {
     };
   }, []);
 
-  return { vendors, loading };
+  // `vendors` is what the directory shows (paused listings left out);
+  // `allVendors` keeps them, for opening a paused listing's own page.
+  const active = useMemo(() => vendors.filter((v) => !v.paused), [vendors]);
+  return { vendors: active, allVendors: vendors, loading };
 }
 
 export function useVendor(id: string | undefined) {

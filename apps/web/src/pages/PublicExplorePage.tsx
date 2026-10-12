@@ -100,6 +100,7 @@ export default function PublicExplorePage() {
           .from("vendor_profiles")
           .select("id, business_name, category, location, logo_url")
           .eq("application_status", "approved")
+          .is("paused_at", null)
           .order("created_at", { ascending: false })
           .limit(60),
         supabase

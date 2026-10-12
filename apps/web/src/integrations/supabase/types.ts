@@ -4739,6 +4739,7 @@ export type Database = {
           appointment_buffer_after_minutes: number
           appointment_buffer_before_minutes: number
           base_price_cents: number | null
+          paused_at: string | null
           pricing_type: string
           pricing_models: string[] | null
           price_min_cents: number | null
@@ -4789,6 +4790,7 @@ export type Database = {
           appointment_buffer_after_minutes?: number
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
+          paused_at?: string | null
           pricing_type?: string
           pricing_models?: string[] | null
           price_min_cents?: number | null
@@ -4839,6 +4841,7 @@ export type Database = {
           appointment_buffer_after_minutes?: number
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
+          paused_at?: string | null
           pricing_type?: string
           pricing_models?: string[] | null
           price_min_cents?: number | null

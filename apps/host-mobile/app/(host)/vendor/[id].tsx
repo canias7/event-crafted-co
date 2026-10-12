@@ -87,6 +87,8 @@ const CARD_BORDER = {
 
 type VendorRow = {
   id: string;
+  // Set while the vendor has paused the listing: no new inquiries.
+  paused_at?: string | null;
   business_name: string | null;
   category: string | null;
   bio: string | null;
@@ -192,7 +194,7 @@ export default function VendorDetailScreen() {
       const baseQuery = supabase
         .from("vendor_profiles")
         .select(
-          "id, business_name, category, bio, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, application_status, slug, verified_at, logo_url, created_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, category_attributes",
+          "id, business_name, category, bio, location, base_price_cents, pricing_models, price_min_cents, price_max_cents, custom_pricing, application_status, slug, verified_at, logo_url, created_at, deposit_pct, cancellation_policy, reschedule_window_days, policy_notes, category_attributes, paused_at",
         );
       const { data: vp } = isUuid
         ? await baseQuery.eq("id", id).maybeSingle()
@@ -206,6 +208,7 @@ export default function VendorDetailScreen() {
       }
       setVendor({
         id: row.id,
+        paused_at: row.paused_at ?? null,
         business_name: row.business_name,
         category: row.category,
         bio: row.bio,
@@ -1069,6 +1072,14 @@ export default function VendorDetailScreen() {
               build collapsed this pill to text-only (no background,
               no flexDirection). Wrap a View instead so styles always
               land. */}
+          {vendor?.paused_at ? (
+            <View style={{ flexShrink: 1, maxWidth: 200 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>Taking a break</Text>
+              <Text style={{ fontFamily: SERIF, color: INK, fontSize: 12, marginTop: 2 }}>
+                Not taking new inquiries right now.
+              </Text>
+            </View>
+          ) : (
           <Pressable onPress={() => setInquireOpen(true)}>
             {({ pressed }) => (
               <View
@@ -1096,6 +1107,7 @@ export default function VendorDetailScreen() {
               </View>
             )}
           </Pressable>
+          )}
         </View>
       </SafeAreaView>
 
@@ -1746,6 +1758,7 @@ function VendorProfileSheet({
           .select("id, business_name, category, logo_url")
           .eq("user_id", uid)
           .eq("application_status", "approved")
+          .is("paused_at", null)
           .order("created_at", { ascending: false });
         if (!cancelled) {
           setOtherListings(((more ?? []) as SheetListingRow[]) ?? []);
