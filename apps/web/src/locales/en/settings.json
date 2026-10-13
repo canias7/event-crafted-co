@@ -34,10 +34,12 @@
     "button": "Delete",
     "confirm_title": "Delete account?",
     "confirm_body": "This will delete your profile and all related data. You'll be signed out immediately and won't be able to sign back in with this email.",
+    "confirm_body_plan": "If you have a paid plan, it's canceled right away and you won't be charged again.",
     "cancel": "Cancel",
     "confirm": "Yes, delete it",
     "success": "Account closed. Goodbye for now.",
-    "error": "{{message}}"
+    "error": "{{message}}",
+    "plan_error": "We couldn't cancel your plan, so your account wasn't deleted. Try again in a moment, or email hello@eventvendora.com."
   },
   "notifications": {
     "back": "Settings",

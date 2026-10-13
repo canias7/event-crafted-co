@@ -39,6 +39,18 @@ const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
+// The error code a failed edge function sent back, if it sent JSON.
+async function readFunctionError(error: unknown): Promise<string | null> {
+  const res = (error as { context?: Response })?.context;
+  if (!res || typeof res.json !== "function") return null;
+  try {
+    const body = await res.json();
+    return typeof body?.error === "string" ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
 export function SettingsSheet({
   open,
   onClose,
@@ -220,21 +232,27 @@ export function SettingsSheet({
       icon: "trash-2",
       title: "Delete your account?",
       message:
-        "This permanently deletes your account, all listings, messages, and history. You can't undo this.",
+        "This permanently deletes your account, all listings, messages, and history. If you have a paid plan, it's canceled right away and you won't be charged again. You can't undo this.",
       confirmLabel: "Delete account",
       cancelLabel: "Cancel",
       destructive: true,
       onConfirm: () => {
         void (async () => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error } = await (supabase as any).rpc(
-            "request_account_deletion",
+          // delete-account cancels any Stripe plan before deleting, so a
+          // deleted vendor is never billed again.
+          const { error } = await supabase.functions.invoke(
+            "delete-account",
+            { body: {} },
           );
           if (error) {
+            const code = await readFunctionError(error);
             dialog.show({
               icon: "alert-circle",
               title: "Couldn't delete account",
-              message: error.message,
+              message:
+                code === "subscription_cancel_failed"
+                  ? "We couldn't cancel your plan, so your account wasn't deleted. Try again in a moment, or email hello@eventvendora.com."
+                  : error.message,
             });
             return;
           }
