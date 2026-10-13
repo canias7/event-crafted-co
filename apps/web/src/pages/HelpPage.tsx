@@ -40,14 +40,13 @@ const FAQ_SECTIONS: { id: string; items: string[] }[] = [
       "approval",
       "inquiries",
       "pause",
-      "downgrade",
       "blocked_title",
       "photos",
     ],
   },
   {
     id: "billing",
-    items: ["card", "invoice", "cancel", "after_cancel", "delete", "switch"],
+    items: ["card", "invoice", "cancel", "after_cancel", "delete"],
   },
 ];
 

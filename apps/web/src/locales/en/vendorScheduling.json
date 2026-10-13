@@ -114,7 +114,9 @@
     "upgradePremium": "Upgrade to Premium",
     "proTitle": "Work less. Book more.",
     "proBody": "Pro unlocks the scheduling controls — working hours, buffers, minimum notice, daily limits, and up to 5 appointment types. Premium adds the automations that answer, remind, follow up, and fill your calendar for you.",
-    "seePlans": "See plans"
+    "seePlans": "See plans",
+    "lockedTitle": "Scheduling controls",
+    "lockedBody": "Working hours, buffers, minimum notice, daily limits and more appointment types aren't available on the Free plan yet."
   },
   "save": "Save scheduling setup",
   "saving": "Saving…"

@@ -47,7 +47,7 @@
       "items": {
         "free": {
           "q": "Is it free to list my business?",
-          "a": "Yes. The Free plan includes one listing at no cost. Pro and Premium are optional monthly plans. <signup>Sign up as a vendor</signup> to get started."
+          "a": "Yes. Every vendor is on the Free plan, which includes one listing at no cost. Paid plans are paused for now. <signup>Sign up as a vendor</signup> to get started."
         },
         "commission": {
           "q": "Does Vendora take a commission?",
@@ -64,10 +64,6 @@
         "pause": {
           "q": "Can I pause my listing?",
           "a": "Yes. On the website, go to My Profile, open the listing and choose Pause listing. In the vendor app, tap the pause button on the listing's card in Profile. While it's paused, your listing is hidden from browsing and search, and its page shows you're taking a break. Your conversations, calendar and reviews stay as they are. Resume whenever you're ready."
-        },
-        "downgrade": {
-          "q": "What happens to my listings if I change or downgrade my plan?",
-          "a": "Nothing is deleted. Your existing listings and photos stay as they are. On a smaller plan you just can't add more than that plan allows. For what you're charged, see \"What happens if I upgrade or downgrade?\" under Billing."
         },
         "blocked_title": {
           "q": "Do hosts see the title of a blocked calendar date?",
@@ -101,10 +97,6 @@
         "delete": {
           "q": "What happens if I delete my account while subscribed?",
           "a": "Deleting your account isn't the same as canceling. When you delete your account (Settings → Delete account), any active subscription is canceled immediately, and your account is deleted only once that cancellation goes through. You won't be charged again, your access ends when the account is deleted, and there's no refund for the unused part of the current billing period. To stop paying but keep your account, cancel your plan instead."
-        },
-        "switch": {
-          "q": "What happens if I upgrade or downgrade?",
-          "a": "Switching between Pro and Premium takes effect right away. You're charged the new plan's monthly price that day, and a new billing month starts. Unused time on your old plan isn't refunded. Before you confirm, the Subscription page shows what you'll be charged. To move to Free, cancel your plan."
         }
       }
     }

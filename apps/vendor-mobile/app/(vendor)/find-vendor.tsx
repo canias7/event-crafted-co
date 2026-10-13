@@ -31,6 +31,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 const PLACEHOLDER = "#746a58";
 
@@ -124,6 +125,14 @@ export default function FindVendorScreen() {
 
     if (error || !data) {
       if (error?.message?.includes("v2v_requires_pro")) {
+        // Plans paused (lib/plans.ts): explain, no "See plans".
+        if (PLANS_PAUSED) {
+          Alert.alert(
+            "Pro feature",
+            "Starting vendor-to-vendor conversations isn't available on the Free plan yet. Replying to existing conversations stays free.",
+          );
+          return;
+        }
         Alert.alert(
           "Pro feature",
           "Vendor-to-vendor messaging is available on Pro and Premium. Replying to existing conversations stays free.",

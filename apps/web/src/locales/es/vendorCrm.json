@@ -6,7 +6,8 @@
   "gate": {
     "title": "Conoce a cada cliente.",
     "body": "Vendora CRM convierte tus consultas en una cartera de clientes — cada anfitrión con el que has trabajado, sus eventos, tus notas privadas y tus recordatorios de seguimiento. Incluido en los planes Pro y Premium.",
-    "cta": "Mejora a Pro"
+    "cta": "Mejora a Pro",
+    "bodyPaused": "Vendora CRM convierte tus consultas en una cartera de clientes — cada anfitrión con el que has trabajado, sus eventos, tus notas privadas y tus recordatorios de seguimiento. Aún no está disponible en el plan Gratis."
   },
   "list": {
     "search": "Buscar clientes",

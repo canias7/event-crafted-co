@@ -29,6 +29,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -323,10 +324,12 @@ export default function VerificationScreen() {
           <Text
             style={{ fontFamily: SERIF, marginTop: 8, textAlign: "center", fontSize: 14, lineHeight: 21, color: INK_DIM }}
           >
-            The verified badge tells hosts a real person and a real business
-            are behind your profile. Applying is included with Pro and
-            Premium plans — approval is always reviewed by our team.
+            {PLANS_PAUSED
+              ? "The verified badge tells hosts a real person and a real business are behind your profile. Applying isn't available on the Free plan yet."
+              : "The verified badge tells hosts a real person and a real business are behind your profile. Applying is included with Pro and Premium plans — approval is always reviewed by our team."}
           </Text>
+          {/* Plans paused (lib/plans.ts): no upgrade button. */}
+          {!PLANS_PAUSED ? (
           <Pressable
             onPress={() => router.push("/(vendor)/subscription" as never)}
             style={{
@@ -342,6 +345,7 @@ export default function VerificationScreen() {
               Upgrade to apply
             </Text>
           </Pressable>
+          ) : null}
         </ScrollView>
         {dialog.element}
       </SafeAreaView>

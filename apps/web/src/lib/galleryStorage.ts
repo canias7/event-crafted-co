@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import i18n from "@/i18n";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Gallery caps are STORAGE-BASED (bytes in the vendor-gallery
 // bucket), per the Free / Pro / Premium plan model:
@@ -64,13 +65,16 @@ export async function ensureGalleryCapacity(
       ? t("storage.full")
       : t("storage.left", { size: formatBytes(remaining) }),
     {
-      description: t("storage.description"),
-      action: {
-        label: t("storage.upgrade"),
-        onClick: () => {
-          window.location.href = "/vendor/subscription";
-        },
-      },
+      // Plans paused (lib/plans.ts): no upgrade offer, just how to free space.
+      description: PLANS_PAUSED ? t("storage.description_paused") : t("storage.description"),
+      action: PLANS_PAUSED
+        ? undefined
+        : {
+            label: t("storage.upgrade"),
+            onClick: () => {
+              window.location.href = "/vendor/subscription";
+            },
+          },
       duration: 8000,
     },
   );

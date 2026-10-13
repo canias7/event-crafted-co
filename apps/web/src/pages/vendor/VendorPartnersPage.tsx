@@ -80,6 +80,7 @@ import { vendorNavItems as navItems } from "@/data/navItems";
 import { VENDOR_INBOX_HUB_TABS } from "@/data/hubTabs";
 import { useCategoryNames } from "@/lib/categoryNames";
 import { intlLocale } from "@/lib/intlLocale";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Vendor-to-vendor partner messaging — separate from host conversations.
 // Threads are keyed on profiles.id (the user account) so a vendor with
@@ -1767,13 +1768,15 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
       // existing threads stays open to everyone.
       if (error?.message?.includes("v2v_requires_pro")) {
         toast.error(t("toasts.v2v_pro_title"), {
-          description: t("toasts.v2v_pro_body"),
-          action: {
-            label: t("toasts.upgrade"),
-            onClick: () => {
-              window.location.href = "/vendor/subscription";
-            },
-          },
+          description: PLANS_PAUSED ? t("toasts.v2v_pro_body_paused") : t("toasts.v2v_pro_body"),
+          action: PLANS_PAUSED
+            ? undefined
+            : {
+                label: t("toasts.upgrade"),
+                onClick: () => {
+                  window.location.href = "/vendor/subscription";
+                },
+              },
           duration: 8000,
         });
         return;

@@ -61,6 +61,7 @@
   "closing": {
     "title": "Start <gold>free.</gold>",
     "sub": "The Free plan includes one listing. Upgrade whenever you're ready for more.",
-    "cta": "List your business — free"
+    "cta": "List your business — free",
+    "subPaused": "The Free plan includes one listing."
   }
 }

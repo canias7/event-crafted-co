@@ -94,7 +94,8 @@
     "ownerNotFound": "Couldn't find the owner of this listing.",
     "proOnly": "Vendor-to-vendor messaging is a Pro feature.",
     "proOnlyBody": "Upgrade to Pro or Premium to start conversations with other vendors.",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "proOnlyBodyPaused": "Not available on the Free plan yet."
   },
   "video": {
     "defaultTitle": "Vendor intro video"

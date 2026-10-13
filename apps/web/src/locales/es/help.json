@@ -47,7 +47,7 @@
       "items": {
         "free": {
           "q": "¿Es gratis publicar mi negocio?",
-          "a": "Sí. El plan Free incluye un anuncio sin costo. Pro y Premium son planes mensuales opcionales. <signup>Regístrate como proveedor</signup> para empezar."
+          "a": "Sí. Todos los proveedores están en el plan Free, que incluye un anuncio sin costo. Los planes de pago están en pausa por ahora. <signup>Regístrate como proveedor</signup> para empezar."
         },
         "commission": {
           "q": "¿Vendora cobra comisión?",
@@ -64,10 +64,6 @@
         "pause": {
           "q": "¿Puedo pausar mi anuncio?",
           "a": "Sí. En el sitio, ve a Mi Perfil, abre el anuncio y elige Pausar anuncio. En la app de proveedores, toca el botón de pausa en la tarjeta del anuncio en Profile. Mientras está pausado, tu anuncio no aparece en las búsquedas ni al explorar, y su página indica que te estás tomando un descanso. Tus conversaciones, tu calendario y tus reseñas no cambian. Reactívalo cuando quieras."
-        },
-        "downgrade": {
-          "q": "¿Qué pasa con mis anuncios si cambio o bajo de plan?",
-          "a": "No se elimina nada. Tus anuncios y fotos siguen igual. Con un plan más pequeño solo no puedes agregar más de lo que ese plan permite. Para saber qué se te cobra, consulta \"¿Qué pasa si subo o bajo de plan?\" en Facturación."
         },
         "blocked_title": {
           "q": "¿Los anfitriones ven el título de una fecha bloqueada en mi calendario?",
@@ -101,10 +97,6 @@
         "delete": {
           "q": "¿Qué pasa si elimino mi cuenta mientras tengo una suscripción?",
           "a": "Eliminar tu cuenta no es lo mismo que cancelar. Cuando eliminas tu cuenta (Configuración → Eliminar cuenta), cualquier suscripción activa se cancela de inmediato, y tu cuenta se elimina solo después de que esa cancelación se complete. No se te vuelve a cobrar, tu acceso termina cuando se elimina la cuenta y no hay reembolso por la parte no usada del período de facturación actual. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan."
-        },
-        "switch": {
-          "q": "¿Qué pasa si subo o bajo de plan?",
-          "a": "Cambiar entre Pro y Premium se aplica de inmediato. Ese día se te cobra el precio mensual del nuevo plan y empieza un nuevo mes de facturación. El tiempo no usado de tu plan anterior no se reembolsa. Antes de confirmar, la página Suscripción te muestra cuánto se te cobrará. Para pasar a Free, cancela tu plan."
         }
       }
     }

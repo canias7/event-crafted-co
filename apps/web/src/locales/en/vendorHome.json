@@ -45,7 +45,8 @@
       "pausedToast": "Listing paused. It's hidden from browsing until you resume it.",
       "resumedToast": "Listing is live again.",
       "failed": "Couldn't update the listing. Try again."
-    }
+    },
+    "capReached": "Listing limit reached"
   },
   "edit": {
     "sidebarTitle": "Edit profile",

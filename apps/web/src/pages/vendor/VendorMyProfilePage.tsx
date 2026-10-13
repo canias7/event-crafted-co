@@ -35,6 +35,7 @@ import { StudioVerifiedBadge } from "@/components/vendor/StudioVerifiedBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategoryNames } from "@/lib/categoryNames";
 import { usePriceLabels } from "@/lib/priceLabels";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 interface VendorRow {
   id: string;
@@ -471,6 +472,8 @@ function ListingsList({
           <Button size="sm" variant="outline" onClick={onAddListing}>
             {t("profile.newListing")}
           </Button>
+        ) : PLANS_PAUSED ? (
+          <p className="text-xs text-muted-foreground">{t("profile.capReached")}</p>
         ) : (
           <Link
             to="/vendor/subscription"

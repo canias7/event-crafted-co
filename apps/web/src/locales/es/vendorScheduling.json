@@ -114,7 +114,9 @@
     "upgradePremium": "Mejora a Premium",
     "proTitle": "Trabaja menos. Consigue más reservas.",
     "proBody": "Pro desbloquea los controles de agenda: horario de trabajo, tiempo entre citas, anticipación mínima, límites diarios y hasta 5 tipos de cita. Premium agrega las automatizaciones que responden, recuerdan, dan seguimiento y llenan tu calendario por ti.",
-    "seePlans": "Ver planes"
+    "seePlans": "Ver planes",
+    "lockedTitle": "Controles de agenda",
+    "lockedBody": "El horario de trabajo, el tiempo entre citas, la anticipación mínima, los límites diarios y más tipos de cita aún no están disponibles en el plan Gratis."
   },
   "save": "Guardar configuración de agenda",
   "saving": "Guardando…"

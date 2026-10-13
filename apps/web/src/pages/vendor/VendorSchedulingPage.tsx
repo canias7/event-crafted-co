@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Day names, option labels and default message texts live in
 // vendorScheduling.json; `key` points at the label.
@@ -594,7 +595,7 @@ export default function VendorSchedulingPage() {
                         </section>
                       ))}
                     </>
-                  ) : (
+                  ) : PLANS_PAUSED ? null : (
                     <section className="card-soft border border-accent/40 bg-accent/5 p-6">
                       <p className="font-label text-accent">{t("upsell.premiumTitle")}</p>
                       <p className="mt-2 text-sm text-muted-foreground">
@@ -620,16 +621,20 @@ export default function VendorSchedulingPage() {
               ) : (
                 <section className="card-soft p-8 text-center">
                   <Zap className="mx-auto h-8 w-8 text-accent" />
-                  <h2 className="font-editorial text-3xl mt-4">{t("upsell.proTitle")}</h2>
+                  <h2 className="font-editorial text-3xl mt-4">
+                    {PLANS_PAUSED ? t("upsell.lockedTitle") : t("upsell.proTitle")}
+                  </h2>
                   <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-                    {t("upsell.proBody")}
+                    {PLANS_PAUSED ? t("upsell.lockedBody") : t("upsell.proBody")}
                   </p>
-                  <Link
-                    to="/vendor/subscription"
-                    className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
-                  >
-                    {t("upsell.seePlans")}
-                  </Link>
+                  {!PLANS_PAUSED && (
+                    <Link
+                      to="/vendor/subscription"
+                      className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
+                    >
+                      {t("upsell.seePlans")}
+                    </Link>
+                  )}
                 </section>
               )}
             </>

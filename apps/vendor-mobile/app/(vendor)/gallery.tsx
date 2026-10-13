@@ -47,6 +47,7 @@ import { compressForUpload } from "@/lib/imageManipulation";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
 import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Cream editorial palette — matches the Inbox restyle / reference mock.
 const WHITE = "#ffffff";
@@ -313,16 +314,21 @@ export default function GalleryScreen() {
         status && status.cap_bytes !== null ? Number(status.cap_bytes) : null;
       const usedBytes = status ? Number(status.used_bytes ?? 0) : 0;
       if (capBytes !== null && usedBytes >= capBytes) {
+        // Plans paused (lib/plans.ts): no upgrade offer, just how to free space.
         Alert.alert(
           "Gallery storage full",
-          `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) or upgrade your plan to add more.`,
-          [
-            { text: "Not now", style: "cancel" },
-            {
-              text: "Upgrade plan",
-              onPress: () => router.push("/(vendor)/subscription" as never),
-            },
-          ],
+          PLANS_PAUSED
+            ? `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) to add more.`
+            : `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) or upgrade your plan to add more.`,
+          PLANS_PAUSED
+            ? [{ text: "OK" }]
+            : [
+                { text: "Not now", style: "cancel" },
+                {
+                  text: "Upgrade plan",
+                  onPress: () => router.push("/(vendor)/subscription" as never),
+                },
+              ],
         );
         return;
       }

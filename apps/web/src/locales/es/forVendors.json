@@ -61,6 +61,7 @@
   "closing": {
     "title": "Empieza <gold>gratis.</gold>",
     "sub": "El plan Gratis incluye un anuncio. Mejora tu plan cuando necesites más.",
-    "cta": "Publica tu negocio — gratis"
+    "cta": "Publica tu negocio — gratis",
+    "subPaused": "El plan Gratis incluye un anuncio."
   }
 }
