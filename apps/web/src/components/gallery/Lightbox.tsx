@@ -35,11 +35,6 @@ interface Img {
   created_at: string;
 }
 
-function formatCoord(value: number, posLabel: string, negLabel: string): string {
-  const abs = Math.abs(value);
-  return `${abs.toFixed(4)}° ${value >= 0 ? posLabel : negLabel}`;
-}
-
 interface Props {
   rows: Img[];
   index: number;
@@ -310,20 +305,6 @@ export function Lightbox({
                 {row.exif.focal_length ? (
                   <ExifRow label={t("lightbox.focalLength")}>
                     {row.exif.focal_length}mm
-                  </ExifRow>
-                ) : null}
-                {row.exif.gps_lat !== undefined &&
-                row.exif.gps_lon !== undefined ? (
-                  <ExifRow label="GPS">
-                    <a
-                      href={`https://www.google.com/maps?q=${row.exif.gps_lat},${row.exif.gps_lon}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-accent hover:underline"
-                    >
-                      {formatCoord(row.exif.gps_lat, t("lightbox.north"), t("lightbox.south"))},{" "}
-                      {formatCoord(row.exif.gps_lon, t("lightbox.east"), t("lightbox.west"))}
-                    </a>
                   </ExifRow>
                 ) : null}
               </div>

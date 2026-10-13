@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { stripImageMetadata } from "@/lib/imageCompress";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
@@ -123,10 +124,13 @@ export default function VendorTeamPage() {
     try {
       let photoUrl = editing?.photo_url ?? null;
       if (photo) {
-        const path = `${userId}/team-${Date.now()}.jpg`;
+        // Re-encoded so the public file carries no EXIF/GPS.
+        const clean = await stripImageMetadata(photo);
+        const ext = clean.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+        const path = `${userId}/team-${Date.now()}.${ext}`;
         const { error } = await supabase.storage
           .from("vendor-posts")
-          .upload(path, photo, { contentType: photo.type || "image/jpeg" });
+          .upload(path, clean, { contentType: clean.type || "image/jpeg" });
         if (error) throw new Error(error.message);
         photoUrl = supabase.storage.from("vendor-posts").getPublicUrl(path).data.publicUrl;
       }

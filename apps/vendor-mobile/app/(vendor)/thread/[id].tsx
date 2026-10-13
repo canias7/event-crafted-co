@@ -28,6 +28,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SHADOW } from "@/lib/ui";
+import { compressForUpload } from "@/lib/imageManipulation";
 
 // Cross-platform attachment shape. Mobile-originated attachments
 // carry { url, kind }; web-originated attachments carry the storage
@@ -276,7 +277,11 @@ export default function ThreadScreen() {
     const asset = pick.assets[0];
     setSending(true);
     try {
-      const resp = await fetch(asset.uri);
+      // Re-encode through the image manipulator before upload: its
+      // output carries no EXIF, so the photo's GPS position never
+      // reaches the public message-attachments bucket.
+      const { uri: upUri, mime: upMime } = await compressForUpload(asset);
+      const resp = await fetch(upUri);
       const blob = await resp.blob();
       // Cap message attachments at 25 MB. Above that the upload starts
       // to fight phone storage timeouts and the recipient inbox UI.
@@ -286,14 +291,15 @@ export default function ThreadScreen() {
         Alert.alert("Photo too large", "Pick a photo under 25 MB.");
         return;
       }
-      const ext = (asset.uri.split(".").pop() || "jpg").toLowerCase();
+      const ext = (upUri.split(".").pop() || "jpg").toLowerCase();
       const path = `${user.id}/${threadId}/${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 10)}.${ext}`;
-      // Mime resolution priority: explicit mimeType from picker →
-      // blob.type from the fetched data → ext-derived fallback. The
-      // ext fallback maps to known image MIMEs so we don't ship the
-      // invalid "image/jpg" (should always be "image/jpeg").
+      // Mime resolution priority: the re-encoded file's mime (JPEG, or
+      // the picker's mimeType if re-encoding failed) → blob.type from
+      // the fetched data → ext-derived fallback. The ext fallback maps
+      // to known image MIMEs so we don't ship the invalid "image/jpg"
+      // (should always be "image/jpeg").
       const extMime: Record<string, string> = {
         jpg: "image/jpeg",
         jpeg: "image/jpeg",
@@ -304,7 +310,7 @@ export default function ThreadScreen() {
         heif: "image/heif",
       };
       const contentType =
-        asset.mimeType ||
+        upMime ||
         blob.type ||
         extMime[ext] ||
         "image/jpeg";

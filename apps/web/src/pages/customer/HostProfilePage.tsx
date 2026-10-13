@@ -28,6 +28,7 @@ import { HostContentSection } from "@/components/host/HostContentSection";
 import { customerNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { stripImageMetadata } from "@/lib/imageCompress";
 
 type VerifStatus = "none" | "pending" | "approved" | "rejected";
 
@@ -164,14 +165,16 @@ export default function HostProfilePage() {
     setLoading(false);
   }, [user?.id, user?.email]);
 
-  async function onPickAvatar(file: File) {
+  async function onPickAvatar(picked: File) {
     if (!user?.id || avatarUploading) return;
-    if (file.size > 10 * 1024 * 1024) {
+    if (picked.size > 10 * 1024 * 1024) {
       toast.error(t("toasts.photoTooLarge"));
       return;
     }
     setAvatarUploading(true);
     try {
+      // Re-encoded so the public file carries no EXIF/GPS.
+      const file = await stripImageMetadata(picked);
       const ext = (file.name.split(".").pop() ?? "jpg")
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");

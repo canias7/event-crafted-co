@@ -16,3 +16,5 @@
 20261013121000_host_reply_emails.sql
 # Email preferences: digest / review prompt / onboarding / weekly digest honour notification_prefs; unschedule scan-reengagement cron.
 20261013150000_email_preferences.sql
+# Privacy: remove GPS keys from saved gallery EXIF (uploader no longer stores them).
+20261013160000_strip_gallery_gps.sql

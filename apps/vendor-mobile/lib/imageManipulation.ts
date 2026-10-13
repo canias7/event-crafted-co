@@ -9,6 +9,14 @@
 // bandwidth on every host who views the listing. Downscaling here
 // matches web's footprint.
 //
+// Privacy: the manipulator writes a fresh JPEG/PNG from the decoded
+// bitmap (UIImage on iOS, Bitmap.compress on Android), so its output
+// carries no EXIF, and in particular no GPS position, while the
+// orientation is already applied to the pixels. The picker's own file
+// can still hold the camera's EXIF, so every photo the app uploads to
+// a public bucket goes through compressForUpload / prepareLogoForUpload
+// first (listing, venue listing, wizard, gallery, team, chat, logo).
+//
 // Best-effort: any manipulation failure falls back to the original
 // asset so the upload still happens — we never block an upload on
 // compression.

@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { vendorNavItems } from "@/data/navItems";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { stripImageMetadata } from "@/lib/imageCompress";
 import { LogoCropperModal } from "@/components/vendor/LogoCropperModal";
 
 interface ProfileForm {
@@ -89,14 +90,16 @@ export default function VendorEditProfilePage() {
     setForm((prev) => ({ ...prev, [k]: v }));
   }
 
-  async function onPickLogo(file: File) {
+  async function onPickLogo(picked: File) {
     if (!user?.id || logoUploading) return;
-    if (file.size > 10 * 1024 * 1024) {
+    if (picked.size > 10 * 1024 * 1024) {
       toast.error(t("edit.toast.photoTooLarge"));
       return;
     }
     setLogoUploading(true);
     try {
+      // Re-encoded so the public file carries no EXIF/GPS.
+      const file = await stripImageMetadata(picked);
       const ext = (file.name.split(".").pop() ?? "jpg")
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");

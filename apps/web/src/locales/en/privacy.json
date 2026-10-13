@@ -26,7 +26,7 @@
   },
   "cookies": {
     "title": "4. Cookies",
-    "body": "We use essential cookies for authentication and session management. With your consent we may use analytics cookies to understand which features get used. You can change cookie preferences from the banner shown on first visit, or in your browser settings."
+    "body": "We use only what the site needs to work: browser storage and cookies that keep you signed in and remember your language, and error reports (sent to our error-tracking service, Sentry, tagged with your account ID but not your name or email) that help us fix bugs. We don’t use analytics or advertising cookies. You can clear stored data in your browser settings at any time."
   },
   "rights": {
     "title": "5. Your rights",

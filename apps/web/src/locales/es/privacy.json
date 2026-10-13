@@ -26,7 +26,7 @@
   },
   "cookies": {
     "title": "4. Cookies",
-    "body": "Usamos cookies esenciales para la autenticación y la gestión de sesiones. Con tu consentimiento, podemos usar cookies de análisis para entender qué funciones se usan. Puedes cambiar tus preferencias de cookies desde el aviso que aparece en tu primera visita o en la configuración de tu navegador."
+    "body": "Solo usamos lo que el sitio necesita para funcionar: almacenamiento del navegador y cookies que mantienen tu sesión iniciada y recuerdan tu idioma, y reportes de errores (enviados a nuestro servicio de seguimiento de errores, Sentry, con el ID de tu cuenta pero sin tu nombre ni tu correo) que nos ayudan a corregir fallas. No usamos cookies de análisis ni de publicidad. Puedes borrar los datos guardados en la configuración de tu navegador en cualquier momento."
   },
   "rights": {
     "title": "5. Tus derechos",

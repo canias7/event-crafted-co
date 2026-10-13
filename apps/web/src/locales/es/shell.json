@@ -25,11 +25,9 @@
     "help": "Ayuda"
   },
   "cookies": {
-    "dismiss": "Cerrar",
-    "title": "Cookies, en pocas palabras",
-    "body": "Usamos cookies esenciales para mantener tu sesión iniciada y (con tu consentimiento) cookies de analítica para entender qué funciones se usan. No vendemos datos ni usamos cookies de seguimiento publicitario. Consulta nuestra <policy>Política de privacidad</policy>.",
-    "accept_all": "Aceptar todas",
-    "essential_only": "Solo esenciales"
+    "title": "Cookies y almacenamiento",
+    "body": "Solo usamos lo necesario para que Vendora funcione: mantener tu sesión iniciada, recordar tu idioma y enviar reportes de errores que nos ayudan a corregir fallas. Sin anuncios ni rastreo. Consulta nuestra <privacy>Política de privacidad</privacy>.",
+    "got_it": "Entendido"
   },
   "command_palette": {
     "placeholder": "Buscar proveedores, páginas…",
