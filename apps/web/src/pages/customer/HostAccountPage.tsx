@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VendorCard } from "@/components/shared/VendorCard";
 import { customerNavItems } from "@/data/navItems";
+import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedVendors } from "@/hooks/useSavedVendors";
 import { useVendors } from "@/hooks/useVendors";
@@ -24,6 +25,7 @@ type VerifStatus = "none" | "pending" | "approved" | "rejected";
 
 export default function HostAccountPage() {
   const { t } = useTranslation("hostAccount");
+  const { t: ts } = useTranslation("settings");
   const { user } = useAuth();
   const { vendors, loading: vendorsLoading } = useVendors();
   const { savedIds, loading: savedLoading } = useSavedVendors();
@@ -162,6 +164,25 @@ export default function HostAccountPage() {
             )}
           </section>
 
+          {/* Delete account: same place as the host app
+              (Profile → Account settings). */}
+          <section>
+            <h2 className="font-editorial text-2xl mb-4">{ts("delete.title")}</h2>
+            <div
+              className="rounded-2xl p-5 md:p-6 flex items-center gap-4"
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+              }}
+            >
+              <p className="flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed">
+                {ts("delete.subtitle")}
+              </p>
+              <div className="shrink-0">
+                <DeleteAccountButton />
+              </div>
+            </div>
+          </section>
         </div>
       </main>
       <MobileNav items={customerNavItems} />
