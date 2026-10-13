@@ -7,6 +7,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { Footer } from "@/components/public/Footer";
 import { ClosingBand, PhotoHero } from "@/components/public/PhotoHero";
 import heroPhoto from "@/assets/photos/27.webp?as=picture";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Text lives in locales/<lang>/forVendors.json, keyed by these ids.
 const STEPS = ["discovered", "inquiries", "book", "grow"];
@@ -93,7 +94,7 @@ export default function ForVendorsPage() {
                 components={{ gold: <span className="font-editorial text-gold" /> }}
               />
             }
-            sub={t("closing.sub")}
+            sub={PLANS_PAUSED ? t("closing.subPaused") : t("closing.sub")}
             cta={{ label: t("closing.cta"), to: "/signup/vendor" }}
           />
         </div>

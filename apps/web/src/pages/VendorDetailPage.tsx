@@ -62,6 +62,7 @@ import { CategoryAttributesDisplay } from "@/components/vendor/CategoryAttribute
 import { SilentErrorBoundary } from "@/components/shared/SilentErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VendorAvailabilityPublic } from "@/components/vendor/VendorAvailabilityPublic";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 const sampleReviews = [
   {
@@ -450,13 +451,15 @@ export default function VendorDetailPage() {
         // 'v2v_requires_pro' for Free vendors.
         if (error.message?.includes("v2v_requires_pro")) {
           toast.error(t("toasts.proOnly"), {
-            description: t("toasts.proOnlyBody"),
-            action: {
-              label: t("toasts.upgrade"),
-              onClick: () => {
-                navigate("/vendor/subscription");
-              },
-            },
+            description: PLANS_PAUSED ? t("toasts.proOnlyBodyPaused") : t("toasts.proOnlyBody"),
+            action: PLANS_PAUSED
+              ? undefined
+              : {
+                  label: t("toasts.upgrade"),
+                  onClick: () => {
+                    navigate("/vendor/subscription");
+                  },
+                },
             duration: 8000,
           });
           return;

@@ -94,6 +94,7 @@ import {
   removeGalleryFileWithRetry,
   type GalleryStorageStatus,
 } from "@/lib/galleryStorage";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 interface GalleryRow {
   id: string;
@@ -1084,7 +1085,8 @@ export default function VendorGalleryPage() {
                             used: formatBytes(storageStatus.usedBytes),
                           })}
                     </span>
-                    {storageStatus.capBytes !== null &&
+                    {!PLANS_PAUSED &&
+                      storageStatus.capBytes !== null &&
                       storageStatus.usedBytes >=
                         storageStatus.capBytes * 0.8 && (
                         <a

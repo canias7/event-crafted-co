@@ -6,7 +6,8 @@
   "gate": {
     "title": "Get verified. Build trust.",
     "body": "The verified badge tells hosts a real person and a real business are behind your profile. Applying is included with Pro and Premium plans — approval is always reviewed by our team.",
-    "cta": "Upgrade to apply"
+    "cta": "Upgrade to apply",
+    "bodyPaused": "The verified badge tells hosts a real person and a real business are behind your profile. Applying isn't available on the Free plan yet."
   },
   "identity": {
     "title": "Identity",

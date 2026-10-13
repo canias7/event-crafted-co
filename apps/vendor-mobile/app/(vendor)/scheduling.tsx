@@ -33,6 +33,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -385,6 +386,17 @@ export default function SchedulingScreen() {
           <Pressable
             onPress={() => {
               if (!canAddType) {
+                // Plans paused (lib/plans.ts): explain the limit, no "See plans".
+                if (PLANS_PAUSED) {
+                  dialog.show({
+                    icon: "zap",
+                    title: "More appointment types",
+                    message: pro
+                      ? "The Pro plan includes up to 5 appointment types."
+                      : "The Free plan includes one appointment type. More aren't available on the Free plan yet.",
+                  });
+                  return;
+                }
                 dialog.show({
                   icon: "zap",
                   title: "More appointment types",
@@ -683,7 +695,7 @@ export default function SchedulingScreen() {
               </View>
             ))}
               </>
-            ) : (
+            ) : PLANS_PAUSED ? null : (
               <PremiumTeaser onUpgrade={() => router.push("/(vendor)/subscription" as never)} />
             )}
 
@@ -710,7 +722,11 @@ export default function SchedulingScreen() {
             </Pressable>
           </>
         ) : (
-          <Upsell onUpgrade={() => router.push("/(vendor)/subscription" as never)} />
+          PLANS_PAUSED ? (
+            <LockedNote />
+          ) : (
+            <Upsell onUpgrade={() => router.push("/(vendor)/subscription" as never)} />
+          )
         )}
       </ScrollView>
 
@@ -1271,6 +1287,31 @@ const PLAN_CARDS: {
     ],
   },
 ];
+
+// Plans paused (lib/plans.ts): a plain note in place of the Upsell,
+// so a Free vendor knows why the controls aren't here.
+function LockedNote() {
+  return (
+    <View
+      style={{
+        marginTop: 28,
+        backgroundColor: CARD,
+        borderWidth: 1,
+        borderColor: BORDER,
+        borderRadius: 20,
+        padding: 16,
+      }}
+    >
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
+        Scheduling controls
+      </Text>
+      <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
+        Working hours, booking rules, daily limits and automations aren't
+        available on the Free plan yet.
+      </Text>
+    </View>
+  );
+}
 
 function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
   return (

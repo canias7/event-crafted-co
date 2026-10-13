@@ -45,7 +45,8 @@
       "pausedToast": "Anuncio en pausa. No aparecerá en las búsquedas hasta que lo reactives.",
       "resumedToast": "Tu anuncio está activo otra vez.",
       "failed": "No se pudo actualizar el anuncio. Inténtalo de nuevo."
-    }
+    },
+    "capReached": "Llegaste al límite de anuncios"
   },
   "edit": {
     "sidebarTitle": "Editar perfil",

@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
 import { useBrandDialog } from "@/components/listing/WizardKit";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -221,6 +222,8 @@ export default function CrmScreen() {
               </View>
             ))}
           </View>
+          {/* Plans paused (lib/plans.ts): no upgrade button. */}
+          {!PLANS_PAUSED ? (
           <Pressable
             onPress={() => router.push("/(vendor)/subscription" as never)}
             style={{
@@ -236,8 +239,19 @@ export default function CrmScreen() {
               Upgrade to Pro
             </Text>
           </Pressable>
-          <Text style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", color: INK_DIM, fontSize: 12 }}>
-            Included with Pro and Premium plans.
+          ) : null}
+          <Text
+            style={{
+              fontFamily: SERIF,
+              marginTop: PLANS_PAUSED ? 24 : 10,
+              textAlign: "center",
+              color: INK_DIM,
+              fontSize: PLANS_PAUSED ? 14 : 12,
+            }}
+          >
+            {PLANS_PAUSED
+              ? "Not available on the Free plan yet."
+              : "Included with Pro and Premium plans."}
           </Text>
         </ScrollView>
         {dialog.element}

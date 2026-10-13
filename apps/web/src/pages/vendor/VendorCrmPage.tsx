@@ -24,6 +24,7 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { intlLocale } from "@/lib/intlLocale";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 interface ClientRow {
   host_id: string;
@@ -151,14 +152,16 @@ export default function VendorCrmPage() {
               <Crown className="mx-auto h-8 w-8 text-accent" />
               <h2 className="font-editorial text-3xl mt-4">{t("gate.title")}</h2>
               <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                {t("gate.body")}
+                {PLANS_PAUSED ? t("gate.bodyPaused") : t("gate.body")}
               </p>
-              <Link
-                to="/vendor/subscription"
-                className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover transition-colors h-11"
-              >
-                {t("gate.cta")}
-              </Link>
+              {!PLANS_PAUSED && (
+                <Link
+                  to="/vendor/subscription"
+                  className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover transition-colors h-11"
+                >
+                  {t("gate.cta")}
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid gap-5 lg:grid-cols-[340px_1fr]">

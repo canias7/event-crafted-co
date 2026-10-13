@@ -33,6 +33,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -522,6 +523,39 @@ export default function SubscriptionScreen() {
           ) : null}
         </View>
 
+        {/* Paid plans paused (lib/plans.ts): no plan cards, toggle,
+            top-ups or comparison, just this note. The current-plan card
+            above (with Manage billing) stays for anyone who already pays. */}
+        {PLANS_PAUSED ? (
+          <View
+            style={{
+              backgroundColor: CARD,
+              borderWidth: 1,
+              borderColor: BORDER,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 28,
+            }}
+          >
+            <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18 }}>
+              Paid plans are paused
+            </Text>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
+              Vendora is free for now: every vendor is on the Free plan. We'll
+              let you know when paid plans are back.
+            </Text>
+            {hasBilling ? (
+              <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
+                {isIOS
+                  ? "Your current plan continues until you cancel it."
+                  : "Your current plan continues until you cancel it. You can manage it with Manage billing above."}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {!PLANS_PAUSED ? (
+        <>
         {/* iOS: no purchase surface at all (Apple 3.1.1). Apple rejected both
             the in-app Stripe checkout AND a button linking out to the web, so
             the iOS build carries no purchase link, button, price, or call to
@@ -876,6 +910,12 @@ export default function SubscriptionScreen() {
             ? "Subscriptions and credits are managed on eventvendora.com. Your current plan is shown above and stays in sync with the app."
             : "Billing is handled securely by Stripe on eventvendora.com. You'll get an email receipt for each charge."}
         </Text>
+        </>
+        ) : hasBilling && !isIOS ? (
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
+            Billing is handled securely by Stripe on eventvendora.com. You'll get an email receipt for each charge.
+          </Text>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

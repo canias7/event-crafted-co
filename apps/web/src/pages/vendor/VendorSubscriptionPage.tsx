@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { vendorNavItems as navItems } from "@/data/navItems";
 import { intlLocale } from "@/lib/intlLocale";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Subscription + AI credits surface for the vendor.
 //
@@ -596,6 +597,11 @@ export default function VendorSubscriptionPage() {
     return h;
   };
 
+  // A paid plan with a Stripe customer: the Billing panel's Update /
+  // Cancel controls work. Also decides the paused-plans note below.
+  const hasBilling =
+    (plan?.tier ?? "free") !== "free" && Boolean(plan?.stripeCustomerId);
+
   return (
     <div className="flex min-h-screen vendor-canvas">
       <DashboardSidebar items={navItems} title="Vendor Portal" backPath="/" />
@@ -604,7 +610,7 @@ export default function VendorSubscriptionPage() {
         <div className="backdrop-blur-sm px-5 md:px-8 py-5 sticky top-0 z-40">
           <h1 className="font-editorial text-3xl">{t("subscription.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("subscription.subtitle")}
+            {PLANS_PAUSED ? t("subscription.subtitle_paused") : t("subscription.subtitle")}
           </p>
         </div>
 
@@ -615,7 +621,29 @@ export default function VendorSubscriptionPage() {
               offer has expired (offerActive false) the billing panel
               expands to fill the row. */}
           <div className="flex flex-col lg:flex-row gap-5 items-stretch">
-          {offerActive && countdown && (
+          {/* Paid plans paused (lib/plans.ts): no plan cards, toggle or
+              top-ups, just this note. Billing stays for anyone who
+              already pays. */}
+          {PLANS_PAUSED && (
+            <div
+              className="flex-1 min-w-0 rounded-2xl p-5 md:p-6"
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+              }}
+            >
+              <h2 className="font-editorial text-2xl">{t("subscription.paused.title")}</h2>
+              <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+                {t("subscription.paused.body")}
+              </p>
+              {hasBilling && (
+                <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+                  {t("subscription.paused.current_continues")}
+                </p>
+              )}
+            </div>
+          )}
+          {!PLANS_PAUSED && offerActive && countdown && (
             <div
               className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
               style={{
@@ -687,16 +715,14 @@ export default function VendorSubscriptionPage() {
               actingId={actingId}
               setActingId={setActingId}
               vendorId={vendorId ?? null}
-              hasBilling={
-                (plan?.tier ?? "free") !== "free" &&
-                Boolean(plan?.stripeCustomerId)
-              }
+              hasBilling={hasBilling}
             />
           </div>
 
           {/* Current-plan and AI-credits cards moved to /vendor/usage. */}
 
           {/* ===== Tier grid ===== */}
+          {!PLANS_PAUSED && (
           <div>
             <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
               <h3 className="font-editorial text-2xl">{t("subscription.choose_plan")}</h3>
@@ -855,6 +881,7 @@ export default function VendorSubscriptionPage() {
                 : t("subscription.switch_note_month")}
             </p>
           </div>
+          )}
 
           {/* ===== Top-up grid ===== */}
           {/* Hidden entirely while the catalog has no top-up rows —
@@ -862,7 +889,7 @@ export default function VendorSubscriptionPage() {
               yet (old test-mode packs were wiped at go-live). Seed
               vendor_credit_packages with kind='topup' rows to bring
               this section back. */}
-          {topups.length > 0 && (
+          {!PLANS_PAUSED && topups.length > 0 && (
           <div>
             <h3 className="font-editorial text-2xl mb-1">{t("subscription.topup_title")}</h3>
             <p className="text-sm text-muted-foreground mb-3">
@@ -916,9 +943,11 @@ export default function VendorSubscriptionPage() {
           </div>
           )}
 
-          <p className="text-xs text-muted-foreground px-2">
-            {t("subscription.stripe_note")}
-          </p>
+          {(!PLANS_PAUSED || hasBilling) && (
+            <p className="text-xs text-muted-foreground px-2">
+              {t("subscription.stripe_note")}
+            </p>
+          )}
         </div>
       </main>
 

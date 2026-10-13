@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import i18n from "@/i18n";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Toast copy lives in locales/<lang>/vendorPlan.json ("credits").
 const tc = (key: string, options?: Record<string, unknown>): string =>
@@ -60,11 +61,14 @@ export async function handleInsufficientCredits(
       ? tc("out_of_credits_action", { count: cost })
       : tc("out_of_credits"),
     {
-      description: tc("top_up_ai"),
-      action: {
-        label: tc("top_up"),
-        onClick: () => navigate("/vendor/subscription"),
-      },
+      // Plans paused (lib/plans.ts): no top-up / upgrade offer.
+      description: PLANS_PAUSED ? tc("top_up_paused") : tc("top_up_ai"),
+      action: PLANS_PAUSED
+        ? undefined
+        : {
+            label: tc("top_up"),
+            onClick: () => navigate("/vendor/subscription"),
+          },
       duration: 8000,
     },
   );
@@ -110,8 +114,10 @@ export async function handleEmailBillingError(
         ? tc("out_of_credits_send", { count: cost })
         : tc("out_of_credits"),
       {
-        description: tc("top_up_send"),
-        action: { label: tc("top_up"), onClick: () => navigate("/vendor/subscription") },
+        description: PLANS_PAUSED ? tc("top_up_paused") : tc("top_up_send"),
+        action: PLANS_PAUSED
+          ? undefined
+          : { label: tc("top_up"), onClick: () => navigate("/vendor/subscription") },
         duration: 8000,
       },
     );

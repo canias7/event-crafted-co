@@ -94,7 +94,8 @@
     "ownerNotFound": "No encontramos al dueño de este anuncio.",
     "proOnly": "Los mensajes entre proveedores son una función Pro.",
     "proOnlyBody": "Mejora a Pro o Premium para iniciar conversaciones con otros proveedores.",
-    "upgrade": "Mejorar plan"
+    "upgrade": "Mejorar plan",
+    "proOnlyBodyPaused": "Aún no está disponible en el plan Gratis."
   },
   "video": {
     "defaultTitle": "Video de presentación del proveedor"

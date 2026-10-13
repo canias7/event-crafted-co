@@ -13,7 +13,8 @@
     "emails_off_server": {
       "documents": "Enable client email sending in your Email settings to send documents.",
       "invoices": "Enable client email sending in your Email settings to send invoices."
-    }
+    },
+    "top_up_paused": "Credit top-ups aren't available right now."
   },
   "subscription": {
     "title": "Subscription",
@@ -82,6 +83,12 @@
       "label": "Billing interval",
       "month": "Monthly",
       "year": "Yearly"
+    },
+    "subtitle_paused": "Your plan and billing. Track usage on the Usage tab.",
+    "paused": {
+      "title": "Paid plans are paused",
+      "body": "Vendora is free for now: every vendor is on the Free plan. We'll let you know when paid plans are back.",
+      "current_continues": "Your current plan continues until you cancel it. You can manage it under Billing."
     }
   },
   "plans": {

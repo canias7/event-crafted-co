@@ -6,7 +6,8 @@
   "gate": {
     "title": "Verifícate. Genera confianza.",
     "body": "La insignia de verificado les muestra a los anfitriones que detrás de tu perfil hay una persona y un negocio reales. Solicitarla está incluido en los planes Pro y Premium — nuestro equipo siempre revisa cada aprobación.",
-    "cta": "Mejora tu plan para solicitarla"
+    "cta": "Mejora tu plan para solicitarla",
+    "bodyPaused": "La insignia de verificado les muestra a los anfitriones que detrás de tu perfil hay una persona y un negocio reales. Aún no puedes solicitarla en el plan Gratis."
   },
   "identity": {
     "title": "Identidad",

@@ -3,7 +3,8 @@
     "full": "Ya usaste todo el almacenamiento de galería de tu plan.",
     "left": "Solo te quedan {{size}} de almacenamiento de galería en tu plan.",
     "description": "Mejora tu plan o elimina algunas imágenes de la galería (vaciar la papelera también libera espacio). Las fotos de tus anuncios no se ven afectadas.",
-    "upgrade": "Mejorar plan"
+    "upgrade": "Mejorar plan",
+    "description_paused": "Elimina algunas imágenes de la galería para liberar espacio (vaciar la papelera también ayuda). Las fotos de tus anuncios no se ven afectadas."
   },
   "lightbox": {
     "viewer": "Visor de imágenes",

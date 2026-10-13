@@ -13,7 +13,8 @@
     "emails_off_server": {
       "documents": "Activa el envío de correos a clientes en tu configuración de correo para enviar documentos.",
       "invoices": "Activa el envío de correos a clientes en tu configuración de correo para enviar facturas."
-    }
+    },
+    "top_up_paused": "Las recargas de créditos no están disponibles por ahora."
   },
   "subscription": {
     "title": "Suscripción",
@@ -82,6 +83,12 @@
       "label": "Periodo de facturación",
       "month": "Mensual",
       "year": "Anual"
+    },
+    "subtitle_paused": "Tu plan y tu facturación. Revisa tu consumo en la pestaña Uso.",
+    "paused": {
+      "title": "Los planes de pago están en pausa",
+      "body": "Por ahora Vendora es gratis: todos los proveedores están en el plan Gratis. Te avisaremos cuando vuelvan los planes de pago.",
+      "current_continues": "Tu plan actual sigue vigente hasta que lo canceles. Puedes administrarlo en Facturación."
     }
   },
   "plans": {

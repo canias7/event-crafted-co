@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { vendorNavItems as navItems } from "@/data/navItems";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 interface RequestRow {
   id: string;
@@ -223,14 +224,16 @@ export default function VendorVerificationPage() {
               <ShieldCheck className="mx-auto h-8 w-8 text-accent" />
               <h2 className="font-editorial text-3xl mt-4">{t("gate.title")}</h2>
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-                {t("gate.body")}
+                {PLANS_PAUSED ? t("gate.bodyPaused") : t("gate.body")}
               </p>
-              <Link
-                to="/vendor/subscription"
-                className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
-              >
-                {t("gate.cta")}
-              </Link>
+              {!PLANS_PAUSED && (
+                <Link
+                  to="/vendor/subscription"
+                  className="inline-flex justify-center items-center mt-6 rounded-full bg-gold px-6 text-sm font-bold text-ink hover:bg-gold-hover h-11"
+                >
+                  {t("gate.cta")}
+                </Link>
+              )}
             </div>
           ) : request && !editing ? (
             <StatusCard request={request} onEdit={() => setEditing(true)} />

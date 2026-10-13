@@ -32,7 +32,8 @@
     "v2v_pro_title": "Los mensajes entre proveedores son una función Pro.",
     "v2v_pro_body": "Mejora a Pro o Premium para iniciar conversaciones con otros proveedores.",
     "upgrade": "Mejorar plan",
-    "start_failed": "No se pudo iniciar la conversación."
+    "start_failed": "No se pudo iniciar la conversación.",
+    "v2v_pro_body_paused": "Aún no está disponible en el plan Gratis."
   },
   "confirm": {
     "archive": "¿Ocultar esta conversación de tu lista? Volverá a aparecer si el otro proveedor te escribe de nuevo.",

@@ -32,6 +32,7 @@ import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { PLANS_PAUSED } from "@/lib/plans";
 
 // Vendora light theme (the user's reference design): warm cream page,
 // gold accents. Every block — the identity card included — is CARD on
@@ -279,6 +280,14 @@ export default function ProfileScreen() {
     // enforces the same cap via trg_enforce_listing_cap; this just
     // gives a friendlier message than the raised exception.
     if (listingCap !== null && listings.length >= listingCap) {
+      // Plans paused (lib/plans.ts): state the limit, no "Upgrade plan".
+      if (PLANS_PAUSED) {
+        Alert.alert(
+          "Listing limit reached",
+          `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}.`,
+        );
+        return;
+      }
       Alert.alert(
         "Listing limit reached",
         `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}. Upgrade your plan to add more.`,
@@ -302,7 +311,9 @@ export default function ProfileScreen() {
       Alert.alert(
         "Couldn't create listing",
         error?.message?.includes("listing_cap_reached")
-          ? "Your plan's listing limit is reached. Upgrade your plan to add more."
+          ? PLANS_PAUSED
+            ? "Your plan's listing limit is reached."
+            : "Your plan's listing limit is reached. Upgrade your plan to add more."
           : (error?.message ?? "Unknown error"),
       );
       return;
@@ -856,6 +867,10 @@ function ListingTab({
               New listing
             </Text>
           </TouchableOpacity>
+        ) : PLANS_PAUSED ? (
+          <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK }}>
+            Listing limit reached
+          </Text>
         ) : (
           <UpgradeLink />
         )}

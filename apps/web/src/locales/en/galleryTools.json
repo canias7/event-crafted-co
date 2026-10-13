@@ -3,7 +3,8 @@
     "full": "You've used all your plan's gallery storage.",
     "left": "Only {{size}} of gallery storage left on your plan.",
     "description": "Upgrade your plan or remove some gallery images (emptying Trash frees space too). Listing photos aren't affected.",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "description_paused": "Remove some gallery images to make room (emptying Trash frees space too). Listing photos aren't affected."
   },
   "lightbox": {
     "viewer": "Image viewer",

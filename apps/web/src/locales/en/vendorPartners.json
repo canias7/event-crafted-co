@@ -32,7 +32,8 @@
     "v2v_pro_title": "Vendor-to-vendor messaging is a Pro feature.",
     "v2v_pro_body": "Upgrade to Pro or Premium to start conversations with other vendors.",
     "upgrade": "Upgrade",
-    "start_failed": "Couldn't start the thread."
+    "start_failed": "Couldn't start the thread.",
+    "v2v_pro_body_paused": "Not available on the Free plan yet."
   },
   "confirm": {
     "archive": "Hide this conversation from your list? It'll come back if the other vendor messages you again.",
