@@ -92,7 +92,7 @@ export default function SettingsScreen() {
   function confirmDelete() {
     Alert.alert(
       "Delete account?",
-      "This kicks off account deletion. Your data is purged after a brief review period. This can't be undone.",
+      "This permanently deletes your account, inquiries, messages and saved vendors right away. You'll be signed out. This can't be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -108,7 +108,7 @@ export default function SettingsScreen() {
             );
             setDeleting(false);
             if (error) {
-              Alert.alert("Couldn't submit request", error.message);
+              Alert.alert("Couldn't delete account", error.message);
               return;
             }
             await signOut();

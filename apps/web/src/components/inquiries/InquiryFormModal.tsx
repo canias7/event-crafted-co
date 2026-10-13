@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -415,8 +415,7 @@ export function InquiryFormModal({
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-editorial text-3xl">{t("inquiry.title")}</DialogTitle>
-          <DialogDescription className="flex items-center gap-1.5 text-xs leading-relaxed pt-1">
-            <Sparkles className="w-3.5 h-3.5 text-accent" />
+          <DialogDescription className="text-xs leading-relaxed pt-1">
             {t("inquiry.subtitle")}
           </DialogDescription>
         </DialogHeader>

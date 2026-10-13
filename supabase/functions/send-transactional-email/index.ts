@@ -122,6 +122,9 @@ serve(async (req) => {
     } else if (kind === "account_suspended") {
       const e = await accountSuspendedEmail(body as AccountSuspendedPayload);
       if (e) emails = [e];
+    } else if (kind === "listing_submitted") {
+      const e = await listingSubmittedEmail(body as ListingSubmittedPayload);
+      if (e) emails = [e];
     } else if (kind === "vendor_applied") {
       const e = await vendorAppliedEmail(body as VendorAppliedPayload);
       if (e) emails = [e];
@@ -443,6 +446,41 @@ async function accountSuspendedEmail(p: AccountSuspendedPayload) {
     to: email,
     subject: "Your Vendora account has been suspended",
     html: shellHtml("Account suspended", body),
+  };
+}
+
+interface ListingSubmittedPayload {
+  vendorProfileId: string;
+}
+
+// Sent to the vendor when they publish a listing (website wizard, edit
+// dialog, vendor app). The listing is now waiting for an admin to
+// approve it; the approval itself is emailed by vendorDecisionEmail.
+async function listingSubmittedEmail(p: ListingSubmittedPayload) {
+  if (!p.vendorProfileId) return null;
+  const sb = adminClient();
+  const { data } = await sb
+    .from("vendor_profiles")
+    .select("business_name, user_id")
+    .eq("id", p.vendorProfileId)
+    .maybeSingle();
+  const row = data as { business_name: string | null; user_id: string } | null;
+  if (!row) return null;
+  const { data: emailData } = await sb.rpc("get_user_email", {
+    p_user_id: row.user_id,
+  });
+  const email = emailData as string | null;
+  if (!email) return null;
+
+  const business = escape(row.business_name || "your listing");
+  const body = `
+    <p style="margin:0 0 16px;">Thanks for submitting <strong>${business}</strong> on Vendora.</p>
+    <p style="margin:0 0 16px;">Our team reviews every new listing before it goes live, usually within 2–3 business days. We'll email you as soon as it's approved.</p>
+    <p style="margin:0;font-size:13px;color:#777;">Questions? Just reply to this email.</p>`;
+  return {
+    to: email,
+    subject: "We received your Vendora listing",
+    html: shellHtml("Listing received", body),
   };
 }
 

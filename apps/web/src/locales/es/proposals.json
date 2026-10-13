@@ -3,10 +3,6 @@
     "trigger": "Enviar una factura, un enlace de pago, una propuesta o un contrato",
     "send": "Enviar",
     "kinds": {
-      "link": {
-        "label": "Enlace de pago",
-        "title": "Enviar un enlace de pago"
-      },
       "proposal": {
         "label": "Propuesta",
         "title": "Enviar una propuesta"
@@ -20,12 +16,10 @@
       "empty": "Sin contenido"
     },
     "hints": {
-      "link": "Elige uno para poner su enlace de pago en el chat.",
       "contract": "Elige un contrato para enviarlo a firma electrónica — el anfitrión recibe un enlace para revisarlo y firmarlo.",
       "proposal": "Elige una plantilla guardada para enviarla al chat. Créalas en Archivos."
     },
     "empty": {
-      "link": "No hay enlaces de pago activos. Crea uno en Archivos → Enlaces de pago.",
       "contract": "No hay contratos guardados. Crea uno en Archivos → Contratos.",
       "proposal": "No hay propuestas guardadas. Crea una en Archivos → Propuestas."
     },
@@ -42,8 +36,6 @@
     },
     "toast": {
       "sent": {
-        "invoice": "Factura enviada",
-        "link": "Enlace de pago enviado",
         "proposal": "Propuesta enviada",
         "contract": "Contrato enviado",
         "item": "Elemento enviado"

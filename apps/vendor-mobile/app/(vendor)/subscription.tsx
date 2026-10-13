@@ -318,7 +318,7 @@ export default function SubscriptionScreen() {
         `Switch to ${tier.name}?`,
         `You'll be charged $${tier.priceMonthly.toFixed(2)} today and start a fresh ${
           tier.billingInterval === "year" ? "12-month" : "30-day"
-        } cycle. Time you already paid for stays with you.`,
+        } cycle. Unused time on your current plan isn't refunded.`,
         [
           { text: "Cancel", style: "cancel" },
           { text: "Confirm switch", onPress: () => void confirmTierSwitch(tier) },

@@ -3,10 +3,6 @@
     "trigger": "Send an invoice, pay link, proposal, or contract",
     "send": "Send",
     "kinds": {
-      "link": {
-        "label": "Pay link",
-        "title": "Send a pay link"
-      },
       "proposal": {
         "label": "Proposal",
         "title": "Send a proposal"
@@ -20,12 +16,10 @@
       "empty": "Empty"
     },
     "hints": {
-      "link": "Pick one to drop its payment link into the chat.",
       "contract": "Pick a contract to send for e-signature — the host gets a link to review and sign.",
       "proposal": "Pick a saved template to send into the chat. Create them in Files."
     },
     "empty": {
-      "link": "No active pay links. Create one in Files → Pay Links.",
       "contract": "No saved contracts. Create one in Files → Contracts.",
       "proposal": "No saved proposals. Create one in Files → Proposals."
     },
@@ -42,8 +36,6 @@
     },
     "toast": {
       "sent": {
-        "invoice": "Invoice sent",
-        "link": "Pay link sent",
         "proposal": "Proposal sent",
         "contract": "Contract sent",
         "item": "Item sent"
