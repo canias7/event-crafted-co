@@ -29,8 +29,8 @@
   },
   "delete": {
     "title": "Delete account",
-    "subtitle": "Permanently removes your profile and everything tied to it",
-    "subtitle_vendor": "Permanently removes your profile and everything tied to it — listings, portfolio, availability",
+    "subtitle": "Close your account. It's permanently deleted after 30 days, and you can restore it before then.",
+    "subtitle_vendor": "Close your account. After 30 days your profile, listings, portfolio and availability are permanently deleted; you can restore it before then.",
     "button": "Delete",
     "confirm_title": "Delete account?",
     "confirm_body": "Deleting closes your account now and signs you out. Everything is permanently deleted after 30 days, including your listings, messages and uploaded files. If you sign in before then, you can restore it.",

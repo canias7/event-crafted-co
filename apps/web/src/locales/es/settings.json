@@ -29,8 +29,8 @@
   },
   "delete": {
     "title": "Eliminar cuenta",
-    "subtitle": "Elimina para siempre tu perfil y todo lo relacionado con él",
-    "subtitle_vendor": "Elimina para siempre tu perfil y todo lo relacionado con él — anuncios, portafolio, disponibilidad",
+    "subtitle": "Cierra tu cuenta. Se elimina para siempre pasados 30 días y puedes restaurarla antes.",
+    "subtitle_vendor": "Cierra tu cuenta. Pasados 30 días se eliminan para siempre tu perfil, tus anuncios, tu portafolio y tu disponibilidad; puedes restaurarla antes.",
     "button": "Eliminar",
     "confirm_title": "¿Eliminar tu cuenta?",
     "confirm_body": "Al eliminarla, tu cuenta se cierra ahora y se cierra tu sesión. Todo se elimina de forma permanente después de 30 días, incluidos tus anuncios, mensajes y archivos subidos. Si inicias sesión antes, puedes restaurarla.",
