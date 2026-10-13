@@ -79,7 +79,7 @@
   },
   "signInPrompt": {
     "title": "Send an inquiry to {{name}}",
-    "body": "Inquiries are routed to vendors with AI-drafted replies in under 3 hours. Sign up as a host to send your first inquiry — it's free.",
+    "body": "Sign up as a host to send your first inquiry — it's free.",
     "signUp": "Create a free host account",
     "logIn": "I already have an account"
   },
@@ -206,7 +206,7 @@
     "signInRequired": "You need to be signed in to report content.",
     "signIn": "Sign in",
     "thanksTitle": "Thanks for the report",
-    "thanksBody": "We'll review this within 24 hours. If we take action, you'll hear back via email.",
+    "thanksBody": "Thanks for letting us know. Our team will review your report.",
     "close": "Close",
     "reason": "Reason",
     "reasonPlaceholder": "Choose a reason",
@@ -236,7 +236,7 @@
   },
   "inquiry": {
     "title": "Send an inquiry",
-    "subtitle": "Vendors typically reply within 3 hours via AI-assisted drafts.",
+    "subtitle": "Tell the vendor about your event. Their reply will appear in your Inbox.",
     "sendingTo": "Sending to",
     "vendor": "Vendor",
     "noVendors": "No vendors are accepting inquiries yet. We're onboarding new vendors weekly — check back soon.",

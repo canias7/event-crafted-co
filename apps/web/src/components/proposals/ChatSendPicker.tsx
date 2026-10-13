@@ -1,8 +1,8 @@
 // Chat composer "+" attach menu for the vendor inquiry thread.
 //
-// One button opens a menu of three send types — Pay link, Proposal,
-// Contract. (Invoice was removed in Oct 2026, owner's call: vendors and
-// hosts arrange payment directly and vendors can't create invoices.)
+// One button opens a menu of two send types — Proposal and Contract.
+// (Invoice and Pay link were removed in Oct 2026, owner's call: vendors
+// and hosts arrange payment directly.)
 // Each opens a picker of the vendor's saved items (from the Files tab)
 // and, on pick, drops a formatted text message into the thread via the
 // parent's sendBody(). No new direct_messages columns:
@@ -15,7 +15,6 @@ import {
   Plus,
   Loader2,
   FileText,
-  Link2,
   FileSignature,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -34,7 +33,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-type SendKind = "link" | "proposal" | "contract";
+type SendKind = "proposal" | "contract";
 
 interface PickRow {
   id: string;
@@ -51,13 +50,6 @@ interface PickRow {
 }
 
 const ORIGIN = typeof window !== "undefined" ? window.location.origin : "https://eventvendora.com";
-
-function formatMoney(cents: number, currency = "usd"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(cents / 100);
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "";
@@ -118,7 +110,6 @@ function prefillProposalBody(
 // What the vendor reads (menu label, dialog title) is
 // picker.kinds.<kind> in the proposals namespace.
 const KIND_META: Record<SendKind, { label: string; icon: typeof FileText }> = {
-  link: { label: "Pay link", icon: Link2 },
   proposal: { label: "Proposal", icon: FileText },
   contract: { label: "Contract", icon: FileSignature },
 };
@@ -129,8 +120,8 @@ export function ChatSendPicker({
   onSend,
 }: {
   vendorId: string;
-  // Inquiry this chat belongs to — stamped onto a pay link when sent so a
-  // successful payment can auto-confirm the booking (webhook).
+  // Inquiry this chat belongs to — used to pre-fill and link the
+  // proposals and contracts sent from here.
   inquiryId: string;
   // Drops a formatted body into the thread (parent's sendBody).
   onSend: (body: string) => Promise<void> | void;
@@ -159,23 +150,7 @@ export function ChatSendPicker({
       setLoading(true);
       setRows([]);
       try {
-        if (k === "link") {
-          const { data } = await supabase
-            .from("payment_links")
-            .select("id, slug, title, amount_cents, currency, status")
-            .eq("vendor_id", vendorId)
-            .eq("status", "active")
-            .order("created_at", { ascending: false })
-            .limit(50);
-          setRows(
-            ((data ?? []) as any[]).map((l) => ({
-              id: l.id,
-              primary: l.title || t("picker.kinds.link.label"),
-              secondary: formatMoney(l.amount_cents, l.currency),
-              body: `💳 ${l.title || "Payment"} · ${formatMoney(l.amount_cents, l.currency)} — [Pay online](${ORIGIN}/pay/link/${l.slug})`,
-            })),
-          );
-        } else {
+        {
           // proposal | contract — saved Files templates (text documents)
           const table = k === "contract" ? "vendor_contract_templates" : "vendor_proposal_templates";
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,18 +189,8 @@ export function ChatSendPicker({
   async function pick(row: PickRow) {
     setSendingId(row.id);
     try {
-      // Link a sent pay link to this inquiry so a successful payment can
-      // auto-confirm the booking (vendorapay-webhook reads inquiry_id).
-      // Best-effort: a failed stamp must not block sending the link.
-      if (kind === "link" && inquiryId) {
-        const { error } = await supabase
-          .from("payment_links")
-          .update({ inquiry_id: inquiryId })
-          .eq("id", row.id);
-        if (error) console.error("[ChatSendPicker] link inquiry stamp failed", error);
-      }
       // Contracts/proposals create an instance and send a link (review &
-      // sign / view & accept). Pay links drop a text/link body.
+      // sign / view & accept).
       if (
         (kind === "contract" && row.contract) ||
         (kind === "proposal" && row.proposal)
@@ -390,9 +355,7 @@ export function ChatSendPicker({
                 ? editing.mode === "contract"
                   ? t("picker.editor.contractHint")
                   : t("picker.editor.proposalHint")
-                : kind === "link"
-                  ? t("picker.hints.link")
-                  : kind === "contract"
+                : kind === "contract"
                     ? t("picker.hints.contract")
                     : t("picker.hints.proposal")}
             </DialogDescription>
@@ -452,9 +415,7 @@ export function ChatSendPicker({
             </div>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              {kind === "link"
-                  ? t("picker.empty.link")
-                  : kind === "contract"
+              {kind === "contract"
                     ? t("picker.empty.contract")
                     : t("picker.empty.proposal")}
             </p>

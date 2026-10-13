@@ -101,6 +101,22 @@ export function InquiryComposer({
         .select("id")
         .single();
       if (error) throw error;
+      // Email the vendor's team, as the website does. Fire-and-forget:
+      // the inquiry is saved and the in-app notification already fired.
+      supabase.functions
+        .invoke("send-transactional-email", {
+          body: { kind: "new_inquiry", inquiryId: (data as { id: string }).id },
+        })
+        .then(({ error: emailErr }) => {
+          if (emailErr) {
+            // eslint-disable-next-line no-console
+            console.warn("[inquiry] new_inquiry email failed", emailErr.message);
+          }
+        })
+        .catch((e) => {
+          // eslint-disable-next-line no-console
+          console.warn("[inquiry] new_inquiry email threw", e);
+        });
       reset();
       onClose();
       onSubmitted?.((data as { id: string }).id);

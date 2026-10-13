@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Award, CheckCircle2, ChevronRight, Clock, Heart, Sparkles } from "lucide-react";
+import { Award, CheckCircle2, ChevronRight, Clock, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
@@ -162,25 +162,6 @@ export default function HostAccountPage() {
             )}
           </section>
 
-          {/* Subscriptions */}
-          <section>
-            <h2 className="font-editorial text-2xl mb-4">{t("subscriptions.title")}</h2>
-            <div
-              className="rounded-2xl p-8 text-center"
-              style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-              }}
-            >
-              <div className="mx-auto w-12 h-12 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
-                <Sparkles className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <p className="font-editorial text-2xl">{t("subscriptions.comingSoon")}</p>
-              <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto leading-relaxed">
-                {t("subscriptions.body")}
-              </p>
-            </div>
-          </section>
         </div>
       </main>
       <MobileNav items={customerNavItems} />

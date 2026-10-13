@@ -79,7 +79,7 @@
   },
   "signInPrompt": {
     "title": "Envía una consulta a {{name}}",
-    "body": "Las consultas llegan a los proveedores, que responden en menos de 3 horas con borradores hechos con IA. Regístrate como anfitrión para enviar tu primera consulta — es gratis.",
+    "body": "Regístrate como anfitrión para enviar tu primera consulta — es gratis.",
     "signUp": "Crea una cuenta de anfitrión gratis",
     "logIn": "Ya tengo una cuenta"
   },
@@ -206,7 +206,7 @@
     "signInRequired": "Necesitas iniciar sesión para reportar contenido.",
     "signIn": "Iniciar sesión",
     "thanksTitle": "Gracias por tu reporte",
-    "thanksBody": "Lo revisaremos en un plazo de 24 horas. Si tomamos medidas, te avisaremos por correo.",
+    "thanksBody": "Gracias por avisarnos. Nuestro equipo revisará tu reporte.",
     "close": "Cerrar",
     "reason": "Motivo",
     "reasonPlaceholder": "Elige un motivo",
@@ -236,7 +236,7 @@
   },
   "inquiry": {
     "title": "Envía una consulta",
-    "subtitle": "Los proveedores suelen responder en menos de 3 horas con borradores asistidos por IA.",
+    "subtitle": "Cuéntale al proveedor sobre tu evento. Su respuesta aparecerá en tu Bandeja.",
     "sendingTo": "Enviar a",
     "vendor": "Proveedor",
     "noVendors": "Todavía no hay proveedores que acepten consultas. Cada semana sumamos proveedores nuevos — vuelve pronto.",

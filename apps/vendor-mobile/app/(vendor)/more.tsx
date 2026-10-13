@@ -75,7 +75,7 @@ export default function MoreScreen() {
       icon: "help-circle",
       title: "Help & support",
       message:
-        "Questions, issues, or feedback? Email us and a real person will get back to you within one business day.",
+        "Questions, issues, or feedback? Email us and a real person will read it.",
       confirmLabel: "Email support",
       cancelLabel: "Close",
       onConfirm: () => {

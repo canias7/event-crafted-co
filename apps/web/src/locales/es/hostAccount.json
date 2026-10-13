@@ -23,10 +23,5 @@
     "retryTitle": "Intenta verificarte de nuevo",
     "requestTitle": "Verifica tu cuenta",
     "requestSubtitle": "Genera confianza con los proveedores. Respuestas más rápidas, mejores coincidencias."
-  },
-  "subscriptions": {
-    "title": "Suscripciones",
-    "comingSoon": "Próximamente",
-    "body": "Pronto llegarán planes Premium para anfitriones con consultas ilimitadas, respuestas prioritarias y atención personalizada."
   }
 }
