@@ -30,7 +30,7 @@
         },
         "message": {
           "q": "¿Cómo le escribo a un proveedor después de enviar una consulta?",
-          "a": "Abre Bandeja (en el menú del sitio o en la pestaña Inbox de la app) y elige la consulta. Ahí está toda tu conversación con el proveedor, y recibirás una notificación cuando te responda."
+          "a": "Abre Bandeja (en el menú del sitio o en la pestaña Inbox de la app) y elige la consulta. Ahí está toda tu conversación con el proveedor. Cuando te responda, recibirás una notificación y, si aún no has leído la respuesta, un correo. Puedes desactivar esos correos en Configuración → Notificaciones."
         },
         "payment_info": {
           "q": "¿Pago a través de Vendora?",

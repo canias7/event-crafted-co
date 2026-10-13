@@ -464,12 +464,7 @@ export default function CalendarScreen() {
               .in("vendor_id", vendorIds)
               .gte("event_date", startYmd)
               .lt("event_date", endYmd),
-            supabase
-              .from("vendor_unavailable_dates")
-              .select("date, reason, vendor_id")
-              .in("vendor_id", vendorIds)
-              .gte("date", startYmd)
-              .lt("date", endYmd),
+            loadBlockedDates(supabase, vendorIds, startYmd, endYmd),
             supabase
               .from("vendor_availability_rules")
               .select("day_of_week, is_unavailable, vendor_id")
@@ -3221,4 +3216,24 @@ function CenterModal({
       </KeyboardAvoidingView>
     </Modal>
   );
+}
+
+// Blocked dates with their private titles. Titles are only readable by
+// the vendor's team, through get_vendor_block_reasons (the table itself
+// is public so hosts can see which days are taken, minus the titles).
+// Falls back to the table while that function is being rolled out.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadBlockedDates(client: any, vendorIds: string[], startYmd: string, endYmd: string) {
+  const res = await client.rpc("get_vendor_block_reasons", {
+    p_vendor_ids: vendorIds,
+    p_start: startYmd,
+    p_end: endYmd,
+  });
+  if (!res.error || res.error.code !== "PGRST202") return res;
+  return client
+    .from("vendor_unavailable_dates")
+    .select("date, reason, vendor_id")
+    .in("vendor_id", vendorIds)
+    .gte("date", startYmd)
+    .lt("date", endYmd);
 }
