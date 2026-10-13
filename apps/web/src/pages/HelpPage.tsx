@@ -6,10 +6,16 @@
 // Public route — no auth gate. That way a logged-out user who's
 // stuck signing in can still get help.
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { Mail, FileText, Lock, MessageCircle } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
+import { Mail, FileText, Lock, Search } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { EmailMenu } from "@/components/shared/EmailMenu";
@@ -17,22 +23,75 @@ import { CONTACT_EMAIL } from "@/lib/contact";
 
 const INK = "#14161a";
 
-interface FAQ {
-  q: string;
-  a: string;
-}
-
 // FAQ sections and their questions, in display order. The words live in
 // locales/<language>/help.json under faq.<section>.title and
-// faq.<section>.items.<question>.q / .a.
+// faq.<section>.items.<question>.q / .a. Answers can link with
+// <vendors>, <signup>, <terms>, <settings> and <email> tags.
 const FAQ_SECTIONS: { id: string; items: string[] }[] = [
-  { id: "vendors", items: ["approval", "photos", "downgrade", "pause", "blocked_title"] },
-  { id: "hosts", items: ["message", "payment_info"] },
-  { id: "billing", items: ["cancel", "delete", "invoice", "card"] },
+  {
+    id: "hosts",
+    items: ["free", "find", "contact", "message", "payment_info", "problem"],
+  },
+  {
+    id: "vendors",
+    items: [
+      "free",
+      "commission",
+      "approval",
+      "inquiries",
+      "pause",
+      "downgrade",
+      "blocked_title",
+      "photos",
+    ],
+  },
+  {
+    id: "billing",
+    items: ["card", "invoice", "cancel", "after_cancel", "delete", "switch"],
+  },
 ];
+
+const FAQ_LINK = "text-gold underline underline-offset-2 hover:text-[#f4f1ea]";
+const FAQ_LINKS = {
+  vendors: <Link to="/vendors" className={FAQ_LINK} />,
+  signup: <Link to="/signup/vendor" className={FAQ_LINK} />,
+  terms: <Link to="/terms" className={FAQ_LINK} />,
+  email: <EmailMenu className={FAQ_LINK} />,
+};
+
+// Lowercase, accents stripped, so "cancelación" matches "cancelacion".
+function fold(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+// Answer text without its <tag> markup, for searching.
+function plain(text: string): string {
+  return text.replace(/<\/?[a-zA-Z]+>/g, "");
+}
 
 export default function HelpPage() {
   const { t } = useTranslation("help");
+  const [query, setQuery] = useState("");
+
+  // Sections with only the questions that match the search; sections
+  // with no match drop out.
+  const sections = useMemo(() => {
+    const words = fold(query).split(/\s+/).filter(Boolean);
+    return FAQ_SECTIONS.map((section) => ({
+      id: section.id,
+      title: t(`faq.${section.id}.title`),
+      items: section.items
+        .map((id) => ({ key: `faq.${section.id}.items.${id}` }))
+        .filter(({ key }) => {
+          if (words.length === 0) return true;
+          const text = fold(`${t(`${key}.q`)} ${plain(t(`${key}.a`))}`);
+          return words.every((w) => text.includes(w));
+        }),
+    })).filter((section) => section.items.length > 0);
+  }, [query, t]);
 
   useEffect(() => {
     document.title = t("page_title");
@@ -67,7 +126,7 @@ export default function HelpPage() {
             <span className="block flex-1 min-w-0">
               <span className="block font-semibold">{t("email_card.title")}</span>
               <span className="block text-sm text-[#f4f1ea]/80">
-                {t("email_card.reply_time", { email: CONTACT_EMAIL })}
+                {CONTACT_EMAIL}
               </span>
             </span>
             <span className="text-xs font-bold text-gold">
@@ -77,16 +136,49 @@ export default function HelpPage() {
         </button>
         </EmailMenu>
 
-        {FAQ_SECTIONS.map((section) => (
-          <FAQSection
-            key={section.id}
-            title={t(`faq.${section.id}.title`)}
-            items={section.items.map((id) => ({
-              q: t(`faq.${section.id}.items.${id}.q`),
-              a: t(`faq.${section.id}.items.${id}.a`),
-            }))}
+        {/* Search filters the questions below as you type. */}
+        <label className="relative block mb-8">
+          <span className="sr-only">{t("search.label")}</span>
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#f4f1ea]/60"
+            aria-hidden
           />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("search.placeholder")}
+            className="w-full h-11 rounded-xl border border-white/15 bg-white/[0.03] pl-11 pr-4 text-sm text-[#f4f1ea] placeholder:text-[#f4f1ea]/60 focus:outline-none focus:border-white/40"
+          />
+        </label>
+
+        {sections.map((section) => (
+          <section key={section.id} className="mb-10">
+            <h2 className="font-editorial text-2xl mb-4">{section.title}</h2>
+            <Accordion type="multiple" className="space-y-3">
+              {section.items.map((item) => (
+                <AccordionItem
+                  key={item.key}
+                  value={item.key}
+                  className="rounded-xl border border-white/15 px-5 data-[state=open]:border-white/30"
+                >
+                  <AccordionTrigger className="py-4 text-left text-[15px] font-bold hover:no-underline [&>svg]:text-gold">
+                    {t(`${item.key}.q`)}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-5 text-sm leading-relaxed text-[#f4f1ea]/80">
+                    <Trans t={t} i18nKey={`${item.key}.a`} components={FAQ_LINKS} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </section>
         ))}
+
+        {sections.length === 0 && (
+          <p className="text-sm text-[#f4f1ea]/80 mb-10">
+            <Trans t={t} i18nKey="search.none" components={FAQ_LINKS} />
+          </p>
+        )}
 
         {/* Legal links — easy access from Help so vendors don't have
             to dig for the terms they agreed to on signup. */}
@@ -111,36 +203,11 @@ export default function HelpPage() {
                 {t("legal.privacy")}
               </Link>
             </li>
-            <li>
-              <EmailMenu
-                subject="Refund request"
-                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
-              >
-                <MessageCircle className="w-4 h-4" />
-                {t("legal.refund")}
-              </EmailMenu>
-            </li>
           </ul>
         </section>
       </main>
 
       <Footer tone="dark" />
     </div>
-  );
-}
-
-function FAQSection({ title, items }: { title: string; items: FAQ[] }) {
-  return (
-    <section className="mb-8">
-      <h2 className="font-editorial text-2xl mb-4">{title}</h2>
-      <ul className="space-y-4">
-        {items.map((item, i) => (
-          <li key={i}>
-            <p className="font-medium mb-1">{item.q}</p>
-            <p className="text-sm text-[#f4f1ea]/80 leading-relaxed">{item.a}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
