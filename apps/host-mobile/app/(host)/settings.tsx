@@ -1,9 +1,10 @@
 // Host account settings. Reached from the Profile tab's "Account
-// settings" card. Three sections:
+// settings" card. Sections:
 //   1. Identity:    display_name (editable), email (read-only)
 //   2. Notifications: vendor reply emails on/off
-//   3. Sign out
-//   4. Danger:      delete the account via the delete-account function
+//   3. Help & legal: links to the website's Help, Terms, Privacy
+//   4. Sign out
+//   5. Danger:      delete the account via the delete-account function
 //
 // Display-name writes go straight to public.profiles (host owns the
 // row via RLS). Delete calls the delete-account edge function, the same
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -41,6 +43,14 @@ const BORDER = "#e6e1d5";
 const DANGER = "#b23a34";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
+
+// The website hosts Help, Terms and Privacy; the app links to them so
+// both always show the same text.
+const LEGAL_LINKS = [
+  { label: "Help & FAQ", url: "https://eventvendora.com/help", icon: "help-circle" },
+  { label: "Terms of Service", url: "https://eventvendora.com/terms", icon: "file-text" },
+  { label: "Privacy Policy", url: "https://eventvendora.com/privacy", icon: "lock" },
+] as const;
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -267,6 +277,44 @@ export default function SettingsScreen() {
                     thumbColor="#ffffff"
                     accessibilityLabel="Vendor replies by email"
                   />
+                </View>
+
+                <SectionLabel style={{ marginTop: 32 }}>Help & legal</SectionLabel>
+                <View style={[field, { paddingVertical: 4 }]}>
+                  {LEGAL_LINKS.map((l, i) => (
+                    <Pressable
+                      key={l.url}
+                      onPress={() => void Linking.openURL(l.url)}
+                      accessibilityRole="link"
+                    >
+                      {({ pressed }) => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingVertical: 12,
+                            borderTopWidth: i === 0 ? 0 : 1,
+                            borderTopColor: BORDER,
+                            opacity: pressed ? 0.7 : 1,
+                          }}
+                        >
+                          <Feather name={l.icon} size={18} color={INK} />
+                          <Text
+                            style={{
+                              fontFamily: SERIF_BOLD,
+                              marginLeft: 12,
+                              color: INK,
+                              fontSize: 15,
+                              flex: 1,
+                            }}
+                          >
+                            {l.label}
+                          </Text>
+                          <Feather name="external-link" size={16} color={INK} />
+                        </View>
+                      )}
+                    </Pressable>
+                  ))}
                 </View>
 
                 <SectionLabel style={{ marginTop: 32 }}>Session</SectionLabel>
