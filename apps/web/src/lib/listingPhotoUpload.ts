@@ -118,11 +118,9 @@ export async function uploadListingPhotos(
       if (shouldCancel?.()) throw new UploadCancelledError();
       const myIndex = cursor++;
       if (myIndex >= files.length) return;
-      // Compress (resize + re-encode JPEG) before upload. Best-
-      // effort: helper returns the original file unchanged if
-      // compression isn't worth it (small file, small dimensions)
-      // or fails (decode error, OOM). Typical iPhone photo: 4 MB
-      // → ~400 KB, ~10× upload + storage win.
+      // Re-encode before upload: always strips EXIF/GPS (public
+      // bucket), and large photos are also resized to a 2400px JPEG.
+      // Typical iPhone photo: 4 MB → ~400 KB.
       const file = await compressImageIfNeeded(files[myIndex]);
       const ext =
         file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||

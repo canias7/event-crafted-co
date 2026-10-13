@@ -4,7 +4,7 @@
   "title": "Términos del servicio",
   "last_updated": "Última actualización: 13 de octubre de 2026",
   "translation_note": "Esta traducción es para tu comodidad. Si hay alguna diferencia con la versión en inglés, prevalece la versión en inglés.",
-  "intro": "Al usar Vendora, aceptas estos términos. Si no los aceptas, por favor no uses la plataforma.",
+  "intro": "Estos términos son un acuerdo entre tú y Vendora LLC, una sociedad de responsabilidad limitada de Carolina del Norte (\"Vendora\"). Al usar Vendora, los aceptas. Si no los aceptas, por favor no uses la plataforma.",
   "eligibility": {
     "title": "1. Elegibilidad",
     "body": "Debes tener al menos 18 años y poder celebrar un contrato vinculante en tu jurisdicción. Los proveedores deben ser un negocio legítimo — empresas unipersonales, LLC, corporaciones."
@@ -44,7 +44,7 @@
       "<strong>Los nuevos planes de pago están en pausa por ahora.</strong> Todos los proveedores pueden usar el plan Free, y no puedes contratar ni cambiar a un plan de pago hasta que los reabramos. Las reglas de abajo se aplican a quien ya tiene un plan de pago y a los planes de pago cuando vuelvan.",
       "El plan Free no cuesta nada. Pro y Premium se cobran cada mes a través de Stripe y se <strong>renuevan automáticamente</strong> cada mes hasta que los canceles.",
       "Puedes cancelar cuando quieras desde la página Suscripción. <strong>Cancelar</strong> hace que tu plan deje de renovarse: conservas el acceso de pago hasta el final del período de facturación actual, no se te vuelve a cobrar y tu cuenta sigue abierta en el plan Free.",
-      "<strong>Eliminar tu cuenta</strong> es distinto: cualquier plan activo se cancela de inmediato, tu acceso termina cuando se elimina la cuenta, no se te vuelve a cobrar y no hay reembolso por la parte no usada del período de facturación actual (consulta la sección 15).",
+      "<strong>Eliminar tu cuenta</strong> es distinto: tu cuenta se cierra de inmediato, cualquier plan activo se cancela en ese momento sin reembolso por la parte no usada del período de facturación actual y no se te vuelve a cobrar (consulta la sección 15).",
       "Cuando los planes de pago estén disponibles, podrás cambiar entre Pro y Premium desde la página Suscripción. Antes de confirmar, la página te muestra cuánto se te cobrará y cuándo empieza tu nuevo mes de facturación.",
       "Si cambiamos el precio de un plan, te avisaremos antes de que el nuevo precio se aplique a tu plan."
     ]
@@ -111,7 +111,7 @@
   "termination": {
     "title": "15. Terminación",
     "items": [
-      "Puedes eliminar tu cuenta en cualquier momento desde tu configuración. Al eliminarla, tu acceso termina de inmediato y cualquier plan de pago activo se cancela en ese mismo momento, así que no se te vuelve a cobrar. No hay reembolso por la parte no usada del período de facturación actual. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan (consulta la sección 6).",
+      "Puedes eliminar tu cuenta en cualquier momento desde tu configuración. Tu cuenta se cierra de inmediato y cualquier plan de pago activo se cancela en ese mismo momento, sin reembolso por la parte no usada del período de facturación actual y sin más cobros. Puedes restaurar la cuenta iniciando sesión dentro de los 30 días (un plan cancelado sigue cancelado); después se elimina de forma permanente, incluidos los archivos que subiste. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan (consulta la sección 6).",
       "Podemos suspender o cerrar una cuenta, u ocultar un anuncio, con previo aviso (o sin aviso en caso de infracciones graves) si infringe estos términos, está involucrada en fraude o actividades ilegales, o pone en riesgo la seguridad de otros usuarios o de Vendora.",
       "Las secciones 7, 9, 12, 13, 14 y 16 siguen aplicándose después de que se cierra una cuenta."
     ]

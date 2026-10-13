@@ -232,14 +232,15 @@ export function SettingsSheet({
       icon: "trash-2",
       title: "Delete your account?",
       message:
-        "This permanently deletes your account, all listings, messages, and history. If you have a paid plan, it's canceled right away and you won't be charged again, with no refund for the rest of the current billing period. You can't undo this.",
+        "Deleting closes your account now and signs you out. If you have a paid plan, it's canceled right away with no refund for the rest of the current billing period. Everything, including your listings, messages and uploaded files, is permanently deleted after 30 days. Sign in before then to restore it.",
       confirmLabel: "Delete account",
       cancelLabel: "Cancel",
       destructive: true,
       onConfirm: () => {
         void (async () => {
-          // delete-account cancels any Stripe plan before deleting, so a
-          // deleted vendor is never billed again.
+          // delete-account cancels any Stripe plan, then closes the
+          // account: it's permanently deleted after 30 days unless the
+          // vendor signs back in and restores it (AccountDeletionGate).
           const { error } = await supabase.functions.invoke(
             "delete-account",
             { body: {} },
@@ -535,8 +536,9 @@ export function SettingsSheet({
                   paddingHorizontal: 12,
                 }}
               >
-                Deleting your account is permanent. Your listings, messages, and
-                reviews will be removed.
+                Deleting closes your account right away. Your listings, messages,
+                reviews and files are permanently deleted after 30 days unless you
+                sign back in and restore it.
               </Text>
             </ScrollView>
           ) : (

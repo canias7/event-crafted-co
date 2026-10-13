@@ -85,6 +85,7 @@ import {
   parseExif,
   type SanitizedExif,
 } from "@/lib/galleryImage";
+import { stripImageMetadata } from "@/lib/imageCompress";
 import {
   ensureGalleryCapacity,
   formatBytes,
@@ -606,14 +607,17 @@ export default function VendorGalleryPage() {
     setUploading(true);
     setUploadProgress({ done: 0, total: list.length });
     let failed = 0;
-    for (const file of list) {
+    for (const original of list) {
       // Best-effort metadata extraction — done first so we can store
       // it on the row at insert time. Both are non-blocking; if
-      // either fails we still upload the image.
-      const [exif, info] = await Promise.all([
-        parseExif(file),
-        computeBlurhash(file),
+      // either fails we still upload the image. parseExif reads the
+      // original (camera/date only, never GPS); the bytes we upload
+      // are re-encoded so they carry no EXIF/GPS (public bucket).
+      const [exif, file] = await Promise.all([
+        parseExif(original),
+        stripImageMetadata(original),
       ]);
+      const info = await computeBlurhash(file);
 
       const ext =
         file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "jpg";

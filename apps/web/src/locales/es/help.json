@@ -96,7 +96,7 @@
         },
         "delete": {
           "q": "¿Qué pasa si elimino mi cuenta mientras tengo una suscripción?",
-          "a": "Eliminar tu cuenta no es lo mismo que cancelar. Cuando eliminas tu cuenta (Configuración → Eliminar cuenta), cualquier suscripción activa se cancela de inmediato, y tu cuenta se elimina solo después de que esa cancelación se complete. No se te vuelve a cobrar, tu acceso termina cuando se elimina la cuenta y no hay reembolso por la parte no usada del período de facturación actual. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan."
+          "a": "Eliminar tu cuenta no es lo mismo que cancelar. Cuando eliminas tu cuenta (Configuración → Eliminar cuenta), cualquier suscripción activa se cancela de inmediato, sin reembolso por la parte no usada del período de facturación actual, y no se te vuelve a cobrar. Tu cuenta se cierra en ese momento. Puedes restaurarla iniciando sesión dentro de los 30 días (el plan sigue cancelado); después se elimina de forma permanente, incluidos los archivos que subiste. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan."
         }
       }
     }

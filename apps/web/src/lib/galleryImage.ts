@@ -1,7 +1,10 @@
 // Shared helpers for the vendor gallery upload pipeline:
 //   • parseExif(file) — extract a sanitized subset of EXIF tags from
-//     a File. GPS, maker-notes, and other large blobs are dropped —
-//     only the camera/lens/exposure-trio + capture date come through.
+//     a File: camera/lens/exposure-trio + capture date only. GPS is
+//     never read or returned (gallery files sit in a public bucket),
+//     and maker-notes and other large blobs are skipped too. The
+//     uploaded bytes themselves go through stripImageMetadata
+//     (lib/imageCompress.ts), so the file carries no location either.
 //   • computeBlurhash(file) — encode a tiny perceptual hash for the
 //     image. Rendered as a canvas placeholder while the real image
 //     streams in, eliminates blank-tile flicker.
@@ -36,13 +39,7 @@ export interface SanitizedExif {
   shutter?: string; // "1/200" formatted
   focal_length?: number;
   orientation?: number;
-  // GPS, when present, in decimal degrees (signed: north/east
-  // positive, south/west negative). Shown in the vendor's own
-  // gallery EXIF panel — public share downloads still receive the
-  // raw file with its embedded GPS unless we later add a strip-
-  // on-share toggle.
-  gps_lat?: number;
-  gps_lon?: number;
+  // No GPS fields, on purpose: location is never stored.
 }
 
 const EXIF_TAGS = [
@@ -60,11 +57,11 @@ const EXIF_TAGS = [
 export async function parseExif(file: File): Promise<SanitizedExif | null> {
   try {
     const exifr = await getExifr();
-    // Pick the small whitelist + GPS. exifr returns latitude /
-    // longitude pre-computed when `gps: true`.
+    // Pick the small whitelist only. GPS parsing stays off so no
+    // location can reach the saved row.
     const raw = await exifr.parse(file, {
       pick: EXIF_TAGS,
-      gps: true,
+      gps: false,
       tiff: true,
       exif: true,
       iptc: false,
@@ -88,8 +85,6 @@ export async function parseExif(file: File): Promise<SanitizedExif | null> {
     }
     if (typeof raw.FocalLength === "number") out.focal_length = raw.FocalLength;
     if (typeof raw.Orientation === "number") out.orientation = raw.Orientation;
-    if (typeof raw.latitude === "number") out.gps_lat = raw.latitude;
-    if (typeof raw.longitude === "number") out.gps_lon = raw.longitude;
     return Object.keys(out).length > 0 ? out : null;
   } catch {
     return null;

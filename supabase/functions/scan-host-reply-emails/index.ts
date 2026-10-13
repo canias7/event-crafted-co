@@ -14,6 +14,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  emailPrefsFooterHtml,
+  listUnsubscribeHeaders,
+} from "../_shared/emailPrefs.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
@@ -78,6 +82,7 @@ serve(async (req) => {
         to: r.email,
         subject: `${vendor} replied to your inquiry`,
         html: replyHtml(vendor, r, link),
+        headers: listUnsubscribeHeaders(),
       }),
     });
     if (send.ok) emailed++;
@@ -104,8 +109,7 @@ function replyHtml(vendor: string, r: ReplyRow, link: string) {
     <p style="margin:0 0 16px;"><strong>${escape(vendor)}</strong> sent you a message on Vendora.</p>
     ${quote}
     ${more}
-    <p style="margin:0 0 24px;"><a href="${link}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-size:14px;font-weight:500;">Read and reply</a></p>
-    <p style="margin:0;font-size:12px;color:#999;">You get these emails because reply emails are on. You can turn them off in <a href="${APP_URL}/settings/notifications" style="color:#999;">Settings → Notifications</a>.</p>`;
+    <p style="margin:0;"><a href="${link}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-size:14px;font-weight:500;">Read and reply</a></p>`;
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#f7f5f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;">
@@ -115,7 +119,7 @@ function replyHtml(vendor: string, r: ReplyRow, link: string) {
           <tr><td style="padding-bottom:24px;"><img src="https://eventvendora.com/pwa-192.png" alt="Vendora" width="44" height="44" style="display:block;border:0;border-radius:8px;" /></td></tr>
           <tr><td style="font-size:24px;line-height:1.25;font-weight:600;padding-bottom:16px;">New reply from ${escape(vendor)}</td></tr>
           <tr><td style="font-size:15px;line-height:1.6;color:#3a3a3a;">${body}</td></tr>
-          <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">Vendora · Premium event planning &amp; vendor marketplace</td></tr>
+          <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;line-height:1.6;">${emailPrefsFooterHtml("emails about vendor replies are on")}<br/>Vendora · Premium event planning &amp; vendor marketplace</td></tr>
         </table>
       </td></tr>
     </table>

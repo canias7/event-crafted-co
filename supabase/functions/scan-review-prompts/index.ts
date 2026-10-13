@@ -1,7 +1,8 @@
 // Scan-and-send for the review prompt loop. Calls the SECURITY DEFINER
 // enqueue_pending_review_prompts() RPC to atomically mark eligible
 // inquiries as prompted + drop in-app notifications, then sends one
-// email per host.
+// email per host. Hosts who turned notification_prefs.review_prompts off
+// (Settings -> Notifications) are left out by the SQL function.
 //
 // Schedule this once per day. With Supabase you can either:
 //   1. Use pg_cron + pg_net to call this URL (requires extensions)
@@ -18,11 +19,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  emailPrefsFooterHtml,
+  listUnsubscribeHeaders,
+} from "../_shared/emailPrefs.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <hello@vendora.app>";
-const APP_URL = Deno.env.get("APP_URL") ?? "https://vendora.app";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const AFTER_DAYS = Number.parseInt(
@@ -94,6 +99,7 @@ serve(async (req) => {
         to: r.host_email,
         subject: `How was your ${r.event_type.replace(/_/g, " ")} with ${r.vendor_name}?`,
         html: reviewPromptHtml(r),
+        headers: listUnsubscribeHeaders(),
       }),
     });
     if (send.ok) {
@@ -150,7 +156,8 @@ function reviewPromptHtml(r: Eligible) {
           </p>
           <p style="margin:0;font-size:13px;color:#777;">Or paste this into your browser:<br/><span style="word-break:break-all;">${link}</span></p>
         </td></tr>
-        <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">
+        <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;line-height:1.6;">
+          ${emailPrefsFooterHtml("review reminders are on")}<br/>
           Vendora · Premium event planning &amp; vendor marketplace
         </td></tr>
       </table>

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import i18n from "@/i18n";
+import { stripImageMetadata } from "@/lib/imageCompress";
 
 const BUCKET = "message-attachments";
 export const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -92,7 +93,10 @@ export async function uploadAttachments(
   onError?: (filename: string, msg: string) => void,
 ): Promise<MessageAttachment[]> {
   const results: MessageAttachment[] = [];
-  for (const file of files) {
+  for (const picked of files) {
+    // Images are re-encoded so the public file carries no EXIF/GPS.
+    // PDFs and voice notes pass through unchanged.
+    const file = await stripImageMetadata(picked);
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
     const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage

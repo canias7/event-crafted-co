@@ -33,11 +33,11 @@
     "subtitle_vendor": "Permanently removes your profile and everything tied to it — listings, portfolio, availability",
     "button": "Delete",
     "confirm_title": "Delete account?",
-    "confirm_body": "This will delete your profile and all related data. You'll be signed out immediately and won't be able to sign back in with this email.",
-    "confirm_body_plan": "If you have a paid plan, it's canceled right away and you won't be charged again. There's no refund for the rest of the current billing period.",
+    "confirm_body": "Deleting closes your account now and signs you out. Everything is permanently deleted after 30 days, including your listings, messages and uploaded files. If you sign in before then, you can restore it.",
+    "confirm_body_plan": "If you have a paid plan, it's canceled right away with no refund for the rest of the current billing period, and you won't be charged again.",
     "cancel": "Cancel",
     "confirm": "Yes, delete it",
-    "success": "Account closed. Goodbye for now.",
+    "success": "Account closed. Sign in within 30 days if you change your mind.",
     "error": "{{message}}",
     "plan_error": "We couldn't cancel your plan, so your account wasn't deleted. Try again in a moment, or email hello@eventvendora.com."
   },
@@ -67,6 +67,18 @@
       "weekly_digest": {
         "title": "Weekly digest",
         "subtitle": "Monday summary of last week's activity"
+      },
+      "daily_digest": {
+        "title": "Daily summary email",
+        "subtitle": "A morning email with anything you haven't read from the day before"
+      },
+      "review_prompts": {
+        "title": "Review reminders",
+        "subtitle": "A reminder to review your vendor a few days after your event"
+      },
+      "onboarding_tips": {
+        "title": "Profile setup tips",
+        "subtitle": "Reminders to finish your listing while it's incomplete"
       },
       "marketing": {
         "title": "Marketing",

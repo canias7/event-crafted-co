@@ -31,6 +31,8 @@ type NotifPrefs = {
   review_received: boolean;
   weekly_digest: boolean;
   daily_digest: boolean;
+  review_prompts: boolean;
+  onboarding_tips: boolean;
   marketing: boolean;
 };
 
@@ -41,18 +43,29 @@ const DEFAULT_PREFS: NotifPrefs = {
   review_received: true,
   weekly_digest: true,
   daily_digest: true,
+  review_prompts: true,
+  onboarding_tips: true,
   marketing: false,
 };
 
 // Rows in display order. Titles and subtitles live in the "settings"
 // namespace under notifications.prefs.<key>. Hosts see the rows that
-// apply to them; vendors see the vendor ones.
-const HOST_PREFS: Array<keyof NotifPrefs> = ["reply_email", "marketing"];
+// apply to them; vendors see the vendor ones. Every non-essential email
+// honours one of these keys server-side (a missing key = on) and links
+// back here from its footer.
+const HOST_PREFS: Array<keyof NotifPrefs> = [
+  "reply_email",
+  "daily_digest",
+  "review_prompts",
+  "marketing",
+];
 const VENDOR_PREFS: Array<keyof NotifPrefs> = [
   "new_inquiry",
   "proposal_accepted",
   "review_received",
   "weekly_digest",
+  "daily_digest",
+  "onboarding_tips",
   "marketing",
 ];
 
