@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { stripImageMetadata } from "@/lib/imageCompress";
 
 export function ModalShell({
   title,
@@ -137,8 +138,11 @@ export function MediaComposerModal({
     }
     setPosting(true);
     try {
+      // Photos are re-encoded so the public file carries no EXIF/GPS.
+      // Videos can't be re-encoded in the browser and go up as is.
+      const upload = isPhoto ? await stripImageMetadata(file) : file;
       const ext =
-        file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ??
+        upload.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ??
         (kind === "post" ? "jpg" : "mp4");
       const filename = `${Date.now()}-${Math.random()
         .toString(36)
@@ -147,9 +151,9 @@ export function MediaComposerModal({
 
       const { error: upErr } = await supabase.storage
         .from(bucket)
-        .upload(path, file, {
+        .upload(path, upload, {
           contentType:
-            file.type || (kind === "post" ? "image/jpeg" : "video/mp4"),
+            upload.type || (kind === "post" ? "image/jpeg" : "video/mp4"),
           upsert: false,
         });
       if (upErr) throw upErr;

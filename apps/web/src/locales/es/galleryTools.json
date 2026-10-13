@@ -33,11 +33,7 @@
     "focalLength": "Distancia focal",
     "noMetadata": "Sin metadatos de cámara.",
     "caption": "Pie de foto",
-    "thisImage": "esta imagen",
-    "north": "N",
-    "south": "S",
-    "east": "E",
-    "west": "O"
+    "thisImage": "esta imagen"
   },
   "edit": {
     "title": "Editar imagen",

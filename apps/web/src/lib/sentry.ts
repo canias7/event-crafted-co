@@ -67,6 +67,9 @@ export function initSentry() {
     release: import.meta.env.VITE_GIT_SHA as string | undefined,
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 0.05,
+    // No personal data: no IP address, cookies or request headers.
+    // (false is the SDK default; set explicitly so it stays off.)
+    sendDefaultPii: false,
     // Don't replay sessions by default — replay storage is expensive.
     replaysSessionSampleRate: 0,
     // Replay only sessions that hit an error.
@@ -101,6 +104,8 @@ export function initSentry() {
       if (text && CHUNK_ERROR_NEEDLES.some((n) => text.includes(n))) {
         return null;
       }
+      // Only the account id leaves the browser, whatever set it.
+      if (event.user) event.user = event.user.id ? { id: event.user.id } : undefined;
       return event;
     },
   });
@@ -128,10 +133,13 @@ export function captureMessage(
   });
 }
 
-export function setUser(user: { id: string; email?: string | null } | null) {
+// Tags reports with the signed-in account's id only (an opaque uuid),
+// so we can find a user's errors without sending their email or other
+// personal details to Sentry.
+export function setUser(user: { id: string } | null) {
   if (!initialized) return;
   if (user) {
-    Sentry.setUser({ id: user.id, email: user.email ?? undefined });
+    Sentry.setUser({ id: user.id });
   } else {
     Sentry.setUser(null);
   }

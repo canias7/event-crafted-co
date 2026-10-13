@@ -33,11 +33,7 @@
     "focalLength": "Focal length",
     "noMetadata": "No camera metadata.",
     "caption": "Caption",
-    "thisImage": "this image",
-    "north": "N",
-    "south": "S",
-    "east": "E",
-    "west": "W"
+    "thisImage": "this image"
   },
   "edit": {
     "title": "Edit image",

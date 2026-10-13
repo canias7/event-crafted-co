@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { stripImageMetadata } from "@/lib/imageCompress";
 import { Button } from "@/components/ui/button";
 import { vendorImageUrl } from "@/lib/storage";
 
@@ -85,7 +86,8 @@ export function PortfolioUploader({ vendorId }: Props) {
 
     let succeeded = 0;
     for (let i = 0; i < accepted.length; i++) {
-      const file = accepted[i];
+      // Re-encoded so the public file carries no EXIF/GPS.
+      const file = await stripImageMetadata(accepted[i]);
       const ext = file.name.split(".").pop() ?? "jpg";
       const filename = `${crypto.randomUUID()}.${ext.toLowerCase()}`;
       const path = `${vendorId}/${filename}`;

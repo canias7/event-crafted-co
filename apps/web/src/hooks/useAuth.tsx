@@ -240,7 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       if (s?.user) {
-        setSentryUser({ id: s.user.id, email: s.user.email ?? null });
+        setSentryUser({ id: s.user.id });
         setTimeout(() => loadProfile(s.user.id), 0);
       } else {
         setSentryUser(null);
@@ -259,10 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       if (data.session?.user) {
-        setSentryUser({
-          id: data.session.user.id,
-          email: data.session.user.email ?? null,
-        });
+        setSentryUser({ id: data.session.user.id });
         loadProfile(data.session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);

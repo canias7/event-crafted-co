@@ -15,6 +15,7 @@ import {
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { stripImageMetadata } from "@/lib/imageCompress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -290,15 +291,17 @@ function Editor({
   const coverRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
-  async function uploadOne(file: File): Promise<string | null> {
-    if (!ACCEPTED.includes(file.type)) {
-      toast.error(t("realEvents.typeError", { name: file.name }));
+  async function uploadOne(picked: File): Promise<string | null> {
+    if (!ACCEPTED.includes(picked.type)) {
+      toast.error(t("realEvents.typeError", { name: picked.name }));
       return null;
     }
-    if (file.size > MAX_BYTES) {
-      toast.error(t("realEvents.sizeError", { name: file.name }));
+    if (picked.size > MAX_BYTES) {
+      toast.error(t("realEvents.sizeError", { name: picked.name }));
       return null;
     }
+    // Re-encoded so the public file carries no EXIF/GPS.
+    const file = await stripImageMetadata(picked);
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${vendorId}/event-${event.id}-${crypto.randomUUID()}.${ext}`;
     const up = await supabase.storage
