@@ -22,7 +22,7 @@
         },
         "downgrade": {
           "q": "What happens to my listing if I downgrade my plan?",
-          "a": "Your current cycle stays paid through its end. The new tier kicks in on the next renewal — credits, listing slots, and features adjust then. Existing photos and content are never touched by a tier change."
+          "a": "Switching between Pro and Premium on the Subscription page takes effect right away: the page shows what you'll be charged before you confirm, and a new billing month starts that day. To go down to Free, cancel your plan: you keep paid access until the end of the current billing period, then your account moves to Free. Existing photos and content are never touched by a tier change."
         },
         "pause": {
           "q": "Can I pause my listing temporarily?",
@@ -51,12 +51,20 @@
       "title": "Billing",
       "items": {
         "invoice": {
-          "q": "How do I download an invoice?",
+          "q": "How do I download an invoice for my plan?",
           "a": "Vendor Subscription page → Billing panel → click View next to any invoice to open the secure invoice PDF. Right-click → Save to download."
         },
         "card": {
           "q": "Where do I update my card?",
           "a": "Subscription page → Billing panel → Update. Opens the secure payment-method page."
+        },
+        "cancel": {
+          "q": "How do I cancel my plan?",
+          "a": "Subscription page → Billing panel → Cancel plan. Your plan stops renewing, and you keep paid access until the end of the current billing period; after that your account moves to Free. Canceling doesn't delete your account."
+        },
+        "delete": {
+          "q": "What happens to my plan if I delete my account?",
+          "a": "Deleting your account (Settings → Delete account) cancels any active plan immediately. Your access ends when the account is deleted, you won't be charged again, and there's no refund for the unused part of the current billing period. If you only want to stop paying, cancel your plan instead and keep access until the period ends."
         }
       }
     }

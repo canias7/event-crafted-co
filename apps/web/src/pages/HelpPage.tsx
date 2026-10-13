@@ -28,7 +28,7 @@ interface FAQ {
 const FAQ_SECTIONS: { id: string; items: string[] }[] = [
   { id: "vendors", items: ["approval", "photos", "downgrade", "pause", "blocked_title"] },
   { id: "hosts", items: ["message", "payment_info"] },
-  { id: "billing", items: ["invoice", "card"] },
+  { id: "billing", items: ["cancel", "delete", "invoice", "card"] },
 ];
 
 export default function HelpPage() {

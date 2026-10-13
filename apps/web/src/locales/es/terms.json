@@ -42,7 +42,8 @@
     "title": "6. Suscripciones",
     "items": [
       "El plan Free no cuesta nada. Pro y Premium se cobran cada mes a través de Stripe y se <strong>renuevan automáticamente</strong> cada mes hasta que los canceles.",
-      "Puedes cancelar cuando quieras desde la página Suscripción. La cancelación se aplica al final del mes que ya pagaste: conservas tu plan hasta entonces y no se te vuelve a cobrar.",
+      "Puedes cancelar cuando quieras desde la página Suscripción. <strong>Cancelar</strong> hace que tu plan deje de renovarse: conservas el acceso de pago hasta el final del período de facturación actual, no se te vuelve a cobrar y tu cuenta sigue abierta en el plan Free.",
+      "<strong>Eliminar tu cuenta</strong> es distinto: cualquier plan activo se cancela de inmediato, tu acceso termina cuando se elimina la cuenta, no se te vuelve a cobrar y no hay reembolso por la parte no usada del período de facturación actual (consulta la sección 15).",
       "Puedes cambiar entre Pro y Premium desde la página Suscripción. Antes de confirmar, la página te muestra cuánto se te cobrará y cuándo empieza tu nuevo mes de facturación.",
       "Si cambiamos el precio de un plan, te avisaremos antes de que el nuevo precio se aplique a tu plan."
     ]
@@ -109,7 +110,7 @@
   "termination": {
     "title": "15. Terminación",
     "items": [
-      "Puedes cerrar tu cuenta en cualquier momento desde tu configuración. Al cerrarla, cualquier plan de pago se cancela de inmediato y no se te vuelve a cobrar.",
+      "Puedes eliminar tu cuenta en cualquier momento desde tu configuración. Al eliminarla, tu acceso termina de inmediato y cualquier plan de pago activo se cancela en ese mismo momento, así que no se te vuelve a cobrar. No hay reembolso por la parte no usada del período de facturación actual. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan (consulta la sección 6).",
       "Podemos suspender o cerrar una cuenta, u ocultar un anuncio, con previo aviso (o sin aviso en caso de infracciones graves) si infringe estos términos, está involucrada en fraude o actividades ilegales, o pone en riesgo la seguridad de otros usuarios o de Vendora.",
       "Las secciones 7, 9, 12, 13, 14 y 16 siguen aplicándose después de que se cierra una cuenta."
     ]

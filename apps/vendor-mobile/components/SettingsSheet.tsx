@@ -232,7 +232,7 @@ export function SettingsSheet({
       icon: "trash-2",
       title: "Delete your account?",
       message:
-        "This permanently deletes your account, all listings, messages, and history. If you have a paid plan, it's canceled right away and you won't be charged again. You can't undo this.",
+        "This permanently deletes your account, all listings, messages, and history. If you have a paid plan, it's canceled right away and you won't be charged again, with no refund for the rest of the current billing period. You can't undo this.",
       confirmLabel: "Delete account",
       cancelLabel: "Cancel",
       destructive: true,

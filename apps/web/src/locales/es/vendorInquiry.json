@@ -65,7 +65,6 @@
     "markedClosed": "Marcada como cerrada",
     "reopened": "Reabierta",
     "maxFiles": "Hasta {{max}} archivos adjuntos por mensaje",
-    "invoiceLoadFailed": "No se pudo cargar esa factura.",
     "uploadFailed": "No se pudieron subir tus archivos adjuntos — el mensaje no se envió.",
     "partialUpload": "Archivos adjuntos subidos: {{uploaded}} de {{total}}."
   }

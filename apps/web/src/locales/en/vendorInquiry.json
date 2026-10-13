@@ -65,7 +65,6 @@
     "markedClosed": "Marked as closed",
     "reopened": "Reopened",
     "maxFiles": "Up to {{max}} attachments per message",
-    "invoiceLoadFailed": "Couldn't load that invoice.",
     "uploadFailed": "Couldn't upload your attachments — message not sent.",
     "partialUpload": "{{uploaded}} of {{total}} attachments uploaded."
   }
