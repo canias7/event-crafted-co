@@ -297,11 +297,22 @@ export default function ThreadScreen() {
     const { data } = await (supabase as any)
       .from("direct_threads")
       .select(
-        "vendor_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, user_id, slug)",
+        "vendor_id, inquiry_id, vendor:vendor_profiles!direct_threads_vendor_id_fkey(business_name, user_id, slug)",
       )
       .eq("id", threadId)
       .maybeSingle();
     if (!data) return;
+    // Mark the inquiry read while the thread is open (this runs on open
+    // and every 30s). Keeps the inbox dot right and stops the reply
+    // email for messages the host has already seen here.
+    if (data.inquiry_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      void (supabase as any)
+        .from("inquiries")
+        .update({ host_read_at: new Date().toISOString() })
+        .eq("id", data.inquiry_id)
+        .then(() => undefined);
+    }
     const otherUserId: string | null = data.vendor?.user_id ?? null;
     let isActive = false;
     if (otherUserId) {

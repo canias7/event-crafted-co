@@ -8,3 +8,7 @@
 20261007120000_home_experiment_registrations.sql
 # Vendors can pause a listing: vendor_profiles.paused_at.
 20261012120000_vendor_listing_pause.sql
+# Blocked-date titles: vendors read them through a members-only function.
+20261013120000_vendor_block_reasons.sql
+# Email hosts when a vendor replies (5-minute scan, opt-out in settings).
+20261013121000_host_reply_emails.sql

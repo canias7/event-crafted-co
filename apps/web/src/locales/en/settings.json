@@ -52,6 +52,10 @@
         "title": "New inquiry",
         "subtitle": "Email + push + in-app when a host asks about your listing"
       },
+      "reply_email": {
+        "title": "Vendor replies by email",
+        "subtitle": "Get an email when a vendor replies to your inquiry and you haven't read it yet"
+      },
       "proposal_accepted": {
         "title": "Proposal accepted",
         "subtitle": "When a host accepts a proposal you sent"

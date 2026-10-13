@@ -26,6 +26,7 @@ import {
 
 type NotifPrefs = {
   new_inquiry: boolean;
+  reply_email: boolean;
   proposal_accepted: boolean;
   review_received: boolean;
   weekly_digest: boolean;
@@ -35,6 +36,7 @@ type NotifPrefs = {
 
 const DEFAULT_PREFS: NotifPrefs = {
   new_inquiry: true,
+  reply_email: true,
   proposal_accepted: true,
   review_received: true,
   weekly_digest: true,
@@ -43,8 +45,10 @@ const DEFAULT_PREFS: NotifPrefs = {
 };
 
 // Rows in display order. Titles and subtitles live in the "settings"
-// namespace under notifications.prefs.<key>.
-const PREFS: Array<keyof NotifPrefs> = [
+// namespace under notifications.prefs.<key>. Hosts see the rows that
+// apply to them; vendors see the vendor ones.
+const HOST_PREFS: Array<keyof NotifPrefs> = ["reply_email", "marketing"];
+const VENDOR_PREFS: Array<keyof NotifPrefs> = [
   "new_inquiry",
   "proposal_accepted",
   "review_received",
@@ -101,6 +105,7 @@ export default function NotificationSettingsPage() {
     lastSide === "vendor" || (lastSide === null && isApprovedVendor);
   const navItems = useVendorNav ? vendorNavItems : customerNavItems;
   const sidebarTitle = useVendorNav ? "Vendor Portal" : "Customer";
+  const rows = useVendorNav ? VENDOR_PREFS : HOST_PREFS;
 
   return (
     <div className="flex min-h-screen vendor-canvas">
@@ -133,7 +138,7 @@ export default function NotificationSettingsPage() {
                 border: "1px solid hsl(var(--border))",
               }}
             >
-              {PREFS.map((key, i) => {
+              {rows.map((key, i) => {
                 const title = t(`notifications.prefs.${key}.title`);
                 return (
                   <div key={key}>

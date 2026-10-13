@@ -52,6 +52,10 @@
         "title": "Nueva consulta",
         "subtitle": "Correo, push y aviso en la app cuando un anfitrión pregunta por tu anuncio"
       },
+      "reply_email": {
+        "title": "Respuestas de proveedores por correo",
+        "subtitle": "Recibe un correo cuando un proveedor responda a tu consulta y aún no la hayas leído"
+      },
       "proposal_accepted": {
         "title": "Propuesta aceptada",
         "subtitle": "Cuando un anfitrión acepta una propuesta que enviaste"

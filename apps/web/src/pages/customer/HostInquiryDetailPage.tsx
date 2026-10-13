@@ -352,6 +352,21 @@ export default function HostInquiryDetailPage() {
       .like("link", `%/customer/inquiries/${inquiryId}%`);
   }, [user?.id, inquiryId]);
 
+  // Keep host_read_at fresh while the conversation is open and the tab
+  // is visible, so a vendor reply the host reads here doesn't also
+  // trigger the "vendor replied" email (scan-host-reply-emails).
+  useEffect(() => {
+    if (!inquiryId) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void supabase
+        .from("inquiries")
+        .update({ host_read_at: new Date().toISOString() })
+        .eq("id", inquiryId);
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [inquiryId]);
+
   // Reset transient per-inquiry state when navigating from one
   // inquiry to another. Otherwise a "reply" or "edit" started in
   // inquiry A bleeds into inquiry B — the composer thinks it's

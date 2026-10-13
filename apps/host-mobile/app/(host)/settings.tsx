@@ -1,8 +1,9 @@
 // Host account settings. Reached from the Profile tab's "Account
 // settings" card. Three sections:
 //   1. Identity:    display_name (editable), email (read-only)
-//   2. Sign out
-//   3. Danger:      delete the account via the delete-account function
+//   2. Notifications: vendor reply emails on/off
+//   3. Sign out
+//   4. Danger:      delete the account via the delete-account function
 //
 // Display-name writes go straight to public.profiles (host owns the
 // row via RLS). Delete calls the delete-account edge function, the same
@@ -17,6 +18,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   View,
@@ -48,16 +50,25 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // notification_prefs.reply_email: email when a vendor replies. A
+  // missing key counts as on (scan-host-reply-emails reads it the same way).
+  const [prefs, setPrefs] = useState<Record<string, unknown>>({});
+  const replyEmail = prefs.reply_email !== false;
 
   const load = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     const { data } = await supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, notification_prefs")
       .eq("id", user.id)
       .maybeSingle();
-    const name = (data as { display_name?: string } | null)?.display_name ?? "";
+    const row = data as {
+      display_name?: string;
+      notification_prefs?: Record<string, unknown> | null;
+    } | null;
+    setPrefs(row?.notification_prefs ?? {});
+    const name = row?.display_name ?? "";
     setDisplayName(name);
     setInitialName(name);
     setLoading(false);
@@ -87,6 +98,22 @@ export default function SettingsScreen() {
     }
     setInitialName(trimmed);
     Alert.alert("Saved", "Your display name is updated.");
+  }
+
+  async function toggleReplyEmail(next: boolean) {
+    if (!user?.id) return;
+    const previous = prefs;
+    const updated = { ...prefs, reply_email: next };
+    setPrefs(updated);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("profiles")
+      .update({ notification_prefs: updated })
+      .eq("id", user.id);
+    if (error) {
+      setPrefs(previous);
+      Alert.alert("Couldn't save", error.message);
+    }
   }
 
   function confirmDelete() {
@@ -216,6 +243,31 @@ export default function SettingsScreen() {
                     </View>
                   )}
                 </Pressable>
+
+                <SectionLabel style={{ marginTop: 32 }}>Notifications</SectionLabel>
+                <View
+                  style={[
+                    field,
+                    { flexDirection: "row", alignItems: "center" },
+                  ]}
+                >
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15 }}>
+                      Vendor replies by email
+                    </Text>
+                    <Text style={hint}>
+                      Get an email when a vendor replies to your inquiry and
+                      you haven't read it yet.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={replyEmail}
+                    onValueChange={(v) => void toggleReplyEmail(v)}
+                    trackColor={{ false: BORDER, true: INK }}
+                    thumbColor="#ffffff"
+                    accessibilityLabel="Vendor replies by email"
+                  />
+                </View>
 
                 <SectionLabel style={{ marginTop: 32 }}>Session</SectionLabel>
                 <Pressable onPress={signOut}>

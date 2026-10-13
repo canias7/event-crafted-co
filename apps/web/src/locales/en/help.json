@@ -30,7 +30,7 @@
         },
         "message": {
           "q": "How do I message a vendor after sending an inquiry?",
-          "a": "Open Inbox (in the website's menu, or the Inbox tab in the app) and choose the inquiry. Your whole conversation with the vendor is there, and you'll get a notification when they reply."
+          "a": "Open Inbox (in the website's menu, or the Inbox tab in the app) and choose the inquiry. Your whole conversation with the vendor is there. When they reply, you'll get a notification, and an email if you haven't read the reply yet. You can turn those emails off in Settings → Notifications."
         },
         "payment_info": {
           "q": "Do I pay through Vendora?",
