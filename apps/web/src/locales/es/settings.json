@@ -34,10 +34,12 @@
     "button": "Eliminar",
     "confirm_title": "¿Eliminar tu cuenta?",
     "confirm_body": "Esto eliminará tu perfil y todos los datos relacionados. Tu sesión se cerrará de inmediato y no podrás volver a iniciar sesión con este correo.",
+    "confirm_body_plan": "Si tienes un plan de pago, se cancela de inmediato y no se te volverá a cobrar.",
     "cancel": "Cancelar",
     "confirm": "Sí, eliminarla",
     "success": "Cuenta cerrada. Hasta pronto.",
-    "error": "No se pudo eliminar tu cuenta: {{message}}"
+    "error": "No se pudo eliminar tu cuenta: {{message}}",
+    "plan_error": "No pudimos cancelar tu plan, así que tu cuenta no se eliminó. Inténtalo de nuevo en un momento o escribe a hello@eventvendora.com."
   },
   "notifications": {
     "back": "Configuración",

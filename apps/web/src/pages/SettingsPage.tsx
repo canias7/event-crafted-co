@@ -27,6 +27,18 @@ import { EmailMenu } from "@/components/shared/EmailMenu";
 // subtitle on the left, value or action pill on the right, divided by
 // hairlines. Identity edits live on /vendor/edit-profile; this surface
 // is intentionally minimal (email on file + sign out + delete account).
+// The error code a failed edge function sent back, if it sent JSON.
+async function readFunctionError(error: unknown): Promise<string | null> {
+  const res = (error as { context?: Response })?.context;
+  if (!res || typeof res.json !== "function") return null;
+  try {
+    const body = await res.json();
+    return typeof body?.error === "string" ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function SettingsPage() {
   const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
@@ -42,10 +54,19 @@ export default function SettingsPage() {
 
   async function deleteAccount() {
     setDeleting(true);
-    const { error } = await supabase.rpc("request_account_deletion");
+    // The delete-account function cancels any Stripe plan before it
+    // deletes the account, so a deleted vendor is never billed again.
+    const { error } = await supabase.functions.invoke("delete-account", {
+      body: {},
+    });
     if (error) {
       setDeleting(false);
-      toast.error(t("delete.error", { message: error.message }));
+      const code = await readFunctionError(error);
+      toast.error(
+        code === "subscription_cancel_failed"
+          ? t("delete.plan_error")
+          : t("delete.error", { message: error.message }),
+      );
       return;
     }
     await supabase.auth.signOut();
@@ -202,6 +223,7 @@ export default function SettingsPage() {
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm leading-relaxed">
                           {t("delete.confirm_body")}
+                          {isApprovedVendor && ` ${t("delete.confirm_body_plan")}`}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="gap-2 sm:gap-0">

@@ -2,11 +2,12 @@
 // settings" card. Three sections:
 //   1. Identity:    display_name (editable), email (read-only)
 //   2. Sign out
-//   3. Danger:      request account deletion via the existing RPC
+//   3. Danger:      delete the account via the delete-account function
 //
 // Display-name writes go straight to public.profiles (host owns the
-// row via RLS). Delete uses `request_account_deletion`, the same
-// SECURITY DEFINER path the web app uses — soft-delete + audit log.
+// row via RLS). Delete calls the delete-account edge function, the same
+// path the website and vendor app use: it cancels any Stripe plan, then
+// runs request_account_deletion.
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -99,9 +100,11 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             setDeleting(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase as any).rpc(
-              "request_account_deletion",
+            // Same server path as the website and the vendor app: it
+            // cancels any Stripe plan before deleting the account.
+            const { error } = await supabase.functions.invoke(
+              "delete-account",
+              { body: {} },
             );
             setDeleting(false);
             if (error) {
