@@ -3,7 +3,7 @@
 // client are app-local; lifting later (when shared infra accumulates)
 // is straightforward.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
@@ -16,6 +16,12 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  // When the user closed their account: the date it's permanently
+  // deleted. Null = active. While set, AccountDeletionGate replaces the
+  // app with a restore / sign-out screen (migration
+  // 20261013140000_account_deletion_grace.sql).
+  deletionScheduledFor: string | null;
+  refreshDeletion: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -24,6 +30,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deletionScheduledFor, setDeletionScheduledFor] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -46,6 +53,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user?.id) return;
     tryRegisterPushToken(session.user.id, "host");
   }, [session?.user?.id]);
+
+  // Closed account in its 30-day grace period? Read on its own so a
+  // database without the column yet still signs in normally.
+  const userId = session?.user?.id ?? null;
+  const refreshDeletion = useCallback(async () => {
+    if (!userId) {
+      setDeletionScheduledFor(null);
+      return;
+    }
+    const { data } = await supabase
+      .from("profiles")
+      .select("deletion_scheduled_for")
+      .eq("id", userId)
+      .maybeSingle();
+    setDeletionScheduledFor(
+      (data as { deletion_scheduled_for?: string | null } | null)
+        ?.deletion_scheduled_for ?? null,
+    );
+  }, [userId]);
+  useEffect(() => {
+    void refreshDeletion();
+  }, [refreshDeletion]);
 
   // Catch admin-deleted accounts. Supabase invalidates refresh tokens
   // on delete but the cached access token stays valid for ~1h. Poll
@@ -71,6 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     session,
     loading,
+    deletionScheduledFor,
+    refreshDeletion,
     signOut: async () => {
       // Remove this device's push token BEFORE clearing the session.
       // Once auth.uid() goes null, RLS on device_push_tokens blocks

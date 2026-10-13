@@ -44,7 +44,7 @@
       "<strong>New paid plans are paused for now.</strong> Every vendor can use the Free plan, and you can't start or switch to a paid plan until we reopen them. The rules below apply to anyone who already has a paid plan, and to paid plans when they return.",
       "The Free plan costs nothing. Pro and Premium are billed monthly through Stripe and <strong>renew automatically</strong> each month until you cancel.",
       "You can cancel any time from the Subscription page. <strong>Canceling</strong> stops your plan from renewing: you keep paid access until the end of the current billing period, aren't charged again, and your account stays open on the Free plan.",
-      "<strong>Deleting your account</strong> is different: any active plan is canceled immediately, your access ends when the account is deleted, you won't be charged again, and there's no refund for the unused part of the current billing period (see section 15).",
+      "<strong>Deleting your account</strong> is different: your account is closed right away, any active plan is canceled immediately with no refund for the unused part of the current billing period, and you won't be charged again (see section 15).",
       "When paid plans are available, you can switch between Pro and Premium from the Subscription page. Before you confirm, the page shows what you'll be charged and when your new billing month starts.",
       "If we change a plan's price, we'll tell you before the new price applies to your plan."
     ]
@@ -111,7 +111,7 @@
   "termination": {
     "title": "15. Termination",
     "items": [
-      "You can delete your account anytime from your settings. Deleting it ends your access immediately and cancels any active paid plan at the same moment, so you won't be charged again. There's no refund for the unused part of the current billing period. To stop paying but keep your account, cancel your plan instead (see section 6).",
+      "You can delete your account anytime from your settings. Your account is closed immediately and any active paid plan is canceled at the same moment, with no refund for the unused part of the current billing period and no further charges. You can restore the account by signing in within 30 days (a canceled plan stays canceled); after that it's permanently deleted, including the files you uploaded. To stop paying but keep your account, cancel your plan instead (see section 6).",
       "We can suspend or close an account, or hide a listing, with notice (or without notice for severe violations) if it violates these terms, is involved in fraud or unlawful activity, or puts other users' safety or Vendora's security at risk.",
       "Sections 7, 9, 12, 13, 14 and 16 continue to apply after an account is closed."
     ]

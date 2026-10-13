@@ -9,7 +9,8 @@
 // Display-name writes go straight to public.profiles (host owns the
 // row via RLS). Delete calls the delete-account edge function, the same
 // path the website and vendor app use: it cancels any Stripe plan, then
-// runs request_account_deletion.
+// runs request_account_deletion, which closes the account and deletes it
+// for good after 30 days unless the host signs back in and restores it.
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -129,7 +130,7 @@ export default function SettingsScreen() {
   function confirmDelete() {
     Alert.alert(
       "Delete account?",
-      "This permanently deletes your account, inquiries, messages and saved vendors right away. You'll be signed out. This can't be undone.",
+      "Deleting closes your account now and signs you out. Any active plan is canceled right away with no refund for the rest of the current billing period. Everything, including your inquiries, messages and saved vendors, is permanently deleted after 30 days. Sign in before then to restore it.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -138,7 +139,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             setDeleting(true);
             // Same server path as the website and the vendor app: it
-            // cancels any Stripe plan before deleting the account.
+            // cancels any Stripe plan, then closes the account.
             const { error } = await supabase.functions.invoke(
               "delete-account",
               { body: {} },

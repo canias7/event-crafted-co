@@ -2142,6 +2142,7 @@ export type Database = {
           business_name: string | null
           category: string | null
           created_at: string
+          deletion_scheduled_for: string | null
           display_name: string | null
           hilux_enabled: boolean
           id: string
@@ -2172,6 +2173,7 @@ export type Database = {
           business_name?: string | null
           category?: string | null
           created_at?: string
+          deletion_scheduled_for?: string | null
           display_name?: string | null
           hilux_enabled?: boolean
           id: string
@@ -2202,6 +2204,7 @@ export type Database = {
           business_name?: string | null
           category?: string | null
           created_at?: string
+          deletion_scheduled_for?: string | null
           display_name?: string | null
           hilux_enabled?: boolean
           id?: string
@@ -4740,6 +4743,7 @@ export type Database = {
           appointment_buffer_before_minutes: number
           base_price_cents: number | null
           paused_at: string | null
+          paused_for_deletion: boolean
           pricing_type: string
           pricing_models: string[] | null
           price_min_cents: number | null
@@ -4791,6 +4795,7 @@ export type Database = {
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
           paused_at?: string | null
+          paused_for_deletion?: boolean
           pricing_type?: string
           pricing_models?: string[] | null
           price_min_cents?: number | null
@@ -4842,6 +4847,7 @@ export type Database = {
           appointment_buffer_before_minutes?: number
           base_price_cents?: number | null
           paused_at?: string | null
+          paused_for_deletion?: boolean
           pricing_type?: string
           pricing_models?: string[] | null
           price_min_cents?: number | null
@@ -5496,6 +5502,23 @@ export type Database = {
     }
     Functions: {
       accept_team_invite: { Args: { p_token: string }; Returns: Json }
+      account_deletions_pending: {
+        Args: never
+        Returns: {
+          deletion_scheduled_for: string
+          due: boolean
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          user_id: string
+        }[]
+      }
+      account_storage_objects: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
       admin_cost_recent: {
         Args: { p_limit?: number; p_since?: string }
         Returns: {
@@ -6122,7 +6145,8 @@ export type Database = {
         }
         Returns: number
       }
-      request_account_deletion: { Args: never; Returns: undefined }
+      request_account_deletion: { Args: never; Returns: string }
+      restore_account_deletion: { Args: never; Returns: undefined }
       revoke_topup_credits: {
         Args: {
           p_n: number

@@ -14,6 +14,8 @@
 20261013130000_restore_notification_prefs.sql
 # Email hosts when a vendor replies (5-minute scan, opt-out in settings).
 20261013121000_host_reply_emails.sql
+# Account deletion: 30-day grace period, restore, daily purge job.
+20261013140000_account_deletion_grace.sql
 # Email preferences: digest / review prompt / onboarding / weekly digest honour notification_prefs; unschedule scan-reengagement cron.
 20261013150000_email_preferences.sql
 # Privacy: remove GPS keys from saved gallery EXIF (uploader no longer stores them).

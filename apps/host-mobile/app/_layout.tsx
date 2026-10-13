@@ -6,6 +6,7 @@ import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { AuthProvider } from "@/lib/auth";
+import { AccountDeletionGate } from "@/components/AccountDeletionGate";
 
 export default function RootLayout() {
   // Libre Baskerville — the same serif the website and the vendor app
@@ -35,7 +36,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <StatusBar style="dark" />
-        <Slot />
+        {/* A closed account in its 30-day grace period sees only the
+            restore / sign-out screen. */}
+        <AccountDeletionGate>
+          <Slot />
+        </AccountDeletionGate>
       </AuthProvider>
     </SafeAreaProvider>
   );

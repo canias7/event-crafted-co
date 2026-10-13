@@ -64,6 +64,8 @@ project_id = "pahpjjubhbcbwqjpamwv"
     verify_jwt = false
   [functions.scan-host-reply-emails]
     verify_jwt = false
+  [functions.purge-deleted-accounts]
+    verify_jwt = false
   [functions.scan-expired-inquiries]
     verify_jwt = false
   [functions.scan-responder-tiers]

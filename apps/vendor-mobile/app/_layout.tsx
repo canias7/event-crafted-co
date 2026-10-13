@@ -16,6 +16,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import * as Updates from "expo-updates";
 import { useFonts } from "expo-font";
 import { AuthProvider } from "@/lib/auth";
+import { AccountDeletionGate } from "@/components/AccountDeletionGate";
 
 // Apply OTA updates on the launch that finds them, instead of expo-updates'
 // default one-launch-behind behaviour (download now, run next time). The
@@ -202,7 +203,11 @@ export default function RootLayout() {
       <FatalCatcher>
         <AuthProvider>
           <StatusBar style="dark" />
-          <Slot />
+          {/* A closed account in its 30-day grace period sees only the
+              restore / sign-out screen. */}
+          <AccountDeletionGate>
+            <Slot />
+          </AccountDeletionGate>
         </AuthProvider>
       </FatalCatcher>
     </SafeAreaProvider>

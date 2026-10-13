@@ -54,8 +54,9 @@ export default function SettingsPage() {
 
   async function deleteAccount() {
     setDeleting(true);
-    // The delete-account function cancels any Stripe plan before it
-    // deletes the account, so a deleted vendor is never billed again.
+    // The delete-account function cancels any Stripe plan, then closes
+    // the account: it's permanently deleted after 30 days unless the
+    // user signs back in and restores it (AccountDeletionGate).
     const { error } = await supabase.functions.invoke("delete-account", {
       body: {},
     });
@@ -223,7 +224,7 @@ export default function SettingsPage() {
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm leading-relaxed">
                           {t("delete.confirm_body")}
-                          {isApprovedVendor && ` ${t("delete.confirm_body_plan")}`}
+                          {` ${t("delete.confirm_body_plan")}`}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="gap-2 sm:gap-0">
