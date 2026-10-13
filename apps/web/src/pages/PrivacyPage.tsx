@@ -4,6 +4,23 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { EmailMenu } from "@/components/shared/EmailMenu";
 
+// Sections in order. Each one in privacy.json has a title plus a "body"
+// paragraph and/or a list of "items", and an optional "after" paragraph.
+const SECTIONS = [
+  "collect",
+  "use",
+  "share",
+  "cookies",
+  "emails",
+  "rights",
+  "retention",
+  "children",
+  "security",
+  "international",
+  "changes",
+  "contact",
+] as const;
+
 export default function PrivacyPage() {
   // The policy's words are in locales/<language>/privacy.json.
   const { t, i18n } = useTranslation("privacy");
@@ -50,63 +67,28 @@ export default function PrivacyPage() {
         )}
 
         <div className="space-y-8 leading-relaxed">
-          <p>
-            {t("intro")}
-          </p>
+          <p>{rich("intro")}</p>
 
-          <Section title={t("collect.title")}>
-            <ul className="list-disc pl-5 space-y-1.5">
-              <li>{rich("collect.account")}</li>
-              <li>{rich("collect.profile")}</li>
-              <li>{rich("collect.vendor_profile")}</li>
-              <li>{rich("collect.messages")}</li>
-              <li>{rich("collect.usage")}</li>
-            </ul>
-          </Section>
-
-          <Section title={t("use.title")}>
-            <p>
-              {t("use.operate")}
-            </p>
-            <p className="mt-3">
-              {t("use.ai")}
-            </p>
-          </Section>
-
-          <Section title={t("share.title")}>
-            <ul className="list-disc pl-5 space-y-1.5">
-              <li>{rich("share.vendors")}</li>
-              <li>{rich("share.providers")}</li>
-              <li>{rich("share.no_sale")}</li>
-            </ul>
-          </Section>
-
-          <Section title={t("cookies.title")}>
-            <p>
-              {t("cookies.body")}
-            </p>
-          </Section>
-
-          <Section title={t("rights.title")}>
-            <p>
-              {rich("rights.access")}
-            </p>
-            <p className="mt-3">
-              {t("rights.laws")}
-            </p>
-          </Section>
-
-          <Section title={t("retention.title")}>
-            <p>
-              {t("retention.body")}
-            </p>
-          </Section>
-
-          <Section title={t("contact.title")}>
-            <p>
-              {rich("contact.body")}
-            </p>
-          </Section>
+          {SECTIONS.map((key) => {
+            const items = t(`${key}.items`, { returnObjects: true });
+            return (
+              <Section key={key} title={t(`${key}.title`)}>
+                {i18n.exists(`${key}.body`, { ns: "privacy" }) && (
+                  <p>{rich(`${key}.body`)}</p>
+                )}
+                {Array.isArray(items) && (
+                  <ul className="list-disc pl-5 space-y-1.5">
+                    {items.map((_, i) => (
+                      <li key={i}>{rich(`${key}.items.${i}`)}</li>
+                    ))}
+                  </ul>
+                )}
+                {i18n.exists(`${key}.after`, { ns: "privacy" }) && (
+                  <p>{rich(`${key}.after`)}</p>
+                )}
+              </Section>
+            );
+          })}
         </div>
       </article>
 

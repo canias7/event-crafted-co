@@ -203,3 +203,45 @@ select cron.schedule(
     );
   $$
 );
+
+-- Guard: users can't set or clear their own deletion date (or the
+-- listing flag) with a direct table update. Only the SECURITY DEFINER
+-- functions above (which run as the function owner) and the service
+-- role may change them.
+create or replace function public.guard_profile_deletion_date()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if current_user in ('authenticated', 'anon')
+     and new.deletion_scheduled_for is distinct from old.deletion_scheduled_for then
+    raise exception 'deletion_scheduled_for can only be changed by deleting or restoring the account';
+  end if;
+  return new;
+end
+$$;
+
+create or replace function public.guard_listing_deletion_flag()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if current_user in ('authenticated', 'anon')
+     and new.paused_for_deletion is distinct from old.paused_for_deletion then
+    raise exception 'paused_for_deletion is managed by account deletion';
+  end if;
+  return new;
+end
+$$;
+
+drop trigger if exists profiles_guard_deletion on public.profiles;
+create trigger profiles_guard_deletion
+  before update on public.profiles
+  for each row execute function public.guard_profile_deletion_date();
+
+drop trigger if exists vendor_profiles_guard_deletion on public.vendor_profiles;
+create trigger vendor_profiles_guard_deletion
+  before update on public.vendor_profiles
+  for each row execute function public.guard_listing_deletion_flag();

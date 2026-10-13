@@ -2,43 +2,90 @@
   "page_title": "Privacy Policy — Vendora",
   "eyebrow": "— LEGAL",
   "title": "Privacy policy",
-  "last_updated": "Last updated: May 3, 2026",
+  "last_updated": "Last updated: October 13, 2026",
   "translation_note": "This translation is for your convenience. If it differs from the English version, the English version prevails.",
-  "intro": "Vendora is a vendor-first event marketplace. This page describes what we collect, how we use it, and the rights you have over your data.",
+  "intro": "This policy explains what personal information Vendora LLC, a North Carolina limited liability company (\"Vendora\", \"we\"), collects when you use eventvendora.com and the Vendora apps, how we use and share it, and the choices you have.",
   "collect": {
     "title": "1. What we collect",
-    "account": "<strong>Account info</strong> — your email, password (hashed), and the role you signed up as (host, vendor, or admin).",
-    "profile": "<strong>Profile + event details</strong> — display name, optional phone, event type, date, location, budget range, and any notes you've shared during onboarding.",
-    "vendor_profile": "<strong>Vendor profile</strong> — for vendors, your business name, category, bio, base price, location, service radius, and portfolio images you upload.",
-    "messages": "<strong>Messages and inquiries</strong> — message bodies, inquiry details, status changes, and any reviews you post.",
-    "usage": "<strong>Usage data</strong> — pages visited, features used, approximate location from IP. We do not sell this to third parties."
+    "items": [
+      "<strong>Account details</strong>: your name (or business name), email address, password (stored only in scrambled, hashed form) and whether you're a host or a vendor. When you sign in, we email you a one-time code.",
+      "<strong>Host details</strong>: your display name and photo, events you plan on Vendora (date, location, guest count, budget, notes), the RSVPs your guests send (their name and, if they give it, email) and vendors you save.",
+      "<strong>Vendor details</strong>: your business profile, location (which we turn into map coordinates), photos and videos, team profiles, calendar and appointments, and notes you keep about your clients.",
+      "<strong>Verification</strong>: if a vendor applies for verification, their legal name, date of birth, photos of a government ID, and business documents such as insurance or a license. These are stored privately and seen only by our review team.",
+      "<strong>Conversations and bookings</strong>: inquiries, messages and attachments, proposals, contracts (including the signer's name and drawn signature), reviews, and reports you send us.",
+      "<strong>Live video</strong>: if a host broadcasts an event live, the video and sound are streamed through our video provider and can be watched by anyone who has the link.",
+      "<strong>Payments</strong>: vendors on a paid plan pay through Stripe. We keep the Stripe customer and subscription IDs and your plan status; we never see your full card number.",
+      "<strong>Device and technical data</strong>: notification tokens for the apps, when you were last active, visits to vendor pages, error reports, and the basic logs (such as IP address) our hosting providers keep."
+    ],
+    "after": "We remove location data from photos before they're uploaded. Videos may still contain it, so check your phone's settings if that matters to you."
   },
   "use": {
     "title": "2. How we use it",
-    "operate": "We use your data to operate Vendora — matching hosts with relevant vendors, routing messages between you and a vendor, displaying public vendor profiles in our directory, sending transactional emails (signup confirmation, inquiry receipts), and improving the product.",
-    "ai": "When the AI inquiry agent is enabled, your inquiry details and a vendor's prior messages are sent to Anthropic's Claude API to draft replies. The vendor reviews and approves every reply before it sends — drafts are never sent automatically."
+    "items": [
+      "To run Vendora: create your account, show vendor profiles, deliver inquiries and messages, and keep your calendar, events and bookings in one place.",
+      "To send you emails and notifications about your account and activity (see section 5).",
+      "To keep Vendora safe: verify vendors, review reports, block spam and fraud, and flag messages that share phone numbers or email addresses.",
+      "To help vendors sort inquiries: inquiries may be labeled with an automatic priority based on the details the host provides.",
+      "To fix bugs and improve the product.",
+      "To meet legal obligations, such as keeping billing records."
+    ],
+    "after": "We don't use AI on your messages or profile, and we don't sell your personal information or use it for advertising."
   },
   "share": {
-    "title": "3. Who we share with",
-    "vendors": "<strong>Vendors you inquire with</strong> — when you send an inquiry, the vendor sees your event details and display name.",
-    "providers": "<strong>Service providers</strong> — Supabase (hosting and database), and (for AI replies) Anthropic.",
-    "no_sale": "<strong>No advertisers, no data brokers, no resellers.</strong> Vendora does not sell or rent your personal data."
+    "title": "3. Who we share it with",
+    "items": [
+      "<strong>Other Vendora users</strong>: vendor profiles are public. When you send an inquiry, that vendor sees your event details and display name. People you chat with can see when you were last active.",
+      "<strong>Service providers</strong> who run parts of Vendora for us: Supabase (database, file storage and sign-in), Cloudflare (website hosting and bot protection), Resend (email), Stripe (payments), Mux (live video), Expo, Apple and Google (app notifications), Sentry (error reports, tagged with your account ID only), and OpenStreetMap (map coordinates and map images).",
+      "<strong>Services your browser or app contacts directly</strong>: Google Fonts (to show the site's fonts), YouTube or Vimeo (only when a vendor's profile has a video from them), and, when you set a password in our apps, the Have I Been Pwned service, which receives only a short, anonymous fragment of the password's fingerprint to check it hasn't appeared in a known data breach.",
+      "<strong>Legal reasons</strong>: if the law requires it, or to protect the rights and safety of Vendora and its users.",
+      "<strong>A business transfer</strong>: if Vendora is merged or sold, your information would move to the new owner under this policy."
+    ],
+    "after": "We don't sell or rent personal information, and we don't share it with advertisers or data brokers."
   },
   "cookies": {
-    "title": "4. Cookies",
-    "body": "We use only what the site needs to work: browser storage and cookies that keep you signed in and remember your language, and error reports (sent to our error-tracking service, Sentry, tagged with your account ID but not your name or email) that help us fix bugs. We don’t use analytics or advertising cookies. You can clear stored data in your browser settings at any time."
+    "title": "4. Cookies and browser storage",
+    "body": "We use only what the site needs to work: browser storage that keeps you signed in and remembers your language and drafts, and error reports that help us fix bugs. We don't use analytics or advertising cookies. You can clear stored data in your browser settings at any time."
+  },
+  "emails": {
+    "title": "5. Emails and notifications",
+    "body": "Some emails are part of using Vendora, like sign-in codes, account and security messages, new inquiries and listing decisions. Others are optional, like daily summaries, review reminders, profile tips, weekly recaps and emails about vendor replies. You can turn optional emails and app notifications off in Settings → Notifications; every optional email has a link there."
   },
   "rights": {
-    "title": "5. Your rights",
-    "access": "You can access, correct, export, or delete your data at any time. Most of this is available directly in your account settings; for a full export or deletion request, email <email>hello@eventvendora.com</email>. We respond within 30 days.",
-    "laws": "EU/UK residents have rights under GDPR; California residents have rights under CCPA — both are honored regardless of where you live."
+    "title": "6. Your choices and rights",
+    "items": [
+      "You can see and update most of your information in your account at any time.",
+      "You can ask for a copy of your information, or ask us to correct or delete it, by emailing <email>hello@eventvendora.com</email>. We'll reply within 30 days.",
+      "You can delete your account from Settings (see section 7).",
+      "We honor these rights for everyone, including the rights people in the EU, UK and California have under their privacy laws."
+    ]
   },
   "retention": {
-    "title": "6. Data retention",
-    "body": "We keep account data while your account is active and for 90 days after deletion (in case you change your mind). Anonymized usage data may be kept longer for analytics."
+    "title": "7. How long we keep it",
+    "items": [
+      "We keep your information while your account is open.",
+      "When you delete your account, it's closed right away and any paid plan is canceled. If you sign in within 30 days, you can restore it. After 30 days, your account, profile, listings, messages and uploaded files are permanently deleted.",
+      "Some information is kept after that: billing records Stripe must keep, anonymized safety and moderation records, and email and security logs our providers keep under their own policies. Messages and inquiries you sent to someone else are deleted with your account.",
+      "App notifications are cleared automatically after 30 days once read, and after 180 days in any case."
+    ]
+  },
+  "children": {
+    "title": "8. Children",
+    "body": "Vendora is for people 18 and older. We don't knowingly collect information from children. If you believe a child has given us information, email us and we'll delete it."
+  },
+  "security": {
+    "title": "9. Security",
+    "body": "We protect your information with encrypted connections, hashed passwords, a one-time code at every sign-in, and access controls that limit who can see what. No system is perfectly secure, so please keep your email account safe and tell us at <email>hello@eventvendora.com</email> if you notice anything unusual."
+  },
+  "international": {
+    "title": "10. Where your information is processed",
+    "body": "Vendora is based in the United States. Your information is stored and processed in the United States and in other countries where our service providers operate."
+  },
+  "changes": {
+    "title": "11. Changes to this policy",
+    "body": "If we change this policy, we'll update the date at the top. If a change is meaningful, we'll tell you by email or with a notice on Vendora before it takes effect."
   },
   "contact": {
-    "title": "7. Contact",
-    "body": "Questions about this policy or your data: email <email>hello@eventvendora.com</email>."
+    "title": "12. Contact",
+    "body": "Questions about this policy or your information: Vendora LLC, <email>hello@eventvendora.com</email>."
   }
 }
