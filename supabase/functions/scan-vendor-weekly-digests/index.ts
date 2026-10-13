@@ -1,17 +1,23 @@
 // Vendor weekly digest scanner. Calls enqueue_vendor_weekly_digests
 // to grab the past-week summary per opted-in vendor, then sends one
-// email each via Resend.
+// email each via Resend. Opted in = notification_prefs.weekly_digest
+// (Settings -> Notifications) and the older
+// vendor_profiles.weekly_digest_enabled both allow it.
 //
 // Schedule weekly (Monday morning works for most US vendors).
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  emailPrefsFooterHtml,
+  listUnsubscribeHeaders,
+} from "../_shared/emailPrefs.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <hello@vendora.events>";
-const APP_URL = Deno.env.get("APP_URL") ?? "https://vendora.events";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -94,6 +100,7 @@ serve(async (req) => {
         to: r.recipient_email,
         subject: digestSubject(r),
         html: digestHtml(r),
+        headers: listUnsubscribeHeaders(),
       }),
     });
     if (send.ok) {
@@ -189,8 +196,7 @@ function digestHtml(r: Row) {
           <a href="${analyticsLink}" style="display:inline-block;background:transparent;color:#1a1a1a;text-decoration:none;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:500;border:1px solid #e0e0e0;">See analytics</a>
         </td></tr>
         <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;line-height:1.6;">
-          You're getting this weekly recap because vendor digests are on.
-          <a href="${APP_URL}/vendor/profile" style="color:#a08259;text-decoration:none;">Turn it off in your profile</a>.
+          ${emailPrefsFooterHtml("your weekly recap email is on")}
         </td></tr>
       </table>
     </td></tr>

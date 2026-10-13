@@ -68,6 +68,18 @@
         "title": "Weekly digest",
         "subtitle": "Monday summary of last week's activity"
       },
+      "daily_digest": {
+        "title": "Daily summary email",
+        "subtitle": "A morning email with anything you haven't read from the day before"
+      },
+      "review_prompts": {
+        "title": "Review reminders",
+        "subtitle": "A reminder to review your vendor a few days after your event"
+      },
+      "onboarding_tips": {
+        "title": "Profile setup tips",
+        "subtitle": "Reminders to finish your listing while it's incomplete"
+      },
       "marketing": {
         "title": "Marketing",
         "subtitle": "Product news, tips, and occasional offers (opt-in)"

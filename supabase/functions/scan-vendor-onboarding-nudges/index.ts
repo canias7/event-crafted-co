@@ -1,13 +1,19 @@
 // Vendor onboarding nudge scanner. Calls
 // enqueue_vendor_onboarding_nudges() to find vendors with incomplete
 // profiles past their grace period, then emails each one a nudge
-// pointing back at /vendor/onboarding.
+// pointing back at /vendor/onboarding. Vendors who turned
+// notification_prefs.onboarding_tips off (Settings -> Notifications) are
+// skipped by the SQL function.
 //
 // Schedule daily.
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  emailPrefsFooterHtml,
+  listUnsubscribeHeaders,
+} from "../_shared/emailPrefs.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
@@ -89,6 +95,7 @@ serve(async (req) => {
         to: r.email,
         subject: nudgeSubject(r),
         html: nudgeHtml(r),
+        headers: listUnsubscribeHeaders(),
       }),
     });
     if (send.ok) {
@@ -149,7 +156,8 @@ function nudgeHtml(r: Row) {
           </p>
           <p style="margin:0;font-size:13px;color:#777;">Or paste this into your browser:<br/><span style="word-break:break-all;">${link}</span></p>
         </td></tr>
-        <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;">
+        <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;line-height:1.6;">
+          ${emailPrefsFooterHtml("profile setup tips are on")}<br/>
           Vendora · Premium event planning &amp; vendor marketplace
         </td></tr>
       </table>

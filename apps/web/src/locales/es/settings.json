@@ -68,6 +68,18 @@
         "title": "Resumen semanal",
         "subtitle": "Un resumen cada lunes de la actividad de la semana anterior"
       },
+      "daily_digest": {
+        "title": "Resumen diario por correo",
+        "subtitle": "Un correo cada mañana con lo que no hayas leído del día anterior"
+      },
+      "review_prompts": {
+        "title": "Recordatorios de reseñas",
+        "subtitle": "Un recordatorio para reseñar a tu proveedor unos días después de tu evento"
+      },
+      "onboarding_tips": {
+        "title": "Consejos para tu perfil",
+        "subtitle": "Recordatorios para completar tu anuncio mientras esté incompleto"
+      },
       "marketing": {
         "title": "Promociones",
         "subtitle": "Novedades del producto, consejos y ofertas ocasionales (opcional)"

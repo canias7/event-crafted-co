@@ -1,6 +1,8 @@
 // Daily digest sender. Calls enqueue_pending_digests() to atomically
 // pick up all unread + un-digested notifications from the last N hours
 // and group them per user. Then sends one Resend email per user.
+// Users who turned notification_prefs.daily_digest off (Settings ->
+// Notifications) are skipped by the SQL function.
 //
 // Schedule once a day, ideally morning (8-9am local-major-market).
 //
@@ -11,11 +13,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import {
+  emailPrefsFooterHtml,
+  listUnsubscribeHeaders,
+} from "../_shared/emailPrefs.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_ADDRESS =
   Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Vendora <hello@vendora.app>";
-const APP_URL = Deno.env.get("APP_URL") ?? "https://vendora.app";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://eventvendora.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const LOOKBACK_HOURS = Number.parseInt(
@@ -95,6 +101,7 @@ serve(async (req) => {
         to: r.email,
         subject: digestSubject(r),
         html: digestHtml(r),
+        headers: listUnsubscribeHeaders(),
       }),
     });
     if (send.ok) {
@@ -185,8 +192,7 @@ function digestHtml(r: DigestRow) {
           <a href="${dashLink}" style="display:inline-block;background:#1a1a1a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-size:14px;font-weight:500;">Open dashboard</a>
         </td></tr>
         <tr><td style="padding-top:40px;border-top:1px solid #ececec;font-size:12px;color:#999999;line-height:1.6;">
-          You're getting this digest because daily summary emails are on.
-          <a href="${APP_URL}/settings" style="color:#a08259;text-decoration:none;">Manage email preferences</a>.
+          ${emailPrefsFooterHtml("your daily summary email is on")}
         </td></tr>
       </table>
     </td></tr>
