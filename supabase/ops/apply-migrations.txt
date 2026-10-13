@@ -10,5 +10,7 @@
 20261012120000_vendor_listing_pause.sql
 # Blocked-date titles: vendors read them through a members-only function.
 20261013120000_vendor_block_reasons.sql
+# Restore profiles.notification_prefs (settings switches, new-inquiry emails).
+20261013130000_restore_notification_prefs.sql
 # Email hosts when a vendor replies (5-minute scan, opt-out in settings).
 20261013121000_host_reply_emails.sql
