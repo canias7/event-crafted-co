@@ -2,69 +2,109 @@
   "page_title": "Ayuda — Vendora",
   "eyebrow": "— AYUDA",
   "title": "¿Cómo podemos ayudarte?",
-  "intro": "Abajo encontrarás las preguntas frecuentes. Para cualquier otra cosa, escríbenos — leemos todos los correos.",
+  "intro": "Abajo encontrarás respuestas a las preguntas más comunes. ¿No encuentras lo que necesitas? Escríbenos — leemos todos los mensajes.",
   "email_card": {
     "title": "Soporte por correo",
-    "reply_time": "{{email}} · normalmente respondemos en menos de 24 horas",
     "open": "Abrir →"
   },
+  "search": {
+    "label": "Buscar en la ayuda",
+    "placeholder": "Buscar en la ayuda...",
+    "none": "Ninguna pregunta coincide con tu búsqueda. Escríbenos a <email>hello@eventvendora.com</email> y te ayudamos."
+  },
   "faq": {
-    "vendors": {
-      "title": "Proveedores",
-      "items": {
-        "approval": {
-          "q": "¿Cuánto tarda la aprobación de un anuncio?",
-          "a": "La mayoría de los anuncios enviados se revisan en menos de 24 horas en días hábiles. Recibirás un correo cuando tu anuncio esté publicado."
-        },
-        "photos": {
-          "q": "¿Por qué mis fotos tardan en subirse?",
-          "a": "Cada foto se redimensiona y se comprime en tu navegador antes de subirse, para mantener bajos los costos de almacenamiento. Con 100 fotos, esto suele tardar entre 10 y 15 segundos. Si se queda en el mismo número por más de un minuto, actualiza la página e inténtalo de nuevo — los campos de texto de tu borrador se guardan automáticamente."
-        },
-        "downgrade": {
-          "q": "¿Qué pasa con mi anuncio si cambio a un plan inferior?",
-          "a": "Cambiar entre Pro y Premium en la página Suscripción se aplica de inmediato: la página te muestra cuánto se te cobrará antes de confirmar, y ese día empieza un nuevo mes de facturación. Para pasar a Free, cancela tu plan: conservas el acceso de pago hasta el final del período de facturación actual y luego tu cuenta pasa a Free. Un cambio de plan nunca toca tus fotos ni tu contenido."
-        },
-        "pause": {
-          "q": "¿Puedo pausar mi anuncio temporalmente?",
-          "a": "Sí. En el sitio web, ve a Mi perfil, abre el anuncio y elige Pausar anuncio. En la app para proveedores, toca el botón de pausa en la tarjeta del anuncio, en Perfil. Mientras esté en pausa, el anuncio no aparece en las búsquedas ni al explorar, y su página les indica a los anfitriones que no estás recibiendo consultas nuevas. Tus conversaciones, tu calendario y tus reseñas no cambian. Elige Reactivar anuncio cuando quieras volver a estar activo."
-        },
-        "blocked_title": {
-          "q": "¿Los anfitriones ven el título que le pongo a una fecha bloqueada?",
-          "a": "No. Los títulos son privados. Los anfitriones solo ven que la fecha no está disponible — tu nota (\"Cumpleaños de Christian\", etc.) nunca sale de tu lado de la app."
-        }
-      }
-    },
     "hosts": {
       "title": "Anfitriones",
       "items": {
+        "free": {
+          "q": "¿Vendora es gratis para los anfitriones?",
+          "a": "Sí. Explorar proveedores y enviar consultas es gratis. Para enviar una consulta necesitas una cuenta de anfitrión gratuita."
+        },
+        "find": {
+          "q": "¿Cómo encuentro proveedores?",
+          "a": "Ve a <vendors>Proveedores</vendors> en el menú superior. Puedes buscar por servicio, ubicación y fecha del evento, explorar por categoría o ciudad, y ordenar los resultados. Explorar muestra fotos y videos de los proveedores. No necesitas una cuenta para explorar."
+        },
+        "contact": {
+          "q": "¿Cómo contacto a un proveedor?",
+          "a": "Abre la página del proveedor y elige Enviar consulta (Inquire en la app). Agrega la fecha de tu evento y algunos detalles, y envíala. Si no has iniciado sesión, primero te pediremos que inicies sesión o crees una cuenta de anfitrión gratuita."
+        },
         "message": {
           "q": "¿Cómo le escribo a un proveedor después de enviar una consulta?",
-          "a": "Abre la consulta desde tu Bandeja. Cuando el proveedor responda, la conversación queda ahí — recibirás una notificación cuando conteste."
+          "a": "Abre Bandeja (en el menú del sitio o en la pestaña Inbox de la app) y elige la consulta. Ahí está toda tu conversación con el proveedor, y recibirás una notificación cuando te responda."
         },
         "payment_info": {
           "q": "¿Pago a través de Vendora?",
-          "a": "Por ahora no. Acuerdas el pago directamente con tu proveedor, así que Vendora nunca ve los datos de tu tarjeta ni de tu banco."
+          "a": "No. Vendora no procesa pagos entre anfitriones y proveedores. El pago, los anticipos y cualquier reembolso los acuerdas directamente con tu proveedor."
+        },
+        "problem": {
+          "q": "¿Qué pasa si tengo un problema con un proveedor?",
+          "a": "Empieza por contactar al proveedor. Los precios, los anticipos, las cancelaciones y los reembolsos se acuerdan entre tú y el proveedor, y Vendora no es parte de ese acuerdo. Si un proveedor parece fraudulento o incumple nuestras reglas, usa Reportar este perfil en su página o escríbenos a <email>hello@eventvendora.com</email>. Consulta nuestros <terms>Términos del servicio</terms> para más detalles."
+        }
+      }
+    },
+    "vendors": {
+      "title": "Proveedores",
+      "items": {
+        "free": {
+          "q": "¿Es gratis publicar mi negocio?",
+          "a": "Sí. El plan Free incluye un anuncio sin costo. Pro y Premium son planes mensuales opcionales. <signup>Regístrate como proveedor</signup> para empezar."
+        },
+        "commission": {
+          "q": "¿Vendora cobra comisión?",
+          "a": "No. Vendora no cobra comisión por tus reservas. Los anfitriones te pagan directamente."
+        },
+        "approval": {
+          "q": "¿Cuánto tarda la aprobación de un anuncio?",
+          "a": "Nuestro equipo revisa cada anuncio nuevo antes de publicarlo, normalmente en 2 a 3 días hábiles. Te avisaremos por correo cuando esté aprobado."
+        },
+        "inquiries": {
+          "q": "¿Cómo me contactan los anfitriones?",
+          "a": "Los anfitriones te envían una consulta desde la página de tu anuncio. Aparece en tu Bandeja (en el menú del sitio o en la pestaña Inbox de la app de proveedores) y recibes una notificación. Responde ahí para seguir la conversación."
+        },
+        "pause": {
+          "q": "¿Puedo pausar mi anuncio?",
+          "a": "Sí. En el sitio, ve a Mi Perfil, abre el anuncio y elige Pausar anuncio. En la app de proveedores, toca el botón de pausa en la tarjeta del anuncio en Profile. Mientras está pausado, tu anuncio no aparece en las búsquedas ni al explorar, y su página indica que te estás tomando un descanso. Tus conversaciones, tu calendario y tus reseñas no cambian. Reactívalo cuando quieras."
+        },
+        "downgrade": {
+          "q": "¿Qué pasa con mis anuncios si cambio o bajo de plan?",
+          "a": "No se elimina nada. Tus anuncios y fotos siguen igual. Con un plan más pequeño solo no puedes agregar más de lo que ese plan permite. Para saber qué se te cobra, consulta \"¿Qué pasa si subo o bajo de plan?\" en Facturación."
+        },
+        "blocked_title": {
+          "q": "¿Los anfitriones ven el título de una fecha bloqueada en mi calendario?",
+          "a": "No. Los anfitriones solo ven que ese día no está disponible. El título es solo para ti."
+        },
+        "photos": {
+          "q": "¿Por qué mis fotos tardan en subir?",
+          "a": "Las fotos grandes se reducen antes de subirse, así que un lote grande puede tardar un poco. En el sitio, cada foto puede pesar hasta 10 MB, con un máximo de 100 por anuncio. Las fotos HEIC del iPhone todavía no son compatibles, así que conviértelas a JPEG primero. Si una carga parece atascada por más de un minuto, revisa tu conexión, actualiza la página e inténtalo de nuevo."
         }
       }
     },
     "billing": {
       "title": "Facturación",
       "items": {
-        "invoice": {
-          "q": "¿Cómo descargo una factura de mi plan?",
-          "a": "Página Suscripción del proveedor → panel Facturación → haz clic en Ver junto a cualquier factura para abrir el PDF seguro de la factura. Clic derecho → Guardar para descargarla."
-        },
         "card": {
-          "q": "¿Dónde actualizo mi tarjeta?",
-          "a": "Página Suscripción → panel Facturación → Actualizar. Se abre la página segura del método de pago."
+          "q": "¿Cómo actualizo mi método de pago?",
+          "a": "Ve a Suscripción (en Más, dentro del menú) y luego a Facturación → Método de pago → Actualizar. Se abre la página segura de Stripe, donde puedes cambiar tu tarjeta."
+        },
+        "invoice": {
+          "q": "¿Cómo veo o descargo la factura o el recibo de mi plan de Vendora?",
+          "a": "Ve a Suscripción → Facturación → Facturas. Elige Ver para abrir una factura o PDF para descargarla. Son las facturas de tu propio plan de Vendora."
         },
         "cancel": {
-          "q": "¿Cómo cancelo mi plan?",
-          "a": "Página Suscripción → panel Facturación → Cancelar plan. Tu plan deja de renovarse y conservas el acceso de pago hasta el final del período de facturación actual; después, tu cuenta pasa a Free. Cancelar no elimina tu cuenta."
+          "q": "¿Cómo cancelo mi suscripción?",
+          "a": "Ve a Suscripción → Facturación → Cancelar plan. Se abre la página de facturación segura de Stripe, donde confirmas la cancelación. En iPhone, administra tu plan desde el sitio web."
+        },
+        "after_cancel": {
+          "q": "¿Qué pasa cuando cancelo?",
+          "a": "Tu plan no se renueva y no se te vuelve a cobrar. Conservas el acceso de pago hasta el final del período de facturación actual y después tu cuenta pasa al plan Free. Cancelar no elimina tu cuenta, tus anuncios ni tus fotos."
         },
         "delete": {
-          "q": "¿Qué pasa con mi plan si elimino mi cuenta?",
-          "a": "Eliminar tu cuenta (Configuración → Eliminar cuenta) cancela de inmediato cualquier plan activo. Tu acceso termina cuando se elimina la cuenta, no se te vuelve a cobrar y no hay reembolso por la parte no usada del período de facturación actual. Si solo quieres dejar de pagar, cancela tu plan y conserva el acceso hasta que termine el período."
+          "q": "¿Qué pasa si elimino mi cuenta mientras tengo una suscripción?",
+          "a": "Eliminar tu cuenta no es lo mismo que cancelar. Cuando eliminas tu cuenta (Configuración → Eliminar cuenta), cualquier suscripción activa se cancela de inmediato, y tu cuenta se elimina solo después de que esa cancelación se complete. No se te vuelve a cobrar, tu acceso termina cuando se elimina la cuenta y no hay reembolso por la parte no usada del período de facturación actual. Si quieres dejar de pagar pero conservar tu cuenta, cancela tu plan."
+        },
+        "switch": {
+          "q": "¿Qué pasa si subo o bajo de plan?",
+          "a": "Cambiar entre Pro y Premium se aplica de inmediato. Ese día se te cobra el precio mensual del nuevo plan y empieza un nuevo mes de facturación. El tiempo no usado de tu plan anterior no se reembolsa. Antes de confirmar, la página Suscripción te muestra cuánto se te cobrará. Para pasar a Free, cancela tu plan."
         }
       }
     }
@@ -72,7 +112,6 @@
   "legal": {
     "eyebrow": "— LEGAL",
     "terms": "Términos del servicio",
-    "privacy": "Política de privacidad",
-    "refund": "Solicitar un reembolso"
+    "privacy": "Política de privacidad"
   }
 }
