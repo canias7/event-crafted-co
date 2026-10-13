@@ -4,57 +4,126 @@
   "title": "Terms of service",
   "last_updated": "Last updated: October 13, 2026",
   "translation_note": "This translation is for your convenience. If it differs from the English version, the English version prevails.",
-  "intro": "By using Vendora, you agree to these terms. If you don't, please don't use the platform. We may update these terms; meaningful changes will be announced via email and a banner notice 30 days before they take effect.",
+  "intro": "By using Vendora, you agree to these terms. If you don't, please don't use the platform.",
   "eligibility": {
     "title": "1. Eligibility",
     "body": "You must be at least 18 years old and able to enter a binding contract in your jurisdiction. Vendors must be a legitimate business — sole proprietors, LLCs, corporations."
   },
   "account": {
     "title": "2. Your account",
-    "body": "You're responsible for keeping your password safe and for any activity under your account. Tell us immediately at <email>hello@eventvendora.com</email> if you suspect unauthorized access."
+    "body": "Keep your account details accurate. You're responsible for keeping your password safe and for any activity under your account. Tell us immediately at <email>hello@eventvendora.com</email> if you suspect unauthorized access."
+  },
+  "role": {
+    "title": "3. Vendora's role",
+    "items": [
+      "Vendora is a marketplace that helps hosts find and contact event vendors. We don't provide the event services listed on Vendora.",
+      "Vendors are independent businesses. They aren't Vendora's employees, agents, partners or joint venturers, and Vendora is not a party to any agreement between a host and a vendor.",
+      "Each vendor sets its own services, prices, availability and policies, and is responsible for how it performs them.",
+      "We review vendor applications before a listing goes live. Unless we expressly say we've verified something, we don't verify or guarantee any vendor's quality, availability, suitability, credentials, licenses, insurance, safety or performance."
+    ]
   },
   "hosts": {
-    "title": "3. For hosts",
-    "body": "Browsing Vendora and sending inquiries is free for hosts. When you book a vendor, you contract directly with that vendor — Vendora is the introduction layer, not the contracting party. Payment terms, cancellation policies, and deliverables are between you and the vendor."
+    "title": "4. For hosts",
+    "body": "Browsing Vendora and sending inquiries is free for hosts. When you book a vendor, you contract directly with that vendor — Vendora is the introduction layer, not the contracting party. Payment terms, deposits, cancellation policies and deliverables are between you and the vendor."
   },
   "vendors": {
-    "title": "4. For vendors",
-    "commission": "Listing on Vendora is <strong>free</strong>, and Vendora takes <strong>no commission</strong> on your bookings: hosts pay you directly.",
-    "membership": "Pro and Premium plans are <strong>billed monthly</strong>. You can change or cancel your plan any time from the Subscription page and keep it until the end of the month you've paid for. You can also pause a listing whenever you need to.",
-    "your_data": "Your profile, portfolio and reviews are <strong>your data</strong>. If you'd like a copy, email us and we'll send it to you.",
-    "ranking": "We do not accept money to influence search ranking. Sort order is determined by fit and quality signals only.",
-    "delivery": "You're responsible for delivering the services you describe in your profile and quotes."
+    "title": "5. For vendors",
+    "items": [
+      "Listing on Vendora is <strong>free</strong>, and Vendora takes <strong>no commission</strong> on your bookings: hosts pay you directly.",
+      "Pro and Premium are optional <strong>monthly</strong> plans (see Subscriptions below). You can pause a listing whenever you need to.",
+      "Your profile, portfolio and reviews are <strong>your data</strong>. If you'd like a copy, email us and we'll send it to you.",
+      "We do not accept money to influence search ranking. Sort order is determined by fit and quality signals only.",
+      "Keep your profile, prices, photos and quotes accurate and up to date.",
+      "You're responsible for the licenses, permits, insurance and other legal requirements that apply to your business and services.",
+      "You're responsible for delivering the services you describe and for honoring the prices, policies and promises you make to hosts."
+    ]
   },
-  "conduct": {
-    "title": "5. Prohibited conduct",
-    "body": "You agree not to: scrape vendor data, post false or misleading reviews, harass other users, or use the platform for anything illegal."
+  "subscriptions": {
+    "title": "6. Subscriptions",
+    "items": [
+      "The Free plan costs nothing. Pro and Premium are billed monthly through Stripe and <strong>renew automatically</strong> each month until you cancel.",
+      "You can cancel any time from the Subscription page. Cancellation takes effect at the end of the month you've already paid for: you keep your plan until then and aren't charged again.",
+      "You can switch between Pro and Premium from the Subscription page. Before you confirm, the page shows what you'll be charged and when your new billing month starts.",
+      "If we change a plan's price, we'll tell you before the new price applies to your plan."
+    ]
+  },
+  "transactions": {
+    "title": "7. Transactions, cancellations & disputes",
+    "items": [
+      "Hosts and vendors agree on prices, deposits, payment, cancellations, refunds and deliverables between themselves.",
+      "Disputes about a vendor's services, deposits, refunds, cancellations, deliverables or how an event went are between the host and the vendor, unless Vendora expressly says otherwise. If something goes wrong, contact the other party first. If you think someone on Vendora is acting fraudulently, tell us at <email>hello@eventvendora.com</email>.",
+      "Nothing in these terms takes away rights you have under consumer protection or other laws that can't be waived by agreement."
+    ]
   },
   "content": {
-    "title": "6. Content + intellectual property",
-    "body": "You retain ownership of everything you upload (portfolio images, messages, reviews). By posting, you grant Vendora a worldwide, royalty-free license to display it within the platform and (for vendors) in editorial features that promote your business."
+    "title": "8. Content & intellectual property",
+    "items": [
+      "You keep ownership of what you upload: photos, videos, profile text, messages and reviews. By posting it, you confirm you own it or have the rights needed to post it.",
+      "You give Vendora a non-exclusive, royalty-free, worldwide license to host, store, copy and display that content only as needed to run Vendora and to show and promote your listing within Vendora's own features, such as search, Explore, category and city pages, and links people share from Vendora.",
+      "Vendora's name, logo, design and software belong to Vendora. Please don't copy or use them without permission.",
+      "If you believe something on Vendora infringes your copyright or other rights, email <email>hello@eventvendora.com</email> with a link to the content, what you own, and how to reach you. We'll review it and may remove the content."
+    ]
+  },
+  "reviews": {
+    "title": "9. Reviews",
+    "items": [
+      "Reviews are the opinions of the people who write them, not Vendora's. They must be honest and based on a real experience.",
+      "A host can review a vendor only after the vendor has marked their inquiry as booked. We don't check what a review says or guarantee that it's accurate.",
+      "We may remove or hide reviews that are fake, abusive, irrelevant, unlawful or against these terms."
+    ]
   },
   "ai": {
-    "title": "7. AI-assisted replies",
-    "body": "When the AI inquiry agent is active, vendors review and approve every drafted reply before it sends. Vendora is not responsible for the content of vendor messages, AI-drafted or otherwise."
+    "title": "10. AI-assisted features",
+    "items": [
+      "Vendora doesn't currently use AI to write or send messages on anyone's behalf. Some older messages are labeled as sent automatically or by AI; they came from an earlier feature that has been retired.",
+      "Vendors can turn on an automatic first reply to new inquiries. The vendor writes that reply; it isn't written by AI.",
+      "Vendors are responsible for every message sent from their account, including automatic replies. If we add AI features, we'll update this section."
+    ]
+  },
+  "conduct": {
+    "title": "11. Prohibited conduct",
+    "intro": "You agree not to:",
+    "items": [
+      "scrape, copy or harvest data from Vendora, including vendor listings",
+      "post fake or misleading reviews, or manipulate reviews or search ranking",
+      "send fake, fraudulent or spam inquiries or messages",
+      "harass, threaten or abuse other users",
+      "commit fraud or impersonate another person or business",
+      "upload malware, or try to get around Vendora's security or access limits",
+      "infringe anyone's intellectual property or other rights",
+      "use Vendora for anything illegal, or interfere with how it runs"
+    ]
   },
   "disclaimers": {
-    "title": "8. Disclaimers",
-    "body": "Vendora is provided \"as is.\" We don't guarantee any specific vendor's availability, quality, or performance — vendors are independent businesses. Reviews are user-submitted opinion."
+    "title": "12. Disclaimers",
+    "body": "To the extent the law allows, Vendora is provided \"as is\" and \"as available.\" Vendors are independent businesses, and we don't guarantee any vendor's availability, quality or performance. We also don't guarantee that you'll get bookings or business results, or that Vendora will always be available or free of errors."
   },
   "liability": {
-    "title": "9. Limitation of liability",
-    "body": "To the fullest extent permitted by law, Vendora's liability is limited to fees you've paid us in the 12 months prior to a claim. We're not liable for indirect, consequential, or punitive damages."
+    "title": "13. Limitation of liability",
+    "body": "To the fullest extent permitted by applicable law, Vendora's liability is limited to fees you've paid us in the 12 months prior to a claim. We're not liable for indirect, consequential, or punitive damages."
+  },
+  "indemnification": {
+    "title": "14. Indemnification",
+    "body": "To the extent the law allows, you agree to cover Vendora's losses and reasonable costs, including legal fees, from claims by others that arise from your services, the content you upload, your breach of these terms, or your violation of someone else's rights."
   },
   "termination": {
-    "title": "10. Termination",
-    "body": "You can close your account anytime from your settings. We can suspend accounts that violate these terms with notice (or without notice for severe violations)."
+    "title": "15. Termination",
+    "items": [
+      "You can close your account anytime from your settings. If you have a paid plan, cancel it from the Subscription page before you close your account.",
+      "We can suspend or close an account, or hide a listing, with notice (or without notice for severe violations) if it violates these terms, is involved in fraud or unlawful activity, or puts other users' safety or Vendora's security at risk.",
+      "Sections 7, 9, 12, 13, 14 and 16 continue to apply after an account is closed."
+    ]
   },
   "law": {
-    "title": "11. Governing law",
+    "title": "16. Governing law & disputes",
     "body": "These terms are governed by the laws of the State of New York, without regard to conflict-of-law principles. Disputes are resolved in courts located in New York County."
   },
+  "changes": {
+    "title": "17. Changes to these terms",
+    "body": "We may update these terms; meaningful changes will be announced via email and a banner notice 30 days before they take effect. The date at the top shows when they last changed."
+  },
   "contact": {
-    "title": "12. Contact",
+    "title": "18. Contact",
     "body": "Questions about these terms: <email>hello@eventvendora.com</email>."
   }
 }

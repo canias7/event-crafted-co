@@ -4,6 +4,29 @@ import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 import { EmailMenu } from "@/components/shared/EmailMenu";
 
+// Sections in order. Each one in terms.json has a title plus a "body"
+// paragraph, or an optional "intro" and a list of "items".
+const SECTIONS = [
+  "eligibility",
+  "account",
+  "role",
+  "hosts",
+  "vendors",
+  "subscriptions",
+  "transactions",
+  "content",
+  "reviews",
+  "ai",
+  "conduct",
+  "disclaimers",
+  "liability",
+  "indemnification",
+  "termination",
+  "law",
+  "changes",
+  "contact",
+] as const;
+
 export default function TermsPage() {
   // The terms' words are in locales/<language>/terms.json.
   const { t, i18n } = useTranslation("terms");
@@ -54,81 +77,26 @@ export default function TermsPage() {
             {t("intro")}
           </p>
 
-          <Section title={t("eligibility.title")}>
-            <p>
-              {t("eligibility.body")}
-            </p>
-          </Section>
-
-          <Section title={t("account.title")}>
-            <p>
-              {rich("account.body")}
-            </p>
-          </Section>
-
-          <Section title={t("hosts.title")}>
-            <p>
-              {t("hosts.body")}
-            </p>
-          </Section>
-
-          <Section title={t("vendors.title")}>
-            <ul className="list-disc pl-5 space-y-1.5">
-              <li>{rich("vendors.commission")}</li>
-              <li>{rich("vendors.membership")}</li>
-              <li>{rich("vendors.your_data")}</li>
-              <li>{t("vendors.ranking")}</li>
-              <li>{t("vendors.delivery")}</li>
-            </ul>
-          </Section>
-
-          <Section title={t("conduct.title")}>
-            <p>
-              {t("conduct.body")}
-            </p>
-          </Section>
-
-          <Section title={t("content.title")}>
-            <p>
-              {t("content.body")}
-            </p>
-          </Section>
-
-          <Section title={t("ai.title")}>
-            <p>
-              {t("ai.body")}
-            </p>
-          </Section>
-
-          <Section title={t("disclaimers.title")}>
-            <p>
-              {t("disclaimers.body")}
-            </p>
-          </Section>
-
-          <Section title={t("liability.title")}>
-            <p>
-              {t("liability.body")}
-            </p>
-          </Section>
-
-          <Section title={t("termination.title")}>
-            <p>
-              {t("termination.body")}
-            </p>
-          </Section>
-
-          <Section title={t("law.title")}>
-            <p>
-              {t("law.body")}
-            </p>
-          </Section>
-
-          <Section title={t("contact.title")}>
-            <p>
-              {rich("contact.body")}
-            </p>
-          </Section>
+          {SECTIONS.map((key) => {
+            const items = t(`${key}.items`, { returnObjects: true });
+            return (
+              <Section key={key} title={t(`${key}.title`)}>
+                {i18n.exists(`${key}.body`, { ns: "terms" }) && (
+                  <p>{rich(`${key}.body`)}</p>
+                )}
+                {i18n.exists(`${key}.intro`, { ns: "terms" }) && (
+                  <p>{rich(`${key}.intro`)}</p>
+                )}
+                {Array.isArray(items) && (
+                  <ul className="list-disc pl-5 space-y-1.5">
+                    {items.map((_, i) => (
+                      <li key={i}>{rich(`${key}.items.${i}`)}</li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+            );
+          })}
         </div>
       </article>
 
