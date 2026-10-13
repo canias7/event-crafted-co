@@ -1,23 +1,10 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, ChevronRight, FileText, Loader2, LogOut, Lock, Mail, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { Bell, ChevronRight, FileText, LogOut, Lock, Mail, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
@@ -27,54 +14,16 @@ import { EmailMenu } from "@/components/shared/EmailMenu";
 // subtitle on the left, value or action pill on the right, divided by
 // hairlines. Identity edits live on /vendor/edit-profile; this surface
 // is intentionally minimal (email on file + sign out + delete account).
-// The error code a failed edge function sent back, if it sent JSON.
-async function readFunctionError(error: unknown): Promise<string | null> {
-  const res = (error as { context?: Response })?.context;
-  if (!res || typeof res.json !== "function") return null;
-  try {
-    const body = await res.json();
-    return typeof body?.error === "string" ? body.error : null;
-  } catch {
-    return null;
-  }
-}
-
 export default function SettingsPage() {
   const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation("settings");
-
-  const [deleting, setDeleting] = useState(false);
 
   const lastSide = getLastDashboardSide();
   const useVendorNav =
     lastSide === "vendor" || (lastSide === null && isApprovedVendor);
   const navItems = useVendorNav ? vendorNavItems : customerNavItems;
   const sidebarTitle = useVendorNav ? "Vendor Portal" : "Customer";
-
-  async function deleteAccount() {
-    setDeleting(true);
-    // The delete-account function cancels any Stripe plan, then closes
-    // the account: it's permanently deleted after 30 days unless the
-    // user signs back in and restores it (AccountDeletionGate).
-    const { error } = await supabase.functions.invoke("delete-account", {
-      body: {},
-    });
-    if (error) {
-      setDeleting(false);
-      const code = await readFunctionError(error);
-      toast.error(
-        code === "subscription_cancel_failed"
-          ? t("delete.plan_error")
-          : t("delete.error", { message: error.message }),
-      );
-      return;
-    }
-    await supabase.auth.signOut();
-    setDeleting(false);
-    toast.success(t("delete.success"));
-    navigate("/", { replace: true });
-  }
 
   return (
     <div className="flex min-h-screen vendor-canvas">
@@ -205,52 +154,7 @@ export default function SettingsPage() {
                     ? t("delete.subtitle_vendor")
                     : t("delete.subtitle")
                 }
-                right={
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                        {t("delete.button")}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-3xl">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-editorial text-3xl">
-                          {t("delete.confirm_title")}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-sm leading-relaxed">
-                          {t("delete.confirm_body")}
-                          {` ${t("delete.confirm_body_plan")}`}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="gap-2 sm:gap-0">
-                        <AlertDialogCancel
-                          disabled={deleting}
-                          className="rounded-full"
-                        >
-                          {t("delete.cancel")}
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={(e) => {
-                            e.preventDefault();
-                            deleteAccount();
-                          }}
-                          disabled={deleting}
-                          className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {deleting && (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          )}
-                          {t("delete.confirm")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                }
+                right={<DeleteAccountButton />}
               />
             </div>
           )}
