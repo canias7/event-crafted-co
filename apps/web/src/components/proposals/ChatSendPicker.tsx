@@ -1,9 +1,11 @@
 // Chat composer "+" attach menu for the vendor inquiry thread.
 //
-// One button opens a menu of four send types — Invoice, Pay link,
-// Proposal, Contract. Each opens a picker of the vendor's saved items
-// (from the Files tab) and, on pick, drops a formatted text message into
-// the thread via the parent's sendBody(). No new direct_messages columns:
+// One button opens a menu of three send types — Pay link, Proposal,
+// Contract. (Invoice was removed in Oct 2026, owner's call: vendors and
+// hosts arrange payment directly and vendors can't create invoices.)
+// Each opens a picker of the vendor's saved items (from the Files tab)
+// and, on pick, drops a formatted text message into the thread via the
+// parent's sendBody(). No new direct_messages columns:
 // mirrors the "Pin location" pattern (emoji-prefixed body the chat
 // renderer linkifies), so this is purely additive and breaks nothing.
 
@@ -14,7 +16,6 @@ import {
   Loader2,
   FileText,
   Link2,
-  ReceiptText,
   FileSignature,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,7 +34,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-type SendKind = "invoice" | "link" | "proposal" | "contract";
+type SendKind = "link" | "proposal" | "contract";
 
 interface PickRow {
   id: string;
@@ -117,7 +118,6 @@ function prefillProposalBody(
 // What the vendor reads (menu label, dialog title) is
 // picker.kinds.<kind> in the proposals namespace.
 const KIND_META: Record<SendKind, { label: string; icon: typeof FileText }> = {
-  invoice: { label: "Invoice", icon: ReceiptText },
   link: { label: "Pay link", icon: Link2 },
   proposal: { label: "Proposal", icon: FileText },
   contract: { label: "Contract", icon: FileSignature },
@@ -127,7 +127,6 @@ export function ChatSendPicker({
   vendorId,
   inquiryId,
   onSend,
-  onStageInvoice,
 }: {
   vendorId: string;
   // Inquiry this chat belongs to — stamped onto a pay link when sent so a
@@ -135,9 +134,6 @@ export function ChatSendPicker({
   inquiryId: string;
   // Drops a formatted body into the thread (parent's sendBody).
   onSend: (body: string) => Promise<void> | void;
-  // Stages an invoice into the composer as a PDF attachment + body (the
-  // vendor reviews, then sends). Falls back to onSend if absent.
-  onStageInvoice?: (invoiceId: string, body: string) => Promise<void> | void;
 }) {
   const { t } = useTranslation("proposals");
   const [kind, setKind] = useState<SendKind | null>(null);
@@ -163,23 +159,7 @@ export function ChatSendPicker({
       setLoading(true);
       setRows([]);
       try {
-        if (k === "invoice") {
-          const { data } = await supabase
-            .from("invoices")
-            .select("id, invoice_number, slug, total_cents, currency, status, bill_to_name")
-            .eq("vendor_id", vendorId)
-            .in("status", ["draft", "sent", "overdue"])
-            .order("created_at", { ascending: false })
-            .limit(50);
-          setRows(
-            ((data ?? []) as any[]).map((inv) => ({
-              id: inv.id,
-              primary: t("picker.rows.invoice", { number: inv.invoice_number }),
-              secondary: `${formatMoney(inv.total_cents, inv.currency)}${inv.bill_to_name ? ` · ${inv.bill_to_name}` : ""}`,
-              body: `🧾 Invoice ${inv.invoice_number} · ${formatMoney(inv.total_cents, inv.currency)} — [Pay online](${ORIGIN}/pay/invoice/${inv.slug})`,
-            })),
-          );
-        } else if (k === "link") {
+        if (k === "link") {
           const { data } = await supabase
             .from("payment_links")
             .select("id, slug, title, amount_cents, currency, status")
@@ -244,14 +224,9 @@ export function ChatSendPicker({
           .eq("id", row.id);
         if (error) console.error("[ChatSendPicker] link inquiry stamp failed", error);
       }
-      // Invoices stage a PDF + body into the composer (vendor reviews,
-      // then sends). Contracts/proposals create an instance and send a
-      // link (review & sign / view & accept). Everything else drops a
-      // text/link body.
-      if (kind === "invoice" && onStageInvoice) {
-        await onStageInvoice(row.id, row.body);
-        toast.success(t("picker.toast.invoiceAdded"));
-      } else if (
+      // Contracts/proposals create an instance and send a link (review &
+      // sign / view & accept). Pay links drop a text/link body.
+      if (
         (kind === "contract" && row.contract) ||
         (kind === "proposal" && row.proposal)
       ) {
@@ -415,8 +390,6 @@ export function ChatSendPicker({
                 ? editing.mode === "contract"
                   ? t("picker.editor.contractHint")
                   : t("picker.editor.proposalHint")
-                : kind === "invoice"
-                ? t("picker.hints.invoice")
                 : kind === "link"
                   ? t("picker.hints.link")
                   : kind === "contract"
@@ -479,9 +452,7 @@ export function ChatSendPicker({
             </div>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              {kind === "invoice"
-                ? t("picker.empty.invoice")
-                : kind === "link"
+              {kind === "link"
                   ? t("picker.empty.link")
                   : kind === "contract"
                     ? t("picker.empty.contract")

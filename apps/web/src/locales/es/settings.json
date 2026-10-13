@@ -34,7 +34,7 @@
     "button": "Eliminar",
     "confirm_title": "¿Eliminar tu cuenta?",
     "confirm_body": "Esto eliminará tu perfil y todos los datos relacionados. Tu sesión se cerrará de inmediato y no podrás volver a iniciar sesión con este correo.",
-    "confirm_body_plan": "Si tienes un plan de pago, se cancela de inmediato y no se te volverá a cobrar.",
+    "confirm_body_plan": "Si tienes un plan de pago, se cancela de inmediato y no se te volverá a cobrar. No hay reembolso por el resto del período de facturación actual.",
     "cancel": "Cancelar",
     "confirm": "Sí, eliminarla",
     "success": "Cuenta cerrada. Hasta pronto.",

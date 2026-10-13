@@ -22,7 +22,7 @@
         },
         "downgrade": {
           "q": "¿Qué pasa con mi anuncio si cambio a un plan inferior?",
-          "a": "Tu ciclo actual sigue pagado hasta que termina. El nuevo nivel entra en vigor en la siguiente renovación — los créditos, los espacios para anuncios y las funciones se ajustan en ese momento. Un cambio de nivel nunca afecta tus fotos ni tu contenido existentes."
+          "a": "Cambiar entre Pro y Premium en la página Suscripción se aplica de inmediato: la página te muestra cuánto se te cobrará antes de confirmar, y ese día empieza un nuevo mes de facturación. Para pasar a Free, cancela tu plan: conservas el acceso de pago hasta el final del período de facturación actual y luego tu cuenta pasa a Free. Un cambio de plan nunca toca tus fotos ni tu contenido."
         },
         "pause": {
           "q": "¿Puedo pausar mi anuncio temporalmente?",
@@ -51,12 +51,20 @@
       "title": "Facturación",
       "items": {
         "invoice": {
-          "q": "¿Cómo descargo una factura?",
+          "q": "¿Cómo descargo una factura de mi plan?",
           "a": "Página Suscripción del proveedor → panel Facturación → haz clic en Ver junto a cualquier factura para abrir el PDF seguro de la factura. Clic derecho → Guardar para descargarla."
         },
         "card": {
           "q": "¿Dónde actualizo mi tarjeta?",
           "a": "Página Suscripción → panel Facturación → Actualizar. Se abre la página segura del método de pago."
+        },
+        "cancel": {
+          "q": "¿Cómo cancelo mi plan?",
+          "a": "Página Suscripción → panel Facturación → Cancelar plan. Tu plan deja de renovarse y conservas el acceso de pago hasta el final del período de facturación actual; después, tu cuenta pasa a Free. Cancelar no elimina tu cuenta."
+        },
+        "delete": {
+          "q": "¿Qué pasa con mi plan si elimino mi cuenta?",
+          "a": "Eliminar tu cuenta (Configuración → Eliminar cuenta) cancela de inmediato cualquier plan activo. Tu acceso termina cuando se elimina la cuenta, no se te vuelve a cobrar y no hay reembolso por la parte no usada del período de facturación actual. Si solo quieres dejar de pagar, cancela tu plan y conserva el acceso hasta que termine el período."
         }
       }
     }

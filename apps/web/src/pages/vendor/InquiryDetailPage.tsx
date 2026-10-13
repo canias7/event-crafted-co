@@ -60,7 +60,6 @@ import {
   MAX_FILES,
   type MessageAttachment,
 } from "@/lib/messageAttachments";
-import { normalizeInvoiceLineItems } from "@/lib/invoiceLineItems";
 import { Paperclip, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { intlLocale, moneyLocale } from "@/lib/intlLocale";
@@ -690,73 +689,6 @@ export default function InquiryDetailPage() {
   }
 
 
-  // Stage an invoice into the composer as a PDF attachment (built
-  // client-side) + a pay-link body — so the vendor can add a note and
-  // review before hitting Send, rather than firing it off immediately.
-  async function stageInvoice(invoiceId: string, body: string) {
-    if (!inquiryId || !user) return;
-    if (pendingFiles.length >= MAX_FILES) {
-      toast.error(t("toast.maxFiles", { max: MAX_FILES }));
-      return;
-    }
-    const { data: inv } = await supabase
-      .from("invoices")
-      .select(
-        "invoice_number, bill_to_name, bill_to_email, issue_date, due_date, notes, line_items, subtotal_cents, tax_rate_bps, tax_cents, total_cents, currency, status, paid_at, refunded_amount_cents, late_fee_cents, vendor_id",
-      )
-      .eq("id", invoiceId)
-      .maybeSingle();
-    if (!inv) {
-      toast.error(t("toast.invoiceLoadFailed"));
-      return;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const i = inv as any;
-    const { data: vp } = await supabase
-      .from("vendor_profiles")
-      .select("business_name, location")
-      .eq("id", i.vendor_id)
-      .maybeSingle();
-    const { buildInvoicePdf } = await import("@/lib/invoiceReceiptPdf");
-    const doc = buildInvoicePdf(
-      {
-        invoice_number: i.invoice_number,
-        bill_to_name: i.bill_to_name,
-        bill_to_email: i.bill_to_email,
-        issue_date: i.issue_date,
-        due_date: i.due_date,
-        notes: i.notes,
-        line_items: normalizeInvoiceLineItems(i.line_items),
-        subtotal_cents: i.subtotal_cents,
-        tax_rate_bps: i.tax_rate_bps,
-        tax_cents: i.tax_cents,
-        total_cents: i.total_cents,
-        currency: i.currency,
-        status: i.status,
-        paid_at: i.paid_at,
-        refunded_amount_cents: i.refunded_amount_cents,
-        late_fee_cents: i.late_fee_cents,
-      },
-      {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        business_name: (vp as any)?.business_name ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        location: (vp as any)?.location ?? null,
-        email: user.email ?? null,
-      },
-    );
-    const blob = doc.output("blob");
-    const file = new File(
-      [blob],
-      `invoice-${i.invoice_number || "vendora"}.pdf`,
-      { type: "application/pdf" },
-    );
-    // Stage in the composer — the vendor reviews + sends via the normal
-    // Send button (which uploads the PDF and posts the message).
-    setPendingFiles((prev) => [...prev, file]);
-    setComposer((prev) => (prev.trim() ? `${prev.trim()}\n${body}` : body));
-  }
-
   async function sendMessage() {
     if (
       (!composer.trim() && pendingFiles.length === 0) ||
@@ -1360,7 +1292,7 @@ export default function InquiryDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Unified send menu — Invoice / Pay link / Proposal / Contract
                 from the vendor's saved Files items, dropped into the thread. */}
-            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} onStageInvoice={stageInvoice} />
+            <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}
