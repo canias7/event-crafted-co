@@ -43,18 +43,17 @@ export default function AccountDeletionPage() {
 
           <Section title={t("account_deletion.app.title")}>
             <p className="mb-2">{t("account_deletion.app.lead")}</p>
-            <ol className="list-decimal pl-5 space-y-1.5">
-              <li>{t("account_deletion.app.step_open")}</li>
+            <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <Trans i18nKey="account_deletion.app.step_settings" ns="auth" components={strong} />
+                <Trans i18nKey="account_deletion.app.web" ns="auth" components={strong} />
               </li>
               <li>
-                <Trans i18nKey="account_deletion.app.step_delete" ns="auth" components={strong} />
+                <Trans i18nKey="account_deletion.app.vendor_app" ns="auth" components={strong} />
               </li>
               <li>
-                <Trans i18nKey="account_deletion.app.step_confirm" ns="auth" components={strong} />
+                <Trans i18nKey="account_deletion.app.host_app" ns="auth" components={strong} />
               </li>
-            </ol>
+            </ul>
             <p className="mt-3">
               {t("account_deletion.app.result")}
             </p>
