@@ -4,57 +4,126 @@
   "title": "Términos del servicio",
   "last_updated": "Última actualización: 13 de octubre de 2026",
   "translation_note": "Esta traducción es para tu comodidad. Si hay alguna diferencia con la versión en inglés, prevalece la versión en inglés.",
-  "intro": "Al usar Vendora, aceptas estos términos. Si no los aceptas, por favor no uses la plataforma. Podemos actualizar estos términos; los cambios importantes se anunciarán por correo electrónico y con un aviso en un banner 30 días antes de que entren en vigor.",
+  "intro": "Al usar Vendora, aceptas estos términos. Si no los aceptas, por favor no uses la plataforma.",
   "eligibility": {
     "title": "1. Elegibilidad",
     "body": "Debes tener al menos 18 años y poder celebrar un contrato vinculante en tu jurisdicción. Los proveedores deben ser un negocio legítimo — empresas unipersonales, LLC, corporaciones."
   },
   "account": {
     "title": "2. Tu cuenta",
-    "body": "Eres responsable de mantener segura tu contraseña y de toda la actividad que ocurra en tu cuenta. Avísanos de inmediato a <email>hello@eventvendora.com</email> si sospechas de un acceso no autorizado."
+    "body": "Mantén actualizados los datos de tu cuenta. Eres responsable de mantener segura tu contraseña y de toda la actividad que ocurra en tu cuenta. Avísanos de inmediato a <email>hello@eventvendora.com</email> si sospechas de un acceso no autorizado."
+  },
+  "role": {
+    "title": "3. El papel de Vendora",
+    "items": [
+      "Vendora es un marketplace que ayuda a los anfitriones a encontrar y contactar proveedores para eventos. No prestamos los servicios para eventos que se publican en Vendora.",
+      "Los proveedores son negocios independientes. No son empleados, agentes, socios ni asociados de Vendora, y Vendora no es parte de ningún acuerdo entre un anfitrión y un proveedor.",
+      "Cada proveedor define sus propios servicios, precios, disponibilidad y políticas, y es responsable de cómo los cumple.",
+      "Revisamos las solicitudes de los proveedores antes de que un anuncio se publique. Salvo que digamos expresamente que verificamos algo, no verificamos ni garantizamos la calidad, disponibilidad, idoneidad, credenciales, licencias, seguros, seguridad ni el desempeño de ningún proveedor."
+    ]
   },
   "hosts": {
-    "title": "3. Para anfitriones",
-    "body": "Explorar Vendora y enviar consultas es gratis para los anfitriones. Cuando contratas a un proveedor, celebras el contrato directamente con ese proveedor — Vendora es quien los pone en contacto, no una parte del contrato. Las condiciones de pago, las políticas de cancelación y los entregables son un asunto entre tú y el proveedor."
+    "title": "4. Para anfitriones",
+    "body": "Explorar Vendora y enviar consultas es gratis para los anfitriones. Cuando contratas a un proveedor, celebras el contrato directamente con ese proveedor — Vendora es quien los pone en contacto, no una parte del contrato. Las condiciones de pago, los anticipos, las políticas de cancelación y los entregables son un asunto entre tú y el proveedor."
   },
   "vendors": {
-    "title": "4. Para proveedores",
-    "commission": "Publicar en Vendora es <strong>gratis</strong> y Vendora <strong>no cobra comisión</strong> por tus reservas: los anfitriones te pagan directamente.",
-    "membership": "Los planes Pro y Premium se <strong>cobran cada mes</strong>. Puedes cambiar o cancelar tu plan cuando quieras desde la página Suscripción y lo conservas hasta el final del mes que ya pagaste. También puedes pausar un anuncio cuando lo necesites.",
-    "your_data": "Tu perfil, tu portafolio y tus reseñas son <strong>tus datos</strong>. Si quieres una copia, escríbenos y te la enviamos.",
-    "ranking": "No aceptamos dinero para influir en el orden de los resultados de búsqueda. El orden se determina únicamente por señales de afinidad y calidad.",
-    "delivery": "Eres responsable de prestar los servicios que describes en tu perfil y en tus cotizaciones."
+    "title": "5. Para proveedores",
+    "items": [
+      "Publicar en Vendora es <strong>gratis</strong> y Vendora <strong>no cobra comisión</strong> por tus reservas: los anfitriones te pagan directamente.",
+      "Pro y Premium son planes opcionales que se cobran <strong>cada mes</strong> (consulta Suscripciones más abajo). Puedes pausar un anuncio cuando lo necesites.",
+      "Tu perfil, tu portafolio y tus reseñas son <strong>tus datos</strong>. Si quieres una copia, escríbenos y te la enviamos.",
+      "No aceptamos dinero para influir en el orden de los resultados de búsqueda. El orden se determina únicamente por señales de afinidad y calidad.",
+      "Mantén tu perfil, tus precios, tus fotos y tus cotizaciones correctos y actualizados.",
+      "Eres responsable de las licencias, los permisos, los seguros y los demás requisitos legales que se apliquen a tu negocio y tus servicios.",
+      "Eres responsable de prestar los servicios que describes y de respetar los precios, las políticas y los compromisos que asumes con los anfitriones."
+    ]
   },
-  "conduct": {
-    "title": "5. Conductas prohibidas",
-    "body": "Te comprometes a no: extraer datos de proveedores de forma automatizada (scraping), publicar reseñas falsas o engañosas, acosar a otros usuarios ni usar la plataforma para nada ilegal."
+  "subscriptions": {
+    "title": "6. Suscripciones",
+    "items": [
+      "El plan Free no cuesta nada. Pro y Premium se cobran cada mes a través de Stripe y se <strong>renuevan automáticamente</strong> cada mes hasta que los canceles.",
+      "Puedes cancelar cuando quieras desde la página Suscripción. La cancelación se aplica al final del mes que ya pagaste: conservas tu plan hasta entonces y no se te vuelve a cobrar.",
+      "Puedes cambiar entre Pro y Premium desde la página Suscripción. Antes de confirmar, la página te muestra cuánto se te cobrará y cuándo empieza tu nuevo mes de facturación.",
+      "Si cambiamos el precio de un plan, te avisaremos antes de que el nuevo precio se aplique a tu plan."
+    ]
+  },
+  "transactions": {
+    "title": "7. Transacciones, cancelaciones y disputas",
+    "items": [
+      "Los anfitriones y los proveedores acuerdan entre ellos los precios, los anticipos, el pago, las cancelaciones, los reembolsos y los entregables.",
+      "Las disputas sobre los servicios de un proveedor, los anticipos, los reembolsos, las cancelaciones, los entregables o cómo salió un evento son entre el anfitrión y el proveedor, salvo que Vendora diga expresamente lo contrario. Si algo sale mal, contacta primero a la otra parte. Si crees que alguien en Vendora está actuando de forma fraudulenta, avísanos a <email>hello@eventvendora.com</email>.",
+      "Nada en estos términos te quita derechos que tengas según las leyes de protección al consumidor u otras leyes que no se puedan renunciar por acuerdo."
+    ]
   },
   "content": {
-    "title": "6. Contenido + propiedad intelectual",
-    "body": "Conservas la propiedad de todo lo que subes (imágenes de portafolio, mensajes, reseñas). Al publicar, otorgas a Vendora una licencia mundial y libre de regalías para mostrarlo dentro de la plataforma y (en el caso de los proveedores) en contenidos editoriales que promocionen tu negocio."
+    "title": "8. Contenido y propiedad intelectual",
+    "items": [
+      "Conservas la propiedad de lo que subes: fotos, videos, textos del perfil, mensajes y reseñas. Al publicarlo, confirmas que es tuyo o que tienes los derechos necesarios para publicarlo.",
+      "Otorgas a Vendora una licencia no exclusiva, mundial y libre de regalías para alojar, almacenar, copiar y mostrar ese contenido solo en la medida necesaria para operar Vendora y para mostrar y promocionar tu anuncio dentro de las funciones de Vendora, como la búsqueda, Explorar, las páginas de categorías y ciudades, y los enlaces que la gente comparte desde Vendora.",
+      "El nombre, el logo, el diseño y el software de Vendora pertenecen a Vendora. Por favor, no los copies ni los uses sin permiso.",
+      "Si crees que algo en Vendora infringe tus derechos de autor u otros derechos, escribe a <email>hello@eventvendora.com</email> con un enlace al contenido, lo que te pertenece y cómo contactarte. Lo revisaremos y podremos retirar el contenido."
+    ]
+  },
+  "reviews": {
+    "title": "9. Reseñas",
+    "items": [
+      "Las reseñas son opiniones de quienes las escriben, no de Vendora. Deben ser honestas y basarse en una experiencia real.",
+      "Un anfitrión solo puede reseñar a un proveedor después de que el proveedor haya marcado su consulta como reservada. No revisamos lo que dice una reseña ni garantizamos que sea exacta.",
+      "Podemos retirar u ocultar reseñas falsas, abusivas, irrelevantes, ilegales o contrarias a estos términos."
+    ]
   },
   "ai": {
-    "title": "7. Respuestas asistidas por IA",
-    "body": "Cuando el agente de consultas con IA está activo, los proveedores revisan y aprueban cada respuesta redactada antes de que se envíe. Vendora no es responsable del contenido de los mensajes de los proveedores, ya sean redactados por IA o no."
+    "title": "10. Funciones asistidas por IA",
+    "items": [
+      "Actualmente Vendora no usa IA para escribir ni enviar mensajes en nombre de nadie. Algunos mensajes antiguos aparecen como enviados automáticamente o por IA; vienen de una función anterior que ya se retiró.",
+      "Los proveedores pueden activar una primera respuesta automática a las nuevas consultas. Esa respuesta la escribe el proveedor; no la escribe la IA.",
+      "Los proveedores son responsables de todos los mensajes que se envían desde su cuenta, incluidas las respuestas automáticas. Si agregamos funciones de IA, actualizaremos esta sección."
+    ]
+  },
+  "conduct": {
+    "title": "11. Conductas prohibidas",
+    "intro": "Te comprometes a no:",
+    "items": [
+      "extraer, copiar o recopilar datos de Vendora de forma automatizada (scraping), incluidos los anuncios de proveedores",
+      "publicar reseñas falsas o engañosas, ni manipular las reseñas o el orden de búsqueda",
+      "enviar consultas o mensajes falsos, fraudulentos o de spam",
+      "acosar, amenazar o maltratar a otros usuarios",
+      "cometer fraude ni hacerte pasar por otra persona o negocio",
+      "subir malware ni intentar burlar la seguridad o los límites de acceso de Vendora",
+      "infringir la propiedad intelectual u otros derechos de cualquier persona",
+      "usar Vendora para algo ilegal ni interferir en su funcionamiento"
+    ]
   },
   "disclaimers": {
-    "title": "8. Exenciones de responsabilidad",
-    "body": "Vendora se ofrece \"tal cual\". No garantizamos la disponibilidad, la calidad ni el desempeño de ningún proveedor en particular — los proveedores son negocios independientes. Las reseñas son opiniones enviadas por los usuarios."
+    "title": "12. Exenciones de responsabilidad",
+    "body": "En la medida en que la ley lo permita, Vendora se ofrece \"tal cual\" y \"según disponibilidad\". Los proveedores son negocios independientes y no garantizamos la disponibilidad, la calidad ni el desempeño de ningún proveedor. Tampoco garantizamos que consigas reservas o resultados para tu negocio, ni que Vendora esté siempre disponible o libre de errores."
   },
   "liability": {
-    "title": "9. Limitación de responsabilidad",
-    "body": "En la máxima medida permitida por la ley, la responsabilidad de Vendora se limita a las tarifas que nos hayas pagado en los 12 meses anteriores a un reclamo. No somos responsables por daños indirectos, consecuenciales ni punitivos."
+    "title": "13. Limitación de responsabilidad",
+    "body": "En la máxima medida permitida por la ley aplicable, la responsabilidad de Vendora se limita a las tarifas que nos hayas pagado en los 12 meses anteriores a un reclamo. No somos responsables por daños indirectos, consecuenciales ni punitivos."
+  },
+  "indemnification": {
+    "title": "14. Indemnización",
+    "body": "En la medida en que la ley lo permita, aceptas cubrir las pérdidas y los costos razonables de Vendora, incluidos los honorarios legales, derivados de reclamos de terceros relacionados con tus servicios, el contenido que subes, tu incumplimiento de estos términos o tu violación de los derechos de otra persona."
   },
   "termination": {
-    "title": "10. Terminación",
-    "body": "Puedes cerrar tu cuenta en cualquier momento desde tu configuración. Podemos suspender, con previo aviso, las cuentas que infrinjan estos términos (o sin aviso en caso de infracciones graves)."
+    "title": "15. Terminación",
+    "items": [
+      "Puedes cerrar tu cuenta en cualquier momento desde tu configuración. Si tienes un plan de pago, cancélalo desde la página Suscripción antes de cerrar tu cuenta.",
+      "Podemos suspender o cerrar una cuenta, u ocultar un anuncio, con previo aviso (o sin aviso en caso de infracciones graves) si infringe estos términos, está involucrada en fraude o actividades ilegales, o pone en riesgo la seguridad de otros usuarios o de Vendora.",
+      "Las secciones 7, 9, 12, 13, 14 y 16 siguen aplicándose después de que se cierra una cuenta."
+    ]
   },
   "law": {
-    "title": "11. Ley aplicable",
+    "title": "16. Ley aplicable y disputas",
     "body": "Estos términos se rigen por las leyes del estado de Nueva York, sin tener en cuenta los principios sobre conflicto de leyes. Las disputas se resuelven en los tribunales ubicados en el condado de Nueva York."
   },
+  "changes": {
+    "title": "17. Cambios en estos términos",
+    "body": "Podemos actualizar estos términos; los cambios importantes se anunciarán por correo electrónico y con un aviso en un banner 30 días antes de que entren en vigor. La fecha de arriba indica cuándo cambiaron por última vez."
+  },
   "contact": {
-    "title": "12. Contacto",
+    "title": "18. Contacto",
     "body": "Preguntas sobre estos términos: <email>hello@eventvendora.com</email>."
   }
 }
