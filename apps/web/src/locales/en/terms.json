@@ -2,7 +2,7 @@
   "page_title": "Terms of Service — Vendora",
   "eyebrow": "— LEGAL",
   "title": "Terms of service",
-  "last_updated": "Last updated: May 3, 2026",
+  "last_updated": "Last updated: October 13, 2026",
   "translation_note": "This translation is for your convenience. If it differs from the English version, the English version prevails.",
   "intro": "By using Vendora, you agree to these terms. If you don't, please don't use the platform. We may update these terms; meaningful changes will be announced via email and a banner notice 30 days before they take effect.",
   "eligibility": {
@@ -19,15 +19,15 @@
   },
   "vendors": {
     "title": "4. For vendors",
-    "commission": "Vendora charges <strong>3% on confirmed bookings</strong> (\"won\" inquiries). No listing fees, no monthly minimums.",
-    "membership": "Membership is <strong>month-to-month</strong>; you can pause or leave any time without penalty.",
-    "your_data": "Vendor profiles, portfolios, and reviews are <strong>your data</strong>. You can export your reviews at any time, including if you leave the platform.",
+    "commission": "Listing on Vendora is <strong>free</strong>, and Vendora takes <strong>no commission</strong> on your bookings: hosts pay you directly.",
+    "membership": "Pro and Premium plans are <strong>billed monthly</strong>. You can change or cancel your plan any time from the Subscription page and keep it until the end of the month you've paid for. You can also pause a listing whenever you need to.",
+    "your_data": "Your profile, portfolio and reviews are <strong>your data</strong>. If you'd like a copy, email us and we'll send it to you.",
     "ranking": "We do not accept money to influence search ranking. Sort order is determined by fit and quality signals only.",
     "delivery": "You're responsible for delivering the services you describe in your profile and quotes."
   },
   "conduct": {
     "title": "5. Prohibited conduct",
-    "body": "You agree not to: scrape vendor data, attempt to circumvent Vendora's commission by transacting off-platform after an introduction, post false or misleading reviews, harass other users, or use the platform for anything illegal."
+    "body": "You agree not to: scrape vendor data, post false or misleading reviews, harass other users, or use the platform for anything illegal."
   },
   "content": {
     "title": "6. Content + intellectual property",
