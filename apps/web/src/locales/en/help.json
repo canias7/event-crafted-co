@@ -2,69 +2,109 @@
   "page_title": "Help — Vendora",
   "eyebrow": "— HELP",
   "title": "How can we help?",
-  "intro": "Common questions below. Anything else, email us — we read every one.",
+  "intro": "Find answers to common questions below. Can't find what you need? Email us — we read every message.",
   "email_card": {
     "title": "Email support",
-    "reply_time": "{{email}} · usually a reply within 24 hours",
     "open": "Open →"
   },
+  "search": {
+    "label": "Search help",
+    "placeholder": "Search help...",
+    "none": "No questions match your search. Email us at <email>hello@eventvendora.com</email> and we'll help."
+  },
   "faq": {
-    "vendors": {
-      "title": "Vendors",
-      "items": {
-        "approval": {
-          "q": "How long does listing approval take?",
-          "a": "Most submissions are reviewed within 24 hours on business days. You'll get an email when your listing goes live."
-        },
-        "photos": {
-          "q": "Why are my photos uploading slowly?",
-          "a": "Each photo is resized and compressed in your browser before upload to keep storage costs down. With 100 photos this usually takes 10–15 seconds. If it's stuck at the same number for over a minute, refresh and try again — your draft text fields are saved automatically."
-        },
-        "downgrade": {
-          "q": "What happens to my listing if I downgrade my plan?",
-          "a": "Switching between Pro and Premium on the Subscription page takes effect right away: the page shows what you'll be charged before you confirm, and a new billing month starts that day. To go down to Free, cancel your plan: you keep paid access until the end of the current billing period, then your account moves to Free. Existing photos and content are never touched by a tier change."
-        },
-        "pause": {
-          "q": "Can I pause my listing temporarily?",
-          "a": "Yes. On the website, go to My Profile, open the listing and choose Pause listing. In the vendor app, tap the pause button on the listing's card in Profile. While it's paused, the listing is hidden from search and browsing, and its page tells hosts you're not taking new inquiries. Your conversations, calendar and reviews stay as they are. Choose Resume listing whenever you're ready to go live again."
-        },
-        "blocked_title": {
-          "q": "Do hosts see the title I add to a blocked date?",
-          "a": "No. Titles are private to you. Hosts only see the date as unavailable — your note (\"Christian's birthday\", etc) never leaves your side of the app."
-        }
-      }
-    },
     "hosts": {
       "title": "Hosts",
       "items": {
+        "free": {
+          "q": "Is Vendora free for hosts?",
+          "a": "Yes. Browsing vendors and sending inquiries is free. To send an inquiry you'll need a free host account."
+        },
+        "find": {
+          "q": "How do I find vendors?",
+          "a": "Go to <vendors>Vendors</vendors> in the top menu. You can search by service, location and event date, browse by category or city, and sort the results. Explore shows photos and videos from vendors. You don't need an account to browse."
+        },
+        "contact": {
+          "q": "How do I contact a vendor?",
+          "a": "Open the vendor's page and choose Send Inquiry (Inquire in the app). Add your event date and a few details, then send. If you're not signed in, you'll be asked to log in or create a free host account first."
+        },
         "message": {
           "q": "How do I message a vendor after sending an inquiry?",
-          "a": "Open the inquiry from your Inbox. Once the vendor responds, the conversation lives there — you'll get a notification when they reply."
+          "a": "Open Inbox (in the website's menu, or the Inbox tab in the app) and choose the inquiry. Your whole conversation with the vendor is there, and you'll get a notification when they reply."
         },
         "payment_info": {
           "q": "Do I pay through Vendora?",
-          "a": "Not at this time. You arrange payment directly with your vendor, so Vendora never sees your card or bank details."
+          "a": "No. Vendora doesn't process payments between hosts and vendors. You arrange payment, deposits and any refunds directly with your vendor."
+        },
+        "problem": {
+          "q": "What happens if I have a problem with a vendor?",
+          "a": "Start by contacting the vendor. Prices, deposits, cancellations and refunds are agreed between you and the vendor, and Vendora isn't part of that agreement. If a vendor seems fraudulent or breaks our rules, use Report this profile on their page or email us at <email>hello@eventvendora.com</email>. See our <terms>Terms of Service</terms> for details."
+        }
+      }
+    },
+    "vendors": {
+      "title": "Vendors",
+      "items": {
+        "free": {
+          "q": "Is it free to list my business?",
+          "a": "Yes. The Free plan includes one listing at no cost. Pro and Premium are optional monthly plans. <signup>Sign up as a vendor</signup> to get started."
+        },
+        "commission": {
+          "q": "Does Vendora take a commission?",
+          "a": "No. Vendora takes no commission on your bookings. Hosts pay you directly."
+        },
+        "approval": {
+          "q": "How long does listing approval take?",
+          "a": "Our team reviews every new listing before it goes live, usually within 2–3 business days. We'll email you when it's approved."
+        },
+        "inquiries": {
+          "q": "How do hosts contact me?",
+          "a": "Hosts send you an inquiry from your listing page. It appears in your Inbox (in the website's menu, or the Inbox tab in the vendor app), and you'll get a notification. Reply there to keep the conversation going."
+        },
+        "pause": {
+          "q": "Can I pause my listing?",
+          "a": "Yes. On the website, go to My Profile, open the listing and choose Pause listing. In the vendor app, tap the pause button on the listing's card in Profile. While it's paused, your listing is hidden from browsing and search, and its page shows you're taking a break. Your conversations, calendar and reviews stay as they are. Resume whenever you're ready."
+        },
+        "downgrade": {
+          "q": "What happens to my listings if I change or downgrade my plan?",
+          "a": "Nothing is deleted. Your existing listings and photos stay as they are. On a smaller plan you just can't add more than that plan allows. For what you're charged, see \"What happens if I upgrade or downgrade?\" under Billing."
+        },
+        "blocked_title": {
+          "q": "Do hosts see the title of a blocked calendar date?",
+          "a": "No. Hosts only see that the day is unavailable. The title is just for you."
+        },
+        "photos": {
+          "q": "Why are my photos taking a while to upload?",
+          "a": "Large photos are resized before they upload, so a big batch can take a little while. On the website each photo can be up to 10 MB, with up to 100 per listing. iPhone HEIC photos aren't supported yet, so convert them to JPEG first. If an upload seems stuck for more than a minute, check your connection, refresh the page and try again."
         }
       }
     },
     "billing": {
       "title": "Billing",
       "items": {
-        "invoice": {
-          "q": "How do I download an invoice for my plan?",
-          "a": "Vendor Subscription page → Billing panel → click View next to any invoice to open the secure invoice PDF. Right-click → Save to download."
-        },
         "card": {
-          "q": "Where do I update my card?",
-          "a": "Subscription page → Billing panel → Update. Opens the secure payment-method page."
+          "q": "How do I update my payment method?",
+          "a": "Go to Subscription (under More in the menu), then Billing → Payment method → Update. This opens Stripe's secure page, where you can change your card."
+        },
+        "invoice": {
+          "q": "How do I view or download my Vendora invoice or receipt?",
+          "a": "Go to Subscription → Billing → Invoices. Choose View to open an invoice, or PDF to download it. These are the invoices for your own Vendora plan."
         },
         "cancel": {
-          "q": "How do I cancel my plan?",
-          "a": "Subscription page → Billing panel → Cancel plan. Your plan stops renewing, and you keep paid access until the end of the current billing period; after that your account moves to Free. Canceling doesn't delete your account."
+          "q": "How do I cancel my subscription?",
+          "a": "Go to Subscription → Billing → Cancel plan. This opens Stripe's secure billing page, where you confirm the cancellation. On iPhone, manage your plan on the website."
+        },
+        "after_cancel": {
+          "q": "What happens when I cancel?",
+          "a": "Your plan won't renew and you won't be charged again. You keep paid access until the end of the current billing period, and then your account moves to the Free plan. Canceling doesn't delete your account, listings or photos."
         },
         "delete": {
-          "q": "What happens to my plan if I delete my account?",
-          "a": "Deleting your account (Settings → Delete account) cancels any active plan immediately. Your access ends when the account is deleted, you won't be charged again, and there's no refund for the unused part of the current billing period. If you only want to stop paying, cancel your plan instead and keep access until the period ends."
+          "q": "What happens if I delete my account while subscribed?",
+          "a": "Deleting your account isn't the same as canceling. When you delete your account (Settings → Delete account), any active subscription is canceled immediately, and your account is deleted only once that cancellation goes through. You won't be charged again, your access ends when the account is deleted, and there's no refund for the unused part of the current billing period. To stop paying but keep your account, cancel your plan instead."
+        },
+        "switch": {
+          "q": "What happens if I upgrade or downgrade?",
+          "a": "Switching between Pro and Premium takes effect right away. You're charged the new plan's monthly price that day, and a new billing month starts. Unused time on your old plan isn't refunded. Before you confirm, the Subscription page shows what you'll be charged. To move to Free, cancel your plan."
         }
       }
     }
@@ -72,7 +112,6 @@
   "legal": {
     "eyebrow": "— LEGAL",
     "terms": "Terms of Service",
-    "privacy": "Privacy Policy",
-    "refund": "Request a refund"
+    "privacy": "Privacy Policy"
   }
 }
