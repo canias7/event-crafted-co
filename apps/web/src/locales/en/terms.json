@@ -30,7 +30,7 @@
     "title": "5. For vendors",
     "items": [
       "Listing on Vendora is <strong>free</strong>, and Vendora takes <strong>no commission</strong> on your bookings: hosts pay you directly.",
-      "Pro and Premium are optional <strong>monthly</strong> plans (see Subscriptions below). You can pause a listing whenever you need to.",
+      "Pro and Premium are paid <strong>monthly</strong> plans; new subscriptions are paused for now (see Subscriptions below). You can pause a listing whenever you need to.",
       "Your profile, portfolio and reviews are <strong>your data</strong>. If you'd like a copy, email us and we'll send it to you.",
       "We do not accept money to influence search ranking. Sort order is determined by fit and quality signals only.",
       "Keep your profile, prices, photos and quotes accurate and up to date.",
@@ -41,10 +41,11 @@
   "subscriptions": {
     "title": "6. Subscriptions",
     "items": [
+      "<strong>New paid plans are paused for now.</strong> Every vendor can use the Free plan, and you can't start or switch to a paid plan until we reopen them. The rules below apply to anyone who already has a paid plan, and to paid plans when they return.",
       "The Free plan costs nothing. Pro and Premium are billed monthly through Stripe and <strong>renew automatically</strong> each month until you cancel.",
       "You can cancel any time from the Subscription page. <strong>Canceling</strong> stops your plan from renewing: you keep paid access until the end of the current billing period, aren't charged again, and your account stays open on the Free plan.",
       "<strong>Deleting your account</strong> is different: any active plan is canceled immediately, your access ends when the account is deleted, you won't be charged again, and there's no refund for the unused part of the current billing period (see section 15).",
-      "You can switch between Pro and Premium from the Subscription page. Before you confirm, the page shows what you'll be charged and when your new billing month starts.",
+      "When paid plans are available, you can switch between Pro and Premium from the Subscription page. Before you confirm, the page shows what you'll be charged and when your new billing month starts.",
       "If we change a plan's price, we'll tell you before the new price applies to your plan."
     ]
   },

@@ -73,7 +73,7 @@ export default function MoreScreen() {
   function openSupport() {
     dialog.show({
       icon: "help-circle",
-      title: "Help & support",
+      title: "Contact us",
       message:
         "Questions, issues, or feedback? Email us and a real person will read it.",
       confirmLabel: "Email support",
@@ -203,8 +203,17 @@ export default function MoreScreen() {
           <GroupRow
             divider
             icon={<Feather name="help-circle" size={18} color={INK} />}
-            label="Help & support"
-            body="FAQs, guides, and contact us"
+            label="Help & FAQ"
+            body="Answers to common questions"
+            onPress={() => {
+              Linking.openURL("https://eventvendora.com/help").catch(() => {});
+            }}
+          />
+          <GroupRow
+            divider
+            icon={<Feather name="mail" size={18} color={INK} />}
+            label="Contact us"
+            body="Email the Vendora team"
             onPress={openSupport}
           />
           <GroupRow

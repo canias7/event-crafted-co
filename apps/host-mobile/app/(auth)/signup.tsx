@@ -17,6 +17,7 @@
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   ScrollView,
   Platform,
   Pressable,
@@ -334,6 +335,35 @@ export default function SignupScreen() {
                     : "Verify"}
               </Text>
             </Pressable>
+
+            {stage === "form" ? (
+              <Text
+                style={{
+                  fontFamily: SERIF,
+                  color: INK_DIM,
+                  fontSize: 12,
+                  lineHeight: 17,
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                By signing up, you agree to our{" "}
+                <Text
+                  style={{ fontFamily: SERIF_BOLD, color: BRONZE }}
+                  onPress={() => void Linking.openURL("https://eventvendora.com/terms")}
+                >
+                  Terms of Service
+                </Text>{" "}
+                and{" "}
+                <Text
+                  style={{ fontFamily: SERIF_BOLD, color: BRONZE }}
+                  onPress={() => void Linking.openURL("https://eventvendora.com/privacy")}
+                >
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            ) : null}
 
             {stage === "code" ? (
               <Pressable

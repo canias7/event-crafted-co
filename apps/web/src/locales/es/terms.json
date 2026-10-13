@@ -30,7 +30,7 @@
     "title": "5. Para proveedores",
     "items": [
       "Publicar en Vendora es <strong>gratis</strong> y Vendora <strong>no cobra comisión</strong> por tus reservas: los anfitriones te pagan directamente.",
-      "Pro y Premium son planes opcionales que se cobran <strong>cada mes</strong> (consulta Suscripciones más abajo). Puedes pausar un anuncio cuando lo necesites.",
+      "Pro y Premium son planes de pago que se cobran <strong>cada mes</strong>; las nuevas suscripciones están en pausa por ahora (consulta Suscripciones más abajo). Puedes pausar un anuncio cuando lo necesites.",
       "Tu perfil, tu portafolio y tus reseñas son <strong>tus datos</strong>. Si quieres una copia, escríbenos y te la enviamos.",
       "No aceptamos dinero para influir en el orden de los resultados de búsqueda. El orden se determina únicamente por señales de afinidad y calidad.",
       "Mantén tu perfil, tus precios, tus fotos y tus cotizaciones correctos y actualizados.",
@@ -41,10 +41,11 @@
   "subscriptions": {
     "title": "6. Suscripciones",
     "items": [
+      "<strong>Los nuevos planes de pago están en pausa por ahora.</strong> Todos los proveedores pueden usar el plan Free, y no puedes contratar ni cambiar a un plan de pago hasta que los reabramos. Las reglas de abajo se aplican a quien ya tiene un plan de pago y a los planes de pago cuando vuelvan.",
       "El plan Free no cuesta nada. Pro y Premium se cobran cada mes a través de Stripe y se <strong>renuevan automáticamente</strong> cada mes hasta que los canceles.",
       "Puedes cancelar cuando quieras desde la página Suscripción. <strong>Cancelar</strong> hace que tu plan deje de renovarse: conservas el acceso de pago hasta el final del período de facturación actual, no se te vuelve a cobrar y tu cuenta sigue abierta en el plan Free.",
       "<strong>Eliminar tu cuenta</strong> es distinto: cualquier plan activo se cancela de inmediato, tu acceso termina cuando se elimina la cuenta, no se te vuelve a cobrar y no hay reembolso por la parte no usada del período de facturación actual (consulta la sección 15).",
-      "Puedes cambiar entre Pro y Premium desde la página Suscripción. Antes de confirmar, la página te muestra cuánto se te cobrará y cuándo empieza tu nuevo mes de facturación.",
+      "Cuando los planes de pago estén disponibles, podrás cambiar entre Pro y Premium desde la página Suscripción. Antes de confirmar, la página te muestra cuánto se te cobrará y cuándo empieza tu nuevo mes de facturación.",
       "Si cambiamos el precio de un plan, te avisaremos antes de que el nuevo precio se aplique a tu plan."
     ]
   },
