@@ -21,6 +21,7 @@ import { ScrollToTop } from "./components/shared/ScrollToTop";
 import { SkipLink } from "./components/SkipLink";
 import { AmbientBackground } from "./components/AmbientBackground";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
+import { AccountDeletionGate } from "./components/auth/AccountDeletionGate";
 
 // Lazy ship-on-mount component. CookieBanner only renders once for
 // users who haven't accepted, so deferring the chunk shaves the
@@ -102,6 +103,9 @@ const App = () => (
           <RealtimeProvider>
           <SkipLink />
           <ScrollToTop />
+          {/* A closed account in its 30-day grace period sees only the
+              restore / sign-out screen. */}
+          <AccountDeletionGate>
           <EmailVerificationBanner />
           <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
@@ -298,6 +302,7 @@ const App = () => (
               wasn't pulling its weight. We'll bring back a leaner
               walkthrough later. */}
           <CommandPaletteLauncher />
+          </AccountDeletionGate>
           <Suspense fallback={null}>
             <CookieBanner />
           </Suspense>

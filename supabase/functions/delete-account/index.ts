@@ -1,19 +1,24 @@
-// Deletes the signed-in user's account, cancelling any Stripe plan first.
+// Closes the signed-in user's account, cancelling any Stripe plan first.
 //
 // Before this existed, the website and both apps called the
-// request_account_deletion RPC directly. That removed the user and their
-// profile but left the Stripe subscription running, so a vendor on Pro or
-// Premium kept being charged after their account was gone.
+// request_account_deletion RPC directly, which left the Stripe
+// subscription running, so a vendor on Pro or Premium kept being charged
+// after their account was gone.
 //
 // Order matters: every live Stripe subscription on the profile's customer
 // is cancelled immediately (no proration, no refund: Vendora has no refund
-// policy to apply), and only once that succeeds is the account deleted. If
+// policy to apply), and only once that succeeds is the account closed. If
 // Stripe can't be reached the account is left alone and the caller gets an
-// error, so nobody ends up deleted-but-still-billed.
+// error, so nobody ends up closed-but-still-billed.
+//
+// Closing = a 30-day grace period (owner's call, Oct 2026):
+// request_account_deletion() sets profiles.deletion_scheduled_for 30 days
+// out and pauses the user's listings. Signing in before then shows a
+// restore screen. purge-deleted-accounts (daily cron) removes the user's
+// files and deletes the auth user once the date passes (migration
+// 20261013140000_account_deletion_grace.sql).
 //
 // The Stripe Customer itself is kept (invoice history for bookkeeping).
-// The webhook's customer.subscription.deleted handler updates a profile
-// that no longer exists, which is a harmless no-op.
 //
 // Required env:
 //   STRIPE_SECRET_KEY
@@ -22,7 +27,8 @@
 //   SUPABASE_ANON_KEY (for auth.getUser and the RPC via the user's JWT)
 //
 // Invoke from a client:
-//   const { error } = await supabase.functions.invoke("delete-account");
+//   const { data, error } = await supabase.functions.invoke("delete-account");
+//   // data: { scheduled_for: ISO timestamp of the purge }
 
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -116,12 +122,14 @@ serve(async (req: Request) => {
     }
   }
 
-  // Same deletion as before, run as the user so auth.uid() resolves.
-  const { error } = await userClient.rpc("request_account_deletion");
+  // Schedule the deletion, run as the user so auth.uid() resolves.
+  const { data: scheduledFor, error } = await userClient.rpc(
+    "request_account_deletion",
+  );
   if (error) {
     console.error("[delete-account] rpc failed:", error.message);
     return json(500, { error: "delete_failed", message: error.message });
   }
 
-  return json(200, { deleted: true });
+  return json(200, { scheduled_for: scheduledFor ?? null });
 });

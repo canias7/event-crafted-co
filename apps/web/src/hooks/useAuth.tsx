@@ -96,6 +96,10 @@ interface AuthCtx {
   // non-auth reason (network, 5xx). Lets guards stop spinning and offer
   // a retry instead of showing "Loading…" forever.
   profileStatus: ProfileStatus;
+  // When the user closed their account: the date it's permanently
+  // deleted. Null = active. While set, AccountDeletionGate replaces the
+  // whole site with a restore / sign-out screen.
+  deletionScheduledFor: string | null;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -113,6 +117,7 @@ const Ctx = createContext<AuthCtx>({
   hasHostAccess: false,
   loading: true,
   profileStatus: "idle",
+  deletionScheduledFor: null,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -131,6 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   >([]);
   const [loading, setLoading] = useState(true);
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
+  const [deletionScheduledFor, setDeletionScheduledFor] = useState<
+    string | null
+  >(null);
 
   // Tracks the latest in-flight loadProfile invocation. Each call
   // captures a generation number and bails out (without setState)
@@ -167,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (!data) {
       setProfileStatus("missing");
+      setDeletionScheduledFor(null);
       setProfile(null);
       setActiveEvent(null);
       setOwnListing(null);
@@ -174,6 +183,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const p = data as unknown as Profile;
+
+    // Closed account waiting out its 30-day grace period. Read on its
+    // own so a database without the column yet (before migration
+    // 20261013140000 is applied) still loads the profile.
+    const { data: del } = await supabase
+      .from("profiles")
+      .select("deletion_scheduled_for")
+      .eq("id", userId)
+      .maybeSingle();
+    if (isStale()) return;
+    setDeletionScheduledFor(
+      (del as { deletion_scheduled_for?: string | null } | null)
+        ?.deletion_scheduled_for ?? null,
+    );
+
     setProfile(p);
     setProfileStatus("ready");
     // host_events removed — multi-event planner workspace is no
@@ -250,6 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadGenRef.current++;
         setProfile(null);
         setProfileStatus("idle");
+        setDeletionScheduledFor(null);
         setActiveEvent(null);
         setOwnListing(null);
         setVendorMemberships([]);
@@ -313,6 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadGenRef.current++;
     setProfile(null);
     setProfileStatus("idle");
+    setDeletionScheduledFor(null);
     setActiveEvent(null);
     setOwnListing(null);
     setVendorMemberships([]);
@@ -355,6 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasHostAccess,
         loading,
         profileStatus,
+        deletionScheduledFor,
         signOut,
         refreshProfile,
       }}

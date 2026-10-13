@@ -9,7 +9,8 @@ import { EmailMenu } from "@/components/shared/EmailMenu";
 // footer. Google requires this page to (1) name the app/developer,
 // (2) spell out the steps to request deletion, and (3) state what data
 // is deleted vs retained and any retention periods. Keep it in sync with
-// request_account_deletion() (migration 20260512120000) and the Privacy
+// the 30-day grace period (request_account_deletion() and the
+// purge-deleted-accounts job, migration 20261013140000) and the Privacy
 // Policy's retention section.
 export default function AccountDeletionPage() {
   const { t } = useTranslation("auth");
@@ -83,6 +84,7 @@ export default function AccountDeletionPage() {
               <li>
                 {t("account_deletion.deleted.listings")}
               </li>
+              <li>{t("account_deletion.deleted.files")}</li>
               <li>{t("account_deletion.deleted.messages")}</li>
               <li>{t("account_deletion.deleted.saved")}</li>
               <li>{t("account_deletion.deleted.push")}</li>
@@ -95,10 +97,10 @@ export default function AccountDeletionPage() {
                 <Trans i18nKey="account_deletion.kept.audit" ns="auth" components={strong} />
               </li>
               <li>
-                <Trans i18nKey="account_deletion.kept.legal" ns="auth" components={strong} />
+                <Trans i18nKey="account_deletion.kept.billing" ns="auth" components={strong} />
               </li>
               <li>
-                <Trans i18nKey="account_deletion.kept.backups" ns="auth" components={strong} />
+                <Trans i18nKey="account_deletion.kept.logs" ns="auth" components={strong} />
               </li>
             </ul>
           </Section>
