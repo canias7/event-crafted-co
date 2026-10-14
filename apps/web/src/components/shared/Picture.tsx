@@ -4,7 +4,7 @@
 // through to the <img> tag's regular src.
 import { forwardRef } from "react";
 
-export interface PictureSource {
+interface PictureSource {
   sources: Record<string, string>;
   img: { src: string; w: number; h: number };
 }

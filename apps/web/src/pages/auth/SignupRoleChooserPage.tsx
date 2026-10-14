@@ -9,10 +9,9 @@
 // Note: one email = one role. The DB enforces this with triggers
 // (block_vendor_insert_if_host / block_host_onboard_if_vendor).
 //
-// Visual: the split layout in the home page's format (AuthSplitLayout).
+// Visual: the simple centred sign-in layout (AuthSplitLayout).
 
 import { Link, Navigate } from "react-router-dom";
-import { CalendarHeart, Store } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthSplitLayout, AuthRoleChooser } from "@/components/auth/AuthSplitLayout";
 
@@ -32,8 +31,6 @@ export default function SignupRoleChooserPage() {
         hostTo="/signup/host"
         vendorTo="/signup/vendor"
         otherTo="/login"
-        hostIcon={<CalendarHeart className="h-5 w-5 md:h-6 md:w-6" />}
-        vendorIcon={<Store className="h-5 w-5 md:h-6 md:w-6" />}
         LinkComponent={Link}
       />
     </AuthSplitLayout>
