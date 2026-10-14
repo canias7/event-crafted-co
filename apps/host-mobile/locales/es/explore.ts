@@ -1,0 +1,36 @@
+export default {
+  title: "Explorar",
+  subtitle: "Anuncios, publicaciones, reels y novedades de proveedores aprobados",
+  tabs: {
+    listing: "Anuncios",
+    grid: "Publicaciones",
+    reels: "Reels",
+    buzz: "Novedades",
+  },
+  empty: {
+    posts: "Aún no hay publicaciones de proveedores.",
+    reels: "Aún no hay reels.",
+    buzz: "Aún no hay novedades.",
+    listings: "Aún no hay anuncios de proveedores.",
+    category: "Aún no hay anuncios en esta categoría.",
+  },
+  all: "Todos",
+  other: "Otros",
+  noPhotos: "Este anuncio aún no tiene fotos",
+  vendorFallback: "Proveedor",
+  locationFallback: "Anuncio del marketplace",
+  save: "Guardar",
+  unsave: "Quitar de guardados",
+  price: {
+    from: "Desde {{price}}",
+    upTo: "Hasta {{price}}",
+    custom: "Precio a la medida",
+  },
+  pricingModels: {
+    fixed_packages: "Paquetes fijos",
+    hourly: "Por hora",
+    per_person: "Por persona",
+    starting_at: "Desde",
+    custom_quote: "Cotización a la medida",
+  },
+};

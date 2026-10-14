@@ -10,14 +10,16 @@
 // fields read across every vendor_profiles row the user owns.
 
 import { supabase } from "./supabase";
+import { i18n } from "./i18n";
 
 export type SetupRoute = "edit-profile" | "listing" | "calendar" | null;
 
 export interface SetupItem {
   key: string;
-  title: string;
+  /** Read at render time, in the app's current language. */
+  readonly title: string;
   /** One-line explanation shown under the title in the checklist. */
-  subtitle: string;
+  readonly subtitle: string;
   done: boolean;
   /** Optional items don't count toward the progress number. */
   optional?: boolean;
@@ -41,6 +43,19 @@ export interface SetupState {
    * surfaces the optional "add a few more" nudge once setup is done.
    */
   photoCount: number;
+}
+
+// Title and subtitle are getters, so whoever renders an item gets it in
+// the language the app is in at that moment (the state can be loaded
+// before a language switch). Texts live in locales/<lang>/setupChecklist.ts
+// under the item's key.
+function withLabels(items: Omit<SetupItem, "title" | "subtitle">[]): SetupItem[] {
+  return items.map((item) =>
+    Object.defineProperties({ ...item }, {
+      title: { get: () => i18n.t(`setupChecklist.${item.key}.title`), enumerable: true },
+      subtitle: { get: () => i18n.t(`setupChecklist.${item.key}.subtitle`), enumerable: true },
+    }) as SetupItem,
+  );
 }
 
 function filled(v: unknown): boolean {
@@ -117,69 +132,53 @@ export async function loadSetupState(userId: string): Promise<SetupState> {
       l.application_status === "submitted",
   );
 
-  const items: SetupItem[] = [
+  const items: SetupItem[] = withLabels([
     {
       key: "identity",
-      title: "Business identity",
-      subtitle: "Your business name, shown everywhere on Vendora.",
       done: filled(identity.business_name) || filled(primary?.business_name),
       route: "edit-profile",
     },
     {
       key: "logo",
-      title: "Profile photo or logo",
-      subtitle: "Put a face on your brand.",
       done: filled(identity.logo_url) || filled(primary?.logo_url),
       route: "edit-profile",
     },
     {
       key: "description",
-      title: "Description",
-      subtitle: "Tell hosts what makes you great.",
       done: filled(identity.bio) || filled(primary?.bio),
       route: "edit-profile",
     },
     {
       key: "category",
-      title: "Category",
-      subtitle: "So the right hosts can find you.",
       done:
         filled(identity.category) || listings.some((l) => filled(l.category)),
       route: "listing",
     },
     {
       key: "location",
-      title: "Location & service area",
-      subtitle: "Where you work — hosts search by area.",
       done:
         filled(identity.location) || listings.some((l) => filled(l.location)),
       route: "listing",
     },
     {
       key: "pricing",
-      title: "Starting price",
-      subtitle: "A price range helps hosts reach out with confidence.",
       done: hasPricing,
       route: "listing",
     },
     {
       key: "listing",
-      title: "Publish a listing",
-      subtitle: "Your listing is your storefront on the marketplace.",
       done: hasPublishedListing,
       route: "listing",
     },
     {
       key: "availability",
-      title: "Availability",
-      subtitle: "Block the dates you can't take bookings.",
       done: availabilityDone,
       route: "calendar",
     },
     // No "Verification" item: verification is granted by the Vendora
     // team from the admin panel — vendors can't apply for it, so a
     // checklist step they can't act on is just noise (user decision).
-  ];
+  ]);
 
   const required = items.filter((i) => !i.optional);
   const requiredDone = required.filter((i) => i.done).length;

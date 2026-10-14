@@ -26,6 +26,8 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { i18n, intlLocale, useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
@@ -63,14 +65,14 @@ function formatDateSeparator(iso: string): string {
     d.getMonth() === today.getMonth() &&
     d.getDate() === today.getDate()
   )
-    return "Today";
+    return i18n.t("partnerThread.dates.today");
   if (
     d.getFullYear() === yesterday.getFullYear() &&
     d.getMonth() === yesterday.getMonth() &&
     d.getDate() === yesterday.getDate()
   )
-    return "Yesterday";
-  return d.toLocaleDateString(undefined, {
+    return i18n.t("partnerThread.dates.yesterday");
+  return d.toLocaleDateString(intlLocale(), {
     month: "short",
     day: "numeric",
     year: d.getFullYear() === today.getFullYear() ? undefined : "numeric",
@@ -111,6 +113,8 @@ export default function PartnerThreadScreen() {
   const router = useRouter();
   const { id: threadId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { t: tr, lang } = useT("partnerThread");
+  const categoryNames = useCategoryNames();
   const [header, setHeader] = useState<PartnerThreadHeader | null>(null);
   const [messages, setMessages] = useState<PartnerMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +150,7 @@ export default function PartnerThreadScreen() {
     const partner = myVendorId === t.vendor_a_id ? t.vendor_b : t.vendor_a;
     setHeader({
       myVendorId,
-      partnerName: partner?.business_name ?? "Partner",
+      partnerName: partner?.business_name ?? i18n.t("partnerThread.partner"),
       partnerCategory: partner?.category ?? null,
     });
   }, [threadId, user?.id]);
@@ -210,7 +214,7 @@ export default function PartnerThreadScreen() {
     });
     setSending(false);
     if (error) {
-      Alert.alert("Couldn't send", error.message);
+      Alert.alert(tr("sendFailed"), error.message);
       return;
     }
     setDraft("");
@@ -227,7 +231,7 @@ export default function PartnerThreadScreen() {
     );
   }
 
-  const enriched = useMemo(() => enrichMessages(messages), [messages]);
+  const enriched = useMemo(() => enrichMessages(messages), [messages, lang]);
   const partnerInitial = (header?.partnerName?.[0] ?? "?").toUpperCase();
 
   return (
@@ -277,14 +281,14 @@ export default function PartnerThreadScreen() {
               style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}
               numberOfLines={1}
             >
-              {header?.partnerName ?? "Partner"}
+              {header?.partnerName ?? tr("partner")}
             </Text>
             {header?.partnerCategory ? (
               <Text
                 style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}
                 numberOfLines={1}
               >
-                {header.partnerCategory}
+                {categoryNames.sub(header.partnerCategory)}
               </Text>
             ) : null}
           </View>
@@ -308,7 +312,7 @@ export default function PartnerThreadScreen() {
             ) : enriched.length === 0 ? (
               <View style={{ alignItems: "center", paddingTop: 80 }}>
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
-                  Say hi to start the conversation.
+                  {tr("empty")}
                 </Text>
               </View>
             ) : (
@@ -327,7 +331,7 @@ export default function PartnerThreadScreen() {
                           letterSpacing: 0.8,
                         }}
                       >
-                        — {m.dateBreak.toUpperCase()} —
+                        — {m.dateBreak.toLocaleUpperCase(intlLocale(lang))} —
                       </Text>
                     ) : null}
                     <View
@@ -393,7 +397,7 @@ export default function PartnerThreadScreen() {
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
-                placeholder="Message your partner…"
+                placeholder={tr("composerPlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 style={{ fontFamily: SERIF,

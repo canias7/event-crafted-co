@@ -30,6 +30,7 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { useT } from "@/lib/i18n";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -82,6 +83,13 @@ function parseDob(input: string): string | null {
   return `${yyyy}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+// Proof documents are stored as "Document 1", "Document 2"… (the admin
+// panel reads them in English); show them in the app's language.
+function docLabel(name: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  const m = name.match(/^Document (\d+)$/);
+  return m ? t("docs.numbered", { n: m[1] }) : name;
+}
+
 function dobToDisplay(iso: string | null): string {
   if (!iso) return "";
   const [y, mo, d] = iso.split("-");
@@ -92,6 +100,7 @@ export default function VerificationScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const dialog = useBrandDialog();
+  const { t } = useT("verification");
 
   const [loading, setLoading] = useState(true);
   const [eligible, setEligible] = useState(false);
@@ -178,8 +187,8 @@ export default function VerificationScreen() {
     if (!perm.granted) {
       dialog.show({
         icon: "image",
-        title: "Library access needed",
-        message: "Enable photo access in Settings to upload documents.",
+        title: t("alerts.library.title"),
+        message: t("alerts.library.message"),
       });
       return;
     }
@@ -196,7 +205,7 @@ export default function VerificationScreen() {
     if (doc.path) return doc.path; // already uploaded (resubmit round)
     const { uri, mime } = await compressForUpload({ uri: doc.uri! });
     const bytes = await (await fetch(uri)).arrayBuffer();
-    if (bytes.byteLength === 0) throw new Error("Empty file");
+    if (bytes.byteLength === 0) throw new Error(t("alerts.emptyFile"));
     const path = `${user!.id}/${slug}-${Date.now()}.jpg`;
     const up = await supabase.storage
       .from("vendor-verifications")
@@ -248,15 +257,14 @@ export default function VerificationScreen() {
       await load();
       dialog.show({
         icon: "check-circle",
-        title: "Submitted for review",
-        message:
-          "We'll review your information within 1–3 business days. You'll get a notification the moment a decision is made.",
+        title: t("alerts.submitted.title"),
+        message: t("alerts.submitted.message"),
       });
     } catch (e) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't submit",
-        message: e instanceof Error ? e.message : "Please try again.",
+        title: t("alerts.submitFailed.title"),
+        message: e instanceof Error ? e.message : t("alerts.submitFailed.message"),
       });
     } finally {
       setSubmitting(false);
@@ -290,7 +298,7 @@ export default function VerificationScreen() {
         <Pressable onPress={onBack} hitSlop={10}>
           <Feather name="chevron-left" size={26} color={INK} />
         </Pressable>
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
+        <Text style={{ flexShrink: 1, textAlign: "center", marginHorizontal: 8, fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
           {title}
         </Text>
         <View style={{ width: 26 }} />
@@ -306,7 +314,7 @@ export default function VerificationScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
           showsVerticalScrollIndicator={false}
         >
-          <Header title="Verification" onBack={() => router.back()} />
+          <Header title={t("title")} onBack={() => router.back()} />
           <View style={{ alignItems: "center", marginTop: 28 }}>
             <MaterialCommunityIcons name="shield-check-outline" size={70} color="#c9a86a" />
           </View>
@@ -319,14 +327,12 @@ export default function VerificationScreen() {
               color: INK,
             }}
           >
-            Get verified. Build trust.
+            {t("intro.title")}
           </Text>
           <Text
             style={{ fontFamily: SERIF, marginTop: 8, textAlign: "center", fontSize: 14, lineHeight: 21, color: INK_DIM }}
           >
-            {PLANS_PAUSED
-              ? "The verified badge tells hosts a real person and a real business are behind your profile. Applying isn't available on the Free plan yet."
-              : "The verified badge tells hosts a real person and a real business are behind your profile. Applying is included with Pro and Premium plans — approval is always reviewed by our team."}
+            {PLANS_PAUSED ? t("upsell.bodyPaused") : t("upsell.body")}
           </Text>
           {/* Plans paused (lib/plans.ts): no upgrade button. */}
           {!PLANS_PAUSED ? (
@@ -342,7 +348,7 @@ export default function VerificationScreen() {
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-              Upgrade to apply
+              {t("upsell.cta")}
             </Text>
           </Pressable>
           ) : null}
@@ -360,29 +366,29 @@ export default function VerificationScreen() {
     const iconColor = s === "approved" ? "#14161a" : s === "needs_info" ? "#b23a34" : "#8a6f3e";
     const title =
       s === "approved"
-        ? "You're verified!"
+        ? t("status.approved.title")
         : s === "needs_info"
-          ? "We need a little more"
+          ? t("status.needsInfo.title")
           : s === "rejected"
-            ? "Not approved this time"
-            : "Under review";
+            ? t("status.rejected.title")
+            : t("status.underReview.title");
     const body =
       s === "approved"
-        ? "Your verified badge is live on your public profile. Hosts browsing Vendora now see it next to your name."
+        ? t("status.approved.body")
         : s === "needs_info"
           ? request.admin_note
-            ? `Our team says: ${request.admin_note}`
-            : "We need additional information before we can approve your request. Update your details and resubmit."
+            ? t("status.needsInfo.note", { note: request.admin_note })
+            : t("status.needsInfo.body")
           : s === "rejected"
-            ? request.admin_note ?? "Reach out to support if you think this was a mistake."
-            : "Your request is being reviewed. This usually takes 1–3 business days — we'll notify you the moment a decision is made.";
+            ? request.admin_note ?? t("status.rejected.body")
+            : t("status.underReview.body");
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 132 }}
           showsVerticalScrollIndicator={false}
         >
-          <Header title="Verification" onBack={() => router.back()} />
+          <Header title={t("title")} onBack={() => router.back()} />
           <View
             style={{
               marginTop: 24,
@@ -433,7 +439,7 @@ export default function VerificationScreen() {
               >
                 <MaterialCommunityIcons name="shield-check" size={16} color="#8a6f3e" />
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>
-                  Verified vendor
+                  {t("status.badge")}
                 </Text>
               </View>
             ) : null}
@@ -454,7 +460,7 @@ export default function VerificationScreen() {
               }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-                Update & resubmit
+                {t("status.resubmit")}
               </Text>
             </Pressable>
           ) : null}
@@ -474,7 +480,7 @@ export default function VerificationScreen() {
       >
         {step === "intro" ? (
           <>
-            <Header title="Verification" onBack={() => router.back()} />
+            <Header title={t("title")} onBack={() => router.back()} />
             <View style={{ alignItems: "center", marginTop: 20 }}>
               <MaterialCommunityIcons name="shield-check" size={76} color="#c9a86a" />
             </View>
@@ -487,21 +493,20 @@ export default function VerificationScreen() {
                 color: INK,
               }}
             >
-              Get verified. Build trust.
+              {t("intro.title")}
             </Text>
             <Text
               style={{ fontFamily: SERIF, marginTop: 6, textAlign: "center", fontSize: 13, lineHeight: 19, color: INK_DIM }}
             >
-              Verified vendors stand out and give clients confidence in your
-              business.
+              {t("intro.subtitle")}
             </Text>
             <View style={{ marginTop: 24, gap: 16 }}>
               {[
-                { icon: "user-check", t: "Identity verification", s: "Confirm who you are" },
-                { icon: "briefcase", t: "Business verification", s: "Confirm your business info" },
-                { icon: "file-text", t: "Document review", s: "We'll review and verify your info" },
+                { icon: "user-check", key: "identity" },
+                { icon: "briefcase", key: "business" },
+                { icon: "file-text", key: "documents" },
               ].map((r) => (
-                <View key={r.t} style={{ flexDirection: "row", alignItems: "center" }}>
+                <View key={r.key} style={{ flexDirection: "row", alignItems: "center" }}>
                   <View
                     style={{
                       width: 46,
@@ -516,9 +521,9 @@ export default function VerificationScreen() {
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
-                      {r.t}
+                      {t(`intro.steps.${r.key}.title`)}
                     </Text>
-                    <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 13, color: INK_DIM }}>{r.s}</Text>
+                    <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 13, color: INK_DIM }}>{t(`intro.steps.${r.key}.subtitle`)}</Text>
                   </View>
                 </View>
               ))}
@@ -534,16 +539,12 @@ export default function VerificationScreen() {
               }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginBottom: 8 }}>
-                What you'll get
+                {t("intro.benefitsTitle")}
               </Text>
-              {[
-                "Verified badge on your profile",
-                "More visibility in search",
-                "Build trust with more clients",
-              ].map((t) => (
-                <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
+              {(["badge", "visibility", "trust"] as const).map((b) => (
+                <View key={b} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
                   <Feather name="check" size={13} color={GOLD} />
-                  <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{t}</Text>
+                  <Text style={{ flexShrink: 1, fontFamily: SERIF, fontSize: 13, color: INK }}>{t(`intro.benefits.${b}`)}</Text>
                 </View>
               ))}
             </View>
@@ -559,7 +560,7 @@ export default function VerificationScreen() {
               }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-                Start verification
+                {t("intro.start")}
               </Text>
             </Pressable>
           </>
@@ -568,20 +569,19 @@ export default function VerificationScreen() {
         {step === "identity" ? (
           <>
             <Header
-              title="Identity verification"
+              title={t("identity.title")}
               onBack={() => (editing && request ? setEditing(false) : setStep("intro"))}
             />
             <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 16 }}>
-              Your legal details stay private — they're only used to verify
-              your identity.
+              {t("identity.subtitle")}
             </Text>
-            <Field label="Legal first name" required>
-              <Input value={firstName} onChangeText={setFirstName} placeholder="Jessica" />
+            <Field label={t("identity.firstName.label")} required>
+              <Input value={firstName} onChangeText={setFirstName} placeholder={t("identity.firstName.placeholder")} />
             </Field>
-            <Field label="Legal last name" required>
-              <Input value={lastName} onChangeText={setLastName} placeholder="Brown" />
+            <Field label={t("identity.lastName.label")} required>
+              <Input value={lastName} onChangeText={setLastName} placeholder={t("identity.lastName.placeholder")} />
             </Field>
-            <Field label="Date of birth (MM/DD/YYYY)">
+            <Field label={t("identity.dob")}>
               <Input
                 value={dobText}
                 onChangeText={setDobText}
@@ -590,16 +590,16 @@ export default function VerificationScreen() {
               />
             </Field>
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginTop: 8, marginBottom: 8 }}>
-              Government-issued ID
+              {t("identity.govId")}
             </Text>
             <DocTile
-              label="Upload front of ID"
+              label={t("identity.uploadFront")}
               doc={idFront}
               onPick={() => pickImage(setIdFront, "ID front")}
               onClear={() => setIdFront(null)}
             />
             <DocTile
-              label="Upload back of ID (optional)"
+              label={t("identity.uploadBack")}
               doc={idBack}
               onPick={() => pickImage(setIdBack, "ID back")}
               onClear={() => setIdBack(null)}
@@ -609,16 +609,16 @@ export default function VerificationScreen() {
                 if (!identityComplete) {
                   dialog.show({
                     icon: "list",
-                    title: "Almost there",
-                    message: "Legal name and a photo of the front of your ID are required.",
+                    title: t("alerts.almostThere"),
+                    message: t("alerts.identityRequired"),
                   });
                   return;
                 }
                 if (dobText.trim() && !parseDob(dobText)) {
                   dialog.show({
                     icon: "calendar",
-                    title: "Check the date",
-                    message: "Enter your date of birth as MM/DD/YYYY.",
+                    title: t("alerts.checkDate.title"),
+                    message: t("alerts.checkDate.message"),
                   });
                   return;
                 }
@@ -633,33 +633,33 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>{t("continue")}</Text>
             </Pressable>
           </>
         ) : null}
 
         {step === "business" ? (
           <>
-            <Header title="Business verification" onBack={() => setStep("identity")} />
+            <Header title={t("business.title")} onBack={() => setStep("identity")} />
             <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 16 }}>
-              Tell us about your business.
+              {t("business.subtitle")}
             </Text>
-            <Field label="Business / Display name" required>
-              <Input value={bizName} onChangeText={setBizName} placeholder="Blush & Bloom Events" />
+            <Field label={t("business.name.label")} required>
+              <Input value={bizName} onChangeText={setBizName} placeholder={t("business.name.placeholder")} />
             </Field>
-            <Field label="Business category">
-              <Input value={bizCategory} onChangeText={setBizCategory} placeholder="Event Planning" />
+            <Field label={t("business.category.label")}>
+              <Input value={bizCategory} onChangeText={setBizCategory} placeholder={t("business.category.placeholder")} />
             </Field>
-            <Field label="Business email">
+            <Field label={t("business.email.label")}>
               <Input
                 value={bizEmail}
                 onChangeText={setBizEmail}
-                placeholder="hello@yourbusiness.com"
+                placeholder={t("business.email.placeholder")}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
             </Field>
-            <Field label="Business phone">
+            <Field label={t("business.phone")}>
               <Input
                 value={bizPhone}
                 onChangeText={setBizPhone}
@@ -667,28 +667,27 @@ export default function VerificationScreen() {
                 keyboardType="phone-pad"
               />
             </Field>
-            <Field label="Business address or service area">
-              <Input value={bizAddress} onChangeText={setBizAddress} placeholder="Charlotte, North Carolina, USA" />
+            <Field label={t("business.address.label")}>
+              <Input value={bizAddress} onChangeText={setBizAddress} placeholder={t("business.address.placeholder")} />
             </Field>
-            <Field label="Website or social (optional)">
+            <Field label={t("business.website.label")}>
               <Input
                 value={website}
                 onChangeText={setWebsite}
-                placeholder="www.yourbusiness.com"
+                placeholder={t("business.website.placeholder")}
                 autoCapitalize="none"
               />
             </Field>
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK, marginTop: 8 }}>
-              Proof of business
+              {t("business.proof.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK_DIM, marginTop: 2, marginBottom: 8 }}>
-              Add a photo of at least one document — insurance certificate,
-              business license, or registration.
+              {t("business.proof.body")}
             </Text>
             {docs.map((d, i) => (
               <DocTile
                 key={`${d.name}-${i}`}
-                label={d.name}
+                label={docLabel(d.name, t)}
                 doc={d}
                 onPick={() => {}}
                 onClear={() => setDocs((cur) => cur.filter((_, j) => j !== i))}
@@ -722,7 +721,7 @@ export default function VerificationScreen() {
               >
                 <Feather name="plus" size={15} color={INK} />
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
-                  Add {docs.length === 0 ? "a document" : "another document"}
+                  {docs.length === 0 ? t("business.proof.addFirst") : t("business.proof.addAnother")}
                 </Text>
               </Pressable>
             ) : null}
@@ -731,8 +730,8 @@ export default function VerificationScreen() {
                 if (!businessComplete) {
                   dialog.show({
                     icon: "list",
-                    title: "Almost there",
-                    message: "Business name and at least one proof document are required.",
+                    title: t("alerts.almostThere"),
+                    message: t("alerts.businessRequired"),
                   });
                   return;
                 }
@@ -747,28 +746,28 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>Continue</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>{t("continue")}</Text>
             </Pressable>
           </>
         ) : null}
 
         {step === "review" ? (
           <>
-            <Header title="Review & submit" onBack={() => setStep("business")} />
+            <Header title={t("review.title")} onBack={() => setStep("business")} />
             <Text style={{ fontFamily: SERIF, textAlign: "center", fontSize: 13, color: INK_DIM, marginBottom: 16 }}>
-              Please review your information before submitting.
+              {t("review.subtitle")}
             </Text>
             <SummaryCard
-              title="Identity"
+              title={t("review.identity")}
               lines={[
                 `${firstName.trim()} ${lastName.trim()}`.trim(),
-                dobText.trim() ? `DOB: ${dobText.trim()}` : "",
-                idBack ? "ID: front + back" : "ID: front",
+                dobText.trim() ? t("review.dob", { dob: dobText.trim() }) : "",
+                idBack ? t("review.idFrontBack") : t("review.idFront"),
               ].filter(Boolean)}
               onEdit={() => setStep("identity")}
             />
             <SummaryCard
-              title="Business"
+              title={t("review.business")}
               lines={[
                 bizName.trim(),
                 bizCategory.trim(),
@@ -778,8 +777,8 @@ export default function VerificationScreen() {
               onEdit={() => setStep("business")}
             />
             <SummaryCard
-              title={`Documents (${docs.length})`}
-              lines={docs.map((d) => d.name)}
+              title={t("review.documents", { count: docs.length })}
+              lines={docs.map((d) => docLabel(d.name, t))}
               onEdit={() => setStep("business")}
             />
             <View
@@ -795,12 +794,11 @@ export default function VerificationScreen() {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                 <Feather name="check-circle" size={14} color="#8a6f3e" />
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
-                  What happens next?
+                  {t("review.nextTitle")}
                 </Text>
               </View>
               <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13, lineHeight: 18, color: INK_DIM }}>
-                We'll review your information within 1–3 business days. You'll
-                be notified in the app once a decision has been made.
+                {t("review.nextBody")}
               </Text>
             </View>
             <Pressable
@@ -819,15 +817,14 @@ export default function VerificationScreen() {
                 <ActivityIndicator color={INK} />
               ) : (
                 <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-                  Submit for review
+                  {t("review.submit")}
                 </Text>
               )}
             </Pressable>
             <Text
               style={{ fontFamily: SERIF, marginTop: 10, textAlign: "center", fontSize: 12, color: INK_DIM, lineHeight: 16 }}
             >
-              By submitting, you agree to Vendora's Terms of Service and
-              Privacy Policy.
+              {t("review.terms")}
             </Text>
           </>
         ) : null}
@@ -848,6 +845,7 @@ function DocTile({
   onPick: () => void;
   onClear: () => void;
 }) {
+  const { t } = useT("verification");
   const has = !!doc && (!!doc.uri || !!doc.path);
   return (
     <Pressable
@@ -886,7 +884,7 @@ function DocTile({
       <View style={{ flex: 1, marginLeft: 11 }}>
         <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>{label}</Text>
         <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 12, color: INK_DIM }}>
-          {has ? (doc?.path && !doc?.uri ? "On file from your last submission" : "Ready to upload") : "JPG or PNG photo"}
+          {has ? (doc?.path && !doc?.uri ? t("docs.onFile") : t("docs.ready")) : t("docs.hint")}
         </Text>
       </View>
       {has ? (
@@ -909,6 +907,7 @@ function SummaryCard({
   lines: string[];
   onEdit: () => void;
 }) {
+  const { t } = useT("verification");
   return (
     <View
       style={{
@@ -921,11 +920,11 @@ function SummaryCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
+        <Text style={{ flexShrink: 1, fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>
           {title}
         </Text>
         <Pressable onPress={onEdit} hitSlop={8}>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>Edit</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>{t("review.edit")}</Text>
         </Pressable>
       </View>
       {lines.map((l) => (

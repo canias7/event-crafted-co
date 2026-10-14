@@ -26,6 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
 
 // Same palette as welcome.tsx / signup.tsx.
 const PAGE = "#14161a";
@@ -55,6 +56,7 @@ type Step = "credentials" | "code";
 export default function LoginScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("login");
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -84,21 +86,19 @@ export default function LoginScreen() {
     const r = data as { ok?: boolean; reason?: string } | null;
     if (!r?.ok) {
       if (r?.reason === "banned") {
-        setError("This account is currently locked. Please contact support if you think this is a mistake.");
+        setError(t("errors.banned"));
       } else if (r?.reason === "not_confirmed") {
-        setError("Your application is still under review. We'll email you the moment it's approved.");
+        setError(t("errors.notConfirmed"));
       } else if (r?.reason === "invalid_credentials") {
-        setError("Email or password is incorrect.");
+        setError(t("errors.invalidCredentials"));
       } else if (r?.reason === "wrong_app") {
-        setError(
-          "That email is a host account. Open the Vendora app to sign in.",
-        );
+        setError(t("errors.hostAccount"));
       } else {
-        setError("Couldn't start sign-in. Please try again.");
+        setError(t("errors.startFailed"));
       }
       return;
     }
-    setInfo("We emailed you a 6-digit code.");
+    setInfo(t("code.sent"));
     setCode("");
     setStep("code");
   }
@@ -106,7 +106,7 @@ export default function LoginScreen() {
   async function onSubmitCode() {
     setError(null);
     if (code.trim().length !== 6) {
-      setError("Enter the 6-digit code we emailed you.");
+      setError(t("errors.codeLength"));
       return;
     }
     setSubmitting(true);
@@ -127,16 +127,16 @@ export default function LoginScreen() {
     if (!r?.ok) {
       setSubmitting(false);
       const reason = r?.reason ?? "unknown";
-      if (reason === "invalid_code") setError("That code is incorrect.");
-      else if (reason === "expired") setError("That code expired. Request a new one.");
-      else if (reason === "too_many_attempts") setError("Too many attempts. Request a new code.");
-      else if (reason === "no_pending_code") setError("No pending code. Start over.");
-      else setError("Couldn't verify code.");
+      if (reason === "invalid_code") setError(t("errors.invalidCode"));
+      else if (reason === "expired") setError(t("errors.expired"));
+      else if (reason === "too_many_attempts") setError(t("errors.tooMany"));
+      else if (reason === "no_pending_code") setError(t("errors.noPending"));
+      else setError(t("errors.verifyFailed"));
       return;
     }
     if (!r.access_token || !r.refresh_token) {
       setSubmitting(false);
-      setError("Couldn't complete sign-in. Please try again.");
+      setError(t("errors.completeFailed"));
       return;
     }
     // The edge function already minted the session server-side (password +
@@ -174,22 +174,16 @@ export default function LoginScreen() {
       if (role !== "vendor" && role !== "admin") {
         await supabase.auth.signOut();
         setSubmitting(false);
-        setError(
-          "That email is a host account. Open the Vendora app to sign in.",
-        );
+        setError(t("errors.hostAccount"));
         return;
       }
       if (role === "vendor" && status !== "approved") {
         await supabase.auth.signOut();
         setSubmitting(false);
         if (status === "rejected") {
-          setError(
-            "Your vendor application wasn't approved. Reach out to support if you think this is a mistake.",
-          );
+          setError(t("errors.rejected"));
         } else {
-          setError(
-            "Your vendor application is still under review. We'll email you the moment it's approved.",
-          );
+          setError(t("errors.underReview"));
         }
         return;
       }
@@ -233,7 +227,7 @@ export default function LoginScreen() {
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
-              ← Back
+              ← {t("back")}
             </Text>
           </Pressable>
 
@@ -241,14 +235,14 @@ export default function LoginScreen() {
           {step === "credentials" ? (
             <>
               <StepHeader
-                eyebrow="SIGN IN"
-                title="Welcome back"
-                subtitle="Log in to plan your next event."
+                eyebrow={t("credentials.eyebrow")}
+                title={t("credentials.title")}
+                subtitle={t("credentials.subtitle")}
               />
 
               <View style={{ marginTop: 28, gap: 20 }}>
                 <View>
-                  <Text style={fieldLabel}>EMAIL</Text>
+                  <Text style={fieldLabel}>{t("credentials.email")}</Text>
                   <View style={inputRow}>
                     <MaterialCommunityIcons
                       name="email-outline"
@@ -272,7 +266,7 @@ export default function LoginScreen() {
                 </View>
 
                 <View>
-                  <Text style={fieldLabel}>PASSWORD</Text>
+                  <Text style={fieldLabel}>{t("credentials.password")}</Text>
                   <View style={inputRow}>
                     <MaterialCommunityIcons
                       name="lock-outline"
@@ -298,7 +292,7 @@ export default function LoginScreen() {
                       style={{ paddingLeft: 10 }}
                     >
                       <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14}}>
-                        {showPassword ? "Hide" : "Show"}
+                        {showPassword ? t("credentials.hide") : t("credentials.show")}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -313,7 +307,7 @@ export default function LoginScreen() {
                   style={primaryBtnFor(submitting || !email || !password)}
                 >
                   <Text style={primaryBtnTextFor(submitting || !email || !password)}>
-                    {submitting ? "Sending code…" : "Continue"}
+                    {submitting ? t("credentials.sending") : t("credentials.continue")}
                   </Text>
                 </TouchableOpacity>
                 <Text
@@ -325,7 +319,7 @@ export default function LoginScreen() {
                     color: SUBTLE,
                   }}
                 >
-                  We'll email you a 6-digit code to confirm it's you.
+                  {t("credentials.codeNote")}
                 </Text>
 
                 <TouchableOpacity
@@ -334,7 +328,7 @@ export default function LoginScreen() {
                   style={{ marginTop: 8, alignItems: "center" }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14 }}>
-                    Forgot your password?
+                    {t("credentials.forgot")}
                   </Text>
                 </TouchableOpacity>
 
@@ -344,9 +338,9 @@ export default function LoginScreen() {
                   style={{ marginTop: 8, alignItems: "center" }}
                 >
                   <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
-                    New here?{" "}
+                    {t("credentials.newHere")}{" "}
                     <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE}}>
-                      Create an account
+                      {t("credentials.createAccount")}
                     </Text>
                   </Text>
                 </TouchableOpacity>
@@ -355,14 +349,14 @@ export default function LoginScreen() {
           ) : (
             <>
               <StepHeader
-                eyebrow="ONE MORE STEP"
-                title="Check your email"
-                subtitle={`We sent a 6-digit code to ${email}. It expires in 10 minutes.`}
+                eyebrow={t("code.eyebrow")}
+                title={t("code.title")}
+                subtitle={t("code.subtitle", { email })}
               />
 
               <View style={{ marginTop: 28, gap: 20 }}>
                 <View>
-                  <Text style={fieldLabel}>6-DIGIT CODE</Text>
+                  <Text style={fieldLabel}>{t("code.label")}</Text>
                   <TextInput
                     inputMode="numeric"
                     keyboardType="number-pad"
@@ -402,7 +396,7 @@ export default function LoginScreen() {
                   style={primaryBtnFor(submitting || code.length !== 6)}
                 >
                   <Text style={primaryBtnTextFor(submitting || code.length !== 6)}>
-                    {submitting ? "Verifying…" : "Sign in"}
+                    {submitting ? t("code.verifying") : t("code.signIn")}
                   </Text>
                 </TouchableOpacity>
 
@@ -422,7 +416,7 @@ export default function LoginScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14}}>
-                      ← Use a different account
+                      ← {t("code.differentAccount")}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -431,7 +425,7 @@ export default function LoginScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14}}>
-                      Resend code
+                      {t("code.resend")}
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -39,6 +39,7 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -81,6 +82,7 @@ function one(v: unknown): string | null {
 export default function ResetPasswordScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("resetPassword");
   const [state, setState] = useState<State>("loading");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -150,7 +152,7 @@ export default function ResetPasswordScreen() {
         });
         if (!mounted.current) return;
         if (e) {
-          setError("This reset link has expired. Request a new one.");
+          setError(t("errors.expired"));
           setState("error");
           return;
         }
@@ -170,7 +172,7 @@ export default function ResetPasswordScreen() {
         });
         if (!mounted.current) return;
         if (e) {
-          setError("This reset link has expired. Request a new one.");
+          setError(t("errors.expired"));
           setState("error");
           return;
         }
@@ -191,7 +193,7 @@ export default function ResetPasswordScreen() {
       // Nothing usable yet — wait for the url event before giving up.
       if (!waitedForUrl) return;
       settled.current = true;
-      setError("This reset link is invalid. Request a new one.");
+      setError(t("errors.invalid"));
       setState("error");
     })();
   }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
@@ -199,7 +201,7 @@ export default function ResetPasswordScreen() {
   async function onSubmit() {
     setError(null);
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("errors.tooShort"));
       return;
     }
     setState("submitting");
@@ -233,7 +235,12 @@ export default function ResetPasswordScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }}>
         <AuthBackdrop />
         <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
-          <Pressable onPress={() => router.replace("/(auth)/login")} hitSlop={8}>
+          <Pressable
+            onPress={() => router.replace("/(auth)/login")}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t("back")}
+          >
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
         </View>
@@ -246,10 +253,10 @@ export default function ResetPasswordScreen() {
               color: INK,
             }}
           >
-            Link expired
+            {t("expired.title")}
           </Text>
           <Text style={{ fontFamily: SERIF, marginTop: 10, color: INK_DIM, fontSize: 15 }}>
-            {error ?? "This password reset link is no longer valid."}
+            {error ?? t("expired.body")}
           </Text>
           <Pressable
             onPress={() => router.replace("/(auth)/forgot-password")}
@@ -263,7 +270,7 @@ export default function ResetPasswordScreen() {
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
-              Request a new link
+              {t("expired.requestNew")}
             </Text>
           </Pressable>
           </AuthCard>
@@ -294,7 +301,7 @@ export default function ResetPasswordScreen() {
                 letterSpacing: -1,
               }}
             >
-              {state === "done" ? "Password updated" : "Set a new password"}
+              {state === "done" ? t("done.title") : t("form.title")}
             </Text>
             {state === "done" ? (
               <Text
@@ -305,7 +312,7 @@ export default function ResetPasswordScreen() {
                   lineHeight: 22,
                 }}
               >
-                You're signed in. Sending you to your inbox…
+                {t("done.body")}
               </Text>
             ) : (
               <>
@@ -317,8 +324,7 @@ export default function ResetPasswordScreen() {
                     lineHeight: 22,
                   }}
                 >
-                  Pick a password you don't use elsewhere. At least 8
-                  characters.
+                  {t("form.body")}
                 </Text>
 
                 <View style={{ marginTop: 24 }}>
@@ -329,7 +335,7 @@ export default function ResetPasswordScreen() {
                       letterSpacing: 0.8,
                     }}
                   >
-                    NEW PASSWORD
+                    {t("form.label")}
                   </Text>
                   <View
                     style={{
@@ -362,6 +368,8 @@ export default function ResetPasswordScreen() {
                       onPress={() => setShowPassword((v) => !v)}
                       hitSlop={8}
                       style={{ paddingHorizontal: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={showPassword ? t("form.hide") : t("form.show")}
                     >
                       <Feather
                         name={showPassword ? "eye-off" : "eye"}
@@ -391,7 +399,7 @@ export default function ResetPasswordScreen() {
                   }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
-                    {state === "submitting" ? "Saving…" : "Save password"}
+                    {state === "submitting" ? t("form.saving") : t("form.save")}
                   </Text>
                 </Pressable>
               </>

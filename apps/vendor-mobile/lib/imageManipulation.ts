@@ -22,6 +22,7 @@
 // compression.
 
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { i18n } from "@/lib/i18n";
 
 const MAX_DIMENSION = 2400;
 const JPEG_QUALITY = 0.85;
@@ -98,7 +99,7 @@ export async function prepareLogoForUpload(
   const ref = await ctx.renderAsync();
   const out = await ref.saveAsync({ format: SaveFormat.PNG, base64: true });
   if (!out.base64) {
-    throw new Error("Image processing returned no data.");
+    throw new Error(i18n.t("imageManipulation.noData"));
   }
   return { base64: out.base64, mime: "image/png", ext: "png" };
 }

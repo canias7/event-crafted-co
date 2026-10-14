@@ -69,6 +69,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SHADOW } from "@/lib/ui";
+import { useT } from "@/lib/i18n";
+
+type TFn = ReturnType<typeof useT>["t"];
 
 // Small palette inserted via the smile button. Tap one to append it
 // to the current draft. Designed for confirmations + emotional
@@ -116,17 +119,17 @@ function initialsOf(name: string): string {
   return s.charAt(0).toUpperCase();
 }
 
-function formatDateSeparator(iso: string): string {
+function formatDateSeparator(iso: string, t: TFn, locale: string): string {
   const d = new Date(iso);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const day = new Date(d);
   day.setHours(0, 0, 0, 0);
   const diff = Math.floor((today.getTime() - day.getTime()) / 86_400_000);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (diff === 0) return t("today");
+  if (diff === 1) return t("yesterday");
+  if (diff < 7) return d.toLocaleDateString(locale, { weekday: "long" });
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 type EnrichedMessage = DirectMessage & {
@@ -140,20 +143,20 @@ type EnrichedMessage = DirectMessage & {
   } | null;
 };
 
-function enrichMessages(msgs: DirectMessage[]): EnrichedMessage[] {
+function enrichMessages(msgs: DirectMessage[], t: TFn, locale: string): EnrichedMessage[] {
   const byId = new Map(msgs.map((m) => [m.id, m]));
   const out: EnrichedMessage[] = [];
   let lastLabel: string | null = null;
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i];
-    const label = formatDateSeparator(m.created_at);
+    const label = formatDateSeparator(m.created_at, t, locale);
     const dateBreak = label !== lastLabel ? label : null;
     lastLabel = label;
     const prev = i > 0 ? msgs[i - 1] : null;
     const next = i + 1 < msgs.length ? msgs[i + 1] : null;
     const sameSenderAsPrev =
       prev && prev.sender_role === m.sender_role && !dateBreak;
-    const nextLabel = next ? formatDateSeparator(next.created_at) : null;
+    const nextLabel = next ? formatDateSeparator(next.created_at, t, locale) : null;
     const sameSenderAsNext =
       next && next.sender_role === m.sender_role && nextLabel === label;
     let replyTo: EnrichedMessage["replyTo"] = null;
@@ -182,6 +185,8 @@ export default function ThreadScreen() {
   const router = useRouter();
   const { id: threadId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { t, lang, locale } = useT("thread");
+  const { t: tc } = useT("common");
   const [header, setHeader] = useState<ThreadHeader | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -224,26 +229,26 @@ export default function ThreadScreen() {
         reason,
       });
       if (error) {
-        Alert.alert("Couldn't send report", "Please try again in a moment.");
+        Alert.alert(t("report.failedTitle"), t("report.failedBody"));
         return;
       }
-      Alert.alert(
-        "Report received",
-        "Thanks — our team will review this thread.",
-      );
+      Alert.alert(t("report.sentTitle"), t("report.sentBody"));
     },
-    [user?.id, threadId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.id, threadId, lang],
   );
 
   const onReport = useCallback(() => {
-    Alert.alert("Report this thread", "Pick a reason:", [
-      { text: "Spam or scam", onPress: () => submitReport("spam") },
-      { text: "Harassment or abuse", onPress: () => submitReport("harassment") },
-      { text: "Inappropriate content", onPress: () => submitReport("inappropriate") },
-      { text: "Something else", onPress: () => submitReport("other") },
-      { text: "Cancel", style: "cancel" },
+    // The reason values saved to thread_reports stay English.
+    Alert.alert(t("report.title"), t("report.pick"), [
+      { text: t("report.spam"), onPress: () => submitReport("spam") },
+      { text: t("report.harassment"), onPress: () => submitReport("harassment") },
+      { text: t("report.inappropriate"), onPress: () => submitReport("inappropriate") },
+      { text: t("report.other"), onPress: () => submitReport("other") },
+      { text: tc("actions.cancel"), style: "cancel" },
     ]);
-  }, [submitReport]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitReport, lang]);
 
   // Header overflow → quick options. Real mute toggle persists in
   // thread_mutes; real report writes to thread_reports for admin
@@ -252,7 +257,7 @@ export default function ThreadScreen() {
     const opts: Array<{ text: string; onPress?: () => void; style?: "cancel" | "destructive" }> = [];
     if (header?.vendorId || header?.vendorSlug) {
       opts.push({
-        text: "View vendor profile",
+        text: t("menu.viewProfile"),
         onPress: () => {
           const target = header?.vendorSlug ?? header?.vendorId;
           if (target) router.push(`/(host)/vendor/${target}` as never);
@@ -260,28 +265,31 @@ export default function ThreadScreen() {
       });
     }
     opts.push({
-      text: muted ? "Unmute notifications" : "Mute notifications",
+      text: muted ? t("menu.unmute") : t("menu.mute"),
       onPress: toggleMute,
     });
     opts.push({
-      text: "Report",
+      text: t("menu.report"),
       style: "destructive",
       onPress: onReport,
     });
-    opts.push({ text: "Cancel", style: "cancel" });
-    Alert.alert(header?.otherName ?? "Conversation", undefined, opts);
-  }, [header, router, muted, toggleMute, onReport]);
+    opts.push({ text: tc("actions.cancel"), style: "cancel" });
+    Alert.alert(
+      header ? header.otherName || t("vendorFallback") : t("conversation"),
+      undefined,
+      opts,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header, router, muted, toggleMute, onReport, lang]);
 
   // Composer "+" tap. The host build doesn't yet bundle
   // expo-image-picker (vendor-mobile does), so sending photos from
   // this side has to wait for the next App Store build. Receiving
   // attachments still works — see bubble renderer below.
   const onAttach = useCallback(() => {
-    Alert.alert(
-      "Sending photos arrives soon",
-      "Photo attachments will arrive in the next app update. You can already receive photos sent from a vendor's app.",
-    );
-  }, []);
+    Alert.alert(t("attach.title"), t("attach.body"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   const onEmojiPick = useCallback(
     (emoji: string) => {
@@ -326,7 +334,9 @@ export default function ThreadScreen() {
       }
     }
     setHeader({
-      otherName: data.vendor?.business_name ?? "Vendor",
+      // Empty when the name is missing; the fallback is applied at
+      // render time so it follows the app's language.
+      otherName: data.vendor?.business_name ?? "",
       otherUserId,
       vendorId: data.vendor_id ?? null,
       vendorSlug: data.vendor?.slug ?? null,
@@ -420,7 +430,7 @@ export default function ThreadScreen() {
     });
     setSending(false);
     if (error) {
-      Alert.alert("Couldn't send", error.message);
+      Alert.alert(t("sendFailed"), error.message);
       return;
     }
     setDraft("");
@@ -438,7 +448,11 @@ export default function ThreadScreen() {
     );
   }
 
-  const enriched = useMemo(() => enrichMessages(messages), [messages]);
+  const enriched = useMemo(
+    () => enrichMessages(messages, t, locale),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [messages, lang],
+  );
   const myLastSentId = useMemo(() => {
     for (let i = enriched.length - 1; i >= 0; i--) {
       if (enriched[i].sender_role === "host") return enriched[i].id;
@@ -446,13 +460,14 @@ export default function ThreadScreen() {
     return null;
   }, [enriched]);
 
-  const initial = header ? initialsOf(header.otherName) : "?";
+  const otherName = header ? header.otherName || t("vendorFallback") : null;
+  const initial = otherName ? initialsOf(otherName) : "?";
 
   return (
     <View style={{ flex: 1, backgroundColor: CREAM }}>
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <Header
-          name={header?.otherName ?? "Conversation"}
+          name={otherName ?? t("conversation")}
           initial={initial}
           isActive={!!header?.isActive}
           onBack={() => router.back()}
@@ -519,6 +534,7 @@ function EmojiPickerModal({
   onPick: (e: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useT("thread");
   return (
     <Modal
       visible={visible}
@@ -565,7 +581,7 @@ function EmojiPickerModal({
               paddingHorizontal: 4,
             }}
           >
-            Quick reactions
+            {t("quickReactions")}
           </Text>
           <View
             style={{
@@ -612,6 +628,7 @@ function Header({
   onBack: () => void;
   onMore: () => void;
 }) {
+  const { t } = useT("thread");
   return (
     <View
       style={{
@@ -682,7 +699,7 @@ function Header({
               marginTop: 1,
             }}
           >
-            Active now
+            {t("activeNow")}
           </Text>
         ) : null}
       </View>
@@ -708,6 +725,7 @@ function MessageRow({
   isMine: boolean;
   showDelivered: boolean;
 }) {
+  const { t } = useT("thread");
   return (
     <View>
       {m.dateBreak ? <DateSeparator label={m.dateBreak} /> : null}
@@ -795,10 +813,10 @@ function MessageRow({
                       size={16}
                       color={INK}
                     />
-                    <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14 }}>
+                    <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14, flexShrink: 1 }}>
                       {audio
-                        ? "Voice message"
-                        : a.filename ?? "Attachment"}
+                        ? t("voiceMessage")
+                        : a.filename ?? t("attachment")}
                     </Text>
                   </Pressable>
                 );
@@ -859,7 +877,7 @@ function MessageRow({
                       }}
                       numberOfLines={1}
                     >
-                      {m.replyTo.senderRole === "host" ? "You" : "Vendor"}
+                      {m.replyTo.senderRole === "host" ? t("you") : t("vendor")}
                     </Text>
                     <Text
                       style={{ fontFamily: SERIF,
@@ -870,7 +888,7 @@ function MessageRow({
                       numberOfLines={2}
                     >
                       {m.replyTo.deleted
-                        ? "Message deleted"
+                        ? t("deleted")
                         : m.replyTo.body}
                     </Text>
                   </View>
@@ -884,7 +902,7 @@ function MessageRow({
                   fontStyle: m.deleted_at ? "italic" : "normal",
                 }}
               >
-                {m.deleted_at ? "Message deleted" : m.body}
+                {m.deleted_at ? t("deleted") : m.body}
               </Text>
               {m.edited_at && !m.deleted_at ? (
                 <Text
@@ -895,7 +913,7 @@ function MessageRow({
                     opacity: 0.6,
                   }}
                 >
-                  edited
+                  {t("edited")}
                 </Text>
               ) : null}
             </View>
@@ -912,7 +930,7 @@ function MessageRow({
             marginRight: 4,
           }}
         >
-          Delivered
+          {t("delivered")}
         </Text>
       ) : null}
     </View>
@@ -936,6 +954,7 @@ function DateSeparator({ label }: { label: string }) {
 }
 
 function EmptyState() {
+  const { t } = useT("thread");
   return (
     <View style={{ alignItems: "center", paddingTop: 64, paddingHorizontal: 24 }}>
       <Feather name="message-square" size={28} color={INK_DIM} />
@@ -947,7 +966,7 @@ function EmptyState() {
           fontSize: 14,
         }}
       >
-        No messages yet — say hi.
+        {t("empty")}
       </Text>
     </View>
   );
@@ -968,6 +987,7 @@ function Composer({
   onAttach: () => void;
   onEmoji: () => void;
 }) {
+  const { t } = useT("thread");
   const enabled = value.trim().length > 0 && !sending;
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
@@ -990,7 +1010,7 @@ function Composer({
         <TextInput
           value={value}
           onChangeText={onChange}
-          placeholder="Write a message…"
+          placeholder={t("placeholder")}
           placeholderTextColor={PLACEHOLDER}
           multiline
           style={{ fontFamily: SERIF,

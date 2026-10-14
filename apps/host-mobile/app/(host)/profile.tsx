@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 import { NotificationsBell } from "@/components/NotificationsBell";
@@ -69,6 +70,7 @@ function initialOf(name: string): string {
 }
 
 export default function ProfileScreen() {
+  const { t } = useT("profile");
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [state, setState] = useState<ProfileState | null>(null);
@@ -132,7 +134,7 @@ export default function ProfileScreen() {
     const fallbackName =
       (profile as { display_name?: string } | null)?.display_name ??
       user.email?.split("@")[0] ??
-      "Host";
+      t("hostFallback");
     const titleCase = fallbackName
       .split(/[ _-]+/)
       .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
@@ -159,6 +161,7 @@ export default function ProfileScreen() {
       },
       verifStatus: status,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.email]);
 
   // Request host verification. Lightweight version: inserts a
@@ -168,12 +171,12 @@ export default function ProfileScreen() {
   const requestVerification = useCallback(() => {
     if (!user?.id) return;
     Alert.alert(
-      "Request host verification",
-      "We'll send your request to our team. Someone will reach out within 48 hours to verify your identity (a photo of a government ID is enough). It typically unlocks faster vendor replies.",
+      t("request.title"),
+      t("request.body"),
       [
-        { text: "Not now", style: "cancel" },
+        { text: t("request.notNow"), style: "cancel" },
         {
-          text: "Request",
+          text: t("request.confirm"),
           onPress: async () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { error } = await (supabase as any)
@@ -181,20 +184,21 @@ export default function ProfileScreen() {
               .insert({ user_id: user.id, status: "pending" });
             if (error) {
               Alert.alert(
-                "Couldn't send request",
-                "Please try again in a moment.",
+                t("request.errorTitle"),
+                t("request.errorBody"),
               );
               return;
             }
             Alert.alert(
-              "Request received",
-              "Thanks — our team will reach out within 48 hours.",
+              t("request.sentTitle"),
+              t("request.sentBody"),
             );
             load();
           },
         },
       ],
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, load]);
 
   useEffect(() => {
@@ -220,7 +224,7 @@ export default function ProfileScreen() {
               marginBottom: 20,
             }}
           >
-            <Text style={PAGE_TITLE}>Profile</Text>
+            <Text style={PAGE_TITLE}>{t("title")}</Text>
             <View
               style={{
                 width: 38,
@@ -252,18 +256,18 @@ export default function ProfileScreen() {
           <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
             <ShortcutTile
               icon="inbox"
-              title="Inbox"
-              subtitle={state?.unread ? `${state.unread} unread` : "All caught up"}
+              title={t("inbox.title")}
+              subtitle={state?.unread ? t("inbox.unread", { count: state.unread }) : t("inbox.caughtUp")}
               badge={state?.unread ? String(state.unread) : null}
               onPress={() => router.push("/(host)/inbox" as never)}
             />
             <ShortcutTile
               icon="calendar"
-              title="My Events"
+              title={t("events.title")}
               subtitle={
                 state?.stats.events
-                  ? `${state.stats.events} planned`
-                  : "Plan your first"
+                  ? t("events.planned", { count: state.stats.events })
+                  : t("events.planFirst")
               }
               badge={null}
               onPress={() => router.push("/(host)/events" as never)}
@@ -278,12 +282,12 @@ export default function ProfileScreen() {
               iconBgColor={BRONZE}
               iconColor={CREAM}
               icon="check-circle"
-              title="You're verified"
-              subtitle="Vendors prioritize verified hosts."
+              title={t("verified.title")}
+              subtitle={t("verified.subtitle")}
               onPress={() =>
                 Alert.alert(
-                  "Verified host",
-                  "Your identity has been verified — vendors see a badge on your inquiries.",
+                  t("verified.alertTitle"),
+                  t("verified.alertBody"),
                 )
               }
             />
@@ -292,12 +296,12 @@ export default function ProfileScreen() {
               iconBgColor={PENDING_BG}
               iconColor={BRONZE}
               icon="clock"
-              title="Verification pending"
-              subtitle="We'll reach out within 48 hours."
+              title={t("pending.title")}
+              subtitle={t("pending.subtitle")}
               onPress={() =>
                 Alert.alert(
-                  "Verification pending",
-                  "Your request is in our queue. We'll email you within 48 hours to collect ID.",
+                  t("pending.title"),
+                  t("pending.alertBody"),
                 )
               }
             />
@@ -308,10 +312,10 @@ export default function ProfileScreen() {
               icon="award"
               title={
                 state?.verifStatus === "rejected"
-                  ? "Try verifying again"
-                  : "Become Verified"
+                  ? t("become.retryTitle")
+                  : t("become.title")
               }
-              subtitle="Build trust with vendors. Faster replies, better matches."
+              subtitle={t("become.subtitle")}
               onPress={requestVerification}
             />
           )}
@@ -321,7 +325,7 @@ export default function ProfileScreen() {
             iconBgColor={CREAM_DEEP}
             iconColor={INK}
             icon="settings"
-            title="Account settings"
+            title={t("accountSettings")}
             subtitle={state?.email ?? ""}
             onPress={() => router.push("/(host)/settings" as never)}
           />
@@ -342,7 +346,7 @@ export default function ProfileScreen() {
                 <Text
                   style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 15,}}
                 >
-                  Log out
+                  {t("logOut")}
                 </Text>
               </View>
             )}
@@ -366,6 +370,7 @@ function HeroCard({
   stats: Stats;
   verified: boolean;
 }) {
+  const { t } = useT("profile");
   return (
     <View
       style={{
@@ -429,7 +434,8 @@ function HeroCard({
         {name}
       </Text>
       <Text style={{ fontFamily: SERIF, marginTop: 4, color: INK_DIM, fontSize: 13 }}>
-        {verified ? "Verified Host  •  " : ""}Member since {memberSince}
+        {verified ? `${t("verifiedHost")}  •  ` : ""}
+        {t("memberSince", { year: memberSince })}
       </Text>
 
       <View
@@ -443,12 +449,12 @@ function HeroCard({
       />
 
       <View style={{ flexDirection: "row", alignItems: "center", alignSelf: "stretch" }}>
-        <StatCol label="Inquiries" value={String(stats.inquiries)} />
+        <StatCol label={t("stats.inquiries")} value={String(stats.inquiries)} />
         <View style={{ width: 1, height: 38, backgroundColor: BORDER }} />
-        <StatCol label="Booked" value={String(stats.booked)} />
+        <StatCol label={t("stats.booked")} value={String(stats.booked)} />
         <View style={{ width: 1, height: 38, backgroundColor: BORDER }} />
         <StatCol
-          label="Vendors"
+          label={t("stats.vendors")}
           value={String(stats.vendors)}
           trailingIcon={
             <Feather name="star" size={16} color={GOLD} style={{ marginLeft: 4 }} />

@@ -1,0 +1,80 @@
+export default {
+  title: "Inbox",
+  subtitle: "Inquiries and partner threads — all in one place.",
+  vendorFallback: "Vendor",
+  tryAgain: "Try again",
+  tabs: {
+    inquiries: "Inquiries",
+    partners: "Partners",
+  },
+  search: {
+    inquiries: "Search by name, event, or message",
+    partners: "Search vendors or messages",
+  },
+  filters: {
+    button: "Filters",
+    toggle: "Toggle filters",
+    all: "All",
+    new: "New",
+    replied: "Replied",
+    booked: "Booked",
+    unread: "Unread",
+    active: "Active",
+  },
+  time: {
+    now: "now",
+    minutes: "{{n}}m",
+    hours: "{{n}}h",
+    days: "{{n}}d",
+    yesterday: "Yesterday",
+  },
+  eventTypes: {
+    wedding: "Wedding",
+    birthday: "Birthday",
+    holiday_dinner: "Holiday Dinner",
+    other: "Other",
+  },
+  nudge: {
+    setup: {
+      title: "Stand out. Get more booked.",
+      body: "Complete your profile and get discovered.",
+      cta: "Improve profile",
+    },
+    photos: {
+      title: "Add a few more photos.",
+      body: "Optional — but more photos give hosts a better feel for your work.",
+      cta: "Add photos",
+    },
+  },
+  tips: {
+    title: "Get more inquiries",
+    message:
+      "• Add photos — listings with 5+ photos get far more inquiries.\n\n• Fill in your description and a starting price so hosts can reach out with confidence.\n\n• Reply fast — hosts book vendors who answer within a day.",
+    button: "Got it",
+  },
+  partners: {
+    findA11y: "Find a vendor to message",
+    noMatchSearch: "No conversations match “{{search}}”. This searches your existing threads only.",
+    noMatchFilter: "No conversations match that filter.",
+    empty: "No partner conversations yet. Find another vendor to start one.",
+    clearSearch: "Clear search",
+    find: "Find a vendor",
+  },
+  empty: {
+    title: "No inquiries yet.",
+    body: "New leads land here.",
+    filteredTitle: "Nothing here.",
+    filteredBody: "Nothing matches that filter.",
+    tips: "Tips to get more inquiries",
+  },
+  card: {
+    inquiry: "Inquiry",
+    dateTbd: "Date TBD",
+    guests_one: "{{count}} guest",
+    guests_other: "{{count}} guests",
+    upTo: "up to {{amount}}",
+    newBadge: "NEW",
+    openFailed: "Couldn't open conversation",
+    tryAgainBody: "Please try again.",
+  },
+};

@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -41,6 +42,7 @@ type Step = "credentials" | "code";
 export default function LoginScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("login");
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,21 +72,19 @@ export default function LoginScreen() {
     const r = data as { ok?: boolean; reason?: string } | null;
     if (!r?.ok) {
       if (r?.reason === "banned") {
-        setError("This account is currently locked. Please contact support if you think this is a mistake.");
+        setError(t("errors.banned"));
       } else if (r?.reason === "not_confirmed") {
-        setError("Your application is still under review. We'll email you the moment it's approved.");
+        setError(t("errors.notConfirmed"));
       } else if (r?.reason === "invalid_credentials") {
-        setError("Email or password is incorrect.");
+        setError(t("errors.invalidCredentials"));
       } else if (r?.reason === "wrong_app") {
-        setError(
-          "That email is a vendor account. Open the Vendora for Vendors app to sign in.",
-        );
+        setError(t("errors.wrongApp"));
       } else {
-        setError("Couldn't start sign-in. Please try again.");
+        setError(t("errors.startFailed"));
       }
       return;
     }
-    setInfo("We emailed you a 6-digit code.");
+    setInfo(t("code.sent"));
     setCode("");
     setStep("code");
   }
@@ -92,7 +92,7 @@ export default function LoginScreen() {
   async function onSubmitCode() {
     setError(null);
     if (code.trim().length !== 6) {
-      setError("Enter the 6-digit code we emailed you.");
+      setError(t("errors.codeLength"));
       return;
     }
     setSubmitting(true);
@@ -108,16 +108,16 @@ export default function LoginScreen() {
     if (!r?.ok) {
       setSubmitting(false);
       const reason = r?.reason ?? "unknown";
-      if (reason === "invalid_code") setError("That code is incorrect.");
-      else if (reason === "expired") setError("That code expired. Request a new one.");
-      else if (reason === "too_many_attempts") setError("Too many attempts. Request a new code.");
-      else if (reason === "no_pending_code") setError("No pending code. Start over.");
-      else setError("Couldn't verify code.");
+      if (reason === "invalid_code") setError(t("errors.invalidCode"));
+      else if (reason === "expired") setError(t("errors.expired"));
+      else if (reason === "too_many_attempts") setError(t("errors.tooManyAttempts"));
+      else if (reason === "no_pending_code") setError(t("errors.noPendingCode"));
+      else setError(t("errors.verifyFailed"));
       return;
     }
     if (!r.token_hash) {
       setSubmitting(false);
-      setError("Couldn't complete sign-in. Please try again.");
+      setError(t("errors.completeFailed"));
       return;
     }
     // Establish the session with the server-minted magiclink token rather
@@ -148,9 +148,7 @@ export default function LoginScreen() {
       if (role !== "host" && role !== "admin") {
         await supabase.auth.signOut();
         setSubmitting(false);
-        setError(
-          "That email is a vendor account. Open the Vendora for Vendors app to sign in.",
-        );
+        setError(t("errors.wrongApp"));
         return;
       }
     }
@@ -176,7 +174,7 @@ export default function LoginScreen() {
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
-              ← Back
+              ← {t("back")}
             </Text>
           </Pressable>
 
@@ -192,7 +190,7 @@ export default function LoginScreen() {
                     letterSpacing: -1,
                   }}
                 >
-                  Welcome back
+                  {t("credentials.title")}
                 </Text>
                 <Text
                   style={{
@@ -202,14 +200,14 @@ export default function LoginScreen() {
                     fontFamily: SERIF_ITALIC,
                   }}
                 >
-                  Log in to plan your next event.
+                  {t("credentials.subtitle")}
                 </Text>
               </View>
 
               <View style={{ marginTop: 32, gap: 16 }}>
                 <Field
-                  label="Email"
-                  placeholder="you@example.com"
+                  label={t("credentials.email")}
+                  placeholder={t("credentials.emailPlaceholder")}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -226,7 +224,7 @@ export default function LoginScreen() {
                       letterSpacing: 0.5,
                     }}
                   >
-                    PASSWORD
+                    {t("credentials.password")}
                   </Text>
                   <View style={{ position: "relative" }}>
                     <TextInput
@@ -260,7 +258,7 @@ export default function LoginScreen() {
                       }}
                     >
                       <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}>
-                        {showPassword ? "Hide" : "Show"}
+                        {showPassword ? t("credentials.hide") : t("credentials.show")}
                       </Text>
                     </Pressable>
                   </View>
@@ -281,7 +279,7 @@ export default function LoginScreen() {
                   }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
-                    {submitting ? "Sending code…" : "Continue"}
+                    {submitting ? t("credentials.sending") : t("credentials.continue")}
                   </Text>
                 </Pressable>
                 <Text
@@ -292,7 +290,7 @@ export default function LoginScreen() {
                     color: INK_DIM,
                   }}
                 >
-                  We'll email you a 6-digit code to confirm it's you.
+                  {t("credentials.codeNote")}
                 </Text>
 
                 <Pressable
@@ -300,7 +298,7 @@ export default function LoginScreen() {
                   style={{ marginTop: 12, alignItems: "center" }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>
-                    Forgot your password?
+                    {t("credentials.forgot")}
                   </Text>
                 </Pressable>
 
@@ -309,8 +307,8 @@ export default function LoginScreen() {
                   style={{ marginTop: 12, alignItems: "center" }}
                 >
                   <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
-                    New here?{" "}
-                    <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Create an account</Text>
+                    {t("credentials.newHere")}{" "}
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{t("credentials.createAccount")}</Text>
                   </Text>
                 </Pressable>
               </View>
@@ -326,7 +324,7 @@ export default function LoginScreen() {
                     letterSpacing: -1,
                   }}
                 >
-                  Check your email
+                  {t("code.title")}
                 </Text>
                 <Text
                   style={{
@@ -336,7 +334,7 @@ export default function LoginScreen() {
                     fontFamily: SERIF_ITALIC,
                   }}
                 >
-                  We sent a 6-digit code to {email}. It expires in 10 minutes.
+                  {t("code.subtitle", { email })}
                 </Text>
               </View>
 
@@ -350,7 +348,7 @@ export default function LoginScreen() {
                       letterSpacing: 0.5,
                     }}
                   >
-                    6-DIGIT CODE
+                    {t("code.label")}
                   </Text>
                   <TextInput
                     inputMode="numeric"
@@ -393,19 +391,19 @@ export default function LoginScreen() {
                   }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
-                    {submitting ? "Verifying…" : "Sign in"}
+                    {submitting ? t("code.verifying") : t("code.signIn")}
                   </Text>
                 </Pressable>
 
                 <View style={{ marginTop: 8, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", columnGap: 16, rowGap: 8 }}>
                   <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
                     <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
-                      ← Use a different account
+                      ← {t("code.differentAccount")}
                     </Text>
                   </Pressable>
                   <Pressable disabled={submitting} onPress={onSubmitCredentials}>
                     <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
-                      Resend code
+                      {t("code.resend")}
                     </Text>
                   </Pressable>
                 </View>

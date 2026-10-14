@@ -30,6 +30,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 import { SHADOW } from "@/lib/ui";
+import { useT } from "@/lib/i18n";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
@@ -40,13 +41,8 @@ const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   more: "more-horizontal",
 };
 
-const LABELS: Record<string, string> = {
-  inbox: "Inbox",
-  gallery: "Gallery",
-  profile: "Profile",
-  calendar: "Calendar",
-  more: "More",
-};
+// Tab labels live in locales/<lang>/layout.ts → tabs.<route name>.
+const LABELLED = new Set(["inbox", "gallery", "profile", "calendar", "more"]);
 
 const ORDER = ["inbox", "gallery", "profile", "calendar", "more"];
 
@@ -96,6 +92,7 @@ function useNewInquiryCount(focusedRoute: string | undefined): number {
 
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useT("layout");
   const focusedRoute = state.routes[state.index]?.name;
   // Called before the early return below — the bar is unmounted on
   // full-bleed screens, and a hook after that branch would run
@@ -267,7 +264,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                   color: isFocused ? "#14161a" : "#746a58",
                 }}
               >
-                {LABELS[route.name] ?? route.name}
+                {LABELLED.has(route.name) ? t(`tabs.${route.name}`) : route.name}
               </Text>
             </Pressable>
           );
@@ -282,6 +279,7 @@ export default function VendorLayout() {
   // Wire push-tap → deep-link routing once the tab navigator is mounted.
   // Both cold-start taps (app killed) and warm taps go through here.
   usePushNotificationTapHandler();
+  const { t } = useT("layout");
 
   if (loading) {
     return (
@@ -314,11 +312,11 @@ export default function VendorLayout() {
         tabBarStyle: { position: "absolute" },
       }}
     >
-      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
-      <Tabs.Screen name="gallery" options={{ title: "Gallery" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
-      <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
-      <Tabs.Screen name="more" options={{ title: "More" }} />
+      <Tabs.Screen name="inbox" options={{ title: t("tabs.inbox") }} />
+      <Tabs.Screen name="gallery" options={{ title: t("tabs.gallery") }} />
+      <Tabs.Screen name="profile" options={{ title: t("tabs.profile") }} />
+      <Tabs.Screen name="calendar" options={{ title: t("tabs.calendar") }} />
+      <Tabs.Screen name="more" options={{ title: t("tabs.more") }} />
       {/* Listing builder — reached from the Profile tab's "Create
           listing" CTA / 4-segment toggle. Hidden from the bottom nav
           because it's a one-and-done flow per vendor. */}

@@ -33,6 +33,7 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { i18n, useT } from "@/lib/i18n";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -61,23 +62,28 @@ interface SignupResponse {
   token_hash?: string;
 }
 
-const REASON_COPY: Record<string, string> = {
-  // Note: host-signup no longer returns "email_taken" — the server
-  // now sends a "you already have an account, log in" email instead
-  // (anti-enumeration). Keeping the map without that entry so it
-  // doesn't dangle as dead copy.
-  no_pending_code:
-    "We couldn't find a pending code. Hit Resend code to get a new one.",
-  expired: "That code has expired. Hit Resend code for a new one.",
-  too_many_attempts:
-    "Too many wrong tries. Hit Resend code to start a new attempt.",
-  wrong_code: "That code didn't match. Try again or resend.",
-  weak_password: "Choose a stronger password: 8+ characters with upper- and lowercase letters, a number and a symbol.",
+// Server reason → key under signup.reasons (locales/<lang>/signup.ts).
+// Note: host-signup no longer returns "email_taken" — the server
+// now sends a "you already have an account, log in" email instead
+// (anti-enumeration). Keeping the map without that entry so it
+// doesn't dangle as dead copy.
+const REASON_KEYS: Record<string, string> = {
+  no_pending_code: "noPendingCode",
+  expired: "expired",
+  too_many_attempts: "tooManyAttempts",
+  wrong_code: "wrongCode",
+  weak_password: "weakPassword",
 };
+
+function reasonCopy(reason: string | undefined): string | undefined {
+  const key = REASON_KEYS[reason ?? ""];
+  return key ? i18n.t(`signup.reasons.${key}`) : undefined;
+}
 
 export default function SignupScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("signup");
   const [stage, setStage] = useState<Stage>("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -102,7 +108,7 @@ export default function SignupScreen() {
       return;
     }
     if (data?.ok === false) {
-      setError(REASON_COPY[data.reason ?? ""] ?? data.reason ?? "Request failed");
+      setError(reasonCopy(data.reason) ?? data.reason ?? t("errors.requestFailed"));
       return;
     }
     if (data?.error) {
@@ -110,7 +116,7 @@ export default function SignupScreen() {
       return;
     }
     setStage("code");
-    setInfo("We emailed you a 6-digit code. Enter it below.");
+    setInfo(t("code.sent"));
   }
 
   async function verifyAndSignIn() {
@@ -136,7 +142,7 @@ export default function SignupScreen() {
     }
     if (data?.ok === false) {
       setSubmitting(false);
-      setError(REASON_COPY[data.reason ?? ""] ?? data.reason ?? "Verification failed");
+      setError(reasonCopy(data.reason) ?? data.reason ?? t("errors.verifyFailed"));
       return;
     }
     if (data?.error) {
@@ -151,7 +157,7 @@ export default function SignupScreen() {
     // render. The /verify endpoint is captcha-exempt.
     if (!data?.token_hash) {
       setSubmitting(false);
-      setError("Account created, but sign-in failed. Try logging in.");
+      setError(t("errors.signInFailed"));
       return;
     }
     const { error: signInErr } = await supabase.auth.verifyOtp({
@@ -160,7 +166,7 @@ export default function SignupScreen() {
     });
     setSubmitting(false);
     if (signInErr) {
-      setError(`Account created but sign-in failed: ${signInErr.message}`);
+      setError(t("errors.signInFailedWith", { message: signInErr.message }));
       return;
     }
     // Auth state has flipped; explicitly route past the (auth) stack.
@@ -202,7 +208,7 @@ export default function SignupScreen() {
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16,}}>
-              ← Back
+              ← {t("back")}
             </Text>
           </Pressable>
 
@@ -216,7 +222,7 @@ export default function SignupScreen() {
                 letterSpacing: -1,
               }}
             >
-              {stage === "form" ? "Plan your event" : "Enter your code"}
+              {stage === "form" ? t("form.title") : t("code.title")}
             </Text>
             <Text
               style={{
@@ -227,8 +233,8 @@ export default function SignupScreen() {
               }}
             >
               {stage === "form"
-                ? "Create an account to message vendors and book events."
-                : `We sent a 6-digit code to ${email.trim().toLowerCase()}.`}
+                ? t("form.subtitle")
+                : t("code.subtitle", { email: email.trim().toLowerCase() })}
             </Text>
           </View>
 
@@ -236,8 +242,8 @@ export default function SignupScreen() {
             {stage === "form" ? (
               <>
                 <Field
-                  label="Email"
-                  placeholder="you@example.com"
+                  label={t("form.email")}
+                  placeholder={t("form.emailPlaceholder")}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -253,14 +259,14 @@ export default function SignupScreen() {
                       letterSpacing: 0.5,
                     }}
                   >
-                    PASSWORD
+                    {t("form.password")}
                   </Text>
                   <View style={{ position: "relative" }}>
                     <TextInput
                       secureTextEntry={!showPassword}
                       value={password}
                       onChangeText={setPassword}
-                      placeholder="8+ characters, Aa, 1 and !"
+                      placeholder={t("form.passwordPlaceholder")}
                       placeholderTextColor={PLACEHOLDER}
                       style={{ fontFamily: SERIF,
                         backgroundColor: INPUT_BG,
@@ -288,7 +294,7 @@ export default function SignupScreen() {
                       <Text
                         style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 13,}}
                       >
-                        {showPassword ? "Hide" : "Show"}
+                        {showPassword ? t("form.hide") : t("form.show")}
                       </Text>
                     </Pressable>
                   </View>
@@ -297,7 +303,7 @@ export default function SignupScreen() {
               </>
             ) : (
               <Field
-                label="Code"
+                label={t("code.label")}
                 placeholder="123456"
                 value={code}
                 onChangeText={(v) => setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
@@ -330,11 +336,11 @@ export default function SignupScreen() {
               <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
                 {submitting
                   ? stage === "form"
-                    ? "Sending…"
-                    : "Verifying…"
+                    ? t("form.sending")
+                    : t("code.verifying")
                   : stage === "form"
-                    ? "Sign up"
-                    : "Verify"}
+                    ? t("form.signUp")
+                    : t("code.verify")}
               </Text>
             </Pressable>
 
@@ -349,21 +355,21 @@ export default function SignupScreen() {
                   marginTop: 4,
                 }}
               >
-                By signing up, you agree to our{" "}
+                {t("form.termsBefore")}{" "}
                 <Text
                   style={{ fontFamily: SERIF_BOLD, color: BRONZE }}
                   onPress={() => void Linking.openURL("https://eventvendora.com/terms")}
                 >
-                  Terms of Service
+                  {t("form.terms")}
                 </Text>{" "}
-                and{" "}
+                {t("form.termsAnd")}{" "}
                 <Text
                   style={{ fontFamily: SERIF_BOLD, color: BRONZE }}
                   onPress={() => void Linking.openURL("https://eventvendora.com/privacy")}
                 >
-                  Privacy Policy
+                  {t("form.privacy")}
                 </Text>
-                .
+                {t("form.termsAfter")}
               </Text>
             ) : null}
 
@@ -374,7 +380,7 @@ export default function SignupScreen() {
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
                 <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14,}}>
-                  Resend code
+                  {t("code.resend")}
                 </Text>
               </Pressable>
             ) : (
@@ -383,8 +389,8 @@ export default function SignupScreen() {
                 style={{ marginTop: 12, alignItems: "center" }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>
-                  Already have an account?{" "}
-                  <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>Log in</Text>
+                  {t("form.haveAccount")}{" "}
+                  <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{t("form.logIn")}</Text>
                 </Text>
               </Pressable>
             )}
