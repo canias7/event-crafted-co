@@ -20,3 +20,5 @@
 20261013150000_email_preferences.sql
 # Privacy: remove GPS keys from saved gallery EXIF (uploader no longer stores them).
 20261013160000_strip_gallery_gps.sql
+# Blocked-date titles private: anon/authenticated can't select vendor_unavailable_dates.reason (read via get_vendor_block_reasons).
+20261014120000_private_block_titles.sql

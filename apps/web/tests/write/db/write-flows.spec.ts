@@ -78,6 +78,15 @@ test.describe("write flows (local stack)", () => {
     expect((rows.data as unknown[]).length).toBe(0);
   });
 
+  test("calendar: block titles are private to the vendor", async () => {
+    const date = "2031-06-16";
+    const ins = await as(vendorA.session).post("vendor_unavailable_dates?select=vendor_id,date", { vendor_id: vendorA.listingId, date, reason: "Private title" });
+    expect(ins.status).toBe(201);
+    const peek = await as(vendorB.session).get(`vendor_unavailable_dates?select=reason&vendor_id=eq.${vendorA.listingId}&date=eq.${date}`);
+    expect(peek.status, "reason column is not selectable").toBeGreaterThanOrEqual(400);
+    await as(vendorA.session).del(`vendor_unavailable_dates?select=vendor_id,date&vendor_id=eq.${vendorA.listingId}&date=eq.${date}`);
+  });
+
   test("calendar: a vendor cannot block another vendor's dates", async () => {
     const r = await as(vendorB.session).post("vendor_unavailable_dates?select=vendor_id,date", { vendor_id: vendorA.listingId, date: "2031-06-15" });
     expect(r.status, "RLS insert check").toBeGreaterThanOrEqual(400);
