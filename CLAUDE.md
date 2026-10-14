@@ -90,6 +90,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - **Inputs:** white, 1px hairline, 12px corners, 44px tall on the web.
 
 **The whole website is dark** (owner's call, Oct 2026): public pages, sign-in, the host and vendor portals, everything in `apps/web`.
+- The page background is plain ink everywhere: no champagne washes, ombre, drifting glows or grid floors (owner's call, Oct 2026). Gold is for accents, not background effects.
 - The colour tokens in `apps/web/src/index.css` are the dark palette: `background` ink, `foreground` cream, `card` and `popover` a step lighter, `border` white at 15%, `accent` champagne (gold text on dark), `primary` cream with an ink label (selected / done), `pending` a dark gold tint, `destructive` a lifted red that reads on ink. Token-styled pages follow them. The table above still gives the brand colours; on the web, bronze text becomes champagne and ink fills become cream.
 - Text on a gold or cream fill uses `text-ink` (`#14161a`, fixed); never `text-foreground` there, which is cream now.
 - Pages built before this use their own classes: ink page (`#14161a`), cream text (`text-[#f4f1ea]`, `/80` for secondary), champagne labels (`text-gold`), cards `border-white/15 bg-white/[0.03]`. Both read the same.
@@ -97,7 +98,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - `PublicNav` and `Footer` always draw dark; their `tone` props are kept only so old call sites compile.
 - The language switcher lives only in the footer's bottom bar, never in the nav (owner's call): any public page needs the footer so it has one.
 - The vendor app's welcome screen is dark too (owner's call, Oct 2026): the web home hero photo fills the screen under the same two scrims (top-to-bottom shade, edge vignette, via `react-native-svg`), with cream text, champagne accents and see-through cards. Every other sign-in, sign-up and password screen in both apps is dark too, on `components/AuthBackdrop.tsx`.
-- **Sign-in backdrop (owner's call, Oct 2026):** the website's sign-in pages (`apps/web/src/components/auth/AuthBackdrop.tsx`) and the apps' auth screens share one look: the plain ink background (no ombre, owner's call) and five thin rings turning at different speeds and directions, two carrying a small gold dot. Change both together.
+- **Sign-in backdrop (owner's call, Oct 2026):** the website's sign-in pages (`apps/web/src/components/auth/AuthBackdrop.tsx`) and the apps' auth screens share one look: the plain ink background (no ombre or glows, owner's call) and five thin rings turning at different speeds and directions, two carrying a small gold dot. Change both together.
 
 **Deliberately different (don't "fix")**
 

@@ -9,9 +9,8 @@
 // Note: one email = one role. The DB enforces this with triggers
 // (block_vendor_insert_if_host / block_host_onboard_if_vendor).
 //
-// Visual: same glassy amber-glow canvas as the landing page and the
-// login chooser — soft #fafafa, amber radial glows, perspective
-// grid, floating particles, glassy role cards.
+// Visual: the same plain ink sign-in canvas as the login chooser
+// (AuthBackdrop: turning rings, no glows), with glassy role cards.
 
 import { Link, Navigate } from "react-router-dom";
 import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
@@ -75,7 +74,6 @@ export default function SignupRoleChooserPage() {
               width: 6,
               height: 6,
               background: "#c9a86a",
-              boxShadow: "0 0 8px rgba(201,168,106,0.5)",
             }}
           />
           <span

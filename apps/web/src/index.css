@@ -78,8 +78,6 @@
     --font-size-h2: clamp(1.875rem, 5vw, 3rem);
     --font-size-body: 1rem;
 
-    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(39 47% 60% / 0.14), transparent 70%);
-    --gradient-glow: radial-gradient(circle at 50% 50%, hsl(39 47% 60% / 0.16), transparent 60%);
   }
 
   /* Dark palette dropped — the app ships a single light palette for
@@ -136,18 +134,9 @@
     font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Ink base (the site is dark everywhere), with champagne washes
-       kept to a whisper in opposite corners. The washes used to
-       run 0.18 alpha over a warmer base, which read as tan next to the
-       app's flat cream. The drifting orbs (AmbientBackground, fixed at
-       z-index:-1) animate above this static base; page content paints
-       above both. */
-    background:
-      radial-gradient(ellipse 1000px 720px at 20% 10%, rgba(201, 168, 106, 0.04) 0%, rgba(201, 168, 106, 0) 55%),
-      radial-gradient(ellipse 920px 700px at 84% 90%, rgba(190, 155, 92, 0.035) 0%, rgba(190, 155, 92, 0) 55%),
-      radial-gradient(ellipse 1100px 800px at 55% 45%, rgba(201, 168, 106, 0.02) 0%, rgba(201, 168, 106, 0) 62%),
-      linear-gradient(180deg, #14161a 0%, #14161a 100%);
-    background-attachment: fixed;
+    /* Plain ink everywhere: no champagne washes or ombre (owner's
+       call, Oct 2026). */
+    background: #14161a;
     background-color: #14161a;
     color-scheme: dark;
   }
@@ -368,11 +357,10 @@
     border-color: hsl(var(--foreground) / 0.3);
   }
 
-  /* Full-screen page wrappers that paint an opaque app background hide
-     the drifting ambient. Make just those roots transparent (only
-     elements that are BOTH min-h-screen AND bg-background — never inputs,
-     dialogs, or popovers, which aren't full-screen) so the ambient shows
-     on every page. */
+  /* Full-screen page wrappers with bg-background stay transparent so
+     every page shows the same plain ink body (only elements that are
+     BOTH min-h-screen AND bg-background — never inputs, dialogs, or
+     popovers). */
   .min-h-screen.bg-background {
     background-color: transparent !important;
   }
@@ -410,63 +398,6 @@
    */
   .public-canvas {
     background: transparent;
-  }
-
-  /* Ambient backdrop layer — soft champagne washes drifting slowly,
-     pinned behind all content (see AmbientBackground.tsx). Fixed +
-     z-index:-1 sits above the body's static wash, below page content. */
-  .ambient-bg {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
-    pointer-events: none;
-  }
-  .ambient-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(56px);
-    will-change: transform;
-  }
-  .ambient-orb--1 {
-    width: 520px;
-    height: 520px;
-    background: rgba(201, 168, 106, 0.045);
-    top: -140px;
-    left: -90px;
-    animation: ambient-drift-1 22s ease-in-out infinite;
-  }
-  .ambient-orb--2 {
-    width: 460px;
-    height: 460px;
-    background: rgba(190, 155, 92, 0.038);
-    bottom: -160px;
-    right: -80px;
-    animation: ambient-drift-2 26s ease-in-out infinite;
-  }
-  .ambient-orb--3 {
-    width: 420px;
-    height: 420px;
-    background: rgba(211, 181, 126, 0.03);
-    top: 42%;
-    left: 44%;
-    animation: ambient-drift-3 30s ease-in-out infinite;
-  }
-  @keyframes ambient-drift-1 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(120px, 90px) scale(1.1); }
-  }
-  @keyframes ambient-drift-2 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-110px, -70px) scale(1.08); }
-  }
-  @keyframes ambient-drift-3 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(-90px, 60px) scale(1.12); }
-    66% { transform: translate(80px, -50px) scale(0.95); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .ambient-orb { animation: none !important; }
   }
 
   /*

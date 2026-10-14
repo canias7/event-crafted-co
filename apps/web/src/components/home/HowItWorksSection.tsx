@@ -142,7 +142,6 @@ function ConnectVisual({
       <span
         aria-hidden
         className="absolute inset-0 bg-white/[0.03]"
-        style={{ backgroundImage: "radial-gradient(120% 90% at 85% 100%, rgba(201,168,106,0.16), transparent 65%)" }}
       />
       {/* The inbox fills the whole card, light as in the portals. Its header
           leaves room at the top for the step number; the message bar sits
