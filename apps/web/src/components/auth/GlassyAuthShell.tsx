@@ -1,7 +1,7 @@
 // Shared glassy shell for the auth form pages (/login/host,
 // /login/vendor, /signup/host, /signup/vendor, /forgot-password,
-// /reset-password). Renders the canvas (AuthBackdrop: turning rings and
-// grid floor on plain ink), the top bar, centered headline + subtitle, glassy form
+// /reset-password). Renders the canvas (AuthBackdrop: turning rings on
+// plain ink), the top bar, centered headline + subtitle, glassy form
 // card, below-card link slot). Page-specific content (form fields,
 // copy, role-specific labels) goes through props.
 //
@@ -10,8 +10,8 @@
 //
 // Deliberately undecorated: this used to scatter four-point stars and
 // eight glowing drifting dots across the canvas, which read as
-// snowflakes rather than as brand. Depth comes from the glows, grid
-// and ring alone — keep it that way.
+// snowflakes rather than as brand. The plain ink and the turning
+// rings are the only decoration — keep it that way.
 
 import { ReactNode } from "react";
 import { AuthTopBar } from "@/components/auth/AuthTopBar";
@@ -126,7 +126,6 @@ export function GlassyAuthShell({
                 width: 6,
                 height: 6,
                 background: "#c9a86a",
-                boxShadow: "0 0 6px rgba(201,168,106,0.5)",
               }}
             />
             <span
@@ -171,7 +170,7 @@ export function GlassyAuthShell({
           right: 0;
           bottom: -2px;
           height: 0.5px;
-          background: linear-gradient(to right, transparent, #c9a86a, transparent);
+          background: rgba(201,168,106,0.6);
         }
         /* Glassy form input — used by children forms */
         .auth-input {

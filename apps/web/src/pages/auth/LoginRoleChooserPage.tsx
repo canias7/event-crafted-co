@@ -65,7 +65,6 @@ export default function LoginRoleChooserPage() {
               width: 6,
               height: 6,
               background: "#c9a86a",
-              boxShadow: "0 0 8px rgba(201,168,106,0.5)",
             }}
           />
           <span

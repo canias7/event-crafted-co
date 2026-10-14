@@ -19,7 +19,6 @@ import { RequireRole } from "./components/auth/RequireRole";
 import { CommandPaletteLauncher } from "./components/CommandPaletteLauncher";
 import { ScrollToTop } from "./components/shared/ScrollToTop";
 import { SkipLink } from "./components/SkipLink";
-import { AmbientBackground } from "./components/AmbientBackground";
 import { EmailVerificationBanner } from "./components/auth/EmailVerificationBanner";
 import { AccountDeletionGate } from "./components/auth/AccountDeletionGate";
 
@@ -95,7 +94,6 @@ import {
 
 const App = () => (
   <TooltipProvider>
-      <AmbientBackground />
       <Toaster />
       <Sonner />
       <BrowserRouter>
