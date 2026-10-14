@@ -19,4 +19,9 @@ export default {
     generic: "Algo salió mal. Inténtalo de nuevo.",
     network: "No pudimos conectar con Vendora. Revisa tu conexión e inténtalo de nuevo.",
   },
+  crash: {
+    title: "Algo salió mal",
+    body: "Haz una captura de esta pantalla y envíala a soporte: muestra exactamente qué falló.",
+    reload: "Recargar la app",
+  },
 };

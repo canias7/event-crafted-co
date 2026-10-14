@@ -19,4 +19,9 @@ export default {
     generic: "Something went wrong. Please try again.",
     network: "Couldn't reach Vendora. Check your connection and try again.",
   },
+  crash: {
+    title: "Something went wrong",
+    body: "Screenshot this screen and send it to support — it shows exactly what broke.",
+    reload: "Reload app",
+  },
 };

@@ -16,7 +16,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import * as Updates from "expo-updates";
 import { useFonts } from "expo-font";
 import { AuthProvider } from "@/lib/auth";
-import { useLanguageReady } from "@/lib/i18n";
+import { i18n, useLanguageReady } from "@/lib/i18n";
 import { AccountDeletionGate } from "@/components/AccountDeletionGate";
 
 // Apply OTA updates on the launch that finds them, instead of expo-updates'
@@ -84,11 +84,10 @@ function JsFatalScreen({
             fontSize: 18,
           }}
         >
-          Something went wrong
+          {i18n.t("common.crash.title")}
         </Text>
         <Text style={{ fontFamily: "LibreBaskerville", color: "#14161a", marginTop: 8, fontSize: 13 }}>
-          Screenshot this screen and send it to support — it shows exactly
-          what broke.
+          {i18n.t("common.crash.body")}
         </Text>
         <View
           style={{
@@ -122,7 +121,7 @@ function JsFatalScreen({
           }}
         >
           <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a", fontSize: 16}}>
-            Reload app
+            {i18n.t("common.crash.reload")}
           </Text>
         </Pressable>
       </ScrollView>

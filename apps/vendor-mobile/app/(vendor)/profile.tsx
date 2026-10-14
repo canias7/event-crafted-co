@@ -25,7 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { usePriceLabels } from "@/lib/priceLabels";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -931,6 +931,7 @@ function ListingCard({
   const dialog = useBrandDialog();
   const { t } = useT("profile");
   const { sub } = useCategoryNames();
+  const priceLabels = usePriceLabels();
 
   const status = listing.application_status ?? "draft";
   const isApproved = status === "approved";
@@ -1159,14 +1160,12 @@ function ListingCard({
           {listing.category ? sub(listing.category) : "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
-        {formatListingPrice(listing.price_min_cents, listing.price_max_cents) ? (
-          <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            {formatListingPrice(listing.price_min_cents, listing.price_max_cents)}
-          </Text>
-        ) : null}
+        <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          {priceLabels.listingPrice(listing.price_min_cents, listing.price_max_cents)}
+        </Text>
         {(() => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const models = pricingModelsLabel((listing as any).pricing_models);
+          const models = priceLabels.models((listing as any).pricing_models);
           return models ? (
             <Text
               style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 2 }}

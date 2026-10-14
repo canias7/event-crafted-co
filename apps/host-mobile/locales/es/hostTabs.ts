@@ -1,6 +1,6 @@
 export default {
   explore: "Explorar",
-  inbox: "Bandeja de entrada",
+  inbox: "Bandeja",
   events: "Eventos",
   profile: "Perfil",
 };
