@@ -1,7 +1,7 @@
 // Shared glassy shell for the auth form pages (/login/host,
 // /login/vendor, /signup/host, /signup/vendor, /forgot-password,
-// /reset-password). Renders the canvas (AuthBackdrop: ombre, turning
-// rings, grid floor), the top bar, centered headline + subtitle, glassy form
+// /reset-password). Renders the canvas (AuthBackdrop: turning rings and
+// grid floor on plain ink), the top bar, centered headline + subtitle, glassy form
 // card, below-card link slot). Page-specific content (form fields,
 // copy, role-specific labels) goes through props.
 //

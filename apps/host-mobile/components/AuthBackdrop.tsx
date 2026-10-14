@@ -1,12 +1,13 @@
 // Backdrop for the sign-in, sign-up and password screens, matching the
-// website's sign-in pages (owner's call, Oct 2026): a champagne ombre over
-// ink, several thin rings turning at different speeds and directions (two
-// carry a small gold dot so the motion reads), all behind the content.
+// website's sign-in pages (owner's call, Oct 2026): the plain ink page
+// (no ombre, owner's call) with several thin rings turning at different
+// speeds and directions (two carry a small gold dot so the motion
+// reads), all behind the content.
 // Same drawing as apps/web/src/components/auth/AuthBackdrop.tsx.
 
 import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Animated, Easing, useWindowDimensions, View } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Circle } from "react-native-svg";
 
 const RINGS = [
   { size: 260, opacity: 0.32, dashed: false, seconds: 50, reverse: false, dot: true },
@@ -74,23 +75,6 @@ export function AuthBackdrop() {
   const cy = height * 0.42;
   return (
     <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, width, height }}>
-      <Svg width={width} height={height} style={{ position: "absolute", top: 0, left: 0 }}>
-        <Defs>
-          <LinearGradient id="ombre" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#c9a86a" stopOpacity={0.16} />
-            <Stop offset="0.28" stopColor="#c9a86a" stopOpacity={0.06} />
-            <Stop offset="0.55" stopColor="#14161a" stopOpacity={0} />
-            <Stop offset="1" stopColor="#8a6f3e" stopOpacity={0.1} />
-          </LinearGradient>
-          <RadialGradient id="glow" cx="50%" cy="34%" rx="70%" ry="45%" fx="50%" fy="34%">
-            <Stop offset="0" stopColor="#c9a86a" stopOpacity={0.16} />
-            <Stop offset="0.45" stopColor="#c9a86a" stopOpacity={0.05} />
-            <Stop offset="1" stopColor="#c9a86a" stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width={width} height={height} fill="url(#ombre)" />
-        <Rect x="0" y="0" width={width} height={height} fill="url(#glow)" />
-      </Svg>
       {RINGS.map((ring, i) => (
         <Ring key={i} ring={ring} cx={cx} cy={cy} still={still} />
       ))}
