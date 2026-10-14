@@ -1,6 +1,6 @@
 export default {
   title: "Что нового",
-  subtitle: "Последние улучшения Vendora для подрядчиков.",
+  subtitle: "Последние улучшения Vendora for Vendors.",
   comingTitle: "Скоро",
   footnote: "Сроки могут меняться: мы выпускаем обновления, когда они готовы.",
   shipped: {
