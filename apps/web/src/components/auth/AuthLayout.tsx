@@ -2,14 +2,13 @@
 // site's top menu (PublicNav); from 1024px a dimmed venue photo fills the
 // left half with the "Why Vendora" points on it, and the page's content
 // sits in a narrow column on the right; on phones there's no photo and the
-// points follow the content. A bottom bar holds the theme switch and the
-// language switcher, since these pages have no footer. Colours follow the
+// points follow the content. The theme switch is in the top menu; a bottom
+// bar holds the language switcher, since these pages have no footer. Colours follow the
 // site theme (light by default); the photo side looks the same in both.
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import authPhoto from "@/assets/hero-video/hero-day-poster.webp";
 
 function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
@@ -53,7 +52,7 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
           <img
             src={authPhoto}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover scale-[1.04]"
           />
           <div className="absolute inset-0 bg-[#0a0b0e]/60" />
           <div
@@ -76,7 +75,6 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
       </main>
       <div className="container">
         <div className="flex items-center justify-end gap-4 border-t border-border py-5">
-          <ThemeToggle />
           <LanguageSwitcher />
         </div>
       </div>

@@ -10,16 +10,18 @@
 import type { ReactNode } from "react";
 import { View } from "react-native";
 import { RADIUS } from "@/lib/ui";
-import { C } from "@/lib/theme";
+import { C, IS_DARK } from "@/lib/theme";
 
 const GOLD = C.gold;
+// Dark keeps the see-through card (white at 3%); light uses the cream card.
+const CARD_FILL = IS_DARK ? "rgba(255,255,255,0.03)" : C.card;
 
 export function AuthCard({ children }: { children: ReactNode }) {
   return (
     <View
       style={{
         marginTop: 16,
-        backgroundColor: C.card,
+        backgroundColor: CARD_FILL,
         borderWidth: 1,
         borderColor: C.border,
         borderRadius: RADIUS.sheet,
