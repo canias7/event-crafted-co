@@ -1,7 +1,7 @@
 export default {
   title: "Ещё",
   subtitle: "Всё остальное — в одно касание.",
-  appName: "Vendora для подрядчиков",
+  appName: "Vendora for Vendors",
   close: "Закрыть",
   sections: {
     business: "ВАШ БИЗНЕС",

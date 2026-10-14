@@ -1,7 +1,7 @@
 export default {
   title: "Más",
   subtitle: "Todo lo demás, a un toque.",
-  appName: "Vendora para proveedores",
+  appName: "Vendora for Vendors",
   close: "Cerrar",
   sections: {
     business: "TU NEGOCIO",
