@@ -35,6 +35,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
@@ -69,7 +70,8 @@ const MAX_PHOTOS = 100;
 // One shared form for the whole Venues group — the vendor's chosen
 // SUBcategory (Event Venues / Outdoor Spaces / …) is their venue type;
 // the form doesn't re-ask it.
-const STEPS = ["Basics", "About", "Spaces", "Amenities", "More"] as const;
+// Labels come from venueListing → steps.<key>.
+const STEPS = ["basics", "about", "spaces", "amenities", "more"] as const;
 
 const BEST_FOR = [
   "Weddings",
@@ -184,6 +186,9 @@ export default function VenueListingScreen() {
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const dialog = useBrandDialog();
+  const { t, tObject } = useT("venueListing");
+  const optionLabels = tObject<Record<string, string>>("options") ?? {};
+  const optLabel = (v: string) => optionLabels[v] ?? v;
 
   // Basics
   const [venueName, setVenueName] = useState("");
@@ -375,7 +380,7 @@ export default function VenueListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
+      dialog.show({ icon: "alert-circle", title: t("dialogs.saveFailed"), message: error.message });
       return false;
     }
     if (status) {
@@ -386,22 +391,22 @@ export default function VenueListingScreen() {
 
   function missingForPublish(): string[] {
     const missing: string[] = [];
-    if (!venueName.trim()) missing.push("Venue name");
-    if (!tagline.trim()) missing.push("Short tagline");
-    if (!capacityMin.trim() || !capacityMax.trim()) missing.push("Capacity (min–max)");
-    if (!address.trim()) missing.push("Location");
-    if (!description.trim()) missing.push("Full description");
+    if (!venueName.trim()) missing.push(t("missing.venueName"));
+    if (!tagline.trim()) missing.push(t("missing.tagline"));
+    if (!capacityMin.trim() || !capacityMax.trim()) missing.push(t("missing.capacity"));
+    if (!address.trim()) missing.push(t("missing.location"));
+    if (!description.trim()) missing.push(t("missing.description"));
     if (spaces.filter((s) => s.name.trim()).length === 0)
-      missing.push("At least one event space");
+      missing.push(t("missing.space"));
     // Custom pricing skips the numeric starting price, same as the
     // generic builder's custom_pricing toggle.
     if (
       pricingType !== "Custom" &&
       (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
     )
-      missing.push("Starting price (or choose Custom pricing)");
+      missing.push(t("missing.price"));
     if (photos.length < MIN_PHOTOS)
-      missing.push(`At least ${MIN_PHOTOS} photos`);
+      missing.push(t("missing.photos", { count: MIN_PHOTOS }));
     return missing;
   }
 
@@ -410,7 +415,7 @@ export default function VenueListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
+    if (ok) dialog.show({ title: t("dialogs.savedTitle"), message: t("dialogs.savedMessage") });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -426,7 +431,7 @@ export default function VenueListingScreen() {
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change category",
+        title: t("dialogs.categoryError"),
         message: error.message,
       });
       return;
@@ -445,8 +450,8 @@ export default function VenueListingScreen() {
     if (missing.length > 0) {
       dialog.show({
         icon: "list",
-        title: "Can't publish yet",
-        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+        title: t("missing.title"),
+        message: `${t("missing.intro")}\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
       });
       return;
     }
@@ -461,9 +466,9 @@ export default function VenueListingScreen() {
       .catch(() => {});
     dialog.show({
       icon: "send",
-      title: "Submitted for review",
-      message: "We'll review your listing within 2–3 business days.",
-      buttonLabel: "Done",
+      title: t("dialogs.submittedTitle"),
+      message: t("dialogs.submittedMessage"),
+      buttonLabel: t("dialogs.done"),
       onClose: () => router.back(),
     });
   }
@@ -476,8 +481,8 @@ export default function VenueListingScreen() {
     if (ok) {
       dialog.show({
         icon: "file-text",
-        title: "Saved as draft",
-        message: "Your listing is out of review until you publish it again.",
+        title: t("dialogs.draftTitle"),
+        message: t("dialogs.draftMessage"),
         onClose: () => router.back(),
       });
     }
@@ -490,8 +495,8 @@ export default function VenueListingScreen() {
     setBusy(false);
     if (ok) {
       dialog.show({
-        title: "Changes saved",
-        message: "Your listing is up to date.",
+        title: t("dialogs.changesTitle"),
+        message: t("dialogs.changesMessage"),
         onClose: () => router.back(),
       });
     }
@@ -504,9 +509,8 @@ export default function VenueListingScreen() {
     if (!perm.granted) {
       dialog.show({
         icon: "image",
-        title: "Library access needed",
-        message:
-          "Enable photo library access in Settings to upload listing photos.",
+        title: t("photos.accessTitle"),
+        message: t("photos.accessMessage"),
       });
       return;
     }
@@ -514,8 +518,8 @@ export default function VenueListingScreen() {
     if (remaining <= 0) {
       dialog.show({
         icon: "image",
-        title: "Photo limit reached",
-        message: `Listings cap at ${MAX_PHOTOS} photos.`,
+        title: t("photos.limitTitle"),
+        message: t("photos.limitMessage", { count: MAX_PHOTOS }),
       });
       return;
     }
@@ -539,9 +543,8 @@ export default function VenueListingScreen() {
     if (assets.length < result.assets.length) {
       dialog.show({
         icon: "alert-circle",
-        title: "Some photos were skipped",
-        message:
-          "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
+        title: t("photos.skippedTitle"),
+        message: t("photos.skippedMessage"),
       });
     }
     if (assets.length === 0) return;
@@ -582,8 +585,8 @@ export default function VenueListingScreen() {
     if (rows.length < assets.length) {
       dialog.show({
         icon: "alert-circle",
-        title: "Some photos didn't upload",
-        message: `${assets.length - rows.length} photo(s) failed. Try them again.`,
+        title: t("photos.failedTitle"),
+        message: t("photos.failedMessage", { count: assets.length - rows.length }),
       });
     }
     await load();
@@ -592,9 +595,9 @@ export default function VenueListingScreen() {
   async function deletePhoto(p: PhotoRow) {
     dialog.show({
       icon: "trash-2",
-      title: "Delete this photo?",
-      message: "It's removed from this listing right away.",
-      confirmLabel: "Delete",
+      title: t("photos.deleteTitle"),
+      message: t("photos.deleteMessage"),
+      confirmLabel: t("photos.deleteConfirm"),
       destructive: true,
       onConfirm: async () => {
         await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
@@ -614,10 +617,9 @@ export default function VenueListingScreen() {
     if (!profile?.id || busy) return;
     dialog.show({
       icon: "trash-2",
-      title: "Delete this listing?",
-      message:
-        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      confirmLabel: "Delete listing",
+      title: t("deleteListing.title"),
+      message: t("deleteListing.message"),
+      confirmLabel: t("deleteListing.confirm"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -630,7 +632,7 @@ export default function VenueListingScreen() {
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't delete",
+            title: t("deleteListing.error"),
             message: error.message,
           });
         } else {
@@ -646,7 +648,7 @@ export default function VenueListingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -657,7 +659,7 @@ export default function VenueListingScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
-            Couldn&rsquo;t load this listing.
+            {t("loadError")}
           </Text>
         </View>
       </SafeAreaView>
@@ -688,9 +690,12 @@ export default function VenueListingScreen() {
               fontFamily: SERIF_BOLD,
               fontSize: 24,
               color: INK,
+              flexShrink: 1,
+              textAlign: "center",
+              marginHorizontal: 8,
             }}
           >
-            {status === "draft" ? "New listing" : "Edit listing"}
+            {status === "draft" ? t("header.new") : t("header.edit")}
           </Text>
           <TouchableOpacity
             onPress={saveDraftHeader}
@@ -708,7 +713,7 @@ export default function VenueListingScreen() {
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
-              {status === "draft" ? "Save draft" : "Save"}
+              {status === "draft" ? t("header.saveDraft") : t("header.save")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -727,34 +732,34 @@ export default function VenueListingScreen() {
           {step === 0 ? (
             <>
               <StepTitle
-                title="Basics"
-                sub="Tell hosts the essentials about your venue."
+                title={t("basics.title")}
+                sub={t("basics.sub")}
               />
               <CategoryField
                 value={profile.category}
                 onPress={() => setCategoryPickerOpen(true)}
               />
-              <Field label="Venue name" required>
+              <Field label={t("basics.venueName")} required>
                 <Input
                   value={venueName}
                   onChangeText={setVenueName}
-                  placeholder="e.g., The Grand Oak Estate"
+                  placeholder={t("basics.venueNamePlaceholder")}
                 />
               </Field>
-              <Field label="Short tagline" required>
+              <Field label={t("basics.tagline")} required>
                 <Input
                   value={tagline}
                   onChangeText={setTagline}
-                  placeholder="e.g., Timeless moments. Unforgettable events."
+                  placeholder={t("basics.taglinePlaceholder")}
                 />
               </Field>
-              <Field label="Capacity (min – max)" required>
+              <Field label={t("basics.capacity")} required>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Input
                       value={capacityMin}
                       onChangeText={(v) => setCapacityMin(v.replace(/[^0-9]/g, ""))}
-                      placeholder="Min guests"
+                      placeholder={t("basics.minGuests")}
                       keyboardType="number-pad"
                     />
                   </View>
@@ -763,26 +768,26 @@ export default function VenueListingScreen() {
                     <Input
                       value={capacityMax}
                       onChangeText={(v) => setCapacityMax(v.replace(/[^0-9]/g, ""))}
-                      placeholder="Max guests"
+                      placeholder={t("basics.maxGuests")}
                       keyboardType="number-pad"
                     />
                   </View>
                 </View>
               </Field>
-              <Field label="Location" required>
-                <Input value={address} onChangeText={setAddress} placeholder="Enter address" />
+              <Field label={t("basics.location")} required>
+                <Input value={address} onChangeText={setAddress} placeholder={t("basics.locationPlaceholder")} />
               </Field>
-              <Field label="Service areas (cities, regions, states)">
+              <Field label={t("basics.serviceAreas")}>
                 <Input
                   value={serviceAreas}
                   onChangeText={setServiceAreas}
-                  placeholder="Add areas"
+                  placeholder={t("basics.serviceAreasPlaceholder")}
                 />
               </Field>
-              <Field label="On-site parking details">
-                <Input value={parking} onChangeText={setParking} placeholder="Add parking details" />
+              <Field label={t("basics.parking")}>
+                <Input value={parking} onChangeText={setParking} placeholder={t("basics.parkingPlaceholder")} />
               </Field>
-              <Field label="Website">
+              <Field label={t("basics.website")}>
                 <Input
                   value={website}
                   onChangeText={setWebsite}
@@ -791,11 +796,11 @@ export default function VenueListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Year established">
+              <Field label={t("basics.year")}>
                 <Input
                   value={yearEstablished}
                   onChangeText={(v) => setYearEstablished(v.replace(/[^0-9]/g, "").slice(0, 4))}
-                  placeholder="e.g., 2015"
+                  placeholder={t("basics.yearPlaceholder")}
                   keyboardType="number-pad"
                 />
               </Field>
@@ -805,39 +810,45 @@ export default function VenueListingScreen() {
           {step === 1 ? (
             <>
               <StepTitle
-                title="About your venue"
-                sub="What makes the space special."
+                title={t("about.title")}
+                sub={t("about.sub")}
               />
-              <Field label="Full description" required>
+              <Field label={t("about.description")} required>
                 <Input
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Describe the venue, the experience, and what hosts can expect."
+                  placeholder={t("about.descriptionPlaceholder")}
                   multiline
                 />
               </Field>
-              <Field label="Best for (select all that apply)">
-                <ChipMulti options={BEST_FOR} selected={bestFor} onChange={setBestFor} />
+              <Field label={t("about.bestFor")}>
+                <ChipMulti
+                  options={BEST_FOR}
+                  selected={bestFor}
+                  onChange={setBestFor}
+                  labelFor={optLabel}
+                />
               </Field>
-              <Field label="Indoor / Outdoor / Both">
+              <Field label={t("about.setting")}>
                 <ChipSingle
+                  labelFor={optLabel}
                   options={["Indoor", "Outdoor", "Both"]}
                   selected={setting}
                   onChange={(v) => setSetting(v as typeof setting)}
                 />
               </Field>
-              <Field label="Style / vibe">
+              <Field label={t("about.style")}>
                 <Input
                   value={styleVibe}
                   onChangeText={setStyleVibe}
-                  placeholder="e.g., Modern industrial with warm accents"
+                  placeholder={t("about.stylePlaceholder")}
                 />
               </Field>
-              <Field label="Unique highlights">
+              <Field label={t("about.highlights")}>
                 <Input
                   value={highlights}
                   onChangeText={setHighlights}
-                  placeholder="e.g., Skyline views, 100-year-old oak tree courtyard"
+                  placeholder={t("about.highlightsPlaceholder")}
                   multiline
                 />
               </Field>
@@ -847,8 +858,8 @@ export default function VenueListingScreen() {
           {step === 2 ? (
             <>
               <StepTitle
-                title="Spaces & capacity"
-                sub="Add your event spaces and capacities."
+                title={t("spaces.title")}
+                sub={t("spaces.sub")}
               />
               <TouchableOpacity
                 onPress={() => setSpaces((prev) => [...prev, emptySpace()])}
@@ -868,13 +879,14 @@ export default function VenueListingScreen() {
               >
                 <Feather name="plus" size={16} color={INK} />
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
-                  Add {spaces.length === 0 ? "event space" : "another space"}
+                  {spaces.length === 0 ? t("spaces.addFirst") : t("spaces.addAnother")}
                 </Text>
               </TouchableOpacity>
               {spaces.map((s, i) => (
                 <SpaceCard
                   key={s.key}
                   space={s}
+                  optLabel={optLabel}
                   onChange={(next) =>
                     setSpaces((prev) => prev.map((x, xi) => (xi === i ? next : x)))
                   }
@@ -889,43 +901,46 @@ export default function VenueListingScreen() {
           {step === 3 ? (
             <>
               <StepTitle
-                title="Amenities"
-                sub="What's included on-site — select all that apply."
+                title={t("amenities.title")}
+                sub={t("amenities.sub")}
               />
               <ChipMulti
                 options={AMENITIES}
+                labelFor={optLabel}
                 selected={amenities}
                 onChange={setAmenities}
                 allowCustom
               />
 
-              <StepTitle title="Policies" sub="Select all that apply." topGap />
+              <StepTitle title={t("amenities.policies")} sub={t("amenities.selectAll")} topGap />
               <ChipMulti
                 options={POLICIES}
+                labelFor={optLabel}
                 selected={policies}
                 onChange={setPolicies}
                 allowCustom
               />
 
-              <StepTitle title="Permits & licenses" sub="Select all that apply." topGap />
+              <StepTitle title={t("amenities.permits")} sub={t("amenities.selectAll")} topGap />
               <ChipMulti
                 options={PERMITS}
+                labelFor={optLabel}
                 selected={permits}
                 onChange={setPermits}
                 allowCustom
               />
-              <Field label="Noise ordinance / quiet hours">
+              <Field label={t("amenities.quietHours")}>
                 <Input
                   value={quietHours}
                   onChangeText={setQuietHours}
-                  placeholder='e.g., "Music off by 10 PM"'
+                  placeholder={t("amenities.quietHoursPlaceholder")}
                 />
               </Field>
-              <Field label="Cancellation policy">
+              <Field label={t("amenities.cancellation")}>
                 <Input
                   value={cancellationPolicy}
                   onChangeText={setCancellationPolicy}
-                  placeholder="e.g., Full refund up to 60 days out, 50% up to 30 days"
+                  placeholder={t("amenities.cancellationPlaceholder")}
                   multiline
                 />
               </Field>
@@ -935,68 +950,70 @@ export default function VenueListingScreen() {
           {step === 4 ? (
             <>
               <StepTitle
-                title="Services & offerings"
-                sub="What's bundled or available — select all that apply."
+                title={t("services.title")}
+                sub={t("services.sub")}
               />
               <ChipMulti
                 options={SERVICES}
+                labelFor={optLabel}
                 selected={services}
                 onChange={setServices}
                 allowCustom
               />
-              <Field label="Preferred partners (optional)">
+              <Field label={t("services.partners")}>
                 <TagList
                   items={partners}
                   onChange={setPartners}
-                  placeholder="Add a partner (e.g., Luminara Photography)"
+                  placeholder={t("services.partnersPlaceholder")}
                 />
               </Field>
 
-              <StepTitle title="Pricing" sub="Where your pricing starts." topGap />
-              <Field label="Pricing type">
+              <StepTitle title={t("pricing.title")} sub={t("pricing.sub")} topGap />
+              <Field label={t("pricing.type")}>
                 <ChipSingle
+                  labelFor={optLabel}
                   options={["Per event", "Hourly", "Custom"]}
                   selected={pricingType}
                   onChange={(v) => setPricingType(v as typeof pricingType)}
                 />
               </Field>
-              <Field label="Starting price (USD)" required>
+              <Field label={t("pricing.start")} required>
                 <Input
                   value={priceMin}
                   onChangeText={(v) => setPriceMin(v.replace(/[^0-9.]/g, ""))}
-                  placeholder="e.g., 2500"
+                  placeholder={t("pricing.startPlaceholder")}
                   keyboardType="decimal-pad"
                 />
               </Field>
-              <Field label="Price range top end (optional)">
+              <Field label={t("pricing.max")}>
                 <Input
                   value={priceMax}
                   onChangeText={(v) => setPriceMax(v.replace(/[^0-9.]/g, ""))}
-                  placeholder="e.g., 12000"
+                  placeholder={t("pricing.maxPlaceholder")}
                   keyboardType="decimal-pad"
                 />
               </Field>
-              <Field label="What's included in the starting price">
+              <Field label={t("pricing.includes")}>
                 <Input
                   value={priceIncludes}
                   onChangeText={setPriceIncludes}
-                  placeholder="e.g., 6-hour rental, tables & chairs, cleaning"
+                  placeholder={t("pricing.includesPlaceholder")}
                   multiline
                 />
               </Field>
-              <Field label="Additional fees (cleaning, overtime, etc.)">
+              <Field label={t("pricing.fees")}>
                 <Input
                   value={additionalFees}
                   onChangeText={setAdditionalFees}
-                  placeholder="e.g., $250 cleaning fee, $150/hr overtime"
+                  placeholder={t("pricing.feesPlaceholder")}
                   multiline
                 />
               </Field>
-              <Field label="Payment schedule / deposit">
+              <Field label={t("pricing.schedule")}>
                 <Input
                   value={paymentSchedule}
                   onChangeText={setPaymentSchedule}
-                  placeholder="e.g., 50% deposit to book, balance 14 days out"
+                  placeholder={t("pricing.schedulePlaceholder")}
                 />
               </Field>
             </>
@@ -1005,8 +1022,8 @@ export default function VenueListingScreen() {
           {step === 4 ? (
             <>
               <StepTitle
-                title="Photos & media"
-                sub={`${MIN_PHOTOS}–${MAX_PHOTOS} photos. Your first becomes the cover.`}
+                title={t("photos.title")}
+                sub={t("photos.sub", { min: MIN_PHOTOS, max: MAX_PHOTOS })}
               />
               <View
                 style={{
@@ -1039,7 +1056,7 @@ export default function VenueListingScreen() {
                         }}
                       >
                         <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 10}}>
-                          COVER
+                          {t("photos.cover")}
                         </Text>
                       </View>
                     ) : null}
@@ -1061,17 +1078,16 @@ export default function VenueListingScreen() {
                   }}
                 >
                   {photoUploading ? (
-                    <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM }}>Uploading…</Text>
+                    <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM }}>{t("photos.uploading")}</Text>
                   ) : (
                     <Feather name="plus" size={22} color={INK_DIM} />
                   )}
                 </TouchableOpacity>
               </View>
               <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 12, color: INK_DIM }}>
-                Long-press a photo to delete it. Reordering and cover changes
-                live in the classic editor for now.
+                {t("photos.hint")}
               </Text>
-              <Field label="Video tour URL (optional)">
+              <Field label={t("photos.video")}>
                 <Input
                   value={videoTourUrl}
                   onChangeText={setVideoTourUrl}
@@ -1080,7 +1096,7 @@ export default function VenueListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Virtual tour link (optional)">
+              <Field label={t("photos.virtual")}>
                 <Input
                   value={virtualTourUrl}
                   onChangeText={setVirtualTourUrl}
@@ -1090,10 +1106,10 @@ export default function VenueListingScreen() {
                 />
               </Field>
 
-              <StepTitle title="FAQs" sub="Answer what hosts will ask first." topGap />
+              <StepTitle title={t("faqs.title")} sub={t("faqs.sub")} topGap />
               <FaqsSection vendorId={profile.id} />
 
-              <StepTitle title="Review" sub="Almost there." topGap />
+              <StepTitle title={t("review.title")} sub={t("review.sub")} topGap />
               <ReviewChecklist missing={missingForPublish()} />
             </>
           ) : null}
@@ -1106,7 +1122,7 @@ export default function VenueListingScreen() {
                 activeOpacity={0.85}
                 style={darkPill}
               >
-                <Text style={darkPillText}>Continue</Text>
+                <Text style={darkPillText}>{t("actions.continue")}</Text>
               </TouchableOpacity>
             ) : status === "pending" ? (
               <>
@@ -1116,7 +1132,7 @@ export default function VenueListingScreen() {
                   activeOpacity={0.85}
                   style={darkPillFor(busy)}
                 >
-                  <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                  <Text style={darkPillText}>{busy ? t("actions.saving") : t("actions.saveChanges")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={withdrawToDraft}
@@ -1124,7 +1140,7 @@ export default function VenueListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Withdraw to draft</Text>
+                  <Text style={lightPillText}>{t("actions.withdraw")}</Text>
                 </TouchableOpacity>
               </>
             ) : status === "approved" ? (
@@ -1134,7 +1150,7 @@ export default function VenueListingScreen() {
                 activeOpacity={0.85}
                 style={darkPillFor(busy)}
               >
-                <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                <Text style={darkPillText}>{busy ? t("actions.saving") : t("actions.saveChanges")}</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -1146,10 +1162,10 @@ export default function VenueListingScreen() {
                 >
                   <Text style={darkPillText}>
                     {busy
-                      ? "Publishing…"
+                      ? t("actions.publishing")
                       : status === "rejected"
-                        ? "Re-submit"
-                        : "Publish"}
+                        ? t("actions.resubmit")
+                        : t("actions.publish")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1158,7 +1174,7 @@ export default function VenueListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Save draft</Text>
+                  <Text style={lightPillText}>{t("actions.saveDraft")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -1169,7 +1185,7 @@ export default function VenueListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
-                  ← Back to {STEPS[step - 1]}
+                  {t("actions.backTo", { step: t(`steps.${STEPS[step - 1]}`) })}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -1181,7 +1197,7 @@ export default function VenueListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
                 <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 14}}>
-                  Delete listing
+                  {t("deleteListing.confirm")}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -1209,6 +1225,7 @@ function StepRail({
   step: number;
   onJump: (i: number) => void;
 }) {
+  const { t } = useT("venueListing");
   return (
     <View
       style={{
@@ -1272,7 +1289,7 @@ function StepRail({
                   color: current ? INK : INK_DIM,
                 }}
               >
-                {label}
+                {t(`steps.${label}`)}
               </Text>
             </Pressable>
           </View>
@@ -1350,18 +1367,24 @@ function Input(props: ComponentProps<typeof TextInput>) {
   );
 }
 
+// Option values below are what's saved (English); the screen shows
+// venueListing → options[value], and a vendor's own entries as typed.
+
 // Multi-select chip grid with an optional inline "+ Add other".
 function ChipMulti({
   options,
   selected,
   onChange,
   allowCustom,
+  labelFor,
 }: {
   options: string[];
   selected: string[];
   onChange: (next: string[]) => void;
   allowCustom?: boolean;
+  labelFor?: (opt: string) => string;
 }) {
+  const { t } = useT("venueListing");
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   // Custom entries the vendor added earlier surface as normal chips.
@@ -1403,7 +1426,7 @@ function ChipMulti({
                 color: on ? "#ffffff" : INK,
               }}
             >
-              {opt}
+              {labelFor ? labelFor(opt) : opt}
             </Text>
           </TouchableOpacity>
         );
@@ -1416,7 +1439,7 @@ function ChipMulti({
             onSubmitEditing={commitCustom}
             onBlur={commitCustom}
             autoFocus
-            placeholder="Type and press return"
+            placeholder={t("chips.typeAndReturn")}
             placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF,
               borderRadius: 999,
@@ -1448,7 +1471,7 @@ function ChipMulti({
           >
             <Feather name="plus" size={12} color={INK_DIM} />
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK_DIM }}>
-              Add other
+              {t("chips.addOther")}
             </Text>
           </TouchableOpacity>
         )
@@ -1461,10 +1484,12 @@ function ChipSingle({
   options,
   selected,
   onChange,
+  labelFor,
 }: {
   options: string[];
   selected: string;
   onChange: (v: string) => void;
+  labelFor?: (opt: string) => string;
 }) {
   return (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -1487,7 +1512,7 @@ function ChipSingle({
             <Text
               style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#fff" : INK }}
             >
-              {opt}
+              {labelFor ? labelFor(opt) : opt}
             </Text>
           </TouchableOpacity>
         );
@@ -1554,13 +1579,19 @@ function SpaceCard({
   space,
   onChange,
   onDelete,
+  optLabel,
 }: {
   space: VenueSpace;
   onChange: (next: VenueSpace) => void;
   onDelete: () => void;
+  optLabel: (v: string) => string;
 }) {
+  const { t } = useT("venueListing");
   const [open, setOpen] = useState(!space.name);
-  const chips = [space.setting || null, space.type.trim() || null].filter(
+  const chips = [
+    space.setting ? optLabel(space.setting) : null,
+    space.type.trim() || null,
+  ].filter(
     Boolean,
   ) as string[];
   return (
@@ -1584,16 +1615,16 @@ function SpaceCard({
               style={{ fontFamily: SERIF_BOLD, flex: 1, fontSize: 16, color: INK }}
               numberOfLines={1}
             >
-              {space.name.trim() || "New space"}
+              {space.name.trim() || t("spaces.newSpace")}
             </Text>
             {space.sqft ? (
               <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginLeft: 8 }}>
-                {space.sqft} sq ft
+                {t("spaces.sqft", { n: space.sqft })}
               </Text>
             ) : null}
           </View>
           {chips.length > 0 ? (
-            <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
               {chips.map((c) => (
                 <View
                   key={c}
@@ -1628,14 +1659,15 @@ function SpaceCard({
           <Input
             value={space.name}
             onChangeText={(v) => onChange({ ...space, name: v })}
-            placeholder="Space name (e.g., Grand Ballroom)"
+            placeholder={t("spaces.namePlaceholder")}
           />
           <Input
             value={space.type}
             onChangeText={(v) => onChange({ ...space, type: v })}
-            placeholder="Space type (e.g., Ballroom, Terrace, Garden)"
+            placeholder={t("spaces.typePlaceholder")}
           />
           <ChipSingle
+            labelFor={optLabel}
             options={["Indoor", "Outdoor"]}
             selected={space.setting}
             onChange={(v) => onChange({ ...space, setting: v as VenueSpace["setting"] })}
@@ -1643,21 +1675,21 @@ function SpaceCard({
           <Input
             value={space.sqft}
             onChangeText={(v) => onChange({ ...space, sqft: v.replace(/[^0-9]/g, "") })}
-            placeholder="Square footage"
+            placeholder={t("spaces.sqftPlaceholder")}
             keyboardType="number-pad"
           />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {(
               [
-                ["ceremony", "Ceremony"],
-                ["reception", "Reception"],
-                ["seated", "Seated dinner"],
-                ["standing", "Standing"],
+                "ceremony",
+                "reception",
+                "seated",
+                "standing",
               ] as const
-            ).map(([k, label]) => (
+            ).map((k) => (
               <View key={k} style={{ flexBasis: "47%", flexGrow: 1 }}>
                 <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM, marginBottom: 4 }}>
-                  {label}
+                  {t(`spaces.${k}`)}
                 </Text>
                 <Input
                   value={space[k]}
@@ -1677,6 +1709,7 @@ function SpaceCard({
 }
 
 function ReviewChecklist({ missing }: { missing: string[] }) {
+  const { t } = useT("venueListing");
   if (missing.length === 0) {
     return (
       <View
@@ -1691,7 +1724,7 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
       >
         <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
         <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 14, color: INK }}>
-          Everything required is filled in. Publish when you&rsquo;re ready.
+          {t("review.allSet")}
         </Text>
       </View>
     );
@@ -1707,7 +1740,7 @@ function ReviewChecklist({ missing }: { missing: string[] }) {
       }}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-        Still needed to publish:
+        {t("review.stillNeeded")}
       </Text>
       {missing.map((m) => (
         <View

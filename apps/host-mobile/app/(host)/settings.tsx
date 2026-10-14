@@ -49,14 +49,16 @@ const SERIF_BOLD = "LibreBaskerville-Bold";
 
 // The website hosts Help, Terms and Privacy; the app links to them so
 // both always show the same text.
+// Labels are read at render time from settings.links.<key>.
 const LEGAL_LINKS = [
-  { label: "Help & FAQ", url: "https://eventvendora.com/help", icon: "help-circle" },
-  { label: "Terms of Service", url: "https://eventvendora.com/terms", icon: "file-text" },
-  { label: "Privacy Policy", url: "https://eventvendora.com/privacy", icon: "lock" },
+  { key: "help", url: "https://eventvendora.com/help", icon: "help-circle" },
+  { key: "terms", url: "https://eventvendora.com/terms", icon: "file-text" },
+  { key: "privacy", url: "https://eventvendora.com/privacy", icon: "lock" },
 ] as const;
 
 export default function SettingsScreen() {
   const { t: tc } = useT("common");
+  const { t } = useT("settings");
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
@@ -96,7 +98,7 @@ export default function SettingsScreen() {
     if (!user?.id) return;
     const trimmed = displayName.trim();
     if (!trimmed) {
-      Alert.alert("Display name is required");
+      Alert.alert(t("nameRequired"));
       return;
     }
     setSaving(true);
@@ -107,11 +109,11 @@ export default function SettingsScreen() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      Alert.alert("Couldn't save", error.message);
+      Alert.alert(t("saveError"), error.message);
       return;
     }
     setInitialName(trimmed);
-    Alert.alert("Saved", "Your display name is updated.");
+    Alert.alert(t("savedTitle"), t("savedBody"));
   }
 
   async function toggleReplyEmail(next: boolean) {
@@ -126,18 +128,18 @@ export default function SettingsScreen() {
       .eq("id", user.id);
     if (error) {
       setPrefs(previous);
-      Alert.alert("Couldn't save", error.message);
+      Alert.alert(t("saveError"), error.message);
     }
   }
 
   function confirmDelete() {
     Alert.alert(
-      "Delete account?",
-      "Deleting closes your account now and signs you out. Any active plan is canceled right away with no refund for the rest of the current billing period. Everything, including your inquiries, messages and saved vendors, is permanently deleted after 30 days. Sign in before then to restore it.",
+      t("deleteConfirm.title"),
+      t("deleteConfirm.body"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("deleteConfirm.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("deleteConfirm.confirm"),
           style: "destructive",
           onPress: async () => {
             setDeleting(true);
@@ -149,7 +151,7 @@ export default function SettingsScreen() {
             );
             setDeleting(false);
             if (error) {
-              Alert.alert("Couldn't delete account", error.message);
+              Alert.alert(t("deleteError"), error.message);
               return;
             }
             await signOut();
@@ -190,9 +192,10 @@ export default function SettingsScreen() {
                 color: INK,
                 fontFamily: SERIF_BOLD,
                 fontSize: 28,
+                flexShrink: 1,
               }}
             >
-              Account settings
+              {t("title")}
             </Text>
           </View>
 
@@ -206,14 +209,14 @@ export default function SettingsScreen() {
               </View>
             ) : (
               <>
-                <SectionLabel>Profile</SectionLabel>
+                <SectionLabel>{t("sections.profile")}</SectionLabel>
 
                 <View style={field}>
-                  <Text style={fieldLabel}>Display name</Text>
+                  <Text style={fieldLabel}>{t("displayName")}</Text>
                   <TextInput
                     value={displayName}
                     onChangeText={setDisplayName}
-                    placeholder="Your name"
+                    placeholder={t("namePlaceholder")}
                     placeholderTextColor={PLACEHOLDER}
                     style={input}
                     autoCapitalize="words"
@@ -221,11 +224,10 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={field}>
-                  <Text style={fieldLabel}>Email</Text>
+                  <Text style={fieldLabel}>{t("email")}</Text>
                   <Text style={readonly}>{user?.email ?? "—"}</Text>
                   <Text style={hint}>
-                    Email changes aren't supported yet — reach out if you need
-                    to switch the account email.
+                    {t("emailHint")}
                   </Text>
                 </View>
 
@@ -251,14 +253,14 @@ export default function SettingsScreen() {
                             color: INK,
                           }}
                         >
-                          Save
+                          {t("save")}
                         </Text>
                       )}
                     </View>
                   )}
                 </Pressable>
 
-                <SectionLabel style={{ marginTop: 32 }}>Notifications</SectionLabel>
+                <SectionLabel style={{ marginTop: 32 }}>{t("sections.notifications")}</SectionLabel>
                 <View
                   style={[
                     field,
@@ -267,11 +269,10 @@ export default function SettingsScreen() {
                 >
                   <View style={{ flex: 1, marginRight: 12 }}>
                     <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15 }}>
-                      Vendor replies by email
+                      {t("replyEmail.title")}
                     </Text>
                     <Text style={hint}>
-                      Get an email when a vendor replies to your inquiry and
-                      you haven't read it yet.
+                      {t("replyEmail.hint")}
                     </Text>
                   </View>
                   <Switch
@@ -279,7 +280,7 @@ export default function SettingsScreen() {
                     onValueChange={(v) => void toggleReplyEmail(v)}
                     trackColor={{ false: BORDER, true: INK }}
                     thumbColor="#ffffff"
-                    accessibilityLabel="Vendor replies by email"
+                    accessibilityLabel={t("replyEmail.title")}
                   />
                 </View>
 
@@ -289,7 +290,7 @@ export default function SettingsScreen() {
                   <Text style={[hint, { marginTop: 10 }]}>{tc("language.note")}</Text>
                 </View>
 
-                <SectionLabel style={{ marginTop: 32 }}>Help & legal</SectionLabel>
+                <SectionLabel style={{ marginTop: 32 }}>{t("sections.help")}</SectionLabel>
                 <View style={[field, { paddingVertical: 4 }]}>
                   {LEGAL_LINKS.map((l, i) => (
                     <Pressable
@@ -318,7 +319,7 @@ export default function SettingsScreen() {
                               flex: 1,
                             }}
                           >
-                            {l.label}
+                            {t(`links.${l.key}`)}
                           </Text>
                           <Feather name="external-link" size={16} color={INK} />
                         </View>
@@ -327,7 +328,7 @@ export default function SettingsScreen() {
                   ))}
                 </View>
 
-                <SectionLabel style={{ marginTop: 32 }}>Session</SectionLabel>
+                <SectionLabel style={{ marginTop: 32 }}>{t("sections.session")}</SectionLabel>
                 <Pressable onPress={signOut}>
                   {({ pressed }) => (
                     <View
@@ -352,14 +353,14 @@ export default function SettingsScreen() {
                           fontSize: 15,
                         }}
                       >
-                        Sign out
+                        {t("signOut")}
                       </Text>
                     </View>
                   )}
                 </Pressable>
 
                 <SectionLabel style={{ marginTop: 32, color: DANGER }}>
-                  Danger zone
+                  {t("sections.danger")}
                 </SectionLabel>
                 <Pressable onPress={confirmDelete} disabled={deleting}>
                   {({ pressed }) => (
@@ -385,7 +386,7 @@ export default function SettingsScreen() {
                           fontSize: 15,
                         }}
                       >
-                        {deleting ? "Submitting…" : "Delete account"}
+                        {deleting ? t("submitting") : t("deleteAccount")}
                       </Text>
                     </View>
                   )}

@@ -70,7 +70,7 @@ function initialOf(name: string): string {
 }
 
 export default function ProfileScreen() {
-  const { t } = useT("profile");
+  const { t, lang } = useT("profile");
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [state, setState] = useState<ProfileState | null>(null);
@@ -161,8 +161,9 @@ export default function ProfileScreen() {
       },
       verifStatus: status,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.email]);
+    // `lang`: the "Host" fallback name follows the language. (t itself
+    // is a new function each render, so it can't be a dependency.)
+  }, [user?.id, user?.email, lang]);
 
   // Request host verification. Lightweight version: inserts a
   // host_verification_requests row, admins receive a notification and
@@ -198,8 +199,7 @@ export default function ProfileScreen() {
         },
       ],
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, load]);
+  }, [user?.id, load, t]);
 
   useEffect(() => {
     load();

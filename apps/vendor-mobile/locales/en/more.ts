@@ -1,0 +1,45 @@
+export default {
+  title: "More",
+  subtitle: "Everything else, one tap away.",
+  appName: "Vendora for Vendors",
+  close: "Close",
+  sections: {
+    business: "YOUR BUSINESS",
+    tools: "TOOLS",
+    account: "ACCOUNT",
+    vendora: "VENDORA",
+  },
+  badges: {
+    optional: "Optional",
+    eligible: "Eligible",
+    new: "New",
+  },
+  rows: {
+    editProfile: { label: "Edit brand profile", body: "Name, logo, bio, and more" },
+    team: { label: "Meet the Team", body: "Introduce the people behind your business" },
+    verification: { label: "Verification", body: "Get your verified badge" },
+    scheduling: { label: "Smart Scheduling", body: "Hours, services, and automations" },
+    crm: { label: "Vendora CRM", body: "Clients, notes, and follow-ups" },
+    subscription: { label: "Subscription", body: "Plan, billing, and usage" },
+    settings: { label: "Settings", body: "Account, password, and privacy" },
+    updates: { label: "Upcoming updates", body: "What's new and what's next" },
+    help: { label: "Help & FAQ", body: "Answers to common questions" },
+    contact: { label: "Contact us", body: "Email the Vendora team" },
+    about: { label: "About Vendora", body: "App info, terms, and policies" },
+  },
+  support: {
+    title: "Contact us",
+    message: "Questions, issues, or feedback? Email us and a real person will read it.",
+    confirm: "Email support",
+  },
+  about: {
+    title: "About Vendora",
+    message: "The premium marketplace connecting event vendors with hosts.\n\nTerms of service and privacy policy live at eventvendora.com.",
+    confirm: "View terms & privacy",
+  },
+  rate: {
+    title: "Love Vendora?",
+    body: "Leave us a review and help other vendors.",
+    button: "Rate us",
+  },
+};

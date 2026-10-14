@@ -234,8 +234,7 @@ export default function ThreadScreen() {
       }
       Alert.alert(t("report.sentTitle"), t("report.sentBody"));
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user?.id, threadId, lang],
+    [user?.id, threadId, t],
   );
 
   const onReport = useCallback(() => {
@@ -247,8 +246,7 @@ export default function ThreadScreen() {
       { text: t("report.other"), onPress: () => submitReport("other") },
       { text: tc("actions.cancel"), style: "cancel" },
     ]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitReport, lang]);
+  }, [submitReport, t, tc]);
 
   // Header overflow → quick options. Real mute toggle persists in
   // thread_mutes; real report writes to thread_reports for admin
@@ -279,8 +277,7 @@ export default function ThreadScreen() {
       undefined,
       opts,
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [header, router, muted, toggleMute, onReport, lang]);
+  }, [header, router, muted, toggleMute, onReport, t, tc]);
 
   // Composer "+" tap. The host build doesn't yet bundle
   // expo-image-picker (vendor-mobile does), so sending photos from
@@ -288,8 +285,7 @@ export default function ThreadScreen() {
   // attachments still works — see bubble renderer below.
   const onAttach = useCallback(() => {
     Alert.alert(t("attach.title"), t("attach.body"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, [t]);
 
   const onEmojiPick = useCallback(
     (emoji: string) => {
@@ -450,7 +446,7 @@ export default function ThreadScreen() {
 
   const enriched = useMemo(
     () => enrichMessages(messages, t, locale),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // t and locale follow lang.
     [messages, lang],
   );
   const myLastSentId = useMemo(() => {

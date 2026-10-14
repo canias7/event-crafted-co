@@ -67,6 +67,7 @@ export function SettingsSheet({
   const { user } = useAuth();
   const dialog = useBrandDialog();
   const { t: tc, lang } = useT("common");
+  const { t } = useT("settingsSheet");
 
   // "Account" view vs inline "Change password" form. The sheet swaps
   // its body when the password row is tapped so the design stays
@@ -113,16 +114,16 @@ export function SettingsSheet({
     if (newPwd.length < 8) {
       dialog.show({
         icon: "lock",
-        title: "Password too short",
-        message: "Must be at least 8 characters.",
+        title: t("dialogs.tooShort.title"),
+        message: t("dialogs.tooShort.message"),
       });
       return;
     }
     if (newPwd !== confirmPwd) {
       dialog.show({
         icon: "lock",
-        title: "Passwords don't match",
-        message: "Please re-type the new password.",
+        title: t("dialogs.mismatch.title"),
+        message: t("dialogs.mismatch.message"),
       });
       return;
     }
@@ -132,7 +133,7 @@ export function SettingsSheet({
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change password",
+        title: t("dialogs.changeFailed"),
         message: error.message,
       });
       return;
@@ -142,8 +143,8 @@ export function SettingsSheet({
     setView("main");
     dialog.show({
       icon: "check-circle",
-      title: "Password updated",
-      message: "Your new password is active.",
+      title: t("dialogs.updated.title"),
+      message: t("dialogs.updated.message"),
     });
   }
 
@@ -175,9 +176,8 @@ export function SettingsSheet({
           setPushOn(false);
           dialog.show({
             icon: "bell",
-            title: "Push permission needed",
-            message:
-              "Enable notifications for Vendora in your device Settings to receive pushes.",
+            title: t("dialogs.pushPermission.title"),
+            message: t("dialogs.pushPermission.message"),
           });
         }
       } catch {
@@ -190,9 +190,8 @@ export function SettingsSheet({
   function onTwoStep() {
     dialog.show({
       icon: "shield",
-      title: "Two-step verification",
-      message:
-        "Stronger sign-in is on the roadmap. Today every login already uses an email-code check; the toggle will switch to authenticator-app 2FA when it ships.",
+      title: t("dialogs.twoStep.title"),
+      message: t("dialogs.twoStep.message"),
     });
   }
 
@@ -200,10 +199,10 @@ export function SettingsSheet({
   function onSignOutPress() {
     dialog.show({
       icon: "log-out",
-      title: "Sign out",
-      message: "Are you sure?",
-      confirmLabel: "Sign out",
-      cancelLabel: "Cancel",
+      title: t("dialogs.signOut.title"),
+      message: t("dialogs.signOut.message"),
+      confirmLabel: t("dialogs.signOut.confirm"),
+      cancelLabel: tc("actions.cancel"),
       destructive: true,
       onConfirm: () => {
         onClose();
@@ -215,11 +214,10 @@ export function SettingsSheet({
   function onDeleteAccount() {
     dialog.show({
       icon: "trash-2",
-      title: "Delete your account?",
-      message:
-        "Deleting closes your account now and signs you out. If you have a paid plan, it's canceled right away with no refund for the rest of the current billing period. Everything, including your listings, messages and uploaded files, is permanently deleted after 30 days. Sign in before then to restore it.",
-      confirmLabel: "Delete account",
-      cancelLabel: "Cancel",
+      title: t("dialogs.delete.title"),
+      message: t("dialogs.delete.message"),
+      confirmLabel: t("dialogs.delete.confirm"),
+      cancelLabel: tc("actions.cancel"),
       destructive: true,
       onConfirm: () => {
         void (async () => {
@@ -234,10 +232,10 @@ export function SettingsSheet({
             const code = await readFunctionError(error);
             dialog.show({
               icon: "alert-circle",
-              title: "Couldn't delete account",
+              title: t("dialogs.deleteFailed.title"),
               message:
                 code === "subscription_cancel_failed"
-                  ? "We couldn't cancel your plan, so your account wasn't deleted. Try again in a moment, or email hello@eventvendora.com."
+                  ? t("dialogs.deleteFailed.cancelFailed")
                   : error.message,
             });
             return;
@@ -308,7 +306,7 @@ export function SettingsSheet({
                     letterSpacing: -0.5,
                   }}
                 >
-                  Account
+                  {t("title")}
                 </Text>
                 <Pressable
                   onPress={onClose}
@@ -334,7 +332,7 @@ export function SettingsSheet({
                   lineHeight: 19,
                 }}
               >
-                Sign-in details and how Vendora reaches you.
+                {t("subtitle")}
               </Text>
 
               {/* SIGN IN */}
@@ -348,7 +346,7 @@ export function SettingsSheet({
                   letterSpacing: 1.2,
                 }}
               >
-                SIGN IN
+                {t("sections.signIn")}
               </Text>
               <View
                 style={{
@@ -361,7 +359,7 @@ export function SettingsSheet({
               >
                 <SettingsRow
                   icon="mail"
-                  label="EMAIL"
+                  label={t("rows.email")}
                   body={email || "—"}
                   right={
                     emailVerified ? (
@@ -391,7 +389,7 @@ export function SettingsSheet({
                             fontSize: 12,
                           }}
                         >
-                          Verified
+                          {t("rows.verified")}
                         </Text>
                       </View>
                     ) : null
@@ -400,15 +398,15 @@ export function SettingsSheet({
                 <RowDivider />
                 <SettingsRow
                   icon="lock"
-                  label="Change password"
-                  body="Tap to update"
+                  label={t("rows.password.label")}
+                  body={t("rows.password.body")}
                   onPress={() => setView("password")}
                 />
                 <RowDivider />
                 <SettingsRow
                   icon="shield"
-                  label="Two-step verification"
-                  body="Off — recommended for vendors"
+                  label={t("rows.twoStep.label")}
+                  body={t("rows.twoStep.body")}
                   right={<Toggle value={false} onPress={onTwoStep} />}
                   onPress={onTwoStep}
                 />
@@ -425,7 +423,7 @@ export function SettingsSheet({
                   letterSpacing: 1.2,
                 }}
               >
-                PREFERENCES
+                {t("sections.preferences")}
               </Text>
               <View
                 style={{
@@ -438,8 +436,8 @@ export function SettingsSheet({
               >
                 <SettingsRow
                   icon="bell"
-                  label="Push notifications"
-                  body="Bookings, messages, reminders"
+                  label={t("rows.push.label")}
+                  body={t("rows.push.body")}
                   right={<Toggle value={pushOn} onPress={togglePush} disabled={pushBusy} />}
                   onPress={togglePush}
                 />
@@ -478,7 +476,7 @@ export function SettingsSheet({
                     marginLeft: 8,
                   }}
                 >
-                  Log out
+                  {t("logOut")}
                 </Text>
               </Pressable>
 
@@ -508,7 +506,7 @@ export function SettingsSheet({
                     marginLeft: 8,
                   }}
                 >
-                  Delete account
+                  {t("deleteAccount")}
                 </Text>
               </Pressable>
 
@@ -523,9 +521,7 @@ export function SettingsSheet({
                   paddingHorizontal: 12,
                 }}
               >
-                Deleting closes your account right away. Your listings, messages,
-                reviews and files are permanently deleted after 30 days unless you
-                sign back in and restore it.
+                {t("deleteNote")}
               </Text>
             </ScrollView>
           ) : (
@@ -568,7 +564,7 @@ export function SettingsSheet({
                     fontSize: 20,
                   }}
                 >
-                  Change password
+                  {t("password.title")}
                 </Text>
                 <View style={{ width: 32 }} />
               </View>
@@ -581,8 +577,7 @@ export function SettingsSheet({
                   lineHeight: 20,
                 }}
               >
-                At least 8 characters. Pick something you don&apos;t use
-                anywhere else.
+                {t("password.subtitle")}
               </Text>
 
               <Text
@@ -594,7 +589,7 @@ export function SettingsSheet({
                   letterSpacing: 1,
                 }}
               >
-                NEW PASSWORD
+                {t("password.new")}
               </Text>
               <TextInput
                 secureTextEntry
@@ -624,7 +619,7 @@ export function SettingsSheet({
                   letterSpacing: 1,
                 }}
               >
-                CONFIRM PASSWORD
+                {t("password.confirm")}
               </Text>
               <TextInput
                 secureTextEntry
@@ -663,7 +658,7 @@ export function SettingsSheet({
                 <Text
                   style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}
                 >
-                  {pwdSubmitting ? "Saving…" : "Save password"}
+                  {pwdSubmitting ? t("password.saving") : t("password.save")}
                 </Text>
               </Pressable>
             </ScrollView>

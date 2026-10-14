@@ -25,9 +25,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { PRICING_MODEL_LABELS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
+
+// Money keeps the US format in every language ($1,234).
+function dollars(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
 
 type VendorRow = {
   id: string;
@@ -57,6 +64,8 @@ export default function VendorDetailScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useT("vendorDetail");
+  const categoryNames = useCategoryNames();
   const [vendor, setVendor] = useState<VendorRow | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [faqs, setFaqs] = useState<FaqRow[]>([]);
@@ -174,7 +183,7 @@ export default function VendorDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+          <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -194,7 +203,7 @@ export default function VendorDetailScreen() {
         </View>
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base text-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
-            Listing not found.
+            {t("notFound")}
           </Text>
         </View>
       </SafeAreaView>
@@ -203,9 +212,27 @@ export default function VendorDetailScreen() {
 
   const screenWidth = Dimensions.get("window").width;
   const galleryHeight = Math.round(screenWidth * 0.95);
+  // Same rules as core's formatListingPrice, in the app's language.
+  const minC = vendor.price_min_cents;
+  const maxC = vendor.price_max_cents;
+  const hasMin = minC != null && minC > 0;
+  const hasMax = maxC != null && maxC > 0;
   const price =
-    formatListingPrice(vendor.price_min_cents, vendor.price_max_cents) || null;
-  const models = pricingModelsLabel(vendor.pricing_models);
+    hasMin && hasMax
+      ? minC === maxC
+        ? dollars(minC as number)
+        : `${dollars(minC as number)} – ${dollars(maxC as number)}`
+      : hasMin
+        ? t("price.from", { amount: dollars(minC as number) })
+        : hasMax
+          ? t("price.upTo", { amount: dollars(maxC as number) })
+          : t("price.custom");
+  const models = (vendor.pricing_models ?? [])
+    .map((m) =>
+      m in PRICING_MODEL_LABELS ? t(`pricingModels.${m}`) : m,
+    )
+    .join(" · ");
+  const categoryLabel = vendor.category ? categoryNames.sub(vendor.category) : null;
 
   async function shareListing() {
     if (!vendor) return;
@@ -213,7 +240,7 @@ export default function VendorDetailScreen() {
       ? `https://eventvendora.com/vendors/${vendor.slug}`
       : `https://eventvendora.com/vendors/${vendor.id}`;
     await Share.share({
-      message: `${vendor.business_name ?? "This vendor"} on Vendora — ${url}`,
+      message: t("shareMessage", { name: vendor.business_name ?? t("thisVendor"), url }),
       url,
     }).catch(() => {});
   }
@@ -255,7 +282,7 @@ export default function VendorDetailScreen() {
             >
               <Feather name="image" size={36} color="#746a58" />
               <Text className="mt-2 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                No listing photos yet
+                {t("noPhotos")}
               </Text>
             </View>
           )}
@@ -329,10 +356,10 @@ export default function VendorDetailScreen() {
               className="text-3xl text-foreground leading-9"
               style={{ fontFamily: "LibreBaskerville-Bold" }}
             >
-              {vendor.business_name ?? "Vendor"}
+              {vendor.business_name ?? t("vendorFallback")}
             </Text>
             <Text className="mt-2 text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-              {vendor.category ?? ""}
+              {categoryLabel ?? ""}
               {vendor.location ? ` · ${vendor.location}` : ""}
             </Text>
           </View>
@@ -344,11 +371,11 @@ export default function VendorDetailScreen() {
                 top={
                   <View className="flex-row items-center gap-1">
                     <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                      {vendor.verified_at ? "Verified" : "New"}
+                      {vendor.verified_at ? t("stats.verified") : t("stats.new")}
                     </Text>
                   </View>
                 }
-                bottom={vendor.verified_at ? "Vendora-checked" : "Just listed"}
+                bottom={vendor.verified_at ? t("stats.checked") : t("stats.justListed")}
               />
               <Divider />
               <StatCell
@@ -357,7 +384,7 @@ export default function VendorDetailScreen() {
                     {faqs.length}
                   </Text>
                 }
-                bottom={faqs.length === 1 ? "FAQ" : "FAQs"}
+                bottom={t("stats.faqs", { count: faqs.length })}
               />
             </View>
           </View>
@@ -400,7 +427,7 @@ export default function VendorDetailScreen() {
                   {price}
                 </Text>
                 <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                  {vendor.category ?? "Marketplace listing"}
+                  {categoryLabel ?? t("marketplaceListing")}
                 </Text>
                 {models ? (
                   <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
@@ -409,14 +436,14 @@ export default function VendorDetailScreen() {
                 ) : null}
                 {vendor.custom_pricing ? (
                   <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                    Pricing varies by event details.
+                    {t("pricingVaries")}
                   </Text>
                 ) : null}
               </>
             ) : (
               <>
                 <Text className="text-xl text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  Pricing on request
+                  {t("pricingOnRequest")}
                 </Text>
                 {models ? (
                   <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
@@ -425,7 +452,7 @@ export default function VendorDetailScreen() {
                 ) : null}
                 {vendor.custom_pricing ? (
                   <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                    Pricing varies by event details.
+                    {t("pricingVaries")}
                   </Text>
                 ) : null}
               </>
@@ -456,7 +483,7 @@ export default function VendorDetailScreen() {
           >
             <Feather name="external-link" size={16} color="#14161a" />
             <Text className="ml-2 text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              View on web
+              {t("viewOnWeb")}
             </Text>
           </Pressable>
         </View>

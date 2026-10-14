@@ -34,6 +34,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { useT } from "@/lib/i18n";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -53,18 +54,23 @@ const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
 
 // Feature comparison per the reference mock — static marketing copy,
-// independent of the Stripe catalog (prices stay DB-driven).
-const COMPARISON: { label: string; free: boolean; pro: boolean; premium: boolean }[] = [
-  { label: "Calendar & availability", free: true, pro: true, premium: true },
-  { label: "Block unavailable dates", free: true, pro: true, premium: true },
-  { label: "Appointment types (1 / 5 / unlimited)", free: true, pro: true, premium: true },
-  { label: "Working hours & custom availability", free: false, pro: true, premium: true },
-  { label: "Buffers, notice & daily limits", free: false, pro: true, premium: true },
-  { label: "Vendora CRM & V2V messaging", free: false, pro: true, premium: true },
-  { label: "Automated replies & reminders", free: false, pro: false, premium: true },
-  { label: "Follow-ups & review requests", free: false, pro: false, premium: true },
-  { label: "Fill Your Calendar alerts", free: false, pro: false, premium: true },
+// independent of the Stripe catalog (prices stay DB-driven). Labels
+// live in locales/<lang>/subscription.ts → comparison.<key>.
+const COMPARISON: { key: string; free: boolean; pro: boolean; premium: boolean }[] = [
+  { key: "calendar", free: true, pro: true, premium: true },
+  { key: "blockDates", free: true, pro: true, premium: true },
+  { key: "appointmentTypes", free: true, pro: true, premium: true },
+  { key: "workingHours", free: false, pro: true, premium: true },
+  { key: "buffers", free: false, pro: true, premium: true },
+  { key: "crm", free: false, pro: true, premium: true },
+  { key: "autoReplies", free: false, pro: false, premium: true },
+  { key: "followUps", free: false, pro: false, premium: true },
+  { key: "fillCalendar", free: false, pro: false, premium: true },
 ];
+
+// Marker for the Premium card's gold "New" bullet (the text itself is
+// translated at render time).
+const SMART_SCHEDULING_NEW = "✦smartSchedulingNew";
 
 // Where the web /mobile/checkout-return page bounces us back to.
 // Matches the `scheme` in app.json; openAuthSessionAsync dismisses
@@ -155,6 +161,11 @@ async function fnErrorMessage(
 
 export default function SubscriptionScreen() {
   const { user } = useAuth();
+  const { t, tObject, locale } = useT("subscription");
+  // Plan bullets come from the catalog (and FREE_TIER) in English; show
+  // the known ones in the app's language, anything new as written.
+  const highlightLabel = (h: string) =>
+    (tObject<Record<string, string>>("highlights") ?? {})[h] ?? h;
 
   const [plan, setPlan] = useState<PlanState | null>(null);
   const [tiers, setTiers] = useState<TierRow[]>([FREE_TIER]);
@@ -269,8 +280,8 @@ export default function SubscriptionScreen() {
   function requireVerifiedEmail(): boolean {
     if (user?.email_confirmed_at) return true;
     Alert.alert(
-      "Verify your email first",
-      "Check your inbox for the verification link before making a purchase — Stripe sends receipts to your email.",
+      t("alerts.verifyEmail.title"),
+      t("alerts.verifyEmail.message"),
     );
     return false;
   }
@@ -293,7 +304,7 @@ export default function SubscriptionScreen() {
       const url = (data as { url?: string } | null)?.url;
       if (error || !url) {
         Alert.alert(
-          "Something went wrong",
+          t("alerts.generic"),
           await fnErrorMessage(error, fallbackError),
         );
         return;
@@ -316,13 +327,13 @@ export default function SubscriptionScreen() {
       // today, fresh cycle) — a second Checkout would be rejected
       // by the edge function anyway.
       Alert.alert(
-        `Switch to ${tier.name}?`,
-        `You'll be charged $${tier.priceMonthly.toFixed(2)} today and start a fresh ${
-          tier.billingInterval === "year" ? "12-month" : "30-day"
-        } cycle. Unused time on your current plan isn't refunded.`,
+        t("alerts.switch.title", { plan: tier.name }),
+        tier.billingInterval === "year"
+          ? t("alerts.switch.messageYear", { price: `$${tier.priceMonthly.toFixed(2)}` })
+          : t("alerts.switch.messageMonth", { price: `$${tier.priceMonthly.toFixed(2)}` }),
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Confirm switch", onPress: () => void confirmTierSwitch(tier) },
+          { text: t("alerts.switch.cancel"), style: "cancel" },
+          { text: t("alerts.switch.confirm"), onPress: () => void confirmTierSwitch(tier) },
         ],
       );
       return;
@@ -331,7 +342,7 @@ export default function SubscriptionScreen() {
       `tier_${tier.id}`,
       "stripe-subscription-checkout",
       { price_id: tier.priceId },
-      "Couldn't start checkout.",
+      t("errors.checkout"),
     );
   }
 
@@ -345,8 +356,8 @@ export default function SubscriptionScreen() {
       );
       if (error) {
         Alert.alert(
-          "Couldn't switch plan",
-          await fnErrorMessage(error, "Please try again in a moment."),
+          t("alerts.switchFailed.title"),
+          await fnErrorMessage(error, t("alerts.switchFailed.message")),
         );
         return;
       }
@@ -360,23 +371,25 @@ export default function SubscriptionScreen() {
       if (!result.changed) {
         Alert.alert(
           result.reason === "already_on_this_tier"
-            ? "You're already on this plan."
-            : "No changes made.",
+            ? t("alerts.alreadyOnPlan")
+            : t("alerts.noChanges"),
         );
       } else if (result.charge_failed) {
         // Tier swapped + credits landed but the card charge failed —
         // surface it honestly so the vendor fixes the card via
         // Manage billing instead of seeing a fake success.
         Alert.alert(
-          `Switched to ${tier.name}, but the card charge failed`,
+          t("alerts.chargeFailed.title", { plan: tier.name }),
           result.charge_failed === "no_payment_method_on_file"
-            ? "No card on file. Open Manage billing to add one."
+            ? t("alerts.chargeFailed.noCard")
             : `Stripe: ${result.charge_failed}`,
         );
       } else {
         Alert.alert(
-          `Switched to ${tier.name}`,
-          `$${((result.charged_now_cents ?? 0) / 100).toFixed(2)} charged today. Your new plan is active.`,
+          t("alerts.switched.title", { plan: tier.name }),
+          t("alerts.switched.message", {
+            amount: `$${((result.charged_now_cents ?? 0) / 100).toFixed(2)}`,
+          }),
         );
       }
       await load();
@@ -392,7 +405,7 @@ export default function SubscriptionScreen() {
       `topup_${pack.id}`,
       "stripe-topup-checkout",
       { price_id: pack.priceId },
-      "Couldn't start top-up checkout.",
+      t("errors.topup"),
     );
   }
 
@@ -402,7 +415,7 @@ export default function SubscriptionScreen() {
       "portal",
       "stripe-customer-portal",
       {},
-      "Couldn't open the billing portal.",
+      t("errors.portal"),
     );
   }
 
@@ -426,7 +439,7 @@ export default function SubscriptionScreen() {
     (t) => t.id === "free" || t.billingInterval === billingInterval,
   );
   const renewalLabel = plan?.currentPeriodEnd
-    ? new Date(plan.currentPeriodEnd).toLocaleDateString(undefined, {
+    ? new Date(plan.currentPeriodEnd).toLocaleDateString(locale, {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -459,10 +472,10 @@ export default function SubscriptionScreen() {
             color: INK,
           }}
         >
-          Subscription
+          {t("title")}
         </Text>
         <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-          Plans and billing
+          {t("subtitle")}
         </Text>
 
         {/* Current plan + credits summary */}
@@ -474,22 +487,22 @@ export default function SubscriptionScreen() {
           }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, color: "rgba(255,255,255,0.6)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2}}>
-            Current plan
+            {t("currentPlan")}
           </Text>
           <Text style={{ color: "#ffffff", fontSize: 30, fontFamily: SERIF_BOLD, marginTop: 6 }}>
             {TIER_LABELS[currentTier] ?? currentTier}
           </Text>
           {plan?.status === "past_due" ? (
             <Text style={{ fontFamily: SERIF, color: "#fca5a5", fontSize: 13, marginTop: 4 }}>
-              Payment past due — update your card in Manage billing.
+              {t("pastDue")}
             </Text>
           ) : plan?.cancelAtPeriodEnd && renewalLabel ? (
             <Text style={{ fontFamily: SERIF, color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
-              Cancels on {renewalLabel}
+              {t("cancelsOn", { date: renewalLabel })}
             </Text>
           ) : currentTier !== "free" && renewalLabel ? (
             <Text style={{ fontFamily: SERIF, color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
-              Renews {renewalLabel}
+              {t("renews", { date: renewalLabel })}
             </Text>
           ) : null}
 
@@ -517,7 +530,7 @@ export default function SubscriptionScreen() {
                 <Feather name="credit-card" size={14} color="#ffffff" />
               )}
               <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13, marginLeft: 8 }}>
-                Manage billing
+                {t("manageBilling")}
               </Text>
             </Pressable>
           ) : null}
@@ -538,17 +551,14 @@ export default function SubscriptionScreen() {
             }}
           >
             <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18 }}>
-              Paid plans are paused
+              {t("paused.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
-              Vendora is free for now: every vendor is on the Free plan. We'll
-              let you know when paid plans are back.
+              {t("paused.body")}
             </Text>
             {hasBilling ? (
               <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
-                {isIOS
-                  ? "Your current plan continues until you cancel it."
-                  : "Your current plan continues until you cancel it. You can manage it with Manage billing above."}
+                {isIOS ? t("paused.continuesIos") : t("paused.continues")}
               </Text>
             ) : null}
           </View>
@@ -575,21 +585,19 @@ export default function SubscriptionScreen() {
             }}
           >
             <Text style={{ color: INK, fontFamily: SERIF_BOLD, fontSize: 18 }}>
-              Your plan
+              {t("ios.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
-              Your current plan is shown above and stays in sync automatically.
-              What every plan includes is listed below — plan changes are made
-              on your account and show up here next time you open this screen.
+              {t("ios.body")}
             </Text>
           </View>
         ) : null}
 
         {/* Plan list. Purchase controls are web + Android only; iOS renders
             the same cards without price or button. */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 32, marginBottom: 12 }}>
-          <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF }}>
-            {isIOS ? "What each plan includes" : "Choose a plan"}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "space-between", marginTop: 32, marginBottom: 12 }}>
+          <Text style={{ flexShrink: 1, color: INK, fontSize: 20, fontFamily: SERIF }}>
+            {isIOS ? t("plansIncluded") : t("choosePlan")}
           </Text>
           {hasYearly && !isIOS ? (
             <View
@@ -618,7 +626,7 @@ export default function SubscriptionScreen() {
                       color: billingInterval === iv ? "#ffffff" : INK_DIM,
                     }}
                   >
-                    {iv === "month" ? "Monthly" : "Yearly"}
+                    {iv === "month" ? t("monthly") : t("yearly")}
                   </Text>
                 </Pressable>
               ))}
@@ -641,7 +649,7 @@ export default function SubscriptionScreen() {
                 ...tier.highlights.filter(
                   (h) => !/smart scheduling/i.test(h),
                 ),
-                "✦ Smart Scheduling & Automations — New",
+                SMART_SCHEDULING_NEW,
               ]
             : tier.highlights;
           return (
@@ -662,7 +670,7 @@ export default function SubscriptionScreen() {
                 </Text>
                 {isCurrent ? (
                   <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-                    Current
+                    {t("current")}
                   </Text>
                 ) : isPremiumTier ? (
                   <View
@@ -674,7 +682,7 @@ export default function SubscriptionScreen() {
                     }}
                   >
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: "#8a6f3e" }}>
-                      Most popular
+                      {t("mostPopular")}
                     </Text>
                   </View>
                 ) : null}
@@ -687,11 +695,11 @@ export default function SubscriptionScreen() {
                     <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 24}}>
                       ${monthlyShown.toFixed(2)}
                     </Text>
-                    <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}> / mo</Text>
+                    <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}> {t("perMonth")}</Text>
                   </Text>
                   {tier.billingInterval === "year" && tier.priceMonthly > 0 ? (
                     <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11, marginTop: 2 }}>
-                      ${tier.priceMonthly.toFixed(2)} billed annually
+                      {t("billedAnnually", { price: `$${tier.priceMonthly.toFixed(2)}` })}
                     </Text>
                   ) : null}
                 </>
@@ -705,19 +713,19 @@ export default function SubscriptionScreen() {
                     <Feather
                       name="check"
                       size={13}
-                      color={h.startsWith("✦") ? GOLD : INK}
+                      color={h === SMART_SCHEDULING_NEW ? GOLD : INK}
                       style={{ marginTop: 2 }}
                     />
                     <Text
                       style={{
-                        fontFamily: h.startsWith("✦") ? SERIF_BOLD : SERIF,
-                        color: h.startsWith("✦") ? "#8a6f3e" : INK,
+                        fontFamily: h === SMART_SCHEDULING_NEW ? SERIF_BOLD : SERIF,
+                        color: h === SMART_SCHEDULING_NEW ? "#8a6f3e" : INK,
                         fontSize: 13,
                         marginLeft: 7,
                         flex: 1,
                       }}
                     >
-                      {h.startsWith("✦") ? h.slice(1).trim() : h}
+                      {h === SMART_SCHEDULING_NEW ? t("smartSchedulingNew") : highlightLabel(h)}
                     </Text>
                   </View>
                 ))}
@@ -753,12 +761,12 @@ export default function SubscriptionScreen() {
                       }}
                     >
                       {isCurrent
-                        ? "Current plan"
+                        ? t("cta.current")
                         : !tier.priceId
-                          ? "Free — default"
+                          ? t("cta.freeDefault")
                           : currentTier !== "free"
-                            ? `Switch to ${tier.name}`
-                            : `Choose ${tier.name}`}
+                            ? t("cta.switch", { plan: tier.name })
+                            : t("cta.choose", { plan: tier.name })}
                     </Text>
                   )}
                 </Pressable>
@@ -771,10 +779,10 @@ export default function SubscriptionScreen() {
         {!isIOS && topups.length > 0 ? (
           <>
             <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF, marginTop: 24 }}>
-              Top up credits
+              {t("topup.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, marginTop: 4, marginBottom: 12 }}>
-              One-time purchase. Credits never expire.
+              {t("topup.subtitle")}
             </Text>
             {topups.map((pack) => {
               const isActing = acting === `topup_${pack.id}`;
@@ -797,7 +805,7 @@ export default function SubscriptionScreen() {
                       {pack.name}
                     </Text>
                     <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginTop: 2 }}>
-                      {pack.credits.toLocaleString()} credits · $
+                      {t("topup.credits", { count: pack.credits, credits: pack.credits.toLocaleString(locale) })} · $
                       {pack.price}
                     </Text>
                   </View>
@@ -819,7 +827,7 @@ export default function SubscriptionScreen() {
                       <ActivityIndicator size="small" color={INK} />
                     ) : (
                       <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
-                        Buy
+                        {t("topup.buy")}
                       </Text>
                     )}
                   </Pressable>
@@ -831,7 +839,7 @@ export default function SubscriptionScreen() {
 
         {/* Feature comparison */}
         <Text style={{ color: INK, fontSize: 20, fontFamily: SERIF, marginTop: 24 }}>
-          Compare plans
+          {t("compare.title")}
         </Text>
         <View
           style={{
@@ -853,7 +861,7 @@ export default function SubscriptionScreen() {
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, flex: 1, color: INK_DIM, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 }}>
-              Feature
+              {t("compare.feature")}
             </Text>
             {["Free", "Pro", "Premium"].map((h) => (
               <Text
@@ -866,7 +874,7 @@ export default function SubscriptionScreen() {
           </View>
           {COMPARISON.map((row, i) => (
             <View
-              key={row.label}
+              key={row.key}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -877,7 +885,7 @@ export default function SubscriptionScreen() {
               }}
             >
               <Text style={{ fontFamily: SERIF, flex: 1, color: INK, fontSize: 13, paddingRight: 8 }}>
-                {row.label}
+                {t(`comparison.${row.key}`)}
               </Text>
               {[row.free, row.pro, row.premium].map((on, j) => (
                 <View key={j} style={{ width: 58, alignItems: "center" }}>
@@ -900,20 +908,17 @@ export default function SubscriptionScreen() {
           }}
         >
           <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, flex: 1, lineHeight: 17 }}>
-            All plans include secure payments, support from a real person, and
-            continuous updates.
+            {t("compare.footnote")}
           </Text>
         </View>
 
         <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
-          {isIOS
-            ? "Subscriptions and credits are managed on eventvendora.com. Your current plan is shown above and stays in sync with the app."
-            : "Billing is handled securely by Stripe on eventvendora.com. You'll get an email receipt for each charge."}
+          {isIOS ? t("billingNoteIos") : t("billingNote")}
         </Text>
         </>
         ) : hasBilling && !isIOS ? (
           <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 11, marginTop: 12, paddingHorizontal: 4 }}>
-            Billing is handled securely by Stripe on eventvendora.com. You'll get an email receipt for each charge.
+            {t("billingNote")}
           </Text>
         ) : null}
       </ScrollView>

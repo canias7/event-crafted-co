@@ -78,6 +78,7 @@ const statValueStyle = {
   color: INK,
   fontSize: 18,
   fontFamily: SERIF_BOLD,
+  textAlign: "center",
 } as const;
 
 // Cards carry a 1px hairline instead of a shadow (component standard).
@@ -1252,6 +1253,7 @@ function StatCell({
           color: INK_DIM,
           fontSize: 10,
           letterSpacing: 0.8,
+          textAlign: "center",
         }}
       >
         {bottom}

@@ -15,7 +15,7 @@
 // threads stays open to everyone. We surface that as an upgrade prompt
 // rather than a raw error.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +32,8 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 const PLACEHOLDER = "#746a58";
 
@@ -74,6 +76,8 @@ const MIN_QUERY = 2;
 export default function FindVendorScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t: tr } = useT("findVendor");
+  const categoryNames = useCategoryNames();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<VendorResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -128,18 +132,18 @@ export default function FindVendorScreen() {
         // Plans paused (lib/plans.ts): explain, no "See plans".
         if (PLANS_PAUSED) {
           Alert.alert(
-            "Pro feature",
-            "Starting vendor-to-vendor conversations isn't available on the Free plan yet. Replying to existing conversations stays free.",
+            tr("pro.title"),
+            tr("pro.pausedBody"),
           );
           return;
         }
         Alert.alert(
-          "Pro feature",
-          "Vendor-to-vendor messaging is available on Pro and Premium. Replying to existing conversations stays free.",
+          tr("pro.title"),
+          tr("pro.body"),
           [
-            { text: "Not now", style: "cancel" },
+            { text: tr("pro.notNow"), style: "cancel" },
             {
-              text: "See plans",
+              text: tr("pro.seePlans"),
               onPress: () => router.push("/(vendor)/subscription"),
             },
           ],
@@ -147,8 +151,8 @@ export default function FindVendorScreen() {
         return;
       }
       Alert.alert(
-        "Couldn't start the conversation",
-        error?.message ?? "Please try again in a moment.",
+        tr("startFailed"),
+        error?.message ?? tr("tryAgainLater"),
       );
       return;
     }
@@ -161,10 +165,7 @@ export default function FindVendorScreen() {
   const showEmpty =
     trimmed.length >= MIN_QUERY && !searching && results.length === 0;
 
-  const subtitle = useMemo(
-    () => "Search any approved vendor by business name to start a chat.",
-    [],
-  );
+  const subtitle = tr("subtitle");
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -175,15 +176,15 @@ export default function FindVendorScreen() {
           hitSlop={12}
           className="mr-3 active:opacity-60"
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={tr("goBack")}
         >
           <Feather name="chevron-left" size={26} color="#14161a" />
         </Pressable>
         <Text
           className="text-3xl text-foreground"
-          style={{ fontFamily: "LibreBaskerville-Bold" }}
+          style={{ fontFamily: "LibreBaskerville-Bold", flexShrink: 1 }}
         >
-          Find a vendor
+          {tr("title")}
         </Text>
       </View>
       <Text className="px-5 pb-4 text-[13.5px] leading-[19px] text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{subtitle}</Text>
@@ -195,7 +196,7 @@ export default function FindVendorScreen() {
           <TextInput style={{ fontFamily: "LibreBaskerville" }}
             value={query}
             onChangeText={setQuery}
-            placeholder="Search vendors by business name"
+            placeholder={tr("searchPlaceholder")}
             placeholderTextColor={PLACEHOLDER}
             autoFocus
             autoCapitalize="none"
@@ -208,7 +209,7 @@ export default function FindVendorScreen() {
               onPress={() => setQuery("")}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Clear search"
+              accessibilityLabel={tr("clearSearch")}
             >
               <Feather name="x" size={16} color="#746a58" />
             </Pressable>
@@ -227,21 +228,23 @@ export default function FindVendorScreen() {
           </View>
         ) : showHint ? (
           <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            Keep typing — enter at least {MIN_QUERY} characters.
+            {tr("hint", { count: MIN_QUERY })}
           </Text>
         ) : showEmpty ? (
           <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            No approved vendors match “{trimmed}”.
+            {tr("noMatch", { query: trimmed })}
           </Text>
         ) : results.length === 0 ? (
           <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            Start typing a business name to find other vendors.
+            {tr("startTyping")}
           </Text>
         ) : (
           <View className="px-5">
             {results.map((r, i) => {
-              const name = r.business_name ?? "Unnamed vendor";
-              const meta = [r.category, r.location].filter(Boolean).join(" · ");
+              const name = r.business_name ?? tr("unnamed");
+              const meta = [r.category ? categoryNames.sub(r.category) : null, r.location]
+                .filter(Boolean)
+                .join(" · ");
               const isStarting = starting === r.id;
               return (
                 <Pressable
@@ -253,7 +256,7 @@ export default function FindVendorScreen() {
                   }`}
                   style={{ opacity: starting !== null && !isStarting ? 0.5 : 1 }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Start a conversation with ${name}`}
+                  accessibilityLabel={tr("startA11y", { name })}
                 >
                   <View
                     className="h-12 w-12 rounded-full items-center justify-center"

@@ -4,7 +4,7 @@ export default {
   upsell: {
     bodyPaused: "La insignia de verificación les muestra a los anfitriones que detrás de tu perfil hay una persona y un negocio reales. Todavía no puedes solicitarla con el plan Free.",
     body: "La insignia de verificación les muestra a los anfitriones que detrás de tu perfil hay una persona y un negocio reales. La solicitud está incluida en los planes Pro y Premium; nuestro equipo siempre revisa cada aprobación.",
-    cta: "Mejora tu plan para solicitarla",
+    cta: "Mejorar mi plan",
   },
   status: {
     approved: {

@@ -245,7 +245,6 @@ export default function EventsScreen() {
       if (isRefresh) setRefreshing(false);
       else setLoading(false);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user?.id],
   );
 
