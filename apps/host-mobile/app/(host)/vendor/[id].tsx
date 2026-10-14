@@ -390,9 +390,9 @@ export default function VendorDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
-          <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">{t("loading")}</Text>
+          <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-sm">{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -400,7 +400,7 @@ export default function VendorDetailScreen() {
 
   if (!vendor) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
         <View className="flex-row items-center px-5 py-3">
           <Pressable
             onPress={() => router.back()}
@@ -411,7 +411,7 @@ export default function VendorDetailScreen() {
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-6">
-          <Text style={{ fontFamily: SERIF }} className="text-base text-foreground text-center">
+          <Text style={{ fontFamily: SERIF, color: C.text }} className="text-base text-center">
             {t("notFound")}
           </Text>
         </View>
@@ -442,7 +442,7 @@ export default function VendorDetailScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1" style={{ backgroundColor: C.page }}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
@@ -463,8 +463,8 @@ export default function VendorDetailScreen() {
             borderBottomLeftRadius: 24,
             borderBottomRightRadius: 24,
             overflow: "hidden",
+            backgroundColor: C.surface,
           }}
-          className="bg-muted"
         >
           {photos.length > 0 ? (
             <ScrollView
@@ -500,7 +500,7 @@ export default function VendorDetailScreen() {
               className="items-center justify-center"
             >
               <Feather name="image" size={36} color="#a89b8a" />
-              <Text style={{ fontFamily: SERIF }} className="mt-2 text-sm text-muted-foreground">
+              <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-2 text-sm">
                 {t("noPhotos")}
               </Text>
             </View>
