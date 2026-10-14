@@ -2,7 +2,8 @@
 // site's top menu (PublicNav); from 1024px a dimmed venue photo fills the
 // left half with the "Why Vendora" points on it, and the page's content
 // sits in a narrow column on the right; on phones there's no photo and the
-// points follow the content. The theme switch is in the top menu; a bottom
+// points follow the content. The photo is the same size and crop on every
+// page (window height, pinned while the form scrolls). The theme switch is in the top menu; a bottom
 // bar holds the language switcher, since these pages have no footer. Colours follow the
 // site theme (light by default); the photo side looks the same in both.
 import { ReactNode } from "react";
@@ -45,10 +46,13 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <PublicNav tone="dark" />
-      <main className="flex-1 grid lg:grid-cols-2">
+      <main className="flex-1 grid lg:grid-cols-2 lg:items-start">
         {/* Photo side (from 1024px): the venue photo, dimmed so the
-            points on it read, the same in light and dark. */}
-        <section className="relative hidden overflow-hidden lg:block" aria-hidden={false}>
+            points on it read, the same in light and dark. It's always
+            the height of the window under the menu and stays put while
+            a long form scrolls, so the photo, its crop and the points
+            sit in the same place on every sign-in page. */}
+        <section className="relative hidden overflow-hidden lg:sticky lg:top-24 lg:block lg:h-[calc(100svh-6rem)]">
           <img
             src={authPhoto}
             alt=""
