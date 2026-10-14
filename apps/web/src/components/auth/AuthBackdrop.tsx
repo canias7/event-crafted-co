@@ -1,6 +1,6 @@
 // Backdrop for every sign-in and sign-up page (owner's call, Oct 2026):
-// a champagne ombre over the ink page, several thin rings turning at
-// different speeds and directions (two carry a small gold dot so the
+// the plain ink page (the champagne ombre was removed, owner's call),
+// several thin rings turning at different speeds and directions (two carry a small gold dot so the
 // motion reads), and the perspective grid floor. The vendor and host
 // apps draw the same thing (components/AuthBackdrop.tsx in each app).
 // Everything is decorative and sits behind the page (z-0).
@@ -16,28 +16,6 @@ const RINGS = [
 export function AuthBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      {/* Ombre: warm champagne at the top fading into ink, a soft glow
-          behind the headline and a warmer pool at the bottom. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(201,168,106,0.16) 0%, rgba(201,168,106,0.06) 28%, rgba(20,22,26,0) 55%, rgba(138,111,62,0.10) 100%)",
-        }}
-      />
-      <div
-        className="absolute"
-        style={{
-          top: "34%",
-          left: "50%",
-          width: "70rem",
-          height: "52rem",
-          transform: "translate(-50%, -50%)",
-          background:
-            "radial-gradient(ellipse at center, rgba(201,168,106,0.16) 0%, rgba(201,168,106,0.07) 35%, rgba(201,168,106,0.02) 60%, transparent 75%)",
-        }}
-      />
-
       {/* Rings */}
       {RINGS.map((r, i) => (
         <div

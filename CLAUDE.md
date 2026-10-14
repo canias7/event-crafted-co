@@ -97,7 +97,7 @@ Applies to the website (`apps/web`) and both apps. Use these tokens and rules; d
 - `PublicNav` and `Footer` always draw dark; their `tone` props are kept only so old call sites compile.
 - The language switcher lives only in the footer's bottom bar, never in the nav (owner's call): any public page needs the footer so it has one.
 - The vendor app's welcome screen is dark too (owner's call, Oct 2026): the web home hero photo fills the screen under the same two scrims (top-to-bottom shade, edge vignette, via `react-native-svg`), with cream text, champagne accents and see-through cards. Every other sign-in, sign-up and password screen in both apps is dark too, on `components/AuthBackdrop.tsx`.
-- **Sign-in backdrop (owner's call, Oct 2026):** the website's sign-in pages (`apps/web/src/components/auth/AuthBackdrop.tsx`) and the apps' auth screens share one look: a champagne ombre over ink and five thin rings turning at different speeds and directions, two carrying a small gold dot. Change both together.
+- **Sign-in backdrop (owner's call, Oct 2026):** the website's sign-in pages (`apps/web/src/components/auth/AuthBackdrop.tsx`) and the apps' auth screens share one look: the plain ink background (no ombre, owner's call) and five thin rings turning at different speeds and directions, two carrying a small gold dot. Change both together.
 
 **Deliberately different (don't "fix")**
 
