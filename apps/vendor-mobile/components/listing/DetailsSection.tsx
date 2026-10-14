@@ -32,29 +32,31 @@ const PLACEHOLDER = "#746a58";
 type AttrValue = string | number | boolean | string[] | null;
 type Attrs = Record<string, AttrValue>;
 
-// The schema's text in the app's language, keyed by the English text
-// (listingDetails → schema.*, the same words as the website). The
-// schema in @vendora/core stays English: option strings are the values
-// saved to category_attributes. A vendor's custom tag shows as typed.
+// The schema's text in the app's language, keyed by the English text:
+// section names, labels, suffixes and preset options from the shared
+// listingAttributes namespace (the same words as the website), help text
+// from listingDetails → help. The schema in @vendora/core stays English:
+// option strings are the values saved to category_attributes. A
+// vendor's custom tag shows as typed.
 type SchemaText = Record<"section" | "label" | "suffix" | "help", (text: string) => string> & {
   option: (text: string, field: string) => string;
 };
 
 function useSchemaText(): SchemaText {
-  const { tObject } = useT("listingDetails");
-  const map = (group: string) => {
-    const names = tObject<Record<string, string> | undefined>(`schema.${group}`) ?? {};
-    return (text: string) =>
-      Object.prototype.hasOwnProperty.call(names, text) ? names[text] : text;
-  };
+  const { tObject } = useT("listingAttributes");
+  const { tObject: tOwn } = useT("listingDetails");
+  const lookup = (names: Record<string, string> | undefined) => (text: string) =>
+    names && Object.prototype.hasOwnProperty.call(names, text) ? names[text] : text;
+  const map = (group: string) =>
+    lookup(tObject<Record<string, string> | undefined>(group));
   const option = map("options");
   const fieldOptions =
-    tObject<Record<string, Record<string, string>> | undefined>("schema.fieldOptions") ?? {};
+    tObject<Record<string, Record<string, string>> | undefined>("fieldOptions") ?? {};
   return {
     section: map("sections"),
     label: map("labels"),
     suffix: map("suffixes"),
-    help: map("help"),
+    help: lookup(tOwn<Record<string, string> | undefined>("help")),
     option: (text, field) => fieldOptions[field]?.[text] ?? option(text),
   };
 }

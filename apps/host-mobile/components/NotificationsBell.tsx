@@ -64,8 +64,8 @@ type TFn = (key: string, vars?: Record<string, string | number | null | undefine
 
 function relativeTime(iso: string, t: TFn, locale: string): string {
   const now = Date.now();
-  const t = new Date(iso).getTime();
-  const diffMs = Math.max(0, now - t);
+  const then = new Date(iso).getTime();
+  const diffMs = Math.max(0, now - then);
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 1) return t("time.justNow");
   if (diffMin < 60) return t("time.minutes", { count: diffMin });

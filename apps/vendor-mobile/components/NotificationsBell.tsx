@@ -20,6 +20,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 // Translate a notification's web-style link into the matching vendor
 // native route. Mirrors lib/pushNotifications.ts so tap-routing is
@@ -50,6 +51,7 @@ export function NotificationsBell({
 }: { iconColor?: string }) {
   const { user } = useAuth();
   const router = useRouter();
+  const { t, locale } = useT("notificationsBell");
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -146,6 +148,8 @@ export function NotificationsBell({
         onPress={() => setOpen(true)}
         hitSlop={8}
         className="active:opacity-60"
+        accessibilityRole="button"
+        accessibilityLabel={t("title")}
       >
         <View>
           <Feather name="bell" size={22} color={iconColor} />
@@ -187,10 +191,10 @@ export function NotificationsBell({
         >
           <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Close</Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("close")}</Text>
             </Pressable>
             <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              Notifications
+              {t("title")}
             </Text>
             <Pressable
               onPress={markAllRead}
@@ -201,7 +205,7 @@ export function NotificationsBell({
                 className="text-sm"
                 style={{ fontFamily: "LibreBaskerville", color: unread > 0 ? "#14161a" : "#746a58" }}
               >
-                Mark read
+                {t("markRead")}
               </Text>
             </Pressable>
           </View>
@@ -209,13 +213,13 @@ export function NotificationsBell({
           <ScrollView contentContainerClassName="pb-12">
             {loading ? (
               <View className="items-center pt-16">
-                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
                 <Feather name="bell-off" size={28} color="#6f6a60" />
                 <Text className="mt-3 text-sm text-muted-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
-                  No notifications yet.
+                  {t("empty")}
                 </Text>
               </View>
             ) : (
@@ -290,7 +294,7 @@ export function NotificationsBell({
                         </Text>
                       ) : null}
                       <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                        {new Date(r.created_at).toLocaleString()}
+                        {new Date(r.created_at).toLocaleString(locale)}
                       </Text>
                     </View>
                   </View>
