@@ -32,6 +32,7 @@ import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { C, IS_DARK } from "@/lib/theme";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
@@ -39,21 +40,24 @@ import { useCategoryNames } from "@/lib/categoryNames";
 // Vendora light theme (the user's reference design): warm cream page,
 // gold accents. Every block — the identity card included — is CARD on
 // PAGE with a hairline BORDER.
+// WHITE is only for logo backdrops (logos always sit on white).
 const WHITE = "#ffffff";
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const BORDER = C.border;
+const GOLD = C.gold;
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
-const BRONZE = "#8a6f3e";
+const BRONZE = C.accentText;
+// "Problem" pill tint: opaque so it reads over a cover photo.
+const ERROR_TINT = IS_DARK ? "#3a2220" : "#f7ece9";
 // The identity card used to be the one dark block on a cream page.
 // It now uses the same CARD + BORDER as every other block, so these
 // are the cream equivalents of the old on-dark tokens.
@@ -81,10 +85,10 @@ function statusRank(s: string | null): number {
 // Pending review / Rejected / Draft directory-card pills). The label is
 // a key under status.* in locales/<lang>/profile.ts.
 function statusMeta(s: string | null): { label: string; bg: string; fg: string } {
-  if (s === "approved") return { label: "live", bg: INK, fg: WHITE };
-  if (s === "rejected") return { label: "rejected", bg: "#f7ece9", fg: "#b23a34" };
+  if (s === "approved") return { label: "live", bg: C.selected, fg: C.onSelected };
+  if (s === "rejected") return { label: "rejected", bg: ERROR_TINT, fg: C.error };
   if (s === "pending" || s === "submitted")
-    return { label: "pending", bg: "#f2e7cb", fg: BRONZE };
+    return { label: "pending", bg: C.pending, fg: C.pendingText };
   return { label: "draft", bg: SURFACE, fg: INK };
 }
 
@@ -100,7 +104,7 @@ function StudioBadge({ size = 20 }: { size?: number }) {
       <Path
         d="M21 33 L29 41 L44 24"
         fill="none"
-        stroke="#ffffff"
+        stroke={IS_DARK ? C.onGold : "#ffffff"}
         strokeWidth={5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -658,7 +662,7 @@ function OutlineBtn({
         borderColor: BORDER,
         borderRadius: 999,
         height: 44,
-        backgroundColor: WHITE,
+        backgroundColor: C.field,
       }}
     >
       <MaterialCommunityIcons name={icon} size={15} color={GOLD} />
@@ -690,7 +694,7 @@ function Avatar({
         height: 72,
         borderRadius: 36,
         overflow: "hidden",
-        backgroundColor: logoUrl ? WHITE : "#ece7db",
+        backgroundColor: logoUrl ? WHITE : SURFACE,
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -709,7 +713,7 @@ function Avatar({
           style={{
             fontFamily: SERIF,
             fontSize: 31,
-            color: "#14161a",
+            color: INK,
           }}
         >
           {initial}
@@ -795,7 +799,7 @@ function EmptyState({
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: C.onGold }}>
             {ctaLabel}
           </Text>
         </TouchableOpacity>
@@ -828,7 +832,7 @@ function ListingTab({
   if (loading) {
     return (
       <View className="items-center px-4 pt-10">
-        <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: INK_DIM }}>{t("loading")}</Text>
       </View>
     );
   }
@@ -876,7 +880,7 @@ function ListingTab({
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: C.onGold }}>
               {t("newListing")}
             </Text>
           </TouchableOpacity>
@@ -1080,8 +1084,8 @@ function ListingCard({
             className="flex-1 items-center justify-center px-6"
             style={{ backgroundColor: SURFACE }}
           >
-            <Feather name="image" size={28} color="#746a58" />
-            <Text className="mt-2 text-center text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+            <Feather name="image" size={28} color={C.placeholder} />
+            <Text className="mt-2 text-center text-xs" style={{ fontFamily: "LibreBaskerville", color: INK_DIM }}>
               {t("card.noPhotos")}
             </Text>
           </View>
@@ -1119,7 +1123,7 @@ function ListingCard({
             }}
           >
             <Feather name="clock" size={28} color="#fff" />
-            <Text className="mt-2 text-center text-xs text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="mt-2 text-center text-xs" style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff" }}>
               {t("underReview")}
             </Text>
           </View>
@@ -1149,18 +1153,16 @@ function ListingCard({
       <View className="mt-3 px-1">
         <Text
           numberOfLines={1}
-          className={
-            isPending ? "text-base text-foreground" : "text-base text-foreground"
-          }
-          style={{ fontFamily: "LibreBaskerville-Bold" }}
+          className="text-base"
+          style={{ fontFamily: "LibreBaskerville-Bold", color: INK }}
         >
           {listing.business_name?.trim() || (listing.category ? sub(listing.category) : null) || t("yourListing")}
         </Text>
-        <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text numberOfLines={1} className="mt-0.5 text-sm" style={{ fontFamily: "LibreBaskerville", color: INK_DIM }}>
           {listing.category ? sub(listing.category) : "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
-        <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text className="mt-1 text-sm" style={{ fontFamily: "LibreBaskerville", color: INK }}>
           {priceLabels.listingPrice(listing.price_min_cents, listing.price_max_cents)}
         </Text>
         {(() => {
