@@ -220,11 +220,9 @@ function PromptCard({
     >
       <div className="flex items-center gap-3">
         <span
-          className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
-          style={{
-            background: "rgba(255,255,255,0.08)",
-            color: "#f4f1ea",
-          }}
+          className={`shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center text-foreground ${
+            isEvent ? "bg-card" : "bg-muted"
+          }`}
           aria-hidden
         >
           {isEvent ? <Sparkles className="w-4 h-4" /> : <Star className="w-4 h-4" />}

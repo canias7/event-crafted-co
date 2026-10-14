@@ -61,12 +61,14 @@ const ON_DARK_NAME_COLORS = new Set(["#f4f1ea", "#fff", "#ffffff", "white"]);
 // every page.
 export function VendoraLogo({
   size = "md",
-  color = "#14161a",
+  color = "theme",
   withTagline = false,
   className,
 }: {
   size?: "sm" | "md" | "lg";
-  /** Color of the "vendora" name — ink on light surfaces, cream on dark. */
+  /** Color of the "vendora" name: "theme" (the default) follows the site
+   *  theme (ink in light, cream in dark); "currentColor" inherits; a hex
+   *  fixes it (ink on light surfaces, cream on dark). */
   color?: string;
   withTagline?: boolean;
   className?: string;
@@ -79,8 +81,11 @@ export function VendoraLogo({
     lg: { mark: 36, name: "text-[32px]", tag: 16, gap: "gap-2.5" },
   }[size];
 
-  const name =
-    color === "currentColor" || !color ? undefined : color;
+  // "theme" and "currentColor" follow the page: the name takes the
+  // foreground token (or inherits) and the tagline the accent token,
+  // bronze in light and champagne in dark.
+  const themed = color === "theme" || color === "currentColor" || !color;
+  const name = themed ? undefined : color;
   // Gold text is champagne on dark surfaces and bronze on light ones.
   const onDark = ON_DARK_NAME_COLORS.has((color ?? "").toLowerCase());
 
@@ -96,16 +101,20 @@ export function VendoraLogo({
         <span
           // Italic regular, exactly as the wordmark has always rendered. Plain
           // utilities only: the custom font-editorial class would win over them.
-          className={cn("font-serif italic font-normal lowercase", dims.name)}
+          className={cn(
+            "font-serif italic font-normal lowercase",
+            color === "theme" && "text-foreground",
+            dims.name,
+          )}
           style={{ color: name, letterSpacing: "0.01em", lineHeight: 1 }}
         >
           vendora
         </span>
         {withTagline ? (
           <span
-            className="font-label mt-1 whitespace-nowrap"
+            className={cn("font-label mt-1 whitespace-nowrap", themed && "text-accent")}
             style={{
-              color: onDark ? "#c9a86a" : "#8a6f3e",
+              color: themed ? undefined : onDark ? "#c9a86a" : "#8a6f3e",
               fontSize: dims.tag,
               letterSpacing: "0.32em",
             }}

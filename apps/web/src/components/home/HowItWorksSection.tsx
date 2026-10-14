@@ -54,10 +54,9 @@ function VendorAvatar({ initial, size }: { initial: string; size: "sm" | "md" })
   return (
     <span
       aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold text-foreground ${
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold text-foreground bg-foreground/[0.08] ${
         size === "md" ? "h-8 w-8 text-[12px]" : "h-5 w-5 text-[9px]"
       }`}
-      style={{ background: "rgba(0,0,0,0.08)" }}
     >
       {initial}
     </span>
@@ -141,7 +140,7 @@ function ConnectVisual({
     <>
       <span
         aria-hidden
-        className="absolute inset-0 bg-white/[0.03]"
+        className="absolute inset-0 bg-card"
       />
       {/* The inbox fills the whole card, light as in the portals. Its header
           leaves room at the top for the step number; the message bar sits
@@ -152,12 +151,11 @@ function ConnectVisual({
         className="absolute inset-0 z-10 flex flex-col overflow-hidden bg-background text-foreground"
       >
         <div
-          className="flex shrink-0 items-center gap-2 px-4 pb-2.5 pt-14 md:pt-[4.75rem]"
-          style={{ background: "rgba(255,255,255,0.85)", borderBottom: "0.5px solid rgba(0,0,0,0.08)" }}
+          className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 pb-2.5 pt-14 md:pt-[4.75rem]"
         >
           <span className="relative shrink-0">
             <VendorAvatar initial={initial} size="md" />
-            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-card" />
           </span>
           <span className="min-w-0 leading-tight">
             <span className="block truncate text-[12px] font-bold">{vendorName}</span>
@@ -274,7 +272,7 @@ export function HowItWorksSection() {
           return (
             <li key={step.key}>
               <div
-                className={`relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/15 sm:aspect-[4/5] ${
+                className={`relative aspect-[4/3] overflow-hidden rounded-2xl border border-border sm:aspect-[4/5] ${
                   // The inbox needs the height; the photo cards go wider on phones.
                   step.key === "connect" ? "" : "min-[360px]:aspect-[16/10]"
                 }`}
@@ -301,13 +299,13 @@ export function HowItWorksSection() {
                   {step.number}
                 </span>
               </div>
-              <span className="relative z-20 -mt-6 ml-5 flex h-12 w-12 items-center justify-center rounded-full border border-gold/50 bg-[#14161a] text-gold">
+              <span className="relative z-20 -mt-6 ml-5 flex h-12 w-12 items-center justify-center rounded-full border border-accent/50 bg-background text-accent">
                 <Icon aria-hidden className="h-5 w-5" strokeWidth={1.75} />
               </span>
-              <h3 className="m-0 mt-4 font-label tracking-[0.3em] text-gold">
+              <h3 className="m-0 mt-4 font-label tracking-[0.3em] text-accent">
                 {t(`howItWorks.steps.${step.key}.title`)}
               </h3>
-              <p className="m-0 mt-2 text-[15px] leading-relaxed text-[#f4f1ea]/80">
+              <p className="m-0 mt-2 text-[15px] leading-relaxed text-muted-foreground">
                 {t(`howItWorks.steps.${step.key}.body`)}
               </p>
             </li>

@@ -167,7 +167,7 @@ export function LogoCropperModal({ file, onCancel, onApply }: Props) {
         className="relative rounded-2xl p-6 w-full max-w-md"
         style={{
           background: "rgba(255,255,255,0.97)",
-          border: "0.5px solid rgba(255,255,255,0.08)",
+          border: "1px solid hsl(var(--border))",
         }}
       >
         <button

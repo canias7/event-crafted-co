@@ -206,8 +206,8 @@ function FieldDisplay({
               key={t}
               className="inline-flex text-[13px] rounded-full px-4 py-1.5"
               style={{
-                background: "rgba(255,255,255,0.12)",
-                color: "#f4f1ea",
+                background: "hsl(var(--muted))",
+                color: "hsl(var(--foreground))",
                 border: "0.5px solid rgba(255,255,255,0.3)",
               }}
             >

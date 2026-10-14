@@ -188,10 +188,8 @@ export default function SignContractPage() {
         </div>
 
         <div
-          className="rounded-2xl p-6 sm:p-8"
+          className="surface-light rounded-2xl p-6 sm:p-8 bg-white text-foreground border border-border"
           style={{
-            background: "rgba(255,255,255,0.85)",
-            border: "0.5px solid rgba(0,0,0,0.10)",
             boxShadow: "0 18px 50px -24px rgba(0,0,0,0.25)",
           }}
         >

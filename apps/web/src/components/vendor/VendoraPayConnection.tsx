@@ -169,13 +169,13 @@ export function VendoraPayConnection() {
           <div
             className="rounded-2xl p-5 flex items-start gap-4 flex-wrap"
             style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
             }}
           >
             <div
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.16)", color: "#f4f1ea" }}
+              style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }}
             >
               <Landmark className="w-5 h-5" />
             </div>
@@ -199,7 +199,7 @@ export function VendoraPayConnection() {
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
                 background: "hsl(var(--muted))",
-                color: "#f4f1ea",
+                color: "hsl(var(--foreground))",
               }}
               aria-hidden
             >
@@ -263,7 +263,7 @@ export function VendoraPayConnection() {
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
                 background: "hsl(var(--muted))",
-                color: "#f4f1ea",
+                color: "hsl(var(--foreground))",
               }}
               aria-hidden
             >

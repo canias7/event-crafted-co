@@ -372,8 +372,8 @@ function FieldEditor({
                 style={
                   active
                     ? {
-                        background: "rgba(255,255,255,0.08)",
-                        color: "#f4f1ea",
+                        background: "hsl(var(--muted))",
+                        color: "hsl(var(--foreground))",
                         border: "0.5px solid rgba(255,255,255,0.3)",
                       }
                     : {
@@ -397,8 +397,8 @@ function FieldEditor({
               onClick={() => onToggleTag(opt)}
               className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
               style={{
-                background: "rgba(255,255,255,0.08)",
-                color: "#f4f1ea",
+                background: "hsl(var(--muted))",
+                color: "hsl(var(--foreground))",
                 border: "0.5px solid rgba(255,255,255,0.3)",
               }}
               title={t("attributes.customEntry")}

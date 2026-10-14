@@ -54,7 +54,7 @@ export function MediaLightbox({
       <button
         onClick={onClose}
         aria-label={t("close")}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-foreground flex items-center justify-center hover:bg-white/25"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur text-white flex items-center justify-center hover:bg-white/25"
       >
         <X className="h-5 w-5" />
       </button>

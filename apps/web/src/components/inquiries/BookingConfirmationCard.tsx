@@ -120,14 +120,9 @@ export function BookingConfirmationCard({
     >
       <div className="flex items-start gap-3">
         <span
-          className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
-          style={{
-            background:
-              state === "confirmed"
-                ? "rgba(255,255,255,0.08)"
-                : "rgba(255,255,255,0.04)",
-            color: state === "confirmed" ? "#f4f1ea" : "#c9a86a",
-          }}
+          className={`shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center ${
+            state === "confirmed" ? "bg-muted text-foreground" : "bg-pending text-accent"
+          }`}
           aria-hidden
         >
           {state === "confirmed" ? (

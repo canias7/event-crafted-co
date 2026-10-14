@@ -11,16 +11,14 @@ export const INSTAGRAM_HANDLE = "@event_vendora";
 export { CONTACT_EMAIL };
 
 // The site footer on every public page: logo, Instagram and email, then
-// For hosts / For vendors / Company links. `tone="dark"` for the dark
-// pages (home, Explore, How it works, For hosts, For vendors): cream text
-// on ink, champagne labels, white-at-15% hairlines.
-// Always dark now (owner's call, Oct 2026); `tone` is kept for old call sites.
+// For hosts / For vendors / Company links. It follows the site theme
+// (light by default, dark with the switch): foreground text, accent
+// labels (bronze in light, champagne in dark), hairline borders.
+// `tone` is kept only so old call sites compile.
 export function Footer(_props: { tone?: "light" | "dark" } = {}) {
-  const tone = "dark";
   const { t } = useTranslation();
   const { t: ts } = useTranslation("shell");
-  const dark = tone === "dark";
-  const link = `text-sm transition-colors ${dark ? "hover:text-gold" : "hover:text-accent"}`;
+  const link = "text-sm transition-colors hover:text-accent";
 
   const columns: { title: string; links: { label: string; to: string }[] }[] = [
     {
@@ -49,17 +47,7 @@ export function Footer(_props: { tone?: "light" | "dark" } = {}) {
   ];
 
   return (
-    <footer
-      className={`py-16 md:py-20 ${dark ? "text-[#f4f1ea]" : "text-foreground"}`}
-      style={{
-        // Light tone stays transparent so the page's warm wash shows
-        // through; the hairline marks where the footer starts.
-        background: dark ? "#14161a" : "transparent",
-        borderTop: dark
-          ? "1px solid rgba(255,255,255,0.15)"
-          : "1px solid hsl(var(--border))",
-      }}
-    >
+    <footer className="border-t border-border bg-background py-16 text-foreground md:py-20">
       <div className="container mx-auto px-5 md:px-8">
         {/* On tablets the brand block takes its own row, so the three
             link columns have room for long words (Russian
@@ -67,7 +55,7 @@ export function Footer(_props: { tone?: "light" | "dark" } = {}) {
         <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 md:gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-3 lg:col-span-1">
             <Link to="/" aria-label={ts("footer.home_label")} className="inline-block">
-              <VendoraLogo size="md" color={dark ? "#f4f1ea" : "#14161a"} withTagline={dark} />
+              <VendoraLogo size="md" color="theme" withTagline />
             </Link>
             <p className="m-0 mt-3 max-w-xs text-sm leading-relaxed">{t("footer.tagline")}</p>
             <div className="mt-5 flex flex-col items-start gap-3">
@@ -77,13 +65,13 @@ export function Footer(_props: { tone?: "light" | "dark" } = {}) {
                 rel="noopener noreferrer"
                 className={`inline-flex items-center gap-2 ${link}`}
               >
-                <Instagram className={`h-4 w-4 ${dark ? "text-gold" : "text-accent"}`} aria-hidden />
+                <Instagram className={`h-4 w-4 text-accent`} aria-hidden />
                 {INSTAGRAM_HANDLE}
               </a>
               <EmailMenu
                 className={`inline-flex items-center gap-2 text-left [overflow-wrap:anywhere] ${link}`}
               >
-                <Mail className={`h-4 w-4 shrink-0 ${dark ? "text-gold" : "text-accent"}`} aria-hidden />
+                <Mail className={`h-4 w-4 shrink-0 text-accent`} aria-hidden />
                 {CONTACT_EMAIL}
               </EmailMenu>
             </div>
@@ -91,7 +79,7 @@ export function Footer(_props: { tone?: "light" | "dark" } = {}) {
 
           {columns.map((col) => (
             <div key={col.title}>
-              <p className={`m-0 mb-4 font-label ${dark ? "text-gold" : "text-accent"}`}>
+              <p className="m-0 mb-4 font-label text-accent">
                 {col.title}
               </p>
               <ul className="m-0 list-none space-y-3 p-0">
@@ -108,14 +96,12 @@ export function Footer(_props: { tone?: "light" | "dark" } = {}) {
         </div>
 
         <div
-          className={`mt-14 flex flex-wrap items-center justify-between gap-3 border-t pt-8 text-sm ${
-            dark ? "border-white/15" : "border-border"
-          }`}
+          className="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-8 text-sm"
         >
           <p className="m-0">
             © {new Date().getFullYear()} Vendora. {t("footer.rights")}
           </p>
-          <LanguageSwitcher tone={dark ? "dark" : "light"} />
+          <LanguageSwitcher />
         </div>
       </div>
     </footer>

@@ -210,13 +210,7 @@ export default function PublicEventRsvpPage() {
         </div>
 
         {submitted ? (
-          <div
-            className="rounded-2xl p-6 text-center"
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "0.5px solid rgba(255,255,255,0.3)",
-            }}
-          >
+          <div className="rounded-2xl p-6 text-center bg-card border border-border">
             <p className="font-editorial text-2xl">{t("thanks.title")}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {t("thanks.body")}
@@ -273,11 +267,6 @@ export default function PublicEventRsvpPage() {
                         ? "bg-foreground text-background"
                         : "bg-card border border-border text-foreground hover:bg-muted"
                     }`}
-                    style={
-                      status === s
-                        ? undefined
-                        : { border: "0.5px solid rgba(255,255,255,0.15)" }
-                    }
                   >
                     {t(`form.choices.${s}`)}
                   </button>

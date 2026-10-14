@@ -48,26 +48,26 @@ export default function TermsPage() {
       components={{
         strong: <strong />,
         email: (
-          <EmailMenu className="text-gold font-medium hover:text-white" />
+          <EmailMenu className="text-accent font-medium underline-offset-2 hover:underline" />
         ),
       }}
     />
   );
 
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PublicNav tone="dark" />
 
       <article id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-gold mb-3">{t("eyebrow")}</p>
+        <p className="font-label text-accent mb-3">{t("eyebrow")}</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           {t("title")}
         </h1>
-        <p className={`text-sm text-[#f4f1ea]/80 ${isTranslation ? "mb-2" : "mb-12"}`}>
+        <p className={`text-sm text-muted-foreground ${isTranslation ? "mb-2" : "mb-12"}`}>
           {t("last_updated")}
         </p>
         {isTranslation && (
-          <p className="text-sm text-[#f4f1ea]/80 mb-12">
+          <p className="text-sm text-muted-foreground mb-12">
             {t("translation_note")}
           </p>
         )}
@@ -100,7 +100,7 @@ export default function TermsPage() {
         </div>
       </article>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }

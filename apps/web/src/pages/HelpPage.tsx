@@ -21,8 +21,6 @@ import { Footer } from "@/components/public/Footer";
 import { EmailMenu } from "@/components/shared/EmailMenu";
 import { CONTACT_EMAIL } from "@/lib/contact";
 
-const INK = "#14161a";
-
 // FAQ sections and their questions, in display order. The words live in
 // locales/<language>/help.json under faq.<section>.title and
 // faq.<section>.items.<question>.q / .a. Answers can link with
@@ -50,7 +48,7 @@ const FAQ_SECTIONS: { id: string; items: string[] }[] = [
   },
 ];
 
-const FAQ_LINK = "text-gold underline underline-offset-2 hover:text-[#f4f1ea]";
+const FAQ_LINK = "text-accent underline underline-offset-2 hover:no-underline";
 const FAQ_LINKS = {
   vendors: <Link to="/vendors" className={FAQ_LINK} />,
   signup: <Link to="/signup/vendor" className={FAQ_LINK} />,
@@ -100,15 +98,15 @@ export default function HelpPage() {
   }, [t]);
 
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: INK }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PublicNav tone="dark" />
 
       <main id="main-content" className="pt-12 md:pt-16 pb-24 container mx-auto px-5 md:px-8 max-w-2xl">
-        <p className="font-label text-gold mb-3">{t("eyebrow")}</p>
+        <p className="font-label text-accent mb-3">{t("eyebrow")}</p>
         <h1 className="font-editorial text-5xl md:text-5xl mb-3 leading-tight">
           {t("title")}
         </h1>
-        <p className="text-[#f4f1ea]/80 mb-8">
+        <p className="text-muted-foreground mb-8">
           {t("intro")}
         </p>
 
@@ -116,19 +114,19 @@ export default function HelpPage() {
         <EmailMenu subject="Vendora support request" asChild>
         <button
           type="button"
-          className="block w-full text-left rounded-2xl border border-white/15 bg-white/[0.03] hover:border-white/40 p-5 mb-10 transition-colors"
+          className="block w-full text-left rounded-2xl border border-border bg-card hover:border-foreground/40 p-5 mb-10 transition-colors"
         >
           <span className="flex items-center gap-4">
-            <span className="w-11 h-11 rounded-xl bg-gold/15 text-gold inline-flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-xl bg-gold/15 text-accent inline-flex items-center justify-center shrink-0">
               <Mail className="w-5 h-5" />
             </span>
             <span className="block flex-1 min-w-0">
               <span className="block font-semibold">{t("email_card.title")}</span>
-              <span className="block text-sm text-[#f4f1ea]/80">
+              <span className="block text-sm text-muted-foreground">
                 {CONTACT_EMAIL}
               </span>
             </span>
-            <span className="text-xs font-bold text-gold">
+            <span className="text-xs font-bold text-accent">
               {t("email_card.open")}
             </span>
           </span>
@@ -139,7 +137,7 @@ export default function HelpPage() {
         <label className="relative block mb-8">
           <span className="sr-only">{t("search.label")}</span>
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#f4f1ea]/60"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
             aria-hidden
           />
           <input
@@ -147,7 +145,7 @@ export default function HelpPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("search.placeholder")}
-            className="w-full h-11 rounded-xl border border-white/15 bg-white/[0.03] pl-11 pr-4 text-sm text-[#f4f1ea] placeholder:text-[#f4f1ea]/60 focus:outline-none focus:border-white/40"
+            className="w-full h-11 rounded-xl border border-border bg-card pl-11 pr-4 text-sm text-foreground placeholder:text-placeholder focus:outline-none focus:border-foreground/40"
           />
         </label>
 
@@ -159,12 +157,12 @@ export default function HelpPage() {
                 <AccordionItem
                   key={item.key}
                   value={item.key}
-                  className="rounded-xl border border-white/15 px-5 data-[state=open]:border-white/30"
+                  className="rounded-xl border border-border px-5 data-[state=open]:border-foreground/30"
                 >
-                  <AccordionTrigger className="py-4 text-left text-[15px] font-bold hover:no-underline [&>svg]:text-gold">
+                  <AccordionTrigger className="py-4 text-left text-[15px] font-bold hover:no-underline [&>svg]:text-accent">
                     {t(`${item.key}.q`)}
                   </AccordionTrigger>
-                  <AccordionContent className="pb-5 text-sm leading-relaxed text-[#f4f1ea]/80">
+                  <AccordionContent className="pb-5 text-sm leading-relaxed text-muted-foreground">
                     <Trans t={t} i18nKey={`${item.key}.a`} components={FAQ_LINKS} />
                   </AccordionContent>
                 </AccordionItem>
@@ -174,20 +172,20 @@ export default function HelpPage() {
         ))}
 
         {sections.length === 0 && (
-          <p className="text-sm text-[#f4f1ea]/80 mb-10">
+          <p className="text-sm text-muted-foreground mb-10">
             <Trans t={t} i18nKey="search.none" components={FAQ_LINKS} />
           </p>
         )}
 
         {/* Legal links — easy access from Help so vendors don't have
             to dig for the terms they agreed to on signup. */}
-        <section className="mt-10 border-t border-white/15 pt-6">
-          <p className="font-label text-gold mb-3">{t("legal.eyebrow")}</p>
+        <section className="mt-10 border-t border-border pt-6">
+          <p className="font-label text-accent mb-3">{t("legal.eyebrow")}</p>
           <ul className="space-y-2.5">
             <li>
               <Link
                 to="/terms"
-                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
+                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-accent"
               >
                 <FileText className="w-4 h-4" />
                 {t("legal.terms")}
@@ -196,7 +194,7 @@ export default function HelpPage() {
             <li>
               <Link
                 to="/privacy"
-                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-gold"
+                className="inline-flex items-center gap-2 text-sm transition-colors hover:text-accent"
               >
                 <Lock className="w-4 h-4" />
                 {t("legal.privacy")}
@@ -206,7 +204,7 @@ export default function HelpPage() {
         </section>
       </main>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }

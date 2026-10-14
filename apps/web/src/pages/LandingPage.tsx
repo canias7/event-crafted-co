@@ -56,7 +56,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen text-foreground" style={{ backgroundColor: INK }}>
+    <div className="min-h-screen bg-background text-foreground">
       {/* ═══════════════ HERO — cinematic full-bleed ═══════════════ */}
       {/* On big desktop screens the video fills the whole window (owner's
           call); the words and buttons keep their normal size, centred in it. */}
@@ -239,7 +239,7 @@ export default function LandingPage() {
       {/* Plan. Connect. Celebrate. */}
       <HowItWorksSection />
 
-      <Footer tone="dark" />
+      <Footer />
 
       {/* Page-local motion. Respect reduced-motion. */}
       <style>{`

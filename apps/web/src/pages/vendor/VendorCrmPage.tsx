@@ -132,7 +132,7 @@ export default function VendorCrmPage() {
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
-          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
+          style={{ borderBottom: "1px solid hsl(var(--border))" }}
         >
           <h1 className="text-3xl md:text-4xl tracking-tight">
             {t("title")}

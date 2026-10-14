@@ -42,8 +42,8 @@ export function VendorComingSoonShell({
             <div
               className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
               style={{
-                background: "rgba(255,255,255,0.08)",
-                color: "#f4f1ea",
+                background: "hsl(var(--muted))",
+                color: "hsl(var(--foreground))",
               }}
             >
               <Icon className="w-6 h-6" />

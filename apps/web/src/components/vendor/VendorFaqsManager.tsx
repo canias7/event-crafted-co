@@ -329,7 +329,7 @@ export function VendorFaqsPublic({ vendorId }: { vendorId: string }) {
     <div>
       <p
         className="font-label mb-3"
-        style={{ color: "#f4f1ea", letterSpacing: "0.22em" }}
+        style={{ color: "hsl(var(--foreground))", letterSpacing: "0.22em" }}
       >
         {t("faq.eyebrow")}
       </p>
@@ -375,7 +375,7 @@ export function FaqCardList({
               className="shrink-0 grid place-items-center w-7 h-7 rounded-md group-open:hidden"
               style={{
                 background: "rgba(255,255,255,0.035)",
-                border: "0.5px solid rgba(255,255,255,0.08)",
+                border: "1px solid hsl(var(--border))",
               }}
               aria-hidden
             >

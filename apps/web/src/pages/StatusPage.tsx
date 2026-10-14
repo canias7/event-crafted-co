@@ -130,35 +130,35 @@ function classify(ok: boolean, latencyMs: number): CheckStatus {
   return "operational";
 }
 
-// On the dark page: green only for "operational" (a live signal),
-// champagne for slow, and "Down" on a cream pill so the brand red
-// stays readable against ink (its latency turns ink to match). Each
+// Green only for "operational" (a live signal; deeper in the light theme
+// so it reads on ivory), gold text for slow, and "Down" as red on its
+// tint, the problem pill (its latency in the full text colour). Each
 // status's word is labels.<status> in status.json.
 const STATUS_META: Record<
   CheckStatus,
   { tone: string; labelTone: string; latencyTone: string; Icon: typeof CheckCircle2 }
 > = {
   checking: {
-    tone: "text-[#f4f1ea]/80",
-    labelTone: "text-[#f4f1ea]/80",
-    latencyTone: "text-[#f4f1ea]/80",
+    tone: "text-muted-foreground",
+    labelTone: "text-muted-foreground",
+    latencyTone: "text-muted-foreground",
     Icon: Loader2,
   },
   operational: {
-    tone: "text-emerald-400",
-    labelTone: "text-emerald-400",
-    latencyTone: "text-[#f4f1ea]/80",
+    tone: "text-emerald-700 dark:text-emerald-400",
+    labelTone: "text-emerald-700 dark:text-emerald-400",
+    latencyTone: "text-muted-foreground",
     Icon: CheckCircle2,
   },
   degraded: {
-    tone: "text-gold",
-    labelTone: "text-gold",
-    latencyTone: "text-[#f4f1ea]/80",
+    tone: "text-accent",
+    labelTone: "text-accent",
+    latencyTone: "text-muted-foreground",
     Icon: AlertCircle,
   },
   down: {
     tone: "text-destructive",
-    labelTone: "rounded-full bg-[#f4f1ea] px-2 py-0.5 text-destructive",
+    labelTone: "rounded-full bg-destructive/10 px-2 py-0.5 text-destructive",
     latencyTone: "text-foreground",
     Icon: XCircle,
   },
@@ -232,20 +232,20 @@ export default function StatusPage() {
   const OverallIcon = overallMeta.Icon;
 
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PublicNav tone="dark" />
 
-      <section className="border-b border-white/15 pt-12 md:pt-16 pb-12 md:pb-16">
+      <section className="border-b border-border pt-12 md:pt-16 pb-12 md:pb-16">
         <div className="container mx-auto px-5 md:px-8 max-w-4xl">
-          <p className="font-label text-gold tracking-[0.4em] mb-4">
+          <p className="font-label text-accent tracking-[0.4em] mb-4">
             {t("eyebrow")}
           </p>
           <h1 className="font-editorial text-5xl md:text-6xl leading-[1.0] mb-6">
-            <Trans t={t} i18nKey="title" components={{ gold: <span className="text-gold" /> }} />
+            <Trans t={t} i18nKey="title" components={{ gold: <span className="text-accent" /> }} />
           </h1>
 
           {/* Top-line overall */}
-          <div className="rounded-2xl border border-white/15 bg-white/[0.03] p-5 flex items-center gap-4 mb-3">
+          <div className="rounded-2xl border border-border bg-card p-5 flex items-center gap-4 mb-3">
             <OverallIcon
               className={`w-6 h-6 shrink-0 ${overallMeta.tone} ${
                 overall === "checking" ? "animate-spin" : ""
@@ -255,7 +255,7 @@ export default function StatusPage() {
               <p className="font-editorial text-2xl leading-tight">
                 {t(`overall.${overall}`)}
               </p>
-              <p className="text-xs text-[#f4f1ea]/80 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {t("refresh_note")}
               </p>
             </div>
@@ -289,7 +289,7 @@ export default function StatusPage() {
               return (
                 <li
                   key={s.id}
-                  className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 flex items-center gap-4"
+                  className="rounded-2xl border border-border bg-card p-4 flex items-center gap-4"
                 >
                   <Icon
                     className={`w-5 h-5 shrink-0 ${meta.tone} ${
@@ -312,11 +312,11 @@ export default function StatusPage() {
                         )}
                       </p>
                     </div>
-                    <p className="text-xs text-[#f4f1ea]/80 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {t(`services.${s.id}.description`)}
                     </p>
                     {r?.note && r.status !== "operational" && (
-                      <p className="text-[11px] text-[#f4f1ea]/80 mt-1">
+                      <p className="text-[11px] text-muted-foreground mt-1">
                         {typeof r.note === "string"
                           ? r.note
                           : t(`notes.${r.note.key}`, { status: r.note.status })}
@@ -328,13 +328,13 @@ export default function StatusPage() {
             })}
           </ul>
 
-          <p className="text-xs text-[#f4f1ea]/80 mt-8 max-w-2xl leading-relaxed">
+          <p className="text-xs text-muted-foreground mt-8 max-w-2xl leading-relaxed">
             {t("footnote")}
           </p>
         </div>
       </section>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { categoryConfig } from "@/pages/VendorCategoryPage";
 import { useCategoryNames } from "@/lib/categoryNames";
 
@@ -37,18 +38,16 @@ const CREAM = "#f4f1ea";
 
 // `tone="overlay"` sits the nav on a dark photo hero (the home and
 // vendors pages): in flow instead of fixed, no glass, cream links with a
-// gold underline on the current page, gold Sign up.
-// `tone="dark"` is the same look as a sticky solid ink bar, for the dark
-// pages (Explore, How it works).
+// gold underline on the current page, gold Sign up. It stays light-on-
+// video in both themes.
+// Every other tone is a sticky solid bar that follows the site theme
+// (light by default, dark with the switch). "light" and "dark" are kept
+// only so old call sites compile.
 export function PublicNav({
   tone: toneProp = "dark",
 }: { tone?: "light" | "overlay" | "dark" } = {}) {
-  // The site is dark everywhere (owner's call, Oct 2026): "light" now
-  // draws the dark bar too, so no page shows a light header.
-  const tone = toneProp === "light" ? "dark" : toneProp;
-  const dark = tone === "dark";
-  // Cream-on-dark styling, shared by the overlay and dark tones.
-  const overlay = true;
+  // On the hero video: cream text and buttons, whatever the theme.
+  const overlay = toneProp === "overlay";
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVendorsOpen, setMobileVendorsOpen] = useState(false);
@@ -81,26 +80,18 @@ export function PublicNav({
             ? "text-white after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-gold"
             : "text-[#f4f1ea]/85 hover:text-white"
         }`
-      : `transition-colors duration-200 ${
-          active ? "text-foreground" : "text-muted-foreground hover:text-accent"
+      : `relative transition-colors duration-200 ${
+          active
+            ? "text-foreground after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-gold"
+            : "text-muted-foreground hover:text-accent"
         }`;
 
   return (
     <nav
       className={
-        dark
-          ? "sticky top-0 z-50 border-b border-white/10 bg-[#14161a]/95 backdrop-blur-md"
-          : overlay
-            ? "relative z-20"
-            : "fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
-      }
-      style={
         overlay
-          ? undefined
-          : {
-              background: "rgba(255,255,255,0.6)",
-              borderBottom: "0.5px solid rgba(0,0,0,0.12)",
-            }
+          ? "relative z-20"
+          : "sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md"
       }
       aria-label={ts("nav.aria_label")}
     >
@@ -110,7 +101,7 @@ export function PublicNav({
           pages' AuthTopBar matches it. */}
       <div className="container mx-auto flex h-20 items-center justify-between px-5 md:h-24 md:px-8">
         <Link to="/" aria-label={ts("nav.logo_label")}>
-          <VendoraLogo size="md" color={overlay ? CREAM : "#000"} withTagline />
+          <VendoraLogo size="md" color={overlay ? CREAM : "theme"} withTagline />
         </Link>
 
         {/* Desktop nav, from 1024px: below that the full logo plus the
@@ -207,6 +198,9 @@ export function PublicNav({
         </div>
 
         <div className="hidden lg:flex items-center gap-1">
+          <ThemeToggle
+            className={overlay ? "mr-2 border-white/40 text-white hover:text-gold" : "mr-2"}
+          />
           {session && profile ? (
             <>
               <NotificationBell variant={overlay ? "dark" : "light"} />
@@ -229,7 +223,7 @@ export function PublicNav({
                     className={`ml-2 flex items-center gap-2 text-sm font-medium transition-colors ${
                       overlay
                         ? "text-[#f4f1ea]/85 hover:text-white"
-                        : "text-muted-foreground hover:text-accent"
+                        : "text-foreground hover:text-accent"
                     }`}
                   >
                     {navLogo ? (
@@ -270,12 +264,20 @@ export function PublicNav({
                 );
               })()}
             </>
-          ) : overlay ? (
+          ) : (
             <div className="flex items-center gap-3 text-[13px]">
               <Link
                 to="/login"
-                className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 font-bold transition-colors hover:bg-white/10"
-                style={{ color: CREAM, border: "1px solid rgba(244,241,234,0.35)" }}
+                className={
+                  overlay
+                    ? "inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 font-bold transition-colors hover:bg-white/10"
+                    : "inline-flex h-9 items-center whitespace-nowrap rounded-full border border-border px-4 font-bold text-foreground transition-colors hover:bg-muted"
+                }
+                style={
+                  overlay
+                    ? { color: CREAM, border: "1px solid rgba(244,241,234,0.35)" }
+                    : undefined
+                }
               >
                 {t("nav.login")}
               </Link>
@@ -286,40 +288,29 @@ export function PublicNav({
                 {t("nav.signup")}
               </Link>
             </div>
-          ) : (
-            <>
-              <Link to="/login">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 text-foreground hover:bg-muted"
-                >
-                  {t("nav.login")}
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button size="sm" variant="secondary" className="h-9">
-                  {t("nav.signup")}
-                </Button>
-              </Link>
-            </>
           )}
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className={`lg:hidden p-2 ${overlay ? "text-[#f4f1ea]" : "text-foreground"}`}
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
-          aria-expanded={mobileOpen}
-          aria-controls="public-mobile-menu"
-        >
-          {mobileOpen ? (
-            <X className="w-5 h-5" aria-hidden="true" />
-          ) : (
-            <Menu className="w-5 h-5" aria-hidden="true" />
-          )}
-        </button>
+        {/* Phones and tablets: the theme switch stays outside the menu so
+            it's one tap away on every public page. */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <ThemeToggle
+            className={overlay ? "border-white/40 text-white hover:text-gold" : undefined}
+          />
+          <button
+            className={`p-2 ${overlay ? "text-[#f4f1ea]" : "text-foreground"}`}
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? t("nav.close_menu") : t("nav.open_menu")}
+            aria-expanded={mobileOpen}
+            aria-controls="public-mobile-menu"
+          >
+            {mobileOpen ? (
+              <X className="w-5 h-5" aria-hidden="true" />
+            ) : (
+              <Menu className="w-5 h-5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
@@ -328,11 +319,7 @@ export function PublicNav({
           id="public-mobile-menu"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className={
-            overlay
-              ? "lg:hidden mx-5 mb-4 rounded-3xl bg-background px-4 pb-4 shadow-lifted md:mx-8"
-              : "lg:hidden bg-background border-b border-border px-4 pb-4"
-          }
+          className="lg:hidden mx-5 mb-4 rounded-3xl border border-border bg-background px-4 pb-4 shadow-lifted md:mx-8"
         >
           {/* Vendors expandable section */}
           <button
