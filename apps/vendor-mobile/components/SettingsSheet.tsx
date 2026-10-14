@@ -19,6 +19,8 @@ import { useAuth } from "@/lib/auth";
 import { tryRegisterPushToken } from "@/lib/pushNotifications";
 import { supabase } from "@/lib/supabase";
 import { useBrandDialog } from "@/components/listing/WizardKit";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { LANGUAGES, useT } from "@/lib/i18n";
 
 // Cream Vendora palette — same tokens as the tab screens.
 const CARD = "#fbf9f4";
@@ -64,6 +66,7 @@ export function SettingsSheet({
 }) {
   const { user } = useAuth();
   const dialog = useBrandDialog();
+  const { t: tc, lang } = useT("common");
 
   // "Account" view vs inline "Change password" form. The sheet swaps
   // its body when the password row is tapped so the design stays
@@ -74,7 +77,6 @@ export function SettingsSheet({
   const [pwdSubmitting, setPwdSubmitting] = useState(false);
 
   const [emailVerified, setEmailVerified] = useState(false);
-  const [language, setLanguage] = useState("en-US");
   const [pushOn, setPushOn] = useState(true);
   const [pushBusy, setPushBusy] = useState(false);
 
@@ -82,19 +84,10 @@ export function SettingsSheet({
     const { data } = await supabase.auth.getUser();
     setEmailVerified(!!data?.user?.email_confirmed_at);
     if (user?.id) {
-      const [{ data: prof }, { count }] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("profiles")
-          .select("preferred_language")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("device_push_tokens")
-          .select("token", { count: "exact", head: true })
-          .eq("user_id", user.id),
-      ]);
-      setLanguage(prof?.preferred_language ?? "en-US");
+      const { count } = await supabase
+        .from("device_push_tokens")
+        .select("token", { count: "exact", head: true })
+        .eq("user_id", user.id);
       setPushOn((count ?? 0) > 0);
     }
   }, [user?.id]);
@@ -203,14 +196,6 @@ export function SettingsSheet({
     });
   }
 
-  function onLanguage() {
-    dialog.show({
-      icon: "globe",
-      title: "Language",
-      message:
-        "More languages are on the way. The app currently runs in English (US).",
-    });
-  }
 
   function onSignOutPress() {
     dialog.show({
@@ -461,10 +446,12 @@ export function SettingsSheet({
                 <RowDivider />
                 <SettingsRow
                   icon="globe"
-                  label="Language"
-                  body={language === "en-US" ? "English (US)" : language}
-                  onPress={onLanguage}
+                  label={tc("language.title")}
+                  body={LANGUAGES.find((l) => l.code === lang)?.label ?? ""}
                 />
+                <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -4 }}>
+                  <LanguagePicker />
+                </View>
               </View>
 
               {/* Log out + Delete */}

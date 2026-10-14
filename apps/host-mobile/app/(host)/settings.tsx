@@ -28,6 +28,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { useT } from "@/lib/i18n";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -54,6 +56,7 @@ const LEGAL_LINKS = [
 ] as const;
 
 export default function SettingsScreen() {
+  const { t: tc } = useT("common");
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
@@ -278,6 +281,12 @@ export default function SettingsScreen() {
                     thumbColor="#ffffff"
                     accessibilityLabel="Vendor replies by email"
                   />
+                </View>
+
+                <SectionLabel style={{ marginTop: 32 }}>{tc("language.title")}</SectionLabel>
+                <View style={field}>
+                  <LanguagePicker />
+                  <Text style={[hint, { marginTop: 10 }]}>{tc("language.note")}</Text>
                 </View>
 
                 <SectionLabel style={{ marginTop: 32 }}>Help & legal</SectionLabel>
