@@ -3,14 +3,15 @@
 // left half with the "Why Vendora" points on it, and the page's content
 // sits in a narrow column on the right; on phones there's no photo and the
 // points follow the content. The photo is the same size and crop on every
-// page (window height, pinned while the form scrolls). The theme switch is in the top menu; a bottom
+// page (window height, pinned while the form scrolls). The photo is the
+// owner's candlelit reception picture. The theme switch is in the top menu; a bottom
 // bar holds the language switcher, since these pages have no footer. Colours follow the
 // site theme (light by default); the photo side looks the same in both.
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
-import authPhoto from "@/assets/hero-video/hero-day-poster.webp";
+import authPhoto from "@/assets/auth/signin-photo.webp";
 
 function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
   const { t } = useTranslation("auth");
@@ -56,9 +57,9 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
           <img
             src={authPhoto}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover scale-[1.04]"
+            className="absolute inset-0 h-full w-full object-cover object-[22%_50%]"
           />
-          <div className="absolute inset-0 bg-[#0a0b0e]/60" />
+          <div className="absolute inset-0 bg-[#0a0b0e]/50" />
           <div
             className="absolute inset-0"
             style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.65) 100%)" }}
