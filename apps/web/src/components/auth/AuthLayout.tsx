@@ -20,11 +20,11 @@ function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
     <aside
       className={
         onPhoto
-          ? "max-w-md text-[#f4f1ea] [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]"
+          ? "max-w-md text-[#f4f1ea] [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_0_18px_rgba(0,0,0,0.7)]"
           : "rounded-2xl border border-border bg-card p-5 md:p-8"
       }
     >
-      <p className={`font-label m-0 ${onPhoto ? "text-gold" : "text-accent"}`}>{t("split.perks.title")}</p>
+      <p className={onPhoto ? "m-0 font-bold uppercase text-gold text-[16px] tracking-[0.14em]" : "font-label m-0 text-accent"}>{t("split.perks.title")}</p>
       <ul className="m-0 mt-5 p-0 list-none flex flex-col gap-5">
         {items.map((it) => (
           <li key={it.title} className="flex gap-3">
@@ -62,7 +62,7 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
           <div className="absolute inset-0 bg-[#0a0b0e]/20" />
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 38%, rgba(10,11,14,0.78) 66%, rgba(10,11,14,0.92) 100%)" }}
+            style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 30%, rgba(10,11,14,0.82) 58%, rgba(10,11,14,0.94) 100%)" }}
           />
           <div className="relative flex h-full items-end px-12 py-14 xl:px-16">
             <Perks onPhoto />
