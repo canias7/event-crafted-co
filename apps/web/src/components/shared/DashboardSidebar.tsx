@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { useLiveVendorBalance } from "@/hooks/useVendorCredits";
 import { siteLocaleOr } from "@/lib/intlLocale";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 // 'studio' is Premium's internal slug (kept for Stripe/webhook
 // compat); 'starter' is a retired, grandfathered tier. Labels and chip
@@ -27,7 +28,7 @@ const TIER_CHIP: Record<VendorTier, { bg: string; ring: string; text: string; sh
   free:    { bg: "hsl(var(--muted))",   ring: "hsl(var(--border))", text: "hsl(var(--foreground))", shadow: "none" },
   starter: { bg: "hsl(var(--muted))",   ring: "hsl(var(--border))", text: "hsl(var(--foreground))", shadow: "none" },
   pro:     { bg: "hsl(var(--pending))", ring: "hsl(var(--gold))",   text: "hsl(var(--accent))",     shadow: "none" },
-  studio:  { bg: "hsl(var(--gold))",    ring: "hsl(var(--gold))",   text: "hsl(var(--foreground))", shadow: "none" },
+  studio:  { bg: "hsl(var(--gold))",    ring: "hsl(var(--gold))",   text: "#14161a",                shadow: "none" },
 };
 
 // Pages pass an English title ("Vendor Portal", "Customer", …); show it in
@@ -259,17 +260,15 @@ export function DashboardSidebar({
         collapsed ? "w-16" : "w-64"
       }`}
       style={{
-        // Transparent so the page canvas (vendor-canvas wash on
-        // /vendor/*, plain white on customer/settings) shows
-        // through. Hairline right border tinted amber so it blends
-        // into the warm gradient instead of cutting a hard grey line.
+        // Transparent so the page background (light or dark, following
+        // the site theme) shows through; the hairline token marks the edge.
         background: "transparent",
-        borderRight: "0.5px solid rgba(255,255,255,0.08)",
+        borderRight: "1px solid hsl(var(--border))",
       }}
       aria-label={tp("sidebar.nav_label", { title: titleText })}
     >
       {collapsed ? (
-        <div className="px-2 py-4 border-b border-[rgba(255,255,255,0.08)] flex flex-col items-center gap-3">
+        <div className="px-2 py-4 border-b border-border flex flex-col items-center gap-3">
           <Link
             to={backPath}
             title={tp("sidebar.logo_label")}
@@ -287,7 +286,7 @@ export function DashboardSidebar({
           </button>
         </div>
       ) : (
-        <div className="px-5 py-6 border-b border-[rgba(255,255,255,0.08)]">
+        <div className="px-5 py-6 border-b border-border">
           {/* The full logo on its own row (the small size fits the 256px
               sidebar); the plan or area label and the collapse button
               sit under it. */}
@@ -345,6 +344,14 @@ export function DashboardSidebar({
         {/* Gallery shows for every vendor tier, including Free. */}
         {items.map(renderItem)}
       </nav>
+      {/* Light / dark switch, at the foot of the sidebar. */}
+      <div
+        className={`border-t border-border ${
+          collapsed ? "flex justify-center px-2 py-4" : "flex items-center px-5 py-4"
+        }`}
+      >
+        <ThemeToggle />
+      </div>
       {/* Dedicated Log out row removed — the Sign out action lives on
           /settings now. signOut + handleLogout helpers stay so other
           surfaces (mobile nav) can keep using them. */}

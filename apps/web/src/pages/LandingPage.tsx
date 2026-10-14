@@ -193,10 +193,11 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Search */}
+            {/* Search: a cream field on the video in both themes, so
+                .surface-light keeps its tokens (placeholder) light. */}
             <form
               onSubmit={submitSearch}
-              className="mt-4 flex flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:rounded-full landing-fadeup"
+              className="surface-light mt-4 flex flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:rounded-full landing-fadeup"
               style={{
                 backgroundColor: "rgba(244,241,234,0.96)",
                 animationDelay: "320ms",

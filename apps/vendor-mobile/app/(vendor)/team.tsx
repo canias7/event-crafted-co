@@ -30,17 +30,22 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+// Switch: selected fill when on; a quiet track when off.
+const SWITCH_TRACK = { false: IS_DARK ? "rgba(255,255,255,0.22)" : "#d6d1c6", true: C.selected };
+// White thumb, except on the cream "on" track in dark, where it's ink.
+const switchThumb = (on: boolean) => (on ? C.onSelected : "#ffffff");
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -195,8 +200,8 @@ export default function TeamScreen() {
           <Switch
             value={showTeam}
             onValueChange={toggleShow}
-            trackColor={{ false: "#d6d1c6", true: INK }}
-            thumbColor="#ffffff"
+            trackColor={SWITCH_TRACK}
+            thumbColor={switchThumb(showTeam)}
           />
         </View>
 
@@ -254,7 +259,7 @@ export default function TeamScreen() {
                     disabled={i === members.length - 1}
                     onPress={() => move(i, 1)}
                   />
-                  <RowIcon icon="trash-2" color="#b23a34" onPress={() => confirmRemove(m)} />
+                  <RowIcon icon="trash-2" color={C.error} onPress={() => confirmRemove(m)} />
                 </View>
               </View>
             ))}
@@ -286,7 +291,7 @@ export default function TeamScreen() {
 
             {members.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 24 }}>
-                <MaterialCommunityIcons name="account-group-outline" size={52} color="#c9a86a" />
+                <MaterialCommunityIcons name="account-group-outline" size={52} color={GOLD} />
                 <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 14, color: INK_DIM, textAlign: "center" }}>
                   {t("empty")}
                 </Text>
@@ -548,7 +553,7 @@ function MemberForm({
                   justifyContent: "center",
                 }}
               >
-                <Feather name="plus" size={16} color={INK} />
+                <Feather name="plus" size={16} color={C.onGold} />
               </View>
               <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: INK }}>
                 {previewUri ? t("form.changePhoto") : t("form.addPhoto")}
@@ -622,8 +627,8 @@ function MemberForm({
                 <Switch
                   value={visible}
                   onValueChange={setVisible}
-                  trackColor={{ false: "#d6d1c6", true: INK }}
-                  thumbColor="#ffffff"
+                  trackColor={SWITCH_TRACK}
+                  thumbColor={switchThumb(visible)}
                 />
               </View>
 
@@ -632,7 +637,7 @@ function MemberForm({
                 disabled={saving}
                 style={{
                   marginTop: 16,
-                  backgroundColor: saving ? "#e0d2b0" : GOLD,
+                  backgroundColor: saving ? C.goldMuted : GOLD,
                   borderRadius: 999,
                   height: 52,
                   alignItems: "center",
@@ -640,9 +645,9 @@ function MemberForm({
                 }}
               >
                 {saving ? (
-                  <ActivityIndicator color={INK} />
+                  <ActivityIndicator color={C.onGold} />
                 ) : (
-                  <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
+                  <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 16}}>
                     {t("form.save")}
                   </Text>
                 )}

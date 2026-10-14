@@ -35,21 +35,35 @@ import { supabase } from "@/lib/supabase";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+const GOLD_MUTED = C.goldMuted;
+const ON_GOLD = C.onGold;
+const SELECTED = C.selected;
+const ON_SELECTED = C.onSelected;
+const FIELD = C.field;
+const ERROR = C.error;
+// Switches: ink track in light; champagne in dark, where a cream track
+// would swallow the white thumb.
+const TRACK_ON = IS_DARK ? C.gold : C.selected;
+const TRACK_OFF = IS_DARK ? "rgba(255,255,255,0.25)" : "#d6d1c6";
+const THUMB = "#ffffff";
 // Plan tags and quiet counts.
-const GOLD_TAG = "#f2e7cb";
-const BRONZE = "#8a6f3e";
-const MUTED = "#746a58";
+const GOLD_TAG = C.pending;
+// The Premium tag: a dark chip with champagne text in both themes.
+const DARK_TAG = IS_DARK ? C.surface : "#14161a";
+const BRONZE = C.accentText;
+const MUTED = C.placeholder;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -487,8 +501,8 @@ export default function SchedulingScreen() {
                       onValueChange={(v) =>
                         setHours((h) => ({ ...h, [key]: { ...day, on: v } }))
                       }
-                      trackColor={{ false: "#d6d1c6", true: INK }}
-                      thumbColor="#ffffff"
+                      trackColor={{ false: TRACK_OFF, true: TRACK_ON }}
+                      thumbColor={THUMB}
                       style={{ transform: [{ scale: 0.85 }] }}
                     />
                     <Text
@@ -634,7 +648,7 @@ export default function SchedulingScreen() {
                 key={sug.id}
                 style={{
                   marginTop: 12,
-                  backgroundColor: "#f2e7cb",
+                  backgroundColor: GOLD_TAG,
                   borderWidth: 1,
                   borderColor: GOLD,
                   borderRadius: 20,
@@ -672,7 +686,7 @@ export default function SchedulingScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14, textAlign: "center" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 14, textAlign: "center" }}>
                       {t("fill.promote")}
                     </Text>
                   </Pressable>
@@ -680,7 +694,7 @@ export default function SchedulingScreen() {
                     onPress={() => decideSuggestion(sug, "dismissed")}
                     style={{
                       flex: 1,
-                      backgroundColor: "#ffffff",
+                      backgroundColor: FIELD,
                       borderWidth: 1,
                       borderColor: BORDER,
                       borderRadius: 999,
@@ -706,7 +720,7 @@ export default function SchedulingScreen() {
               disabled={saving}
               style={{
                 marginTop: 28,
-                backgroundColor: saving ? "#e0d2b0" : GOLD,
+                backgroundColor: saving ? GOLD_MUTED : GOLD,
                 borderRadius: 999,
                 height: 52,
                 alignItems: "center",
@@ -714,9 +728,9 @@ export default function SchedulingScreen() {
               }}
             >
               {saving ? (
-                <ActivityIndicator color={INK} />
+                <ActivityIndicator color={ON_GOLD} />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 16}}>
                   {t("save")}
                 </Text>
               )}
@@ -881,12 +895,12 @@ function RuleChips({
                 paddingHorizontal: 16,
                 paddingVertical: 9,
                 borderRadius: 999,
-                backgroundColor: on ? INK : CARD,
+                backgroundColor: on ? SELECTED : CARD,
                 borderWidth: 1,
-                borderColor: on ? INK : BORDER,
+                borderColor: on ? SELECTED : BORDER,
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#ffffff" : INK }}>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? ON_SELECTED : INK }}>
                 {o}
               </Text>
             </Pressable>
@@ -944,8 +958,8 @@ function ToggleCard({
       <Switch
         value={on}
         onValueChange={setOn}
-        trackColor={{ false: "#d6d1c6", true: INK }}
-        thumbColor="#ffffff"
+        trackColor={{ false: TRACK_OFF, true: TRACK_ON }}
+        thumbColor={THUMB}
       />
     </View>
   );
@@ -1009,8 +1023,8 @@ function AutoRow({
         <Switch
           value={on}
           onValueChange={setOn}
-          trackColor={{ false: "#d6d1c6", true: INK }}
-          thumbColor="#ffffff"
+          trackColor={{ false: TRACK_OFF, true: TRACK_ON }}
+          thumbColor={THUMB}
         />
       </View>
       {on ? (
@@ -1030,10 +1044,10 @@ function AutoRow({
                       paddingHorizontal: 11,
                       paddingVertical: 7,
                       borderRadius: 999,
-                      backgroundColor: sel ? INK : SURFACE,
+                      backgroundColor: sel ? SELECTED : SURFACE,
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: sel ? "#ffffff" : INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: sel ? ON_SELECTED : INK }}>
                       {o}
                     </Text>
                   </Pressable>
@@ -1146,12 +1160,12 @@ function TypeForm({
                       paddingHorizontal: 16,
                       paddingVertical: 10,
                       borderRadius: 999,
-                      backgroundColor: on ? INK : CARD,
+                      backgroundColor: on ? SELECTED : CARD,
                       borderWidth: 1,
-                      borderColor: on ? INK : BORDER,
+                      borderColor: on ? SELECTED : BORDER,
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#ffffff" : INK }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? ON_SELECTED : INK }}>
                       {d >= 60
                         ? t("typeForm.durHr", { count: d / 60, n: new Intl.NumberFormat(locale).format(d / 60) })
                         : t("typeForm.durMin", { n: d })}
@@ -1173,8 +1187,8 @@ function TypeForm({
             <Switch
               value={active}
               onValueChange={setActive}
-              trackColor={{ false: "#d6d1c6", true: INK }}
-              thumbColor="#ffffff"
+              trackColor={{ false: TRACK_OFF, true: TRACK_ON }}
+              thumbColor={THUMB}
             />
           </View>
           <Pressable
@@ -1182,7 +1196,7 @@ function TypeForm({
             disabled={saving}
             style={{
               marginTop: 16,
-              backgroundColor: saving ? "#e0d2b0" : GOLD,
+              backgroundColor: saving ? GOLD_MUTED : GOLD,
               borderRadius: 999,
               height: 52,
               alignItems: "center",
@@ -1190,16 +1204,16 @@ function TypeForm({
             }}
           >
             {saving ? (
-              <ActivityIndicator color={INK} />
+              <ActivityIndicator color={ON_GOLD} />
             ) : (
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 15}}>
                 {t("typeForm.save")}
               </Text>
             )}
           </Pressable>
           {type ? (
             <Pressable onPress={remove} style={{ alignItems: "center", paddingVertical: 16 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 14}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: ERROR, fontSize: 14}}>
                 {t("typeForm.deleteType")}
               </Text>
             </Pressable>
@@ -1225,7 +1239,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
     <View
       style={{
         marginTop: 28,
-        backgroundColor: "#f2e7cb",
+        backgroundColor: GOLD_TAG,
         borderWidth: 1,
         borderColor: GOLD,
         borderRadius: 20,
@@ -1241,7 +1255,7 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
       <View style={{ marginTop: 16, gap: 10 }}>
         {rows.map((r) => (
           <View key={r.icon} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Feather name={r.icon} size={15} color="#8a6f3e" />
+            <Feather name={r.icon} size={15} color={BRONZE} />
             <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 13, color: INK }}>{r.text}</Text>
           </View>
         ))}
@@ -1259,8 +1273,8 @@ function PremiumTeaser({ onUpgrade }: { onUpgrade: () => void }) {
           gap: 8,
         }}
       >
-        <MaterialCommunityIcons name="arrow-up-circle-outline" size={15} color={INK} />
-        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+        <MaterialCommunityIcons name="arrow-up-circle-outline" size={15} color={ON_GOLD} />
+        <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 15}}>
           {t("teaser.upgrade")}
         </Text>
       </Pressable>
@@ -1336,7 +1350,7 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
                   paddingHorizontal: 8,
                   paddingVertical: 4,
                   borderRadius: 8,
-                  backgroundColor: c.tag === "PRO" ? GOLD_TAG : INK,
+                  backgroundColor: c.tag === "PRO" ? GOLD_TAG : DARK_TAG,
                 }}
               >
                 <Text
@@ -1377,8 +1391,8 @@ function Upsell({ onUpgrade }: { onUpgrade: () => void }) {
           gap: 8,
         }}
       >
-        <Feather name="arrow-up-circle" size={16} color={INK} />
-        <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>{t("plans.seePlans")}</Text>
+        <Feather name="arrow-up-circle" size={16} color={ON_GOLD} />
+        <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 16 }}>{t("plans.seePlans")}</Text>
       </Pressable>
     </View>
   );

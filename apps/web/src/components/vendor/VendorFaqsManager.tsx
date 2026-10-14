@@ -374,7 +374,7 @@ export function FaqCardList({
             <span
               className="shrink-0 grid place-items-center w-7 h-7 rounded-md group-open:hidden"
               style={{
-                background: "rgba(255,255,255,0.035)",
+                background: "hsl(var(--muted))",
                 border: "1px solid hsl(var(--border))",
               }}
               aria-hidden
@@ -382,7 +382,7 @@ export function FaqCardList({
               <span
                 className="block w-1.5 h-1.5 rotate-45"
                 style={{
-                  background: "rgba(255,255,255,0.3)",
+                  background: "hsl(var(--foreground) / 0.4)",
                   borderRadius: 1,
                 }}
               />
@@ -391,14 +391,14 @@ export function FaqCardList({
             <span
               className="shrink-0 hidden group-open:grid place-items-center w-7 h-7 rounded-full"
               style={{
-                background: "#f4f1ea",
+                background: "hsl(var(--foreground))",
               }}
               aria-hidden
             >
               <span
                 className="block w-2 h-2 rotate-45"
                 style={{
-                  border: "1.5px solid #fff",
+                  border: "1.5px solid hsl(var(--background))",
                   borderRadius: 1,
                 }}
               />
@@ -406,7 +406,7 @@ export function FaqCardList({
           </summary>
           <div
             className="mx-6"
-            style={{ borderTop: "0.75px dashed rgba(255,255,255,0.3)" }}
+            style={{ borderTop: "1px dashed hsl(var(--border))" }}
             aria-hidden
           />
           <p className="px-6 pt-4 pb-5 italic text-[15px] text-muted-foreground leading-relaxed whitespace-pre-wrap">

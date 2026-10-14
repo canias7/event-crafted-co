@@ -32,6 +32,7 @@ import { useAuth } from "@/lib/auth";
 import { i18n, useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
 import { supabase } from "@/lib/supabase";
+import { C } from "@/lib/theme";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
@@ -40,16 +41,16 @@ import { wizardRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
 // different app section.
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const GOLD = "#c9a86a";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const GOLD = C.gold;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -638,9 +639,9 @@ export default function ListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
+          <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -648,18 +649,19 @@ export default function ListingScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6 gap-4">
-          <Text className="text-base text-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="text-base text-center" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
             {setupError
               ? setupError
               : t("errors.openEditor")}
           </Text>
           <Pressable
             onPress={loadAll}
-            className="rounded-full bg-accent px-6 py-3 active:opacity-80"
+            className="rounded-full px-6 py-3 active:opacity-80"
+            style={{ backgroundColor: C.gold }}
           >
-            <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.onGold }}>
               {t("tryAgain")}
             </Text>
           </Pressable>
@@ -877,15 +879,15 @@ export default function ListingScreen() {
                       paddingVertical: 10,
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: active ? INK : BORDER,
-                      backgroundColor: active ? INK : "#ffffff",
+                      borderColor: active ? C.selected : BORDER,
+                      backgroundColor: active ? C.selected : C.field,
                     }}
                   >
                     <Text
                       style={{
                         fontFamily: SERIF_BOLD,
                         fontSize: 13,
-                        color: active ? "#ffffff" : INK,
+                        color: active ? C.onSelected : INK,
                       }}
                     >
                       {t(`pricingModels.${m}`)}
@@ -964,7 +966,7 @@ export default function ListingScreen() {
                   width: 52,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: customPricing ? INK : BORDER,
+                  backgroundColor: customPricing ? C.selected : BORDER,
                   padding: 3,
                   justifyContent: "center",
                 }}
@@ -974,7 +976,7 @@ export default function ListingScreen() {
                     width: 24,
                     height: 24,
                     borderRadius: 999,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: customPricing ? C.onSelected : "#ffffff",
                     alignSelf: customPricing ? "flex-end" : "flex-start",
                   }}
                 />
@@ -1152,7 +1154,7 @@ export default function ListingScreen() {
                 <View
                   style={{
                     marginHorizontal: 20,
-                    backgroundColor: "#fbf9f4",
+                    backgroundColor: C.card,
                     borderRadius: 20,
                     borderWidth: 1,
                     borderColor: BORDER,
@@ -1243,7 +1245,7 @@ function CircleButton({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: "#fbf9f4",
+        backgroundColor: C.card,
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.7 : 1,
@@ -1370,7 +1372,7 @@ function FieldLabel({
       </Text>
       {required ? (
         <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#b23a34" }}
+          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.error }}
         />
       ) : null}
     </View>
@@ -1451,7 +1453,8 @@ function PhotoGrid({
                 position: "absolute",
                 top: 10,
                 left: 10,
-                backgroundColor: INK,
+                // Badge over the photo: fixed ink in both themes.
+                backgroundColor: "#14161a",
                 paddingHorizontal: 10,
                 paddingVertical: 4,
                 borderRadius: 999,
@@ -1460,7 +1463,7 @@ function PhotoGrid({
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  color: CREAM,
+                  color: "#f4f1ea",
                   fontSize: 11,
                   letterSpacing: 1.2,
                 }}
@@ -1567,8 +1570,8 @@ function BannerCard({
 }) {
   // "accent" is the waiting look (gold tint, champagne edge); "good" is a
   // plain card, since green is kept for live signals.
-  const accentBg = tone === "accent" ? "#f2e7cb" : "#fbf9f4";
-  const accentBorder = tone === "accent" ? "#c9a86a" : "#e6e1d5";
+  const accentBg = tone === "accent" ? C.pending : C.card;
+  const accentBorder = tone === "accent" ? C.gold : C.border;
   return (
     <View
       style={{
@@ -1632,7 +1635,7 @@ function fieldBox(multiline = false) {
   return {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: "#fbf9f4",
+    backgroundColor: C.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
@@ -1660,7 +1663,7 @@ const savePillStyle = {
   borderRadius: 999,
   borderWidth: 1,
   borderColor: BORDER,
-  backgroundColor: "#ffffff",
+  backgroundColor: C.field,
   height: 52,
   justifyContent: "center" as const,
   alignItems: "center" as const,
@@ -1683,6 +1686,6 @@ const publishPillStyle = {
 const publishPillText = {
   fontFamily: SERIF_BOLD,
   fontSize: 15,
-  color: INK,
+  color: C.onGold,
 };
 

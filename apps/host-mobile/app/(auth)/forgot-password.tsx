@@ -24,19 +24,20 @@ import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
 import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const CREAM = "#14161a";
-const INK = "#f4f1ea";
+const CREAM = C.page;
+const INK = C.text;
 // Labels on gold buttons stay ink.
-const INK_ON_GOLD = "#14161a";
-const GOLD = "#c9a86a";
+const INK_ON_GOLD = C.onGold;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — solid, not faded.
-const GOLD_MUTED = "#e0d2b0";
-const INK_DIM = "#f4f1ea";
-const PLACEHOLDER = "#a39a88";
-const INK_BORDER = "rgba(255,255,255,0.15)";
-const INPUT_BG = "rgba(255,255,255,0.05)";
-const ERROR = "#e0716a";
+const GOLD_MUTED = C.goldMuted;
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const INK_BORDER = C.border;
+const INPUT_BG = C.field;
+const ERROR = C.error;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";

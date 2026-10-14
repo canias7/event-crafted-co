@@ -18,6 +18,7 @@ import { useFonts } from "expo-font";
 import { AuthProvider } from "@/lib/auth";
 import { i18n, useLanguageReady } from "@/lib/i18n";
 import { AccountDeletionGate } from "@/components/AccountDeletionGate";
+import { C } from "@/lib/theme";
 
 // Apply OTA updates on the launch that finds them, instead of expo-updates'
 // default one-launch-behind behaviour (download now, run next time). The
@@ -75,24 +76,24 @@ function JsFatalScreen({
   onReload: () => void;
 }) {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f1ea" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.page }}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 24 }}>
         <Text
           style={{
             fontFamily: "LibreBaskerville-Bold",
-            color: "#b23a34",
+            color: C.error,
             fontSize: 18,
           }}
         >
           {i18n.t("common.crash.title")}
         </Text>
-        <Text style={{ fontFamily: "LibreBaskerville", color: "#14161a", marginTop: 8, fontSize: 13 }}>
+        <Text style={{ fontFamily: "LibreBaskerville", color: C.text, marginTop: 8, fontSize: 13 }}>
           {i18n.t("common.crash.body")}
         </Text>
         <View
           style={{
             marginTop: 16,
-            backgroundColor: "#fbf9f4",
+            backgroundColor: C.card,
             borderRadius: 12,
             padding: 16,
           }}
@@ -100,7 +101,7 @@ function JsFatalScreen({
           <Text
             selectable
             style={{
-              color: "#14161a",
+              color: C.text,
               fontSize: 12,
               lineHeight: 18,
               fontFamily: "monospace",
@@ -113,14 +114,14 @@ function JsFatalScreen({
           onPress={onReload}
           style={{
             marginTop: 20,
-            backgroundColor: "#c9a86a",
+            backgroundColor: C.gold,
             borderRadius: 999,
             height: 52,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a", fontSize: 16}}>
+          <Text style={{ fontFamily: "LibreBaskerville-Bold", color: C.onGold, fontSize: 16}}>
             {i18n.t("common.crash.reload")}
           </Text>
         </Pressable>
@@ -199,14 +200,14 @@ export default function RootLayout() {
   // Hold the tree until the faces are in — otherwise the first frame
   // paints in the system serif and visibly reflows.
   if (!fontsLoaded || !languageReady) {
-    return <View style={{ flex: 1, backgroundColor: "#f4f1ea" }} />;
+    return <View style={{ flex: 1, backgroundColor: C.page }} />;
   }
 
   return (
     <SafeAreaProvider>
       <FatalCatcher>
         <AuthProvider>
-          <StatusBar style="dark" />
+          <StatusBar style={C.statusBar} />
           {/* A closed account in its 30-day grace period sees only the
               restore / sign-out screen. */}
           <AccountDeletionGate>

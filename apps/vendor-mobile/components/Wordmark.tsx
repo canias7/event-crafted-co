@@ -7,9 +7,10 @@
 // tintColor can paint it brand gold (or any surface-appropriate color).
 
 import { Image, Platform, Text, View } from "react-native";
+import { C } from "@/lib/theme";
 
-const INK = "#14161a";
-const GOLD = "#c9a86a";
+const INK = C.text;
+const GOLD = C.gold;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";

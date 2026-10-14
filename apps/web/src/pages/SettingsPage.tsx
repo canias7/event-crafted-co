@@ -188,7 +188,7 @@ function SettingRow({
           background: destructive
             ? "hsl(var(--destructive) / 0.1)"
             : "hsl(var(--muted))",
-          color: destructive ? "#b23a34" : "#f4f1ea",
+          color: destructive ? "hsl(var(--destructive))" : "hsl(var(--foreground))",
         }}
         aria-hidden
       >
@@ -218,8 +218,8 @@ function RowDivider() {
     <div
       aria-hidden
       style={{
-        height: "0.5px",
-        background: "rgba(255,255,255,0.06)",
+        height: "1px",
+        background: "hsl(var(--border))",
         marginLeft: "1.25rem",
         marginRight: "1.25rem",
       }}

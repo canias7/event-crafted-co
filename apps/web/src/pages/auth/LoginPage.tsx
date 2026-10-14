@@ -406,7 +406,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
             <Link
               to={otherSideHref}
               className="font-medium pb-px"
-              style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
+              style={{ borderBottom: "0.5px solid currentColor", color: "hsl(var(--foreground))" }}
             >
               {otherSideLabel}
             </Link>
@@ -492,7 +492,7 @@ export default function LoginPage({ role }: LoginPageProps = {}) {
         </button>
         <p
           className="text-center font-serif italic"
-          style={{ fontSize: "12.5px", opacity: 0.55, marginTop: "6px", lineHeight: 1.5 }}
+          style={{ fontSize: "12.5px", opacity: 0.7, marginTop: "6px", lineHeight: 1.5 }}
         >
           {tAuth("login.code_note")}
         </p>

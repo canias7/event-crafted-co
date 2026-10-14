@@ -36,7 +36,7 @@ export function BrandCardShell({ children, bio, businessName }: Props) {
         aria-label={flipped ? t("brandCard.showFront") : t("brandCard.showBio")}
         className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-semibold text-foreground hover:text-accent transition-colors"
         style={{
-          background: "#ffffff",
+          background: "hsl(var(--card))",
           border: "1px solid hsl(var(--border))",
         }}
       >

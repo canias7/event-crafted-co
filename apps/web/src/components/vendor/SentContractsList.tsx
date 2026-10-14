@@ -166,7 +166,7 @@ export function SentContractsList({
     <div
       data-cockpit-card
       className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(0,0,0,0.08)" }}
+      style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
     >
       <div className="px-4 pt-3 pb-2 border-b border-border">
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">

@@ -28,6 +28,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SHADOW } from "@/lib/ui";
+import { C, IS_DARK } from "@/lib/theme";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { i18n, intlLocale, useT } from "@/lib/i18n";
 
@@ -71,14 +72,26 @@ function isAudioAttachment(a: AttachmentRef): boolean {
 
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
+// CREAM is the page colour; it is also the label on SELECTED fills
+// (avatars, outgoing bubbles, the send button): ink in light shows
+// cream on ink, dark shows ink on cream.
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const CARD = C.card;
+const BORDER = C.border;
+const INK = C.text;
+const SELECTED = C.selected;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+// Quoted-reply chip inside a bubble: a faint wash of the bubble's label.
+const QUOTE_MINE_BG = IS_DARK ? "rgba(20,22,26,0.08)" : "rgba(255,255,255,0.12)";
+const QUOTE_MINE_BAR = IS_DARK ? "rgba(20,22,26,0.5)" : "rgba(255,255,255,0.5)";
+const QUOTE_THEIRS_BG = IS_DARK ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+const SEND_OFF_BG = IS_DARK ? C.surface : "#e6e1d5";
+const SEND_OFF_FG = IS_DARK ? C.placeholder : "#f4f1ea";
 const ACTIVE_GREEN = "#22c55e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -588,7 +601,7 @@ function EmojiPickerModal({
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={{
-            backgroundColor: "#fbf9f4",
+            backgroundColor: CARD,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 12,
@@ -601,7 +614,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#e6e1d5",
+              backgroundColor: BORDER,
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -666,7 +679,7 @@ function Header({
         paddingHorizontal: 20,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#e6e1d5",
+        borderBottomColor: BORDER,
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -678,7 +691,7 @@ function Header({
             width: 42,
             height: 42,
             borderRadius: 999,
-            backgroundColor: INK,
+            backgroundColor: SELECTED,
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -776,7 +789,7 @@ function MessageRow({
                   width: 30,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: INK,
+                  backgroundColor: SELECTED,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -858,7 +871,7 @@ function MessageRow({
                 backgroundColor: m.deleted_at
                   ? CREAM_DEEP
                   : isMine
-                    ? INK
+                    ? SELECTED
                     : CREAM_DEEP,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
@@ -881,8 +894,8 @@ function MessageRow({
                     paddingVertical: 6,
                     borderRadius: 8,
                     backgroundColor: isMine
-                      ? "rgba(255,255,255,0.12)"
-                      : "rgba(0,0,0,0.05)",
+                      ? QUOTE_MINE_BG
+                      : QUOTE_THEIRS_BG,
                   }}
                 >
                   <View
@@ -891,7 +904,7 @@ function MessageRow({
                       alignSelf: "stretch",
                       borderRadius: 2,
                       backgroundColor: isMine
-                        ? "rgba(255,255,255,0.5)"
+                        ? QUOTE_MINE_BAR
                         : INK,
                     }}
                   />
@@ -1027,7 +1040,7 @@ function Composer({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#fbf9f4",
+          backgroundColor: CARD,
           borderRadius: 999,
           paddingLeft: 16,
           paddingRight: 6,
@@ -1062,13 +1075,13 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#e6e1d5",
+            backgroundColor: enabled ? SELECTED : SEND_OFF_BG,
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,
           }}
         >
-          <Feather name="navigation" size={18} color={CREAM} />
+          <Feather name="navigation" size={18} color={enabled ? CREAM : SEND_OFF_FG} />
         </Pressable>
       </View>
     </View>

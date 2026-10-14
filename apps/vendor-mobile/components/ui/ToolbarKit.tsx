@@ -14,12 +14,12 @@
 import { Fragment } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { C, IS_DARK } from "@/lib/theme";
 
-const CARD = "#fbf9f4";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
-const WHITE = "#ffffff";
-const PLACEHOLDER = "#746a58";
+const CARD = C.card;
+const BORDER = C.border;
+const INK = C.text;
+const PLACEHOLDER = C.placeholder;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -124,6 +124,7 @@ export function SearchField({
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={PLACEHOLDER}
+        keyboardAppearance={IS_DARK ? "dark" : "light"}
         // Android otherwise lets a long placeholder wrap onto a second line
         // that the field's height then slices in half. One line, cut at the
         // edge, reads as "more text here" instead of as broken.
@@ -162,16 +163,16 @@ export function ToolbarButton({
         width: CONTROL_HEIGHT,
         height: CONTROL_HEIGHT,
         borderRadius: 12,
-        backgroundColor: active ? INK : CARD,
+        backgroundColor: active ? C.selected : CARD,
         borderWidth: 1,
-        borderColor: active ? INK : BORDER,
+        borderColor: active ? C.selected : BORDER,
         alignItems: "center",
         justifyContent: "center",
         gap: 3,
       }}
     >
-      <Feather name={icon} size={17} color={active ? WHITE : INK} />
-      <Text style={{ fontFamily: SERIF, fontSize: 11, color: active ? WHITE : INK }}>{label}</Text>
+      <Feather name={icon} size={17} color={active ? C.onSelected : INK} />
+      <Text style={{ fontFamily: SERIF, fontSize: 11, color: active ? C.onSelected : INK }}>{label}</Text>
     </Pressable>
   );
 }

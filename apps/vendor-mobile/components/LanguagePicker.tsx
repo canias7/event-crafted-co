@@ -5,7 +5,10 @@
 // the selected pill is cream with an ink label.
 import { Pressable, Text, View } from "react-native";
 import { LANGUAGES, setLanguage, useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
+// tone="dark" is the photo welcome screen: fixed colours over the photo.
+// The default follows the app theme.
 const INK = "#14161a";
 const CREAM = "#f4f1ea";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -36,18 +39,18 @@ export function LanguagePicker({ tone = "light" }: { tone?: "light" | "dark" }) 
               justifyContent: "center",
               borderWidth: 1,
               borderColor: on
-                ? dark ? CREAM : INK
-                : dark ? "rgba(255,255,255,0.15)" : "#e6e1d5",
+                ? dark ? CREAM : C.selected
+                : dark ? "rgba(255,255,255,0.15)" : C.border,
               backgroundColor: on
-                ? dark ? CREAM : INK
-                : dark ? "transparent" : "#ffffff",
+                ? dark ? CREAM : C.selected
+                : dark ? "transparent" : C.field,
             }}
           >
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
                 fontSize: 14,
-                color: on ? (dark ? INK : "#ffffff") : dark ? CREAM : INK,
+                color: on ? (dark ? INK : C.onSelected) : dark ? CREAM : C.text,
               }}
             >
               {l.label}

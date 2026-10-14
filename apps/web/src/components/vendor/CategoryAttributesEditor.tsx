@@ -372,15 +372,14 @@ function FieldEditor({
                 style={
                   active
                     ? {
-                        background: "hsl(var(--muted))",
-                        color: "hsl(var(--foreground))",
-                        border: "0.5px solid rgba(255,255,255,0.3)",
+                        background: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                        border: "1px solid hsl(var(--primary))",
                       }
                     : {
-                        background: "rgba(255,255,255,0.55)",
-                        color: "rgba(26,22,18,0.65)",
-                        border: "0.5px solid rgba(255,255,255,0.1)",
-                        backdropFilter: "blur(6px)",
+                        background: "hsl(var(--card))",
+                        color: "hsl(var(--foreground))",
+                        border: "1px solid hsl(var(--border))",
                       }
                 }
                 aria-pressed={active}
@@ -397,9 +396,9 @@ function FieldEditor({
               onClick={() => onToggleTag(opt)}
               className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
               style={{
-                background: "hsl(var(--muted))",
-                color: "hsl(var(--foreground))",
-                border: "0.5px solid rgba(255,255,255,0.3)",
+                background: "hsl(var(--primary))",
+                color: "hsl(var(--primary-foreground))",
+                border: "1px solid hsl(var(--primary))",
               }}
               title={t("attributes.customEntry")}
             >
@@ -482,8 +481,8 @@ function CustomTagButton({ onAdd }: { onAdd: (value: string) => void }) {
         className="text-[13px] rounded-full px-4 py-1.5 transition-colors inline-flex items-center gap-1.5"
         style={{
           background: "transparent",
-          color: "rgba(26,22,18,0.55)",
-          border: "0.5px dashed rgba(255,255,255,0.3)",
+          color: "hsl(var(--foreground))",
+          border: "1px dashed hsl(var(--foreground) / 0.3)",
         }}
         aria-label={t("attributes.addCustomAria")}
       >

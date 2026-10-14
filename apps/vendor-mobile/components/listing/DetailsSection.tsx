@@ -126,8 +126,8 @@ export function DetailsSection({
   if (!category) {
     return (
       <View className="gap-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{t("title")}</Text>
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
           {t("pickCategory")}
         </Text>
       </View>
@@ -137,8 +137,8 @@ export function DetailsSection({
   if (!schema) {
     return (
       <View className="gap-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{t("title")}</Text>
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
           {t("noSchema", { category: sub(category) })}
         </Text>
       </View>
@@ -148,8 +148,8 @@ export function DetailsSection({
   if (loading) {
     return (
       <View className="gap-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{t("title")}</Text>
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
       </View>
     );
   }
@@ -163,14 +163,14 @@ export function DetailsSection({
   return (
     <View className="gap-5">
       <View>
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{t("title")}</Text>
-        <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="mt-0.5 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
           {t("intro", { category: sub(category) })}
         </Text>
       </View>
       {applicableSections.map((section) => (
         <View key={section.name} className="gap-4">
-          <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+          <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
             {tx.section(section.name)}
           </Text>
           {section.fields.map((field) => (
@@ -187,9 +187,9 @@ export function DetailsSection({
       <Pressable
         onPress={save}
         disabled={busy}
-        className="rounded-full border border-border bg-white h-11 items-center justify-center active:opacity-80"
+        className="rounded-full border h-11 items-center justify-center active:opacity-80" style={{ borderColor: C.border, backgroundColor: C.field }}
       >
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
           {busy ? t("saving") : t("save")}
         </Text>
       </Pressable>
@@ -217,19 +217,19 @@ function FieldEditor({
           : "";
     return (
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
           {tx.label(field.label)}
         </Text>
         {field.help ? (
-          <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
             {tx.help(field.help)}
           </Text>
         ) : null}
         <View className="mt-2 flex-row items-center gap-2">
           {field.type === "currency" ? (
-            <Text className="text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>$</Text>
+            <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>$</Text>
           ) : null}
-          <TextInput style={{ fontFamily: "LibreBaskerville" }}
+          <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
             value={str}
             onChangeText={(v) => {
               const cleaned = v.replace(/[^0-9.]/g, "");
@@ -246,10 +246,10 @@ function FieldEditor({
             placeholder="0"
             placeholderTextColor={PLACEHOLDER}
             keyboardType={field.type === "int" ? "number-pad" : "decimal-pad"}
-            className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+            className="flex-1 rounded-xl border px-4 py-3 text-base"
           />
           {"suffix" in field && field.suffix ? (
-            <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+            <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
               {tx.suffix(field.suffix)}
             </Text>
           ) : null}
@@ -261,11 +261,11 @@ function FieldEditor({
     return (
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
             {tx.label(field.label)}
           </Text>
           {field.help ? (
-            <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+            <Text className="mt-0.5 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
               {tx.help(field.help)}
             </Text>
           ) : null}
@@ -346,9 +346,9 @@ function TagsField({
 
   return (
     <View>
-      <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>{label}</Text>
+      <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>{label}</Text>
       {help ? (
-        <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{help}</Text>
+        <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{help}</Text>
       ) : null}
       <View className="mt-2 flex-row flex-wrap gap-2">
         {options.map((opt) => (
@@ -490,15 +490,15 @@ function SelectField({
   const label = tx.label(field.label);
   return (
     <View>
-      <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>{label}</Text>
+      <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>{label}</Text>
       {field.help ? (
-        <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{tx.help(field.help)}</Text>
+        <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{tx.help(field.help)}</Text>
       ) : null}
       <Pressable
         onPress={() => setOpen(true)}
-        className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
+        className="mt-2 rounded-xl border px-4 py-3 active:opacity-80 flex-row items-center justify-between" style={{ borderColor: C.border, backgroundColor: C.page }}
       >
-        <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+        <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
           {value ? tx.option(value, field.key) : t("pickOne")}
         </Text>
         <Feather name="chevron-down" size={18} color="#746a58" />
@@ -509,12 +509,12 @@ function SelectField({
         presentationStyle="pageSheet"
         onRequestClose={() => setOpen(false)}
       >
-        <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderColor: C.border }}>
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("cancel")}</Text>
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("cancel")}</Text>
             </Pressable>
-            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
               {label}
             </Text>
             <View style={{ width: 60 }} />

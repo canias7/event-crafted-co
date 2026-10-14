@@ -34,15 +34,20 @@ import { supabase } from "@/lib/supabase";
 import { prepareLogoForUpload, type PickedAsset } from "@/lib/imageManipulation";
 import { LogoCropperModal } from "@/components/LogoCropperModal";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const CREAM = "#f4f1ea";
-const INK = "#14161a";
+const CREAM = C.page;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+// Monogram avatar: ink with a cream letter in both themes (avatars keep
+// their ink fill).
+const AVATAR_BG = "#14161a";
+const AVATAR_FG = "#f4f1ea";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -302,7 +307,7 @@ export default function EditProfileScreen() {
                       width: 120,
                       height: 120,
                       borderRadius: 24,
-                      backgroundColor: INK,
+                      backgroundColor: AVATAR_BG,
                       alignItems: "center",
                       justifyContent: "center",
                       overflow: "hidden",
@@ -324,7 +329,7 @@ export default function EditProfileScreen() {
                     ) : (
                       <Text
                         style={{
-                          color: CREAM,
+                          color: AVATAR_FG,
                           fontFamily: SERIF_BOLD,
                           fontSize: 66,
                           lineHeight: 74,
@@ -440,10 +445,11 @@ function Field({
         onChangeText={onChange}
         placeholder={placeholder}
         placeholderTextColor={PLACEHOLDER}
+        keyboardAppearance={IS_DARK ? "dark" : "light"}
         multiline={multiline}
         style={{ fontFamily: SERIF,
           marginTop: 6,
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: BORDER,

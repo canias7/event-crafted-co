@@ -70,7 +70,7 @@ export default function CheckEmailPage() {
             height: 56,
             borderRadius: "50%",
             background: "rgba(201,168,106,0.15)",
-            color: "#c9a86a",
+            color: "hsl(var(--accent))",
           }}
         >
           <Mail className="w-6 h-6" />

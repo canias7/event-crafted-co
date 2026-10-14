@@ -25,21 +25,24 @@ import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupItem, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor } from "@/components/listing/WizardKit";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
-const BRONZE = "#8a6f3e";
+const BRONZE = C.accentText;
 const GOLD_SOFT = "rgba(201,168,106,0.35)";
-const BORDER = "#e6e1d5";
+const BORDER = C.border;
+// Faint chip tint: ink at 6% on light, white at 8% on dark.
+const TINT = IS_DARK ? "rgba(255,255,255,0.08)" : "rgba(20,22,26,0.06)";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -231,7 +234,7 @@ export default function SetupChecklistScreen() {
                   }}
                 >
                   {item.done ? (
-                    <MaterialCommunityIcons name="check" size={16} color={INK} />
+                    <MaterialCommunityIcons name="check" size={16} color={C.onGold} />
                   ) : null}
                 </View>
 
@@ -252,7 +255,7 @@ export default function SetupChecklistScreen() {
                         style={{
                           marginLeft: 8,
                           borderRadius: 999,
-                          backgroundColor: "rgba(20,22,26,0.06)",
+                          backgroundColor: TINT,
                           paddingHorizontal: 8,
                           paddingVertical: 2,
                         }}
@@ -322,7 +325,7 @@ export default function SetupChecklistScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 16}}>
               {t("backToProfile")}
             </Text>
           </TouchableOpacity>

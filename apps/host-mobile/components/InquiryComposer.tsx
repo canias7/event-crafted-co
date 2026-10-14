@@ -21,11 +21,15 @@ import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Text inputs: page fill, hairline, ink text (theme-aware).
+const INPUT_STYLE = { fontFamily: SERIF, backgroundColor: C.page, borderColor: C.border, color: C.text };
+const KEYBOARD = IS_DARK ? "dark" : "light";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
@@ -141,27 +145,27 @@ export function InquiryComposer({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
         <KeyboardAvoidingView
           behavior="padding"
           style={{ flex: 1 }}
         >
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderBottomColor: C.border }}>
             <Pressable
               onPress={onClose}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={t("close")}
             >
-              <Feather name="x" size={22} color="#14161a" />
+              <Feather name="x" size={22} color={C.text} />
             </Pressable>
-            <Text style={{ fontFamily: SERIF_BOLD }} className="text-base text-foreground">
+            <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-base">
               {t("title")}
             </Text>
             <Pressable onPress={submit} hitSlop={8} disabled={!canSubmit}>
               <Text
                 className="text-sm"
-                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? "#14161a" : "#746a58" }}
+                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? C.text : C.placeholder }}
               >
                 {submitting ? t("sending") : t("send")}
               </Text>
@@ -174,17 +178,17 @@ export function InquiryComposer({
           >
             {vendorName ? (
               <View>
-                <Text style={{ fontFamily: SERIF }} className="text-xs uppercase tracking-wide text-muted-foreground">
+                <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-xs uppercase tracking-wide">
                   {t("to")}
                 </Text>
-                <Text style={{ fontFamily: SERIF_BOLD }} className="mt-1 text-base text-foreground">
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="mt-1 text-base">
                   {vendorName}
                 </Text>
               </View>
             ) : null}
 
             <View>
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-sm mb-2">
                 {t("eventType")}
               </Text>
               <View className="flex-row flex-wrap gap-2">
@@ -195,15 +199,17 @@ export function InquiryComposer({
                       key={type}
                       onPress={() => setEventType(type)}
                       className={`rounded-full px-4 py-2 active:opacity-70 ${
- active
-                          ? "bg-foreground"
-                          : "border border-border bg-background"
+                        active ? "" : "border"
                       }`}
+                      style={
+                        active
+                          ? { backgroundColor: C.selected }
+                          : { backgroundColor: C.page, borderColor: C.border }
+                      }
                     >
-                      <Text style={{ fontFamily: SERIF_BOLD }}
-                        className={`text-sm ${
-                          active ? "text-white" : "text-foreground"
-                        }`}
+                      <Text
+                        style={{ fontFamily: SERIF_BOLD, color: active ? C.onSelected : C.text }}
+                        className="text-sm"
                       >
                         {t(`eventTypes.${type}`)}
                       </Text>
@@ -255,10 +261,11 @@ export function InquiryComposer({
             </View>
 
             <View>
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-sm mb-2">
                 {t("message")}
               </Text>
-              <TextInput style={{ fontFamily: SERIF }}
+              <TextInput style={INPUT_STYLE}
+                keyboardAppearance={KEYBOARD}
                 value={message}
                 onChangeText={setMessage}
                 placeholder={t("messagePlaceholder")}
@@ -266,7 +273,7 @@ export function InquiryComposer({
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
-                className="min-h-[140px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="min-h-[140px] rounded-xl border px-4 py-3 text-base"
               />
             </View>
           </ScrollView>
@@ -293,15 +300,16 @@ function Field({
 }) {
   return (
     <View>
-      <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">{label}</Text>
-      <TextInput style={{ fontFamily: SERIF }}
+      <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-sm mb-2">{label}</Text>
+      <TextInput style={INPUT_STYLE}
+        keyboardAppearance={KEYBOARD}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={PLACEHOLDER}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+        className="rounded-xl border px-4 py-3 text-base"
       />
     </View>
   );

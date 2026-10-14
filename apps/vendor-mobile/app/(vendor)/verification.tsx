@@ -31,18 +31,20 @@ import { compressForUpload } from "@/lib/imageManipulation";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
-const GOLD_SOFT = "#f2e7cb";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+const GOLD_SOFT = C.pending;
+const BRONZE = C.accentText;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -316,7 +318,7 @@ export default function VerificationScreen() {
         >
           <Header title={t("title")} onBack={() => router.back()} />
           <View style={{ alignItems: "center", marginTop: 28 }}>
-            <MaterialCommunityIcons name="shield-check-outline" size={70} color="#c9a86a" />
+            <MaterialCommunityIcons name="shield-check-outline" size={70} color={GOLD} />
           </View>
           <Text
             style={{
@@ -347,7 +349,7 @@ export default function VerificationScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>
               {t("upsell.cta")}
             </Text>
           </Pressable>
@@ -363,7 +365,7 @@ export default function VerificationScreen() {
     const s = request.status;
     const icon =
       s === "approved" ? "check-circle" : s === "needs_info" ? "alert-circle" : "clock";
-    const iconColor = s === "approved" ? "#14161a" : s === "needs_info" ? "#b23a34" : "#8a6f3e";
+    const iconColor = s === "approved" ? INK : s === "needs_info" ? C.error : BRONZE;
     const title =
       s === "approved"
         ? t("status.approved.title")
@@ -437,8 +439,8 @@ export default function VerificationScreen() {
                   paddingVertical: 8,
                 }}
               >
-                <MaterialCommunityIcons name="shield-check" size={16} color="#8a6f3e" />
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>
+                <MaterialCommunityIcons name="shield-check" size={16} color={BRONZE} />
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: BRONZE }}>
                   {t("status.badge")}
                 </Text>
               </View>
@@ -459,7 +461,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>
                 {t("status.resubmit")}
               </Text>
             </Pressable>
@@ -482,7 +484,7 @@ export default function VerificationScreen() {
           <>
             <Header title={t("title")} onBack={() => router.back()} />
             <View style={{ alignItems: "center", marginTop: 20 }}>
-              <MaterialCommunityIcons name="shield-check" size={76} color="#c9a86a" />
+              <MaterialCommunityIcons name="shield-check" size={76} color={GOLD} />
             </View>
             <Text
               style={{
@@ -559,7 +561,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>
                 {t("intro.start")}
               </Text>
             </Pressable>
@@ -633,7 +635,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>{t("continue")}</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>{t("continue")}</Text>
             </Pressable>
           </>
         ) : null}
@@ -746,7 +748,7 @@ export default function VerificationScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>{t("continue")}</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>{t("continue")}</Text>
             </Pressable>
           </>
         ) : null}
@@ -784,7 +786,7 @@ export default function VerificationScreen() {
             <View
               style={{
                 marginTop: 6,
-                backgroundColor: "#f2e7cb",
+                backgroundColor: GOLD_SOFT,
                 borderWidth: 1,
                 borderColor: GOLD,
                 borderRadius: 20,
@@ -792,7 +794,7 @@ export default function VerificationScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-                <Feather name="check-circle" size={14} color="#8a6f3e" />
+                <Feather name="check-circle" size={14} color={BRONZE} />
                 <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
                   {t("review.nextTitle")}
                 </Text>
@@ -806,7 +808,7 @@ export default function VerificationScreen() {
               disabled={submitting}
               style={{
                 marginTop: 20,
-                backgroundColor: submitting ? "#e0d2b0" : GOLD,
+                backgroundColor: submitting ? C.goldMuted : GOLD,
                 borderRadius: 999,
                 height: 52,
                 alignItems: "center",
@@ -814,9 +816,9 @@ export default function VerificationScreen() {
               }}
             >
               {submitting ? (
-                <ActivityIndicator color={INK} />
+                <ActivityIndicator color={C.onGold} />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>
                   {t("review.submit")}
                 </Text>
               )}
@@ -924,7 +926,7 @@ function SummaryCard({
           {title}
         </Text>
         <Pressable onPress={onEdit} hitSlop={8}>
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: "#8a6f3e" }}>{t("review.edit")}</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: BRONZE }}>{t("review.edit")}</Text>
         </Pressable>
       </View>
       {lines.map((l) => (

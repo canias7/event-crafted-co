@@ -2,9 +2,12 @@
 // sign-in screens; the choice is saved on the device (lib/i18n.ts) and
 // every screen that reads its text through useT() switches at once.
 // Selected = ink fill with a white label (brand rule); on dark screens
-// the selected pill is cream with an ink label.
+// the selected pill is cream with an ink label. tone="light" (the
+// default) follows the app theme (lib/theme.ts); tone="dark" always
+// draws the dark look, for pills over a photo or the ink page.
 import { Pressable, Text, View } from "react-native";
 import { LANGUAGES, setLanguage, useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
 const INK = "#14161a";
 const CREAM = "#f4f1ea";
@@ -36,18 +39,18 @@ export function LanguagePicker({ tone = "light" }: { tone?: "light" | "dark" }) 
               justifyContent: "center",
               borderWidth: 1,
               borderColor: on
-                ? dark ? CREAM : INK
-                : dark ? "rgba(255,255,255,0.15)" : "#e6e1d5",
+                ? dark ? CREAM : C.selected
+                : dark ? "rgba(255,255,255,0.15)" : C.border,
               backgroundColor: on
-                ? dark ? CREAM : INK
-                : dark ? "transparent" : "#ffffff",
+                ? dark ? CREAM : C.selected
+                : dark ? "transparent" : C.field,
             }}
           >
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
                 fontSize: 14,
-                color: on ? (dark ? INK : "#ffffff") : dark ? CREAM : INK,
+                color: on ? (dark ? INK : C.onSelected) : dark ? CREAM : C.text,
               }}
             >
               {l.label}

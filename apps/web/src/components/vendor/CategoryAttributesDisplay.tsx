@@ -208,7 +208,7 @@ function FieldDisplay({
               style={{
                 background: "hsl(var(--muted))",
                 color: "hsl(var(--foreground))",
-                border: "0.5px solid rgba(255,255,255,0.3)",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               {names.option(t, field.key)}

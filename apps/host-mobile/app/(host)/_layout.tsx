@@ -13,6 +13,11 @@ import { useAuth } from "@/lib/auth";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 import { SHADOW } from "@/lib/ui";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
+
+// Inactive tab icons: warm grey on the cream bar, a lighter warm grey on
+// the dark one so they still read.
+const ICON_IDLE = IS_DARK ? C.placeholder : "#6f6a60";
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   explore: "search",
@@ -56,7 +61,10 @@ function FloatingTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
           // Warm card cream, same as vendor's floating bar. The old
           // #f5f5f5 was a cold grey that read as a different app
           // against the cream page.
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
+          // Dark: the shadow doesn't show on ink, so a hairline edges the bar.
+          borderWidth: IS_DARK ? 1 : 0,
+          borderColor: C.border,
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -93,13 +101,13 @@ function FloatingTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFocused ? "#14161a" : "transparent",
+                backgroundColor: isFocused ? C.selected : "transparent",
               }}
             >
               <Feather
                 name={iconName}
                 size={20}
-                color={isFocused ? "#ffffff" : "#6f6a60"}
+                color={isFocused ? C.onSelected : ICON_IDLE}
               />
             </Pressable>
           );
@@ -118,8 +126,8 @@ export default function HostLayout() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: C.page }}>
+        <ActivityIndicator color={C.text} />
       </View>
     );
   }
@@ -137,6 +145,7 @@ export default function HostLayout() {
         // ~76px tall (64 + safe-area), so anything that ends near
         // the bottom should add some extra padding.
         tabBarStyle: { position: "absolute" },
+        sceneStyle: { backgroundColor: C.page },
       }}
     >
       <Tabs.Screen name="explore" options={{ title: t("explore") }} />

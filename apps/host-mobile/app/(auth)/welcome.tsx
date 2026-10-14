@@ -21,15 +21,16 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const CREAM = "#14161a";
-const CREAM_DEEP = "rgba(255,255,255,0.08)";
-const INK = "#f4f1ea";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
 // Labels on gold buttons stay ink.
-const INK_ON_GOLD = "#14161a";
-const GOLD = "#c9a86a";
-const INK_DIM = "#f4f1ea";
-const INK_BORDER = "rgba(255,255,255,0.15)";
+const INK_ON_GOLD = C.onGold;
+const GOLD = C.gold;
+const INK_DIM = C.textDim;
+const INK_BORDER = C.border;
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -300,7 +301,7 @@ export default function WelcomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: CREAM }}>
       <AuthBackdrop />
-      <StatusBar barStyle="light-content" backgroundColor={CREAM} />
+      <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={CREAM} />
 
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         {/* Upper text area — non-interactive on purpose. */}
@@ -450,7 +451,7 @@ export default function WelcomeScreen() {
             borderRadius: 999,
             // Secondary: white fill with a 1px hairline — the standard
             // secondary pill. No shadow anywhere in this palette.
-            backgroundColor: "rgba(255,255,255,0.06)",
+            backgroundColor: C.field,
             borderWidth: 1,
             borderColor: INK_BORDER,
             alignItems: "center",
@@ -470,7 +471,7 @@ export default function WelcomeScreen() {
 
         {/* Language pills, so people can switch before signing in. */}
         <View style={{ marginTop: 16, alignItems: "center", maxWidth: "100%" }}>
-          <LanguagePicker tone="dark" />
+          <LanguagePicker tone={IS_DARK ? "dark" : "light"} />
         </View>
       </View>
     </View>

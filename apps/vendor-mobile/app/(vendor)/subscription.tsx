@@ -33,22 +33,28 @@ import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
+import { C, IS_DARK } from "@/lib/theme";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { useT } from "@/lib/i18n";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const BORDER = C.border;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — solid, not faded, so
 // "unavailable" never reads as "broken".
-const GOLD_MUTED = "#e0d2b0";
-const GOLD_SOFT = "#f2e7cb";
+const GOLD_MUTED = C.goldMuted;
+const GOLD_SOFT = C.pending;
+// The current-plan summary card is a "selected" fill: ink with white
+// text on light, cream with ink text on dark. onSel(a) is its label
+// colour at alpha a.
+const onSel = (a: number) => (IS_DARK ? `rgba(20,22,26,${a})` : `rgba(255,255,255,${a})`);
+const SUMMARY_ALERT = IS_DARK ? "#b23a34" : "#fca5a5";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -481,27 +487,27 @@ export default function SubscriptionScreen() {
         {/* Current plan + credits summary */}
         <View
           style={{
-            backgroundColor: INK,
+            backgroundColor: C.selected,
             borderRadius: 20,
             padding: 16,
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, color: "rgba(255,255,255,0.6)", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2}}>
+          <Text style={{ fontFamily: SERIF_BOLD, color: onSel(0.6), fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2}}>
             {t("currentPlan")}
           </Text>
-          <Text style={{ color: "#ffffff", fontSize: 30, fontFamily: SERIF_BOLD, marginTop: 6 }}>
+          <Text style={{ color: C.onSelected, fontSize: 30, fontFamily: SERIF_BOLD, marginTop: 6 }}>
             {TIER_LABELS[currentTier] ?? currentTier}
           </Text>
           {plan?.status === "past_due" ? (
-            <Text style={{ fontFamily: SERIF, color: "#fca5a5", fontSize: 13, marginTop: 4 }}>
+            <Text style={{ fontFamily: SERIF, color: SUMMARY_ALERT, fontSize: 13, marginTop: 4 }}>
               {t("pastDue")}
             </Text>
           ) : plan?.cancelAtPeriodEnd && renewalLabel ? (
-            <Text style={{ fontFamily: SERIF, color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
+            <Text style={{ fontFamily: SERIF, color: onSel(0.7), fontSize: 13, marginTop: 4 }}>
               {t("cancelsOn", { date: renewalLabel })}
             </Text>
           ) : currentTier !== "free" && renewalLabel ? (
-            <Text style={{ fontFamily: SERIF, color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
+            <Text style={{ fontFamily: SERIF, color: onSel(0.7), fontSize: 13, marginTop: 4 }}>
               {t("renews", { date: renewalLabel })}
             </Text>
           ) : null}
@@ -517,19 +523,19 @@ export default function SubscriptionScreen() {
                 alignItems: "center",
                 backgroundColor:
                   acting !== null
-                    ? "rgba(255,255,255,0.06)"
-                    : "rgba(255,255,255,0.12)",
+                    ? onSel(0.06)
+                    : onSel(0.12),
                 borderRadius: 999,
                 paddingHorizontal: 16,
                 height: 36,
               }}
             >
               {acting === "portal" ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={C.onSelected} />
               ) : (
-                <Feather name="credit-card" size={14} color="#ffffff" />
+                <Feather name="credit-card" size={14} color={C.onSelected} />
               )}
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13, marginLeft: 8 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onSelected, fontSize: 13, marginLeft: 8 }}>
                 {t("manageBilling")}
               </Text>
             </Pressable>
@@ -603,7 +609,7 @@ export default function SubscriptionScreen() {
             <View
               style={{
                 flexDirection: "row",
-                backgroundColor: "#ece7db",
+                backgroundColor: C.surface,
                 borderRadius: 999,
                 padding: 3,
               }}
@@ -616,14 +622,14 @@ export default function SubscriptionScreen() {
                     borderRadius: 999,
                     paddingHorizontal: 12,
                     paddingVertical: 6,
-                    backgroundColor: billingInterval === iv ? INK : "transparent",
+                    backgroundColor: billingInterval === iv ? C.selected : "transparent",
                   }}
                 >
                   <Text
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 12,
-                      color: billingInterval === iv ? "#ffffff" : INK_DIM,
+                      color: billingInterval === iv ? C.onSelected : INK_DIM,
                     }}
                   >
                     {iv === "month" ? t("monthly") : t("yearly")}
@@ -681,7 +687,7 @@ export default function SubscriptionScreen() {
                       paddingVertical: 4,
                     }}
                   >
-                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: "#8a6f3e" }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: C.pendingText }}>
                       {t("mostPopular")}
                     </Text>
                   </View>
@@ -719,7 +725,7 @@ export default function SubscriptionScreen() {
                     <Text
                       style={{
                         fontFamily: h === SMART_SCHEDULING_NEW ? SERIF_BOLD : SERIF,
-                        color: h === SMART_SCHEDULING_NEW ? "#8a6f3e" : INK,
+                        color: h === SMART_SCHEDULING_NEW ? C.accentText : INK,
                         fontSize: 13,
                         marginLeft: 7,
                         flex: 1,
@@ -751,13 +757,13 @@ export default function SubscriptionScreen() {
                   }}
                 >
                   {isActing ? (
-                    <ActivityIndicator size="small" color={INK} />
+                    <ActivityIndicator size="small" color={C.onGold} />
                   ) : (
                     <Text
                       style={{
                         fontFamily: SERIF_BOLD,
                         fontSize: 14,
-                        color: isCurrent || !tier.priceId ? INK_DIM : INK,
+                        color: isCurrent || !tier.priceId ? INK_DIM : C.onGold,
                       }}
                     >
                       {isCurrent
@@ -824,9 +830,9 @@ export default function SubscriptionScreen() {
                     }}
                   >
                     {isActing ? (
-                      <ActivityIndicator size="small" color={INK} />
+                      <ActivityIndicator size="small" color={C.onGold} />
                     ) : (
-                      <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 13}}>
                         {t("topup.buy")}
                       </Text>
                     )}
@@ -857,7 +863,7 @@ export default function SubscriptionScreen() {
               alignItems: "center",
               paddingHorizontal: 16,
               paddingVertical: 12,
-              backgroundColor: "#f2e7cb",
+              backgroundColor: C.pending,
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, flex: 1, color: INK_DIM, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 }}>
@@ -892,7 +898,7 @@ export default function SubscriptionScreen() {
                   {on ? (
                     <Feather name="check" size={15} color={j === 2 ? GOLD : INK} />
                   ) : (
-                    <Text style={{ fontFamily: SERIF, color: "#746a58", fontSize: 13 }}>—</Text>
+                    <Text style={{ fontFamily: SERIF, color: C.placeholder, fontSize: 13 }}>—</Text>
                   )}
                 </View>
               ))}

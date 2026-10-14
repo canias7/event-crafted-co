@@ -94,7 +94,7 @@ export function ListingPicker({
             type="button"
             className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition-colors"
             style={{
-              background: "#ffffff",
+              background: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
             }}
           >

@@ -50,19 +50,19 @@ export default function ForgotPasswordPage() {
         <Link
           to="/login"
           className="pb-px font-medium"
-          style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
+          style={{ borderBottom: "0.5px solid currentColor", color: "hsl(var(--foreground))" }}
         >
           {t("auth.forgot.back_to_sign_in")}
         </Link>
       }
       belowCardLink={
         !sent ? (
-          <div className="flex items-center gap-1.5 text-[#f4f1ea]/80">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <span>{t("auth.forgot.remembered")}</span>
             <Link
               to="/login"
               className="font-medium pb-px"
-              style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
+              style={{ borderBottom: "0.5px solid currentColor", color: "hsl(var(--foreground))" }}
             >
               {t("auth.forgot.sign_in")}
             </Link>
@@ -75,14 +75,14 @@ export default function ForgotPasswordPage() {
           <div
             className="rounded-xl"
             style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.15)",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               padding: "16px 18px",
             }}
           >
             <p
               className="leading-relaxed"
-              style={{ fontSize: "14px", color: "#f4f1ea" }}
+              style={{ fontSize: "14px", color: "hsl(var(--foreground))" }}
             >
               {t("auth.forgot.sent_lead")}{" "}
               <span className="font-medium">{email}</span>{" "}

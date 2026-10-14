@@ -27,9 +27,10 @@ import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 import { FaqsSection } from "@/components/listing/Sections";
 import {
-  CREAM,
+  PAGE,
   INK,
   INK_DIM,
   BORDER,
@@ -460,7 +461,7 @@ export default function CorporateListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{tw("loading")}</Text>
         </View>
@@ -469,7 +470,7 @@ export default function CorporateListingScreen() {
   }
   if (!profile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
             {tw("loadFailed")}
@@ -482,7 +483,7 @@ export default function CorporateListingScreen() {
   const yesNo = ["Yes", "No"];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -519,7 +520,7 @@ export default function CorporateListingScreen() {
               height: 36,
               justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              backgroundColor: busy ? C.page : C.field,
               borderColor: BORDER,
             }}
           >
@@ -964,7 +965,7 @@ export default function CorporateListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#b23a34", fontSize: 14}}>
+                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: C.error, fontSize: 14}}>
                   {tw("deleteListing")}
                 </Text>
               </TouchableOpacity>

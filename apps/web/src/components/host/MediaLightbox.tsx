@@ -46,7 +46,7 @@ export function MediaLightbox({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
       style={{
-        background: "rgba(20,16,12,0.55)",
+        background: "rgba(20,16,12,0.8)",
         backdropFilter: "blur(28px) saturate(140%)",
         WebkitBackdropFilter: "blur(28px) saturate(140%)",
       }}
