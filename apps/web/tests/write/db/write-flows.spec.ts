@@ -68,18 +68,18 @@ test.describe("write flows (local stack)", () => {
 
   test("calendar: a vendor blocks and unblocks a date", async () => {
     const date = "2031-06-14";
-    const ins = await as(vendorA.session).post("vendor_unavailable_dates", { vendor_id: vendorA.listingId, date, reason: "Canary" });
+    const ins = await as(vendorA.session).post("vendor_unavailable_dates?select=vendor_id,date", { vendor_id: vendorA.listingId, date, reason: "Canary" });
     expect(ins.status, JSON.stringify(ins.data).slice(0, 200)).toBe(201);
     let rows = await as(vendorA.session).get(`vendor_unavailable_dates?select=date&vendor_id=eq.${vendorA.listingId}&date=eq.${date}`);
     expect((rows.data as unknown[]).length).toBe(1);
-    const del = await as(vendorA.session).del(`vendor_unavailable_dates?vendor_id=eq.${vendorA.listingId}&date=eq.${date}`);
+    const del = await as(vendorA.session).del(`vendor_unavailable_dates?select=vendor_id,date&vendor_id=eq.${vendorA.listingId}&date=eq.${date}`);
     expect(del.status).toBe(200);
     rows = await as(vendorA.session).get(`vendor_unavailable_dates?select=date&vendor_id=eq.${vendorA.listingId}&date=eq.${date}`);
     expect((rows.data as unknown[]).length).toBe(0);
   });
 
   test("calendar: a vendor cannot block another vendor's dates", async () => {
-    const r = await as(vendorB.session).post("vendor_unavailable_dates", { vendor_id: vendorA.listingId, date: "2031-06-15" });
+    const r = await as(vendorB.session).post("vendor_unavailable_dates?select=vendor_id,date", { vendor_id: vendorA.listingId, date: "2031-06-15" });
     expect(r.status, "RLS insert check").toBeGreaterThanOrEqual(400);
   });
 
