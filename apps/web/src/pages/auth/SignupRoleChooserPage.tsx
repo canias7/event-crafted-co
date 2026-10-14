@@ -9,11 +9,11 @@
 // Note: one email = one role. The DB enforces this with triggers
 // (block_vendor_insert_if_host / block_host_onboard_if_vendor).
 //
-// Visual: the simple centred sign-in layout (AuthSplitLayout).
+// Visual: the simple centred sign-in layout (AuthLayout).
 
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthSplitLayout, AuthRoleChooser } from "@/components/auth/AuthSplitLayout";
+import { AuthLayout, AuthRoleChooser } from "@/components/auth/AuthLayout";
 
 export default function SignupRoleChooserPage() {
   // Already authenticated? Skip the chooser and drop them in the
@@ -25,7 +25,7 @@ export default function SignupRoleChooserPage() {
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
   }
   return (
-    <AuthSplitLayout side="signup">
+    <AuthLayout side="signup">
       <AuthRoleChooser
         side="signup"
         hostTo="/signup/host"
@@ -33,6 +33,6 @@ export default function SignupRoleChooserPage() {
         otherTo="/login"
         LinkComponent={Link}
       />
-    </AuthSplitLayout>
+    </AuthLayout>
   );
 }

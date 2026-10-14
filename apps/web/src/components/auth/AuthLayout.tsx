@@ -1,35 +1,13 @@
 // Layout for every sign-in and sign-up page (owner's call, Oct 2026):
-// kept simple on purpose. The site's top menu (PublicNav), then one
-// narrow centred column on the plain ink page: no rings or glows.
-//
-// PREVIEW: the owner wanted "something more" than the bare column, so
-// three additions to choose from, picked with ?look=a|b|c (default a).
-// Once one is chosen the others and the switch go.
-//   a  a flat card around the column, with a small gold ornament on top
-//   b  one wide photo above the title (picture 04, the table setting)
-//   c  a "Why Vendora" panel beside the column (stacks below on phones)
+// kept simple on purpose. The site's top menu (PublicNav), the page's
+// content in a narrow column on the plain ink page (no rings, glows or
+// photos), a "Why Vendora" panel beside it (below it on phones), and a
+// bottom bar with the language switcher, since these pages have no
+// footer.
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
-import { Picture } from "@/components/shared/Picture";
-import photoTable from "@/assets/photos/04.webp?as=picture";
-
-function readLook(): "a" | "b" | "c" {
-  if (typeof window === "undefined") return "a";
-  const v = new URLSearchParams(window.location.search).get("look");
-  return v === "b" || v === "c" ? v : "a";
-}
-
-/** Thin gold rule with a small diamond in the middle. */
-function Ornament() {
-  return (
-    <div className="flex items-center justify-center gap-3" aria-hidden>
-      <span className="h-px w-10 bg-gold/60" />
-      <span className="h-1.5 w-1.5 rotate-45 bg-gold" />
-      <span className="h-px w-10 bg-gold/60" />
-    </div>
-  );
-}
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 function Perks() {
   const { t } = useTranslation("auth");
@@ -55,41 +33,23 @@ function Perks() {
 type Side = "signin" | "signup";
 type LinkLike = React.ComponentType<{ to: string; className?: string; children: ReactNode }>;
 
-export function AuthSplitLayout({ children }: { side?: Side; children: ReactNode }) {
-  const look = readLook();
+export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PublicNav tone="dark" />
-      {look === "a" && (
-        <main className="flex-1 container flex items-start justify-center py-10 md:py-16">
-          <div className="w-full max-w-[520px] rounded-3xl border border-white/15 bg-white/[0.03] px-5 py-8 md:px-10 md:py-10">
-            <div className="mb-8"><Ornament /></div>
-            {children}
+      <main className="flex-1 container flex justify-center py-12 md:py-20">
+        <div className="w-full max-w-[920px] grid gap-10 lg:grid-cols-[440px_1fr] lg:gap-16 items-start">
+          <div>{children}</div>
+          <div className="lg:mt-2">
+            <Perks />
           </div>
-        </main>
-      )}
-      {look === "b" && (
-        <main className="flex-1 container flex justify-center py-8 md:py-14">
-          <div className="w-full max-w-[440px]">
-            <Picture
-              source={photoTable}
-              alt=""
-              loading="eager"
-              sizes="(min-width: 640px) 440px, 100vw"
-              className="mb-8 block w-full aspect-[16/7] object-cover rounded-2xl border border-white/15"
-            />
-            {children}
-          </div>
-        </main>
-      )}
-      {look === "c" && (
-        <main className="flex-1 container flex justify-center py-12 md:py-20">
-          <div className="w-full max-w-[920px] grid gap-10 lg:grid-cols-[440px_1fr] lg:gap-16 items-start">
-            <div>{children}</div>
-            <div className="lg:mt-2"><Perks /></div>
-          </div>
-        </main>
-      )}
+        </div>
+      </main>
+      <div className="container">
+        <div className="flex justify-end border-t border-white/15 py-5">
+          <LanguageSwitcher tone="dark" />
+        </div>
+      </div>
     </div>
   );
 }

@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
       }
       belowCardLink={
         !sent ? (
-          <div className="flex items-center justify-center gap-1.5 opacity-70">
+          <div className="flex items-center gap-1.5 text-[#f4f1ea]/80">
             <span>{t("auth.forgot.remembered")}</span>
             <Link
               to="/login"

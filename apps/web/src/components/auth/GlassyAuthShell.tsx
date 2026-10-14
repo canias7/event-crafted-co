@@ -8,7 +8,7 @@
 // gold submit pill.
 
 import { ReactNode } from "react";
-import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 
 interface Props {
   /** Sans-serif headline (e.g. "Welcome back,") */
@@ -40,7 +40,7 @@ export function GlassyAuthShell({
   children,
 }: Props) {
   return (
-    <AuthSplitLayout side={side}>
+    <AuthLayout side={side}>
       <div>
         <h1 className="auth-headline m-0 text-[32px] md:text-[40px] leading-[1.1]" style={{ letterSpacing: "-0.5px" }}>
           {title} <span className="text-gold">{titleAccent}</span>
@@ -103,7 +103,7 @@ export function GlassyAuthShell({
           cursor: not-allowed;
         }
       `}</style>
-    </AuthSplitLayout>
+    </AuthLayout>
   );
 }
 

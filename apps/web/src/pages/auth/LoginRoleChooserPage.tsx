@@ -1,10 +1,10 @@
 // Sign-in role chooser. /login lands here; the user picks Host or Vendor
 // and we forward to /login/host or /login/vendor. Simple centred layout
-// (AuthSplitLayout).
+// (AuthLayout).
 
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthSplitLayout, AuthRoleChooser } from "@/components/auth/AuthSplitLayout";
+import { AuthLayout, AuthRoleChooser } from "@/components/auth/AuthLayout";
 
 export default function LoginRoleChooserPage() {
   // Already authenticated? Skip the chooser and drop them in the
@@ -16,7 +16,7 @@ export default function LoginRoleChooserPage() {
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
   }
   return (
-    <AuthSplitLayout side="signin">
+    <AuthLayout side="signin">
       <AuthRoleChooser
         side="signin"
         hostTo="/login/host"
@@ -24,6 +24,6 @@ export default function LoginRoleChooserPage() {
         otherTo="/signup"
         LinkComponent={Link}
       />
-    </AuthSplitLayout>
+    </AuthLayout>
   );
 }
