@@ -937,14 +937,26 @@ export default function CalendarScreen() {
         setBlocking(false);
         return;
       }
+      // Insert the day where it's missing, then set the title. Not one
+      // upsert-with-update: titles are private, so the app can't read the
+      // reason column, and Postgres refuses ON CONFLICT DO UPDATE without it.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await (supabase as any)
         .from("vendor_unavailable_dates")
         .upsert(
           targetIds.map((vid) => ({ vendor_id: vid, date: targetDate, reason })),
-          { onConflict: "vendor_id,date" },
+          { onConflict: "vendor_id,date", ignoreDuplicates: true },
         );
       err = res.error;
+      if (!err) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const upd = await (supabase as any)
+          .from("vendor_unavailable_dates")
+          .update({ reason })
+          .in("vendor_id", targetIds)
+          .eq("date", targetDate);
+        err = upd.error;
+      }
     }
     setBlocking(false);
     setBlockModalOpen(false);
@@ -3220,20 +3232,13 @@ function CenterModal({
 
 // Blocked dates with their private titles. Titles are only readable by
 // the vendor's team, through get_vendor_block_reasons (the table itself
-// is public so hosts can see which days are taken, minus the titles).
-// Falls back to the table while that function is being rolled out.
+// is public so hosts can see which days are taken, minus the titles:
+// anon and authenticated can't select the reason column).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadBlockedDates(client: any, vendorIds: string[], startYmd: string, endYmd: string) {
-  const res = await client.rpc("get_vendor_block_reasons", {
+  return client.rpc("get_vendor_block_reasons", {
     p_vendor_ids: vendorIds,
     p_start: startYmd,
     p_end: endYmd,
   });
-  if (!res.error || res.error.code !== "PGRST202") return res;
-  return client
-    .from("vendor_unavailable_dates")
-    .select("date, reason, vendor_id")
-    .in("vendor_id", vendorIds)
-    .gte("date", startYmd)
-    .lt("date", endYmd);
 }
