@@ -29,25 +29,26 @@ import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
 // Same palette as welcome / signup / login.
-const PAGE = "#14161a";
-const INK = "#f4f1ea";
-const INK_ON_GOLD = "#14161a";
-const GOLD = "#c9a86a";
+const PAGE = C.page;
+const INK = C.text;
+const INK_ON_GOLD = C.onGold;
+const GOLD = C.gold;
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
-const BRONZE = "#c9a86a";
+const BRONZE = C.accentText;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#f4f1ea";
-const SUBTLE = "#a39a88";
-const BORDER = "rgba(255,255,255,0.15)";
-const FIELD_BG = "rgba(255,255,255,0.05)";
-const FIELD_BORDER = "rgba(255,255,255,0.15)";
-const ERROR = "#e0716a";
+const INK_DIM = C.text;
+const SUBTLE = C.placeholder;
+const BORDER = C.border;
+const FIELD_BG = IS_DARK ? "rgba(255,255,255,0.05)" : C.field;
+const FIELD_BORDER = C.border;
+const ERROR = C.error;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -88,7 +89,7 @@ export default function ForgotPasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <AuthBackdrop />
-      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+      <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -149,7 +150,7 @@ export default function ForgotPasswordScreen() {
                       placeholder="you@example.com"
                       placeholderTextColor={SUBTLE}
                       selectionColor={GOLD}
-                      keyboardAppearance="dark"
+                      keyboardAppearance={IS_DARK ? "dark" : "light"}
                       style={inputText}
                     />
                   </View>
@@ -272,7 +273,7 @@ const primaryBtnText = {
 // On gold over cream that fades BOTH fill and label toward the page, so
 // it read as broken rather than as "nothing typed yet". Give the state
 // its own solid colours instead, and keep the lift for the live one.
-const GOLD_MUTED = "#e0d2b0";
+const GOLD_MUTED = C.goldMuted;
 function primaryBtnFor(disabled: boolean) {
   return disabled ? { ...primaryBtn, backgroundColor: GOLD_MUTED } : primaryBtn;
 }

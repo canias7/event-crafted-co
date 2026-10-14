@@ -26,6 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { C, IS_DARK } from "@/lib/theme";
 
 // Category groups with their own listing wizard. THE single source of
 // truth for the handoff — the generic builder, the profile tab, and the
@@ -67,19 +68,24 @@ export function editorRouteFor(category: string | null | undefined): string {
   return wizardRouteFor(category) ?? "listing";
 }
 
-export const CREAM = "#fbf9f4";
-export const INK = "#14161a";
+// Colours come from the active theme (lib/theme.ts); names kept for
+// the wizards that import them.
+export const CREAM = C.card;
+// Wizard page: the cream card colour in light (as before), the ink page
+// in dark so the cards stand off it.
+export const PAGE = IS_DARK ? C.page : C.card;
+export const INK = C.text;
 export // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-export const BORDER = "#e6e1d5";
-export const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+export const BORDER = C.border;
+export const GOLD = C.gold;
 // Disabled fill for the gold pill. Same rule as the auth buttons: give
 // the state its own solid colour rather than fading fill and label
 // together, which reads as broken rather than unavailable.
-export const GOLD_MUTED = "#e0d2b0";
+export const GOLD_MUTED = C.goldMuted;
 export const GOLD_SOFT = "rgba(201,168,106,0.16)";
 export const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -100,13 +106,13 @@ export const darkPill = {
 };
 export const darkPillText = {
   fontFamily: SERIF_BOLD,
-  color: INK,
+  color: C.onGold,
   fontSize: 16,
 };
 export const lightPill = {
   borderWidth: 1,
   borderColor: BORDER,
-  backgroundColor: "#ffffff",
+  backgroundColor: C.field,
   borderRadius: 999,
   height: 52,
   alignItems: "center" as const,
@@ -125,7 +131,7 @@ export const lightPillText = {
 export const darkPillDisabled = { ...darkPill, backgroundColor: GOLD_MUTED };
 export const lightPillDisabled = {
   ...lightPill,
-  backgroundColor: "#f4f1ea",
+  backgroundColor: C.page,
   borderColor: BORDER,
 };
 export function darkPillFor(disabled: boolean) {
@@ -180,19 +186,19 @@ export function StepRail({
                   borderRadius: 14,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: done ? INK : current ? GOLD : "transparent",
+                  backgroundColor: done ? C.selected : current ? GOLD : "transparent",
                   borderWidth: done || current ? 0 : 1,
                   borderColor: BORDER,
                 }}
               >
                 {done ? (
-                  <Feather name="check" size={14} color="#fff" />
+                  <Feather name="check" size={14} color={C.onSelected} />
                 ) : (
                   <Text
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 13,
-                      color: current ? INK : INK_DIM,
+                      color: current ? C.onGold : INK_DIM,
                     }}
                   >
                     {i + 1}
@@ -256,7 +262,7 @@ export function Field({
     <View style={{ marginTop: 16 }}>
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         {label}
-        {required ? <Text style={{ fontFamily: SERIF, color: "#b23a34" }}> *</Text> : null}
+        {required ? <Text style={{ fontFamily: SERIF, color: C.error }}> *</Text> : null}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -270,7 +276,7 @@ export function Input(props: ComponentProps<typeof TextInput>) {
       placeholderTextColor={PLACEHOLDER}
       {...props}
       style={{ fontFamily: SERIF,
-        backgroundColor: "#ffffff",
+        backgroundColor: C.field,
         borderWidth: 1,
         borderColor: BORDER,
         borderRadius: 12,
@@ -329,16 +335,16 @@ export function ChipMulti({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? INK : "#ffffff",
+              backgroundColor: on ? C.selected : C.field,
               borderWidth: 1,
-              borderColor: on ? INK : BORDER,
+              borderColor: on ? C.selected : BORDER,
             }}
           >
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
                 fontSize: 13,
-                color: on ? "#ffffff" : INK,
+                color: on ? C.onSelected : INK,
               }}
             >
               {labelFor ? labelFor(opt) : opt}
@@ -376,7 +382,7 @@ export function ChipMulti({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: "#ffffff",
+              backgroundColor: C.field,
               borderWidth: 1,
               borderColor: BORDER,
               flexDirection: "row",
@@ -420,13 +426,13 @@ export function ChipSingle({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? INK : "#ffffff",
+              backgroundColor: on ? C.selected : C.field,
               borderWidth: 1,
-              borderColor: on ? INK : BORDER,
+              borderColor: on ? C.selected : BORDER,
             }}
           >
             <Text
-              style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#fff" : INK }}
+              style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? C.onSelected : INK }}
             >
               {labelFor ? labelFor(opt) : opt}
             </Text>
@@ -620,7 +626,7 @@ function BrandDialogView({
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
-                color: isConfirm && spec?.destructive ? "#ffffff" : INK,
+                color: isConfirm && spec?.destructive ? "#ffffff" : C.onGold,
                 fontSize: 15,
               }}
             >
@@ -636,7 +642,7 @@ function BrandDialogView({
               style={{
                 marginTop: 10,
                 alignSelf: "stretch",
-                backgroundColor: "#ffffff",
+                backgroundColor: C.field,
                 borderWidth: 1,
                 borderColor: BORDER,
                 borderRadius: 999,
@@ -804,7 +810,7 @@ export function CategoryField({
         onPress={onPress}
         activeOpacity={0.7}
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: C.field,
           borderWidth: 1,
           borderColor: BORDER,
           borderRadius: 12,
@@ -848,7 +854,7 @@ export function CategoryPickerModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View
           style={{
             flexDirection: "row",

@@ -24,4 +24,8 @@ export default {
     body: "Screenshot this screen and send it to support — it shows exactly what broke.",
     reload: "Reload app",
   },
+  theme: {
+    title: "Dark mode",
+    note: "The app restarts for a moment to switch.",
+  },
 };

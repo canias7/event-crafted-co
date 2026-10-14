@@ -57,10 +57,10 @@ const ACTION_COST: Record<string, number> = {
 
 // Distinct colors per action for the donut + segment bars.
 const ACTION_COLOR: Record<string, string> = {
-  hilux_reply: "#c9a86a",
+  hilux_reply: "hsl(var(--gold))",
   hilux_regenerate: "#8a6f3e",
   hilux_draft: "#e0d2b0",
-  hilux_followup: "#f4f1ea",
+  hilux_followup: "hsl(var(--foreground))",
   axion_image: "#9333ea",
   mux_minute: "#06b6d4",
   email_parse: "#10b981",
@@ -332,7 +332,7 @@ export function VendorUsagePageImpl() {
       <main className="flex-1 min-w-0 pb-24 lg:pb-0">
         <div
           className="px-5 md:px-8 pt-8 pb-6"
-          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}
+          style={{ borderBottom: "1px solid hsl(var(--border))" }}
         >
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-sans">{t("usage.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -368,8 +368,8 @@ export function VendorUsagePageImpl() {
                       size="sm"
                       className="rounded-full shrink-0"
                       style={{
-                        background: "rgba(255,255,255,0.6)",
-                        borderColor: "rgba(255,255,255,0.3)",
+                        background: "hsl(var(--card))",
+                        borderColor: "hsl(var(--border))",
                       }}
                     >
                       {actingId === "portal" ? (
@@ -479,7 +479,7 @@ export function VendorUsagePageImpl() {
                           height: d.credits > 0 ? `${Math.max(heightPct, 4)}%` : "4px",
                           background: d.credits > 0
                             ? "linear-gradient(180deg, #c9a86a 0%, #8a6f3e 100%)"
-                            : "rgba(255,255,255,0.08)",
+                            : "hsl(var(--muted))",
                           opacity: hoveredBarIdx === null || active ? 1 : 0.55,
                         }}
                       />
@@ -591,7 +591,7 @@ export function VendorUsagePageImpl() {
                       <span
                         className="w-2.5 h-2.5 rounded-sm shrink-0 transition-transform"
                         style={{
-                          background: idle ? "rgba(255,255,255,0.12)" : colorFor(row.action),
+                          background: idle ? "hsl(var(--muted))" : colorFor(row.action),
                           transform: active ? "scale(1.25)" : undefined,
                         }}
                       />
@@ -762,19 +762,19 @@ function HourHeatmap({ data, max }: { data: number[][]; max: number }) {
     18: t("usage.axis_hours.h18"),
   };
   const cellColor = (v: number) => {
-    if (v === 0 || max === 0) return "rgba(255,255,255,0.05)";
+    if (v === 0 || max === 0) return "hsl(var(--foreground) / 0.05)";
     const ratio = v / max;
-    if (ratio > 0.75) return "#f4f1ea";
-    if (ratio > 0.5) return "#c9a86a";
-    if (ratio > 0.25) return "rgba(255,255,255,0.3)";
-    return "rgba(255,255,255,0.15)";
+    if (ratio > 0.75) return "hsl(var(--foreground))";
+    if (ratio > 0.5) return "hsl(var(--accent))";
+    if (ratio > 0.25) return "hsl(var(--foreground) / 0.3)";
+    return "hsl(var(--foreground) / 0.15)";
   };
   const swatches = [
-    "rgba(255,255,255,0.05)",
-    "rgba(255,255,255,0.15)",
-    "rgba(255,255,255,0.3)",
-    "#8a6f3e",
-    "#f4f1ea",
+    "hsl(var(--foreground) / 0.05)",
+    "hsl(var(--foreground) / 0.15)",
+    "hsl(var(--foreground) / 0.3)",
+    "hsl(var(--accent))",
+    "hsl(var(--foreground))",
   ];
   return (
     <div className="mt-4 flex-1 flex flex-col">
@@ -846,7 +846,7 @@ function Donut({
   return (
     <div className="relative mt-5 mx-auto" style={{ width: 180, height: 180 }}>
       <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-        <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="22" />
+        <circle cx="100" cy="100" r="70" fill="none" className="stroke-muted" strokeWidth="22" />
         {segments.map((seg) => {
           const segLen = total > 0 ? (seg.value / total) * C : 0;
           const dash = `${segLen} ${C - segLen}`;
@@ -858,7 +858,6 @@ function Donut({
               key={seg.key}
               cx="100" cy="100" r="70"
               fill="none"
-              stroke={seg.color}
               strokeWidth={hoveredKey === seg.key ? 26 : 22}
               strokeDasharray={dash}
               strokeDashoffset={dashOffset}
@@ -866,7 +865,7 @@ function Donut({
               opacity={dimmed ? 0.35 : 1}
               onMouseEnter={() => onHover?.(seg.key)}
               onMouseLeave={() => onHover?.(null)}
-              style={{ cursor: onHover ? "pointer" : "default", transition: "stroke-width 120ms, opacity 120ms" }}
+              style={{ stroke: seg.color, cursor: onHover ? "pointer" : "default", transition: "stroke-width 120ms, opacity 120ms" }}
             />
           );
         })}

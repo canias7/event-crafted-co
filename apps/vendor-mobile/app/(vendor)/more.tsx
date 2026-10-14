@@ -21,18 +21,19 @@ import { Wordmark } from "@/components/Wordmark";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { hasFreshUpdate } from "./updates";
 import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
-const GOLD_SOFT = "#f2e7cb";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+const GOLD_SOFT = C.pending;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -255,7 +256,7 @@ export default function MoreScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 5,
-              backgroundColor: "#ffffff",
+              backgroundColor: C.field,
               borderWidth: 1,
               borderColor: BORDER,
               borderRadius: 999,
@@ -396,7 +397,7 @@ function GroupRow({
                   paddingVertical: 2,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, color: "#8a6f3e" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, color: C.pendingText }}>
                   {badge}
                 </Text>
               </View>

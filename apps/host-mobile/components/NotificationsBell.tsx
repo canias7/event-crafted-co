@@ -24,20 +24,21 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+import { C } from "@/lib/theme";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
-const INK = "#14161a";
-const INK_DIM = "#14161a";
-const CREAM = "#f4f1ea";
+const INK = C.text;
+const INK_DIM = C.textDim;
+const CREAM = C.page;
 // Unread markers are champagne, per the brand (numbers in ink).
-const GOLD = "#c9a86a";
+const GOLD = C.gold;
 
 // Cards carry a 1px hairline instead of a shadow (component standard).
 const CARD_BORDER = {
   borderWidth: 1,
-  borderColor: "#e6e1d5",
+  borderColor: C.border,
 } as const;
 
 function routeFromLink(link: string | null | undefined): string | null {
@@ -109,8 +110,8 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /booking|accepted|confirmed/.test(type) || /booked|confirmed/i.test(title);
   if (isBooking) {
     return (
-      <View style={{ ...box, backgroundColor: INK }}>
-        <Feather name="check" size={22} color="#ffffff" />
+      <View style={{ ...box, backgroundColor: C.selected }}>
+        <Feather name="check" size={22} color={C.onSelected} />
       </View>
     );
   }
@@ -130,7 +131,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /replied/i.test(title);
   if (isPerson && row.actor_image_url) {
     return (
-      <View style={{ ...box, backgroundColor: "#ece7db", overflow: "hidden" }}>
+      <View style={{ ...box, backgroundColor: C.surface, overflow: "hidden" }}>
         <Image
           source={{ uri: row.actor_image_url }}
           style={{ width: 44, height: 44 }}
@@ -142,7 +143,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
   if (isPerson) {
     const initial = (title.trim()[0] ?? "?").toUpperCase();
     return (
-      <View style={{ ...box, backgroundColor: "#ece7db" }}>
+      <View style={{ ...box, backgroundColor: C.surface }}>
         <Text
           style={{
             color: INK,
@@ -160,7 +161,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /system|push|test/.test(type) || /push test|claude/i.test(title);
   if (isSystem) {
     return (
-      <View style={{ ...box, backgroundColor: "#ece7db" }}>
+      <View style={{ ...box, backgroundColor: C.surface }}>
         <Feather name="bell" size={20} color={INK_DIM} />
       </View>
     );
@@ -168,7 +169,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
 
   const initial = (title.trim()[0] ?? "?").toUpperCase();
   return (
-    <View style={{ ...box, backgroundColor: "#ece7db" }}>
+    <View style={{ ...box, backgroundColor: C.surface }}>
       <Text
         style={{
           color: INK,
@@ -293,7 +294,7 @@ function Section({
       </Text>
       <View
         style={{
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 20,
           overflow: "hidden",
           ...CARD_BORDER,
@@ -306,7 +307,7 @@ function Section({
               <View
                 style={{
                   height: 1,
-                  backgroundColor: "#e6e1d5",
+                  backgroundColor: C.border,
                   marginLeft: 72,
                 }}
               />
@@ -319,7 +320,7 @@ function Section({
 }
 
 export function NotificationsBell({
-  iconColor = "#14161a",
+  iconColor = C.text,
 }: { iconColor?: string }) {
   const { t } = useT("notificationsBell");
   const { user } = useAuth();
@@ -433,7 +434,7 @@ export function NotificationsBell({
               }}
             >
               <Text
-                style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 10,}}
+                style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 10,}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -483,7 +484,7 @@ export function NotificationsBell({
             >
               <Text
                 style={{ fontFamily: SERIF_BOLD,
-                  color: unread > 0 ? INK : "#746a58",
+                  color: unread > 0 ? INK : C.placeholder,
                   fontSize: 15,
                 }}
               >

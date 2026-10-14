@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 interface NavItem {
   labelKey: string;
@@ -128,8 +129,12 @@ export function MobileNav({ items }: MobileNavProps) {
             side="bottom"
             className="rounded-t-3xl max-h-[85vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]"
           >
-            <SheetHeader className="text-left mb-2">
+            {/* The light / dark switch sits beside the title (the portals'
+                sidebar, which has it on desktop, is hidden on phones).
+                pr-10 keeps it clear of the sheet's close button. */}
+            <SheetHeader className="mb-2 flex-row items-center justify-between gap-3 space-y-0 pr-10 text-left">
               <SheetTitle className="font-display text-lg">{tp("mobile_nav.more")}</SheetTitle>
+              <ThemeToggle />
             </SheetHeader>
             {overflowItems.length > 0 && (
               <div className="grid grid-cols-2 gap-2 py-2">

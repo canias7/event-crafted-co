@@ -56,7 +56,9 @@ const typeIcons: Record<string, typeof Inbox> = {
 };
 
 interface Props {
-  /** Tailwind color classes for the trigger when on dark backgrounds. */
+  /** "light": token colours, following the site theme (portal headers,
+   *  the public nav's solid bar). "dark": cream, for the nav over the hero
+   *  video. */
   variant?: "light" | "dark";
 }
 

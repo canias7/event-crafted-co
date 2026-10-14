@@ -26,17 +26,26 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const INK_DIM = C.textDim;
+const BORDER = C.border;
 // Primary button fill — gold pill, ink label.
-const GOLD = "#c9a86a";
-const PENDING_FG = "#8a6f3e";
-const PENDING_BG = "#f2e7cb";
-const ERROR = "#b23a34";
+const GOLD = C.gold;
+const PENDING_FG = C.pendingText;
+const PENDING_BG = C.pending;
+const ERROR = C.error;
+// Problem tint for the error box.
+const ERROR_BG = IS_DARK ? "rgba(224,113,106,0.12)" : "#f7ece9";
+const ERROR_EDGE = IS_DARK ? "rgba(224,113,106,0.4)" : "#e6c9c2";
+// The "up next" summary card is the selected fill (ink in light, cream in
+// dark). Its text is the page colour, and its overlays are drawn in that
+// colour's RGB at low alpha.
+const ON_SUMMARY = C.page;
+const ON_SUMMARY_RGB = IS_DARK ? "20,22,26" : "250,245,236";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -48,7 +57,7 @@ const PAGE_TITLE = {
   fontSize: 38,
   lineHeight: 44,
   letterSpacing: -0.5,
-  color: "#14161a",
+  color: C.text,
   marginTop: 8,
 } as const;
 
@@ -361,7 +370,7 @@ export default function EventsScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 999,
-                    backgroundColor: showPast ? INK : CREAM_DEEP,
+                    backgroundColor: showPast ? C.selected : CREAM_DEEP,
                     alignItems: "center",
                     justifyContent: "center",
                     opacity: pressed ? 0.85 : 1,
@@ -370,7 +379,7 @@ export default function EventsScreen() {
                   <Feather
                     name="filter"
                     size={18}
-                    color={showPast ? CREAM : INK}
+                    color={showPast ? ON_SUMMARY : INK}
                   />
                 </View>
               )}
@@ -500,9 +509,9 @@ export default function EventsScreen() {
                     marginHorizontal: 20,
                     marginTop: 16,
                     borderRadius: 12,
-                    backgroundColor: "#f7ece9",
+                    backgroundColor: ERROR_BG,
                     borderWidth: 1,
-                    borderColor: "#e6c9c2",
+                    borderColor: ERROR_EDGE,
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                   }}
@@ -579,13 +588,13 @@ function DayPill({
         paddingVertical: 12,
         paddingHorizontal: 8,
         borderRadius: 20,
-        backgroundColor: isSelected ? INK : CREAM_DEEP,
+        backgroundColor: isSelected ? C.selected : CREAM_DEEP,
         alignItems: "center",
       }}
     >
       <Text
         style={{ fontFamily: SERIF_BOLD,
-          color: isSelected ? "#ffffff" : INK_DIM,
+          color: isSelected ? C.onSelected : INK_DIM,
           fontSize: 11,
           letterSpacing: 0.6,
         }}
@@ -595,7 +604,7 @@ function DayPill({
       <Text
         style={{
           marginTop: 2,
-          color: isSelected ? "#ffffff" : INK,
+          color: isSelected ? C.onSelected : INK,
           fontSize: 22,
           fontFamily: SERIF_BOLD,
         }}
@@ -610,7 +619,7 @@ function DayPill({
           borderRadius: 999,
           backgroundColor: hasEvent
             ? isSelected
-              ? CREAM
+              ? ON_SUMMARY
               : INK
             : "transparent",
         }}
@@ -692,7 +701,7 @@ function statusOf(vendors: VendorChip[], t: TFn): {
     (v) => v.status === "new" || v.status === "replied" || v.status === "drafted",
   ).length;
   if (vendors.length > 0 && won === vendors.length) {
-    return { text: t("status.confirmed"), fg: "#ffffff", bg: INK };
+    return { text: t("status.confirmed"), fg: C.onSelected, bg: C.selected };
   }
   if (pending > 0) {
     return {
@@ -720,8 +729,9 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
     <View style={{ paddingHorizontal: 20 }}>
       <View
         style={{
-          // Dark summary card: stays ink; card radius and padding.
-          backgroundColor: INK,
+          // Summary card: the selected fill (ink in light, cream in
+          // dark); card radius and padding.
+          backgroundColor: C.selected,
           borderRadius: 20,
           padding: 16,
         }}
@@ -735,7 +745,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                 paddingHorizontal: 10,
                 paddingVertical: 5,
                 borderRadius: 999,
-                backgroundColor: "rgba(250,245,236,0.10)",
+                backgroundColor: `rgba(${ON_SUMMARY_RGB},0.10)`,
                 flexDirection: "row",
                 alignItems: "center",
               }}
@@ -774,7 +784,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
         <Text
           style={{ fontFamily: SERIF,
             marginTop: 6,
-            color: "rgba(250,245,236,0.65)",
+            color: `rgba(${ON_SUMMARY_RGB},0.65)`,
             fontSize: 14,
           }}
         >
@@ -789,7 +799,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
         <View
           style={{
             height: 1,
-            backgroundColor: "rgba(250,245,236,0.15)",
+            backgroundColor: `rgba(${ON_SUMMARY_RGB},0.15)`,
             marginTop: 20,
             marginBottom: 16,
           }}
@@ -837,13 +847,13 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                   opacity: pressed ? 0.85 : 1,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13,}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 13,}}>
                   {t("view")}
                 </Text>
                 <Feather
                   name="chevron-right"
                   size={14}
-                  color={INK}
+                  color={C.onGold}
                   style={{ marginLeft: 2 }}
                 />
               </View>
@@ -871,7 +881,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
       {({ pressed }) => (
       <View
         style={{
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 20,
           borderWidth: 1,
           borderColor: BORDER,

@@ -2,6 +2,7 @@
 // settings" card. Sections:
 //   1. Identity:    display_name (editable), email (read-only)
 //   2. Notifications: vendor reply emails on/off
+//   2b. Language and Dark mode (lib/theme.ts)
 //   3. Help & legal: links to the website's Help, Terms, Privacy
 //   4. Sign out
 //   5. Danger:      delete the account via the delete-account function
@@ -33,17 +34,23 @@ import { useT } from "@/lib/i18n";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK, setDarkMode } from "@/lib/theme";
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const GOLD = "#c9a86a";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — solid, not faded.
-const GOLD_MUTED = "#e0d2b0";
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
-const DANGER = "#b23a34";
+const GOLD_MUTED = C.goldMuted;
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+const DANGER = C.error;
+// Hairline around the delete-account card: a red tint.
+const DANGER_BORDER = IS_DARK ? "rgba(224,113,106,0.4)" : "#e6c9c2";
+// Switches: hairline track off, the "selected" fill on; the thumb takes
+// the selected label colour so it shows on the cream track in dark.
+const SWITCH_TRACK = { false: BORDER, true: C.selected };
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -218,6 +225,7 @@ export default function SettingsScreen() {
                     onChangeText={setDisplayName}
                     placeholder={t("namePlaceholder")}
                     placeholderTextColor={PLACEHOLDER}
+                    keyboardAppearance={IS_DARK ? "dark" : "light"}
                     style={input}
                     autoCapitalize="words"
                   />
@@ -246,11 +254,11 @@ export default function SettingsScreen() {
                       }}
                     >
                       {saving ? (
-                        <ActivityIndicator color={INK} />
+                        <ActivityIndicator color={C.onGold} />
                       ) : (
                         <Text
                           style={{ fontFamily: SERIF_BOLD,
-                            color: INK,
+                            color: C.onGold,
                           }}
                         >
                           {t("save")}
@@ -278,8 +286,8 @@ export default function SettingsScreen() {
                   <Switch
                     value={replyEmail}
                     onValueChange={(v) => void toggleReplyEmail(v)}
-                    trackColor={{ false: BORDER, true: INK }}
-                    thumbColor="#ffffff"
+                    trackColor={SWITCH_TRACK}
+                    thumbColor={replyEmail ? C.onSelected : "#ffffff"}
                     accessibilityLabel={t("replyEmail.title")}
                   />
                 </View>
@@ -288,6 +296,29 @@ export default function SettingsScreen() {
                 <View style={field}>
                   <LanguagePicker />
                   <Text style={[hint, { marginTop: 10 }]}>{tc("language.note")}</Text>
+                </View>
+
+                {/* Dark mode: one row card under Language (its title is the
+                    row's own label, so no section heading repeats it). */}
+                <View
+                  style={[
+                    field,
+                    { marginTop: 24, flexDirection: "row", alignItems: "center" },
+                  ]}
+                >
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15 }}>
+                      {tc("theme.title")}
+                    </Text>
+                    <Text style={hint}>{tc("theme.note")}</Text>
+                  </View>
+                  <Switch
+                    value={IS_DARK}
+                    onValueChange={(v) => void setDarkMode(v)}
+                    trackColor={SWITCH_TRACK}
+                    thumbColor={IS_DARK ? C.onSelected : "#ffffff"}
+                    accessibilityLabel={tc("theme.title")}
+                  />
                 </View>
 
                 <SectionLabel style={{ marginTop: 32 }}>{t("sections.help")}</SectionLabel>
@@ -334,7 +365,7 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: "#fbf9f4",
+                        backgroundColor: C.card,
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                         borderRadius: 20,
@@ -367,14 +398,14 @@ export default function SettingsScreen() {
                     <View
                       style={{
                         marginTop: 12,
-                        backgroundColor: "#fbf9f4",
+                        backgroundColor: C.card,
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                         borderRadius: 20,
                         flexDirection: "row",
                         alignItems: "center",
                         borderWidth: 1,
-                        borderColor: "#e6c9c2",
+                        borderColor: DANGER_BORDER,
                         opacity: pressed ? 0.85 : 1,
                       }}
                     >
@@ -428,7 +459,7 @@ function SectionLabel({
 // Settings group card: cream fill, hairline border, radius 20, padding 16.
 const field = {
   marginTop: 12,
-  backgroundColor: "#fbf9f4",
+  backgroundColor: C.card,
   borderRadius: 20,
   borderWidth: 1,
   borderColor: BORDER,

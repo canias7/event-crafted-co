@@ -1,7 +1,8 @@
 // How it works: everything a host needs on one page. This page and
 // "Plan with Vendora" (/for-hosts, which now redirects here) were merged
 // on the owner's call, Oct 2026. Vendors have their own page, For vendors.
-// Dark page (ink, cream text, champagne gold). Every step describes
+// Follows the site theme (light by default, dark on the switch); only the
+// photo hero stays dark. Every step describes
 // something the product does today.
 //
 // Text: howItWorks.json (hero eyebrow, the five steps, FAQ) and
@@ -25,10 +26,6 @@ import meetPhoto from "@/assets/photos/07.webp?as=picture";
 import conversationPhoto from "@/assets/photos/44.webp?as=picture";
 import { EmailMenu } from "@/components/shared/EmailMenu";
 
-const INK = "#14161a";
-const CREAM = "#f4f1ea";
-const GOLD = "#c9a86a";
-const SOFT = "rgba(244,241,234,0.78)";
 
 type Step = {
   title: string;
@@ -58,7 +55,7 @@ const TOOLS = [
 
 const FAQ_IDS = ["find", "contact", "checked", "booking", "join", "other"];
 
-const FAQ_LINK = "text-gold underline-offset-4 hover:underline";
+const FAQ_LINK = "text-accent underline-offset-4 hover:underline";
 
 // The links inside the FAQ answers, by the tag name the answers use.
 const FAQ_LINKS = {
@@ -71,7 +68,7 @@ const FAQ_LINKS = {
 
 const num = (i: number) => String(i + 1).padStart(2, "0");
 
-const EYEBROW = "m-0 text-[11px] font-bold uppercase tracking-[0.22em]";
+const EYEBROW = "m-0 text-[11px] font-bold uppercase tracking-[0.22em] text-accent";
 
 export default function HowItWorksPage() {
   const { t } = useTranslation("howItWorks");
@@ -84,7 +81,7 @@ export default function HowItWorksPage() {
   }));
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: INK, color: CREAM }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PhotoHero
         photo={heroPhoto}
         position="object-[50%_30%]"
@@ -104,13 +101,13 @@ export default function HowItWorksPage() {
       <main id="main-content">
         {/* ═══════ THE STEPS ═══════ */}
         <section id="steps" className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
-          <p className={EYEBROW} style={{ color: GOLD }}>
+          <p className={EYEBROW}>
             {t("hosts.eyebrow")}
           </p>
           <h2 className="m-0 mt-3 text-[30px] leading-tight md:text-[42px]">
             {t("hosts.title")}
           </h2>
-          <p className="m-0 mt-3 max-w-2xl text-[15px] leading-relaxed md:text-base" style={{ color: SOFT }}>
+          <p className="m-0 mt-3 max-w-2xl text-[15px] leading-relaxed md:text-base text-muted-foreground">
             {t("hosts.intro")}
           </p>
 
@@ -136,9 +133,9 @@ export default function HowItWorksPage() {
         </section>
 
         {/* ═══════ TOOLS ═══════ */}
-        <section className="border-t border-white/15">
+        <section className="border-t border-border">
           <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-            <p className="m-0 text-center font-label text-gold">{th("tools.eyebrow")}</p>
+            <p className="m-0 text-center font-label text-accent">{th("tools.eyebrow")}</p>
             <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
               {th("tools.title")}
             </h2>
@@ -146,10 +143,9 @@ export default function HowItWorksPage() {
               {TOOLS.map((tool) => (
                 <div key={tool.id} className="text-center">
                   <span
-                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
-                    style={{ border: "1px solid rgba(201,168,106,0.4)" }}
+                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-gold/40 bg-gold/15"
                   >
-                    <tool.icon className="h-5 w-5 text-gold" aria-hidden />
+                    <tool.icon className="h-5 w-5 text-accent" aria-hidden />
                   </span>
                   <p className="m-0 mt-3 text-[14px] font-bold">{th(`tools.items.${tool.id}.title`)}</p>
                   <p className="m-0 mt-1 text-[13px] leading-relaxed">{th(`tools.items.${tool.id}.body`)}</p>
@@ -160,9 +156,9 @@ export default function HowItWorksPage() {
         </section>
 
         {/* ═══════ FAQ ═══════ */}
-        <section id="faq" className="border-t border-white/15">
+        <section id="faq" className="border-t border-border">
           <div className="container mx-auto scroll-mt-24 px-5 py-14 md:scroll-mt-28 md:px-8 md:py-20">
-            <p className={EYEBROW} style={{ color: GOLD }}>
+            <p className={EYEBROW}>
               {t("faq.eyebrow")}
             </p>
             <h2 className="m-0 mt-3 text-[30px] leading-tight md:text-[42px]">
@@ -173,12 +169,12 @@ export default function HowItWorksPage() {
                 <AccordionItem
                   key={id}
                   value={id}
-                  className="rounded-xl border border-white/15 px-5 data-[state=open]:border-white/30"
+                  className="rounded-xl border border-border px-5 data-[state=open]:border-foreground/30"
                 >
-                  <AccordionTrigger className="py-4 text-left text-[16px] font-bold hover:no-underline [&>svg]:text-gold">
+                  <AccordionTrigger className="py-4 text-left text-[16px] font-bold hover:no-underline [&>svg]:text-accent">
                     {t(`faq.items.${id}.q`)}
                   </AccordionTrigger>
-                  <AccordionContent className="pb-5 text-[15px] leading-relaxed" style={{ color: SOFT }}>
+                  <AccordionContent className="pb-5 text-[15px] leading-relaxed text-muted-foreground">
                     <Trans t={t} i18nKey={`faq.items.${id}.a`} components={FAQ_LINKS} />
                   </AccordionContent>
                 </AccordionItem>
@@ -187,13 +183,13 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <div className="border-t border-white/15">
+        <div className="border-t border-border">
           <ClosingBand
             title={
               <Trans
                 t={th}
                 i18nKey="closing.title"
-                components={{ gold: <span className="font-editorial text-gold" /> }}
+                components={{ gold: <span className="font-editorial text-accent" /> }}
               />
             }
             cta={{ label: th("closing.cta"), to: "/vendors" }}
@@ -201,14 +197,14 @@ export default function HowItWorksPage() {
         </div>
       </main>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }
 
 function StepCard({ step, index }: { step: Step; index: number }) {
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-white/15 bg-white/[0.03] p-2">
+    <article className="flex h-full flex-col rounded-2xl border border-border bg-card p-2">
       {step.image && (
         <div className="overflow-hidden rounded-xl">
           <Picture
@@ -221,19 +217,19 @@ function StepCard({ step, index }: { step: Step; index: number }) {
       )}
       <div className="flex flex-1 flex-col px-4 pb-5 pt-5">
         <div className="flex items-center gap-4">
-          <span className="text-[34px] font-bold leading-none" style={{ color: GOLD }}>
+          <span className="text-[34px] font-bold leading-none text-accent">
             {num(index)}
           </span>
-          <span className="h-px flex-1 bg-white/15" aria-hidden />
+          <span className="h-px flex-1 bg-border" aria-hidden />
         </div>
         <h3 className="m-0 mt-4 text-[21px] leading-snug">{step.title}</h3>
-        <p className="m-0 mt-2 text-[14.5px] leading-relaxed" style={{ color: SOFT }}>
+        <p className="m-0 mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
           {step.body}
         </p>
         <ul className="m-0 mt-4 list-none space-y-2 p-0">
           {step.points.map((p) => (
             <li key={p} className="flex gap-2.5 text-[14px] leading-snug">
-              <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: GOLD }} aria-hidden />
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
               <span>{p}</span>
             </li>
           ))}

@@ -21,6 +21,11 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
+
+// Unread rows: a faint wash (bg-muted at 40% in light).
+const UNREAD_BG = IS_DARK ? "rgba(255,255,255,0.05)" : "rgba(236,231,219,0.4)";
+const EMPTY_ICON = IS_DARK ? C.placeholder : "#6f6a60";
 
 // Translate a notification's web-style link into the matching vendor
 // native route. Mirrors lib/pushNotifications.ts so tap-routing is
@@ -47,7 +52,7 @@ interface NotificationRow {
 }
 
 export function NotificationsBell({
-  iconColor = "#14161a",
+  iconColor = C.text,
 }: { iconColor?: string }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -163,14 +168,14 @@ export function NotificationsBell({
                 height: 16,
                 borderRadius: 999,
                 // Unread count: champagne with an ink number, per the brand.
-                backgroundColor: "#c9a86a",
+                backgroundColor: C.gold,
                 paddingHorizontal: 4,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <Text
-                style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a", fontSize: 10}}
+                style={{ fontFamily: "LibreBaskerville-Bold", color: C.onGold, fontSize: 10}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -186,14 +191,15 @@ export function NotificationsBell({
         onRequestClose={() => setOpen(false)}
       >
         <SafeAreaView
-          className="flex-1 bg-background"
+          className="flex-1"
+          style={{ backgroundColor: C.page }}
           edges={["top", "bottom"]}
         >
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderColor: C.border }}>
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("close")}</Text>
+              <Text className="text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{t("close")}</Text>
             </Pressable>
-            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="text-base" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
               {t("title")}
             </Text>
             <Pressable
@@ -203,7 +209,7 @@ export function NotificationsBell({
             >
               <Text
                 className="text-sm"
-                style={{ fontFamily: "LibreBaskerville", color: unread > 0 ? "#14161a" : "#746a58" }}
+                style={{ fontFamily: "LibreBaskerville", color: unread > 0 ? C.text : C.placeholder }}
               >
                 {t("markRead")}
               </Text>
@@ -213,12 +219,12 @@ export function NotificationsBell({
           <ScrollView contentContainerClassName="pb-12">
             {loading ? (
               <View className="items-center pt-16">
-                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
+                <Text className="text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
-                <Feather name="bell-off" size={28} color="#6f6a60" />
-                <Text className="mt-3 text-sm text-muted-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
+                <Feather name="bell-off" size={28} color={EMPTY_ICON} />
+                <Text className="mt-3 text-sm text-center" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                   {t("empty")}
                 </Text>
               </View>
@@ -227,9 +233,11 @@ export function NotificationsBell({
                 <Pressable
                   key={r.id}
                   onPress={() => openNotification(r)}
-                  className={`px-5 py-4 border-b border-border active:opacity-70 ${
-                    r.read_at == null ? "bg-muted/40" : ""
-                  }`}
+                  className="px-5 py-4 border-b active:opacity-70"
+                  style={{
+                    borderColor: C.border,
+                    backgroundColor: r.read_at == null ? UNREAD_BG : undefined,
+                  }}
                 >
                   <View className="flex-row items-start gap-3">
                     {r.read_at == null ? (
@@ -238,7 +246,7 @@ export function NotificationsBell({
                           width: 8,
                           height: 8,
                           borderRadius: 999,
-                          backgroundColor: "#c9a86a",
+                          backgroundColor: C.gold,
                           marginTop: 7,
                         }}
                       />
@@ -250,7 +258,7 @@ export function NotificationsBell({
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          backgroundColor: "#ece7db",
+                          backgroundColor: C.surface,
                         }}
                         accessibilityIgnoresInvertColors
                       />
@@ -264,7 +272,7 @@ export function NotificationsBell({
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          backgroundColor: "#14161a",
+                          backgroundColor: C.selected,
                           alignItems: "center",
                           justifyContent: "center",
                         }}
@@ -272,7 +280,7 @@ export function NotificationsBell({
                         <Text
                           style={{
                             fontFamily: "LibreBaskerville-Bold",
-                            color: "#ffffff",
+                            color: C.onSelected,
                             fontSize: 16,
                           }}
                         >
@@ -281,19 +289,19 @@ export function NotificationsBell({
                       </View>
                     )}
                     <View className="flex-1">
-                      <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                      <Text className="text-base" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
                         {r.title}
                       </Text>
                       {r.body ? (
                         <Text
-                          className="mt-0.5 text-sm text-foreground"
+                          className="mt-0.5 text-sm"
                           numberOfLines={2}
-                          style={{ fontFamily: "LibreBaskerville" }}
+                          style={{ color: C.text, fontFamily: "LibreBaskerville" }}
                         >
                           {r.body}
                         </Text>
                       ) : null}
-                      <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                      <Text className="mt-1 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                         {new Date(r.created_at).toLocaleString(locale)}
                       </Text>
                     </View>

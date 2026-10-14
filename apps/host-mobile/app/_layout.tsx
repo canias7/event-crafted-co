@@ -8,6 +8,7 @@ import { useFonts } from "expo-font";
 import { AuthProvider } from "@/lib/auth";
 import { useLanguageReady } from "@/lib/i18n";
 import { AccountDeletionGate } from "@/components/AccountDeletionGate";
+import { C } from "@/lib/theme";
 
 export default function RootLayout() {
   // Libre Baskerville — the same serif the website and the vendor app
@@ -34,13 +35,13 @@ export default function RootLayout() {
   // download fails, falling back to the system serif is a bad-looking
   // app; blocking on `!fontsLoaded` forever is a blank one.
   if ((!fontsLoaded && !fontError) || !languageReady) {
-    return <View style={{ flex: 1, backgroundColor: "#f4f1ea" }} />;
+    return <View style={{ flex: 1, backgroundColor: C.page }} />;
   }
 
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={C.statusBar} />
         {/* A closed account in its 30-day grace period sees only the
             restore / sign-out screen. */}
         <AccountDeletionGate>

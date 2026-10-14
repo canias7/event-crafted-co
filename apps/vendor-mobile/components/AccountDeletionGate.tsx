@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { BUTTON_HEIGHT, COLORS, RADIUS } from "@/lib/ui";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -55,32 +56,32 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.ink }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.page }}>
       <AuthBackdrop />
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.ink} />
+      <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={C.page} />
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}>
         <View
           style={{
             borderRadius: RADIUS.card,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.15)",
-            backgroundColor: "rgba(255,255,255,0.03)",
+            borderColor: C.border,
+            backgroundColor: IS_DARK ? "rgba(255,255,255,0.03)" : C.card,
             padding: 24,
           }}
         >
           <Text
             accessibilityRole="header"
-            style={{ fontFamily: SERIF_BOLD, color: COLORS.ivory, fontSize: 26, lineHeight: 32, textAlign: "center" }}
+            style={{ fontFamily: SERIF_BOLD, color: C.text, fontSize: 26, lineHeight: 32, textAlign: "center" }}
           >
             {t("title")}
           </Text>
           <Text
-            style={{ fontFamily: SERIF, color: COLORS.ivory, fontSize: 15, lineHeight: 23, marginTop: 16, textAlign: "center" }}
+            style={{ fontFamily: SERIF, color: C.text, fontSize: 15, lineHeight: 23, marginTop: 16, textAlign: "center" }}
           >
             {t("body", { date })}
           </Text>
           <Text
-            style={{ fontFamily: SERIF, color: "rgba(244,241,234,0.8)", fontSize: 13, lineHeight: 20, marginTop: 12, textAlign: "center" }}
+            style={{ fontFamily: SERIF, color: C.textDim, fontSize: 13, lineHeight: 20, marginTop: 12, textAlign: "center" }}
           >
             {t("note")}
           </Text>
@@ -100,9 +101,9 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
             })}
           >
             {busy === "restore" ? (
-              <ActivityIndicator color={COLORS.ink} />
+              <ActivityIndicator color={C.onGold} />
             ) : (
-              <Text style={{ fontFamily: SERIF_BOLD, color: COLORS.ink, fontSize: 16 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 16 }}>
                 {t("restore")}
               </Text>
             )}
@@ -116,16 +117,17 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
               height: BUTTON_HEIGHT.lg,
               borderRadius: RADIUS.pill,
               borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.15)",
+              borderColor: C.border,
+              backgroundColor: IS_DARK ? "transparent" : C.field,
               opacity: pressed ? 0.8 : 1,
               alignItems: "center",
               justifyContent: "center",
             })}
           >
             {busy === "signout" ? (
-              <ActivityIndicator color={COLORS.ivory} />
+              <ActivityIndicator color={C.text} />
             ) : (
-              <Text style={{ fontFamily: SERIF_BOLD, color: COLORS.ivory, fontSize: 16 }}>
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text, fontSize: 16 }}>
                 {t("signOut")}
               </Text>
             )}

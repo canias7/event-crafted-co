@@ -136,7 +136,7 @@ function StatusTile({
       ? t("status.bothLive")
       : t("status.live");
 
-  const stampColor = waiting ? "text-foreground/60" : "text-accent";
+  const stampColor = waiting ? "text-muted-foreground" : "text-accent";
 
   const msSinceSubmit = Date.now() - new Date(row.created_at).getTime();
   const editable = msSinceSubmit < EDIT_WINDOW_MS;
@@ -154,13 +154,9 @@ function StatusTile({
     >
       <div className="flex items-start gap-3">
         <span
-          className="shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center"
-          style={{
-            background: waiting
-              ? "rgba(255,255,255,0.04)"
-              : "rgba(255,255,255,0.08)",
-            color: waiting ? "#c9a86a" : "#f4f1ea",
-          }}
+          className={`shrink-0 w-9 h-9 rounded-xl inline-flex items-center justify-center ${
+            waiting ? "bg-pending text-accent" : "bg-muted text-foreground"
+          }`}
           aria-hidden
         >
           {waiting ? <Clock className="w-4 h-4" /> : <Check className="w-4 h-4" />}

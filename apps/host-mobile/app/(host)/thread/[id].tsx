@@ -70,6 +70,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SHADOW } from "@/lib/ui";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
 type TFn = ReturnType<typeof useT>["t"];
 
@@ -78,11 +79,18 @@ type TFn = ReturnType<typeof useT>["t"];
 // shorthand, not full conversation — pick a real keyboard for that.
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+// Ink fills (avatars, my bubbles, send) are the "selected" fill: ink in
+// light, cream in dark. What sits on them is the page colour (CREAM).
+const FILL = C.selected;
+// Reply-quote tints inside a bubble: mine sits on FILL, theirs on SURFACE.
+const QUOTE_BG_MINE = IS_DARK ? "rgba(20,22,26,0.08)" : "rgba(255,255,255,0.12)";
+const QUOTE_BAR_MINE = IS_DARK ? "rgba(20,22,26,0.5)" : "rgba(255,255,255,0.5)";
+const QUOTE_BG_THEIRS = IS_DARK ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
 const ACTIVE_GREEN = "#22c55e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -549,7 +557,7 @@ function EmojiPickerModal({
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={{
-            backgroundColor: "#fbf9f4",
+            backgroundColor: C.card,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             // Sheet padding 24; the top keeps 12 for the grab handle.
@@ -563,7 +571,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#e6e1d5",
+              backgroundColor: C.border,
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -633,7 +641,7 @@ function Header({
         paddingHorizontal: 20,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#e6e1d5",
+        borderBottomColor: C.border,
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -645,7 +653,7 @@ function Header({
             width: 42,
             height: 42,
             borderRadius: 999,
-            backgroundColor: INK,
+            backgroundColor: FILL,
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -742,7 +750,7 @@ function MessageRow({
                   width: 30,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: INK,
+                  backgroundColor: FILL,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -824,7 +832,7 @@ function MessageRow({
                 backgroundColor: m.deleted_at
                   ? CREAM_DEEP
                   : isMine
-                    ? INK
+                    ? FILL
                     : CREAM_DEEP,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
@@ -850,8 +858,8 @@ function MessageRow({
                     paddingVertical: 6,
                     borderRadius: 8,
                     backgroundColor: isMine
-                      ? "rgba(255,255,255,0.12)"
-                      : "rgba(0,0,0,0.05)",
+                      ? QUOTE_BG_MINE
+                      : QUOTE_BG_THEIRS,
                   }}
                 >
                   <View
@@ -860,7 +868,7 @@ function MessageRow({
                       alignSelf: "stretch",
                       borderRadius: 2,
                       backgroundColor: isMine
-                        ? "rgba(255,255,255,0.5)"
+                        ? QUOTE_BAR_MINE
                         : INK,
                     }}
                   />
@@ -991,7 +999,7 @@ function Composer({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 999,
           paddingLeft: 16,
           paddingRight: 6,
@@ -1008,6 +1016,7 @@ function Composer({
           onChangeText={onChange}
           placeholder={t("placeholder")}
           placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance={IS_DARK ? "dark" : "light"}
           multiline
           style={{ fontFamily: SERIF,
             flex: 1,
@@ -1027,13 +1036,13 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#e6e1d5",
+            backgroundColor: enabled ? FILL : C.border,
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,
           }}
         >
-          <Feather name="navigation" size={18} color={CREAM} />
+          <Feather name="navigation" size={18} color={enabled || !IS_DARK ? CREAM : C.placeholder} />
         </Pressable>
       </View>
     </View>

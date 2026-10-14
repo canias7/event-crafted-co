@@ -4,11 +4,17 @@
 // scales; any shadow that remains spreads one of the SHADOW presets so
 // every floating surface casts the same shadow.
 
-/** Brand palette (see "Brand system" in the repo's CLAUDE.md). */
+import { C } from "@/lib/theme";
+
+/** Brand palette (see "Brand system" in the repo's CLAUDE.md). Page
+ *  chrome follows the active light / dark theme (`C` in lib/theme.ts):
+ *  `ink` is the text colour, `ivory` the page, `cream` the card, `white`
+ *  the field fill. `onGold` is the fixed ink label on gold fills. */
 export const COLORS = {
-  ink: "#14161a", ivory: "#f4f1ea", cream: "#fbf9f4", surface: "#ece7db",
-  border: "#e6e1d5", bronze: "#8a6f3e", gold: "#c9a86a", goldMuted: "#e0d2b0",
-  goldTint: "#f2e7cb", red: "#b23a34", placeholder: "#746a58", white: "#ffffff",
+  ink: C.text, ivory: C.page, cream: C.card, surface: C.surface,
+  border: C.border, bronze: C.accentText, gold: C.gold, goldMuted: C.goldMuted,
+  goldTint: C.pending, red: C.error, placeholder: C.placeholder, white: C.field,
+  onGold: C.onGold,
 } as const;
 
 /** Corner radii: tags, inputs/tiles, cards, sheets/modals, pills. */

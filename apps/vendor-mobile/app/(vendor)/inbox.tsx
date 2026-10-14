@@ -33,6 +33,7 @@ import { Wordmark } from "@/components/Wordmark";
 import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
 import { i18n, intlLocale, useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { C, IS_DARK } from "@/lib/theme";
 
 type Tab = "inquiries" | "partners";
 
@@ -44,16 +45,24 @@ const PHOTO_NUDGE_BELOW = 5;
 
 // Cream editorial palette — matches the reference mock (warmer than the
 // wizards' near-white CREAM).
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const TRACK = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const TRACK = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+const ON_GOLD = C.onGold;
+const SELECTED = C.selected;
+const ON_SELECTED = C.onSelected;
+const FIELD = C.field;
+const BRONZE = C.accentText;
+const ERROR = C.error;
+const ERROR_BG = IS_DARK ? "rgba(224,113,106,0.12)" : "#f7ece9";
+const ERROR_BORDER = IS_DARK ? "rgba(224,113,106,0.35)" : "#e6c9c2";
 // Libre Baskerville, like every other screen. This used to fall back to
 // the platform system serif (Times on iOS), which is why the inbox read
 // as a different typeface from the rest of the app. Android won't
@@ -404,7 +413,7 @@ export default function InboxScreen() {
                   <MaterialCommunityIcons
                     name="email-outline"
                     size={14}
-                    color={inquiryFilter === "new" ? "#ffffff" : INK}
+                    color={inquiryFilter === "new" ? ON_SELECTED : INK}
                   />
                 }
                 label={t("filters.new")}
@@ -479,14 +488,14 @@ export default function InboxScreen() {
                   height: 38,
                   width: 38,
                   borderRadius: 999,
-                  backgroundColor: INK,
+                  backgroundColor: SELECTED,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t("partners.findA11y")}
               >
-                <Feather name="plus" size={18} color="#ffffff" />
+                <Feather name="plus" size={18} color={ON_SELECTED} />
               </TouchableOpacity>
             </View>
           )
@@ -498,16 +507,16 @@ export default function InboxScreen() {
               marginHorizontal: 20,
               marginBottom: 12,
               borderRadius: 12,
-              backgroundColor: "#f7ece9",
+              backgroundColor: ERROR_BG,
               borderWidth: 1,
-              borderColor: "#e6c9c2",
+              borderColor: ERROR_BORDER,
               paddingHorizontal: 16,
               paddingVertical: 12,
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: "#b23a34" }}>{error}</Text>
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: ERROR }}>{error}</Text>
             <Pressable onPress={() => load(false)} hitSlop={6}>
-              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: "#b23a34" }}>
+              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: ERROR }}>
                 {t("tryAgain")}
               </Text>
             </Pressable>
@@ -550,7 +559,7 @@ export default function InboxScreen() {
                   style={{
                     marginTop: 12,
                     borderRadius: 999,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: FIELD,
                     borderWidth: 1,
                     borderColor: BORDER,
                     paddingHorizontal: 20,
@@ -575,7 +584,7 @@ export default function InboxScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: ON_GOLD }}>
                   {t("partners.find")}
                 </Text>
               </TouchableOpacity>
@@ -602,7 +611,7 @@ export default function InboxScreen() {
             style={{
               marginHorizontal: 20,
               marginTop: 20,
-              backgroundColor: "#ece7db",
+              backgroundColor: TRACK,
               borderRadius: 20,
               padding: 16,
             }}
@@ -615,7 +624,7 @@ export default function InboxScreen() {
                   width: 46,
                   height: 46,
                   borderRadius: 999,
-                  backgroundColor: "#fbf9f4",
+                  backgroundColor: CARD,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -641,7 +650,7 @@ export default function InboxScreen() {
               style={{
                 alignSelf: "flex-start",
                 marginTop: 12,
-                backgroundColor: "#ffffff",
+                backgroundColor: FIELD,
                 borderWidth: 1,
                 borderColor: BORDER,
                 borderRadius: 999,
@@ -693,20 +702,20 @@ function Chip({
         paddingHorizontal: 10,
         height: 42,
         borderRadius: 999,
-        backgroundColor: active ? INK : CARD,
+        backgroundColor: active ? SELECTED : CARD,
         borderWidth: 1,
-        borderColor: active ? INK : BORDER,
+        borderColor: active ? SELECTED : BORDER,
       }}
     >
       {iconNode ??
         (icon ? (
-          <Feather name={icon} size={14} color={active ? "#ffffff" : INK} />
+          <Feather name={icon} size={14} color={active ? ON_SELECTED : INK} />
         ) : null)}
       <Text
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 14,
-          color: active ? "#ffffff" : INK,
+          color: active ? ON_SELECTED : INK,
         }}
       >
         {label}
@@ -740,7 +749,7 @@ function EmptyState({
         <MaterialCommunityIcons
           name="email-open-outline"
           size={64}
-          color="#c9a86a"
+          color={GOLD}
         />
       </View>
       <Text
@@ -772,8 +781,8 @@ function EmptyState({
             gap: 8,
           }}
         >
-          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={INK} />
-          <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={ON_GOLD} />
+          <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 15}}>
             {t("empty.tips")}
           </Text>
         </TouchableOpacity>
@@ -886,7 +895,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           {row.special_requests ? (
             <Text
               numberOfLines={2}
-              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: "#14161a" }}
+              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: INK }}
             >
               {row.special_requests}
             </Text>
@@ -909,7 +918,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                   fontFamily: SERIF_BOLD,
                   fontSize: 10,
                   letterSpacing: 1,
-                  color: "#8a6f3e",
+                  color: BRONZE,
                 }}
               >
                 {t("card.newBadge")}

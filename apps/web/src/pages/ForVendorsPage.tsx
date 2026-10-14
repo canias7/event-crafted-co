@@ -24,7 +24,7 @@ const TOOLS = [
 export default function ForVendorsPage() {
   const { t } = useTranslation("forVendors");
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PhotoHero
         photo={heroPhoto}
         position="object-[50%_22%]"
@@ -44,14 +44,14 @@ export default function ForVendorsPage() {
       <main id="main-content">
         {/* Steps */}
         <section id="steps" className="container mx-auto scroll-mt-24 px-5 py-16 md:px-8 md:py-24">
-          <p className="m-0 text-center font-label text-gold">{t("steps.eyebrow")}</p>
+          <p className="m-0 text-center font-label text-accent">{t("steps.eyebrow")}</p>
           <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[42px]">
             {t("steps.title")}
           </h2>
           <ol className="m-0 mt-12 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
             {STEPS.map((id, i) => (
-              <li key={id} className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 md:p-6">
-                <p className="m-0 text-[30px] font-bold leading-none text-gold">
+              <li key={id} className="rounded-2xl border border-border bg-card p-4 md:p-6">
+                <p className="m-0 text-[30px] font-bold leading-none text-accent">
                   {String(i + 1).padStart(2, "0")}
                 </p>
                 <p className="m-0 mt-4 text-[16px] font-bold">{t(`steps.items.${id}.title`)}</p>
@@ -62,9 +62,9 @@ export default function ForVendorsPage() {
         </section>
 
         {/* Tools */}
-        <section className="border-t border-white/15">
+        <section className="border-t border-border">
           <div className="container mx-auto px-5 py-16 md:px-8 md:py-24">
-            <p className="m-0 text-center font-label text-gold">{t("tools.eyebrow")}</p>
+            <p className="m-0 text-center font-label text-accent">{t("tools.eyebrow")}</p>
             <h2 className="m-0 mx-auto mt-3 max-w-2xl text-center text-[30px] leading-tight md:text-[38px]">
               {t("tools.title")}
             </h2>
@@ -72,10 +72,9 @@ export default function ForVendorsPage() {
               {TOOLS.map((tool) => (
                 <div key={tool.id} className="text-center">
                   <span
-                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15"
-                    style={{ border: "1px solid rgba(201,168,106,0.4)" }}
+                    className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-gold/40 bg-gold/15"
                   >
-                    <tool.icon className="h-5 w-5 text-gold" aria-hidden />
+                    <tool.icon className="h-5 w-5 text-accent" aria-hidden />
                   </span>
                   <p className="m-0 mt-3 text-[14px] font-bold">{t(`tools.items.${tool.id}.title`)}</p>
                   <p className="m-0 mt-1 text-[13px] leading-relaxed">{t(`tools.items.${tool.id}.body`)}</p>
@@ -85,13 +84,13 @@ export default function ForVendorsPage() {
           </div>
         </section>
 
-        <div className="border-t border-white/15">
+        <div className="border-t border-border">
           <ClosingBand
             title={
               <Trans
                 t={t}
                 i18nKey="closing.title"
-                components={{ gold: <span className="font-editorial text-gold" /> }}
+                components={{ gold: <span className="font-editorial text-accent" /> }}
               />
             }
             sub={PLANS_PAUSED ? t("closing.subPaused") : t("closing.sub")}
@@ -100,7 +99,7 @@ export default function ForVendorsPage() {
         </div>
       </main>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }

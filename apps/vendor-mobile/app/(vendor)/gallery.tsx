@@ -46,26 +46,31 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { C, IS_DARK } from "@/lib/theme";
 import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { useT } from "@/lib/i18n";
 
 // Cream editorial palette — matches the Inbox restyle / reference mock.
+// WHITE is only for the black lightbox; chrome uses C.
 const WHITE = "#ffffff";
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+const GOLD = C.gold;
 // Gold as text on a light surface is bronze (champagne is too faint to read).
-const BRONZE = "#8a6f3e";
-const ERROR = "#b23a34";
+const BRONZE = C.accentText;
+const ERROR = C.error;
+// Danger label on the floating bulk-action bar (a "selected" fill: ink
+// on light, cream on dark).
+const BAR_DANGER = IS_DARK ? "#b23a34" : "#ff8a80";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -573,14 +578,14 @@ export default function GalleryScreen() {
           <Pressable
             onPress={uploadImages}
             disabled={uploading}
-            style={[pillStyle(true), { backgroundColor: uploading ? "#e0d2b0" : GOLD }]}
+            style={[pillStyle(true), { backgroundColor: uploading ? C.goldMuted : GOLD }]}
           >
             {uploading ? (
-              <ActivityIndicator size="small" color={INK} />
+              <ActivityIndicator size="small" color={C.onGold} />
             ) : (
-              <Feather name="plus" size={15} color={INK} />
+              <Feather name="plus" size={15} color={C.onGold} />
             )}
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13, marginLeft: 6 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 13, marginLeft: 6 }}>
               {uploading && uploadProgress
                 ? `${uploadProgress.done}/${uploadProgress.total}`
                 : t("upload")}
@@ -744,7 +749,7 @@ export default function GalleryScreen() {
                     : "image-multiple-outline"
                 }
                 size={64}
-                color="#c9a86a"
+                color={GOLD}
               />
             </View>
             <Text
@@ -783,8 +788,8 @@ export default function GalleryScreen() {
                   gap: 8,
                 }}
               >
-                <Feather name="upload" size={15} color={INK} />
-                <Text style={{ flexShrink: 1, fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+                <Feather name="upload" size={15} color={C.onGold} />
+                <Text style={{ flexShrink: 1, fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>
                   {t("empty.uploadFirst")}
                 </Text>
               </Pressable>
@@ -853,14 +858,14 @@ export default function GalleryScreen() {
                         width: 22,
                         height: 22,
                         borderRadius: 999,
-                        backgroundColor: isSel ? INK : "rgba(255,255,255,0.85)",
+                        backgroundColor: isSel ? C.selected : "rgba(255,255,255,0.85)",
                         borderWidth: 1,
-                        borderColor: isSel ? INK : BORDER,
+                        borderColor: isSel ? C.selected : BORDER,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      {isSel ? <Feather name="check" size={13} color={WHITE} /> : null}
+                      {isSel ? <Feather name="check" size={13} color={C.onSelected} /> : null}
                     </View>
                   ) : img.caption && !listView ? (
                     <View style={{ position: "absolute", bottom: 6, right: 6, width: 20, height: 20, borderRadius: 999, backgroundColor: "rgba(10,10,10,0.7)", alignItems: "center", justifyContent: "center" }}>
@@ -889,7 +894,7 @@ export default function GalleryScreen() {
             }
             style={{
               marginTop: 20,
-              backgroundColor: "#ece7db",
+              backgroundColor: SURFACE,
               borderRadius: 20,
               padding: 16,
               flexDirection: "row",
@@ -982,7 +987,7 @@ export default function GalleryScreen() {
                 marginTop: 24,
                 height: 52,
                 borderRadius: 999,
-                backgroundColor: selectMode ? WHITE : GOLD,
+                backgroundColor: selectMode ? C.field : GOLD,
                 borderWidth: selectMode ? 1 : 0,
                 borderColor: BORDER,
                 alignItems: "center",
@@ -991,8 +996,8 @@ export default function GalleryScreen() {
                 gap: 8,
               }}
             >
-              <Feather name={selectMode ? "x" : "check-square"} size={16} color={INK} />
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+              <Feather name={selectMode ? "x" : "check-square"} size={16} color={selectMode ? INK : C.onGold} />
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: selectMode ? INK : C.onGold }}>
                 {selectMode ? t("options.exitSelect") : t("options.select")}
               </Text>
             </Pressable>
@@ -1010,7 +1015,7 @@ export default function GalleryScreen() {
             left: 16,
             right: 16,
             bottom: 28,
-            backgroundColor: INK,
+            backgroundColor: C.selected,
             borderRadius: 20,
             paddingVertical: 12,
             paddingHorizontal: 16,
@@ -1019,7 +1024,7 @@ export default function GalleryScreen() {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, color: WHITE}}>{t("selected", { count: selected.size })}</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, color: C.onSelected}}>{t("selected", { count: selected.size })}</Text>
           <View style={{ flexDirection: "row", gap: 20 }}>
             {tab === "trash" ? (
               <BarAction icon="rotate-ccw" label={t("actions.restore")} onPress={async () => { await restore([...selected]); exitSelect(); }} />
@@ -1111,6 +1116,7 @@ export default function GalleryScreen() {
           onChangeText={setNewAlbumName}
           placeholder={t("albums.namePlaceholder")}
           placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance={IS_DARK ? "dark" : "light"}
           autoFocus
           style={{ fontFamily: SERIF, marginTop: 16, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
         />
@@ -1144,7 +1150,7 @@ function pillStyle(filled: boolean) {
     height: 36,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: filled ? GOLD : WHITE,
+    backgroundColor: filled ? GOLD : C.field,
     borderWidth: filled ? 0 : 1,
     borderColor: BORDER,
   };
@@ -1169,10 +1175,10 @@ function SegBtn({
         height: 40,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: active ? INK : "transparent",
+        backgroundColor: active ? C.selected : "transparent",
       }}
     >
-      <Feather name={icon} size={17} color={active ? WHITE : INK} />
+      <Feather name={icon} size={17} color={active ? C.onSelected : INK} />
     </Pressable>
   );
 }
@@ -1256,22 +1262,22 @@ function Chip({
         height: small ? 38 : 46,
         paddingHorizontal: 16,
         borderRadius: 999,
-        backgroundColor: active ? INK : small ? SURFACE : CARD,
+        backgroundColor: active ? C.selected : small ? SURFACE : CARD,
         borderWidth: small ? 0 : 1,
-        borderColor: active && !small ? INK : BORDER,
+        borderColor: active && !small ? C.selected : BORDER,
       }}
     >
       {icon ? (
         <Feather
           name={icon}
           size={14}
-          color={active ? WHITE : INK}
+          color={active ? C.onSelected : INK}
           style={{ marginRight: 6 }}
         />
       ) : null}
       <Text
         style={{
-          color: active ? WHITE : INK,
+          color: active ? C.onSelected : INK,
           fontSize: small ? 13.5 : 15,
           fontWeight: "600",
           ...(small ? {} : { fontFamily: SERIF }),
@@ -1286,8 +1292,8 @@ function Chip({
 function BarAction({ icon, label, onPress, danger }: { icon: keyof typeof Feather.glyphMap; label: string; onPress: () => void; danger?: boolean }) {
   return (
     <Pressable onPress={onPress} style={{ alignItems: "center" }} hitSlop={8}>
-      <Feather name={icon} size={18} color={danger ? "#ff8a80" : WHITE} />
-      <Text style={{ fontFamily: SERIF, color: danger ? "#ff8a80" : WHITE, fontSize: 11, marginTop: 2 }}>{label}</Text>
+      <Feather name={icon} size={18} color={danger ? BAR_DANGER : C.onSelected} />
+      <Text style={{ fontFamily: SERIF, color: danger ? BAR_DANGER : C.onSelected, fontSize: 11, marginTop: 2 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -1325,14 +1331,14 @@ function SmallBtn({ label, onPress, primary }: { label: string; onPress: () => v
         paddingHorizontal: 20,
         height: 44,
         borderRadius: 999,
-        backgroundColor: primary ? GOLD : WHITE,
+        backgroundColor: primary ? GOLD : C.field,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, color: INK}}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: primary ? C.onGold : INK }}>{label}</Text>
     </Pressable>
   );
 }

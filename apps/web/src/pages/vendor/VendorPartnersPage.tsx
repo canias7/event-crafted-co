@@ -941,8 +941,8 @@ export default function VendorPartnersPage() {
                           <span
                             className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center font-semibold self-center"
                             style={{
-                              background: "rgba(255,255,255,0.08)",
-                              color: "#f4f1ea",
+                              background: "hsl(var(--muted))",
+                              color: "hsl(var(--foreground))",
                             }}
                             aria-hidden
                           >
@@ -1182,8 +1182,8 @@ function PartnerChatPane(props: {
       <div
         className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,255,255,0.85)",
-          borderBottom: "0.5px solid rgba(255,255,255,0.08)",
+          background: "hsl(var(--background) / 0.85)",
+          borderBottom: "1px solid hsl(var(--border))",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
@@ -1207,8 +1207,8 @@ function PartnerChatPane(props: {
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
                 style={{
-                  background: "rgba(255,255,255,0.08)",
-                  color: "#f4f1ea",
+                  background: "hsl(var(--muted))",
+                  color: "hsl(var(--foreground))",
                 }}
                 aria-hidden
               >
@@ -1218,7 +1218,7 @@ function PartnerChatPane(props: {
             {activeNow ? (
               <span
                 aria-hidden
-                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#fffdfa]"
+                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
               />
             ) : null}
           </div>
@@ -1230,8 +1230,8 @@ function PartnerChatPane(props: {
               <span
                 className="shrink-0 inline-flex items-center text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded-full"
                 style={{
-                  background: "rgba(99,102,241,0.12)",
-                  color: "rgb(67,56,202)",
+                  background: "hsl(var(--muted))",
+                  color: "hsl(var(--foreground))",
                 }}
               >
                 {t("chat.partner")}
@@ -1337,8 +1337,8 @@ function PartnerChatPane(props: {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(255,255,255,0.08)",
-                            color: "#f4f1ea",
+                            background: "hsl(var(--muted))",
+                            color: "hsl(var(--foreground))",
                           }}
                           aria-hidden
                         >
@@ -1499,8 +1499,8 @@ function PartnerChatPane(props: {
       <div
         className="sticky bottom-24 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,255,255,0.92)",
-          borderTop: "0.5px solid rgba(255,255,255,0.08)",
+          background: "hsl(var(--background) / 0.92)",
+          borderTop: "1px solid hsl(var(--border))",
         }}
         onDragOver={(e) => {
           if (Array.from(e.dataTransfer.types).includes("Files")) {
@@ -1793,8 +1793,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
     <aside
       className="hidden lg:flex flex-col w-80 shrink-0 border-l p-4 gap-3 overflow-hidden"
       style={{
-        borderColor: "rgba(255,255,255,0.08)",
-        background: "rgba(255,255,255,0.4)",
+        borderColor: "hsl(var(--border))",
+        background: "hsl(var(--card) / 0.4)",
       }}
     >
       <div>
@@ -1861,8 +1861,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                     onClick={() => void startThread(r)}
                     className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-colors hover:bg-secondary/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     style={{
-                      background: "rgba(255,255,255,0.6)",
-                      border: "0.5px solid rgba(255,255,255,0.08)",
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
                     }}
                   >
                     {r.logo_url ? (
@@ -1875,8 +1875,8 @@ function FindVendorPanel({ meId }: { meId: string | null }) {
                       <span
                         className="w-9 h-9 rounded-full inline-flex items-center justify-center font-semibold shrink-0 text-sm"
                         style={{
-                          background: "rgba(255,255,255,0.08)",
-                          color: "#f4f1ea",
+                          background: "hsl(var(--muted))",
+                          color: "hsl(var(--foreground))",
                         }}
                       >
                         {initial}

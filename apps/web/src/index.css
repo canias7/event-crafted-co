@@ -6,51 +6,100 @@
 
 @layer base {
   :root {
-    /* Vendora is dark everywhere (owner's call, Oct 2026): ink page,
-       cream text, champagne accents, white-at-15% hairlines, the same
-       look the public pages already had. Every token-styled page and
-       component follows these values. Text on a gold or cream fill uses
-       `text-ink` (#14161a), which never changes. */
+    /* Light is the default palette (owner's call, Oct 2026); a switch in
+       the top menu and the portals turns on the dark one (html.dark,
+       saved in localStorage "vendora-theme", applied before first paint
+       by index.html). Text on a gold fill uses `text-ink`, which never
+       changes. */
+    --background: 42 31% 94%;
+    --foreground: 220 14% 9%;
+
+    --card: 43 47% 97%;
+    --card-foreground: 220 14% 9%;
+
+    --popover: 43 47% 97%;
+    --popover-foreground: 220 14% 9%;
+
+    --primary: 220 14% 9%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 42 31% 91%;
+    --secondary-foreground: 220 14% 9%;
+
+    --muted: 42 31% 89%;
+    --muted-foreground: 220 14% 9%;
+
+    --placeholder: 38 14% 40%;
+
+    --accent: 39 38% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 3 55% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --pending: 43 60% 87%;
+
+    --gold: 39 47% 60%;
+    --gold-hover: 39 47% 55%;
+    --gold-muted: 42 44% 78%;
+
+    --border: 35 25% 25% / 0.12;
+    --input: 42 31% 91%;
+    --ring: 39 38% 39% / 0.6;
+
+    --radius: 0.75rem;
+
+    --shadow-sm: 220 14% 9% / 0.03;
+    --shadow-md: 220 14% 9% / 0.06;
+
+    --sidebar-background: 43 47% 97%;
+    --sidebar-foreground: 220 14% 9%;
+    --sidebar-primary: 220 14% 9%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 42 31% 91%;
+    --sidebar-accent-foreground: 220 14% 9%;
+    --sidebar-border: 35 25% 25% / 0.12;
+    --sidebar-ring: 39 38% 39% / 0.6;
+
+    --font-size-hero: clamp(2.75rem, 9vw, 6rem);
+    --font-size-h2: clamp(1.875rem, 5vw, 3rem);
+    --font-size-body: 1rem;
+
+    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 20%, hsl(39 47% 60% / 0.14), transparent 70%);
+    --gradient-glow: radial-gradient(circle at 50% 50%, hsl(39 47% 60% / 0.16), transparent 60%);
+  }
+
+  .dark {
+    /* Dark palette: ink page, cream text, champagne accents,
+       white-at-15% hairlines. */
     --background: 220 13% 9%;
     --foreground: 43 32% 94%;
 
-    /* Cards and fields: white at ~3-5% over ink. */
     --card: 220 10% 12%;
     --card-foreground: 43 32% 94%;
 
-    /* Menus, popovers and dialogs: a step lighter than cards. */
     --popover: 222 9% 15%;
     --popover-foreground: 43 32% 94%;
 
-    /* Selected / done: cream fill with an ink label. */
     --primary: 43 32% 94%;
     --primary-foreground: 220 13% 9%;
 
-    /* Chips, neutral pills, hovers: white at ~8%. */
     --secondary: 220 7% 17%;
     --secondary-foreground: 43 32% 94%;
 
     --muted: 220 7% 17%;
-    /* Secondary text: cream at ~85%, never grey. */
     --muted-foreground: 42 22% 84%;
 
-    /* Placeholder: light enough to read on dark fields. */
     --placeholder: 39 12% 62%;
 
-    /* Accent = champagne on dark (links, labels, badges). */
     --accent: 39 47% 60%;
     --accent-foreground: 220 13% 9%;
 
-    /* Red, lifted so it reads on ink (errors, delete, problems). */
     --destructive: 3 62% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Waiting: champagne text on a dark gold tint. */
     --pending: 40 24% 20%;
 
-    /* Champagne (#c9a86a): the primary button fill (ink label), ornament
-       and unread dots. Hover a step darker; disabled solid muted gold
-       with the label still ink. */
     --gold: 39 47% 60%;
     --gold-hover: 39 47% 55%;
     --gold-muted: 42 44% 78%;
@@ -59,7 +108,6 @@
     --input: 220 7% 17%;
     --ring: 39 47% 60% / 0.6;
 
-    --radius: 0.75rem;
 
     --shadow-sm: 0 0% 0% / 0.25;
     --shadow-md: 0 0% 0% / 0.4;
@@ -73,19 +121,12 @@
     --sidebar-border: 0 0% 100% / 0.15;
     --sidebar-ring: 39 47% 60% / 0.6;
 
-    /* Custom tokens */
-    --font-size-hero: clamp(2.75rem, 9vw, 6rem);
-    --font-size-h2: clamp(1.875rem, 5vw, 3rem);
-    --font-size-body: 1rem;
 
   }
 
-  /* Dark palette dropped — the app ships a single light palette for
-     everyone. If we ever bring dark back, redefine .dark here and
-     restore the ThemeProvider + inline pre-paint script. */
 }
 
-/* Paper surfaces on the dark site: invoices, contracts, proposals and
+/* Paper surfaces (both themes): invoices, contracts, proposals and
    signature pads stay white like the document they print as. Inside, the
    tokens go back to the light palette so their text stays ink. */
 .surface-light {
@@ -134,11 +175,10 @@
     font-family: 'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Plain ink everywhere: no champagne washes or ombre (owner's
-       call, Oct 2026). */
-    background: #14161a;
-    background-color: #14161a;
-    color-scheme: dark;
+    /* Plain page colour, no champagne washes or ombre (owner's call,
+       Oct 2026): ivory in light, ink in dark. */
+    background: hsl(var(--background));
+    background-color: hsl(var(--background));
   }
 
   h1, h2, h3, h4, h5, h6 {

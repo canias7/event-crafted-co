@@ -28,6 +28,7 @@ import { Feather } from "@expo/vector-icons";
 import { PRICING_MODEL_LABELS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { C } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
 
@@ -181,9 +182,9 @@ export default function VendorDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
+          <Text className="text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -191,18 +192,18 @@ export default function VendorDetailScreen() {
 
   if (!vendor) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
         <View className="flex-row items-center px-5 py-3">
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
             className="active:opacity-70"
           >
-            <Feather name="chevron-left" size={26} color="#14161a" />
+            <Feather name="chevron-left" size={26} color={C.text} />
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-base text-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="text-base text-center" style={{ color: C.text, fontFamily: "LibreBaskerville" }}>
             {t("notFound")}
           </Text>
         </View>
@@ -246,15 +247,14 @@ export default function VendorDetailScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1" style={{ backgroundColor: C.page }}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Photo gallery — full-bleed, swipeable. */}
         <View
-          style={{ width: screenWidth, height: galleryHeight }}
-          className="bg-muted"
+          style={{ width: screenWidth, height: galleryHeight, backgroundColor: C.surface }}
         >
           {photos.length > 0 ? (
             <ScrollView
@@ -280,8 +280,8 @@ export default function VendorDetailScreen() {
               style={{ width: screenWidth, height: galleryHeight }}
               className="items-center justify-center"
             >
-              <Feather name="image" size={36} color="#746a58" />
-              <Text className="mt-2 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+              <Feather name="image" size={36} color={C.placeholder} />
+              <Text className="mt-2 text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                 {t("noPhotos")}
               </Text>
             </View>
@@ -332,7 +332,7 @@ export default function VendorDetailScreen() {
                 backgroundColor: "rgba(0,0,0,0.55)",
               }}
             >
-              <Text className="text-xs text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+              <Text className="text-xs" style={{ color: "#ffffff", fontFamily: "LibreBaskerville-Bold" }}>
                 {photoIndex + 1} / {photos.length}
               </Text>
             </View>
@@ -342,7 +342,7 @@ export default function VendorDetailScreen() {
         {/* White content card — overlaps the bottom of the gallery. */}
         <View
           style={{
-            backgroundColor: "#fbf9f4",
+            backgroundColor: C.card,
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             marginTop: -24,
@@ -353,24 +353,24 @@ export default function VendorDetailScreen() {
           {/* Title */}
           <View className="px-5">
             <Text
-              className="text-3xl text-foreground leading-9"
-              style={{ fontFamily: "LibreBaskerville-Bold" }}
+              className="text-3xl leading-9"
+              style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}
             >
               {vendor.business_name ?? t("vendorFallback")}
             </Text>
-            <Text className="mt-2 text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+            <Text className="mt-2 text-base" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
               {categoryLabel ?? ""}
               {vendor.location ? ` · ${vendor.location}` : ""}
             </Text>
           </View>
 
           {/* Stats row — 3 cells separated by vertical lines. */}
-          <View className="mx-5 mt-5 rounded-[20px] border border-border">
+          <View className="mx-5 mt-5 rounded-[20px] border" style={{ borderColor: C.border }}>
             <View className="flex-row">
               <StatCell
                 top={
                   <View className="flex-row items-center gap-1">
-                    <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                    <Text className="text-base" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
                       {vendor.verified_at ? t("stats.verified") : t("stats.new")}
                     </Text>
                   </View>
@@ -380,7 +380,7 @@ export default function VendorDetailScreen() {
               <Divider />
               <StatCell
                 top={
-                  <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                  <Text className="text-base" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
                     {faqs.length}
                   </Text>
                 }
@@ -394,7 +394,7 @@ export default function VendorDetailScreen() {
           {/* Bio */}
           {vendor.bio ? (
             <View className="px-5 pt-6">
-              <Text className="text-base text-foreground leading-relaxed" style={{ fontFamily: "LibreBaskerville" }}>
+              <Text className="text-base leading-relaxed" style={{ color: C.text, fontFamily: "LibreBaskerville" }}>
                 {vendor.bio}
               </Text>
             </View>
@@ -411,9 +411,9 @@ export default function VendorDetailScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderTopWidth: 1,
-          borderTopColor: "#e6e1d5",
+          borderTopColor: C.border,
         }}
       >
         <View className="flex-row items-center justify-between px-5 py-3">
@@ -421,37 +421,37 @@ export default function VendorDetailScreen() {
             {price ? (
               <>
                 <Text
-                  className="text-xl text-foreground"
-                  style={{ fontFamily: "LibreBaskerville", textDecorationLine: "underline" }}
+                  className="text-xl"
+                  style={{ color: C.text, fontFamily: "LibreBaskerville", textDecorationLine: "underline" }}
                 >
                   {price}
                 </Text>
-                <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                <Text className="mt-0.5 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                   {categoryLabel ?? t("marketplaceListing")}
                 </Text>
                 {models ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                  <Text className="mt-0.5 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                     {models}
                   </Text>
                 ) : null}
                 {vendor.custom_pricing ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                  <Text className="mt-0.5 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                     {t("pricingVaries")}
                   </Text>
                 ) : null}
               </>
             ) : (
               <>
-                <Text className="text-xl text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                <Text className="text-xl" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
                   {t("pricingOnRequest")}
                 </Text>
                 {models ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                  <Text className="mt-0.5 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                     {models}
                   </Text>
                 ) : null}
                 {vendor.custom_pricing ? (
-                  <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                  <Text className="mt-0.5 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                     {t("pricingVaries")}
                   </Text>
                 ) : null}
@@ -474,15 +474,15 @@ export default function VendorDetailScreen() {
             className="rounded-full active:opacity-80"
             style={{
               // Gold — the app-wide primary button fill, with an ink label.
-              backgroundColor: "#c9a86a",
+              backgroundColor: C.gold,
               paddingHorizontal: 24,
               height: 52,
               flexDirection: "row",
               alignItems: "center",
             }}
           >
-            <Feather name="external-link" size={16} color="#14161a" />
-            <Text className="ml-2 text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Feather name="external-link" size={16} color={C.onGold} />
+            <Text className="ml-2 text-base" style={{ color: C.onGold, fontFamily: "LibreBaskerville-Bold" }}>
               {t("viewOnWeb")}
             </Text>
           </Pressable>
@@ -550,13 +550,13 @@ function StatCell({
   return (
     <View className="flex-1 items-center px-2 py-3">
       {top}
-      <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{bottom}</Text>
+      <Text className="mt-1 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{bottom}</Text>
     </View>
   );
 }
 
 function Divider() {
-  return <View style={{ width: 1, backgroundColor: "#e6e1d5" }} />;
+  return <View style={{ width: 1, backgroundColor: C.border }} />;
 }
 
 function Section({
@@ -568,7 +568,7 @@ function Section({
 }) {
   return (
     <View className="px-5 pt-7">
-      <Text className="text-xl text-foreground mb-3" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+      <Text className="text-xl mb-3" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
         {title}
       </Text>
       {children}

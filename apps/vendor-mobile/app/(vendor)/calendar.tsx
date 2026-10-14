@@ -53,36 +53,51 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
 import { SHADOW } from "@/lib/ui";
+import { C, IS_DARK } from "@/lib/theme";
 import { i18n, intlLocale, useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — a solid lighter gold rather than
 // a faded one, so "unavailable" never reads as "broken".
-const GOLD_MUTED = "#e0d2b0";
-const PENDING_BG = "#f2e7cb";
-const PENDING_FG = "#8a6f3e";
-const HATCH = "#d6d1c6";
-const HATCH_BG = "#ece7db";
+const GOLD_MUTED = C.goldMuted;
+const ON_GOLD = C.onGold;
+// Selected fills (active tab, chip, day): ink in light, cream in dark.
+const SELECTED = C.selected;
+const ON_SELECTED = C.onSelected;
+const ON_SELECTED_DIM = IS_DARK ? "rgba(20,22,26,0.7)" : "rgba(255,255,255,0.7)";
+// Digit / dot on a booked (selected-filled) day: the page colour.
+const ON_BOOKED = C.page;
+const FIELD = C.field;
+const ERROR = C.error;
+const ERROR_BG = IS_DARK ? "rgba(224,113,106,0.12)" : "#f7ece9";
+const ERROR_BORDER = IS_DARK ? "rgba(224,113,106,0.35)" : "#e6c9c2";
+const PENDING_BG = C.pending;
+const PENDING_FG = C.pendingText;
+const HATCH = IS_DARK ? "rgba(255,255,255,0.18)" : "#d6d1c6";
+const HATCH_BG = C.surface;
 // Champagne bronze — gold deep enough to stay legible as small text.
-const BRONZE = "#8a6f3e";
+const BRONZE = C.accentText;
 // Solid stand-in for INK on a disabled control (the warm subtle tone).
-const INK_MUTED = "#746a58";
-const CARD = "#fbf9f4";
+const INK_MUTED = C.placeholder;
+const CARD = C.card;
 // Pale gold behind the block-mode hint: warmer than the page, lighter
 // than the pending-day fill so the two don't read as related.
-const HINT_BG = "#f7efdc";
+const HINT_BG = IS_DARK ? C.pending : "#f7efdc";
+// The floating block bar stays a dark card in both themes (a step up
+// from the ink page in dark so it still reads as raised).
+const BAR_BG = IS_DARK ? C.surface : "#14161a";
 // Status dots for the multi-listing account view (match web STATUS_DOT).
-const DOT_BOOKED = "#14161a";
+const DOT_BOOKED = C.selected;
 const DOT_PENDING = "#c9a86a";
 const DOT_BLOCKED = "#b3aed6";
 // Stable per-listing palette (mirrors apps/web/src/lib/listingColors).
@@ -1321,16 +1336,16 @@ export default function CalendarScreen() {
               style={{
                 marginBottom: 12,
                 borderRadius: 12,
-                backgroundColor: "#f7ece9",
+                backgroundColor: ERROR_BG,
                 borderWidth: 1,
-                borderColor: "#e6c9c2",
+                borderColor: ERROR_BORDER,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
             >
-              <Text style={{ fontFamily: SERIF, color: "#b23a34", fontSize: 13 }}>{error}</Text>
+              <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 13 }}>{error}</Text>
               <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 13}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: ERROR, fontSize: 13}}>
                   {t("tryAgain")}
                 </Text>
               </Pressable>
@@ -1397,7 +1412,7 @@ export default function CalendarScreen() {
             style={{
               marginTop: 16,
               flexDirection: "row",
-              backgroundColor: "#ffffff",
+              backgroundColor: FIELD,
               borderRadius: 999,
               padding: 4,
               borderWidth: 1,
@@ -1514,7 +1529,7 @@ export default function CalendarScreen() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      backgroundColor: "#ffffff",
+                      backgroundColor: FIELD,
                       borderWidth: 1,
                       borderColor: BORDER,
                       height: 36,
@@ -1552,7 +1567,7 @@ export default function CalendarScreen() {
                   <LegendDot
                     swatch={
                       <View
-                        style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: INK }}
+                        style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: SELECTED }}
                       />
                     }
                     label={t("legend.booked")}
@@ -1629,7 +1644,7 @@ export default function CalendarScreen() {
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        backgroundColor: "#ffffff",
+                        backgroundColor: FIELD,
                         borderWidth: 1,
                         borderColor: BORDER,
                         paddingHorizontal: 12,
@@ -1667,10 +1682,10 @@ export default function CalendarScreen() {
                       <Feather
                         name={isSelectedBlocked ? "x" : "calendar"}
                         size={14}
-                        color={INK}
+                        color={ON_GOLD}
                         style={{ marginRight: 4 }}
                       />
-                      <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
+                      <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 13}}>
                         {blocking ? t("day.saving") : isSelectedBlocked ? t("day.unblock") : t("day.blockDay")}
                       </Text>
                     </View>
@@ -1741,7 +1756,7 @@ export default function CalendarScreen() {
                   <MaterialCommunityIcons
                     name="calendar-check-outline"
                     size={48}
-                    color="#c9a86a"
+                    color={GOLD}
                   />
                   <Text
                     style={{
@@ -1828,7 +1843,7 @@ export default function CalendarScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: INK,
+              backgroundColor: BAR_BG,
               borderRadius: 20,
               paddingVertical: 12,
               paddingLeft: 20,
@@ -1889,7 +1904,7 @@ export default function CalendarScreen() {
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 14,
-                      color: INK,
+                      color: ON_GOLD,
                     }}
                   >
                     {blocking
@@ -2026,13 +2041,13 @@ export default function CalendarScreen() {
                         paddingHorizontal: 12,
                         height: 32,
                         borderRadius: 999,
-                        backgroundColor: active ? INK : "#ece7db",
+                        backgroundColor: active ? SELECTED : CREAM_DEEP,
                       }}
                     >
                       <Text
                         style={{
                           fontFamily: SERIF_BOLD,
-                          color: active ? "#ffffff" : INK,
+                          color: active ? ON_SELECTED : INK,
                           fontSize: 12,
                         }}
                       >
@@ -2070,12 +2085,12 @@ export default function CalendarScreen() {
                   paddingHorizontal: 12,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: aTitle === t ? INK : CREAM_DEEP,
+                  backgroundColor: aTitle === t ? SELECTED : CREAM_DEEP,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: aTitle === t ? "#ffffff" : INK, fontSize: 12}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: aTitle === t ? ON_SELECTED : INK, fontSize: 12}}>
                   {t}
                 </Text>
               </Pressable>
@@ -2105,12 +2120,12 @@ export default function CalendarScreen() {
                   paddingHorizontal: 12,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: aTime === t ? INK : CREAM_DEEP,
+                  backgroundColor: aTime === t ? SELECTED : CREAM_DEEP,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: aTime === t ? "#ffffff" : INK, fontSize: 12}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: aTime === t ? ON_SELECTED : INK, fontSize: 12}}>
                   {t}
                 </Text>
               </Pressable>
@@ -2131,7 +2146,7 @@ export default function CalendarScreen() {
                   paddingHorizontal: 12,
                   height: 32,
                   borderRadius: 999,
-                  backgroundColor: aDuration === d.value ? INK : CREAM_DEEP,
+                  backgroundColor: aDuration === d.value ? SELECTED : CREAM_DEEP,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -2139,7 +2154,7 @@ export default function CalendarScreen() {
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: aDuration === d.value ? "#ffffff" : INK,
+                    color: aDuration === d.value ? ON_SELECTED : INK,
                     fontSize: 12,
                   }}
                 >
@@ -2150,7 +2165,7 @@ export default function CalendarScreen() {
           </ScrollView>
 
           {addIsPast ? (
-            <Text style={{ fontFamily: SERIF, color: "#b23a34", fontSize: 12, marginTop: 8 }}>
+            <Text style={{ fontFamily: SERIF, color: ERROR, fontSize: 12, marginTop: 8 }}>
               {t("addModal.past")}
             </Text>
           ) : null}
@@ -2265,11 +2280,11 @@ function RoundIconButton({
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: INK,
+                backgroundColor: SELECTED,
               }}
             />
           ) : null}
-          <Feather name={icon} size={18} color={active ? "#ffffff" : INK} />
+          <Feather name={icon} size={18} color={active ? ON_SELECTED : INK} />
         </View>
       )}
     </Pressable>
@@ -2305,11 +2320,11 @@ function ModeTab({
             right: 0,
             bottom: 0,
             borderRadius: 22,
-            backgroundColor: INK,
+            backgroundColor: SELECTED,
           }}
         />
       ) : null}
-      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: active ? "#ffffff" : INK }}>
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: active ? ON_SELECTED : INK }}>
         {label}
       </Text>
     </Pressable>
@@ -2336,7 +2351,7 @@ function TargetChip({
         height: 32,
         paddingHorizontal: 12,
         borderRadius: 999,
-        backgroundColor: active ? INK : CREAM_DEEP,
+        backgroundColor: active ? SELECTED : CREAM_DEEP,
       }}
     >
       {color ? (
@@ -2350,7 +2365,7 @@ function TargetChip({
           }}
         />
       ) : null}
-      <Text style={{ fontFamily: SERIF_BOLD, color: active ? "#ffffff" : INK, fontSize: 12}}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: active ? ON_SELECTED : INK, fontSize: 12}}>{label}</Text>
     </Pressable>
   );
 }
@@ -2480,8 +2495,8 @@ function DayCell({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const accent = picking ? GOLD : INK;
-  const onAccent = picking ? INK : "#ffffff";
+  const accent = picking ? GOLD : SELECTED;
+  const onAccent = picking ? ON_GOLD : ON_SELECTED;
   // Account view: number + one status dot per event (cap 4 + "+N").
   if (showDots) {
     const MAX = 4;
@@ -2504,7 +2519,7 @@ function DayCell({
           <Text
             style={{
               fontFamily: SERIF_BOLD,
-              color: selected ? onAccent : inMonth ? INK : "#746a58",
+              color: selected ? onAccent : inMonth ? INK : PLACEHOLDER,
               fontSize: 14,
             }}
           >
@@ -2531,7 +2546,7 @@ function DayCell({
   // Single-listing full-cell color grid.
   const baseBg =
     state === "booked"
-      ? INK
+      ? SELECTED
       : state === "pending"
         ? PENDING_BG
         : state === "blocked"
@@ -2545,9 +2560,9 @@ function DayCell({
     selected && state === "available"
       ? onAccent
       : !inMonth
-        ? "#746a58"
+        ? PLACEHOLDER
         : state === "booked"
-          ? CREAM
+          ? ON_BOOKED
           : state === "pending"
             ? PENDING_FG
             : INK;
@@ -2602,7 +2617,7 @@ function DayCell({
               width: 3,
               height: 3,
               borderRadius: 999,
-              backgroundColor: state === "booked" ? CREAM : PENDING_FG,
+              backgroundColor: state === "booked" ? ON_BOOKED : PENDING_FG,
             }}
           />
         ) : null}
@@ -2766,9 +2781,9 @@ function RecurringBlocksSection({
                   savingDow !== null && !saving
                     ? isOff
                       ? INK_MUTED
-                      : "#ece7db"
+                      : CREAM_DEEP
                     : isOff
-                      ? INK
+                      ? SELECTED
                       : CREAM_DEEP,
               }}
               accessibilityLabel={t(isOff ? "recurring.dayOff" : "recurring.dayOn", {
@@ -2776,9 +2791,9 @@ function RecurringBlocksSection({
               })}
             >
               {saving ? (
-                <ActivityIndicator size="small" color={isOff ? "#ffffff" : INK} />
+                <ActivityIndicator size="small" color={isOff ? ON_SELECTED : INK} />
               ) : (
-                <Text style={{ fontFamily: SERIF_BOLD, color: isOff ? "#ffffff" : INK_DIM, fontSize: 13}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: isOff ? ON_SELECTED : INK_DIM, fontSize: 13}}>
                   {short}
                 </Text>
               )}
@@ -2870,8 +2885,8 @@ function AppointmentsSection({
                 opacity: pressed ? 0.6 : 1,
               }}
             >
-              <Feather name="plus" size={13} color={INK} style={{ marginRight: 4 }} />
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>{t("appts.add")}</Text>
+              <Feather name="plus" size={13} color={ON_GOLD} style={{ marginRight: 4 }} />
+              <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 12}}>{t("appts.add")}</Text>
             </View>
           )}
         </Pressable>
@@ -2910,13 +2925,13 @@ function AppointmentsSection({
                   height: 32,
                   paddingHorizontal: 12,
                   borderRadius: 999,
-                  backgroundColor: filter === opt.value ? INK : CREAM_DEEP,
+                  backgroundColor: filter === opt.value ? SELECTED : CREAM_DEEP,
                 }}
               >
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: filter === opt.value ? "#ffffff" : INK_DIM,
+                    color: filter === opt.value ? ON_SELECTED : INK_DIM,
                     fontSize: 12,
                   }}
                 >
@@ -2926,7 +2941,7 @@ function AppointmentsSection({
                   style={{
                     fontFamily: SERIF,
                     marginLeft: 6,
-                    color: filter === opt.value ? "rgba(255,255,255,0.7)" : INK_DIM,
+                    color: filter === opt.value ? ON_SELECTED_DIM : INK_DIM,
                     fontSize: 12,
                   }}
                 >
@@ -3118,7 +3133,7 @@ function ActionBtn({
   // fades fill and label together and reads as broken.
   // The gold pill keeps an ink label in both states — only the fill
   // carries "disabled", same rule as the auth buttons.
-  const fg = disabled && !primary ? INK_MUTED : INK;
+  const fg = primary ? ON_GOLD : disabled ? INK_MUTED : INK;
   return (
     <Pressable
       onPress={onPress}
@@ -3135,7 +3150,7 @@ function ActionBtn({
           ? disabled
             ? GOLD_MUTED
             : GOLD
-          : "#ffffff",
+          : FIELD,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
       }}
@@ -3165,7 +3180,7 @@ function SmallBtn({
         paddingHorizontal: 20,
         height: 44,
         borderRadius: 999,
-        backgroundColor: primary ? (disabled ? GOLD_MUTED : GOLD) : "#ffffff",
+        backgroundColor: primary ? (disabled ? GOLD_MUTED : GOLD) : FIELD,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
@@ -3175,7 +3190,7 @@ function SmallBtn({
       <Text
         style={{
           fontFamily: SERIF_BOLD,
-          color: primary ? INK : disabled ? INK_MUTED : INK,
+          color: primary ? ON_GOLD : disabled ? INK_MUTED : INK,
         }}
       >
         {label}

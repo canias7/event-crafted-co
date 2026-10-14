@@ -21,22 +21,23 @@ import { supabase } from "@/lib/supabase";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { LANGUAGES, useT } from "@/lib/i18n";
+import { C, IS_DARK, setDarkMode } from "@/lib/theme";
 
-// Cream Vendora palette — same tokens as the tab screens.
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+// Vendora palette (light / dark, lib/theme.ts) — same tokens as the tab screens.
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — solid, not faded, so "unavailable"
 // never reads as "broken".
-const GOLD_MUTED = "#e0d2b0";
-const GOLD_SOFT = "#f2e7cb";
+const GOLD_MUTED = C.goldMuted;
+const GOLD_SOFT = C.pending;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -378,14 +379,14 @@ export function SettingsSheet({
                             width: 6,
                             height: 6,
                             borderRadius: 999,
-                            backgroundColor: "#8a6f3e",
+                            backgroundColor: C.pendingText,
                             marginRight: 5,
                           }}
                         />
                         <Text
                           style={{
                             fontFamily: SERIF_BOLD,
-                            color: "#8a6f3e",
+                            color: C.pendingText,
                             fontSize: 12,
                           }}
                         >
@@ -450,6 +451,14 @@ export function SettingsSheet({
                 <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -4 }}>
                   <LanguagePicker />
                 </View>
+                <RowDivider />
+                <SettingsRow
+                  icon="moon"
+                  label={tc("theme.title")}
+                  body={tc("theme.note")}
+                  right={<Toggle value={IS_DARK} onPress={() => void setDarkMode(!IS_DARK)} />}
+                  onPress={() => void setDarkMode(!IS_DARK)}
+                />
               </View>
 
               {/* Log out + Delete */}
@@ -457,7 +466,7 @@ export function SettingsSheet({
                 onPress={onSignOutPress}
                 style={{
                   marginTop: 24,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: C.field,
                   borderWidth: 1,
                   borderColor: BORDER,
                   borderRadius: 999,
@@ -487,7 +496,7 @@ export function SettingsSheet({
                 onPress={onDeleteAccount}
                 style={{
                   marginTop: 12,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: C.field,
                   borderWidth: 1,
                   borderColor: BORDER,
                   borderRadius: 999,
@@ -497,11 +506,11 @@ export function SettingsSheet({
                   justifyContent: "center",
                 }}
               >
-                <Feather name="trash-2" size={16} color="#b23a34" />
+                <Feather name="trash-2" size={16} color={C.error} />
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: "#b23a34",
+                    color: C.error,
                     fontSize: 16,
                     marginLeft: 8,
                   }}
@@ -656,7 +665,7 @@ export function SettingsSheet({
                 }}
               >
                 <Text
-                  style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}
+                  style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}
                 >
                   {pwdSubmitting ? t("password.saving") : t("password.save")}
                 </Text>
@@ -781,7 +790,7 @@ function Toggle({
         width: 48,
         height: 28,
         borderRadius: 999,
-        backgroundColor: value ? INK : "#d6d1c6",
+        backgroundColor: value ? C.selected : IS_DARK ? "rgba(255,255,255,0.2)" : "#d6d1c6",
         padding: 3,
         opacity: disabled ? 0.6 : 1,
       }}
@@ -791,7 +800,8 @@ function Toggle({
           width: 22,
           height: 22,
           borderRadius: 999,
-          backgroundColor: "#ffffff",
+          // White knob; on the cream "on" track in dark it turns ink.
+          backgroundColor: value ? C.onSelected : "#ffffff",
           transform: [{ translateX: value ? 20 : 0 }],
         }}
       />

@@ -31,6 +31,7 @@ import { supabase } from "@/lib/supabase";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 import { SHADOW } from "@/lib/ui";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
@@ -141,9 +142,9 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderWidth: 1,
-          borderColor: "#e6e1d5",
+          borderColor: C.border,
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -210,14 +211,14 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       width: 40,
                       height: 40,
                       borderRadius: 20,
-                      backgroundColor: "#14161a",
+                      backgroundColor: C.selected,
                     }}
                   />
                 ) : null}
                 <Feather
                   name={iconName}
                   size={20}
-                  color={isFocused ? "#ffffff" : "#6f6a60"}
+                  color={isFocused ? C.onSelected : IS_DARK ? C.placeholder : "#6f6a60"}
                 />
                 {route.name === "inbox" && newInquiries > 0 ? (
                   <View
@@ -232,12 +233,12 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       borderRadius: 9,
                       paddingHorizontal: 5,
                       // Champagne with an ink number: the brand's unread colour.
-                      backgroundColor: "#c9a86a",
+                      backgroundColor: C.gold,
                       // Ring in the bar's own cream so the badge reads as
                       // sitting on top of the icon rather than merging
                       // with it when the tab is active and dark.
                       borderWidth: 1,
-                      borderColor: "#fbf9f4",
+                      borderColor: C.card,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -247,7 +248,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                         fontFamily: "LibreBaskerville-Bold",
                         fontSize: 9,
                         lineHeight: 12,
-                        color: "#14161a",
+                        color: C.onGold,
                       }}
                     >
                       {newInquiries > 99 ? "99+" : newInquiries}
@@ -261,7 +262,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                   fontFamily: isFocused ? "LibreBaskerville-Bold" : "LibreBaskerville",
                   fontSize: 10,
                   marginTop: 2,
-                  color: isFocused ? "#14161a" : "#746a58",
+                  color: isFocused ? C.text : C.placeholder,
                 }}
               >
                 {LABELLED.has(route.name) ? t(`tabs.${route.name}`) : route.name}
@@ -283,8 +284,8 @@ export default function VendorLayout() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: C.page }}>
+        <ActivityIndicator color={C.text} />
       </View>
     );
   }
@@ -310,6 +311,8 @@ export default function VendorLayout() {
         // floating bar is ~76px tall (64 + safe-area), so anything that
         // ends near the bottom should add some extra padding.
         tabBarStyle: { position: "absolute" },
+        // Dark theme: paint the scene so no light default shows through.
+        ...(IS_DARK ? { sceneStyle: { backgroundColor: C.page } } : {}),
       }}
     >
       <Tabs.Screen name="inbox" options={{ title: t("tabs.inbox") }} />

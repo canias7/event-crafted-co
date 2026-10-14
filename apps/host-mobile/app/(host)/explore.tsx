@@ -29,6 +29,10 @@ import { useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
+
+// Grey icons (idle view tabs): warm grey on light, lighter on dark.
+const ICON_DIM = IS_DARK ? C.placeholder : "#6f6a60";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -42,7 +46,7 @@ const PAGE_TITLE = {
   fontSize: 38,
   lineHeight: 44,
   letterSpacing: -0.5,
-  color: "#14161a",
+  color: C.text,
   marginTop: 8,
 } as const;
 
@@ -293,16 +297,16 @@ export default function ExploreScreen() {
   }, [loadSaved]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
       <View className="px-5 pt-4 pb-4">
         <Wordmark />
         <Text style={PAGE_TITLE}>{t("title")}</Text>
-        <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
+        <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-1 text-sm">
           {t("subtitle")}
         </Text>
       </View>
 
-      <View className="flex-row border-t border-border">
+      <View className="flex-row border-t" style={{ borderColor: C.border }}>
         <ViewTab
           active={view === "listing"}
           onPress={() => setView("listing")}
@@ -390,15 +394,15 @@ function ViewTab({
       style={{
         // Selected tile: card cream with a 1px ink border — selection
         // reads in ink, and tiles carry no shadow.
-        backgroundColor: active ? "#fbf9f4" : "transparent",
+        backgroundColor: active ? C.card : "transparent",
         borderRadius: active ? 12 : 0,
         borderWidth: active ? 1 : 0,
-        borderColor: "#14161a",
+        borderColor: C.selected,
         marginHorizontal: active ? 4 : 0,
         marginVertical: active ? 4 : 0,
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#14161a" : "#6f6a60"} />
+      <Feather name={iconName} size={22} color={active ? C.text : ICON_DIM} />
     </Pressable>
   );
 }
@@ -406,7 +410,7 @@ function ViewTab({
 function EmptyMessage({ body }: { body: string }) {
   return (
     <View className="items-center pt-16 px-6">
-      <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground text-center">{body}</Text>
+      <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-sm text-center">{body}</Text>
     </View>
   );
 }
@@ -415,7 +419,7 @@ function EmptyMessage({ body }: { body: string }) {
 function FeedAuthorHeader({ vendor }: { vendor: Author }) {
   return (
     <View className="flex-row items-center gap-3 px-3 py-3">
-      <View className="h-10 w-10 overflow-hidden rounded-full bg-muted">
+      <View className="h-10 w-10 overflow-hidden rounded-full" style={{ backgroundColor: C.surface }}>
         <Image
           source={
             vendor?.logo_url
@@ -426,9 +430,9 @@ function FeedAuthorHeader({ vendor }: { vendor: Author }) {
           resizeMode="cover"
         />
       </View>
-      <Text style={{ fontFamily: SERIF_BOLD }}
+      <Text style={{ fontFamily: SERIF_BOLD, color: C.text }}
         numberOfLines={1}
-        className="flex-1 text-base text-foreground"
+        className="flex-1 text-base"
       >
         {vendor?.business_name ?? "Vendora"}
       </Text>
@@ -446,9 +450,9 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             style={{
               borderRadius: 20,
               overflow: "hidden",
-              backgroundColor: "#fbf9f4",
+              backgroundColor: C.card,
               borderWidth: 1,
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
             }}
           >
             <View>
@@ -461,8 +465,8 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             />
             {p.caption ? (
               <View className="px-4 py-3">
-                <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{p.caption}</Text>
-                <Text style={{ fontFamily: SERIF }} className="mt-1 text-xs text-muted-foreground">
+                <Text style={{ fontFamily: SERIF, color: C.text }} className="text-sm">{p.caption}</Text>
+                <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-1 text-xs">
                   {new Date(p.created_at).toLocaleString(locale)}
                 </Text>
               </View>
@@ -483,9 +487,9 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             style={{
               borderRadius: 20,
               overflow: "hidden",
-              backgroundColor: "#fbf9f4",
+              backgroundColor: C.card,
               borderWidth: 1,
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
             }}
           >
             <View>
@@ -524,7 +528,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             </View>
             {r.caption ? (
               <View className="px-4 py-3">
-                <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{r.caption}</Text>
+                <Text style={{ fontFamily: SERIF, color: C.text }} className="text-sm">{r.caption}</Text>
               </View>
             ) : null}
           </View>
@@ -542,11 +546,11 @@ function BuzzList({ items }: { items: BuzzRow[] }) {
         // Card: p-1 plus the rows' own 12px inset = the standard 16.
         <View
           key={b.id}
-          className="rounded-[20px] border border-border bg-[#fbf9f4] p-1"
+          className="rounded-[20px] border p-1" style={{ borderColor: C.border, backgroundColor: C.card }}
         >
           <FeedAuthorHeader vendor={b.vendor} />
-          <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
-          <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-xs text-muted-foreground">
+          <Text style={{ fontFamily: SERIF, color: C.text }} className="px-3 pb-3 text-base">{b.body}</Text>
+          <Text style={{ fontFamily: SERIF, color: C.textDim }} className="px-3 pb-3 text-xs">
             {new Date(b.created_at).toLocaleString(locale)}
           </Text>
         </View>
@@ -644,7 +648,7 @@ function ListingFeed({
           return (
             <View key={groupName}>
               <View className="px-5 mb-3">
-                <Text style={{ fontFamily: SERIF_BOLD }} className="text-lg text-foreground">
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-lg">
                   {groupLabel(groupName)}
                 </Text>
               </View>
@@ -654,7 +658,7 @@ function ListingFeed({
                   if (rows.length === 0) return null;
                   return (
                     <View key={subName}>
-                      <Text style={{ fontFamily: SERIF_BOLD }} className="px-5 mb-2 text-sm text-muted-foreground">
+                      <Text style={{ fontFamily: SERIF_BOLD, color: C.textDim }} className="px-5 mb-2 text-sm">
                         {subLabel(subName)}
                       </Text>
                       <ScrollView
@@ -680,7 +684,7 @@ function ListingFeed({
         })}
         {visibleGroups.length === 0 ? (
           <View className="items-center pt-10 px-5">
-            <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">
+            <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-sm">
               {t("empty.category")}
             </Text>
           </View>
@@ -731,10 +735,10 @@ function ListingCard({
         ) : (
           <View
             className="flex-1 items-center justify-center px-6"
-            style={{ backgroundColor: "#ece7db" }}
+            style={{ backgroundColor: C.surface }}
           >
             <Feather name="image" size={28} color="#a89b8a" />
-            <Text style={{ fontFamily: SERIF }} className="mt-2 text-center text-xs text-muted-foreground">
+            <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-2 text-center text-xs">
               {t("noPhotos")}
             </Text>
           </View>
@@ -767,25 +771,25 @@ function ListingCard({
         </Pressable>
       </View>
       <View className="mt-3 px-1">
-        <Text style={{ fontFamily: SERIF_BOLD }}
+        <Text style={{ fontFamily: SERIF_BOLD, color: C.text }}
           numberOfLines={1}
-          className="text-base text-foreground"
+          className="text-base"
         >
           {listing.business_name ?? t("vendorFallback")}
         </Text>
-        <Text style={{ fontFamily: SERIF }}
+        <Text style={{ fontFamily: SERIF, color: C.textDim }}
           numberOfLines={1}
-          className="mt-0.5 text-sm text-muted-foreground"
+          className="mt-0.5 text-sm"
         >
           {listing.location ?? t("locationFallback")}
         </Text>
         {price ? (
-          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-foreground">{price}</Text>
+          <Text style={{ fontFamily: SERIF, color: C.text }} className="mt-1 text-sm">{price}</Text>
         ) : null}
         {models ? (
-          <Text style={{ fontFamily: SERIF }}
+          <Text style={{ fontFamily: SERIF, color: C.textDim }}
             numberOfLines={1}
-            className="mt-0.5 text-xs text-muted-foreground"
+            className="mt-0.5 text-xs"
           >
             {models}
           </Text>
@@ -808,13 +812,17 @@ function CategoryChip({
     <Pressable
       onPress={onPress}
       className={`rounded-full px-4 py-2 active:opacity-70 ${
- active ? "bg-foreground" : "border border-border bg-background"
+        active ? "" : "border"
       }`}
+      style={
+        active
+          ? { backgroundColor: C.selected }
+          : { backgroundColor: C.page, borderColor: C.border }
+      }
     >
-      <Text style={{ fontFamily: SERIF_BOLD }}
-        className={`text-xs ${
-          active ? "text-white" : "text-foreground"
-        }`}
+      <Text
+        style={{ fontFamily: SERIF_BOLD, color: active ? C.onSelected : C.text }}
+        className="text-xs"
       >
         {label}
       </Text>

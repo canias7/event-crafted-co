@@ -1,18 +1,17 @@
 import { useTranslation } from "react-i18next";
 import { Toaster as Sonner, toast } from "sonner";
+import { useTheme } from "@/lib/theme";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-// Pinned to the light palette — the app no longer supports a theme
-// toggle (see useTheme deletion + index.html). Sonner's own next-themes
-// integration would otherwise fall back to OS preference and produce
-// dark toasts on dark-mode machines.
+// Follows the site's theme switch (lib/theme.ts), not the OS setting.
 const Toaster = ({ ...props }: ToasterProps) => {
   // Screen-reader name of the toast region (sonner appends the hotkey).
   const { t } = useTranslation("ui");
+  const { theme } = useTheme();
   return (
     <Sonner
-      theme="dark"
+      theme={theme}
       containerAriaLabel={t("toasts.region")}
       className="toaster group"
       toastOptions={{

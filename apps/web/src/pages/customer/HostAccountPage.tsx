@@ -210,7 +210,7 @@ function VerificationCard({
         }
         icon={CheckCircle2}
         iconBg="bg-accent"
-        iconColor="text-white"
+        iconColor="text-accent-foreground"
         title={t("verification.verifiedTitle")}
         subtitle={t("verification.verifiedSubtitle")}
       />
@@ -224,7 +224,7 @@ function VerificationCard({
         }
         icon={Clock}
         iconBg="bg-foreground"
-        iconColor="text-white"
+        iconColor="text-background"
         title={t("verification.pendingTitle")}
         subtitle={t("verification.pendingSubtitle")}
       />

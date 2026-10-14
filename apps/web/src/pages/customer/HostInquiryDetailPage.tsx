@@ -807,11 +807,7 @@ export default function HostInquiryDetailPage() {
           button. Info opens the inquiry-summary sheet (the brief the
           host originally submitted). */}
       <div
-        className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md"
-        style={{
-          background: "rgba(255,255,255,0.85)",
-          borderBottom: "0.5px solid rgba(255,255,255,0.08)",
-        }}
+        className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md bg-background/85 border-b border-border"
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
           <Link
@@ -831,8 +827,7 @@ export default function HostInquiryDetailPage() {
               />
             ) : (
               <span
-                className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
+                className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold bg-muted text-foreground"
                 aria-hidden
               >
                 {vendorInitial}
@@ -840,7 +835,7 @@ export default function HostInquiryDetailPage() {
             )}
             <span
               aria-hidden
-              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
             />
           </div>
           <div className="min-w-0 flex-1 leading-tight">
@@ -964,11 +959,7 @@ export default function HostInquiryDetailPage() {
                         />
                       ) : (
                         <span
-                          className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
-                          style={{
-                            background: "rgba(255,255,255,0.08)",
-                            color: "#f4f1ea",
-                          }}
+                          className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold bg-muted text-foreground"
                           aria-hidden
                         >
                           {vendorInitial}
@@ -1196,12 +1187,7 @@ export default function HostInquiryDetailPage() {
       (inquiry.status === "lost" ||
         inquiry.status === "expired" ||
         inquiry.status === "cancelled") ? (
-        <div className="sticky bottom-20 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
-          style={{
-            background: "rgba(255,255,255,0.92)",
-            borderTop: "0.5px solid rgba(255,255,255,0.08)",
-          }}
-        >
+        <div className="sticky bottom-20 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground bg-background/90 border-t border-border">
           {inquiry.status === "lost"
             ? t("detail.ended.lost")
             : inquiry.status === "expired"
@@ -1214,11 +1200,7 @@ export default function HostInquiryDetailPage() {
         // MobileNav pill (≈80px including safe-area padding). On lg+
         // the MobileNav is hidden, so the composer sticks at the
         // actual viewport bottom.
-        className="sticky bottom-20 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md"
-        style={{
-          background: "rgba(255,255,255,0.92)",
-          borderTop: "0.5px solid rgba(255,255,255,0.08)",
-        }}
+        className="sticky bottom-20 lg:bottom-0 px-5 md:px-6 py-3 backdrop-blur-md bg-background/90 border-t border-border"
       >
         <div className="max-w-3xl mx-auto space-y-2">
           {/* Quick-action chips — host-side has one: propose a

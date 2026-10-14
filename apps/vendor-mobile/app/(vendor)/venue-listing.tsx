@@ -36,6 +36,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
@@ -50,15 +51,18 @@ import {
 // the listing over.
 const THIS_ROUTE = "venue-listing";
 
-const CREAM = "#fbf9f4";
-const INK = "#14161a";
+const CREAM = C.card;
+// Wizard page: cream card colour in light (as before), ink page in dark
+// so the cards stand off it.
+const PAGE = IS_DARK ? C.page : C.card;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+const GOLD = C.gold;
 const GOLD_SOFT = "rgba(201,168,106,0.16)";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -646,7 +650,7 @@ export default function VenueListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{t("loading")}</Text>
         </View>
@@ -656,7 +660,7 @@ export default function VenueListingScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
             {t("loadError")}
@@ -667,7 +671,7 @@ export default function VenueListingScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -708,7 +712,7 @@ export default function VenueListingScreen() {
               height: 36,
               justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              backgroundColor: busy ? C.page : C.field,
               borderColor: BORDER,
             }}
           >
@@ -1196,7 +1200,7 @@ export default function VenueListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 14}}>
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.error, fontSize: 14}}>
                   {t("deleteListing.confirm")}
                 </Text>
               </TouchableOpacity>
@@ -1262,19 +1266,19 @@ function StepRail({
                   borderRadius: 14,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: done ? INK : current ? GOLD : "transparent",
+                  backgroundColor: done ? C.selected : current ? GOLD : "transparent",
                   borderWidth: done || current ? 0 : 1,
                   borderColor: BORDER,
                 }}
               >
                 {done ? (
-                  <Feather name="check" size={14} color="#fff" />
+                  <Feather name="check" size={14} color={C.onSelected} />
                 ) : (
                   <Text
                     style={{
                       fontFamily: SERIF_BOLD,
                       fontSize: 13,
-                      color: current ? INK : INK_DIM,
+                      color: current ? C.onGold : INK_DIM,
                     }}
                   >
                     {i + 1}
@@ -1338,7 +1342,7 @@ function Field({
     <View style={{ marginTop: 16 }}>
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
         {label}
-        {required ? <Text style={{ fontFamily: SERIF, color: "#b23a34" }}> *</Text> : null}
+        {required ? <Text style={{ fontFamily: SERIF, color: C.error }}> *</Text> : null}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -1352,7 +1356,7 @@ function Input(props: ComponentProps<typeof TextInput>) {
       placeholderTextColor={PLACEHOLDER}
       {...props}
       style={{ fontFamily: SERIF,
-        backgroundColor: "#ffffff",
+        backgroundColor: C.field,
         borderWidth: 1,
         borderColor: BORDER,
         borderRadius: 12,
@@ -1414,16 +1418,16 @@ function ChipMulti({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? INK : "#ffffff",
+              backgroundColor: on ? C.selected : C.field,
               borderWidth: 1,
-              borderColor: on ? INK : BORDER,
+              borderColor: on ? C.selected : BORDER,
             }}
           >
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
                 fontSize: 13,
-                color: on ? "#ffffff" : INK,
+                color: on ? C.onSelected : INK,
               }}
             >
               {labelFor ? labelFor(opt) : opt}
@@ -1461,7 +1465,7 @@ function ChipMulti({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: "#ffffff",
+              backgroundColor: C.field,
               borderWidth: 1,
               borderColor: BORDER,
               flexDirection: "row",
@@ -1504,13 +1508,13 @@ function ChipSingle({
               borderRadius: 999,
               paddingHorizontal: 16,
               paddingVertical: 9,
-              backgroundColor: on ? INK : "#ffffff",
+              backgroundColor: on ? C.selected : C.field,
               borderWidth: 1,
-              borderColor: on ? INK : BORDER,
+              borderColor: on ? C.selected : BORDER,
             }}
           >
             <Text
-              style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#fff" : INK }}
+              style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? C.onSelected : INK }}
             >
               {labelFor ? labelFor(opt) : opt}
             </Text>
@@ -1644,7 +1648,7 @@ function SpaceCard({
           ) : null}
         </View>
         <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-          <Feather name="trash-2" size={16} color="#b23a34" />
+          <Feather name="trash-2" size={16} color={C.error} />
         </TouchableOpacity>
         <Feather
           name={open ? "chevron-up" : "chevron-down"}
@@ -1764,13 +1768,13 @@ const darkPill = {
 };
 const darkPillText = {
   fontFamily: SERIF_BOLD,
-  color: INK,
+  color: C.onGold,
   fontSize: 16,
 };
 const lightPill = {
   borderWidth: 1,
   borderColor: BORDER,
-  backgroundColor: "#ffffff",
+  backgroundColor: C.field,
   borderRadius: 999,
   height: 52,
   alignItems: "center" as const,
@@ -1780,11 +1784,11 @@ const lightPill = {
 // Local copies of the shared wizard pills, so they get the same solid
 // disabled treatment rather than a washed-out 50% opacity.
 function darkPillFor(disabled: boolean) {
-  return disabled ? { ...darkPill, backgroundColor: "#e0d2b0" } : darkPill;
+  return disabled ? { ...darkPill, backgroundColor: C.goldMuted } : darkPill;
 }
 function lightPillFor(disabled: boolean) {
   return disabled
-    ? { ...lightPill, backgroundColor: "#f4f1ea", borderColor: BORDER }
+    ? { ...lightPill, backgroundColor: C.page, borderColor: BORDER }
     : lightPill;
 }
 const lightPillText = {

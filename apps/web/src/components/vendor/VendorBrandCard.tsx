@@ -114,8 +114,8 @@ export function VendorBrandCard({ vendorId }: { vendorId: string }) {
           )}
           {/* KYC verified mark (bottom-right) — admin-verified vendor. */}
           {verified ? (
-            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-foreground border-[3px] border-white flex items-center justify-center">
-              <CheckCircle2 className="w-3 h-3 text-white" />
+            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-foreground border-[3px] border-card flex items-center justify-center">
+              <CheckCircle2 className="w-3 h-3 text-background" />
             </div>
           ) : null}
           {/* Studio starburst seal (top-right) — paid tier verification.
