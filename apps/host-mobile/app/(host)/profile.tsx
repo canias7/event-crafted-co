@@ -20,19 +20,20 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
-const BRONZE = "#8a6f3e";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const INK_DIM = C.textDim;
+const BORDER = C.border;
+const GOLD = C.gold;
+const BRONZE = C.accentText;
 // Gold tint: the "waiting" fill (bronze on gold tint).
-const PENDING_BG = "#f2e7cb";
+const PENDING_BG = C.pending;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -44,7 +45,7 @@ const PAGE_TITLE = {
   fontSize: 38,
   lineHeight: 44,
   letterSpacing: -0.5,
-  color: "#14161a",
+  color: C.text,
   marginTop: 8,
 } as const;
 
@@ -307,7 +308,7 @@ export default function ProfileScreen() {
             />
           ) : (
             <ActionCard
-              iconBgColor={INK}
+              iconBgColor={C.selected}
               iconColor={CREAM}
               icon="award"
               title={
@@ -374,7 +375,7 @@ function HeroCard({
   return (
     <View
       style={{
-        backgroundColor: "#fbf9f4",
+        backgroundColor: C.card,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: BORDER,
@@ -388,7 +389,7 @@ function HeroCard({
             width: 110,
             height: 110,
             borderRadius: 999,
-            backgroundColor: INK,
+            backgroundColor: C.selected,
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -411,7 +412,7 @@ function HeroCard({
             width: 30,
             height: 30,
             borderRadius: 999,
-            backgroundColor: "#fbf9f4",
+            backgroundColor: C.card,
             alignItems: "center",
             justifyContent: "center",
             borderWidth: 2,
@@ -519,7 +520,7 @@ function ShortcutTile({
       {({ pressed }) => (
         <View
           style={{
-            backgroundColor: "#fbf9f4",
+            backgroundColor: C.card,
             borderRadius: 20,
             borderWidth: 1,
             borderColor: BORDER,
@@ -549,7 +550,7 @@ function ShortcutTile({
             {badge ? (
               <View
                 style={{
-                  backgroundColor: INK,
+                  backgroundColor: C.selected,
                   borderRadius: 999,
                   paddingHorizontal: 10,
                   paddingVertical: 4,
@@ -601,7 +602,7 @@ function ActionCard({
         <View
           style={{
             marginTop: 12,
-            backgroundColor: "#fbf9f4",
+            backgroundColor: C.card,
             borderRadius: 20,
             borderWidth: 1,
             borderColor: BORDER,

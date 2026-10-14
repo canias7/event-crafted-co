@@ -19,8 +19,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Pressed row: the surface tint in light (as before); a fade in dark,
+// where NativeWind's bg-muted would flash light.
+const ROW_PRESS = IS_DARK ? "active:opacity-70" : "active:bg-muted";
 
 // ----------------------------------------------------------------------------
 // Section header — section title + add button.
@@ -258,14 +262,14 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="edit-2" size={18} color="#746a58" />
+                  <Feather name="edit-2" size={18} color={C.placeholder} />
                 </Pressable>
                 <Pressable
                   onPress={() => remove(p.id)}
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="trash-2" size={18} color="#b23a34" />
+                  <Feather name="trash-2" size={18} color={C.error} />
                 </Pressable>
               </View>
             </View>
@@ -543,14 +547,14 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="edit-2" size={18} color="#746a58" />
+                  <Feather name="edit-2" size={18} color={C.placeholder} />
                 </Pressable>
                 <Pressable
                   onPress={() => remove(f.id)}
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="trash-2" size={18} color="#b23a34" />
+                  <Feather name="trash-2" size={18} color={C.error} />
                 </Pressable>
               </View>
             </View>
@@ -746,7 +750,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
           <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
             {cancellationLabel}
           </Text>
-          <Feather name="chevron-down" size={18} color="#746a58" />
+          <Feather name="chevron-down" size={18} color={C.placeholder} />
         </Pressable>
       </View>
       <View>
@@ -809,15 +813,12 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
                   setCancellation(o.value);
                   setPickerOpen(false);
                 }}
-                className="px-5 py-4 active:bg-muted"
+                className={`px-5 py-4 ${ROW_PRESS}`}
               >
                 <Text
-                  className={`text-base ${
-                    cancellation === o.value
-                      ? "text-foreground"
-                      : "text-foreground"
-                  }`}
+                  className="text-base"
                   style={{
+                    color: C.text,
                     fontFamily:
                       cancellation === o.value
                         ? "LibreBaskerville-Bold"

@@ -29,19 +29,25 @@ import { Wordmark } from "@/components/Wordmark";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { intlLocale, useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const GOLD = "#c9a86a";
-const GOLD_SOFT = "#f2e7cb";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const GOLD = C.gold;
+const GOLD_MUTED = C.goldMuted;
+const ON_GOLD = C.onGold;
+const GOLD_SOFT = C.pending;
+const BRONZE = C.accentText;
+const SELECTED = C.selected;
+const ON_SELECTED = C.onSelected;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -239,7 +245,7 @@ export default function CrmScreen() {
               alignItems: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 15}}>
               {t("gate.upgrade")}
             </Text>
           </Pressable>
@@ -414,7 +420,7 @@ export default function CrmScreen() {
                       {c.notes_count > 0 ? ` · ${t("row.notes", { count: c.notes_count })}` : ""}
                     </Text>
                     {c.next_event_date ? (
-                      <Text style={{ fontFamily: SERIF_BOLD, marginTop: 3, color: "#8a6f3e", fontSize: 12}}>
+                      <Text style={{ fontFamily: SERIF_BOLD, marginTop: 3, color: BRONZE, fontSize: 12}}>
                         {t("row.nextEvent", { date: fmtShort(c.next_event_date) })}
                       </Text>
                     ) : null}
@@ -432,8 +438,8 @@ export default function CrmScreen() {
                         marginRight: 6,
                       }}
                     >
-                      <Feather name="bell" size={11} color="#8a6f3e" />
-                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: "#8a6f3e" }}>
+                      <Feather name="bell" size={11} color={BRONZE} />
+                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: BRONZE }}>
                         {fmtShort(c.follow_up_at)}
                       </Text>
                     </View>
@@ -677,8 +683,8 @@ function ClientSheet({
               height: 44,
             }}
           >
-            <Feather name="message-circle" size={15} color={INK} />
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>{t("sheet.message")}</Text>
+            <Feather name="message-circle" size={15} color={ON_GOLD} />
+            <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 14}}>{t("sheet.message")}</Text>
           </Pressable>
 
           {/* Follow-up reminder */}
@@ -688,7 +694,7 @@ function ClientSheet({
           {followUpAt ? (
             <View
               style={{
-                backgroundColor: "#f2e7cb",
+                backgroundColor: GOLD_SOFT,
                 borderWidth: 1,
                 borderColor: GOLD,
                 borderRadius: 20,
@@ -697,8 +703,8 @@ function ClientSheet({
                 alignItems: "center",
               }}
             >
-              <Feather name="bell" size={16} color="#8a6f3e" />
-              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: "#8a6f3e", fontSize: 13}}>
+              <Feather name="bell" size={16} color={BRONZE} />
+              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: BRONZE, fontSize: 13}}>
                 {t("sheet.followUpSet", { date: fmtDate(followUpAt) })}
               </Text>
               <Pressable onPress={() => void setFollowUp(null)} hitSlop={8} disabled={savingFollow}>
@@ -753,7 +759,7 @@ function ClientSheet({
               style={{
                 marginTop: 8,
                 alignSelf: "flex-end",
-                backgroundColor: noteText.trim() ? GOLD : "#e0d2b0",
+                backgroundColor: noteText.trim() ? GOLD : GOLD_MUTED,
                 borderRadius: 999,
                 paddingHorizontal: 16,
                 height: 36,
@@ -761,13 +767,13 @@ function ClientSheet({
               }}
             >
               {savingNote ? (
-                <ActivityIndicator size="small" color={INK} />
+                <ActivityIndicator size="small" color={ON_GOLD} />
               ) : (
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
                     fontSize: 13,
-                    color: INK_DIM,
+                    color: ON_GOLD,
                   }}
                 >
                   {t("sheet.saveNote")}
@@ -839,7 +845,7 @@ function ClientSheet({
                     </Text>
                     <View
                       style={{
-                        backgroundColor: booked ? INK : SURFACE,
+                        backgroundColor: booked ? SELECTED : SURFACE,
                         borderRadius: 999,
                         paddingHorizontal: 10,
                         paddingVertical: 4,
@@ -849,7 +855,7 @@ function ClientSheet({
                         style={{
                           fontFamily: SERIF_BOLD,
                           fontSize: 11,
-                          color: booked ? "#fff" : INK_DIM,
+                          color: booked ? ON_SELECTED : INK_DIM,
                         }}
                       >
                         {booked ? t("sheet.status.booked") : t("sheet.status.inquiry")}

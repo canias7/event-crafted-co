@@ -25,9 +25,16 @@ import {
 } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 import { useCategoryNames } from "@/lib/categoryNames";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Quiet chip text: soft ink in light (as before), dim cream in dark.
+const QUIET_TEXT = IS_DARK ? C.textDim : "rgba(26,22,18,0.55)";
+const CHIP_TEXT = IS_DARK ? C.textDim : "rgba(26,22,18,0.65)";
+// Pressed row: the surface tint in light (as before); a fade in dark,
+// where NativeWind's bg-muted would flash light.
+const ROW_PRESS = IS_DARK ? "active:opacity-70" : "active:bg-muted";
 
 type AttrValue = string | number | boolean | string[] | null;
 type Attrs = Record<string, AttrValue>;
@@ -369,10 +376,10 @@ function TagsField({
               alignItems: "center",
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
               paddingLeft: 12,
               paddingRight: 4,
-              backgroundColor: "#fff",
+              backgroundColor: C.field,
             }}
           >
             <TextInput
@@ -391,7 +398,7 @@ function TagsField({
                 fontSize: 13,
                 minWidth: 96,
                 paddingVertical: 6,
-                color: "#14161a",
+                color: C.text,
               }}
             />
             <Pressable
@@ -401,13 +408,13 @@ function TagsField({
                 width: 26,
                 height: 26,
                 borderRadius: 999,
-                backgroundColor: "#14161a",
+                backgroundColor: C.selected,
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: draft.trim() ? 1 : 0.3,
               }}
             >
-              <Feather name="check" size={13} color="#fff" />
+              <Feather name="check" size={13} color={C.onSelected} />
             </Pressable>
           </View>
         ) : (
@@ -422,11 +429,11 @@ function TagsField({
               borderRadius: 999,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
             }}
           >
-            <Feather name="plus" size={13} color="rgba(26,22,18,0.55)" />
-            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 13, color: "rgba(26,22,18,0.55)" }}>
+            <Feather name="plus" size={13} color={QUIET_TEXT} />
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 13, color: QUIET_TEXT }}>
               {tr("addOther")}
             </Text>
           </Pressable>
@@ -456,16 +463,16 @@ function Chip({
         paddingVertical: 8,
         borderRadius: 999,
         borderWidth: 1,
-        backgroundColor: active ? "#14161a" : "#ffffff",
-        borderColor: active ? "#14161a" : "#e6e1d5",
+        backgroundColor: active ? C.selected : C.field,
+        borderColor: active ? C.selected : C.border,
       }}
     >
-      {active ? <Feather name="check" size={13} color="#ffffff" /> : null}
+      {active ? <Feather name="check" size={13} color={C.onSelected} /> : null}
       <Text
         style={{
           fontFamily: "LibreBaskerville",
           fontSize: 13,
-          color: active ? "#ffffff" : "rgba(26,22,18,0.65)",
+          color: active ? C.onSelected : CHIP_TEXT,
         }}
       >
         {text}
@@ -501,7 +508,7 @@ function SelectField({
         <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
           {value ? tx.option(value, field.key) : t("pickOne")}
         </Text>
-        <Feather name="chevron-down" size={18} color="#746a58" />
+        <Feather name="chevron-down" size={18} color={C.placeholder} />
       </Pressable>
       <Modal
         visible={open}
@@ -527,13 +534,12 @@ function SelectField({
                   onChange(opt);
                   setOpen(false);
                 }}
-                className="px-5 py-4 active:bg-muted"
+                className={`px-5 py-4 ${ROW_PRESS}`}
               >
                 <Text
-                  className={`text-base ${
-                    value === opt ? "text-foreground" : "text-foreground"
-                  }`}
+                  className="text-base"
                   style={{
+                    color: C.text,
                     fontFamily:
                       value === opt
                         ? "LibreBaskerville-Bold"
