@@ -1,21 +1,95 @@
 // Layout for every sign-in and sign-up page (owner's call, Oct 2026):
 // kept simple on purpose. The site's top menu (PublicNav), then one
-// narrow centred column on the plain ink page: no photos, rings, glows
-// or framed cards around the content.
+// narrow centred column on the plain ink page: no rings or glows.
+//
+// PREVIEW: the owner wanted "something more" than the bare column, so
+// three additions to choose from, picked with ?look=a|b|c (default a).
+// Once one is chosen the others and the switch go.
+//   a  a flat card around the column, with a small gold ornament on top
+//   b  one wide photo above the title (picture 04, the table setting)
+//   c  a "Why Vendora" panel beside the column (stacks below on phones)
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
+import { Picture } from "@/components/shared/Picture";
+import photoTable from "@/assets/photos/04.webp?as=picture";
+
+function readLook(): "a" | "b" | "c" {
+  if (typeof window === "undefined") return "a";
+  const v = new URLSearchParams(window.location.search).get("look");
+  return v === "b" || v === "c" ? v : "a";
+}
+
+/** Thin gold rule with a small diamond in the middle. */
+function Ornament() {
+  return (
+    <div className="flex items-center justify-center gap-3" aria-hidden>
+      <span className="h-px w-10 bg-gold/60" />
+      <span className="h-1.5 w-1.5 rotate-45 bg-gold" />
+      <span className="h-px w-10 bg-gold/60" />
+    </div>
+  );
+}
+
+function Perks() {
+  const { t } = useTranslation("auth");
+  const items = t("split.perks.items", { returnObjects: true }) as { title: string; body: string }[];
+  return (
+    <aside className="rounded-2xl border border-white/15 bg-white/[0.03] p-5 md:p-8">
+      <p className="font-label text-gold m-0">{t("split.perks.title")}</p>
+      <ul className="m-0 mt-5 p-0 list-none flex flex-col gap-5">
+        {items.map((it) => (
+          <li key={it.title} className="flex gap-3">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rotate-45 bg-gold" aria-hidden />
+            <span>
+              <span className="block font-bold text-[15px]">{it.title}</span>
+              <span className="mt-1 block text-[14px] leading-relaxed text-[#f4f1ea]/80">{it.body}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
 
 type Side = "signin" | "signup";
 type LinkLike = React.ComponentType<{ to: string; className?: string; children: ReactNode }>;
 
 export function AuthSplitLayout({ children }: { side?: Side; children: ReactNode }) {
+  const look = readLook();
   return (
     <div className="min-h-screen flex flex-col text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
       <PublicNav tone="dark" />
-      <main className="flex-1 container flex justify-center py-12 md:py-20">
-        <div className="w-full max-w-[440px]">{children}</div>
-      </main>
+      {look === "a" && (
+        <main className="flex-1 container flex items-start justify-center py-10 md:py-16">
+          <div className="w-full max-w-[520px] rounded-3xl border border-white/15 bg-white/[0.03] px-5 py-8 md:px-10 md:py-10">
+            <div className="mb-8"><Ornament /></div>
+            {children}
+          </div>
+        </main>
+      )}
+      {look === "b" && (
+        <main className="flex-1 container flex justify-center py-8 md:py-14">
+          <div className="w-full max-w-[440px]">
+            <Picture
+              source={photoTable}
+              alt=""
+              loading="eager"
+              sizes="(min-width: 640px) 440px, 100vw"
+              className="mb-8 block w-full aspect-[16/7] object-cover rounded-2xl border border-white/15"
+            />
+            {children}
+          </div>
+        </main>
+      )}
+      {look === "c" && (
+        <main className="flex-1 container flex justify-center py-12 md:py-20">
+          <div className="w-full max-w-[920px] grid gap-10 lg:grid-cols-[440px_1fr] lg:gap-16 items-start">
+            <div>{children}</div>
+            <div className="lg:mt-2"><Perks /></div>
+          </div>
+        </main>
+      )}
     </div>
   );
 }

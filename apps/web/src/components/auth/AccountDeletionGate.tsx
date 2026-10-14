@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { AuthTopBar } from "@/components/auth/AuthTopBar";
 import { intlLocale } from "@/lib/intlLocale";
 
@@ -51,7 +50,6 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#14161a] text-[#f4f1ea]">
-      <AuthBackdrop />
       <AuthTopBar />
       <main
         id="main-content"
