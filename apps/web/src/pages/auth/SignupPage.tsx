@@ -199,6 +199,9 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             <input
               className="auth-input pr-10"
               type={showPassword ? "text" : "password"}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

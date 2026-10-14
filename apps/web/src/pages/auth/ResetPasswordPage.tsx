@@ -205,6 +205,9 @@ export default function ResetPasswordPage() {
                 id="new-password"
                 className="auth-input pr-10"
                 type={showPassword ? "text" : "password"}
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
@@ -255,6 +258,9 @@ export default function ResetPasswordPage() {
               id="confirm"
               className="auth-input"
               type={showPassword ? "text" : "password"}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               minLength={8}
