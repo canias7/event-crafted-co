@@ -53,7 +53,7 @@ export default {
   },
   values: {
     Menu: "Меню",
-    Service: "Обслуживание",
+    Service: "Сервис",
     "Full-service catering": "Полный кейтеринг",
     Buffet: "Фуршет",
     "Plated meals": "Подача на тарелках",
