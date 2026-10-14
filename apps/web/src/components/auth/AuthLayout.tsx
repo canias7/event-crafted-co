@@ -20,7 +20,7 @@ function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
     <aside
       className={
         onPhoto
-          ? "max-w-md text-[#f4f1ea]"
+          ? "max-w-md text-[#f4f1ea] [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]"
           : "rounded-2xl border border-border bg-card p-5 md:p-8"
       }
     >
@@ -30,8 +30,8 @@ function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
           <li key={it.title} className="flex gap-3">
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rotate-45 bg-gold" aria-hidden />
             <span>
-              <span className="block font-bold text-[15px]">{it.title}</span>
-              <span className={`mt-1 block text-[14px] leading-relaxed ${onPhoto ? "text-[#f4f1ea]/85" : "text-muted-foreground"}`}>{it.body}</span>
+              <span className={`block font-bold ${onPhoto ? "text-[17px]" : "text-[15px]"}`}>{it.title}</span>
+              <span className={`mt-1 block leading-relaxed ${onPhoto ? "text-[15px] text-[#f4f1ea]" : "text-[14px] text-muted-foreground"}`}>{it.body}</span>
             </span>
           </li>
         ))}
@@ -59,10 +59,10 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-[22%_50%]"
           />
-          <div className="absolute inset-0 bg-[#0a0b0e]/35" />
+          <div className="absolute inset-0 bg-[#0a0b0e]/20" />
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.65) 100%)" }}
+            style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 38%, rgba(10,11,14,0.78) 66%, rgba(10,11,14,0.92) 100%)" }}
           />
           <div className="relative flex h-full items-end px-12 py-14 xl:px-16">
             <Perks onPhoto />
