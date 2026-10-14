@@ -115,6 +115,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
 
   return (
     <GlassyAuthShell
+      side="signup"
       title={isVendor ? tAuth("signup.title_vendor") : tAuth("signup.title_host")}
       titleAccent={accentWord}
       subtitle={

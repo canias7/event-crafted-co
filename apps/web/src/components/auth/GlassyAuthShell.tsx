@@ -14,8 +14,7 @@
 // rings are the only decoration — keep it that way.
 
 import { ReactNode } from "react";
-import { AuthTopBar } from "@/components/auth/AuthTopBar";
-import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 
 interface Props {
   /** Sans-serif headline (e.g. "Welcome back,") */
@@ -30,6 +29,8 @@ interface Props {
   topRight: ReactNode;
   /** Below-card link slot — usually "On the other side? ..." */
   belowCardLink?: ReactNode;
+  /** Which welcome the photo side shows (sign-up pages pass "signup"). */
+  side?: "signin" | "signup";
   /** Form fields go inside the glassy form card. */
   children: ReactNode;
 }
@@ -41,33 +42,20 @@ export function GlassyAuthShell({
   pillLabel,
   topRight,
   belowCardLink,
+  side = "signin",
   children,
 }: Props) {
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ background: "transparent", color: "#f4f1ea" }}
-    >
-      <AuthBackdrop />
+    <AuthSplitLayout side={side}>
+      <div className="flex flex-col items-center">
+        {/* Was the top bar's right-hand slot; now a quiet line above the title. */}
+        <div className="mb-6 w-full text-center text-[13px] text-[#f4f1ea]/80">{topRight}</div>
 
-      {/* No star or drifting-particle decorations: scattered glowing
-          dots plus four-point stars read as snowflakes, which is the
-          wrong season and the wrong brand. The glows, grid and ring
-          carry the depth on their own. */}
-
-      {/* TOP BAR: the same logo, in the same place, as every other page */}
-      <AuthTopBar>{topRight}</AuthTopBar>
-
-      {/* MAIN */}
-      <div
-        className="relative z-[2] flex flex-col items-center justify-center"
-        style={{ padding: "130px 40px 64px", minHeight: "100vh" }}
-      >
         {/* Headlines */}
-        <h1
+        <h2
           className="auth-headline text-foreground m-0 w-full text-center"
           style={{
-            fontSize: "46px",
+            fontSize: "40px",
             fontWeight: 700,
             lineHeight: 1.02,
             letterSpacing: "-1.2px",
@@ -75,11 +63,11 @@ export function GlassyAuthShell({
           }}
         >
           {title}
-        </h1>
-        <h1
+        </h2>
+        <h2
           className="auth-headline font-editorial text-foreground m-0 w-full text-center"
           style={{
-            fontSize: "50px",
+            fontSize: "42px",
             fontWeight: 700,
             lineHeight: 1.02,
             letterSpacing: "-0.7px",
@@ -89,7 +77,7 @@ export function GlassyAuthShell({
           <span className="auth-underline-shimmer relative inline-block">
             {titleAccent}
           </span>
-        </h1>
+        </h2>
         <p
           className="font-serif italic m-0 text-center mb-9"
           style={{ fontSize: "16px", opacity: 0.85 }}
@@ -153,7 +141,6 @@ export function GlassyAuthShell({
         )}
 
       </div>
-
       {/* KEYFRAMES — namespaced to the auth shell */}
       <style>{`
         @keyframes authPulse {
@@ -222,7 +209,7 @@ export function GlassyAuthShell({
           cursor: not-allowed;
         }
       `}</style>
-    </div>
+    </AuthSplitLayout>
   );
 }
 
