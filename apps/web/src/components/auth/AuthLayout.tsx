@@ -59,7 +59,7 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-[22%_50%]"
           />
-          <div className="absolute inset-0 bg-[#0a0b0e]/50" />
+          <div className="absolute inset-0 bg-[#0a0b0e]/35" />
           <div
             className="absolute inset-0"
             style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.65) 100%)" }}
