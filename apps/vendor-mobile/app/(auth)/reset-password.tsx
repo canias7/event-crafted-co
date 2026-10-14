@@ -43,6 +43,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 // Same palette as welcome / signup / login.
 const PAGE = "#14161a";
@@ -53,7 +54,6 @@ const GOLD = "#c9a86a";
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
 const BRONZE = "#c9a86a";
-const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
@@ -260,6 +260,7 @@ export default function ResetPasswordScreen() {
             </Text>
           </Pressable>
 
+          <AuthCard>
           <StepHeader
             eyebrow="RESET PASSWORD"
             title={
@@ -277,6 +278,7 @@ export default function ResetPasswordScreen() {
           >
             <Text style={primaryBtnText}>Request a new link</Text>
           </TouchableOpacity>
+          </AuthCard>
         </View>
       </SafeAreaView>
     );
@@ -300,6 +302,7 @@ export default function ResetPasswordScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
+          <AuthCard>
           <StepHeader
             eyebrow={state === "done" ? "ALL SET" : "RESET PASSWORD"}
             title={state === "done" ? "Password updated" : "Set a new password"}
@@ -359,33 +362,17 @@ export default function ResetPasswordScreen() {
               </TouchableOpacity>
             </View>
           )}
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// Gold hairlines meeting a four-point star — same divider as signup/login.
-function StarDivider() {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 28,
-        gap: 16,
-      }}
-    >
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
-      <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
-    </View>
-  );
-}
 
 function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
   return (
-    <View style={{ marginTop: 24 }}>
+    <View>
       <Text style={eyebrowLabel}>{p.eyebrow}</Text>
       <Text
         style={{
@@ -400,7 +387,6 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
         {p.title}
       </Text>
       <Text style={subhead}>{p.subtitle}</Text>
-      <StarDivider />
     </View>
   );
 }

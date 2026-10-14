@@ -22,6 +22,7 @@ import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -89,8 +90,10 @@ export default function ForgotPasswordScreen() {
             </Pressable>
           </View>
 
+          <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+          <AuthCard>
           {!sent ? (
-            <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
+            <View>
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
@@ -177,7 +180,7 @@ export default function ForgotPasswordScreen() {
               </Pressable>
             </View>
           ) : (
-            <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
+            <View>
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
@@ -219,6 +222,8 @@ export default function ForgotPasswordScreen() {
               </Pressable>
             </View>
           )}
+          </AuthCard>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

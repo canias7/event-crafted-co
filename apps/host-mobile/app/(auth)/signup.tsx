@@ -32,6 +32,7 @@ import { PasswordMeter } from "@/components/PasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -205,7 +206,8 @@ export default function SignupScreen() {
             </Text>
           </Pressable>
 
-          <View style={{ marginTop: 24 }}>
+          <AuthCard>
+          <View>
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
@@ -387,6 +389,7 @@ export default function SignupScreen() {
               </Pressable>
             )}
           </View>
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -39,6 +39,7 @@ export default function CheckEmailPage() {
 
   return (
     <GlassyAuthShell
+      side="signup"
       title={isVendor ? t("check_email.title_vendor") : t("shared.check_your")}
       titleAccent={isVendor ? t("check_email.accent_vendor") : t("shared.email_accent")}
       subtitle={

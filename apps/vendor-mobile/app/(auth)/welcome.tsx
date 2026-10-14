@@ -180,7 +180,7 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={{ marginTop: 24 }}>
-          {/* Divider — the same gold ✦ every other auth screen uses. */}
+          {/* Divider: gold hairlines meeting a ✦. */}
           <View
             style={{
               flexDirection: "row",

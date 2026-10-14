@@ -1,213 +1,29 @@
-// Sign-in role chooser. /login lands here; user picks Host or Vendor
-// and we forward to /login/host or /login/vendor. Adapted from the
-// new glassy-amber-grid design — same canvas as the landing page so
-// the auth surface reads as one continuous brand world.
+// Sign-in role chooser. /login lands here; the user picks Host or Vendor
+// and we forward to /login/host or /login/vendor. Simple centred layout
+// (AuthLayout).
 
 import { Link, Navigate } from "react-router-dom";
-import { CalendarHeart, Briefcase, ArrowRight } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthTopBar } from "@/components/auth/AuthTopBar";
-import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
+import { AuthLayout, AuthRoleChooser } from "@/components/auth/AuthLayout";
 
 export default function LoginRoleChooserPage() {
   // Already authenticated? Skip the chooser and drop them in the
   // portal they belong to. (Catches users who hit /login from an
   // old tab while already signed in elsewhere.)
   const { session, hasVendorAccess, hasHostAccess, loading } = useAuth();
-  const { t } = useTranslation("auth");
   if (!loading && session) {
     if (hasVendorAccess) return <Navigate to="/vendor/me" replace />;
     if (hasHostAccess) return <Navigate to="/customer/explore" replace />;
   }
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ background: "transparent", color: "#f4f1ea" }}
-    >
-      <AuthBackdrop />
-
-      {/* No floating particles: scattered glowing dots read as
-          snowflakes rather than as brand. */}
-
-      {/* Top bar: the same logo, in the same place, as every other page */}
-      <AuthTopBar>
-        <span>
-          {t("login_chooser.new_to_vendora")}{" "}
-          <Link
-            to="/signup"
-            className="font-medium pb-px"
-            style={{ borderBottom: "0.5px solid currentColor" }}
-          >
-            {t("login_chooser.sign_up")}
-          </Link>
-        </span>
-      </AuthTopBar>
-
-      {/* Centered chooser */}
-      <div
-        className="relative z-[2] flex flex-col items-center justify-center px-6 md:px-10"
-        style={{ minHeight: "720px", padding: "130px 40px 100px" }}
-      >
-        {/* Pulse pill */}
-        <div
-          className="inline-flex items-center gap-2.5 rounded-full px-4 py-1.5 mb-7"
-          style={{
-            border: "0.5px solid rgba(255,255,255,0.4)",
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-        >
-          <span
-            className="login-pulse rounded-full"
-            style={{
-              width: 6,
-              height: 6,
-              background: "#c9a86a",
-            }}
-          />
-          <span
-            className="uppercase font-semibold text-foreground"
-            style={{ fontSize: "11px", letterSpacing: "2.5px" }}
-          >
-            {t("login_chooser.pill")}
-          </span>
-        </div>
-
-        <h1
-          className="text-foreground m-0 text-center"
-          style={{
-            fontSize: "48px",
-            fontWeight: 700,
-            lineHeight: 1.1,
-            letterSpacing: "-1.2px",
-          }}
-        >
-          {t("login_chooser.title")}
-        </h1>
-        <h1
-          className="font-editorial text-foreground mt-2 mb-4 text-center"
-          style={{
-            fontSize: "48px",
-            lineHeight: 1.1,
-            letterSpacing: "-0.8px",
-          }}
-        >
-          {t("login_chooser.title_accent")}
-        </h1>
-
-        {/* Role cards */}
-        <div
-          className="w-full flex flex-col gap-3.5"
-          style={{ maxWidth: "520px" }}
-        >
-          <RoleCard
-            to="/login/host"
-            icon={<CalendarHeart className="w-5 h-5" />}
-            title={t("login_chooser.host_title")}
-            subtitle={t("login_chooser.host_subtitle")}
-          />
-          <RoleCard
-            to="/login/vendor"
-            icon={<Briefcase className="w-5 h-5" />}
-            title={t("login_chooser.vendor_title")}
-            subtitle={t("login_chooser.vendor_subtitle")}
-          />
-        </div>
-
-      </div>
-
-      {/* Keyframes — namespaced to this surface */}
-      <style>{`
-        @keyframes loginGridScroll {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 60px; }
-        }
-        .login-grid-scroll {
-          animation: loginGridScroll 5s linear infinite;
-        }
-        @keyframes loginPulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.4); opacity: 0.6; }
-        }
-        .login-pulse {
-          animation: loginPulse 1.6s ease-in-out infinite;
-        }
-        .login-card {
-          transition: all 0.3s ease;
-        }
-        .login-card:hover {
-          background: rgba(255,255,255,0.05) !important;
-          border-color: rgba(255,255,255,0.4) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-      `}</style>
-    </div>
+    <AuthLayout side="signin">
+      <AuthRoleChooser
+        side="signin"
+        hostTo="/login/host"
+        vendorTo="/login/vendor"
+        otherTo="/signup"
+        LinkComponent={Link}
+      />
+    </AuthLayout>
   );
 }
-
-function RoleCard({
-  to,
-  icon,
-  title,
-  subtitle,
-}: {
-  to: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className="login-card group flex items-center gap-4.5 cursor-pointer"
-      style={{
-        padding: "22px 24px",
-        background: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        border: "0.5px solid rgba(255,255,255,0.15)",
-        borderRadius: "14px",
-        gap: "18px",
-      }}
-    >
-      <div
-        className="flex items-center justify-center shrink-0"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.05)",
-          border: "0.5px solid rgba(255,255,255,0.15)",
-        }}
-      >
-        {icon}
-      </div>
-      <div className="flex-1">
-        <div
-          className="font-editorial"
-          style={{ fontSize: "20px", color: "#f4f1ea", marginBottom: "3px" }}
-        >
-          {title}
-        </div>
-        <div style={{ fontSize: "12px", color: "#f4f1ea", opacity: 0.65 }}>
-          {subtitle}
-        </div>
-      </div>
-      <div
-        className="flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5"
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: "50%",
-          border: "0.5px solid rgba(255,255,255,0.4)",
-        }}
-      >
-        <ArrowRight className="w-3.5 h-3.5" />
-      </div>
-    </Link>
-  );
-}
-
