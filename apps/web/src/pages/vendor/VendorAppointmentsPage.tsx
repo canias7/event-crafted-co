@@ -1056,8 +1056,12 @@ export default function VendorAppointmentsPage({
     if (willBlock) {
       const trimmedTitle = blockTitle.trim();
       const reason = trimmedTitle.length > 0 ? trimmedTitle : "Blocked manually";
+      // Insert the day where it's missing, then set the title on every
+      // targeted row. Not one upsert-with-update: titles are private, so
+      // the browser can't read the reason column, and Postgres refuses an
+      // ON CONFLICT DO UPDATE without that read access.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const inserted = await (supabase as any)
         .from("vendor_unavailable_dates")
         .upsert(
           targetIds.map((vid) => ({
@@ -1065,8 +1069,15 @@ export default function VendorAppointmentsPage({
             date: selectedYmd,
             reason,
           })),
-          { onConflict: "vendor_id,date" },
+          { onConflict: "vendor_id,date", ignoreDuplicates: true },
         );
+      const { error } = inserted.error
+        ? inserted
+        : await supabase
+            .from("vendor_unavailable_dates")
+            .update({ reason })
+            .in("vendor_id", targetIds)
+            .eq("date", selectedYmd);
       setBlocking(false);
       setBlockTitle("");
       if (error) {
@@ -2042,20 +2053,13 @@ function BookingRow({
 
 // Blocked dates with their private titles. Titles are only readable by
 // the vendor's team, through get_vendor_block_reasons (the table itself
-// is public so hosts can see which days are taken, minus the titles).
-// Falls back to the table while that function is being rolled out.
+// is public so hosts can see which days are taken, minus the titles:
+// anon and authenticated can't select the reason column).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadBlockedDates(client: any, vendorIds: string[], startYmd: string, endYmd: string) {
-  const res = await client.rpc("get_vendor_block_reasons", {
+  return client.rpc("get_vendor_block_reasons", {
     p_vendor_ids: vendorIds,
     p_start: startYmd,
     p_end: endYmd,
   });
-  if (!res.error || res.error.code !== "PGRST202") return res;
-  return client
-    .from("vendor_unavailable_dates")
-    .select("date, reason, vendor_id")
-    .in("vendor_id", vendorIds)
-    .gte("date", startYmd)
-    .lt("date", endYmd);
 }
