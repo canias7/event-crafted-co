@@ -25,6 +25,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 // Same palette as welcome.tsx / signup.tsx.
 const PAGE = "#14161a";
@@ -237,6 +238,7 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
 
+          <AuthCard>
           {step === "credentials" ? (
             <>
               <StepHeader
@@ -409,7 +411,10 @@ export default function LoginScreen() {
                   style={{
                     marginTop: 4,
                     flexDirection: "row",
+                    flexWrap: "wrap",
                     justifyContent: "space-between",
+                    columnGap: 16,
+                    rowGap: 8,
                   }}
                 >
                   <TouchableOpacity
@@ -434,6 +439,7 @@ export default function LoginScreen() {
               </View>
             </>
           )}
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -460,7 +466,7 @@ function StarDivider() {
 
 function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
   return (
-    <View style={{ marginTop: 24 }}>
+    <View>
       <Text style={eyebrowLabel}>{p.eyebrow}</Text>
       <Text
         style={{

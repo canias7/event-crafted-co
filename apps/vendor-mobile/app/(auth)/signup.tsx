@@ -42,6 +42,7 @@ import { PasswordMeter } from "@/components/PasswordMeter";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 // Same palette as welcome.tsx — the two screens must read as one flow.
 const PAGE = "#14161a";
@@ -263,6 +264,7 @@ export default function VendorSignupScreen() {
             </Pressable>
           )}
 
+          <AuthCard>
           {step === "account" ? (
             <AccountStep
               email={email}
@@ -312,6 +314,7 @@ export default function VendorSignupScreen() {
           {step === "done" ? (
             <ThanksView onClose={() => router.replace("/(auth)/welcome")} />
           ) : null}
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -349,7 +352,7 @@ function StarDivider() {
 
 function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
   return (
-    <View style={{ marginTop: 24 }}>
+    <View>
       <Text style={eyebrowLabel}>{p.eyebrow}</Text>
       <Text
         style={{
@@ -617,7 +620,7 @@ function CodeStep(p: CodeStepProps) {
 
 function ThanksView({ onClose }: { onClose: () => void }) {
   return (
-    <View style={{ marginTop: 80, alignItems: "center" }}>
+    <View style={{ marginTop: 24, alignItems: "center" }}>
       <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
       <Text style={{ ...eyebrowLabel, marginTop: 16 }}>
         APPLICATION RECEIVED

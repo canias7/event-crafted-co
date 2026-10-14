@@ -38,6 +38,7 @@ import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -236,7 +237,8 @@ export default function ResetPasswordScreen() {
             <Feather name="chevron-left" size={26} color={INK} />
           </Pressable>
         </View>
-        <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
+        <View style={{ paddingHorizontal: 20 }}>
+          <AuthCard>
           <Text
             style={{
               fontFamily: SERIF_BOLD,
@@ -264,6 +266,7 @@ export default function ResetPasswordScreen() {
               Request a new link
             </Text>
           </Pressable>
+          </AuthCard>
         </View>
       </SafeAreaView>
     );
@@ -281,7 +284,8 @@ export default function ResetPasswordScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
+          <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}>
+            <AuthCard>
             <Text
               style={{
                 fontFamily: SERIF_BOLD,
@@ -392,6 +396,7 @@ export default function ResetPasswordScreen() {
                 </Pressable>
               </>
             )}
+            </AuthCard>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

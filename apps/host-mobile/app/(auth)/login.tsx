@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 const CREAM = "#14161a";
 const INK = "#f4f1ea";
@@ -179,9 +180,10 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
 
+          <AuthCard>
           {step === "credentials" ? (
             <>
-              <View style={{ marginTop: 24 }}>
+              <View>
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
@@ -315,7 +317,7 @@ export default function LoginScreen() {
             </>
           ) : (
             <>
-              <View style={{ marginTop: 24 }}>
+              <View>
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
@@ -395,7 +397,7 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
-                <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
+                <View style={{ marginTop: 8, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", columnGap: 16, rowGap: 8 }}>
                   <Pressable disabled={submitting} onPress={() => setStep("credentials")}>
                     <Text style={{ fontFamily: SERIF, color: BRONZE, fontSize: 14,}}>
                       ← Use a different account
@@ -410,6 +412,7 @@ export default function LoginScreen() {
               </View>
             </>
           )}
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

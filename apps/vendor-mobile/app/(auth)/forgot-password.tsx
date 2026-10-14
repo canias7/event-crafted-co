@@ -27,6 +27,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { AuthCard } from "@/components/AuthCard";
 
 // Same palette as welcome / signup / login.
 const PAGE = "#14161a";
@@ -117,6 +118,7 @@ export default function ForgotPasswordScreen() {
             </Text>
           </Pressable>
 
+          <AuthCard>
           {!sent ? (
             <>
               <StepHeader
@@ -183,6 +185,7 @@ export default function ForgotPasswordScreen() {
               </TouchableOpacity>
             </>
           )}
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -209,7 +212,7 @@ function StarDivider() {
 
 function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
   return (
-    <View style={{ marginTop: 24 }}>
+    <View>
       <Text style={eyebrowLabel}>{p.eyebrow}</Text>
       <Text
         style={{
