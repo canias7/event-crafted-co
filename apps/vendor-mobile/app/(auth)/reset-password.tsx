@@ -54,7 +54,6 @@ const GOLD = "#c9a86a";
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
 const BRONZE = "#c9a86a";
-const GOLD_HAIRLINE = "rgba(201,168,106,0.5)";
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
@@ -370,23 +369,6 @@ export default function ResetPasswordScreen() {
   );
 }
 
-// Gold hairlines meeting a four-point star — same divider as signup/login.
-function StarDivider() {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 28,
-        gap: 16,
-      }}
-    >
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
-      <MaterialCommunityIcons name="star-four-points" size={16} color={GOLD} />
-      <View style={{ flex: 1, height: 1, backgroundColor: GOLD_HAIRLINE }} />
-    </View>
-  );
-}
 
 function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
   return (
@@ -405,7 +387,6 @@ function StepHeader(p: { eyebrow: string; title: string; subtitle: string }) {
         {p.title}
       </Text>
       <Text style={subhead}>{p.subtitle}</Text>
-      <StarDivider />
     </View>
   );
 }
