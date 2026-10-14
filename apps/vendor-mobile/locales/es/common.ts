@@ -24,4 +24,8 @@ export default {
     body: "Haz una captura de esta pantalla y envíala a soporte: muestra exactamente qué falló.",
     reload: "Recargar la app",
   },
+  theme: {
+    title: "Modo oscuro",
+    note: "La app se reinicia un momento para cambiar.",
+  },
 };
