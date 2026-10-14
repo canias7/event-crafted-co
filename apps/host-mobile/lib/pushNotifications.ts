@@ -19,6 +19,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useRouter, type Router } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { i18n } from "@/lib/i18n";
 
 // Foreground behavior: show the banner + play sound even when the
 // app is open. Without this the system suppresses the alert.
@@ -46,7 +47,8 @@ export async function tryRegisterPushToken(
     // that has always been MAX; send-push targets it via channelId.
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("vendora-alerts", {
-        name: "Vendora alerts",
+        // Channel names show in Android's notification settings.
+        name: i18n.t("pushNotifications.channels.alerts"),
         importance: Notifications.AndroidImportance.MAX,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
@@ -57,7 +59,7 @@ export async function tryRegisterPushToken(
       // Keep the legacy channel for anything still sent without a
       // channelId (falls back to "default").
       await Notifications.setNotificationChannelAsync("default", {
-        name: "Default",
+        name: i18n.t("pushNotifications.channels.default"),
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",

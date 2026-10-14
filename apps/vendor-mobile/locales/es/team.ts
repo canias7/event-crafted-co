@@ -1,0 +1,36 @@
+export default {
+  title: "Conoce al equipo",
+  intro: "Presenta a las personas detrás de tu negocio. Aparecerá en tu perfil público y es totalmente opcional.",
+  showToggle: "Mostrar “Conoce al equipo” en mi perfil",
+  hidden: "oculto",
+  add: "Agregar integrante",
+  empty: "Las personas detrás de cada detalle: agrega a tu primer integrante.",
+  remove: {
+    title: "¿Quitar a {{name}}?",
+    message: "Desaparecerá de tu perfil público de inmediato.",
+    confirm: "Quitar",
+  },
+  form: {
+    editTitle: "Editar integrante",
+    addTitle: "Agregar integrante",
+    changePhoto: "Cambiar foto",
+    addPhoto: "Agregar foto",
+    photoHint: "JPG o PNG. Funciona mejor una foto cuadrada.",
+    fields: {
+      name: { label: "Nombre completo", placeholder: "p. ej., Jessica Brown" },
+      role: { label: "Cargo / Puesto", placeholder: "p. ej., Fundadora y planificadora principal" },
+      bio: { label: "Biografía breve", placeholder: "Cuéntales a los clientes sobre esta persona…" },
+      specialty: { label: "Especialidad / Qué hace", placeholder: "p. ej., Coordinación del día, logística, diseño" },
+      years: { label: "Años en el negocio", placeholder: "p. ej., 5 años" },
+      funFact: { label: "Dato curioso (opcional)", placeholder: "¡Algo divertido sobre esta persona!" },
+      link: { label: "Red social o sitio web (opcional)", placeholder: "p. ej., instagram.com/usuario" },
+    },
+    showOnProfile: "Mostrar en el perfil público",
+    save: "Guardar integrante",
+    alerts: {
+      library: { title: "Se necesita acceso a la galería", message: "Activa el acceso a fotos en Ajustes para agregar una foto." },
+      required: { title: "Ya casi", message: "El nombre, el cargo y una biografía breve son obligatorios." },
+      saveFailed: { title: "No se pudo guardar", message: "Inténtalo de nuevo." },
+    },
+  },
+};

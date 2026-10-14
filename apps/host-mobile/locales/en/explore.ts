@@ -1,0 +1,36 @@
+export default {
+  title: "Explore",
+  subtitle: "Listings, posts, reels, and buzz from approved vendors",
+  tabs: {
+    listing: "Listings",
+    grid: "Posts",
+    reels: "Reels",
+    buzz: "Buzz",
+  },
+  empty: {
+    posts: "No vendor posts yet.",
+    reels: "No reels yet.",
+    buzz: "No buzz yet.",
+    listings: "No vendor listings yet.",
+    category: "No listings in this category yet.",
+  },
+  all: "All",
+  other: "Other",
+  noPhotos: "No listing photos yet",
+  vendorFallback: "Vendor",
+  locationFallback: "Marketplace listing",
+  save: "Save",
+  unsave: "Remove from saved",
+  price: {
+    from: "From {{price}}",
+    upTo: "Up to {{price}}",
+    custom: "Custom pricing",
+  },
+  pricingModels: {
+    fixed_packages: "Fixed Packages",
+    hourly: "Hourly",
+    per_person: "Per Person",
+    starting_at: "Starting At",
+    custom_quote: "Custom Quote",
+  },
+};

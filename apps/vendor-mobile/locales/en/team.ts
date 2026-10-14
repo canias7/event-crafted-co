@@ -1,0 +1,36 @@
+export default {
+  title: "Meet the Team",
+  intro: "Introduce the people behind your business. This will appear on your public profile — it's completely optional.",
+  showToggle: "Show “Meet the Team” on my profile",
+  hidden: "hidden",
+  add: "Add team member",
+  empty: "The people behind the details — add your first team member.",
+  remove: {
+    title: "Remove {{name}}?",
+    message: "They come off your public profile right away.",
+    confirm: "Remove",
+  },
+  form: {
+    editTitle: "Edit team member",
+    addTitle: "Add team member",
+    changePhoto: "Change photo",
+    addPhoto: "Add photo",
+    photoHint: "JPG or PNG. Square works best.",
+    fields: {
+      name: { label: "Full name", placeholder: "e.g., Jessica Brown" },
+      role: { label: "Role / Title", placeholder: "e.g., Founder & Lead Planner" },
+      bio: { label: "Short bio", placeholder: "Tell clients about this team member…" },
+      specialty: { label: "Specialty / What they do", placeholder: "e.g., Day-of coordination, logistics, design" },
+      years: { label: "Years with the business", placeholder: "e.g., 5 years" },
+      funFact: { label: "Fun fact (optional)", placeholder: "Something fun about them!" },
+      link: { label: "Social or website link (optional)", placeholder: "e.g., instagram.com/username" },
+    },
+    showOnProfile: "Show on public profile",
+    save: "Save team member",
+    alerts: {
+      library: { title: "Library access needed", message: "Enable photo access in Settings to add a photo." },
+      required: { title: "Almost there", message: "Name, role, and a short bio are required." },
+      saveFailed: { title: "Couldn't save", message: "Try again." },
+    },
+  },
+};

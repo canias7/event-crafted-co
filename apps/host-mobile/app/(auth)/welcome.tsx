@@ -19,6 +19,8 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { useT } from "@/lib/i18n";
 
 const CREAM = "#14161a";
 const CREAM_DEEP = "rgba(255,255,255,0.08)";
@@ -49,17 +51,9 @@ const WORDMARK_PRE_DELAY = 200;
 const WORDMARK_HOLD = 700;
 const TAGLINE_HOLD = 1200;
 
-const OPENER_TEXT = "The night is fine when the people align.";
-// 30..36 = "people" — rendered bold instead of italic on that range.
-const OPENER_BOLD_RANGE: [number, number] = [30, 36];
-
-const PHRASES = [
-  "A florist with taste.",
-  "A photographer to chase.",
-  "A night without waste.",
-];
-
-const TAGLINE = "for those who plan, and those who craft.";
+// The opener, the three phrases and the tagline come from the welcome
+// namespace (locales/<lang>/welcome.ts). The opener's bold word
+// ("people") is looked up in the opener text to get its range.
 
 interface AnimatedCharProps {
   char: string;
@@ -228,6 +222,15 @@ type Scene = "opener" | "phrases" | "wordmark" | "done";
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, tObject } = useT("welcome");
+  const OPENER_TEXT = t("opener");
+  const openerBold = t("openerBold");
+  const boldStart = openerBold ? OPENER_TEXT.indexOf(openerBold) : -1;
+  const OPENER_BOLD_RANGE: [number, number] | undefined =
+    boldStart >= 0 ? [boldStart, boldStart + openerBold.length] : undefined;
+  const phrasesValue = tObject<string[]>("phrases");
+  const PHRASES = Array.isArray(phrasesValue) ? phrasesValue : [];
+  const TAGLINE = t("tagline");
   const [scene, setScene] = useState<Scene>("opener");
   const [phrasesShown, setPhrasesShown] = useState(0);
   const [stackFading, setStackFading] = useState(false);
@@ -434,7 +437,7 @@ export default function WelcomeScreen() {
               fontFamily: SERIF_BOLD,
             }}
           >
-            Sign up
+            {t("signUp")}
           </Text>
         </Pressable>
 
@@ -461,9 +464,14 @@ export default function WelcomeScreen() {
               fontFamily: SERIF_BOLD,
             }}
           >
-            Sign in
+            {t("signIn")}
           </Text>
         </Pressable>
+
+        {/* Language pills, so people can switch before signing in. */}
+        <View style={{ marginTop: 16, alignItems: "center", maxWidth: "100%" }}>
+          <LanguagePicker tone="dark" />
+        </View>
       </View>
     </View>
   );

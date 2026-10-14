@@ -44,6 +44,7 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
 
 // Same palette as welcome / signup / login.
 const PAGE = "#14161a";
@@ -92,6 +93,7 @@ function one(v: unknown): string | null {
 export default function ResetPasswordScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("resetPassword");
   const [state, setState] = useState<State>("loading");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -163,7 +165,7 @@ export default function ResetPasswordScreen() {
         });
         if (!mounted.current) return;
         if (e) {
-          setError("This reset link has expired. Request a new one.");
+          setError(t("errors.expired"));
           setState("error");
           return;
         }
@@ -183,7 +185,7 @@ export default function ResetPasswordScreen() {
         });
         if (!mounted.current) return;
         if (e) {
-          setError("This reset link has expired. Request a new one.");
+          setError(t("errors.expired"));
           setState("error");
           return;
         }
@@ -206,7 +208,7 @@ export default function ResetPasswordScreen() {
       // Do not spin forever if no link is coming at all.
       if (!waitedForUrl) return;
       settled.current = true;
-      setError("We couldn't read that reset link. Request a new one.");
+      setError(t("errors.unreadable"));
       setState("error");
     })();
   }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
@@ -214,7 +216,7 @@ export default function ResetPasswordScreen() {
   async function onSubmit() {
     setError(null);
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("errors.tooShort"));
       return;
     }
     setState("submitting");
@@ -256,19 +258,19 @@ export default function ResetPasswordScreen() {
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
-              ← Back
+              ← {t("back")}
             </Text>
           </Pressable>
 
           <AuthCard>
           <StepHeader
-            eyebrow="RESET PASSWORD"
+            eyebrow={t("eyebrow")}
             title={
-              error?.startsWith("We couldn't read")
-                ? "Link didn't open"
-                : "Link expired"
+              error === t("errors.unreadable")
+                ? t("linkError.didntOpen")
+                : t("linkError.expired")
             }
-            subtitle={error ?? "This password reset link is no longer valid."}
+            subtitle={error ?? t("linkError.invalid")}
           />
 
           <TouchableOpacity
@@ -276,7 +278,7 @@ export default function ResetPasswordScreen() {
             activeOpacity={0.85}
             style={{ ...primaryBtn, marginTop: 28 }}
           >
-            <Text style={primaryBtnText}>Request a new link</Text>
+            <Text style={primaryBtnText}>{t("linkError.requestNew")}</Text>
           </TouchableOpacity>
           </AuthCard>
         </View>
@@ -304,19 +306,15 @@ export default function ResetPasswordScreen() {
         >
           <AuthCard>
           <StepHeader
-            eyebrow={state === "done" ? "ALL SET" : "RESET PASSWORD"}
-            title={state === "done" ? "Password updated" : "Set a new password"}
-            subtitle={
-              state === "done"
-                ? "You're signed in. Sending you to your profile…"
-                : "Pick a password you don't use elsewhere. At least 8 characters."
-            }
+            eyebrow={state === "done" ? t("done.eyebrow") : t("eyebrow")}
+            title={state === "done" ? t("done.title") : t("form.title")}
+            subtitle={state === "done" ? t("done.subtitle") : t("form.subtitle")}
           />
 
           {state === "done" ? null : (
             <View style={{ marginTop: 28, gap: 20 }}>
               <View>
-                <Text style={fieldLabel}>NEW PASSWORD</Text>
+                <Text style={fieldLabel}>{t("form.label")}</Text>
                 <View style={inputRow}>
                   <MaterialCommunityIcons
                     name="lock-outline"
@@ -342,7 +340,7 @@ export default function ResetPasswordScreen() {
                     style={{ paddingLeft: 10 }}
                   >
                     <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14}}>
-                      {showPassword ? "Hide" : "Show"}
+                      {showPassword ? t("form.hide") : t("form.show")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -357,7 +355,7 @@ export default function ResetPasswordScreen() {
                 style={primaryBtnFor(state === "submitting" || password.length < 8)}
               >
                 <Text style={primaryBtnTextFor(state === "submitting" || password.length < 8)}>
-                  {state === "submitting" ? "Saving…" : "Save password"}
+                  {state === "submitting" ? t("form.saving") : t("form.save")}
                 </Text>
               </TouchableOpacity>
             </View>

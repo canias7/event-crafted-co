@@ -53,6 +53,8 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
 import { SHADOW } from "@/lib/ui";
+import { i18n, intlLocale, useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 const CREAM = "#f4f1ea";
 const CREAM_DEEP = "#ece7db";
@@ -97,8 +99,17 @@ const LISTING_PALETTE = [
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
-const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
-const DAY_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Strings outside components (helpers, callbacks) read the current
+// language at call time; the screen re-renders on a language change.
+const tt = (key: string, vars?: Parameters<typeof i18n.t>[1]) => i18n.t(`calendar.${key}`, vars);
+
+// Weekday names in the app's language, Sunday first (0 = Sun, as
+// getDay() counts). The grid keeps its Sunday-first week in every
+// language. 1 Jan 2023 was a Sunday.
+const WEEK_DOWS = [0, 1, 2, 3, 4, 5, 6];
+function weekdayName(dow: number, style: "narrow" | "short" | "long", locale: string): string {
+  return new Date(2023, 0, 1 + dow).toLocaleDateString(locale, { weekday: style });
+}
 
 type DayState = "available" | "booked" | "pending" | "blocked";
 type EventState = Exclude<DayState, "available">;
@@ -140,36 +151,24 @@ interface AppointmentRow {
   host: { display_name: string | null } | null;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  consultation: "Consultation",
-  walkthrough: "Walkthrough",
-  tasting: "Tasting",
-  fitting: "Fitting",
-  phone_call: "Phone call",
-  other: "Meeting",
-};
+// Appointment kinds as stored; shown via calendar.kinds.<kind>.
+const KINDS = ["consultation", "walkthrough", "tasting", "fitting", "phone_call", "other"];
+function kindLabel(kind: string): string | undefined {
+  return KINDS.includes(kind) ? tt(`kinds.${kind}`) : undefined;
+}
 
-const DURATION_OPTS: Array<{ value: number; label: string }> = [
-  { value: 30, label: "30m" },
-  { value: 45, label: "45m" },
-  { value: 60, label: "1h" },
-  { value: 90, label: "1.5h" },
-  { value: 120, label: "2h" },
-  { value: 240, label: "Half day" },
-  { value: 480, label: "Full day" },
+// Labels live in calendar.durations.<key>.
+const DURATION_OPTS: Array<{ value: number; key: string }> = [
+  { value: 30, key: "m30" },
+  { value: 45, key: "m45" },
+  { value: 60, key: "h1" },
+  { value: 90, key: "h1_5" },
+  { value: 120, key: "h2" },
+  { value: 240, key: "halfDay" },
+  { value: 480, key: "fullDay" },
 ];
 
 const TIME_QUICK = ["09:00", "12:00", "14:00", "17:00", "19:00"];
-
-const ENTRY_TYPE_SUGGESTIONS = [
-  "Personal",
-  "Vacation",
-  "External shoot",
-  "Consultation",
-  "Walkthrough",
-  "Tasting",
-  "Phone call",
-];
 
 function ymdKey(d: Date): string {
   const y = d.getFullYear();
@@ -210,9 +209,9 @@ function prettyRange(a: string, b: string): string {
   const d2 = parseYmd(hi);
   if (!d1 || !d2) return "";
   const sameYear = d1.getFullYear() === d2.getFullYear();
-  const left = d1.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const left = d1.toLocaleDateString(intlLocale(), { month: "short", day: "numeric" });
   const right = d2.toLocaleDateString(
-    undefined,
+    intlLocale(),
     sameYear
       ? { month: "short", day: "numeric" }
       : { month: "short", day: "numeric", year: "numeric" },
@@ -238,7 +237,7 @@ function describeDays(sorted: string[]): string {
   return dayRuns(sorted)
     .map(([a, b]) =>
       a === b
-        ? (parseYmd(a)?.toLocaleDateString(undefined, { month: "short", day: "numeric" }) ?? a)
+        ? (parseYmd(a)?.toLocaleDateString(intlLocale(), { month: "short", day: "numeric" }) ?? a)
         : prettyRange(a, b),
     )
     .join(", ");
@@ -252,7 +251,7 @@ function nameDays(sorted: string[]): string {
     const [a, b] = runs[0];
     return a === b ? prettyDay(a) : prettyRange(a, b);
   }
-  return `${sorted.length} dates`;
+  return tt("nameDays", { count: sorted.length });
 }
 
 function fmtMoneyShort(cents: number): string {
@@ -264,17 +263,12 @@ function fmtMoneyShort(cents: number): string {
 function statusLabel(s: string): string {
   switch (s) {
     case "won":
-      return "Confirmed";
     case "new":
-      return "Awaiting reply";
     case "replied":
-      return "Replied";
     case "drafted":
-      return "Drafting reply";
     case "lost":
-      return "Lost";
     case "expired":
-      return "Expired";
+      return tt(`inquiryStatus.${s}`);
     default:
       return s;
   }
@@ -291,7 +285,7 @@ function apptDayState(status: string): "booked" | "pending" | null {
 function prettyDay(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(intlLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -299,7 +293,7 @@ function prettyDay(ymd: string): string {
 }
 
 function fmtApptTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
+  return new Date(iso).toLocaleTimeString(intlLocale(), {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -315,6 +309,8 @@ function isValidHHMM(s: string): boolean {
 
 export default function CalendarScreen() {
   const { user } = useAuth();
+  const { t, tObject, lang } = useT("calendar");
+  const cat = useCategoryNames();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // "Add booking" + "Block day" need ~270pt. On a 360pt phone that
@@ -489,7 +485,7 @@ export default function CalendarScreen() {
           results[3]?.error ??
           null;
         if (firstErr)
-          setError(firstErr.message ?? "Couldn't load the calendar.");
+          setError(firstErr.message ?? tt("loadError"));
 
         setAppointments((apptRes.data ?? []) as AppointmentRow[]);
 
@@ -538,7 +534,7 @@ export default function CalendarScreen() {
         if (reqId === reqRef.current) {
           setError(
             (err as { message?: string })?.message ??
-              "Couldn't load the calendar.",
+              tt("loadError"),
           );
         }
       } finally {
@@ -672,11 +668,11 @@ export default function CalendarScreen() {
     const listingNameById = new Map(
       listings.map((l) => [
         l.id,
-        l.business_name?.trim() || l.category || "Listing",
+        l.business_name?.trim() || (l.category ? cat.sub(l.category) : "") || tt("day.listingFallback"),
       ]),
     );
     const labelFor = (vid: string | null) =>
-      showListingColors && vid ? ` · ${listingNameById.get(vid) ?? "Listing"}` : "";
+      showListingColors && vid ? ` · ${listingNameById.get(vid) ?? tt("day.listingFallback")}` : "";
     const out: Array<{
       kind: "inquiry" | "busy" | "appointment";
       inquiryId: string | null;
@@ -701,9 +697,9 @@ export default function CalendarScreen() {
         inquiryId: i.id,
         title: i.event_type
           ? i.event_type[0].toUpperCase() + i.event_type.slice(1)
-          : "Booking",
+          : tt("items.booking"),
         subtitle:
-          (i.host?.display_name ?? "Host") +
+          (i.host?.display_name ?? tt("items.host")) +
           " · " +
           statusLabel(i.status) +
           labelFor(i.vendor_id),
@@ -718,18 +714,18 @@ export default function CalendarScreen() {
       if (ymdKey(new Date(a.scheduled_at)) !== selectedYmd) continue;
       const statusWord =
         a.status === "accepted"
-          ? "Confirmed"
+          ? tt("apptStatus.confirmed")
           : a.status === "completed"
-            ? "Completed"
-            : "Proposed";
+            ? tt("apptStatus.completed")
+            : tt("apptStatus.proposed");
       out.push({
         kind: "appointment",
         inquiryId: a.inquiry_id ?? null,
-        title: a.title?.trim() || KIND_LABEL[a.kind] || "Meeting",
+        title: a.title?.trim() || kindLabel(a.kind) || tt("kinds.other"),
         subtitle:
           (a.host_id
-            ? (a.host?.display_name ?? "Client") + " · " + statusWord
-            : "Off-platform · personal") + labelFor(a.vendor_id),
+            ? (a.host?.display_name ?? tt("items.client")) + " · " + statusWord
+            : tt("items.offPlatform")) + labelFor(a.vendor_id),
         amountCents: null,
         accent: st,
         timeLabel: fmtApptTime(a.scheduled_at),
@@ -741,15 +737,16 @@ export default function CalendarScreen() {
       out.push({
         kind: "busy",
         inquiryId: null,
-        title: reason && !isLegacyFallback ? reason : "Blocked",
-        subtitle: "Marked unavailable",
+        title: reason && !isLegacyFallback ? reason : tt("items.blocked"),
+        subtitle: tt("items.markedUnavailable"),
         amountCents: null,
         accent: "blocked",
-        timeLabel: "All day",
+        timeLabel: tt("items.allDay"),
       });
     }
     return out;
-  }, [selectedYmd, inquiries, appointments, manualBlocks, listings, showListingColors]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYmd, inquiries, appointments, manualBlocks, listings, showListingColors, lang]);
 
   const isSelectedBlocked = !!selectedYmd && manualBlocks.has(selectedYmd);
   // A day with an accepted appointment is already unavailable to hosts, so
@@ -774,7 +771,7 @@ export default function CalendarScreen() {
         { p_inquiry_id: inquiryId },
       );
       if (err || !data) {
-        Alert.alert("Couldn't open thread", err?.message ?? "Try the inbox.");
+        Alert.alert(tt("alerts.openThreadTitle"), err?.message ?? tt("alerts.openThreadBody"));
         return;
       }
       router.push(`/(vendor)/thread/${data as string}` as never);
@@ -825,8 +822,8 @@ export default function CalendarScreen() {
       if (!isOpenDay(d)) {
         setPickNote(
           dayState.get(d) === "booked"
-            ? `${prettyDay(d)} is booked, so it's already unavailable.`
-            : `${prettyDay(d)} has a pending request. To block it anyway, cancel and block it on its own.`,
+            ? tt("pickNote.booked", { day: prettyDay(d) })
+            : tt("pickNote.pending", { day: prettyDay(d) }),
         );
         return;
       }
@@ -875,11 +872,8 @@ export default function CalendarScreen() {
       return next;
     });
     setPickNote(
-      `Filled in ${prettyRange(fill.first, fill.last)}.${
-        fill.skipped > 0
-          ? ` Skipped ${fill.skipped} booked or pending date${fill.skipped === 1 ? "" : "s"}.`
-          : ""
-      }`,
+      tt("pickNote.filled", { range: prettyRange(fill.first, fill.last) }) +
+        (fill.skipped > 0 ? " " + tt("pickNote.skipped", { count: fill.skipped }) : ""),
     );
   }, [fill, blockListingIds]);
 
@@ -964,8 +958,8 @@ export default function CalendarScreen() {
     setEditingBlockDate(null);
     if (err) {
       Alert.alert(
-        editingBlockDate ? "Couldn't update title" : "Couldn't block",
-        err.message ?? "Try again.",
+        editingBlockDate ? tt("alerts.updateTitleFailed") : tt("alerts.blockFailed"),
+        err.message ?? tt("alerts.tryAgain"),
       );
       return;
     }
@@ -999,7 +993,7 @@ export default function CalendarScreen() {
       .in("date", pickedDates);
     setBlocking(false);
     if (err) {
-      Alert.alert("Couldn't unblock", err.message);
+      Alert.alert(tt("alerts.unblockFailed"), err.message);
       return;
     }
     exitSelectMode();
@@ -1025,7 +1019,7 @@ export default function CalendarScreen() {
       .eq("date", selectedYmd);
     setBlocking(false);
     if (err) {
-      Alert.alert("Couldn't unblock", err.message);
+      Alert.alert(tt("alerts.unblockFailed"), err.message);
       return;
     }
     load(false);
@@ -1037,12 +1031,12 @@ export default function CalendarScreen() {
   const needsListing = writeTargetIds().length === 0;
   const explainNeedsListing = useCallback(() => {
     Alert.alert(
-      "Publish a listing first",
-      "Blocking days marks your listing unavailable to hosts. Once you have a listing, this unlocks.",
+      tt("alerts.publishFirstTitle"),
+      tt("alerts.publishFirstBody"),
       [
-        { text: "Not now", style: "cancel" },
+        { text: tt("alerts.notNow"), style: "cancel" },
         {
-          text: "Finish setup",
+          text: tt("alerts.finishSetup"),
           onPress: () => router.push("/(vendor)/setup" as never),
         },
       ],
@@ -1057,17 +1051,15 @@ export default function CalendarScreen() {
     }
     if (isSelectedBlocked) {
       Alert.alert(
-        "Re-open this day?",
-        `${prettyDay(selectedYmd)} becomes bookable again on ${
-          blockTarget === "all"
-            ? vendorIds.length === 1
-              ? "your listing"
-              : `your ${vendorIds.length} listings`
-            : "the selected listing"
-        }.`,
+        tt("alerts.reopenDayTitle"),
+        blockTarget === "all"
+          ? vendorIds.length === 1
+            ? tt("alerts.reopenDayYourListing", { day: prettyDay(selectedYmd) })
+            : tt("alerts.reopenDayListings", { day: prettyDay(selectedYmd), count: vendorIds.length })
+          : tt("alerts.reopenDaySelected", { day: prettyDay(selectedYmd) }),
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Unblock", onPress: commitUnblock },
+          { text: tt("alerts.cancel"), style: "cancel" },
+          { text: tt("alerts.unblock"), onPress: commitUnblock },
         ],
       );
     } else {
@@ -1118,7 +1110,7 @@ export default function CalendarScreen() {
           else next.add(dow);
           return next;
         });
-        Alert.alert("Couldn't update", err.message);
+        Alert.alert(tt("alerts.updateFailed"), err.message);
         return;
       }
       load(false);
@@ -1166,13 +1158,13 @@ export default function CalendarScreen() {
   const addManualAppointment = useCallback(async () => {
     if (!user?.id || !selectedYmd || addSaving) return;
     if (!isValidHHMM(aTime)) {
-      Alert.alert("Pick a valid time", "Use 24-hour HH:MM, e.g. 14:30.");
+      Alert.alert(tt("alerts.invalidTimeTitle"), tt("alerts.invalidTimeBody"));
       return;
     }
     const vid = aListingId ?? accountPrimaryId;
     const scheduledAt = new Date(`${selectedYmd}T${aTime}:00`);
     if (scheduledAt.getTime() < Date.now()) {
-      Alert.alert("Can't add in the past", "Pick today or a future time.");
+      Alert.alert(tt("alerts.pastTitle"), tt("alerts.pastBody"));
       return;
     }
     setAddSaving(true);
@@ -1193,7 +1185,7 @@ export default function CalendarScreen() {
     });
     setAddSaving(false);
     if (err) {
-      Alert.alert("Couldn't add to calendar", err.message ?? "Try again.");
+      Alert.alert(tt("alerts.addFailed"), err.message ?? tt("alerts.tryAgain"));
       return;
     }
     setAddOpen(false);
@@ -1226,7 +1218,7 @@ export default function CalendarScreen() {
         .eq("id", appt.id);
       setApptPendingId(null);
       if (err) {
-        Alert.alert("Couldn't update", err.message);
+        Alert.alert(tt("alerts.updateFailed"), err.message);
         return;
       }
       load(false);
@@ -1271,13 +1263,11 @@ export default function CalendarScreen() {
     }
     if (pickedAllBlocked) {
       Alert.alert(
-        "Re-open these dates?",
-        pickedDates.length === 1
-          ? "1 date becomes bookable again."
-          : `${pickedDates.length} dates become bookable again.`,
+        t("alerts.reopenDatesTitle"),
+        t("alerts.reopenDatesBody", { count: pickedDates.length }),
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Unblock", style: "destructive", onPress: commitUnblockPicked },
+          { text: t("alerts.cancel"), style: "cancel" },
+          { text: t("alerts.unblock"), style: "destructive", onPress: commitUnblockPicked },
         ],
       );
       return;
@@ -1288,12 +1278,15 @@ export default function CalendarScreen() {
   }
   // The year is only informative once you leave the current one, so
   // drop it otherwise and keep the card header short.
-  const monthLabel = viewMonth.toLocaleDateString(
-    undefined,
+  // Spanish and Russian month names come lower-case; a title starts
+  // with a capital.
+  const monthText = viewMonth.toLocaleDateString(
+    intlLocale(),
     viewMonth.getFullYear() === new Date().getFullYear()
       ? { month: "long" }
       : { month: "long", year: "numeric" },
   );
+  const monthLabel = monthText.charAt(0).toUpperCase() + monthText.slice(1);
 
   const listingColorById = useMemo(() => {
     const m = new Map<string, string>();
@@ -1338,7 +1331,7 @@ export default function CalendarScreen() {
               <Text style={{ fontFamily: SERIF, color: "#b23a34", fontSize: 13 }}>{error}</Text>
               <Pressable onPress={() => load(false)} style={{ marginTop: 8 }}>
                 <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34", fontSize: 13}}>
-                  Try again
+                  {t("tryAgain")}
                 </Text>
               </Pressable>
             </View>
@@ -1369,12 +1362,12 @@ export default function CalendarScreen() {
                 letterSpacing: -0.5,
               }}
             >
-              Calendar
+              {t("title")}
             </Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <RoundIconButton
                 icon="zap"
-                label="Scheduling"
+                label={t("header.scheduling")}
                 onPress={() => router.push("/(vendor)/scheduling" as never)}
               />
               {/* List: just the Appointments list, without the grid. A
@@ -1382,14 +1375,14 @@ export default function CalendarScreen() {
                   own, so the page has one switch, not two. */}
               <RoundIconButton
                 icon="list"
-                label="Appointments list"
+                label={t("header.appointmentsList")}
                 active={calView === "list"}
                 onPress={() => {
                   if (selectMode) exitSelectMode();
                   setCalView((v) => (v === "list" ? "month" : "list"));
                 }}
               />
-              <RoundIconButton icon="calendar" label="Jump to today" onPress={jumpToToday} />
+              <RoundIconButton icon="calendar" label={t("header.jumpToToday")} onPress={jumpToToday} />
             </View>
           </View>
 
@@ -1411,9 +1404,9 @@ export default function CalendarScreen() {
               borderColor: BORDER,
             }}
           >
-            <ModeTab label="View bookings" active={!selectMode} onPress={exitSelectMode} />
+            <ModeTab label={t("mode.view")} active={!selectMode} onPress={exitSelectMode} />
             <ModeTab
-              label="Block dates"
+              label={t("mode.block")}
               active={selectMode}
               onPress={() => {
                 if (selectMode) return;
@@ -1487,7 +1480,7 @@ export default function CalendarScreen() {
                   style={{ marginRight: 8 }}
                 />
                 <Text style={{ flex: 1, fontFamily: SERIF, fontSize: 12.5, lineHeight: 18, color: BRONZE }}>
-                  {pickNote ?? "Tap the dates you can't work."}
+                  {pickNote ?? t("pickHint")}
                 </Text>
               </View>
             ) : null}
@@ -1532,7 +1525,7 @@ export default function CalendarScreen() {
                   >
                     <Feather name="plus" size={14} color={INK} style={{ marginRight: 5 }} />
                     <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13 }}>
-                      Fill gaps
+                      {t("fillGaps")}
                     </Text>
                   </View>
                 )}
@@ -1550,9 +1543,9 @@ export default function CalendarScreen() {
             >
               {showListingColors ? (
                 <>
-                  <LegendDot swatch={<Dot color={DOT_BOOKED} />} label="Booked" />
-                  <LegendDot swatch={<Dot color={DOT_PENDING} />} label="Pending" />
-                  <LegendDot swatch={<Dot color={DOT_BLOCKED} />} label="Blocked" />
+                  <LegendDot swatch={<Dot color={DOT_BOOKED} />} label={t("legend.booked")} />
+                  <LegendDot swatch={<Dot color={DOT_PENDING} />} label={t("legend.pending")} />
+                  <LegendDot swatch={<Dot color={DOT_BLOCKED} />} label={t("legend.blocked")} />
                 </>
               ) : (
                 <>
@@ -1562,7 +1555,7 @@ export default function CalendarScreen() {
                         style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: INK }}
                       />
                     }
-                    label="Booked"
+                    label={t("legend.booked")}
                   />
                   <LegendDot
                     swatch={
@@ -1570,7 +1563,7 @@ export default function CalendarScreen() {
                         style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: PENDING_BG }}
                       />
                     }
-                    label="Pending"
+                    label={t("legend.pending")}
                   />
                   <LegendDot
                     swatch={
@@ -1586,7 +1579,7 @@ export default function CalendarScreen() {
                         <Hatch size={12} />
                       </View>
                     }
-                    label="Blocked"
+                    label={t("legend.blocked")}
                   />
                 </>
               )}
@@ -1624,7 +1617,7 @@ export default function CalendarScreen() {
                   {prettyDay(selectedYmd)}
                 </Text>
               </View>
-              <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 <Pressable
                   onPress={() => {
                     setAListingId(accountPrimaryId);
@@ -1647,7 +1640,7 @@ export default function CalendarScreen() {
                     >
                       <Feather name="plus" size={14} color={INK} style={{ marginRight: 4 }} />
                       <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
-                        Add booking
+                        {t("day.addBooking")}
                       </Text>
                     </View>
                   )}
@@ -1678,7 +1671,7 @@ export default function CalendarScreen() {
                         style={{ marginRight: 4 }}
                       />
                       <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13}}>
-                        {blocking ? "Saving…" : isSelectedBlocked ? "Unblock" : "Block day"}
+                        {blocking ? t("day.saving") : isSelectedBlocked ? t("day.unblock") : t("day.blockDay")}
                       </Text>
                     </View>
                   )}
@@ -1703,17 +1696,17 @@ export default function CalendarScreen() {
                   color: INK_DIM,
                 }}
               >
-                BLOCK APPLIES TO
+                {t("day.blockAppliesTo")}
               </Text>
               <TargetChip
-                label="All listings"
+                label={t("day.allListings")}
                 active={blockTarget === "all"}
                 onPress={() => setBlockTarget("all")}
               />
               {listings.map((l) => (
                 <TargetChip
                   key={l.id}
-                  label={l.business_name?.trim() || l.category || "Listing"}
+                  label={l.business_name?.trim() || (l.category ? cat.sub(l.category) : "") || t("day.listingFallback")}
                   color={listingColorById.get(l.id)}
                   active={blockTarget === l.id}
                   onPress={() => setBlockTarget(l.id)}
@@ -1724,7 +1717,7 @@ export default function CalendarScreen() {
 
           {isSelectedBooked && !isSelectedBlocked && !selectMode ? (
             <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 12, color: INK_DIM }}>
-              Already booked — this day is automatically unavailable to hosts.
+              {t("day.alreadyBooked")}
             </Text>
           ) : null}
 
@@ -1758,10 +1751,10 @@ export default function CalendarScreen() {
                       fontSize: 14,
                     }}
                   >
-                    Nothing on the books for this day.
+                    {t("day.emptyTitle")}
                   </Text>
                   <Text style={{ fontFamily: SERIF, marginTop: 3, color: INK_DIM, fontSize: 13 }}>
-                    Add a booking or block off time.
+                    {t("day.emptyBody")}
                   </Text>
                 </View>
               ) : (
@@ -1846,8 +1839,8 @@ export default function CalendarScreen() {
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: "#ffffff" }}>
                 {pickedDates.length === 0
-                  ? "No dates selected"
-                  : `${pickedDates.length} date${pickedDates.length === 1 ? "" : "s"} selected`}
+                  ? t("bar.none")
+                  : t("bar.selected", { count: pickedDates.length })}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
                 <Text
@@ -1855,10 +1848,10 @@ export default function CalendarScreen() {
                   style={{ flexShrink: 1, fontFamily: SERIF, fontSize: 12, color: "rgba(244,241,234,0.75)" }}
                 >
                   {pickedDates.length === 0
-                    ? "Tap dates on the calendar"
+                    ? t("bar.tapDates")
                     : describeDays(pickedDates) +
                       (pickedToBlock.length > 0 && pickedToBlock.length < pickedDates.length
-                        ? ` · ${pickedDates.length - pickedToBlock.length} already blocked`
+                        ? ` · ${t("bar.alreadyBlocked", { count: pickedDates.length - pickedToBlock.length })}`
                         : "")}
                 </Text>
                 {pickedDates.length > 0 ? (
@@ -1870,7 +1863,7 @@ export default function CalendarScreen() {
                     hitSlop={10}
                   >
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: GOLD, marginLeft: 8 }}>
-                      Clear
+                      {t("bar.clear")}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -1900,12 +1893,12 @@ export default function CalendarScreen() {
                     }}
                   >
                     {blocking
-                      ? "Saving…"
+                      ? t("day.saving")
                       : pickedDates.length === 0
-                        ? "Block"
+                        ? t("bar.block")
                         : pickedAllBlocked
-                          ? `Unblock ${pickedDates.length} date${pickedDates.length === 1 ? "" : "s"}`
-                          : `Block ${pickedToBlock.length} date${pickedToBlock.length === 1 ? "" : "s"}`}
+                          ? t("bar.unblockN", { count: pickedDates.length })
+                          : t("bar.blockN", { count: pickedToBlock.length })}
                   </Text>
                 </View>
               )}
@@ -1924,25 +1917,25 @@ export default function CalendarScreen() {
         }}
         title={
           editingBlockDate
-            ? `Edit title — ${prettyDay(editingBlockDate)}`
+            ? t("blockModal.editTitle", { day: prettyDay(editingBlockDate) })
             : selectMode && pickedToBlock.length > 0
-              ? `Block ${nameDays(pickedToBlock)}?`
-              : `Block ${selectedYmd ? prettyDay(selectedYmd) : "this day"}?`
+              ? t("blockModal.blockQ", { day: nameDays(pickedToBlock) })
+              : selectedYmd
+                ? t("blockModal.blockQ", { day: prettyDay(selectedYmd) })
+                : t("blockModal.blockThisDayQ")
         }
       >
         <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK_DIM, lineHeight: 18, marginTop: 6 }}>
           {editingBlockDate
-            ? "Change the title for this blocked day. Leave blank to clear it."
+            ? t("blockModal.editBody")
             : selectMode
-              ? `${pickedToBlock.length} date${
-                  pickedToBlock.length === 1 ? "" : "s"
-                } will be marked unavailable. Add an optional title so you remember why (“Vacation”). Only you see it — hosts just see the dates as unavailable.`
-              : "Add an optional title so you remember why (“Christian’s birthday”). Only you see it — hosts just see the day as unavailable."}
+              ? t("blockModal.multiBody", { count: pickedToBlock.length })
+              : t("blockModal.singleBody")}
         </Text>
         <TextInput
           value={blockTitleInput}
           onChangeText={setBlockTitleInput}
-          placeholder="What is it? (optional)"
+          placeholder={t("blockModal.placeholder")}
           placeholderTextColor={PLACEHOLDER}
           autoFocus
           maxLength={80}
@@ -1961,7 +1954,7 @@ export default function CalendarScreen() {
         />
         <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
           <SmallBtn
-            label="Cancel"
+            label={t("blockModal.cancel")}
             onPress={() => {
               setBlockModalOpen(false);
               setBlockTitleInput("");
@@ -1969,7 +1962,7 @@ export default function CalendarScreen() {
             }}
           />
           <SmallBtn
-            label={blocking ? "Saving…" : editingBlockDate ? "Save" : "Block"}
+            label={blocking ? t("day.saving") : editingBlockDate ? t("blockModal.save") : t("blockModal.block")}
             primary
             onPress={commitBlock}
           />
@@ -1980,17 +1973,16 @@ export default function CalendarScreen() {
       <CenterModal
         visible={addOpen}
         onClose={() => setAddOpen(false)}
-        title="Add personal entry"
+        title={t("addModal.title")}
       >
         <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK_DIM, marginTop: 6, lineHeight: 18 }}>
-          {selectedYmd ? prettyDay(selectedYmd) : ""} · block off-platform time —
-          vacation, an external booking, a personal appointment. Private to you.
+          {t("addModal.intro", { day: selectedYmd ? prettyDay(selectedYmd) : "" })}
         </Text>
 
         <ScrollView style={{ marginTop: 12 }} keyboardShouldPersistTaps="handled">
           {showListingColors ? (
             <>
-              <FieldLabel text="Listing" />
+              <FieldLabel text={t("addModal.listing")} />
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1999,7 +1991,7 @@ export default function CalendarScreen() {
                 {listings.map((l) => (
                   <TargetChip
                     key={l.id}
-                    label={l.business_name?.trim() || l.category || "Listing"}
+                    label={l.business_name?.trim() || (l.category ? cat.sub(l.category) : "") || t("day.listingFallback")}
                     color={listingColorById.get(l.id)}
                     active={aListingId === l.id}
                     onPress={() => setAListingId(l.id)}
@@ -2011,7 +2003,7 @@ export default function CalendarScreen() {
 
           {myTypes.length > 0 ? (
             <>
-              <FieldLabel text="Your services" />
+              <FieldLabel text={t("addModal.services")} />
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -2045,8 +2037,10 @@ export default function CalendarScreen() {
                         }}
                       >
                         {t.name} · {t.duration_minutes >= 60
-                          ? `${t.duration_minutes / 60}h`
-                          : `${t.duration_minutes}m`}
+                          ? tt("addModal.serviceHours", {
+                              n: new Intl.NumberFormat(intlLocale()).format(t.duration_minutes / 60),
+                            })
+                          : tt("addModal.serviceMinutes", { n: t.duration_minutes })}
                       </Text>
                     </Pressable>
                   );
@@ -2055,11 +2049,11 @@ export default function CalendarScreen() {
             </>
           ) : null}
 
-          <FieldLabel text="Type" />
+          <FieldLabel text={t("addModal.type")} />
           <TextInput
             value={aTitle}
             onChangeText={setATitle}
-            placeholder="Vacation, External shoot…"
+            placeholder={t("addModal.typePlaceholder")}
             placeholderTextColor={PLACEHOLDER}
             style={inputStyle}
           />
@@ -2068,7 +2062,7 @@ export default function CalendarScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 6, paddingVertical: 8 }}
           >
-            {ENTRY_TYPE_SUGGESTIONS.map((t) => (
+            {(tObject<string[]>("entrySuggestions") ?? []).map((t) => (
               <Pressable
                 key={t}
                 onPress={() => setATitle(t)}
@@ -2088,7 +2082,7 @@ export default function CalendarScreen() {
             ))}
           </ScrollView>
 
-          <FieldLabel text="Time (24h)" />
+          <FieldLabel text={t("addModal.time")} />
           <TextInput
             value={aTime}
             onChangeText={setATime}
@@ -2123,7 +2117,7 @@ export default function CalendarScreen() {
             ))}
           </ScrollView>
 
-          <FieldLabel text="Duration" />
+          <FieldLabel text={t("addModal.duration")} />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -2149,7 +2143,7 @@ export default function CalendarScreen() {
                     fontSize: 12,
                   }}
                 >
-                  {d.label}
+                  {t(`durations.${d.key}`)}
                 </Text>
               </Pressable>
             ))}
@@ -2157,24 +2151,24 @@ export default function CalendarScreen() {
 
           {addIsPast ? (
             <Text style={{ fontFamily: SERIF, color: "#b23a34", fontSize: 12, marginTop: 8 }}>
-              That date & time is in the past. Pick today or later.
+              {t("addModal.past")}
             </Text>
           ) : null}
 
-          <FieldLabel text="Location (optional)" />
+          <FieldLabel text={t("addModal.location")} />
           <TextInput
             value={aLocation}
             onChangeText={setALocation}
-            placeholder="Address, Zoom…"
+            placeholder={t("addModal.locationPlaceholder")}
             placeholderTextColor={PLACEHOLDER}
             style={inputStyle}
           />
 
-          <FieldLabel text="Notes (optional)" />
+          <FieldLabel text={t("addModal.notes")} />
           <TextInput
             value={aNotes}
             onChangeText={setANotes}
-            placeholder="Anything to remember"
+            placeholder={t("addModal.notesPlaceholder")}
             placeholderTextColor={PLACEHOLDER}
             multiline
             style={[inputStyle, { height: 70, textAlignVertical: "top" }]}
@@ -2182,9 +2176,9 @@ export default function CalendarScreen() {
         </ScrollView>
 
         <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-          <SmallBtn label="Cancel" onPress={() => setAddOpen(false)} />
+          <SmallBtn label={t("addModal.cancel")} onPress={() => setAddOpen(false)} />
           <SmallBtn
-            label={addSaving ? "Adding…" : "Add"}
+            label={addSaving ? t("addModal.adding") : t("addModal.add")}
             primary
             disabled={addSaving || addIsPast}
             onPress={addManualAppointment}
@@ -2404,6 +2398,7 @@ function MonthGrid({
   onSelect: (k: string) => void;
   onLongSelect: (k: string) => void;
 }) {
+  const { locale } = useT("calendar");
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
   const gridStart = new Date(firstOfMonth);
   gridStart.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
@@ -2418,12 +2413,12 @@ function MonthGrid({
   return (
     <View>
       <View style={{ flexDirection: "row", marginBottom: 8 }}>
-        {DAY_HEADERS.map((d, i) => (
-          <View key={i} style={{ flex: 1, alignItems: "center" }}>
+        {WEEK_DOWS.map((dow) => (
+          <View key={dow} style={{ flex: 1, alignItems: "center" }}>
             <Text
               style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 11, letterSpacing: 0.5 }}
             >
-              {d}
+              {weekdayName(dow, "narrow", locale).toUpperCase()}
             </Text>
           </View>
         ))}
@@ -2617,6 +2612,7 @@ function DayCell({
 }
 
 function BlockedDayCard({ title, onPress }: { title: string; onPress: () => void }) {
+  const { t } = useT("calendar");
   return (
     <Pressable onPress={onPress}>
       {({ pressed }) => (
@@ -2642,9 +2638,9 @@ function BlockedDayCard({ title, onPress }: { title: string; onPress: () => void
               </Text>
               <Feather name="edit-2" size={11} color={INK_DIM} style={{ marginLeft: 6 }} />
             </View>
-            <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12 }}>Marked unavailable</Text>
+            <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12 }}>{t("items.markedUnavailable")}</Text>
           </View>
-          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}>All day</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginLeft: 8 }}>{t("items.allDay")}</Text>
         </View>
       )}
     </Pressable>
@@ -2666,6 +2662,8 @@ function BookingRow({
   };
   onPress?: () => void;
 }) {
+  const { t } = useT("calendar");
+  const allDay = t("items.allDay");
   const tappable = !!onPress;
   const accentColor = DOT_COLOR[item.accent];
   return (
@@ -2685,7 +2683,7 @@ function BookingRow({
           }}
         >
           <View style={{ width: 4, alignSelf: "stretch", backgroundColor: accentColor }} />
-          {item.timeLabel && item.timeLabel !== "All day" ? (
+          {item.timeLabel && item.timeLabel !== allDay ? (
             <View style={{ paddingHorizontal: 12, paddingVertical: 16, alignItems: "center", width: 70 }}>
               <Text style={{ color: INK, fontSize: 14, fontFamily: SERIF_BOLD }} numberOfLines={1}>
                 {item.timeLabel}
@@ -2708,8 +2706,8 @@ function BookingRow({
             >
               {fmtMoneyShort(item.amountCents)}
             </Text>
-          ) : item.timeLabel === "All day" ? (
-            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginRight: 16 }}>All day</Text>
+          ) : item.timeLabel === allDay ? (
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginRight: 16 }}>{allDay}</Text>
           ) : null}
         </View>
       )}
@@ -2727,6 +2725,7 @@ function RecurringBlocksSection({
   savingDow: number | null;
   onToggle: (dow: number, willBeOff: boolean) => void;
 }) {
+  const { t, locale } = useT("calendar");
   return (
     <View
       style={{
@@ -2738,18 +2737,18 @@ function RecurringBlocksSection({
         borderColor: BORDER,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>Recurring blocks</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", columnGap: 8 }}>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK, flexShrink: 1 }}>{t("recurring.title")}</Text>
         <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
-          {recurringOff.size > 0 ? `${recurringOff.size}× weekly` : "Repeat every week"}
+          {recurringOff.size > 0 ? t("recurring.weekly", { count: recurringOff.size }) : t("recurring.repeat")}
         </Text>
       </View>
       <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 12, color: INK_DIM, lineHeight: 17 }}>
-        Tap a day to mark it permanently unavailable every future week. Hosts won't see you as
-        bookable on that weekday.
+        {t("recurring.body")}
       </Text>
       <View style={{ flexDirection: "row", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
-        {DAY_HEADERS.map((short, dow) => {
+        {WEEK_DOWS.map((dow) => {
+          const short = weekdayName(dow, "narrow", locale).toUpperCase();
           const isOff = recurringOff.has(dow);
           const saving = savingDow === dow;
           return (
@@ -2772,7 +2771,9 @@ function RecurringBlocksSection({
                       ? INK
                       : CREAM_DEEP,
               }}
-              accessibilityLabel={`${DAY_FULL[dow]} ${isOff ? "off" : "on"}`}
+              accessibilityLabel={t(isOff ? "recurring.dayOff" : "recurring.dayOn", {
+                day: weekdayName(dow, "long", locale),
+              })}
             >
               {saving ? (
                 <ActivityIndicator size="small" color={isOff ? "#ffffff" : INK} />
@@ -2804,6 +2805,7 @@ function AppointmentsSection({
   onOpenInquiry: (inquiryId: string) => void;
   onAdd: () => void;
 }) {
+  const { t } = useT("calendar");
   const [filter, setFilter] = useState<"upcoming" | "needs_response" | "past" | "all">(
     "upcoming",
   );
@@ -2838,10 +2840,10 @@ function AppointmentsSection({
   }, [appointments, filter]);
 
   const filterOpts: Array<{ value: typeof filter; label: string; count: number }> = [
-    { value: "upcoming", label: "Upcoming", count: counts.upcoming },
-    { value: "needs_response", label: "Needs response", count: counts.needs_response },
-    { value: "past", label: "Past", count: counts.past },
-    { value: "all", label: "All", count: counts.all },
+    { value: "upcoming", label: t("appts.upcoming"), count: counts.upcoming },
+    { value: "needs_response", label: t("appts.needsResponse"), count: counts.needs_response },
+    { value: "past", label: t("appts.past"), count: counts.past },
+    { value: "all", label: t("appts.all"), count: counts.all },
   ];
 
   return (
@@ -2854,7 +2856,7 @@ function AppointmentsSection({
           marginBottom: 10,
         }}
       >
-        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK }}>Appointments</Text>
+        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 16, color: INK, flexShrink: 1, marginRight: 8 }}>{t("appts.title")}</Text>
         <Pressable onPress={onAdd}>
           {({ pressed }) => (
             <View
@@ -2869,7 +2871,7 @@ function AppointmentsSection({
               }}
             >
               <Feather name="plus" size={13} color={INK} style={{ marginRight: 4 }} />
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>Add appointment</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>{t("appts.add")}</Text>
             </View>
           )}
         </Pressable>
@@ -2888,7 +2890,7 @@ function AppointmentsSection({
           }}
         >
           <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
-            No appointments yet. Calls, consultations, and tastings you schedule show up here.
+            {t("appts.empty")}
           </Text>
         </View>
       ) : (
@@ -2936,7 +2938,7 @@ function AppointmentsSection({
 
           {visible.length === 0 ? (
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13, textAlign: "center", paddingVertical: 20 }}>
-              Nothing matches that filter.
+              {t("appts.noMatch")}
             </Text>
           ) : (
             visible.map((appt) => (
@@ -2966,30 +2968,31 @@ function AppointmentCard({
   onSetStatus: (a: AppointmentRow, s: AppointmentRow["status"]) => void;
   onOpenInquiry: (inquiryId: string) => void;
 }) {
+  const { t, locale } = useT("calendar");
   const when = new Date(appt.scheduled_at);
   const inPast = when.getTime() < Date.now();
   const isPersonal = !appt.host_id;
-  const heading = appt.title?.trim() || KIND_LABEL[appt.kind] || "Meeting";
+  const heading = appt.title?.trim() || kindLabel(appt.kind) || t("kinds.other");
   const needsMyResponse = appt.status === "proposed" && appt.proposed_by === "host";
   const canCancel = appt.status === "accepted" || appt.status === "proposed";
   const canMarkComplete = appt.status === "accepted" && inPast;
 
   const statusText = isPersonal
-    ? "Personal"
+    ? t("apptStatus.personal")
     : appt.status === "accepted"
-      ? "Confirmed"
+      ? t("apptStatus.confirmed")
       : appt.status === "completed"
-        ? "Completed"
+        ? t("apptStatus.completed")
         : appt.status === "proposed"
-          ? "Proposed"
+          ? t("apptStatus.proposed")
           : appt.status === "declined"
-            ? "Declined"
-            : "Cancelled";
+            ? t("apptStatus.declined")
+            : t("apptStatus.cancelled");
 
   function confirmCancel() {
-    Alert.alert("Cancel this appointment?", "The other party will be notified.", [
-      { text: "Keep it", style: "cancel" },
-      { text: "Cancel appointment", style: "destructive", onPress: () => onSetStatus(appt, "cancelled") },
+    Alert.alert(t("alerts.cancelApptTitle"), t("alerts.cancelApptBody"), [
+      { text: t("alerts.keepIt"), style: "cancel" },
+      { text: t("alerts.cancelAppt"), style: "destructive", onPress: () => onSetStatus(appt, "cancelled") },
     ]);
   }
 
@@ -3009,15 +3012,15 @@ function AppointmentCard({
           <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }} numberOfLines={1}>
             {heading}
             {appt.host?.display_name ? (
-              <Text style={{ fontFamily: SERIF, color: INK_DIM}}> with {appt.host.display_name}</Text>
+              <Text style={{ fontFamily: SERIF, color: INK_DIM}}>{t("appts.withName", { name: appt.host.display_name })}</Text>
             ) : null}
           </Text>
           <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12, color: INK_DIM }}>
             {isPersonal
-              ? "Off-platform · personal"
+              ? t("appts.offPlatform")
               : appt.proposed_by === "vendor"
-                ? "Proposed by you"
-                : "Proposed by the host"}
+                ? t("appts.proposedByYou")
+                : t("appts.proposedByHost")}
           </Text>
         </View>
         <View
@@ -3033,8 +3036,8 @@ function AppointmentCard({
       </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 10 }}>
-        <Meta icon="calendar" text={when.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} />
-        <Meta icon="clock" text={`${fmtApptTime(appt.scheduled_at)} · ${appt.duration_minutes} min`} />
+        <Meta icon="calendar" text={when.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })} />
+        <Meta icon="clock" text={`${fmtApptTime(appt.scheduled_at)} · ${t("appts.durationMin", { count: appt.duration_minutes })}`} />
         {appt.location ? <Meta icon="map-pin" text={appt.location} /> : null}
       </View>
 
@@ -3059,15 +3062,15 @@ function AppointmentCard({
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
           {needsMyResponse ? (
             <>
-              <ActionBtn label="Accept" icon="check" primary disabled={pending} onPress={() => onSetStatus(appt, "accepted")} />
-              <ActionBtn label="Decline" icon="x" disabled={pending} onPress={() => onSetStatus(appt, "declined")} />
+              <ActionBtn label={t("appts.accept")} icon="check" primary disabled={pending} onPress={() => onSetStatus(appt, "accepted")} />
+              <ActionBtn label={t("appts.decline")} icon="x" disabled={pending} onPress={() => onSetStatus(appt, "declined")} />
             </>
           ) : null}
           {canMarkComplete ? (
-            <ActionBtn label="Mark complete" icon="check-circle" disabled={pending} onPress={() => onSetStatus(appt, "completed")} />
+            <ActionBtn label={t("appts.markComplete")} icon="check-circle" disabled={pending} onPress={() => onSetStatus(appt, "completed")} />
           ) : null}
           {canCancel && !needsMyResponse ? (
-            <ActionBtn label="Cancel" icon="x-circle" muted disabled={pending} onPress={confirmCancel} />
+            <ActionBtn label={t("appts.cancel")} icon="x-circle" muted disabled={pending} onPress={confirmCancel} />
           ) : null}
           {appt.inquiry_id ? (
             <Pressable
@@ -3075,7 +3078,7 @@ function AppointmentCard({
               style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center" }}
               hitSlop={6}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>Open inquiry</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12}}>{t("appts.openInquiry")}</Text>
               <Feather name="chevron-right" size={14} color={INK} />
             </Pressable>
           ) : null}

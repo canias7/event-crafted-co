@@ -1,0 +1,51 @@
+export default {
+  title: "Perfil",
+  hostFallback: "Anfitrión",
+  memberSince: "Miembro desde {{year}}",
+  verifiedHost: "Anfitrión verificado",
+  stats: {
+    inquiries: "Consultas",
+    booked: "Reservas",
+    vendors: "Proveedores",
+  },
+  inbox: {
+    title: "Bandeja",
+    unread_one: "{{count}} sin leer",
+    unread_other: "{{count}} sin leer",
+    caughtUp: "Todo al día",
+  },
+  events: {
+    title: "Mis eventos",
+    planned_one: "{{count}} planeado",
+    planned_other: "{{count}} planeados",
+    planFirst: "Planea el primero",
+  },
+  verified: {
+    title: "Estás verificado",
+    subtitle: "Los proveedores dan prioridad a los anfitriones verificados.",
+    alertTitle: "Anfitrión verificado",
+    alertBody: "Tu identidad está verificada: los proveedores ven una insignia en tus consultas.",
+  },
+  pending: {
+    title: "Verificación pendiente",
+    subtitle: "Te contactaremos en un plazo de 48 horas.",
+    alertBody: "Tu solicitud está en nuestra fila. Te escribiremos en un plazo de 48 horas para pedirte una identificación.",
+  },
+  become: {
+    title: "Verifica tu cuenta",
+    retryTitle: "Intenta verificarte de nuevo",
+    subtitle: "Genera confianza con los proveedores. Respuestas más rápidas, mejores coincidencias.",
+  },
+  request: {
+    title: "Solicitar verificación de anfitrión",
+    body: "Enviaremos tu solicitud a nuestro equipo. Alguien te contactará en un plazo de 48 horas para verificar tu identidad (basta con una foto de una identificación oficial). Por lo general, así los proveedores responden más rápido.",
+    notNow: "Ahora no",
+    confirm: "Solicitar",
+    errorTitle: "No se pudo enviar la solicitud",
+    errorBody: "Inténtalo de nuevo en un momento.",
+    sentTitle: "Solicitud recibida",
+    sentBody: "Gracias. Nuestro equipo te contactará en un plazo de 48 horas.",
+  },
+  accountSettings: "Configuración de la cuenta",
+  logOut: "Cerrar sesión",
+};

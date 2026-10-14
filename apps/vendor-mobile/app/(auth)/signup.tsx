@@ -43,6 +43,8 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Same palette as welcome.tsx — the two screens must read as one flow.
 const PAGE = "#14161a";
@@ -74,6 +76,7 @@ type Step = "account" | "business" | "code" | "done";
 export default function VendorSignupScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("signup");
   const [step, setStep] = useState<Step>("account");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +101,7 @@ export default function VendorSignupScreen() {
   async function continueToBusiness() {
     setError(null);
     if (!step1Valid) {
-      setError(passwordProblem(password) ?? "Please complete every field.");
+      setError(passwordProblem(password) ?? t("errors.incomplete"));
       return;
     }
     // The server also checks the password against known data breaches
@@ -110,7 +113,7 @@ export default function VendorSignupScreen() {
     );
     setSubmitting(false);
     if (data?.ok === false) {
-      setError(data.reason ?? "Choose a stronger password.");
+      setError(data.reason ?? t("errors.weakPassword"));
       return;
     }
     setStep("business");
@@ -145,7 +148,7 @@ export default function VendorSignupScreen() {
       // sends an "already registered, log in" email and returns
       // ok:true so the API can't be used to enumerate accounts.
       // Any other ok:false here is genuinely something else.
-      setError(data.reason ?? "Couldn't send code.");
+      setError(data.reason ?? t("errors.sendFailed"));
       // A password problem belongs on the password screen.
       if (/password/i.test(data.reason ?? "")) setStep("account");
       return;
@@ -186,17 +189,17 @@ export default function VendorSignupScreen() {
     if (data?.ok === false) {
       setSubmitting(false);
       if (data.reason === "wrong_code") {
-        setError("That code didn't match. Try again or resend.");
+        setError(t("errors.wrongCode"));
       } else if (data.reason === "expired") {
-        setError("That code expired. Hit Resend code for a new one.");
+        setError(t("errors.expired"));
       } else if (data.reason === "too_many_attempts") {
-        setError("Too many wrong tries. Hit Resend code to start over.");
+        setError(t("errors.tooMany"));
       } else if (data.reason === "no_pending_code") {
-        setError("We couldn't find a pending code. Hit Resend code.");
+        setError(t("errors.noPending"));
       } else if (data.reason === "weak_password") {
-        setError(passwordProblem(password) ?? "Choose a stronger password.");
+        setError(passwordProblem(password) ?? t("errors.weakPassword"));
       } else {
-        setError(data.reason ?? "Verification failed.");
+        setError(data.reason ?? t("errors.verifyFailed"));
       }
       return;
     }
@@ -258,7 +261,7 @@ export default function VendorSignupScreen() {
               style={{ alignSelf: "flex-start", paddingVertical: 8 }}
             >
               <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
-                ← Back
+                ← {t("back")}
               </Text>
             </Pressable>
           )}
@@ -365,17 +368,18 @@ interface AccountStepProps {
 }
 
 function AccountStep(p: AccountStepProps) {
+  const { t } = useT("signup");
   return (
     <>
       <StepHeader
-        eyebrow="STEP 1 OF 2"
-        title="Set up your account"
-        subtitle="Used to sign in and receive inquiries."
+        eyebrow={t("account.eyebrow")}
+        title={t("account.title")}
+        subtitle={t("account.subtitle")}
       />
 
       <View style={{ marginTop: 28, gap: 20 }}>
         <Field
-          label="Email"
+          label={t("account.email")}
           icon="email-outline"
           placeholder="business@email.com"
           value={p.email}
@@ -385,7 +389,7 @@ function AccountStep(p: AccountStepProps) {
           autoCapitalize="none"
         />
         <View>
-          <Text style={fieldLabel}>PASSWORD</Text>
+          <Text style={fieldLabel}>{t("account.password")}</Text>
           <View style={inputRow}>
             <MaterialCommunityIcons
               name="lock-outline"
@@ -397,7 +401,7 @@ function AccountStep(p: AccountStepProps) {
               secureTextEntry={!p.showPassword}
               value={p.password}
               onChangeText={p.setPassword}
-              placeholder="8+ characters, Aa, 1 and !"
+              placeholder={t("account.passwordPlaceholder")}
               placeholderTextColor={SUBTLE}
               selectionColor={GOLD}
               keyboardAppearance="dark"
@@ -410,7 +414,7 @@ function AccountStep(p: AccountStepProps) {
               style={{ paddingLeft: 10 }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14}}>
-                {p.showPassword ? "Hide" : "Show"}
+                {p.showPassword ? t("account.hide") : t("account.show")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -425,7 +429,7 @@ function AccountStep(p: AccountStepProps) {
           activeOpacity={0.85}
           style={primaryBtnFor(!p.valid)}
         >
-          <Text style={primaryBtnTextFor(!p.valid)}>Continue</Text>
+          <Text style={primaryBtnTextFor(!p.valid)}>{t("account.continue")}</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -445,17 +449,19 @@ interface BusinessStepProps {
 }
 
 function BusinessStep(p: BusinessStepProps) {
+  const { t } = useT("signup");
+  const cn = useCategoryNames();
   return (
     <>
       <StepHeader
-        eyebrow="STEP 2 OF 2"
-        title="Tell us about your business"
-        subtitle="You can edit any of this later from your dashboard."
+        eyebrow={t("business.eyebrow")}
+        title={t("business.title")}
+        subtitle={t("business.subtitle")}
       />
 
       <View style={{ marginTop: 28, gap: 20 }}>
         <Field
-          label="Business name"
+          label={t("business.name")}
           icon="storefront-outline"
           placeholder="Luminara Photography"
           value={p.businessName}
@@ -463,7 +469,7 @@ function BusinessStep(p: BusinessStepProps) {
           autoCapitalize="words"
         />
         <View>
-          <Text style={fieldLabel}>CATEGORY</Text>
+          <Text style={fieldLabel}>{t("business.category")}</Text>
           <TouchableOpacity
             onPress={p.openPicker}
             activeOpacity={0.7}
@@ -483,7 +489,7 @@ function BusinessStep(p: BusinessStepProps) {
                 flex: 1,
               }}
             >
-              {p.category || "Choose a category"}
+              {p.category ? cn.sub(p.category) : t("business.chooseCategory")}
             </Text>
             <MaterialCommunityIcons
               name="chevron-right"
@@ -502,7 +508,7 @@ function BusinessStep(p: BusinessStepProps) {
           style={primaryBtnFor(p.submitting || !p.valid)}
         >
           <Text style={primaryBtnTextFor(p.submitting || !p.valid)}>
-            {p.submitting ? "Submitting…" : "Submit application"}
+            {p.submitting ? t("business.submitting") : t("business.submit")}
           </Text>
         </TouchableOpacity>
 
@@ -516,8 +522,7 @@ function BusinessStep(p: BusinessStepProps) {
             lineHeight: 18,
           }}
         >
-          By submitting, you agree to Vendora's vendor terms. We hand-review
-          every application within 2–3 business days.
+          {t("business.note")}
         </Text>
       </View>
     </>
@@ -536,17 +541,18 @@ interface CodeStepProps {
 }
 
 function CodeStep(p: CodeStepProps) {
+  const { t } = useT("signup");
   return (
     <>
       <StepHeader
-        eyebrow="VERIFY YOUR EMAIL"
-        title="Enter your code"
-        subtitle={`We sent a 6-digit code to ${p.email}.`}
+        eyebrow={t("code.eyebrow")}
+        title={t("code.title")}
+        subtitle={t("code.subtitle", { email: p.email })}
       />
 
       <View style={{ marginTop: 28, gap: 20 }}>
         <View>
-          <Text style={fieldLabel}>6-DIGIT CODE</Text>
+          <Text style={fieldLabel}>{t("code.label")}</Text>
           <View style={inputRow}>
             <MaterialCommunityIcons
               name="email-check-outline"
@@ -579,7 +585,7 @@ function CodeStep(p: CodeStepProps) {
           style={primaryBtnFor(p.submitting || !p.valid)}
         >
           <Text style={primaryBtnTextFor(p.submitting || !p.valid)}>
-            {p.submitting ? "Verifying…" : "Verify"}
+            {p.submitting ? t("code.verifying") : t("code.verify")}
           </Text>
         </TouchableOpacity>
 
@@ -590,7 +596,7 @@ function CodeStep(p: CodeStepProps) {
           style={{ alignItems: "center", paddingVertical: 8 }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14}}>
-            Resend code
+            {t("code.resend")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -599,11 +605,12 @@ function CodeStep(p: CodeStepProps) {
 }
 
 function ThanksView({ onClose }: { onClose: () => void }) {
+  const { t } = useT("signup");
   return (
     <View style={{ marginTop: 24, alignItems: "center" }}>
       <MaterialCommunityIcons name="star-four-points" size={22} color={GOLD} />
       <Text style={{ ...eyebrowLabel, marginTop: 16 }}>
-        APPLICATION RECEIVED
+        {t("thanks.eyebrow")}
       </Text>
       <Text
         style={{
@@ -615,7 +622,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
           textAlign: "center",
         }}
       >
-        Thanks for applying.
+        {t("thanks.title")}
       </Text>
       <Text
         style={{
@@ -628,9 +635,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
           maxWidth: 320,
         }}
       >
-        We hand-review every Vendora application. Expect an email from us
-        within 2–3 business days. If approved, you'll be able to sign in and
-        finish setting up your listing.
+        {t("thanks.body")}
       </Text>
 
       <TouchableOpacity
@@ -643,7 +648,7 @@ function ThanksView({ onClose }: { onClose: () => void }) {
           maxWidth: 320,
         }}
       >
-        <Text style={primaryBtnText}>Back to start</Text>
+        <Text style={primaryBtnText}>{t("thanks.backToStart")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -710,6 +715,8 @@ function CategoryPicker({
   onSelect,
   onClose,
 }: CategoryPickerProps) {
+  const { t } = useT("signup");
+  const cn = useCategoryNames();
   return (
     <Modal
       visible={visible}
@@ -759,7 +766,7 @@ function CategoryPicker({
               marginBottom: 12,
             }}
           >
-            Choose a category
+            {t("business.chooseCategory")}
           </Text>
           <ScrollView keyboardShouldPersistTaps="handled">
             {CATEGORY_GROUPS.map((group) => (
@@ -774,7 +781,7 @@ function CategoryPicker({
                     letterSpacing: 2,
                   }}
                 >
-                  {group.name.toUpperCase()}
+                  {cn.group(group.slug, group.name).toUpperCase()}
                 </Text>
                 {group.subs.map((sub) => {
                   const isSelected = sub === selected;
@@ -791,7 +798,7 @@ function CategoryPicker({
                         alignItems: "center",
                       }}
                     >
-                      <Text style={{ fontFamily: SERIF, color: INK, fontSize: 16 }}>{sub}</Text>
+                      <Text style={{ fontFamily: SERIF, color: INK, fontSize: 16, flexShrink: 1 }}>{cn.sub(sub)}</Text>
                       {isSelected ? (
                         <MaterialCommunityIcons
                           name="check"

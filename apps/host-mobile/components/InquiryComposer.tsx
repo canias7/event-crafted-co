@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 
 const SERIF = "LibreBaskerville";
@@ -28,12 +29,8 @@ const PLACEHOLDER = "#746a58";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
-const EVENT_TYPES: { key: EventType; label: string }[] = [
-  { key: "wedding", label: "Wedding" },
-  { key: "birthday", label: "Birthday" },
-  { key: "holiday_dinner", label: "Holiday dinner" },
-  { key: "other", label: "Other" },
-];
+// Saved values; labels come from inquiryComposer.eventTypes.<key>.
+const EVENT_TYPES: EventType[] = ["wedding", "birthday", "holiday_dinner", "other"];
 
 export function InquiryComposer({
   visible,
@@ -48,6 +45,7 @@ export function InquiryComposer({
   onClose: () => void;
   onSubmitted?: (inquiryId: string) => void;
 }) {
+  const { t } = useT("inquiryComposer");
   const { user } = useAuth();
   const [eventType, setEventType] = useState<EventType>("wedding");
   const [eventDate, setEventDate] = useState("");
@@ -70,11 +68,11 @@ export function InquiryComposer({
 
   async function submit() {
     if (!user?.id || !vendorId) {
-      Alert.alert("Sign in first", "You need to be logged in to send an inquiry.");
+      Alert.alert(t("signInTitle"), t("signInBody"));
       return;
     }
     if (!message.trim()) {
-      Alert.alert("Message is required");
+      Alert.alert(t("messageRequired"));
       return;
     }
     setSubmitting(true);
@@ -120,11 +118,14 @@ export function InquiryComposer({
       reset();
       onClose();
       onSubmitted?.((data as { id: string }).id);
-      Alert.alert("Sent", `${vendorName ?? "The vendor"} will get back to you soon.`);
+      Alert.alert(
+        t("sentTitle"),
+        vendorName ? t("sentBody", { name: vendorName }) : t("sentBodyNoName"),
+      );
     } catch (err) {
       Alert.alert(
-        "Couldn't send inquiry",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("errorTitle"),
+        (err as { message?: string })?.message ?? t("errorBody"),
       );
     } finally {
       setSubmitting(false);
@@ -146,18 +147,23 @@ export function InquiryComposer({
           style={{ flex: 1 }}
         >
           <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t("close")}
+            >
               <Feather name="x" size={22} color="#14161a" />
             </Pressable>
             <Text style={{ fontFamily: SERIF_BOLD }} className="text-base text-foreground">
-              Inquire
+              {t("title")}
             </Text>
             <Pressable onPress={submit} hitSlop={8} disabled={!canSubmit}>
               <Text
                 className="text-sm"
                 style={{ fontFamily: SERIF_BOLD, color: canSubmit ? "#14161a" : "#746a58" }}
               >
-                {submitting ? "Sending…" : "Send"}
+                {submitting ? t("sending") : t("send")}
               </Text>
             </Pressable>
           </View>
@@ -169,7 +175,7 @@ export function InquiryComposer({
             {vendorName ? (
               <View>
                 <Text style={{ fontFamily: SERIF }} className="text-xs uppercase tracking-wide text-muted-foreground">
-                  To
+                  {t("to")}
                 </Text>
                 <Text style={{ fontFamily: SERIF_BOLD }} className="mt-1 text-base text-foreground">
                   {vendorName}
@@ -179,15 +185,15 @@ export function InquiryComposer({
 
             <View>
               <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
-                Event type
+                {t("eventType")}
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {EVENT_TYPES.map((t) => {
-                  const active = eventType === t.key;
+                {EVENT_TYPES.map((type) => {
+                  const active = eventType === type;
                   return (
                     <Pressable
-                      key={t.key}
-                      onPress={() => setEventType(t.key)}
+                      key={type}
+                      onPress={() => setEventType(type)}
                       className={`rounded-full px-4 py-2 active:opacity-70 ${
  active
                           ? "bg-foreground"
@@ -199,7 +205,7 @@ export function InquiryComposer({
                           active ? "text-white" : "text-foreground"
                         }`}
                       >
-                        {t.label}
+                        {t(`eventTypes.${type}`)}
                       </Text>
                     </Pressable>
                   );
@@ -208,29 +214,29 @@ export function InquiryComposer({
             </View>
 
             <Field
-              label="Event date"
-              placeholder="YYYY-MM-DD"
+              label={t("eventDate")}
+              placeholder={t("eventDatePlaceholder")}
               value={eventDate}
               onChangeText={setEventDate}
               autoCapitalize="none"
             />
             <Field
-              label="Guest count"
-              placeholder="e.g. 80"
+              label={t("guestCount")}
+              placeholder={t("guestCountPlaceholder")}
               value={guestCount}
               onChangeText={(v) => setGuestCount(v.replace(/[^0-9]/g, ""))}
               keyboardType="number-pad"
             />
             <Field
-              label="Location"
-              placeholder="City, State"
+              label={t("location")}
+              placeholder={t("locationPlaceholder")}
               value={location}
               onChangeText={setLocation}
             />
             <View className="flex-row gap-3">
               <View style={{ flex: 1 }}>
                 <Field
-                  label="Budget min ($)"
+                  label={t("budgetMin")}
                   placeholder="0"
                   value={budgetMin}
                   onChangeText={setBudgetMin}
@@ -239,7 +245,7 @@ export function InquiryComposer({
               </View>
               <View style={{ flex: 1 }}>
                 <Field
-                  label="Budget max ($)"
+                  label={t("budgetMax")}
                   placeholder="0"
                   value={budgetMax}
                   onChangeText={setBudgetMax}
@@ -250,12 +256,12 @@ export function InquiryComposer({
 
             <View>
               <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
-                Message
+                {t("message")}
               </Text>
               <TextInput style={{ fontFamily: SERIF }}
                 value={message}
                 onChangeText={setMessage}
-                placeholder="Tell the vendor about your event…"
+                placeholder={t("messagePlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={6}

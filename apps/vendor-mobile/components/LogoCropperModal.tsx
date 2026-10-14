@@ -16,6 +16,7 @@
 
 import { Dimensions, Image, Pressable, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { useT } from "@/lib/i18n";
 
 const INK = "#14161a";
 // Secondary text is the same black as headings; hierarchy comes from
@@ -32,6 +33,7 @@ export function LogoCropperModal({
   onCancel: () => void;
   onApply: () => void;
 }) {
+  const { t } = useT("logoCropperModal");
   // Square preview, clamped so it never overflows a narrow phone.
   const viewport = Math.min(300, Math.max(220, Dimensions.get("window").width - 64));
   const radius = viewport / 2 - 8;
@@ -58,10 +60,10 @@ export function LogoCropperModal({
         <Text
           style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 20, color: "#14161a"}}
         >
-          Your logo
+          {t("title")}
         </Text>
         <Text style={{ fontFamily: "LibreBaskerville", marginTop: 4, marginBottom: 20, fontSize: 13, color: INK_DIM }}>
-          We fit your whole logo on a clean background — nothing gets cropped.
+          {t("subtitle")}
         </Text>
 
         {/* Preview: whole logo contained on white, with a circular guide
@@ -107,6 +109,7 @@ export function LogoCropperModal({
             marginTop: 24,
             flexDirection: "row",
             justifyContent: "flex-end",
+            flexWrap: "wrap",
             gap: 10,
           }}
         >
@@ -123,7 +126,7 @@ export function LogoCropperModal({
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a"}}>Choose different</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a"}}>{t("chooseDifferent")}</Text>
           </Pressable>
           <Pressable
             onPress={onApply}
@@ -136,7 +139,7 @@ export function LogoCropperModal({
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a"}}>Use logo</Text>
+            <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#14161a"}}>{t("useLogo")}</Text>
           </Pressable>
         </View>
       </View>

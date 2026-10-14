@@ -122,7 +122,18 @@ The whole website (`apps/web`: public pages, sign-in, host and vendor portals) i
 - Category names: `useCategoryNames()`; prices and event types: `usePriceLabels()`. Values saved to the database, URLs and filters stay English.
 - `<Trans>` tags must not be named after HTML void elements (`link`, `br`, `img`, `input`, `hr`…): use `<helpLink>`, `<gold>` and so on.
 - Tailwind's `capitalize` is switched off in every language but English (`index.css`), since Spanish and Russian use sentence case; write their labels in sentence case.
-- Stays English on purpose: what vendors and hosts typed, chat messages the site writes on someone's behalf, contract/invoice PDFs, server emails, the mobile apps and the admin panel. (The signed-contract PDF from the sign page has Spanish labels in Spanish but English in Russian: jsPDF's built-in fonts have no Cyrillic.)
+- Stays English on purpose: what vendors and hosts typed, chat messages the site writes on someone's behalf, contract/invoice PDFs, server emails and the admin panel. (The signed-contract PDF from the sign page has Spanish labels in Spanish but English in Russian: jsPDF's built-in fonts have no Cyrillic.)
+
+## App languages (English, Spanish, Russian)
+
+Both apps are in English, Spanish and Russian too (Oct 2026), with the same word lists and rules as the website above. Any text you add or change in an app needs all three.
+
+- `lib/i18n.ts` (same file in both apps; no i18next, so no new packages): `const { t, tObject, lang, locale } = useT("<namespace>")`; outside components `i18n.t("<namespace>.key")`. Plurals: `key_one`/`key_other`, Russian adds `_few`/`_many`. Missing keys fall back to English.
+- Strings: `locales/<lang>/<namespace>.ts`, one namespace per screen. Keep en/es/ru keys identical. After adding a namespace file, run `python3 scripts/gen-app-locales-index.py` to regenerate `locales/index.ts`.
+- The choice is saved on the phone (`vendora-lang` in AsyncStorage); with none saved the phone's language is used when it's Spanish or Russian. Pickers: Settings (vendor `SettingsSheet`, host `settings.tsx`) and both welcome screens (`components/LanguagePicker.tsx`).
+- Dates and numbers: pass `locale` from `useT()`; money stays US format ("en-US"). Category names: `useCategoryNames()` (`lib/categoryNames.ts`, strings copied from the website's `categories.json`); listing attributes: the `listingAttributes` namespace (copied from the website's `vendorProfileParts.json`). Keep those copies in step with the website. Price lines: vendor `lib/priceLabels.ts` (core's `formatListingPrice`/`pricingModelsLabel` are English only).
+- Russian letters: the bundled `assets/fonts/LibreBaskerville-*.ttf` files have PT Serif's Cyrillic glyphs merged in, so Russian draws in PT Serif with no font switch. If the fonts are ever replaced, merge the Cyrillic back in.
+- Stays English: what people typed, chat messages, server emails and push texts, the iOS permission prompts (native, need a build).
 
 ## Mobile apps (host-mobile + vendor-mobile)
 

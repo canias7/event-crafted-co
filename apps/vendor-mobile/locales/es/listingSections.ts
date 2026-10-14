@@ -1,0 +1,68 @@
+// Packages, FAQs and policies sections (components/listing/Sections.tsx).
+export default {
+  "add": "+ Agregar",
+  "loading": "Cargando…",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "save": "Guardar",
+  "saving": "Guardando…",
+  "tryAgain": "Inténtalo de nuevo.",
+  "cantUndo": "Esto no se puede deshacer.",
+  "deleteError": "No se pudo eliminar",
+  "packages": {
+    "title": "Paquetes",
+    "subtitle": "Niveles de precio y qué incluyen",
+    "empty": "Aún no hay paquetes. Agrega un nivel de precio para darles a los anfitriones una opción clara.",
+    "inactive": "inactivo",
+    "more_one": "+{{count}} más",
+    "more_other": "+{{count}} más",
+    "nameRequired": "El nombre es obligatorio",
+    "priceNumber": "El precio debe ser un número",
+    "saveError": "No se pudo guardar el paquete",
+    "deleteTitle": "¿Eliminar el paquete?",
+    "edit": "Editar paquete",
+    "new": "Nuevo paquete",
+    "name": "Nombre",
+    "namePlaceholder": "Paquete estándar",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Una o dos frases.",
+    "price": "Precio ($)",
+    "includes": "Qué incluye",
+    "includesHint": "Un elemento por línea.",
+    "includesPlaceholder": "4 horas de cobertura\nGalería de fotos editadas\nVisita previa al lugar",
+    "active": "Activo"
+  },
+  "faqs": {
+    "title": "Preguntas frecuentes",
+    "subtitle": "Lo que suelen preguntar los anfitriones",
+    "empty": "Aún no hay preguntas frecuentes. Agregar 3 a 5 te ahorra tiempo en las primeras respuestas.",
+    "bothRequired": "La pregunta y la respuesta son obligatorias",
+    "saveError": "No se pudo guardar la pregunta",
+    "deleteTitle": "¿Eliminar la pregunta?",
+    "edit": "Editar pregunta",
+    "new": "Nueva pregunta",
+    "question": "Pregunta",
+    "questionPlaceholder": "¿Viajas para eventos?",
+    "answer": "Respuesta",
+    "answerPlaceholder": "Sí, cubrimos cualquier lugar a menos de 100 millas…"
+  },
+  "policies": {
+    "title": "Políticas",
+    "subtitle": "Cancelación, anticipos, condiciones de pago",
+    "savedTitle": "Guardado",
+    "savedMessage": "Políticas actualizadas.",
+    "saveError": "No se pudieron guardar las políticas",
+    "deposit": "Anticipo (%)",
+    "cancellation": "Política de cancelación",
+    "reschedule": "Plazo para reprogramar (días)",
+    "notes": "Notas",
+    "notesPlaceholder": "Cualquier condición adicional que los anfitriones deban saber.",
+    "save": "Guardar políticas",
+    "options": {
+      "none": "— elige una política —",
+      "flexible": "Flexible (reembolso total hasta 7 días antes)",
+      "moderate": "Moderada (50% hasta 30 días antes)",
+      "strict": "Estricta (sin reembolso)"
+    }
+  }
+};

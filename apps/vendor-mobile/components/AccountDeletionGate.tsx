@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { BUTTON_HEIGHT, COLORS, RADIUS } from "@/lib/ui";
+import { useT } from "@/lib/i18n";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -27,8 +28,9 @@ export function AccountDeletionGate({ children }: { children: ReactNode }) {
 function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
   const { refreshDeletion, signOut } = useAuth();
   const [busy, setBusy] = useState<"restore" | "signout" | null>(null);
+  const { t, locale } = useT("accountDeletionGate");
 
-  const date = new Date(scheduledFor).toLocaleDateString("en-US", {
+  const date = new Date(scheduledFor).toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -39,7 +41,7 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
     const { error } = await supabase.rpc("restore_account_deletion");
     if (error) {
       setBusy(null);
-      Alert.alert("Couldn't restore your account", error.message);
+      Alert.alert(t("restoreFailed"), error.message);
       return;
     }
     await refreshDeletion();
@@ -70,17 +72,17 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
             accessibilityRole="header"
             style={{ fontFamily: SERIF_BOLD, color: COLORS.ivory, fontSize: 26, lineHeight: 32, textAlign: "center" }}
           >
-            Your account is closed
+            {t("title")}
           </Text>
           <Text
             style={{ fontFamily: SERIF, color: COLORS.ivory, fontSize: 15, lineHeight: 23, marginTop: 16, textAlign: "center" }}
           >
-            Your account is scheduled for deletion on {date}. Restore it to keep using Vendora.
+            {t("body", { date })}
           </Text>
           <Text
             style={{ fontFamily: SERIF, color: "rgba(244,241,234,0.8)", fontSize: 13, lineHeight: 20, marginTop: 12, textAlign: "center" }}
           >
-            Your listings come back as they were. A canceled plan stays canceled.
+            {t("note")}
           </Text>
 
           <Pressable
@@ -101,7 +103,7 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
               <ActivityIndicator color={COLORS.ink} />
             ) : (
               <Text style={{ fontFamily: SERIF_BOLD, color: COLORS.ink, fontSize: 16 }}>
-                Restore account
+                {t("restore")}
               </Text>
             )}
           </Pressable>
@@ -124,7 +126,7 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
               <ActivityIndicator color={COLORS.ivory} />
             ) : (
               <Text style={{ fontFamily: SERIF_BOLD, color: COLORS.ivory, fontSize: 16 }}>
-                Sign out
+                {t("signOut")}
               </Text>
             )}
           </Pressable>

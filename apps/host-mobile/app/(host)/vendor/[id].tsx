@@ -48,11 +48,12 @@ import RAnimated, {
 } from "react-native-reanimated";
 import {
   getCategorySchema,
-  formatListingPrice,
-  pricingModelsLabel,
+  PRICING_MODEL_LABELS,
   type AttributeField,
   type CategorySection,
 } from "@vendora/core";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Editorial type + tone palette — bold serif title, muted ink for
 // supporting copy. Matches the listing-detail design (cream cards on
@@ -77,6 +78,7 @@ const statValueStyle = {
   color: INK,
   fontSize: 18,
   fontFamily: SERIF_BOLD,
+  textAlign: "center",
 } as const;
 
 // Cards carry a 1px hairline instead of a shadow (component standard).
@@ -139,14 +141,65 @@ type PolicyRow = {
 type AttrValue = string | number | boolean | string[] | null | undefined;
 type AttrMap = Record<string, AttrValue>;
 
-const CANCELLATION_LABEL: Record<string, string> = {
-  flexible: "Flexible — full refund up to 7 days before",
-  moderate: "Moderate — 50% up to 30 days before",
-  strict: "Strict — non-refundable",
-};
+type TFn = ReturnType<typeof useT>["t"];
+
+// Stored cancellation_policy values; the label is read at render time.
+const CANCELLATION_KEYS = ["flexible", "moderate", "strict"];
+
+// Money keeps the US format in every language ($1,234).
+function dollars(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
+
+// @vendora/core's formatListingPrice / pricingModelsLabel in the app's
+// language (same output in English).
+function listingPriceLabel(
+  t: TFn,
+  minCents: number | null | undefined,
+  maxCents: number | null | undefined,
+): string {
+  const hasMin = minCents != null && minCents > 0;
+  const hasMax = maxCents != null && maxCents > 0;
+  if (hasMin && hasMax) {
+    return minCents === maxCents
+      ? dollars(minCents as number)
+      : `${dollars(minCents as number)} – ${dollars(maxCents as number)}`;
+  }
+  if (hasMin) return t("price.from", { price: dollars(minCents as number) });
+  if (hasMax) return t("price.upTo", { price: dollars(maxCents as number) });
+  return t("price.custom");
+}
+
+function pricingModelsText(t: TFn, models: string[] | null | undefined): string {
+  if (!models || models.length === 0) return "";
+  return models
+    .map((m) => (m in PRICING_MODEL_LABELS ? t(`price.models.${m}`) : m))
+    .join(" · ");
+}
+
+// Listing details (schema text) in the app's language, keyed by the
+// English text; a vendor's own custom tag shows as typed.
+function useAttributeNames() {
+  const { tObject } = useT("listingAttributes");
+  const pick = (group: string) => {
+    const names = tObject<Record<string, string> | undefined>(group);
+    return (text: string) =>
+      names && Object.prototype.hasOwnProperty.call(names, text) ? names[text] : text;
+  };
+  const option = pick("options");
+  const fieldOptions = tObject<Record<string, Record<string, string>> | undefined>("fieldOptions");
+  return {
+    section: pick("sections"),
+    label: pick("labels"),
+    suffix: pick("suffixes"),
+    option: (text: string, field: string) => fieldOptions?.[field]?.[text] ?? option(text),
+  };
+}
 
 export default function VendorDetailScreen() {
   const router = useRouter();
+  const { t } = useT("vendor");
+  const categoryNames = useCategoryNames();
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [vendor, setVendor] = useState<VendorRow | null>(null);
@@ -339,7 +392,7 @@ export default function VendorDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
         <View className="flex-1 items-center justify-center">
-          <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">Loading…</Text>
+          <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -359,7 +412,7 @@ export default function VendorDetailScreen() {
         </View>
         <View className="flex-1 items-center justify-center px-6">
           <Text style={{ fontFamily: SERIF }} className="text-base text-foreground text-center">
-            Listing not found.
+            {t("notFound")}
           </Text>
         </View>
       </SafeAreaView>
@@ -369,7 +422,9 @@ export default function VendorDetailScreen() {
   const screenWidth = Dimensions.get("window").width;
   const galleryHeight = Math.round(screenWidth * 0.95);
   const price =
-    formatListingPrice(vendor.price_min_cents, vendor.price_max_cents) || null;
+    listingPriceLabel(t, vendor.price_min_cents, vendor.price_max_cents) || null;
+  const pricingModels = pricingModelsText(t, vendor.pricing_models);
+  const categoryLabel = vendor.category ? categoryNames.sub(vendor.category) : null;
   const owner = team.find((m) => m.is_owner) ?? team[0];
 
   async function shareListing() {
@@ -378,7 +433,10 @@ export default function VendorDetailScreen() {
       ? `https://eventvendora.com/vendors/${vendor.slug}`
       : `https://eventvendora.com/vendors/${vendor.id}`;
     await Share.share({
-      message: `${vendor.business_name ?? "This vendor"} on Vendora — ${url}`,
+      message: t("share.message", {
+        name: vendor.business_name ?? t("share.fallbackName"),
+        url,
+      }),
       url,
     }).catch(() => {});
   }
@@ -443,7 +501,7 @@ export default function VendorDetailScreen() {
             >
               <Feather name="image" size={36} color="#a89b8a" />
               <Text style={{ fontFamily: SERIF }} className="mt-2 text-sm text-muted-foreground">
-                No listing photos yet
+                {t("noPhotos")}
               </Text>
             </View>
           )}
@@ -533,7 +591,7 @@ export default function VendorDetailScreen() {
                   letterSpacing: 0.6,
                 }}
               >
-                {vendor.verified_at ? "VERIFIED" : "NEW"}
+                {vendor.verified_at ? t("pill.verified") : t("pill.new")}
               </Text>
             </View>
             {vendor.category ? (
@@ -551,7 +609,7 @@ export default function VendorDetailScreen() {
                     fontSize: 12,
                   }}
                 >
-                  {vendor.category}
+                  {categoryLabel}
                 </Text>
               </View>
             ) : null}
@@ -568,7 +626,7 @@ export default function VendorDetailScreen() {
               }}
               numberOfLines={2}
             >
-              {vendor.business_name ?? "Vendor"}
+              {vendor.business_name ?? t("vendorFallback")}
             </Text>
 
             {/* Location row with map-pin glyph */}
@@ -586,11 +644,12 @@ export default function VendorDetailScreen() {
                     marginLeft: 6,
                     color: INK_DIM,
                     fontSize: 14,
+                    flexShrink: 1,
                   }}
                 >
                   {vendor.location ?? ""}
                   {vendor.location && vendor.category ? "  ·  " : ""}
-                  {vendor.category ?? ""}
+                  {categoryLabel ?? ""}
                 </Text>
               </View>
             ) : null}
@@ -611,27 +670,27 @@ export default function VendorDetailScreen() {
             <StatCell
               top={
                 <Text style={statValueStyle}>
-                  {vendor.verified_at ? "Verified" : "Just listed"}
+                  {vendor.verified_at ? t("stats.verified") : t("stats.justListed")}
                 </Text>
               }
-              bottom={vendor.verified_at ? "Vendora-checked" : "NEW"}
+              bottom={vendor.verified_at ? t("stats.checked") : t("stats.new")}
             />
             <Divider />
             <StatCell
               top={<Text style={statValueStyle}>{packages.length || 0}</Text>}
-              bottom={packages.length === 1 ? "PACKAGE" : "PACKAGES"}
+              bottom={t("stats.packages", { count: packages.length })}
             />
             <Divider />
             <StatCell
               top={<Text style={statValueStyle}>{faqs.length}</Text>}
-              bottom={faqs.length === 1 ? "FAQ" : "FAQS"}
+              bottom={t("stats.faqs", { count: faqs.length })}
             />
           </View>
 
           {/* Host section — own header + card with chevron */}
           {owner ? (
             <View style={{ marginTop: 24 }}>
-              <Text style={sectionHeaderStyle}>Host</Text>
+              <Text style={sectionHeaderStyle}>{t("sections.host")}</Text>
               <View
                 style={{
                   marginHorizontal: 20,
@@ -673,7 +732,7 @@ export default function VendorDetailScreen() {
                     }}
                     numberOfLines={1}
                   >
-                    Hosted by {owner.display_name}
+                    {t("hostedBy", { name: owner.display_name })}
                   </Text>
                   <Text
                     style={{ fontFamily: SERIF,
@@ -697,7 +756,7 @@ export default function VendorDetailScreen() {
           {/* About — bio paragraph, sits directly on cream */}
           {vendor.bio ? (
             <View style={{ marginTop: 24 }}>
-              <Text style={sectionHeaderStyle}>About</Text>
+              <Text style={sectionHeaderStyle}>{t("sections.about")}</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 <Text style={{ fontFamily: SERIF, color: INK, fontSize: 15, lineHeight: 22 }}>
                   {vendor.bio}
@@ -716,7 +775,7 @@ export default function VendorDetailScreen() {
           {/* Packages — white cards on cream backdrop */}
           {packages.length > 0 ? (
             <View style={{ marginTop: 24 }}>
-              <Text style={sectionHeaderStyle}>Packages</Text>
+              <Text style={sectionHeaderStyle}>{t("sections.packages")}</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {packages.map((p) => (
                   <View
@@ -752,7 +811,7 @@ export default function VendorDetailScreen() {
                           fontSize: 17,
                         }}
                       >
-                        ${(p.price_cents / 100).toLocaleString()}
+                        ${(p.price_cents / 100).toLocaleString("en-US")}
                       </Text>
                     </View>
                     {p.description ? (
@@ -791,7 +850,7 @@ export default function VendorDetailScreen() {
           {/* Team — white cards on cream backdrop, avatar + OWNER pill */}
           {team.length > 0 ? (
             <View style={{ marginTop: 12 }}>
-              <Text style={sectionHeaderStyle}>Team</Text>
+              <Text style={sectionHeaderStyle}>{t("sections.team")}</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {team.map((m) => (
                   <View
@@ -867,7 +926,7 @@ export default function VendorDetailScreen() {
                                   letterSpacing: 0.8,
                                 }}
                               >
-                                OWNER
+                                {t("owner")}
                               </Text>
                             </View>
                           ) : null}
@@ -916,7 +975,7 @@ export default function VendorDetailScreen() {
           {/* FAQ — collapsible cream cards */}
           {faqs.length > 0 ? (
             <View style={{ marginTop: 12 }}>
-              <Text style={sectionHeaderStyle}>FAQ</Text>
+              <Text style={sectionHeaderStyle}>{t("sections.faq")}</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {faqs.map((f) => (
                   <FaqCard key={f.id} question={f.question} answer={f.answer} />
@@ -932,24 +991,25 @@ export default function VendorDetailScreen() {
             policy.reschedule_window_days != null ||
             policy.policy_notes) ? (
             <View style={{ marginTop: 12 }}>
-              <Text style={sectionHeaderStyle}>Policies</Text>
+              <Text style={sectionHeaderStyle}>{t("sections.policies")}</Text>
               <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
                 {policy.cancellation_policy ? (
                   <PolicyCard
-                    label="Cancellation"
+                    label={t("policies.cancellation")}
                     value={
-                      CANCELLATION_LABEL[policy.cancellation_policy] ??
-                      policy.cancellation_policy
+                      CANCELLATION_KEYS.includes(policy.cancellation_policy)
+                        ? t(`policies.cancellationOptions.${policy.cancellation_policy}`)
+                        : policy.cancellation_policy
                     }
                   />
                 ) : null}
                 {policy.deposit_pct != null ? (
-                  <PolicyCard label="Deposit" value={`${policy.deposit_pct}%`} />
+                  <PolicyCard label={t("policies.deposit")} value={`${policy.deposit_pct}%`} />
                 ) : null}
                 {policy.reschedule_window_days != null ? (
                   <PolicyCard
-                    label="Reschedule"
-                    value={`${policy.reschedule_window_days} days`}
+                    label={t("policies.reschedule")}
+                    value={t("policies.days", { count: policy.reschedule_window_days })}
                   />
                 ) : null}
                 {policy.policy_notes ? (
@@ -1008,7 +1068,7 @@ export default function VendorDetailScreen() {
                     letterSpacing: 0.6,
                   }}
                 >
-                  FROM
+                  {t("price.fromEyebrow")}
                 </Text>
                 {/* Manual underline via borderBottom — RN's
                     textDecorationLine on heavy-bold sits right at
@@ -1031,7 +1091,7 @@ export default function VendorDetailScreen() {
                     {price}
                   </Text>
                 </View>
-                {pricingModelsLabel(vendor.pricing_models) ? (
+                {pricingModels ? (
                   <Text
                     style={{ fontFamily: SERIF,
                       marginTop: 4,
@@ -1040,7 +1100,7 @@ export default function VendorDetailScreen() {
                     }}
                     numberOfLines={1}
                   >
-                    {pricingModelsLabel(vendor.pricing_models)}
+                    {pricingModels}
                   </Text>
                 ) : null}
                 {vendor.custom_pricing ? (
@@ -1052,7 +1112,7 @@ export default function VendorDetailScreen() {
                     }}
                     numberOfLines={1}
                   >
-                    Pricing varies by event details.
+                    {t("price.varies")}
                   </Text>
                 ) : null}
               </>
@@ -1063,7 +1123,7 @@ export default function VendorDetailScreen() {
                   fontSize: 18,
                 }}
               >
-                Pricing on request
+                {t("price.onRequest")}
               </Text>
             )}
           </View>
@@ -1074,9 +1134,9 @@ export default function VendorDetailScreen() {
               land. */}
           {vendor?.paused_at ? (
             <View style={{ flexShrink: 1, maxWidth: 200 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>Taking a break</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14 }}>{t("paused.title")}</Text>
               <Text style={{ fontFamily: SERIF, color: INK, fontSize: 12, marginTop: 2 }}>
-                Not taking new inquiries right now.
+                {t("paused.body")}
               </Text>
             </View>
           ) : (
@@ -1101,7 +1161,7 @@ export default function VendorDetailScreen() {
                     marginRight: 6,
                   }}
                 >
-                  Inquire
+                  {t("inquire")}
                 </Text>
                 <Feather name="chevron-right" size={16} color={INK} />
               </View>
@@ -1193,6 +1253,7 @@ function StatCell({
           color: INK_DIM,
           fontSize: 10,
           letterSpacing: 0.8,
+          textAlign: "center",
         }}
       >
         {bottom}
@@ -1280,6 +1341,7 @@ function PolicyCard({ label, value }: { label: string; value: string }) {
         style={{ fontFamily: SERIF_BOLD,
           color: INK,
           fontSize: 15,
+          flexShrink: 1,
         }}
       >
         {label}
@@ -1310,6 +1372,7 @@ function CategoryDetails({
   category: string;
   attrs: AttrMap;
 }) {
+  const { t } = useT("vendor");
   const schema = getCategorySchema(category);
   if (!schema) return null;
 
@@ -1321,7 +1384,7 @@ function CategoryDetails({
 
   return (
     <View style={{ marginTop: 24 }}>
-      <Text style={sectionHeaderStyle}>Details</Text>
+      <Text style={sectionHeaderStyle}>{t("sections.details")}</Text>
       <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
         {populatedSections.map((section) => (
           <CategoryDetailSection
@@ -1342,6 +1405,7 @@ function CategoryDetailSection({
   section: CategorySection;
   attrs: AttrMap;
 }) {
+  const names = useAttributeNames();
   const populated = section.fields.filter((f) => hasAttrValue(attrs[f.key]));
   if (populated.length === 0) return null;
 
@@ -1355,7 +1419,7 @@ function CategoryDetailSection({
           marginBottom: 8,
         }}
       >
-        {section.name.toUpperCase()}
+        {names.section(section.name).toUpperCase()}
       </Text>
       <View
         style={{
@@ -1408,19 +1472,22 @@ function CategoryDetailValue({
   field: AttributeField;
   value: AttrValue;
 }) {
+  const names = useAttributeNames();
+  const { locale } = useT();
+  const label = names.label(field.label);
   if (field.type === "currency" && typeof value === "number") {
     return (
       <RowLabelValue
-        label={field.label}
-        value={`$${(value / 100).toLocaleString()}`}
+        label={label}
+        value={`$${(value / 100).toLocaleString("en-US")}`}
       />
     );
   }
   if (field.type === "int" && typeof value === "number") {
     return (
       <RowLabelValue
-        label={field.label}
-        value={`${value}${field.suffix ? ` ${field.suffix}` : ""}`}
+        label={label}
+        value={`${value.toLocaleString(locale)}${field.suffix ? ` ${names.suffix(field.suffix)}` : ""}`}
       />
     );
   }
@@ -1435,13 +1502,13 @@ function CategoryDetailValue({
             fontSize: 15,
           }}
         >
-          {field.label}
+          {label}
         </Text>
       </View>
     );
   }
   if (field.type === "select" && typeof value === "string" && value) {
-    return <RowLabelValue label={field.label} value={value} />;
+    return <RowLabelValue label={label} value={names.option(value, field.key)} />;
   }
   if (field.type === "tags") {
     const tags = (value as string[] | undefined) ?? [];
@@ -1455,7 +1522,7 @@ function CategoryDetailValue({
             marginBottom: 8,
           }}
         >
-          {field.label}
+          {label}
         </Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {tags.map((t) => (
@@ -1469,7 +1536,7 @@ function CategoryDetailValue({
               }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 12,}}>
-                {t}
+                {names.option(t, field.key)}
               </Text>
             </View>
           ))}
@@ -1497,6 +1564,7 @@ function RowLabelValue({ label, value }: { label: string; value: string }) {
           color: INK,
           fontSize: 15,
           textAlign: "right",
+          flexShrink: 1,
         }}
         numberOfLines={2}
       >
@@ -1517,18 +1585,18 @@ function hasAttrValue(v: AttrValue): boolean {
 
 // "Listing since Mar 2026" style label — short month + year is enough,
 // matches Airbnb's "1 year hosting" terseness.
-function joinedLabel(iso: string | null | undefined): string {
-  if (!iso) return "Recently joined";
+function joinedLabel(t: TFn, iso: string | null | undefined): string {
+  if (!iso) return t("joined.recently");
   const then = new Date(iso);
-  if (Number.isNaN(then.getTime())) return "Recently joined";
+  if (Number.isNaN(then.getTime())) return t("joined.recently");
   const now = new Date();
   const months =
     (now.getFullYear() - then.getFullYear()) * 12 +
     (now.getMonth() - then.getMonth());
-  if (months < 1) return "Just joined Vendora";
-  if (months < 12) return `${months} month${months === 1 ? "" : "s"} on Vendora`;
+  if (months < 1) return t("joined.justJoined");
+  if (months < 12) return t("joined.months", { count: months });
   const years = Math.floor(months / 12);
-  return `${years} year${years === 1 ? "" : "s"} on Vendora`;
+  return t("joined.years", { count: years });
 }
 
 function VendorBusinessCard({
@@ -1542,6 +1610,7 @@ function VendorBusinessCard({
   fallbackLogoUrl: string | null;
   onPress: () => void;
 }) {
+  const { t } = useT("vendor");
   const initial = (
     vendor.business_name?.[0] ??
     owner?.display_name?.[0] ??
@@ -1574,13 +1643,15 @@ function VendorBusinessCard({
             style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15,}}
             numberOfLines={1}
           >
-            Hosted by {owner?.display_name ?? vendor.business_name ?? "Vendor"}
+            {t("hostedBy", {
+              name: owner?.display_name ?? vendor.business_name ?? t("vendorFallback"),
+            })}
           </Text>
           <Text
             style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}
             numberOfLines={1}
           >
-            {joinedLabel(vendor.created_at)}
+            {joinedLabel(t, vendor.created_at)}
           </Text>
         </View>
         <Feather name="chevron-right" size={20} color={INK_DIM} />
@@ -1705,6 +1776,8 @@ function VendorProfileSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { t } = useT("vendor");
+  const { t: tc } = useT("common");
   const [tab, setTab] = useState<SheetTab>("posts");
   const [posts, setPosts] = useState<SheetPostRow[]>([]);
   const [reels, setReels] = useState<SheetReelRow[]>([]);
@@ -1802,12 +1875,13 @@ function VendorProfileSheet({
           }}
         >
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Close</Text>
+            <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>{tc("actions.close")}</Text>
           </Pressable>
           <Text
-            style={{ fontSize: 17, color: INK, fontFamily: SERIF_BOLD }}
+            style={{ fontSize: 17, color: INK, fontFamily: SERIF_BOLD, flexShrink: 1, textAlign: "center" }}
+            numberOfLines={1}
           >
-            Vendor profile
+            {t("sheet.title")}
           </Text>
           <View style={{ width: 56 }} />
         </View>
@@ -1835,7 +1909,7 @@ function VendorProfileSheet({
                   color: INK_DIM,
                 }}
               >
-                ABOUT {owner.display_name?.toUpperCase()}
+                {t("sheet.aboutName", { name: owner.display_name?.toUpperCase() })}
               </Text>
               <Text
                 style={{
@@ -1865,25 +1939,25 @@ function VendorProfileSheet({
             >
               <SheetTabPill
                 active={tab === "posts"}
-                label="Posts"
+                label={t("sheet.tabs.posts")}
                 count={counts.posts}
                 onPress={() => setTab("posts")}
               />
               <SheetTabPill
                 active={tab === "reels"}
-                label="Reels"
+                label={t("sheet.tabs.reels")}
                 count={counts.reels}
                 onPress={() => setTab("reels")}
               />
               <SheetTabPill
                 active={tab === "buzz"}
-                label="Buzz"
+                label={t("sheet.tabs.buzz")}
                 count={counts.buzz}
                 onPress={() => setTab("buzz")}
               />
               <SheetTabPill
                 active={tab === "listings"}
-                label="Listings"
+                label={t("sheet.tabs.listings")}
                 count={counts.listings}
                 onPress={() => setTab("listings")}
               />
@@ -1892,24 +1966,24 @@ function VendorProfileSheet({
             <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
               {tab === "posts" ? (
                 posts.length === 0 ? (
-                  <SheetEmpty body="No posts yet." />
+                  <SheetEmpty body={t("sheet.empty.posts")} />
                 ) : (
                   <SheetPostGrid posts={posts} />
                 )
               ) : tab === "reels" ? (
                 reels.length === 0 ? (
-                  <SheetEmpty body="No reels yet." />
+                  <SheetEmpty body={t("sheet.empty.reels")} />
                 ) : (
                   <SheetReelGrid reels={reels} />
                 )
               ) : tab === "buzz" ? (
                 buzz.length === 0 ? (
-                  <SheetEmpty body="No buzz yet." />
+                  <SheetEmpty body={t("sheet.empty.buzz")} />
                 ) : (
                   <SheetBuzzList items={buzz} />
                 )
               ) : otherListings.length === 0 ? (
-                <SheetEmpty body="No listings yet." />
+                <SheetEmpty body={t("sheet.empty.listings")} />
               ) : (
                 <SheetListingsList
                   listings={otherListings}
@@ -2084,6 +2158,7 @@ function SheetReelGrid({ reels }: { reels: SheetReelRow[] }) {
 }
 
 function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
+  const { locale } = useT();
   return (
     <View style={{ gap: 12, paddingTop: 4 }}>
       {items.map((b) => (
@@ -2108,7 +2183,7 @@ function SheetBuzzList({ items }: { items: SheetBuzzRow[] }) {
             {b.body}
           </Text>
           <Text style={{ fontFamily: SERIF, marginTop: 6, color: INK_DIM, fontSize: 12 }}>
-            {new Date(b.created_at).toLocaleDateString()}
+            {new Date(b.created_at).toLocaleDateString(locale)}
           </Text>
         </View>
       ))}
@@ -2125,6 +2200,8 @@ function SheetListingsList({
   currentId: string;
   onPress: (id: string) => void;
 }) {
+  const { t } = useT("vendor");
+  const categoryNames = useCategoryNames();
   return (
     <View style={{ gap: 12, paddingTop: 4 }}>
       {listings.map((l) => {
@@ -2189,7 +2266,7 @@ function SheetListingsList({
                     style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15, flexShrink: 1 }}
                     numberOfLines={1}
                   >
-                    {l.business_name ?? "Listing"}
+                    {l.business_name ?? t("listingFallback")}
                   </Text>
                   {isCurrent ? (
                     <View
@@ -2207,7 +2284,7 @@ function SheetListingsList({
                           letterSpacing: 0.6,
                         }}
                       >
-                        VIEWING
+                        {t("sheet.viewing")}
                       </Text>
                     </View>
                   ) : null}
@@ -2217,7 +2294,7 @@ function SheetListingsList({
                     style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}
                     numberOfLines={1}
                   >
-                    {l.category}
+                    {categoryNames.sub(l.category)}
                   </Text>
                 ) : null}
               </View>
@@ -2421,6 +2498,7 @@ function CreamOceanFront({
   height: number;
   onFlip: () => void;
 }) {
+  const { t, locale } = useT("vendor");
   return (
     <>
       <Svg
@@ -2513,7 +2591,7 @@ function CreamOceanFront({
               }}
               numberOfLines={2}
             >
-              {vendor.business_name ?? "Vendor"}
+              {vendor.business_name ?? t("vendorFallback")}
             </Text>
             {vendor.location ? (
               <View
@@ -2544,17 +2622,17 @@ function CreamOceanFront({
             paddingVertical: 12,
           }}
         >
-          <CreamOceanStat label="Bookings" value="0" />
+          <CreamOceanStat label={t("sheet.stats.bookings")} value="0" />
           <View
             style={{ width: 1, backgroundColor: "#e6e1d5" }}
           />
-          <CreamOceanStat label="Rating" value="—" italic />
+          <CreamOceanStat label={t("sheet.stats.rating")} value="—" italic />
           <View
             style={{ width: 1, backgroundColor: "#e6e1d5" }}
           />
           <CreamOceanStat
-            label="Joined"
-            value={shortJoined(vendor.created_at)}
+            label={t("sheet.stats.joined")}
+            value={shortJoined(t, locale, vendor.created_at)}
             italic
           />
         </View>
@@ -2601,6 +2679,7 @@ function CreamOceanBack({
   height: number;
   onFlip: () => void;
 }) {
+  const { t } = useT("vendor");
   const hasBio = !!vendor.bio?.trim();
   return (
     <>
@@ -2647,7 +2726,7 @@ function CreamOceanBack({
           }}
           numberOfLines={5}
         >
-          {hasBio ? vendor.bio : "No bio yet."}
+          {hasBio ? vendor.bio : t("sheet.noBio")}
         </Text>
       </View>
 
@@ -2695,6 +2774,8 @@ function CreamOceanStat({
           color: INK_DIM,
           marginBottom: 3,
         }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
       >
         {label}
       </Text>
@@ -2712,21 +2793,21 @@ function CreamOceanStat({
   );
 }
 
-function shortJoined(iso: string | null | undefined): string {
-  if (!iso) return "today";
+function shortJoined(t: TFn, locale: string, iso: string | null | undefined): string {
+  if (!iso) return t("sheet.stats.today");
   const then = new Date(iso);
-  if (Number.isNaN(then.getTime())) return "today";
+  if (Number.isNaN(then.getTime())) return t("sheet.stats.today");
   const now = new Date();
   const isSameDay =
     then.getFullYear() === now.getFullYear() &&
     then.getMonth() === now.getMonth() &&
     then.getDate() === now.getDate();
-  if (isSameDay) return "today";
+  if (isSameDay) return t("sheet.stats.today");
   const months =
     (now.getFullYear() - then.getFullYear()) * 12 +
     (now.getMonth() - then.getMonth());
   if (months < 12) {
-    return then.toLocaleDateString(undefined, {
+    return then.toLocaleDateString(locale, {
       month: "short",
       year: "numeric",
     });

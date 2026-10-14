@@ -28,6 +28,7 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
 
 // Same palette as welcome / signup / login.
 const PAGE = "#14161a";
@@ -54,6 +55,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 export default function ForgotPasswordScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("forgotPassword");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -113,7 +115,7 @@ export default function ForgotPasswordScreen() {
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
-              ← Back
+              ← {t("back")}
             </Text>
           </Pressable>
 
@@ -121,14 +123,14 @@ export default function ForgotPasswordScreen() {
           {!sent ? (
             <>
               <StepHeader
-                eyebrow="RESET PASSWORD"
-                title="Forgot your password?"
-                subtitle="Enter your email and we'll send a reset link. Tap it on this device to pick a new password."
+                eyebrow={t("eyebrow")}
+                title={t("request.title")}
+                subtitle={t("request.subtitle")}
               />
 
               <View style={{ marginTop: 28, gap: 20 }}>
                 <View>
-                  <Text style={fieldLabel}>EMAIL</Text>
+                  <Text style={fieldLabel}>{t("request.email")}</Text>
                   <View style={inputRow}>
                     <MaterialCommunityIcons
                       name="email-outline"
@@ -162,7 +164,7 @@ export default function ForgotPasswordScreen() {
                   style={primaryBtnFor(submitting || !email.trim())}
                 >
                   <Text style={primaryBtnTextFor(submitting || !email.trim())}>
-                    {submitting ? "Sending…" : "Send reset link"}
+                    {submitting ? t("request.sending") : t("request.send")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -170,9 +172,9 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               <StepHeader
-                eyebrow="RESET PASSWORD"
-                title="Check your email"
-                subtitle={`If an account exists for ${email}, you'll get a reset link within a minute. Open it on this device to set a new password.`}
+                eyebrow={t("eyebrow")}
+                title={t("sent.title")}
+                subtitle={t("sent.subtitle", { email })}
               />
 
               <TouchableOpacity
@@ -180,7 +182,7 @@ export default function ForgotPasswordScreen() {
                 activeOpacity={0.85}
                 style={{ ...primaryBtn, marginTop: 28 }}
               >
-                <Text style={primaryBtnText}>Back to sign in</Text>
+                <Text style={primaryBtnText}>{t("sent.backToSignIn")}</Text>
               </TouchableOpacity>
             </>
           )}

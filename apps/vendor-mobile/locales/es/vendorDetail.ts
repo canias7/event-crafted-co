@@ -1,0 +1,32 @@
+export default {
+  loading: "Cargando…",
+  notFound: "No se encontró el anuncio.",
+  noPhotos: "El anuncio aún no tiene fotos",
+  vendorFallback: "Proveedor",
+  thisVendor: "Este proveedor",
+  shareMessage: "{{name}} en Vendora: {{url}}",
+  marketplaceListing: "Anuncio en Vendora",
+  pricingVaries: "El precio varía según los detalles del evento.",
+  pricingOnRequest: "Precio a consultar",
+  viewOnWeb: "Ver en la web",
+  price: {
+    from: "Desde {{amount}}",
+    upTo: "Hasta {{amount}}",
+    custom: "Precio personalizado",
+  },
+  pricingModels: {
+    fixed_packages: "Paquetes fijos",
+    hourly: "Por hora",
+    per_person: "Por persona",
+    starting_at: "Desde",
+    custom_quote: "Cotización personalizada",
+  },
+  stats: {
+    verified: "Verificado",
+    new: "Nuevo",
+    checked: "Revisado por Vendora",
+    justListed: "Recién publicado",
+    faqs_one: "Pregunta",
+    faqs_other: "Preguntas",
+  },
+};

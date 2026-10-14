@@ -12,6 +12,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 import { SHADOW } from "@/lib/ui";
+import { useT } from "@/lib/i18n";
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   explore: "search",
@@ -22,7 +23,7 @@ const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 
 const ORDER = ["explore", "inbox", "events", "profile"];
 
-function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+function FloatingTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const focusedRoute = state.routes[state.index]?.name;
   // Hide the floating bar on screens that own the bottom — the
@@ -83,6 +84,9 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 }
               }}
               hitSlop={6}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isFocused }}
+              accessibilityLabel={descriptors[route.key]?.options.title}
               style={{
                 width: 48,
                 height: 48,
@@ -107,6 +111,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function HostLayout() {
   const { loading, user } = useAuth();
+  const { t } = useT("hostTabs");
   // Wire push-tap → deep-link routing once the tab navigator is mounted.
   // Both cold-start taps (app killed) and warm taps go through here.
   usePushNotificationTapHandler();
@@ -134,10 +139,10 @@ export default function HostLayout() {
         tabBarStyle: { position: "absolute" },
       }}
     >
-      <Tabs.Screen name="explore" options={{ title: "Explore" }} />
-      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
-      <Tabs.Screen name="events" options={{ title: "Events" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen name="explore" options={{ title: t("explore") }} />
+      <Tabs.Screen name="inbox" options={{ title: t("inbox") }} />
+      <Tabs.Screen name="events" options={{ title: t("events") }} />
+      <Tabs.Screen name="profile" options={{ title: t("profile") }} />
       {/* Vendor detail — opened from Explore card tap; not a tab. */}
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       {/* Conversation — opened from Inbox row tap; not a tab. */}

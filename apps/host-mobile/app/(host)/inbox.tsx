@@ -23,6 +23,8 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 
@@ -81,23 +83,35 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function relativeTime(iso: string | null): string {
+type TFn = (key: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+function relativeTime(iso: string | null, t: TFn, locale: string): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
+  if (m < 1) return t("time.now");
+  if (m < 60) return t("time.minutes", { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return t("time.hours", { count: h });
   const d = Math.floor(h / 24);
-  if (d === 1) return "Yesterday";
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d === 1) return t("time.yesterday");
+  if (d < 7) return t("time.days", { count: d });
+  return new Date(iso).toLocaleDateString(locale, { month: "short", day: "numeric" });
+}
+
+// Event type in the app's language; unknown values fall back to the
+// shared English formatter.
+function eventTypeText(type: string | null, t: TFn): string {
+  const v = type?.trim();
+  if (!v) return t("eventTypes.fallback");
+  const label = t(`eventTypes.${v}`);
+  return label === `inbox.eventTypes.${v}` ? eventTypeLabel(v) : label;
 }
 
 type Filter = "all" | "awaiting" | "replied" | "booked";
 
 export default function InboxScreen() {
+  const { t } = useT("inbox");
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -174,9 +188,9 @@ export default function InboxScreen() {
       >
         <View className="px-5 pt-2 pb-4">
           <Wordmark />
-          <Text style={PAGE_TITLE}>Inbox</Text>
+          <Text style={PAGE_TITLE}>{t("title")}</Text>
           <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
-            Your inquiries to vendors — all in one place
+            {t("subtitle")}
           </Text>
         </View>
 
@@ -186,7 +200,7 @@ export default function InboxScreen() {
             <TextInput style={{ fontFamily: SERIF }}
               value={search}
               onChangeText={setSearch}
-              placeholder="Search by vendor, event, or message"
+              placeholder={t("searchPlaceholder")}
               placeholderTextColor={PLACEHOLDER}
               className="ml-2 flex-1 text-base text-foreground"
             />
@@ -200,22 +214,22 @@ export default function InboxScreen() {
         >
           <Chip
             active={filter === "all"}
-            label="All"
+            label={t("filters.all")}
             onPress={() => setFilter("all")}
           />
           <Chip
             active={filter === "awaiting"}
-            label="Awaiting"
+            label={t("filters.awaiting")}
             onPress={() => setFilter("awaiting")}
           />
           <Chip
             active={filter === "replied"}
-            label="Replied"
+            label={t("filters.replied")}
             onPress={() => setFilter("replied")}
           />
           <Chip
             active={filter === "booked"}
-            label="Booked"
+            label={t("filters.booked")}
             onPress={() => setFilter("booked")}
           />
         </ScrollView>
@@ -231,7 +245,7 @@ export default function InboxScreen() {
               className="mt-2 active:opacity-70"
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34" }} className="text-sm">
-                Try again
+                {t("retry")}
               </Text>
             </Pressable>
           </View>
@@ -246,8 +260,8 @@ export default function InboxScreen() {
             <Empty
               msg={
                 search || filter !== "all"
-                  ? "Nothing matches that filter."
-                  : "No conversations yet. Reach out to a vendor from Explore."
+                  ? t("emptyFiltered")
+                  : t("empty")
               }
             />
           ) : (
@@ -306,8 +320,10 @@ function Avatar({ seed, label }: { seed: string; label: string }) {
 
 function InquiryCard({ row }: { row: InquiryRow }) {
   const router = useRouter();
+  const { t, locale } = useT("inbox");
+  const cat = useCategoryNames();
   const [opening, setOpening] = useState(false);
-  const vendorName = row.vendor_profiles?.[0]?.business_name ?? "Vendor";
+  const vendorName = row.vendor_profiles?.[0]?.business_name ?? t("vendorFallback");
   const category = row.vendor_profiles?.[0]?.category ?? null;
   // Host-side "noteworthy" = vendor has replied and the host hasn't
   // opened it yet. There's no per-thread unread bit on inquiries, so we
@@ -316,7 +332,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
   const isUnread = row.status === "replied" || row.status === "drafted";
   const previewBudget =
     row.budget_max_cents != null
-      ? ` · up to $${Math.round(row.budget_max_cents / 100)}`
+      ? ` · ${t("budgetUpTo", { amount: `$${Math.round(row.budget_max_cents / 100)}` })}`
       : "";
 
   async function open() {
@@ -352,12 +368,12 @@ function InquiryCard({ row }: { row: InquiryRow }) {
               ) : null}
             </View>
             <Text style={{ fontFamily: SERIF }} className="text-xs text-muted-foreground">
-              {relativeTime(row.created_at)}
+              {relativeTime(row.created_at, t, locale)}
             </Text>
           </View>
           <Text style={{ fontFamily: SERIF }} className="mt-0.5 text-xs text-muted-foreground" numberOfLines={1}>
-            {category ? `${category} · ` : ""}
-            {eventTypeLabel(row.event_type)}
+            {category ? `${cat.sub(category)} · ` : ""}
+            {eventTypeText(row.event_type, t)}
             {row.event_date ? ` · ${row.event_date}` : ""}
             {previewBudget}
           </Text>
@@ -375,7 +391,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
               style={{ backgroundColor: "#f2e7cb" }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: "#8a6f3e" }} className="text-[10px] uppercase tracking-wide">
-                Replied
+                {t("badges.replied")}
               </Text>
             </View>
           ) : row.status === "won" ? (
@@ -384,7 +400,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
               style={{ backgroundColor: "#14161a" }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: "#f4f1ea" }} className="text-[10px] uppercase tracking-wide">
-                Booked
+                {t("badges.booked")}
               </Text>
             </View>
           ) : null}

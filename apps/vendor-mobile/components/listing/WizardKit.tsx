@@ -24,6 +24,8 @@ import * as ImagePicker from "expo-image-picker";
 import { CATEGORY_GROUPS } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Category groups with their own listing wizard. THE single source of
 // truth for the handoff — the generic builder, the profile tab, and the
@@ -289,12 +291,16 @@ export function ChipMulti({
   selected,
   onChange,
   allowCustom,
+  labelFor,
 }: {
   options: string[];
   selected: string[];
   onChange: (next: string[]) => void;
   allowCustom?: boolean;
+  /** Display label for an option; the stored value stays as given. */
+  labelFor?: (opt: string) => string;
 }) {
+  const { t } = useT("wizardKit");
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const custom = selected.filter((s) => !options.includes(s));
@@ -335,7 +341,7 @@ export function ChipMulti({
                 color: on ? "#ffffff" : INK,
               }}
             >
-              {opt}
+              {labelFor ? labelFor(opt) : opt}
             </Text>
           </TouchableOpacity>
         );
@@ -348,7 +354,7 @@ export function ChipMulti({
             onSubmitEditing={commitCustom}
             onBlur={commitCustom}
             autoFocus
-            placeholder="Type and press return"
+            placeholder={t("chips.typeAndReturn")}
             placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF,
               borderRadius: 999,
@@ -380,7 +386,7 @@ export function ChipMulti({
           >
             <Feather name="plus" size={12} color={INK_DIM} />
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK_DIM }}>
-              Add other
+              {t("chips.addOther")}
             </Text>
           </TouchableOpacity>
         )
@@ -393,10 +399,13 @@ export function ChipSingle({
   options,
   selected,
   onChange,
+  labelFor,
 }: {
   options: string[];
   selected: string;
   onChange: (v: string) => void;
+  /** Display label for an option; the stored value stays as given. */
+  labelFor?: (opt: string) => string;
 }) {
   return (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -419,7 +428,7 @@ export function ChipSingle({
             <Text
               style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? "#fff" : INK }}
             >
-              {opt}
+              {labelFor ? labelFor(opt) : opt}
             </Text>
           </TouchableOpacity>
         );
@@ -521,6 +530,7 @@ function BrandDialogView({
   onDismiss: () => void;
   onConfirm: () => void;
 }) {
+  const { t } = useT("wizardKit");
   const isConfirm = !!spec?.onConfirm;
   return (
     <Modal
@@ -615,8 +625,8 @@ function BrandDialogView({
               }}
             >
               {isConfirm
-                ? (spec?.confirmLabel ?? "Confirm")
-                : (spec?.buttonLabel ?? "OK")}
+                ? (spec?.confirmLabel ?? t("dialog.confirm"))
+                : (spec?.buttonLabel ?? t("dialog.ok"))}
             </Text>
           </TouchableOpacity>
           {isConfirm ? (
@@ -636,7 +646,7 @@ function BrandDialogView({
               }}
             >
               <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-                {spec?.cancelLabel ?? "Cancel"}
+                {spec?.cancelLabel ?? t("dialog.cancel")}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -686,6 +696,7 @@ export function CustomFieldsEditor({
   fields: CustomField[];
   onChange: (next: CustomField[]) => void;
 }) {
+  const { t } = useT("wizardKit");
   function setAt(i: number, patch: Partial<CustomField>) {
     onChange(fields.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
   }
@@ -716,7 +727,7 @@ export function CustomFieldsEditor({
               <Input
                 value={f.label}
                 onChangeText={(v) => setAt(i, { label: v.slice(0, 80) })}
-                placeholder="Field name — e.g., Languages spoken"
+                placeholder={t("customFields.namePlaceholder")}
               />
             </View>
             <TouchableOpacity
@@ -739,7 +750,7 @@ export function CustomFieldsEditor({
           <Input
             value={f.value}
             onChangeText={(v) => setAt(i, { value: v.slice(0, 500) })}
-            placeholder="Your answer…"
+            placeholder={t("customFields.answerPlaceholder")}
             multiline
           />
         </View>
@@ -762,7 +773,7 @@ export function CustomFieldsEditor({
       >
         <Feather name="plus" size={16} color={INK} />
         <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-          Add your own field
+          {t("customFields.add")}
         </Text>
       </TouchableOpacity>
     </View>
@@ -785,8 +796,10 @@ export function CategoryField({
   value: string | null;
   onPress: () => void;
 }) {
+  const { t } = useT("wizardKit");
+  const { sub } = useCategoryNames();
   return (
-    <Field label="Category" required>
+    <Field label={t("category.label")} required>
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
@@ -803,7 +816,7 @@ export function CategoryField({
         }}
       >
         <Text style={{ fontFamily: SERIF, fontSize: 15, color: value ? INK : INK_DIM }}>
-          {value || "Choose a category"}
+          {value ? sub(value) : t("category.choose")}
         </Text>
         <Feather name="chevron-down" size={18} color={INK_DIM} />
       </TouchableOpacity>
@@ -826,6 +839,8 @@ export function CategoryPickerModal({
   onSelect: (sub: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useT("wizardKit");
+  const names = useCategoryNames();
   return (
     <Modal
       visible={visible}
@@ -846,7 +861,7 @@ export function CategoryPickerModal({
           }}
         >
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Cancel</Text>
+            <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>{t("dialog.cancel")}</Text>
           </Pressable>
           <Text
             style={{
@@ -855,7 +870,7 @@ export function CategoryPickerModal({
               fontFamily: SERIF_BOLD,
             }}
           >
-            Category
+            {t("category.label")}
           </Text>
           <View style={{ width: 60 }} />
         </View>
@@ -872,7 +887,7 @@ export function CategoryPickerModal({
                   color: INK_DIM,
                 }}
               >
-                {group.name.toUpperCase()}
+                {names.group(group.slug, group.name).toUpperCase()}
               </Text>
               <View
                 style={{
@@ -901,7 +916,7 @@ export function CategoryPickerModal({
                           minHeight: 50,
                         }}
                       >
-                        <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK }}>{sub}</Text>
+                        <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK }}>{names.sub(sub)}</Text>
                         {active ? (
                           <Feather name="check" size={18} color={INK} />
                         ) : null}
@@ -919,6 +934,7 @@ export function CategoryPickerModal({
 }
 
 export function ReviewChecklist({ missing }: { missing: string[] }) {
+  const { t } = useT("wizardKit");
   if (missing.length === 0) {
     return (
       <View
@@ -933,7 +949,7 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
       >
         <MaterialCommunityIcons name="check-circle" size={20} color={GOLD} />
         <Text style={{ fontFamily: SERIF, flex: 1, fontSize: 14, color: INK }}>
-          Everything required is filled in. Publish when you&rsquo;re ready.
+          {t("review.allSet")}
         </Text>
       </View>
     );
@@ -949,7 +965,7 @@ export function ReviewChecklist({ missing }: { missing: string[] }) {
       }}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-        Still needed to publish:
+        {t("review.stillNeeded")}
       </Text>
       {missing.map((m) => (
         <View
@@ -984,6 +1000,7 @@ export function ListingPhotosGrid({
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
   const [uploading, setUploading] = useState(false);
   const dialog = useBrandDialog();
+  const { t } = useT("wizardKit");
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -1010,9 +1027,8 @@ export function ListingPhotosGrid({
     if (!perm.granted) {
       dialog.show({
         icon: "image",
-        title: "Library access needed",
-        message:
-          "Enable photo library access in Settings to upload listing photos.",
+        title: t("photos.accessTitle"),
+        message: t("photos.accessMessage"),
       });
       return;
     }
@@ -1020,8 +1036,8 @@ export function ListingPhotosGrid({
     if (remaining <= 0) {
       dialog.show({
         icon: "image",
-        title: "Photo limit reached",
-        message: `Listings cap at ${MAX_PHOTOS} photos.`,
+        title: t("photos.limitTitle"),
+        message: t("photos.limitMessage", { count: MAX_PHOTOS }),
       });
       return;
     }
@@ -1045,9 +1061,8 @@ export function ListingPhotosGrid({
     if (assets.length < result.assets.length) {
       dialog.show({
         icon: "alert-circle",
-        title: "Some photos were skipped",
-        message:
-          "HEIC photos can't be shown on the web listing. In iOS Camera settings choose Formats → Most Compatible.",
+        title: t("photos.skippedTitle"),
+        message: t("photos.skippedMessage"),
       });
     }
     if (assets.length === 0) return;
@@ -1088,8 +1103,8 @@ export function ListingPhotosGrid({
     if (rows.length < assets.length) {
       dialog.show({
         icon: "alert-circle",
-        title: "Some photos didn't upload",
-        message: `${assets.length - rows.length} photo(s) failed. Try them again.`,
+        title: t("photos.failedTitle"),
+        message: t("photos.failedMessage", { count: assets.length - rows.length }),
       });
     }
     await load();
@@ -1098,9 +1113,9 @@ export function ListingPhotosGrid({
   function deletePhoto(p: PhotoRow) {
     dialog.show({
       icon: "trash-2",
-      title: "Delete this photo?",
-      message: "It's removed from this listing right away.",
-      confirmLabel: "Delete",
+      title: t("photos.deleteTitle"),
+      message: t("photos.deleteMessage"),
+      confirmLabel: t("photos.deleteConfirm"),
       destructive: true,
       onConfirm: async () => {
         await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
@@ -1145,7 +1160,7 @@ export function ListingPhotosGrid({
                 }}
               >
                 <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 10}}>
-                  COVER
+                  {t("photos.cover")}
                 </Text>
               </View>
             ) : null}
@@ -1167,14 +1182,14 @@ export function ListingPhotosGrid({
           }}
         >
           {uploading ? (
-            <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM }}>Uploading…</Text>
+            <Text style={{ fontFamily: SERIF, fontSize: 11, color: INK_DIM }}>{t("photos.uploading")}</Text>
           ) : (
             <Feather name="plus" size={22} color={INK_DIM} />
           )}
         </TouchableOpacity>
       </View>
       <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 12, color: INK_DIM }}>
-        Long-press a photo to delete it. Your first photo is the cover.
+        {t("photos.hint")}
       </Text>
       {dialog.element}
     </View>

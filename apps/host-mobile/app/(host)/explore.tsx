@@ -23,13 +23,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import {
-  CATEGORY_GROUPS,
-  formatListingPrice,
-  groupOfSub,
-  pricingModelsLabel,
-} from "@vendora/core";
+import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
 
@@ -50,6 +47,41 @@ const PAGE_TITLE = {
 } as const;
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
+
+type TFn = (key: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+// Money keeps the US format in every language ($1,234).
+function dollars(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
+
+// Same rules as formatListingPrice in @vendora/core, in the app's language.
+function listingPrice(
+  minCents: number | null | undefined,
+  maxCents: number | null | undefined,
+  t: TFn,
+): string {
+  const hasMin = minCents != null && minCents > 0;
+  const hasMax = maxCents != null && maxCents > 0;
+  if (hasMin && hasMax) {
+    return minCents === maxCents
+      ? dollars(minCents as number)
+      : `${dollars(minCents as number)} – ${dollars(maxCents as number)}`;
+  }
+  if (hasMin) return t("price.from", { price: dollars(minCents as number) });
+  if (hasMax) return t("price.upTo", { price: dollars(maxCents as number) });
+  return t("price.custom");
+}
+
+function pricingModelsText(models: string[] | null | undefined, t: TFn): string {
+  if (!models || models.length === 0) return "";
+  return models
+    .map((m) => {
+      const label = t(`pricingModels.${m}`);
+      return label === `explore.pricingModels.${m}` ? m : label;
+    })
+    .join(" · ");
+}
 
 type Author = { business_name: string | null; logo_url: string | null } | null;
 
@@ -91,6 +123,7 @@ interface ListingRow {
 }
 
 export default function ExploreScreen() {
+  const { t } = useT("explore");
   const { user } = useAuth();
   // Listings is the landing tab: it is the only view with content today
   // (vendor_posts and vendor_reels are both empty), so defaulting to the
@@ -263,9 +296,9 @@ export default function ExploreScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="px-5 pt-4 pb-4">
         <Wordmark />
-        <Text style={PAGE_TITLE}>Explore</Text>
+        <Text style={PAGE_TITLE}>{t("title")}</Text>
         <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
-          Listings, posts, reels, and buzz from approved vendors
+          {t("subtitle")}
         </Text>
       </View>
 
@@ -273,21 +306,25 @@ export default function ExploreScreen() {
         <ViewTab
           active={view === "listing"}
           onPress={() => setView("listing")}
+          label={t("tabs.listing")}
           iconName="shopping-bag"
         />
         <ViewTab
           active={view === "grid"}
           onPress={() => setView("grid")}
+          label={t("tabs.grid")}
           iconName="grid"
         />
         <ViewTab
           active={view === "reels"}
           onPress={() => setView("reels")}
+          label={t("tabs.reels")}
           iconName="play"
         />
         <ViewTab
           active={view === "buzz"}
           onPress={() => setView("buzz")}
+          label={t("tabs.buzz")}
           iconName="align-left"
         />
       </View>
@@ -300,24 +337,24 @@ export default function ExploreScreen() {
       >
         {view === "grid" ? (
           posts.length === 0 ? (
-            <EmptyMessage body="No vendor posts yet." />
+            <EmptyMessage body={t("empty.posts")} />
           ) : (
             <PostGrid posts={posts} />
           )
         ) : view === "reels" ? (
           reels.length === 0 ? (
-            <EmptyMessage body="No reels yet." />
+            <EmptyMessage body={t("empty.reels")} />
           ) : (
             <ReelGrid reels={reels} />
           )
         ) : view === "buzz" ? (
           buzz.length === 0 ? (
-            <EmptyMessage body="No buzz yet." />
+            <EmptyMessage body={t("empty.buzz")} />
           ) : (
             <BuzzList items={buzz} />
           )
         ) : listings.length === 0 ? (
-          <EmptyMessage body="No vendor listings yet." />
+          <EmptyMessage body={t("empty.listings")} />
         ) : (
           <ListingFeed
             listings={listings}
@@ -336,14 +373,19 @@ function ViewTab({
   active,
   onPress,
   iconName,
+  label,
 }: {
   active: boolean;
   onPress: () => void;
   iconName: keyof typeof Feather.glyphMap;
+  label: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
         // Selected tile: card cream with a 1px ink border — selection
@@ -395,6 +437,7 @@ function FeedAuthorHeader({ vendor }: { vendor: Author }) {
 }
 
 function PostGrid({ posts }: { posts: PostRow[] }) {
+  const { locale } = useT("explore");
   return (
     <View className="gap-3">
       {posts.map((p) => (
@@ -420,7 +463,7 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
               <View className="px-4 py-3">
                 <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{p.caption}</Text>
                 <Text style={{ fontFamily: SERIF }} className="mt-1 text-xs text-muted-foreground">
-                  {new Date(p.created_at).toLocaleString()}
+                  {new Date(p.created_at).toLocaleString(locale)}
                 </Text>
               </View>
             ) : null}
@@ -492,6 +535,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
 }
 
 function BuzzList({ items }: { items: BuzzRow[] }) {
+  const { locale } = useT("explore");
   return (
     <View className="gap-3 px-5">
       {items.map((b) => (
@@ -503,7 +547,7 @@ function BuzzList({ items }: { items: BuzzRow[] }) {
           <FeedAuthorHeader vendor={b.vendor} />
           <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
           <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-xs text-muted-foreground">
-            {new Date(b.created_at).toLocaleString()}
+            {new Date(b.created_at).toLocaleString(locale)}
           </Text>
         </View>
       ))}
@@ -527,6 +571,16 @@ function ListingFeed({
   savedIds: Set<string>;
   onToggleSave: (vendorId: string) => void;
 }) {
+  const { t } = useT("explore");
+  const cat = useCategoryNames();
+  // Groups and subs are keyed by their stored English names; only the
+  // label shown is translated.
+  const groupLabel = (name: string) => {
+    if (name === "Other") return t("other");
+    const slug = CATEGORY_GROUPS.find((g) => g.name === name)?.slug;
+    return slug ? cat.group(slug, name) : name;
+  };
+  const subLabel = (name: string) => (name === "Other" ? t("other") : cat.sub(name));
   const byGroup = new Map<string, Map<string, ListingRow[]>>();
   for (const l of listings) {
     const sub =
@@ -561,14 +615,14 @@ function ListingFeed({
         contentContainerClassName="px-5 gap-2 pb-4"
       >
         <CategoryChip
-          label="All"
+          label={t("all")}
           active={category == null}
           onPress={() => onCategoryChange(null)}
         />
         {orderedGroups.map((g) => (
           <CategoryChip
             key={g}
-            label={g}
+            label={groupLabel(g)}
             active={category === g}
             onPress={() => onCategoryChange(g)}
           />
@@ -591,7 +645,7 @@ function ListingFeed({
             <View key={groupName}>
               <View className="px-5 mb-3">
                 <Text style={{ fontFamily: SERIF_BOLD }} className="text-lg text-foreground">
-                  {groupName}
+                  {groupLabel(groupName)}
                 </Text>
               </View>
               <View className="gap-5">
@@ -601,7 +655,7 @@ function ListingFeed({
                   return (
                     <View key={subName}>
                       <Text style={{ fontFamily: SERIF_BOLD }} className="px-5 mb-2 text-sm text-muted-foreground">
-                        {subName}
+                        {subLabel(subName)}
                       </Text>
                       <ScrollView
                         horizontal
@@ -627,7 +681,7 @@ function ListingFeed({
         {visibleGroups.length === 0 ? (
           <View className="items-center pt-10 px-5">
             <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">
-              No listings in this category yet.
+              {t("empty.category")}
             </Text>
           </View>
         ) : null}
@@ -646,10 +700,11 @@ function ListingCard({
   onToggleSave: () => void;
 }) {
   const router = useRouter();
+  const { t } = useT("explore");
   const price =
-    formatListingPrice(listing.price_min_cents, listing.price_max_cents) ||
+    listingPrice(listing.price_min_cents, listing.price_max_cents, t) ||
     null;
-  const models = pricingModelsLabel(listing.pricing_models);
+  const models = pricingModelsText(listing.pricing_models, t);
   return (
     <Pressable
       onPress={() =>
@@ -680,7 +735,7 @@ function ListingCard({
           >
             <Feather name="image" size={28} color="#a89b8a" />
             <Text style={{ fontFamily: SERIF }} className="mt-2 text-center text-xs text-muted-foreground">
-              No listing photos yet
+              {t("noPhotos")}
             </Text>
           </View>
         )}
@@ -692,6 +747,8 @@ function ListingCard({
             onToggleSave();
           }}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={saved ? t("unsave") : t("save")}
           style={{
             position: "absolute",
             top: 12,
@@ -714,13 +771,13 @@ function ListingCard({
           numberOfLines={1}
           className="text-base text-foreground"
         >
-          {listing.business_name ?? "Vendor"}
+          {listing.business_name ?? t("vendorFallback")}
         </Text>
         <Text style={{ fontFamily: SERIF }}
           numberOfLines={1}
           className="mt-0.5 text-sm text-muted-foreground"
         >
-          {listing.location ?? "Marketplace listing"}
+          {listing.location ?? t("locationFallback")}
         </Text>
         {price ? (
           <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-foreground">{price}</Text>

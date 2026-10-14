@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupItem, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor } from "@/components/listing/WizardKit";
+import { useT } from "@/lib/i18n";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -46,6 +47,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 export default function SetupChecklistScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useT("setup");
   const [state, setState] = useState<SetupState | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -87,7 +89,7 @@ export default function SetupChecklistScreen() {
       .single();
     setCreating(false);
     if (error || !data?.id) {
-      Alert.alert("Couldn't create a listing", error?.message ?? "Unknown error");
+      Alert.alert(t("createError.title"), error?.message ?? t("createError.unknown"));
       return;
     }
     router.push(`/(vendor)/listing?id=${data.id}` as never);
@@ -126,7 +128,7 @@ export default function SetupChecklistScreen() {
           style={{ alignSelf: "flex-start", paddingVertical: 8 }}
         >
           <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
-            ← Back
+            {t("back")}
           </Text>
         </Pressable>
 
@@ -139,7 +141,7 @@ export default function SetupChecklistScreen() {
               letterSpacing: 3,
             }}
           >
-            {state?.complete ? "ALL SET" : "FINISH SETTING UP"}
+            {state?.complete ? t("eyebrow.complete") : t("eyebrow.incomplete")}
           </Text>
           <Text
             style={{
@@ -151,7 +153,7 @@ export default function SetupChecklistScreen() {
               letterSpacing: -0.5,
             }}
           >
-            {state?.complete ? "You're live!" : "You're almost live"}
+            {state?.complete ? t("title.complete") : t("title.incomplete")}
           </Text>
           <Text
             style={{
@@ -162,9 +164,7 @@ export default function SetupChecklistScreen() {
               color: INK_DIM,
             }}
           >
-            {state?.complete
-              ? "Everything's in place. Hosts can discover and book you."
-              : "Complete these steps to start getting discovered by customers."}
+            {state?.complete ? t("subtitle.complete") : t("subtitle.incomplete")}
           </Text>
         </View>
 
@@ -188,7 +188,7 @@ export default function SetupChecklistScreen() {
             />
           </View>
           <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 13, color: INK_DIM }}>
-            {state ? `${done} of ${total} complete` : "Checking your progress…"}
+            {state ? t("progress", { done, total }) : t("checking")}
           </Text>
         </View>
 
@@ -236,9 +236,10 @@ export default function SetupChecklistScreen() {
                 </View>
 
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
                     <Text
                       style={{
+                        flexShrink: 1,
                         fontFamily: SERIF_BOLD,
                         fontSize: 16,
                         color: INK,
@@ -264,7 +265,7 @@ export default function SetupChecklistScreen() {
                             color: INK_DIM,
                           }}
                         >
-                          OPTIONAL
+                          {t("optional")}
                         </Text>
                       </View>
                     ) : null}
@@ -322,7 +323,7 @@ export default function SetupChecklistScreen() {
             }}
           >
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
-              Back to my profile
+              {t("backToProfile")}
             </Text>
           </TouchableOpacity>
         ) : null}

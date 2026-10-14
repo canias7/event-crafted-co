@@ -1,0 +1,38 @@
+export default {
+  title: "Account settings",
+  sections: {
+    profile: "Profile",
+    notifications: "Notifications",
+    help: "Help & legal",
+    session: "Session",
+    danger: "Danger zone",
+  },
+  displayName: "Display name",
+  namePlaceholder: "Your name",
+  email: "Email",
+  emailHint: "Email changes aren't supported yet — reach out if you need to switch the account email.",
+  save: "Save",
+  nameRequired: "Display name is required",
+  saveError: "Couldn't save",
+  savedTitle: "Saved",
+  savedBody: "Your display name is updated.",
+  replyEmail: {
+    title: "Vendor replies by email",
+    hint: "Get an email when a vendor replies to your inquiry and you haven't read it yet.",
+  },
+  links: {
+    help: "Help & FAQ",
+    terms: "Terms of Service",
+    privacy: "Privacy Policy",
+  },
+  signOut: "Sign out",
+  deleteAccount: "Delete account",
+  submitting: "Submitting…",
+  deleteConfirm: {
+    title: "Delete account?",
+    body: "Deleting closes your account now and signs you out. Any active plan is canceled right away with no refund for the rest of the current billing period. Everything, including your inquiries, messages and saved vendors, is permanently deleted after 30 days. Sign in before then to restore it.",
+    cancel: "Cancel",
+    confirm: "Delete",
+  },
+  deleteError: "Couldn't delete account",
+};

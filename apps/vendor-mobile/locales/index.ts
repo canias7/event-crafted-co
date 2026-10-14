@@ -1,0 +1,308 @@
+// Every namespace in locales/<lang>/<namespace>.ts. To add one, create
+// the same file under en/, es/ and ru/ and list it here (imports are
+// spelled out so Metro bundles them with no special config).
+type Tree = { [key: string]: string | string[] | Tree };
+
+import en_accountDeletionGate from "./en/accountDeletionGate";
+import en_beautyListing from "./en/beautyListing";
+import en_calendar from "./en/calendar";
+import en_categories from "./en/categories";
+import en_common from "./en/common";
+import en_corporateListing from "./en/corporateListing";
+import en_crm from "./en/crm";
+import en_designListing from "./en/designListing";
+import en_editProfile from "./en/editProfile";
+import en_entertainmentListing from "./en/entertainmentListing";
+import en_experienceListing from "./en/experienceListing";
+import en_findVendor from "./en/findVendor";
+import en_foodListing from "./en/foodListing";
+import en_forgotPassword from "./en/forgotPassword";
+import en_gallery from "./en/gallery";
+import en_imageManipulation from "./en/imageManipulation";
+import en_inbox from "./en/inbox";
+import en_layout from "./en/layout";
+import en_listing from "./en/listing";
+import en_listingAttributes from "./en/listingAttributes";
+import en_listingDetails from "./en/listingDetails";
+import en_listingSections from "./en/listingSections";
+import en_listingWizard from "./en/listingWizard";
+import en_login from "./en/login";
+import en_logoCropperModal from "./en/logoCropperModal";
+import en_mediaListing from "./en/mediaListing";
+import en_more from "./en/more";
+import en_notificationsBell from "./en/notificationsBell";
+import en_partnerThread from "./en/partnerThread";
+import en_password from "./en/password";
+import en_passwordMeter from "./en/passwordMeter";
+import en_profile from "./en/profile";
+import en_pushNotifications from "./en/pushNotifications";
+import en_rentalListing from "./en/rentalListing";
+import en_resetPassword from "./en/resetPassword";
+import en_scheduling from "./en/scheduling";
+import en_settingsSheet from "./en/settingsSheet";
+import en_setup from "./en/setup";
+import en_setupChecklist from "./en/setupChecklist";
+import en_signup from "./en/signup";
+import en_subscription from "./en/subscription";
+import en_team from "./en/team";
+import en_thread from "./en/thread";
+import en_updates from "./en/updates";
+import en_vendorDetail from "./en/vendorDetail";
+import en_venueListing from "./en/venueListing";
+import en_verification from "./en/verification";
+import en_welcome from "./en/welcome";
+import en_wizardKit from "./en/wizardKit";
+import es_accountDeletionGate from "./es/accountDeletionGate";
+import es_beautyListing from "./es/beautyListing";
+import es_calendar from "./es/calendar";
+import es_categories from "./es/categories";
+import es_common from "./es/common";
+import es_corporateListing from "./es/corporateListing";
+import es_crm from "./es/crm";
+import es_designListing from "./es/designListing";
+import es_editProfile from "./es/editProfile";
+import es_entertainmentListing from "./es/entertainmentListing";
+import es_experienceListing from "./es/experienceListing";
+import es_findVendor from "./es/findVendor";
+import es_foodListing from "./es/foodListing";
+import es_forgotPassword from "./es/forgotPassword";
+import es_gallery from "./es/gallery";
+import es_imageManipulation from "./es/imageManipulation";
+import es_inbox from "./es/inbox";
+import es_layout from "./es/layout";
+import es_listing from "./es/listing";
+import es_listingAttributes from "./es/listingAttributes";
+import es_listingDetails from "./es/listingDetails";
+import es_listingSections from "./es/listingSections";
+import es_listingWizard from "./es/listingWizard";
+import es_login from "./es/login";
+import es_logoCropperModal from "./es/logoCropperModal";
+import es_mediaListing from "./es/mediaListing";
+import es_more from "./es/more";
+import es_notificationsBell from "./es/notificationsBell";
+import es_partnerThread from "./es/partnerThread";
+import es_password from "./es/password";
+import es_passwordMeter from "./es/passwordMeter";
+import es_profile from "./es/profile";
+import es_pushNotifications from "./es/pushNotifications";
+import es_rentalListing from "./es/rentalListing";
+import es_resetPassword from "./es/resetPassword";
+import es_scheduling from "./es/scheduling";
+import es_settingsSheet from "./es/settingsSheet";
+import es_setup from "./es/setup";
+import es_setupChecklist from "./es/setupChecklist";
+import es_signup from "./es/signup";
+import es_subscription from "./es/subscription";
+import es_team from "./es/team";
+import es_thread from "./es/thread";
+import es_updates from "./es/updates";
+import es_vendorDetail from "./es/vendorDetail";
+import es_venueListing from "./es/venueListing";
+import es_verification from "./es/verification";
+import es_welcome from "./es/welcome";
+import es_wizardKit from "./es/wizardKit";
+import ru_accountDeletionGate from "./ru/accountDeletionGate";
+import ru_beautyListing from "./ru/beautyListing";
+import ru_calendar from "./ru/calendar";
+import ru_categories from "./ru/categories";
+import ru_common from "./ru/common";
+import ru_corporateListing from "./ru/corporateListing";
+import ru_crm from "./ru/crm";
+import ru_designListing from "./ru/designListing";
+import ru_editProfile from "./ru/editProfile";
+import ru_entertainmentListing from "./ru/entertainmentListing";
+import ru_experienceListing from "./ru/experienceListing";
+import ru_findVendor from "./ru/findVendor";
+import ru_foodListing from "./ru/foodListing";
+import ru_forgotPassword from "./ru/forgotPassword";
+import ru_gallery from "./ru/gallery";
+import ru_imageManipulation from "./ru/imageManipulation";
+import ru_inbox from "./ru/inbox";
+import ru_layout from "./ru/layout";
+import ru_listing from "./ru/listing";
+import ru_listingAttributes from "./ru/listingAttributes";
+import ru_listingDetails from "./ru/listingDetails";
+import ru_listingSections from "./ru/listingSections";
+import ru_listingWizard from "./ru/listingWizard";
+import ru_login from "./ru/login";
+import ru_logoCropperModal from "./ru/logoCropperModal";
+import ru_mediaListing from "./ru/mediaListing";
+import ru_more from "./ru/more";
+import ru_notificationsBell from "./ru/notificationsBell";
+import ru_partnerThread from "./ru/partnerThread";
+import ru_password from "./ru/password";
+import ru_passwordMeter from "./ru/passwordMeter";
+import ru_profile from "./ru/profile";
+import ru_pushNotifications from "./ru/pushNotifications";
+import ru_rentalListing from "./ru/rentalListing";
+import ru_resetPassword from "./ru/resetPassword";
+import ru_scheduling from "./ru/scheduling";
+import ru_settingsSheet from "./ru/settingsSheet";
+import ru_setup from "./ru/setup";
+import ru_setupChecklist from "./ru/setupChecklist";
+import ru_signup from "./ru/signup";
+import ru_subscription from "./ru/subscription";
+import ru_team from "./ru/team";
+import ru_thread from "./ru/thread";
+import ru_updates from "./ru/updates";
+import ru_vendorDetail from "./ru/vendorDetail";
+import ru_venueListing from "./ru/venueListing";
+import ru_verification from "./ru/verification";
+import ru_welcome from "./ru/welcome";
+import ru_wizardKit from "./ru/wizardKit";
+
+export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
+  en: {
+    accountDeletionGate: en_accountDeletionGate as Tree,
+    beautyListing: en_beautyListing as Tree,
+    calendar: en_calendar as Tree,
+    categories: en_categories as Tree,
+    common: en_common as Tree,
+    corporateListing: en_corporateListing as Tree,
+    crm: en_crm as Tree,
+    designListing: en_designListing as Tree,
+    editProfile: en_editProfile as Tree,
+    entertainmentListing: en_entertainmentListing as Tree,
+    experienceListing: en_experienceListing as Tree,
+    findVendor: en_findVendor as Tree,
+    foodListing: en_foodListing as Tree,
+    forgotPassword: en_forgotPassword as Tree,
+    gallery: en_gallery as Tree,
+    imageManipulation: en_imageManipulation as Tree,
+    inbox: en_inbox as Tree,
+    layout: en_layout as Tree,
+    listing: en_listing as Tree,
+    listingAttributes: en_listingAttributes as Tree,
+    listingDetails: en_listingDetails as Tree,
+    listingSections: en_listingSections as Tree,
+    listingWizard: en_listingWizard as Tree,
+    login: en_login as Tree,
+    logoCropperModal: en_logoCropperModal as Tree,
+    mediaListing: en_mediaListing as Tree,
+    more: en_more as Tree,
+    notificationsBell: en_notificationsBell as Tree,
+    partnerThread: en_partnerThread as Tree,
+    password: en_password as Tree,
+    passwordMeter: en_passwordMeter as Tree,
+    profile: en_profile as Tree,
+    pushNotifications: en_pushNotifications as Tree,
+    rentalListing: en_rentalListing as Tree,
+    resetPassword: en_resetPassword as Tree,
+    scheduling: en_scheduling as Tree,
+    settingsSheet: en_settingsSheet as Tree,
+    setup: en_setup as Tree,
+    setupChecklist: en_setupChecklist as Tree,
+    signup: en_signup as Tree,
+    subscription: en_subscription as Tree,
+    team: en_team as Tree,
+    thread: en_thread as Tree,
+    updates: en_updates as Tree,
+    vendorDetail: en_vendorDetail as Tree,
+    venueListing: en_venueListing as Tree,
+    verification: en_verification as Tree,
+    welcome: en_welcome as Tree,
+    wizardKit: en_wizardKit as Tree,
+  },
+  es: {
+    accountDeletionGate: es_accountDeletionGate as Tree,
+    beautyListing: es_beautyListing as Tree,
+    calendar: es_calendar as Tree,
+    categories: es_categories as Tree,
+    common: es_common as Tree,
+    corporateListing: es_corporateListing as Tree,
+    crm: es_crm as Tree,
+    designListing: es_designListing as Tree,
+    editProfile: es_editProfile as Tree,
+    entertainmentListing: es_entertainmentListing as Tree,
+    experienceListing: es_experienceListing as Tree,
+    findVendor: es_findVendor as Tree,
+    foodListing: es_foodListing as Tree,
+    forgotPassword: es_forgotPassword as Tree,
+    gallery: es_gallery as Tree,
+    imageManipulation: es_imageManipulation as Tree,
+    inbox: es_inbox as Tree,
+    layout: es_layout as Tree,
+    listing: es_listing as Tree,
+    listingAttributes: es_listingAttributes as Tree,
+    listingDetails: es_listingDetails as Tree,
+    listingSections: es_listingSections as Tree,
+    listingWizard: es_listingWizard as Tree,
+    login: es_login as Tree,
+    logoCropperModal: es_logoCropperModal as Tree,
+    mediaListing: es_mediaListing as Tree,
+    more: es_more as Tree,
+    notificationsBell: es_notificationsBell as Tree,
+    partnerThread: es_partnerThread as Tree,
+    password: es_password as Tree,
+    passwordMeter: es_passwordMeter as Tree,
+    profile: es_profile as Tree,
+    pushNotifications: es_pushNotifications as Tree,
+    rentalListing: es_rentalListing as Tree,
+    resetPassword: es_resetPassword as Tree,
+    scheduling: es_scheduling as Tree,
+    settingsSheet: es_settingsSheet as Tree,
+    setup: es_setup as Tree,
+    setupChecklist: es_setupChecklist as Tree,
+    signup: es_signup as Tree,
+    subscription: es_subscription as Tree,
+    team: es_team as Tree,
+    thread: es_thread as Tree,
+    updates: es_updates as Tree,
+    vendorDetail: es_vendorDetail as Tree,
+    venueListing: es_venueListing as Tree,
+    verification: es_verification as Tree,
+    welcome: es_welcome as Tree,
+    wizardKit: es_wizardKit as Tree,
+  },
+  ru: {
+    accountDeletionGate: ru_accountDeletionGate as Tree,
+    beautyListing: ru_beautyListing as Tree,
+    calendar: ru_calendar as Tree,
+    categories: ru_categories as Tree,
+    common: ru_common as Tree,
+    corporateListing: ru_corporateListing as Tree,
+    crm: ru_crm as Tree,
+    designListing: ru_designListing as Tree,
+    editProfile: ru_editProfile as Tree,
+    entertainmentListing: ru_entertainmentListing as Tree,
+    experienceListing: ru_experienceListing as Tree,
+    findVendor: ru_findVendor as Tree,
+    foodListing: ru_foodListing as Tree,
+    forgotPassword: ru_forgotPassword as Tree,
+    gallery: ru_gallery as Tree,
+    imageManipulation: ru_imageManipulation as Tree,
+    inbox: ru_inbox as Tree,
+    layout: ru_layout as Tree,
+    listing: ru_listing as Tree,
+    listingAttributes: ru_listingAttributes as Tree,
+    listingDetails: ru_listingDetails as Tree,
+    listingSections: ru_listingSections as Tree,
+    listingWizard: ru_listingWizard as Tree,
+    login: ru_login as Tree,
+    logoCropperModal: ru_logoCropperModal as Tree,
+    mediaListing: ru_mediaListing as Tree,
+    more: ru_more as Tree,
+    notificationsBell: ru_notificationsBell as Tree,
+    partnerThread: ru_partnerThread as Tree,
+    password: ru_password as Tree,
+    passwordMeter: ru_passwordMeter as Tree,
+    profile: ru_profile as Tree,
+    pushNotifications: ru_pushNotifications as Tree,
+    rentalListing: ru_rentalListing as Tree,
+    resetPassword: ru_resetPassword as Tree,
+    scheduling: ru_scheduling as Tree,
+    settingsSheet: ru_settingsSheet as Tree,
+    setup: ru_setup as Tree,
+    setupChecklist: ru_setupChecklist as Tree,
+    signup: ru_signup as Tree,
+    subscription: ru_subscription as Tree,
+    team: ru_team as Tree,
+    thread: ru_thread as Tree,
+    updates: ru_updates as Tree,
+    vendorDetail: ru_vendorDetail as Tree,
+    venueListing: ru_venueListing as Tree,
+    verification: ru_verification as Tree,
+    welcome: ru_welcome as Tree,
+    wizardKit: ru_wizardKit as Tree,
+  },
+};

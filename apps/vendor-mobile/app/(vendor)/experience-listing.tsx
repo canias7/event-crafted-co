@@ -26,6 +26,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 import { FaqsSection } from "@/components/listing/Sections";
 import {
   CREAM,
@@ -112,6 +113,17 @@ export default function ExperienceListingScreen() {
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const dialog = useBrandDialog();
+  const { t: tw, tObject: twObject } = useT("listingWizard");
+  const { t, tObject } = useT("experienceListing");
+  // Options are saved in English; chips show them in the app's language.
+  const valueLabels: Record<string, string> = {
+    ...(twObject<Record<string, string>>("values") ?? {}),
+    ...(tObject<Record<string, string>>("values") ?? {}),
+  };
+  const chipLabel = (v: string) => valueLabels[v] ?? v;
+  const chipLabels = (opts: readonly string[]) => opts.map(chipLabel);
+  const chipValue = (opts: readonly string[], label: string) =>
+    opts.find((o) => chipLabel(o) === label) ?? label;
 
   // Basics
   const [businessName, setBusinessName] = useState("");
@@ -297,7 +309,7 @@ export default function ExperienceListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
+      dialog.show({ icon: "alert-circle", title: tw("dialogs.saveFailed"), message: error.message });
       return false;
     }
     if (status) {
@@ -308,20 +320,20 @@ export default function ExperienceListingScreen() {
 
   function missingForPublish(): string[] {
     const missing: string[] = [];
-    if (!businessName.trim()) missing.push("Business / listing name");
-    if (!tagline.trim()) missing.push("Short tagline");
-    if (!location.trim()) missing.push("Location");
-    if (!serviceAreas.trim()) missing.push("Service areas");
-    if (!yearsInBusiness.trim()) missing.push("Years in business");
-    if (!description.trim()) missing.push("Full description");
+    if (!businessName.trim()) missing.push(tw("missing.businessListingName"));
+    if (!tagline.trim()) missing.push(tw("missing.shortTagline"));
+    if (!location.trim()) missing.push(tw("missing.location"));
+    if (!serviceAreas.trim()) missing.push(tw("missing.serviceAreas"));
+    if (!yearsInBusiness.trim()) missing.push(tw("missing.yearsInBusiness"));
+    if (!description.trim()) missing.push(tw("missing.fullDescription"));
     if (experienceTypes.length === 0)
-      missing.push("Experience type (at least one)");
+      missing.push(t("missing.experienceTypeAtLeastOne"));
     if (
       pricingType !== "Custom" &&
       (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
     )
-      missing.push("Starting price (or choose Custom pricing)");
-    if (photoCount < MIN_PHOTOS) missing.push(`At least ${MIN_PHOTOS} photos`);
+      missing.push(tw("missing.startingPriceOrChooseCustomPricing"));
+    if (photoCount < MIN_PHOTOS) missing.push(tw("missing.minPhotos", { count: MIN_PHOTOS }));
     return missing;
   }
 
@@ -330,7 +342,7 @@ export default function ExperienceListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
+    if (ok) dialog.show({ title: tw("dialogs.saved"), message: tw("dialogs.savedMessage") });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -346,7 +358,7 @@ export default function ExperienceListingScreen() {
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change category",
+        title: tw("dialogs.categoryFailed"),
         message: error.message,
       });
       return;
@@ -365,8 +377,10 @@ export default function ExperienceListingScreen() {
     if (missing.length > 0) {
       dialog.show({
         icon: "list",
-        title: "Can't publish yet",
-        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+        title: tw("dialogs.cantPublish"),
+        message: tw("dialogs.cantPublishMessage", {
+          list: missing.map((m) => `• ${m}`).join("\n"),
+        }),
       });
       return;
     }
@@ -381,9 +395,9 @@ export default function ExperienceListingScreen() {
       .catch(() => {});
     dialog.show({
       icon: "send",
-      title: "Submitted for review",
-      message: "We'll review your listing within 2–3 business days.",
-      buttonLabel: "Done",
+      title: tw("dialogs.submitted"),
+      message: tw("dialogs.submittedMessage"),
+      buttonLabel: tw("dialogs.done"),
       onClose: () => router.back(),
     });
   }
@@ -396,8 +410,8 @@ export default function ExperienceListingScreen() {
     if (ok) {
       dialog.show({
         icon: "file-text",
-        title: "Saved as draft",
-        message: "Your listing is out of review until you publish it again.",
+        title: tw("dialogs.savedAsDraft"),
+        message: tw("dialogs.savedAsDraftMessage"),
         onClose: () => router.back(),
       });
     }
@@ -410,8 +424,8 @@ export default function ExperienceListingScreen() {
     setBusy(false);
     if (ok) {
       dialog.show({
-        title: "Changes saved",
-        message: "Your listing is up to date.",
+        title: tw("dialogs.changesSaved"),
+        message: tw("dialogs.changesSavedMessage"),
         onClose: () => router.back(),
       });
     }
@@ -423,10 +437,9 @@ export default function ExperienceListingScreen() {
     if (!profile?.id || busy) return;
     dialog.show({
       icon: "trash-2",
-      title: "Delete this listing?",
-      message:
-        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      confirmLabel: "Delete listing",
+      title: tw("dialogs.deleteTitle"),
+      message: tw("dialogs.deleteMessage"),
+      confirmLabel: tw("deleteListing"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -439,7 +452,7 @@ export default function ExperienceListingScreen() {
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't delete",
+            title: tw("dialogs.deleteFailed"),
             message: error.message,
           });
         } else {
@@ -455,7 +468,7 @@ export default function ExperienceListingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{tw("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -465,7 +478,7 @@ export default function ExperienceListingScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
-            Couldn&rsquo;t load this listing.
+            {tw("loadFailed")}
           </Text>
         </View>
       </SafeAreaView>
@@ -499,7 +512,7 @@ export default function ExperienceListingScreen() {
               color: INK,
             }}
           >
-            {status === "draft" ? "New listing" : "Edit listing"}
+            {status === "draft" ? tw("newListing") : tw("editListing")}
           </Text>
           <TouchableOpacity
             onPress={saveDraftHeader}
@@ -517,12 +530,12 @@ export default function ExperienceListingScreen() {
             }}
           >
             <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>
-              {status === "draft" ? "Save draft" : "Save"}
+              {status === "draft" ? tw("saveDraft") : tw("save")}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <StepRail steps={STEPS} step={step} onJump={setStep} />
+        <StepRail steps={chipLabels(STEPS)} step={step} onJump={setStep} />
 
         <ScrollView
           contentContainerStyle={{
@@ -536,42 +549,42 @@ export default function ExperienceListingScreen() {
           {step === 0 ? (
             <>
               <StepTitle
-                title="Basics"
-                sub="Tell clients the essentials about your experience."
+                title={tw("headings.basics")}
+                sub={t("subs.tellClientsTheEssentialsAboutYour")}
               />
               <CategoryField
                 value={profile.category}
                 onPress={() => setCategoryPickerOpen(true)}
               />
-              <Field label="Business / listing name" required>
+              <Field label={tw("labels.businessListingName")} required>
                 <Input
                   value={businessName}
                   onChangeText={setBusinessName}
-                  placeholder="e.g., Coastal Wine Tour Experiences"
+                  placeholder={t("placeholders.egCoastalWineTourExperiences")}
                 />
               </Field>
-              <Field label="Short tagline" required>
+              <Field label={tw("labels.shortTagline")} required>
                 <Input
                   value={tagline}
                   onChangeText={setTagline}
-                  placeholder="e.g., Taste. Explore. Make Memories."
+                  placeholder={t("placeholders.egTasteExploreMakeMemories")}
                 />
               </Field>
-              <Field label="Location" required>
+              <Field label={tw("labels.location")} required>
                 <Input
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="Enter city or ZIP code"
+                  placeholder={tw("placeholders.enterCityOrZipCode")}
                 />
               </Field>
-              <Field label="Service areas (cities, regions, states)" required>
+              <Field label={tw("labels.serviceAreasCitiesRegionsStates")} required>
                 <Input
                   value={serviceAreas}
                   onChangeText={setServiceAreas}
-                  placeholder="Add areas"
+                  placeholder={tw("placeholders.addAreas")}
                 />
               </Field>
-              <Field label="Website">
+              <Field label={tw("labels.website")}>
                 <Input
                   value={website}
                   onChangeText={setWebsite}
@@ -580,7 +593,7 @@ export default function ExperienceListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Instagram (optional)">
+              <Field label={tw("labels.instagramOptional")}>
                 <Input
                   value={instagram}
                   onChangeText={setInstagram}
@@ -588,11 +601,11 @@ export default function ExperienceListingScreen() {
                   autoCapitalize="none"
                 />
               </Field>
-              <Field label="Years in business" required>
+              <Field label={tw("labels.yearsInBusiness")} required>
                 <Input
                   value={yearsInBusiness}
                   onChangeText={(v) => setYearsInBusiness(v.replace(/[^0-9]/g, "").slice(0, 3))}
-                  placeholder="e.g., 5"
+                  placeholder={tw("placeholders.eg5")}
                   keyboardType="number-pad"
                 />
               </Field>
@@ -602,45 +615,45 @@ export default function ExperienceListingScreen() {
           {step === 1 ? (
             <>
               <StepTitle
-                title="About your experience"
-                sub="Make clients feel what booking you is like."
+                title={t("headings.aboutYourExperience")}
+                sub={t("subs.makeClientsFeelWhatBookingYou")}
               />
-              <Field label="Full description" required>
+              <Field label={tw("labels.fullDescription")} required>
                 <Input
                   value={description}
                   onChangeText={(v) => setDescription(v.slice(0, 1000))}
-                  placeholder="Describe the experience from arrival to send-off…"
+                  placeholder={t("placeholders.describeTheExperienceFromArrivalTo")}
                   multiline
                 />
               </Field>
-              <Field label="What you offer (one line)">
+              <Field label={tw("labels.whatYouOfferOneLine")}>
                 <Input
                   value={whatYouOffer}
                   onChangeText={setWhatYouOffer}
-                  placeholder="e.g., Guided tastings with a certified sommelier"
+                  placeholder={t("placeholders.egGuidedTastingsWithACertified")}
                 />
               </Field>
-              <Field label="Best for (select all that apply)">
+              <Field label={tw("labels.bestForSelectAllThatApply")}>
                 <ChipMulti
-                  options={BEST_FOR}
-                  selected={bestFor}
-                  onChange={setBestFor}
+                  options={chipLabels(BEST_FOR)}
+                  selected={bestFor.map(chipLabel)}
+                  onChange={(next) => setBestFor(next.map((l) => chipValue(BEST_FOR, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="What makes you unique">
+              <Field label={tw("labels.whatMakesYouUnique")}>
                 <Input
                   value={unique}
                   onChangeText={(v) => setUnique(v.slice(0, 500))}
-                  placeholder="Highlight what makes your experience one-of-a-kind — unique activities get 3x more bookings."
+                  placeholder={t("placeholders.highlightWhatMakesYourExperienceOne")}
                   multiline
                 />
               </Field>
-              <Field label="Tags & highlights (shown on your listing)">
+              <Field label={tw("labels.tagsHighlightsShownOnYourListing")}>
                 <TagList
                   items={tags}
                   onChange={setTags}
-                  placeholder="Add a tag — e.g., BYOB friendly, sunset slot"
+                  placeholder={t("placeholders.addATagEGByob")}
                 />
               </Field>
             </>
@@ -649,35 +662,35 @@ export default function ExperienceListingScreen() {
           {step === 2 ? (
             <>
               <StepTitle
-                title="Experience details"
-                sub="Tell clients more about your experience."
+                title={t("headings.experienceDetails")}
+                sub={t("subs.tellClientsMoreAboutYourExperience")}
               />
-              <Field label="Experience type (select all that apply)" required>
+              <Field label={t("labels.experienceTypeSelectAllThatApply")} required>
                 <ChipMulti
-                  options={EXPERIENCE_TYPES}
-                  selected={experienceTypes}
-                  onChange={setExperienceTypes}
+                  options={chipLabels(EXPERIENCE_TYPES)}
+                  selected={experienceTypes.map(chipLabel)}
+                  onChange={(next) => setExperienceTypes(next.map((l) => chipValue(EXPERIENCE_TYPES, l)))}
                   allowCustom
                 />
               </Field>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <View style={{ flex: 1 }}>
-                  <Field label="Duration" required>
+                  <Field label={t("labels.duration")} required>
                     <Input
                       value={duration}
                       onChangeText={setDuration}
-                      placeholder="e.g., 2 hours"
+                      placeholder={t("placeholders.eg2Hours")}
                     />
                   </Field>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Field label="Group size (min – max)">
+                  <Field label={t("labels.groupSizeMinMax")}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                       <View style={{ flex: 1 }}>
                         <Input
                           value={groupMin}
                           onChangeText={(v) => setGroupMin(v.replace(/[^0-9]/g, ""))}
-                          placeholder="Min"
+                          placeholder={tw("placeholders.min")}
                           keyboardType="number-pad"
                         />
                       </View>
@@ -686,7 +699,7 @@ export default function ExperienceListingScreen() {
                         <Input
                           value={groupMax}
                           onChangeText={(v) => setGroupMax(v.replace(/[^0-9]/g, ""))}
-                          placeholder="Max"
+                          placeholder={tw("placeholders.max")}
                           keyboardType="number-pad"
                         />
                       </View>
@@ -694,93 +707,93 @@ export default function ExperienceListingScreen() {
                   </Field>
                 </View>
               </View>
-              <Field label="Age requirements (if any)">
+              <Field label={t("labels.ageRequirementsIfAny")}>
                 <Input
                   value={ageRequirements}
                   onChangeText={setAgeRequirements}
-                  placeholder="e.g., 18+"
+                  placeholder={t("placeholders.eg18")}
                 />
               </Field>
-              <Field label="Skill level required (if any)">
+              <Field label={t("labels.skillLevelRequiredIfAny")}>
                 <ChipSingle
-                  options={SKILL_LEVELS}
-                  selected={skillLevel}
-                  onChange={setSkillLevel}
+                  options={chipLabels(SKILL_LEVELS)}
+                  selected={chipLabel(skillLevel)}
+                  onChange={(l) => setSkillLevel(chipValue(SKILL_LEVELS, l))}
                 />
               </Field>
 
               <StepTitle
-                title="What's included"
-                sub="Add anything — it's your experience."
+                title={tw("headings.whatsIncluded")}
+                sub={t("subs.addAnythingItsYourExperience")}
                 topGap
               />
-              <Field label="What's included in the experience">
+              <Field label={t("labels.whatsIncludedInTheExperience")}>
                 <TagList
                   items={included}
                   onChange={setIncluded}
-                  placeholder="Add an item — e.g., All tastings, take-home kit"
+                  placeholder={t("placeholders.addAnItemEGAll")}
                 />
               </Field>
-              <Field label="Equipment / materials provided">
+              <Field label={t("labels.equipmentMaterialsProvided")}>
                 <Input
                   value={equipmentProvided}
                   onChangeText={setEquipmentProvided}
-                  placeholder="e.g., Glassware, aprons, all supplies"
+                  placeholder={t("placeholders.egGlasswareApronsAllSupplies")}
                   multiline
                 />
               </Field>
-              <Field label="Staff / guide included?">
+              <Field label={t("labels.staffGuideIncluded")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={staffIncluded}
-                  onChange={(v) => setStaffIncluded(v as typeof staffIncluded)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(staffIncluded)}
+                  onChange={(v) => setStaffIncluded(chipValue(yesNo, v) as typeof staffIncluded)}
                 />
               </Field>
 
               <StepTitle
-                title="Logistics & requirements"
-                sub="How hosting works."
+                title={tw("headings.logisticsRequirements")}
+                sub={t("subs.howHostingWorks")}
                 topGap
               />
-              <Field label="Where does it happen?">
+              <Field label={t("labels.whereDoesItHappen")}>
                 <ChipSingle
-                  options={LOCATION_MODES}
-                  selected={locationMode}
-                  onChange={setLocationMode}
+                  options={chipLabels(LOCATION_MODES)}
+                  selected={chipLabel(locationMode)}
+                  onChange={(l) => setLocationMode(chipValue(LOCATION_MODES, l))}
                 />
               </Field>
-              <Field label="Travel fees">
+              <Field label={tw("labels.travelFees")}>
                 <Input
                   value={travelFees}
                   onChangeText={setTravelFees}
-                  placeholder="e.g., Free within 25 miles, $1/mile beyond"
+                  placeholder={t("placeholders.egFreeWithin25Miles1")}
                 />
               </Field>
-              <Field label="Access / space requirements">
+              <Field label={t("labels.accessSpaceRequirements")}>
                 <Input
                   value={spaceRequirements}
                   onChangeText={setSpaceRequirements}
-                  placeholder="e.g., Table space for 12, access to power"
+                  placeholder={t("placeholders.egTableSpaceFor12Access")}
                 />
               </Field>
-              <Field label="Weather considerations">
+              <Field label={t("labels.weatherConsiderations")}>
                 <Input
                   value={weather}
                   onChangeText={setWeather}
-                  placeholder="e.g., Covered area needed if outdoors"
+                  placeholder={t("placeholders.egCoveredAreaNeededIfOutdoors")}
                 />
               </Field>
-              <Field label="Lead time required">
+              <Field label={tw("labels.leadTimeRequired")}>
                 <Input
                   value={leadTime}
                   onChangeText={setLeadTime}
-                  placeholder="e.g., 2 weeks notice"
+                  placeholder={tw("placeholders.eg2WeeksNotice")}
                 />
               </Field>
 
               <StepTitle
-                title="Make it yours"
-                sub="Add any custom field, activity, or policy — anything the form didn't ask."
+                title={tw("headings.makeItYours")}
+                sub={t("subs.addAnyCustomFieldActivityOr")}
                 topGap
               />
               <CustomFieldsEditor fields={customFields} onChange={setCustomFields} />
@@ -789,72 +802,72 @@ export default function ExperienceListingScreen() {
 
           {step === 3 ? (
             <>
-              <StepTitle title="Pricing" sub="Where your pricing starts." />
-              <Field label="Pricing type">
+              <StepTitle title={tw("headings.pricing")} sub={tw("subs.whereYourPricingStarts")} />
+              <Field label={tw("labels.pricingType")}>
                 <ChipSingle
-                  options={PRICING_TYPES}
-                  selected={pricingType}
-                  onChange={setPricingType}
+                  options={chipLabels(PRICING_TYPES)}
+                  selected={chipLabel(pricingType)}
+                  onChange={(l) => setPricingType(chipValue(PRICING_TYPES, l))}
                 />
               </Field>
-              <Field label="Starting price (USD)" required>
+              <Field label={tw("labels.startingPriceUsd")} required>
                 <Input
                   value={priceMin}
                   onChangeText={(v) => setPriceMin(v.replace(/[^0-9.]/g, ""))}
-                  placeholder="e.g., 75"
+                  placeholder={t("placeholders.eg75")}
                   keyboardType="decimal-pad"
                 />
               </Field>
-              <Field label="Minimum spend / group size">
+              <Field label={t("labels.minimumSpendGroupSize")}>
                 <Input
                   value={minSpend}
                   onChangeText={setMinSpend}
-                  placeholder="e.g., $500 minimum or 6 guests"
+                  placeholder={t("placeholders.eg500MinimumOr6Guests")}
                 />
               </Field>
-              <Field label="Additional fees (travel, overtime, etc.)">
+              <Field label={tw("labels.additionalFeesTravelOvertimeEtc")}>
                 <Input
                   value={additionalFees}
                   onChangeText={setAdditionalFees}
-                  placeholder="e.g., Weekend surcharge $50"
+                  placeholder={t("placeholders.egWeekendSurcharge50")}
                 />
               </Field>
-              <Field label="Deposit / payment terms">
+              <Field label={tw("labels.depositPaymentTerms")}>
                 <Input
                   value={paymentSchedule}
                   onChangeText={setPaymentSchedule}
-                  placeholder="e.g., 50% to book, balance day-of"
+                  placeholder={t("placeholders.eg50ToBookBalanceDay")}
                 />
               </Field>
 
-              <StepTitle title="Policies & notes" sub="The fine print." topGap />
-              <Field label="Cancellation / rescheduling policy">
+              <StepTitle title={tw("headings.policiesNotes")} sub={tw("subs.theFinePrint")} topGap />
+              <Field label={tw("labels.cancellationReschedulingPolicy")}>
                 <Input
                   value={cancellationPolicy}
                   onChangeText={setCancellationPolicy}
-                  placeholder="e.g., Full refund up to 7 days out"
+                  placeholder={tw("placeholders.egFullRefundUpTo7")}
                   multiline
                 />
               </Field>
-              <Field label="Age waiver / liability">
+              <Field label={t("labels.ageWaiverLiability")}>
                 <Input
                   value={liability}
                   onChangeText={setLiability}
-                  placeholder="e.g., Waiver signed at booking"
+                  placeholder={t("placeholders.egWaiverSignedAtBooking")}
                 />
               </Field>
-              <Field label="Health / safety requirements">
+              <Field label={t("labels.healthSafetyRequirements")}>
                 <Input
                   value={healthSafety}
                   onChangeText={setHealthSafety}
-                  placeholder="e.g., Allergies collected in advance"
+                  placeholder={t("placeholders.egAllergiesCollectedInAdvance")}
                 />
               </Field>
-              <Field label="Other important notes">
+              <Field label={tw("labels.otherImportantNotes")}>
                 <Input
                   value={otherNotes}
                   onChangeText={setOtherNotes}
-                  placeholder="Anything else clients should know"
+                  placeholder={tw("placeholders.anythingElseClientsShouldKnow")}
                   multiline
                 />
               </Field>
@@ -864,11 +877,11 @@ export default function ExperienceListingScreen() {
           {step === 4 ? (
             <>
               <StepTitle
-                title="Photos & media"
-                sub="Show the moment — guests mid-experience beats empty setups."
+                title={tw("headings.photosMedia")}
+                sub={t("subs.showTheMomentGuestsMidExperience")}
               />
               <ListingPhotosGrid vendorId={profile.id} onCount={setPhotoCount} />
-              <Field label="Itinerary / details PDF (optional)">
+              <Field label={t("labels.itineraryDetailsPdfOptional")}>
                 <Input
                   value={itineraryUrl}
                   onChangeText={setItineraryUrl}
@@ -877,7 +890,7 @@ export default function ExperienceListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Video (optional)">
+              <Field label={tw("labels.videoOptional")}>
                 <Input
                   value={videoUrl}
                   onChangeText={setVideoUrl}
@@ -887,10 +900,10 @@ export default function ExperienceListingScreen() {
                 />
               </Field>
 
-              <StepTitle title="FAQs" sub="Answer what clients will ask first." topGap />
+              <StepTitle title={tw("headings.faqs")} sub={tw("subs.answerWhatClientsWillAskFirst")} topGap />
               <FaqsSection vendorId={profile.id} />
 
-              <StepTitle title="Review" sub="Almost there." topGap />
+              <StepTitle title={tw("headings.review")} sub={tw("subs.almostThere")} topGap />
               <ReviewChecklist missing={missingForPublish()} />
             </>
           ) : null}
@@ -902,7 +915,7 @@ export default function ExperienceListingScreen() {
                 activeOpacity={0.85}
                 style={darkPill}
               >
-                <Text style={darkPillText}>Continue</Text>
+                <Text style={darkPillText}>{tw("continue")}</Text>
               </TouchableOpacity>
             ) : status === "pending" ? (
               <>
@@ -912,7 +925,7 @@ export default function ExperienceListingScreen() {
                   activeOpacity={0.85}
                   style={darkPillFor(busy)}
                 >
-                  <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                  <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={withdrawToDraft}
@@ -920,7 +933,7 @@ export default function ExperienceListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Withdraw to draft</Text>
+                  <Text style={lightPillText}>{tw("withdrawToDraft")}</Text>
                 </TouchableOpacity>
               </>
             ) : status === "approved" ? (
@@ -930,7 +943,7 @@ export default function ExperienceListingScreen() {
                 activeOpacity={0.85}
                 style={darkPillFor(busy)}
               >
-                <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -942,10 +955,10 @@ export default function ExperienceListingScreen() {
                 >
                   <Text style={darkPillText}>
                     {busy
-                      ? "Publishing…"
+                      ? tw("publishing")
                       : status === "rejected"
-                        ? "Re-submit"
-                        : "Publish"}
+                        ? tw("resubmit")
+                        : tw("publish")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -954,7 +967,7 @@ export default function ExperienceListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Save draft</Text>
+                  <Text style={lightPillText}>{tw("saveDraft")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -965,7 +978,7 @@ export default function ExperienceListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
-                  ← Back to {STEPS[step - 1]}
+                  {tw("backTo", { step: chipLabel(STEPS[step - 1]) })}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -977,7 +990,7 @@ export default function ExperienceListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
                 <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#b23a34", fontSize: 14}}>
-                  Delete listing
+                  {tw("deleteListing")}
                 </Text>
               </TouchableOpacity>
             ) : null}

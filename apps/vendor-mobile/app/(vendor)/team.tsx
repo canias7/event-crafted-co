@@ -29,6 +29,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { Field, Input, useBrandDialog } from "@/components/listing/WizardKit";
+import { useT } from "@/lib/i18n";
 
 const PAGE = "#f4f1ea";
 const CARD = "#fbf9f4";
@@ -69,6 +70,7 @@ export default function TeamScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const dialog = useBrandDialog();
+  const { t } = useT("team");
 
   const [loading, setLoading] = useState(true);
   const [showTeam, setShowTeam] = useState(true);
@@ -133,9 +135,9 @@ export default function TeamScreen() {
   function confirmRemove(m: TeamMember) {
     dialog.show({
       icon: "trash-2",
-      title: `Remove ${m.full_name.split(" ")[0]}?`,
-      message: "They come off your public profile right away.",
-      confirmLabel: "Remove",
+      title: t("remove.title", { name: m.full_name.split(" ")[0] }),
+      message: t("remove.message"),
+      confirmLabel: t("remove.confirm"),
       destructive: true,
       onConfirm: async () => {
         setMembers((cur) => cur.filter((x) => x.id !== m.id));
@@ -158,18 +160,19 @@ export default function TeamScreen() {
           </Pressable>
           <Text
             style={{
+              flexShrink: 1,
+              textAlign: "center",
               fontFamily: SERIF_BOLD,
               fontSize: 20,
               color: INK,
             }}
           >
-            Meet the Team
+            {t("title")}
           </Text>
           <View style={{ width: 26 }} />
         </View>
         <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-          Introduce the people behind your business. This will appear on your
-          public profile — it&rsquo;s completely optional.
+          {t("intro")}
         </Text>
 
         {/* Master toggle */}
@@ -187,7 +190,7 @@ export default function TeamScreen() {
           }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, flex: 1, fontSize: 15, color: INK }}>
-            Show &ldquo;Meet the Team&rdquo; on my profile
+            {t("showToggle")}
           </Text>
           <Switch
             value={showTeam}
@@ -233,7 +236,7 @@ export default function TeamScreen() {
                   >
                     {m.full_name}
                     {!m.visible ? (
-                      <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>  · hidden</Text>
+                      <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>  · {t("hidden")}</Text>
                     ) : null}
                   </Text>
                   <Text numberOfLines={1} style={{ fontFamily: SERIF, marginTop: 1, fontSize: 13, color: INK_DIM }}>
@@ -277,7 +280,7 @@ export default function TeamScreen() {
             >
               <Feather name="plus" size={17} color={INK} />
               <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
-                Add team member
+                {t("add")}
               </Text>
             </Pressable>
 
@@ -285,7 +288,7 @@ export default function TeamScreen() {
               <View style={{ alignItems: "center", paddingVertical: 24 }}>
                 <MaterialCommunityIcons name="account-group-outline" size={52} color="#c9a86a" />
                 <Text style={{ fontFamily: SERIF, marginTop: 10, fontSize: 14, color: INK_DIM, textAlign: "center" }}>
-                  The people behind the details — add your first team member.
+                  {t("empty")}
                 </Text>
               </View>
             ) : null}
@@ -382,6 +385,7 @@ function MemberForm({
   onSaved: () => void;
 }) {
   const dialog = useBrandDialog();
+  const { t } = useT("team");
   const [name, setName] = useState(member?.full_name ?? "");
   const [role, setRole] = useState(member?.role_title ?? "");
   const [bio, setBio] = useState(member?.bio ?? "");
@@ -401,8 +405,8 @@ function MemberForm({
     if (!perm.granted) {
       dialog.show({
         icon: "image",
-        title: "Library access needed",
-        message: "Enable photo access in Settings to add a photo.",
+        title: t("form.alerts.library.title"),
+        message: t("form.alerts.library.message"),
       });
       return;
     }
@@ -422,8 +426,8 @@ function MemberForm({
     if (!name.trim() || !role.trim() || !bio.trim()) {
       dialog.show({
         icon: "list",
-        title: "Almost there",
-        message: "Name, role, and a short bio are required.",
+        title: t("form.alerts.required.title"),
+        message: t("form.alerts.required.message"),
       });
       return;
     }
@@ -472,8 +476,8 @@ function MemberForm({
     } catch (err) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't save",
-        message: (err as { message?: string })?.message ?? "Try again.",
+        title: t("form.alerts.saveFailed.title"),
+        message: (err as { message?: string })?.message ?? t("form.alerts.saveFailed.message"),
       });
     } finally {
       setSaving(false);
@@ -501,8 +505,8 @@ function MemberForm({
             <Pressable onPress={onClose} hitSlop={10}>
               <Feather name="chevron-left" size={26} color={INK} />
             </Pressable>
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
-              {member ? "Edit team member" : "Add team member"}
+            <Text style={{ flexShrink: 1, textAlign: "center", fontFamily: SERIF_BOLD, fontSize: 20, color: INK }}>
+              {member ? t("form.editTitle") : t("form.addTitle")}
             </Text>
             <View style={{ width: 26 }} />
           </View>
@@ -547,57 +551,57 @@ function MemberForm({
                 <Feather name="plus" size={16} color={INK} />
               </View>
               <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: INK }}>
-                {previewUri ? "Change photo" : "Add photo"}
+                {previewUri ? t("form.changePhoto") : t("form.addPhoto")}
               </Text>
               <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 12, color: INK_DIM }}>
-                JPG or PNG. Square works best.
+                {t("form.photoHint")}
               </Text>
             </Pressable>
 
             <View style={{ marginTop: 20 }}>
-              <Field label="Full name" required>
-                <Input value={name} onChangeText={setName} placeholder="e.g., Jessica Brown" />
+              <Field label={t("form.fields.name.label")} required>
+                <Input value={name} onChangeText={setName} placeholder={t("form.fields.name.placeholder")} />
               </Field>
-              <Field label="Role / Title" required>
+              <Field label={t("form.fields.role.label")} required>
                 <Input
                   value={role}
                   onChangeText={setRole}
-                  placeholder="e.g., Founder & Lead Planner"
+                  placeholder={t("form.fields.role.placeholder")}
                 />
               </Field>
-              <Field label="Short bio" required>
+              <Field label={t("form.fields.bio.label")} required>
                 <Input
                   value={bio}
                   onChangeText={(v) => setBio(v.slice(0, 300))}
-                  placeholder="Tell clients about this team member…"
+                  placeholder={t("form.fields.bio.placeholder")}
                   multiline
                 />
                 <Text style={{ fontFamily: SERIF, marginTop: 4, alignSelf: "flex-end", fontSize: 11, color: INK_DIM }}>
                   {bio.length}/300
                 </Text>
               </Field>
-              <Field label="Specialty / What they do">
+              <Field label={t("form.fields.specialty.label")}>
                 <Input
                   value={specialty}
                   onChangeText={setSpecialty}
-                  placeholder="e.g., Day-of coordination, logistics, design"
+                  placeholder={t("form.fields.specialty.placeholder")}
                 />
               </Field>
-              <Field label="Years with the business">
-                <Input value={years} onChangeText={setYears} placeholder="e.g., 5 years" />
+              <Field label={t("form.fields.years.label")}>
+                <Input value={years} onChangeText={setYears} placeholder={t("form.fields.years.placeholder")} />
               </Field>
-              <Field label="Fun fact (optional)">
+              <Field label={t("form.fields.funFact.label")}>
                 <Input
                   value={funFact}
                   onChangeText={setFunFact}
-                  placeholder="Something fun about them!"
+                  placeholder={t("form.fields.funFact.placeholder")}
                 />
               </Field>
-              <Field label="Social or website link (optional)">
+              <Field label={t("form.fields.link.label")}>
                 <Input
                   value={link}
                   onChangeText={setLink}
-                  placeholder="e.g., instagram.com/username"
+                  placeholder={t("form.fields.link.placeholder")}
                   autoCapitalize="none"
                   keyboardType="url"
                 />
@@ -612,8 +616,8 @@ function MemberForm({
                   paddingVertical: 8,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
-                  Show on public profile
+                <Text style={{ flex: 1, marginRight: 12, fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+                  {t("form.showOnProfile")}
                 </Text>
                 <Switch
                   value={visible}
@@ -639,7 +643,7 @@ function MemberForm({
                   <ActivityIndicator color={INK} />
                 ) : (
                   <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16}}>
-                    Save team member
+                    {t("form.save")}
                   </Text>
                 )}
               </Pressable>

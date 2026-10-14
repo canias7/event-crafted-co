@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 const PLACEHOLDER = "#746a58";
 
@@ -32,6 +33,7 @@ function SectionHeader({
   subtitle?: string;
   onAdd?: () => void;
 }) {
+  const { t } = useT("listingSections");
   return (
     <View className="flex-row items-end justify-between">
       <View className="flex-1 pr-3">
@@ -48,7 +50,7 @@ function SectionHeader({
           hitSlop={6}
           className="rounded-full border border-border bg-white px-3 h-9 justify-center active:opacity-70"
         >
-          <Text className="text-xs text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>+ Add</Text>
+          <Text className="text-xs text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{t("add")}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -90,6 +92,7 @@ const EMPTY_PACK: PackDraft = {
 };
 
 export function PackagesSection({ vendorId }: { vendorId: string }) {
+  const { t } = useT("listingSections");
   const [items, setItems] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<PackDraft | null>(null);
@@ -118,11 +121,11 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
     const trimmed = editing.name.trim();
     const cents = Math.round(Number.parseFloat(editing.price || "0") * 100);
     if (!trimmed) {
-      Alert.alert("Name is required");
+      Alert.alert(t("packages.nameRequired"));
       return;
     }
     if (!Number.isFinite(cents) || cents < 0) {
-      Alert.alert("Price must be a number");
+      Alert.alert(t("packages.priceNumber"));
       return;
     }
     setBusy(true);
@@ -161,8 +164,8 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
       await load();
     } catch (err) {
       Alert.alert(
-        "Couldn't save package",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("packages.saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -170,10 +173,10 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
   }
 
   async function remove(id: string) {
-    Alert.alert("Delete package?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("packages.deleteTitle"), t("cantUndo"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("delete"),
         style: "destructive",
         onPress: async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,7 +184,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
             .from("vendor_packages")
             .delete()
             .eq("id", id);
-          if (error) Alert.alert("Couldn't delete", error.message);
+          if (error) Alert.alert(t("deleteError"), error.message);
           else load();
         },
       },
@@ -191,15 +194,15 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
   return (
     <View className="gap-3">
       <SectionHeader
-        title="Packages"
-        subtitle="Pricing tiers and what's included"
+        title={t("packages.title")}
+        subtitle={t("packages.subtitle")}
         onAdd={() => setEditing({ ...EMPTY_PACK })}
       />
       {loading ? (
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
       ) : items.length === 0 ? (
         <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          No packages yet. Add a pricing tier to give hosts a clear option.
+          {t("packages.empty")}
         </Text>
       ) : (
         items.map((p) => (
@@ -213,8 +216,8 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                   {p.name}
                 </Text>
                 <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                  ${(p.price_cents / 100).toLocaleString()}
-                  {p.is_active ? "" : " · inactive"}
+                  ${(p.price_cents / 100).toLocaleString("en-US")}
+                  {p.is_active ? "" : ` · ${t("packages.inactive")}`}
                 </Text>
                 {p.description ? (
                   <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
@@ -234,7 +237,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                     ))}
                     {p.includes.length > 4 ? (
                       <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                        +{p.includes.length - 4} more
+                        {t("packages.more", { count: p.includes.length - 4 })}
                       </Text>
                     ) : null}
                   </View>
@@ -293,6 +296,7 @@ function PackEditorModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const { t } = useT("listingSections");
   return (
     <Modal
       visible={draft != null}
@@ -304,14 +308,14 @@ function PackEditorModal({
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
           <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("cancel")}</Text>
             </Pressable>
             <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              {draft.id ? "Edit package" : "New package"}
+              {draft.id ? t("packages.edit") : t("packages.new")}
             </Text>
             <Pressable onPress={onSave} hitSlop={8} disabled={busy}>
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                {busy ? "Saving…" : "Save"}
+                {busy ? t("saving") : t("save")}
               </Text>
             </Pressable>
           </View>
@@ -321,24 +325,24 @@ function PackEditorModal({
           >
             <View>
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Name
+                {t("packages.name")}
               </Text>
               <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.name}
                 onChangeText={(v) => onChange({ ...draft, name: v })}
-                placeholder="Standard package"
+                placeholder={t("packages.namePlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
               />
             </View>
             <View>
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Description
+                {t("packages.description")}
               </Text>
               <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.description}
                 onChangeText={(v) => onChange({ ...draft, description: v })}
-                placeholder="One or two sentences."
+                placeholder={t("packages.descriptionPlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={3}
@@ -348,7 +352,7 @@ function PackEditorModal({
             </View>
             <View>
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Price ($)
+                {t("packages.price")}
               </Text>
               <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.price}
@@ -361,15 +365,15 @@ function PackEditorModal({
             </View>
             <View>
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                What's included
+                {t("packages.includes")}
               </Text>
               <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                One item per line.
+                {t("packages.includesHint")}
               </Text>
               <TextInput style={{ fontFamily: "LibreBaskerville" }}
                 value={draft.includes}
                 onChangeText={(v) => onChange({ ...draft, includes: v })}
-                placeholder={"4 hours of coverage\nEdited photo gallery\nLocation scouting"}
+                placeholder={t("packages.includesPlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={5}
@@ -379,7 +383,7 @@ function PackEditorModal({
             </View>
             <View className="flex-row items-center justify-between">
               <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Active
+                {t("packages.active")}
               </Text>
               <Switch
                 value={draft.is_active}
@@ -415,6 +419,7 @@ interface FaqDraft {
 const EMPTY_FAQ: FaqDraft = { question: "", answer: "" };
 
 export function FaqsSection({ vendorId }: { vendorId: string }) {
+  const { t } = useT("listingSections");
   const [items, setItems] = useState<Faq[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<FaqDraft | null>(null);
@@ -441,7 +446,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
     const q = editing.question.trim();
     const a = editing.answer.trim();
     if (!q || !a) {
-      Alert.alert("Question and answer are both required");
+      Alert.alert(t("faqs.bothRequired"));
       return;
     }
     setBusy(true);
@@ -471,8 +476,8 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
       await load();
     } catch (err) {
       Alert.alert(
-        "Couldn't save FAQ",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("faqs.saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -480,10 +485,10 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
   }
 
   async function remove(id: string) {
-    Alert.alert("Delete FAQ?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("faqs.deleteTitle"), t("cantUndo"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("delete"),
         style: "destructive",
         onPress: async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -491,7 +496,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
             .from("vendor_faqs")
             .delete()
             .eq("id", id);
-          if (error) Alert.alert("Couldn't delete", error.message);
+          if (error) Alert.alert(t("deleteError"), error.message);
           else load();
         },
       },
@@ -501,15 +506,15 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
   return (
     <View className="gap-3">
       <SectionHeader
-        title="FAQs"
-        subtitle="Common questions hosts ask"
+        title={t("faqs.title")}
+        subtitle={t("faqs.subtitle")}
         onAdd={() => setEditing({ ...EMPTY_FAQ })}
       />
       {loading ? (
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
       ) : items.length === 0 ? (
         <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          No FAQs yet. Adding 3-5 saves you time on first-touch replies.
+          {t("faqs.empty")}
         </Text>
       ) : (
         items.map((f) => (
@@ -565,14 +570,14 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
           >
             <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
               <Pressable onPress={() => setEditing(null)} hitSlop={8}>
-                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("cancel")}</Text>
               </Pressable>
               <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                {editing.id ? "Edit FAQ" : "New FAQ"}
+                {editing.id ? t("faqs.edit") : t("faqs.new")}
               </Text>
               <Pressable onPress={save} hitSlop={8} disabled={busy}>
                 <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  {busy ? "Saving…" : "Save"}
+                  {busy ? t("saving") : t("save")}
                 </Text>
               </Pressable>
             </View>
@@ -582,26 +587,26 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
             >
               <View>
                 <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  Question
+                  {t("faqs.question")}
                 </Text>
                 <TextInput style={{ fontFamily: "LibreBaskerville" }}
                   value={editing.question}
                   onChangeText={(v) =>
                     setEditing({ ...editing, question: v })
                   }
-                  placeholder="Do you travel for events?"
+                  placeholder={t("faqs.questionPlaceholder")}
                   placeholderTextColor={PLACEHOLDER}
                   className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
                 />
               </View>
               <View>
                 <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  Answer
+                  {t("faqs.answer")}
                 </Text>
                 <TextInput style={{ fontFamily: "LibreBaskerville" }}
                   value={editing.answer}
                   onChangeText={(v) => setEditing({ ...editing, answer: v })}
-                  placeholder="Yes, we cover anywhere within 100 miles…"
+                  placeholder={t("faqs.answerPlaceholder")}
                   placeholderTextColor={PLACEHOLDER}
                   multiline
                   numberOfLines={4}
@@ -623,14 +628,16 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
 // reschedule_window_days (int), policy_notes (text). Edited inline.
 // ============================================================================
 
+// Stored values; labels come from listingSections → policies.options.
 const CANCELLATION_OPTIONS = [
-  { value: "", label: "— pick a policy —" },
-  { value: "flexible", label: "Flexible (full refund up to 7 days before)" },
-  { value: "moderate", label: "Moderate (50% up to 30 days before)" },
-  { value: "strict", label: "Strict (no refund)" },
+  { value: "", key: "none" },
+  { value: "flexible", key: "flexible" },
+  { value: "moderate", key: "moderate" },
+  { value: "strict", key: "strict" },
 ] as const;
 
 export function PoliciesSection({ vendorId }: { vendorId: string }) {
+  const { t } = useT("listingSections");
   const [depositPct, setDepositPct] = useState("");
   const [cancellation, setCancellation] = useState("");
   const [reschedule, setReschedule] = useState("");
@@ -685,11 +692,11 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         .update(payload)
         .eq("id", vendorId);
       if (error) throw error;
-      Alert.alert("Saved", "Policies updated.");
+      Alert.alert(t("policies.savedTitle"), t("policies.savedMessage"));
     } catch (err) {
       Alert.alert(
-        "Couldn't save policies",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("policies.saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -699,25 +706,25 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
   if (loading) {
     return (
       <View className="gap-3">
-        <SectionHeader title="Policies" />
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <SectionHeader title={t("policies.title")} />
+        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
       </View>
     );
   }
 
-  const cancellationLabel =
-    CANCELLATION_OPTIONS.find((o) => o.value === cancellation)?.label ??
-    "— pick a policy —";
+  const cancellationKey =
+    CANCELLATION_OPTIONS.find((o) => o.value === cancellation)?.key ?? "none";
+  const cancellationLabel = t(`policies.options.${cancellationKey}`);
 
   return (
     <View className="gap-4">
       <SectionHeader
-        title="Policies"
-        subtitle="Cancellation, deposits, payment terms"
+        title={t("policies.title")}
+        subtitle={t("policies.subtitle")}
       />
       <View>
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          Deposit (%)
+          {t("policies.deposit")}
         </Text>
         <TextInput style={{ fontFamily: "LibreBaskerville" }}
           value={depositPct}
@@ -730,7 +737,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
       </View>
       <View>
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          Cancellation policy
+          {t("policies.cancellation")}
         </Text>
         <Pressable
           onPress={() => setPickerOpen(true)}
@@ -744,7 +751,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
       </View>
       <View>
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          Reschedule window (days)
+          {t("policies.reschedule")}
         </Text>
         <TextInput style={{ fontFamily: "LibreBaskerville" }}
           value={reschedule}
@@ -756,11 +763,11 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         />
       </View>
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Notes</Text>
+        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{t("policies.notes")}</Text>
         <TextInput style={{ fontFamily: "LibreBaskerville" }}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Any additional terms hosts should know."
+          placeholder={t("policies.notesPlaceholder")}
           placeholderTextColor={PLACEHOLDER}
           multiline
           numberOfLines={3}
@@ -774,7 +781,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         className="rounded-full border border-border bg-white h-11 items-center justify-center active:opacity-80"
       >
         <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          {busy ? "Saving…" : "Save policies"}
+          {busy ? t("saving") : t("policies.save")}
         </Text>
       </Pressable>
 
@@ -787,10 +794,10 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
           <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("cancel")}</Text>
             </Pressable>
             <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              Cancellation policy
+              {t("policies.cancellation")}
             </Text>
             <View style={{ width: 60 }} />
           </View>
@@ -817,7 +824,7 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
                         : "LibreBaskerville",
                   }}
                 >
-                  {o.label}
+                  {t(`policies.options.${o.key}`)}
                 </Text>
               </Pressable>
             ))}
