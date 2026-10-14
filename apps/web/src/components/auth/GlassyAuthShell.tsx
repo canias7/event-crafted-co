@@ -14,7 +14,7 @@
 // rings are the only decoration — keep it that way.
 
 import { ReactNode } from "react";
-import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
+import { AuthSplitLayout, useAuthLook } from "@/components/auth/AuthSplitLayout";
 
 interface Props {
   /** Sans-serif headline (e.g. "Welcome back,") */
@@ -85,19 +85,8 @@ export function GlassyAuthShell({
           {subtitle}
         </p>
 
-        {/* GLASSY FORM CARD */}
-        <div
-          className="w-full"
-          style={{
-            maxWidth: "420px",
-            background: "rgba(255,255,255,0.04)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "18px",
-            padding: "28px 28px 24px",
-          }}
-        >
+        {/* GLASSY FORM CARD (flat inside look a's framed card) */}
+        <ShellCard>
           {/* Pill header */}
           <div
             className="flex items-center justify-center"
@@ -129,7 +118,7 @@ export function GlassyAuthShell({
           </div>
 
           {children}
-        </div>
+        </ShellCard>
 
         {belowCardLink && (
           <div
@@ -213,3 +202,22 @@ export function GlassyAuthShell({
   );
 }
 
+
+function ShellCard({ children }: { children: ReactNode }) {
+  const look = useAuthLook();
+  if (look === "a") return <div className="w-full max-w-[420px]">{children}</div>;
+  return (
+    <div
+      className="w-full"
+      style={{
+        maxWidth: "420px",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.15)",
+        borderRadius: "20px",
+        padding: "28px 28px 24px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
