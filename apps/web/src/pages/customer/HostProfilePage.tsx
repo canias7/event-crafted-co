@@ -311,14 +311,6 @@ function HeroCard({
   const { t } = useTranslation("hostProfile");
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border p-8 flex flex-col items-center bg-card">
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(circle at 18% 22%, rgba(255,230,180,0.55), transparent 55%)",
-        }}
-      />
       <div className="relative">
         <input
           ref={fileInputRef}

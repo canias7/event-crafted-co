@@ -34,8 +34,9 @@ import { supabase } from "@/lib/supabase";
 import { PLANS_PAUSED } from "@/lib/plans";
 import { useT } from "@/lib/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
+import { C } from "@/lib/theme";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
 
 interface VendorResult {
   id: string;
@@ -168,7 +169,7 @@ export default function FindVendorScreen() {
   const subtitle = tr("subtitle");
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
       {/* Header with back — this screen is pushed, not a tab. */}
       <View className="flex-row items-center px-5 pt-2 pb-1">
         <Pressable
@@ -178,22 +179,22 @@ export default function FindVendorScreen() {
           accessibilityRole="button"
           accessibilityLabel={tr("goBack")}
         >
-          <Feather name="chevron-left" size={26} color="#14161a" />
+          <Feather name="chevron-left" size={26} color={C.text} />
         </Pressable>
         <Text
-          className="text-3xl text-foreground"
-          style={{ fontFamily: "LibreBaskerville-Bold", flexShrink: 1 }}
+          className="text-3xl"
+          style={{ color: C.text, fontFamily: "LibreBaskerville-Bold", flexShrink: 1 }}
         >
           {tr("title")}
         </Text>
       </View>
-      <Text className="px-5 pb-4 text-[13.5px] leading-[19px] text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{subtitle}</Text>
+      <Text className="px-5 pb-4 text-[13.5px] leading-[19px]" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{subtitle}</Text>
 
       {/* Search */}
       <View className="px-5 mb-3">
-        <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-          <Feather name="search" size={16} color="#746a58" />
-          <TextInput style={{ fontFamily: "LibreBaskerville" }}
+        <View className="flex-row items-center rounded-full px-4 py-3" style={{ backgroundColor: C.surface }}>
+          <Feather name="search" size={16} color={C.placeholder} />
+          <TextInput style={{ color: C.text, fontFamily: "LibreBaskerville" }}
             value={query}
             onChangeText={setQuery}
             placeholder={tr("searchPlaceholder")}
@@ -202,7 +203,7 @@ export default function FindVendorScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            className="ml-2 flex-1 text-base text-foreground"
+            className="ml-2 flex-1 text-base"
           />
           {query.length > 0 ? (
             <Pressable
@@ -211,7 +212,7 @@ export default function FindVendorScreen() {
               accessibilityRole="button"
               accessibilityLabel={tr("clearSearch")}
             >
-              <Feather name="x" size={16} color="#746a58" />
+              <Feather name="x" size={16} color={C.placeholder} />
             </Pressable>
           ) : null}
         </View>
@@ -224,18 +225,18 @@ export default function FindVendorScreen() {
       >
         {searching ? (
           <View className="px-5 py-12 items-center">
-            <ActivityIndicator color="#14161a" />
+            <ActivityIndicator color={C.text} />
           </View>
         ) : showHint ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="px-5 py-10 text-center text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
             {tr("hint", { count: MIN_QUERY })}
           </Text>
         ) : showEmpty ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="px-5 py-10 text-center text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
             {tr("noMatch", { query: trimmed })}
           </Text>
         ) : results.length === 0 ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="px-5 py-10 text-center text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
             {tr("startTyping")}
           </Text>
         ) : (
@@ -252,9 +253,9 @@ export default function FindVendorScreen() {
                   onPress={() => void startThread(r)}
                   disabled={starting !== null}
                   className={`flex-row items-center py-3 active:opacity-60 ${
-                    i > 0 ? "border-t border-border" : ""
+                    i > 0 ? "border-t" : ""
                   }`}
-                  style={{ opacity: starting !== null && !isStarting ? 0.5 : 1 }}
+                  style={{ borderColor: C.border, opacity: starting !== null && !isStarting ? 0.5 : 1 }}
                   accessibilityRole="button"
                   accessibilityLabel={tr("startA11y", { name })}
                 >
@@ -262,32 +263,32 @@ export default function FindVendorScreen() {
                     className="h-12 w-12 rounded-full items-center justify-center"
                     style={{ backgroundColor: avatarColor(r.id) }}
                   >
-                    <Text className="text-sm text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                    <Text className="text-sm" style={{ color: "#ffffff", fontFamily: "LibreBaskerville-Bold" }}>
                       {initials(name)}
                     </Text>
                   </View>
                   <View className="ml-3 flex-1">
                     <Text
-                      className="text-base text-foreground"
+                      className="text-base"
                       numberOfLines={1}
-                      style={{ fontFamily: "LibreBaskerville-Bold" }}
+                      style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}
                     >
                       {name}
                     </Text>
                     {meta ? (
                       <Text
-                        className="mt-0.5 text-sm text-muted-foreground"
+                        className="mt-0.5 text-sm"
                         numberOfLines={1}
-                        style={{ fontFamily: "LibreBaskerville" }}
+                        style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}
                       >
                         {meta}
                       </Text>
                     ) : null}
                   </View>
                   {isStarting ? (
-                    <ActivityIndicator size="small" color="#14161a" />
+                    <ActivityIndicator size="small" color={C.text} />
                   ) : (
-                    <Feather name="message-circle" size={18} color="#746a58" />
+                    <Feather name="message-circle" size={18} color={C.placeholder} />
                   )}
                 </Pressable>
               );

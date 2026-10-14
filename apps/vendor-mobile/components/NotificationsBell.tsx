@@ -191,9 +191,9 @@ export function NotificationsBell({
         >
           <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("close")}</Text>
+              <Text className="text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{t("close")}</Text>
             </Pressable>
-            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+            <Text className="text-base" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
               {t("title")}
             </Text>
             <Pressable
@@ -213,12 +213,12 @@ export function NotificationsBell({
           <ScrollView contentContainerClassName="pb-12">
             {loading ? (
               <View className="items-center pt-16">
-                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
+                <Text className="text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{t("loading")}</Text>
               </View>
             ) : rows.length === 0 ? (
               <View className="items-center pt-16 px-6">
                 <Feather name="bell-off" size={28} color="#6f6a60" />
-                <Text className="mt-3 text-sm text-muted-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
+                <Text className="mt-3 text-sm text-center" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                   {t("empty")}
                 </Text>
               </View>
@@ -281,7 +281,7 @@ export function NotificationsBell({
                       </View>
                     )}
                     <View className="flex-1">
-                      <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                      <Text className="text-base" style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}>
                         {r.title}
                       </Text>
                       {r.body ? (
@@ -293,7 +293,7 @@ export function NotificationsBell({
                           {r.body}
                         </Text>
                       ) : null}
-                      <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                      <Text className="mt-1 text-xs" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
                         {new Date(r.created_at).toLocaleString(locale)}
                       </Text>
                     </View>
