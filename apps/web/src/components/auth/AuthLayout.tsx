@@ -1,28 +1,36 @@
-// Layout for every sign-in and sign-up page (owner's call, Oct 2026):
-// kept simple on purpose. The site's top menu (PublicNav), the page's
-// content in a narrow column on the plain page (no rings, glows or
-// photos), a "Why Vendora" panel beside it (below it on phones), and a
-// bottom bar with the theme switch and the language switcher, since these
-// pages have no footer. Colours follow the site theme (light by default).
+// Layout for every sign-in and sign-up page (owner's call, Oct 2026): the
+// site's top menu (PublicNav); from 1024px a dimmed venue photo fills the
+// left half with the "Why Vendora" points on it, and the page's content
+// sits in a narrow column on the right; on phones there's no photo and the
+// points follow the content. A bottom bar holds the theme switch and the
+// language switcher, since these pages have no footer. Colours follow the
+// site theme (light by default); the photo side looks the same in both.
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import authPhoto from "@/assets/hero-video/hero-day-poster.webp";
 
-function Perks() {
+function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
   const { t } = useTranslation("auth");
   const items = t("split.perks.items", { returnObjects: true }) as { title: string; body: string }[];
   return (
-    <aside className="rounded-2xl border border-border bg-card p-5 md:p-8">
-      <p className="font-label text-accent m-0">{t("split.perks.title")}</p>
+    <aside
+      className={
+        onPhoto
+          ? "max-w-md text-[#f4f1ea]"
+          : "rounded-2xl border border-border bg-card p-5 md:p-8"
+      }
+    >
+      <p className={`font-label m-0 ${onPhoto ? "text-gold" : "text-accent"}`}>{t("split.perks.title")}</p>
       <ul className="m-0 mt-5 p-0 list-none flex flex-col gap-5">
         {items.map((it) => (
           <li key={it.title} className="flex gap-3">
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rotate-45 bg-gold" aria-hidden />
             <span>
               <span className="block font-bold text-[15px]">{it.title}</span>
-              <span className="mt-1 block text-[14px] leading-relaxed text-muted-foreground">{it.body}</span>
+              <span className={`mt-1 block text-[14px] leading-relaxed ${onPhoto ? "text-[#f4f1ea]/85" : "text-muted-foreground"}`}>{it.body}</span>
             </span>
           </li>
         ))}
@@ -38,13 +46,33 @@ export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <PublicNav tone="dark" />
-      <main className="flex-1 container flex justify-center py-12 md:py-20">
-        <div className="w-full max-w-[920px] grid gap-10 lg:grid-cols-[440px_1fr] lg:gap-16 items-start">
-          <div>{children}</div>
-          <div className="lg:mt-2">
-            <Perks />
+      <main className="flex-1 grid lg:grid-cols-2">
+        {/* Photo side (from 1024px): the venue photo, dimmed so the
+            points on it read, the same in light and dark. */}
+        <section className="relative hidden overflow-hidden lg:block" aria-hidden={false}>
+          <img
+            src={authPhoto}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-[#0a0b0e]/60" />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.65) 100%)" }}
+          />
+          <div className="relative flex h-full items-end px-12 py-14 xl:px-16">
+            <Perks onPhoto />
           </div>
-        </div>
+        </section>
+
+        <section className="flex justify-center px-5 py-12 md:px-8 md:py-20">
+          <div className="w-full max-w-[440px]">
+            {children}
+            <div className="mt-12 lg:hidden">
+              <Perks />
+            </div>
+          </div>
+        </section>
       </main>
       <div className="container">
         <div className="flex items-center justify-end gap-4 border-t border-border py-5">
