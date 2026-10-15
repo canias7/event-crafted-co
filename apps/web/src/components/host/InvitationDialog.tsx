@@ -213,7 +213,7 @@ export function InvitationDialog({
               <p className="text-sm font-bold mb-2">{t("invite.cover")}</p>
               {s.invite_cover_url ? (
                 <div className="relative">
-                  <img src={s.invite_cover_url} alt="" className="w-full aspect-[3/2] object-cover rounded-xl" />
+                  <img src={s.invite_cover_url} alt="" className="w-full aspect-[3/2] max-h-56 object-cover rounded-xl" />
                   <button
                     type="button"
                     onClick={() => set("invite_cover_url", null)}
@@ -394,7 +394,8 @@ export function InvitationDialog({
           </TabsContent>
         </Tabs>
 
-        <div className="mt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border pt-4">
+        {/* Pinned to the bottom of the window so Save is always in reach, on every screen size. */}
+        <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 mt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border bg-card px-6 pt-4 pb-6">
           <a
             href={`/rsvp/${shareToken}`}
             target="_blank"
