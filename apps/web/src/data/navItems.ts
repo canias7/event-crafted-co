@@ -102,7 +102,7 @@ export const vendorNavItems: NavItem[] = [
       { labelKey: "sidebar.vendor.edit_profile", path: "/vendor/edit-profile", icon: Pencil },
       { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
       { labelKey: "sidebar.vendor.verification", path: "/vendor/verification", icon: BadgeCheck, requiresPro: true },
-      { labelKey: "sidebar.vendor.scheduling", path: "/vendor/scheduling", icon: Zap },
+      { labelKey: "sidebar.vendor.scheduling", path: "/vendor/scheduling", icon: Zap, requiresPro: true },
       { labelKey: "sidebar.vendor.crm", path: "/vendor/crm", icon: Users, requiresPro: true },
       { labelKey: "sidebar.vendor.templates", path: "/vendor/templates", icon: FileText },
       { labelKey: "sidebar.vendor.team", path: "/vendor/team", icon: Sparkles },

@@ -50,7 +50,8 @@ export default function MoreScreen() {
   const dialog = useBrandDialog();
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Pro+ vendors (Pro, Premium or unlimited listings, as is_pro_user()):
-  // they get the verified badge application and Vendora CRM.
+  // they get the verified badge application, Smart Scheduling and Vendora
+  // CRM; Free vendors don't see those rows.
   const [verifyEligible, setVerifyEligible] = useState(false);
 
   useEffect(() => {
@@ -163,6 +164,8 @@ export default function MoreScreen() {
         </MenuSection>
 
         <MenuSection title={t("sections.tools")}>
+          {verifyEligible ? (
+          <>
           <GroupRow
             icon={<Feather name="zap" size={18} color={INK} />}
             label={t("rows.scheduling.label")}
@@ -170,7 +173,6 @@ export default function MoreScreen() {
             badge={t("badges.new")}
             onPress={() => router.push("/(vendor)/scheduling" as never)}
           />
-          {verifyEligible ? (
           <GroupRow
             divider
             icon={<Feather name="users" size={18} color={INK} />}
@@ -179,9 +181,10 @@ export default function MoreScreen() {
             badge="Pro"
             onPress={() => router.push("/(vendor)/crm" as never)}
           />
+          </>
           ) : null}
           <GroupRow
-            divider
+            divider={verifyEligible}
             icon={<Feather name="file-text" size={18} color={INK} />}
             label={t("rows.templates.label")}
             body={t("rows.templates.body")}
