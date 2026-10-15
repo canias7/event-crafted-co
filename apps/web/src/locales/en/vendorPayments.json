@@ -80,7 +80,8 @@
     "item_count_one": "{{count}} item",
     "item_count_other": "{{count}} items",
     "summary": "{{expenses}} across {{items}}",
-    "grouped_other": "{{n}} grouped into Other"
+    "grouped_other": "{{n}} grouped into Other",
+    "record": "+ Record an expense"
   },
   "pay": {
     "try_again": "Try again in a moment.",
@@ -255,6 +256,37 @@
       "venmo": "Venmo",
       "bank_transfer": "Bank transfer",
       "card": "Card (outside Vendora)",
+      "other": "Other"
+    }
+  },
+  "expense_form": {
+    "title": "Record an expense",
+    "description": "Log what you spend on the business (supplies, rentals, help, travel) to see your real cash flow. Only you can see these.",
+    "amount": "Amount ($)",
+    "date": "Date",
+    "what": "What it was for",
+    "what_placeholder": "e.g. Flowers for the Rivera wedding",
+    "what_required": "Say what the expense was for.",
+    "category": "Category",
+    "paid_to": "Paid to (optional)",
+    "paid_to_placeholder": "Store, person or company",
+    "save": "Save expense",
+    "saved": "Recorded {{amount}}.",
+    "save_failed": "Couldn't save the expense. Try again.",
+    "recorded": "Recorded expenses",
+    "delete": "Delete expense",
+    "delete_failed": "Couldn't delete the expense. Try again.",
+    "categories": {
+      "supplies": "Supplies",
+      "rentals": "Rentals",
+      "labor": "Staff and helpers",
+      "travel": "Travel",
+      "mileage": "Mileage",
+      "marketing": "Marketing",
+      "software": "Software",
+      "fees": "Fees",
+      "meals": "Meals",
+      "insurance": "Insurance",
       "other": "Other"
     }
   }

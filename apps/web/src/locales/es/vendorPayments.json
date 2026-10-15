@@ -80,7 +80,8 @@
     "item_count_one": "{{count}} concepto",
     "item_count_other": "{{count}} conceptos",
     "summary": "{{expenses}} en {{items}}",
-    "grouped_other": "{{n}} agrupados en Otros"
+    "grouped_other": "{{n}} agrupados en Otros",
+    "record": "+ Registrar un gasto"
   },
   "pay": {
     "try_again": "Inténtalo de nuevo en un momento.",
@@ -255,6 +256,37 @@
       "venmo": "Venmo",
       "bank_transfer": "Transferencia bancaria",
       "card": "Tarjeta (fuera de Vendora)",
+      "other": "Otro"
+    }
+  },
+  "expense_form": {
+    "title": "Registrar un gasto",
+    "description": "Anota lo que gastas en el negocio (materiales, alquileres, ayudantes, viajes) para ver tu flujo de caja real. Solo tú puedes verlos.",
+    "amount": "Monto ($)",
+    "date": "Fecha",
+    "what": "En qué se gastó",
+    "what_placeholder": "p. ej., flores para la boda Rivera",
+    "what_required": "Indica en qué se gastó.",
+    "category": "Categoría",
+    "paid_to": "Pagado a (opcional)",
+    "paid_to_placeholder": "Tienda, persona o empresa",
+    "save": "Guardar gasto",
+    "saved": "Se registró {{amount}}.",
+    "save_failed": "No se pudo guardar el gasto. Inténtalo de nuevo.",
+    "recorded": "Gastos registrados",
+    "delete": "Eliminar gasto",
+    "delete_failed": "No se pudo eliminar el gasto. Inténtalo de nuevo.",
+    "categories": {
+      "supplies": "Materiales",
+      "rentals": "Alquileres",
+      "labor": "Personal y ayudantes",
+      "travel": "Viajes",
+      "mileage": "Kilometraje",
+      "marketing": "Marketing",
+      "software": "Software",
+      "fees": "Comisiones",
+      "meals": "Comidas",
+      "insurance": "Seguros",
       "other": "Otro"
     }
   }

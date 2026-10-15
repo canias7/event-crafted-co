@@ -16,6 +16,7 @@ import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { useRealtime } from "@/lib/realtime";
 import { intlLocale, moneyLocale, siteIsEnglish, siteLocaleOr } from "@/lib/intlLocale";
 import { OutsidePaymentsDialog, formatReceivedOn } from "@/components/vendor/OutsidePaymentsDialog";
+import { ExpensesDialog } from "@/components/vendor/ExpensesDialog";
 
 interface Balance {
   available_cents: number;
@@ -276,6 +277,7 @@ function OverviewTab({
   // "Record a payment" dialog (payments received outside Vendora); a
   // save or delete bumps reloadKey so the cards refetch.
   const [outsideOpen, setOutsideOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   // Recent paid invoices across the whole account (replaces the
   // single-listing Stripe transactions table that used to live here).
@@ -570,7 +572,17 @@ function OverviewTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 xl:w-11/12">
         <OverviewLeadsCard leads={leads} />
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
-        <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
+        <OverviewExpensesCard
+          expenses={expenses}
+          currency={currency}
+          onViewAll={onViewExpenses}
+          onRecord={() => setExpenseOpen(true)}
+        />
+        <ExpensesDialog
+          open={expenseOpen}
+          onOpenChange={setExpenseOpen}
+          onChanged={() => setReloadKey((k) => k + 1)}
+        />
       </div>
 
       {/* Upcoming appointments — confirmed / proposed meetings across
@@ -1343,10 +1355,13 @@ function OverviewExpensesCard({
   expenses,
   currency,
   onViewAll,
+  onRecord,
 }: {
   expenses: { total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> };
   currency: string;
   onViewAll?: () => void;
+  // Opens "Record an expense".
+  onRecord: () => void;
 }) {
   const { t } = useTranslation("vendorPayments");
   // Brand ramp (ink → bronze → champagne → sand) so a vendor scanning
@@ -1384,6 +1399,13 @@ function OverviewExpensesCard({
           </button>
         ) : null}
       </div>
+      <button
+        type="button"
+        onClick={onRecord}
+        className="mb-3 text-xs font-bold text-accent hover:underline underline-offset-4"
+      >
+        {t("expenses.record")}
+      </button>
       {expenses.count === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
           {t("expenses.empty")}
