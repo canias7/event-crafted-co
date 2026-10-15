@@ -49,7 +49,8 @@ export default function MoreScreen() {
   const { user, signOut } = useAuth();
   const dialog = useBrandDialog();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // Pro+ vendors are eligible to apply for the verified badge.
+  // Pro+ vendors (Pro, Premium or unlimited listings, as is_pro_user()):
+  // they get the verified badge application and Vendora CRM.
   const [verifyEligible, setVerifyEligible] = useState(false);
 
   useEffect(() => {
@@ -144,6 +145,9 @@ export default function MoreScreen() {
             badge={t("badges.optional")}
             onPress={() => router.push("/(vendor)/team" as never)}
           />
+          {/* Pro-only rows (Verification, Vendora CRM) show only to vendors
+              on Pro or Premium (owner's call, Oct 2026). */}
+          {verifyEligible ? (
           <GroupRow
             divider
             icon={<MaterialCommunityIcons name="shield-check-outline" size={19} color={INK} />}
@@ -152,9 +156,10 @@ export default function MoreScreen() {
             // The card used to turn gold when the vendor was eligible. A
             // single tinted row inside a shared card reads as a glitch, so
             // the "Eligible" badge carries that signal on its own.
-            badge={verifyEligible ? t("badges.eligible") : "Pro"}
+            badge={t("badges.eligible")}
             onPress={() => router.push("/(vendor)/verification" as never)}
           />
+          ) : null}
         </MenuSection>
 
         <MenuSection title={t("sections.tools")}>
@@ -165,6 +170,7 @@ export default function MoreScreen() {
             badge={t("badges.new")}
             onPress={() => router.push("/(vendor)/scheduling" as never)}
           />
+          {verifyEligible ? (
           <GroupRow
             divider
             icon={<Feather name="users" size={18} color={INK} />}
@@ -173,6 +179,7 @@ export default function MoreScreen() {
             badge="Pro"
             onPress={() => router.push("/(vendor)/crm" as never)}
           />
+          ) : null}
           <GroupRow
             divider
             icon={<Feather name="file-text" size={18} color={INK} />}

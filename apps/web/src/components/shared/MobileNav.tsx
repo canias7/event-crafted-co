@@ -11,6 +11,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsProVendor } from "@/hooks/useIsProVendor";
+import { navForPlan, vendorNavItems } from "@/data/navItems";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 interface NavItem {
@@ -20,6 +22,7 @@ interface NavItem {
   /** Optional — matches the shared nav type; rendering guards on it. */
   icon?: LucideIcon;
   children?: NavItem[];
+  requiresPro?: boolean;
   /** Match the full path incl. query (e.g. Overview vs Workspace). */
   exact?: boolean;
 }
@@ -63,7 +66,7 @@ export function MobileNav({ items }: MobileNavProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { t: tp } = useTranslation("portal");
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Inbox is reachable from the floating chat-bubble at top-right of
@@ -73,7 +76,10 @@ export function MobileNav({ items }: MobileNavProps) {
   // navigate there from a non-dashboard page.
   const isInbox = (path: string) =>
     path === "/vendor/inbox" || path === "/customer/inquiries";
-  const flatItems = flattenItems(items);
+  // Pro-only rows (Verification, Vendora CRM) only for vendors who have them.
+  const isVendorSide = items === vendorNavItems;
+  const isPro = useIsProVendor(isVendorSide ? user?.id ?? null : null);
+  const flatItems = flattenItems(isVendorSide ? navForPlan(items, isPro) : items);
   const primaryItems = flatItems.filter((it) => !isInbox(it.path)).slice(0, 4);
   const overflowItems = flatItems.filter(
     (it) => !primaryItems.some((p) => p.path === it.path),

@@ -9,7 +9,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { customerNavItems, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
+import { customerNavItems, navForPlan, setLastDashboardSide, vendorNavItems } from "@/data/navItems";
+import { useIsProVendor } from "@/hooks/useIsProVendor";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorPlan, type VendorTier } from "@/hooks/useVendorPlan";
 import { useLiveVendorBalance } from "@/hooks/useVendorCredits";
@@ -82,6 +83,9 @@ export function DashboardSidebar({
   // Subscription tier lives on profiles (per-user) post migration
   // 20260524000000 — pass user.id, not ownListing.id.
   const { tier } = useVendorPlan(isVendorSide ? user?.id ?? null : null);
+  // Pro-only rows (Verification, Vendora CRM) only for vendors who have them.
+  const isPro = useIsProVendor(isVendorSide ? user?.id ?? null : null);
+  const shownItems = isVendorSide ? navForPlan(items, isPro) : items;
   const subLabel = isVendorSide ? tp(`sidebar.tier_label.${tier}`) : titleText;
   // Live credit balance shown as a small chip on the right of the
   // Usage nav row. Subscribes to vendor_credit_balances UPDATEs so
@@ -342,7 +346,7 @@ export function DashboardSidebar({
         aria-label={tp("sidebar.primary")}
       >
         {/* Gallery shows for every vendor tier, including Free. */}
-        {items.map(renderItem)}
+        {shownItems.map(renderItem)}
       </nav>
       {/* Light / dark switch, at the foot of the sidebar. */}
       <div
