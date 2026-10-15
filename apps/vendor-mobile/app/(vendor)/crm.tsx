@@ -28,19 +28,26 @@ import { supabase } from "@/lib/supabase";
 import { Wordmark } from "@/components/Wordmark";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { intlLocale, useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const GOLD = "#c9a86a";
-const GOLD_SOFT = "#f2e7cb";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const GOLD = C.gold;
+const GOLD_MUTED = C.goldMuted;
+const ON_GOLD = C.onGold;
+const GOLD_SOFT = C.pending;
+const BRONZE = C.accentText;
+const SELECTED = C.selected;
+const ON_SELECTED = C.onSelected;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -88,28 +95,33 @@ function initials(name: string): string {
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(intlLocale(), { month: "short", day: "numeric", year: "numeric" });
 }
 
 function fmtShort(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return d.toLocaleDateString(intlLocale(), { month: "short", day: "numeric" });
 }
 
-// Follow-up quick picks (days from now).
-const FOLLOW_UPS: { label: string; days: number }[] = [
-  { label: "Tomorrow", days: 1 },
-  { label: "In 3 days", days: 3 },
-  { label: "Next week", days: 7 },
-  { label: "In 2 weeks", days: 14 },
-  { label: "In a month", days: 30 },
+// Follow-up quick picks (days from now); labels are crm.followUps.<key>.
+const FOLLOW_UPS: { key: string; days: number }[] = [
+  { key: "tomorrow", days: 1 },
+  { key: "in3Days", days: 3 },
+  { key: "nextWeek", days: 7 },
+  { key: "in2Weeks", days: 14 },
+  { key: "inAMonth", days: 30 },
 ];
+
+// Event types are stored in English ("holiday_dinner"); show the known
+// ones in the app's language and fall back to the core label.
+const KNOWN_EVENT_TYPES = ["wedding", "birthday", "holiday_dinner", "other"];
 
 export default function CrmScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const dialog = useBrandDialog();
+  const { t } = useT("crm");
 
   const [loading, setLoading] = useState(true);
   const [gated, setGated] = useState(false);
@@ -177,19 +189,17 @@ export default function CrmScreen() {
               color: INK,
             }}
           >
-            Know every client.
+            {t("gate.title")}
           </Text>
           <Text style={{ fontFamily: SERIF, marginTop: 8, fontSize: 15, color: INK_DIM, lineHeight: 22 }}>
-            Vendora CRM turns your inquiries into a client book — every host
-            you've worked with, their events, your notes, and follow-up
-            reminders so no lead goes cold.
+            {t("gate.body")}
           </Text>
           <View style={{ marginTop: 24, gap: 12 }}>
             {[
-              { icon: "users", text: "Every client in one place, built from your inquiries" },
-              { icon: "file-text", text: "Private notes on each client — only you see them" },
-              { icon: "bell", text: "Follow-up reminders that ping your phone" },
-              { icon: "calendar", text: "Their upcoming and past events at a glance" },
+              { icon: "users", text: t("gate.features.clients") },
+              { icon: "file-text", text: t("gate.features.notes") },
+              { icon: "bell", text: t("gate.features.reminders") },
+              { icon: "calendar", text: t("gate.features.events") },
             ].map((row) => (
               <View
                 key={row.icon}
@@ -235,8 +245,8 @@ export default function CrmScreen() {
               alignItems: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-              Upgrade to Pro
+            <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 15}}>
+              {t("gate.upgrade")}
             </Text>
           </Pressable>
           ) : null}
@@ -250,8 +260,8 @@ export default function CrmScreen() {
             }}
           >
             {PLANS_PAUSED
-              ? "Not available on the Free plan yet."
-              : "Included with Pro and Premium plans."}
+              ? t("gate.paused")
+              : t("gate.included")}
           </Text>
         </ScrollView>
         {dialog.element}
@@ -295,10 +305,10 @@ export default function CrmScreen() {
             color: INK,
           }}
         >
-          Clients
+          {t("title")}
         </Text>
         <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-          Your client book, built from every inquiry.
+          {t("subtitle")}
         </Text>
 
         {/* Search */}
@@ -318,7 +328,7 @@ export default function CrmScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search clients"
+            placeholder={t("searchPlaceholder")}
             placeholderTextColor={PLACEHOLDER}
             style={{ fontFamily: SERIF, flex: 1, marginLeft: 9, paddingVertical: 12, fontSize: 15, color: INK }}
           />
@@ -352,12 +362,12 @@ export default function CrmScreen() {
                 textAlign: "center",
               }}
             >
-              {query ? "No clients match" : "No clients yet"}
+              {query ? t("empty.noMatchTitle") : t("empty.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, marginTop: 6, color: INK_DIM, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
               {query
-                ? "Try a different name."
-                : "As soon as a host sends you an inquiry, they'll appear here with their events, your notes, and follow-ups."}
+                ? t("empty.noMatchBody")
+                : t("empty.body")}
             </Text>
           </View>
         ) : (
@@ -405,13 +415,13 @@ export default function CrmScreen() {
                       {c.host_name}
                     </Text>
                     <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-                      {c.inquiries_count} {c.inquiries_count === 1 ? "inquiry" : "inquiries"}
-                      {c.booked_count > 0 ? ` · ${c.booked_count} booked` : ""}
-                      {c.notes_count > 0 ? ` · ${c.notes_count} ${c.notes_count === 1 ? "note" : "notes"}` : ""}
+                      {t("row.inquiries", { count: c.inquiries_count })}
+                      {c.booked_count > 0 ? ` · ${t("row.booked", { count: c.booked_count })}` : ""}
+                      {c.notes_count > 0 ? ` · ${t("row.notes", { count: c.notes_count })}` : ""}
                     </Text>
                     {c.next_event_date ? (
-                      <Text style={{ fontFamily: SERIF_BOLD, marginTop: 3, color: "#8a6f3e", fontSize: 12}}>
-                        Next event {fmtShort(c.next_event_date)}
+                      <Text style={{ fontFamily: SERIF_BOLD, marginTop: 3, color: BRONZE, fontSize: 12}}>
+                        {t("row.nextEvent", { date: fmtShort(c.next_event_date) })}
                       </Text>
                     ) : null}
                   </View>
@@ -428,8 +438,8 @@ export default function CrmScreen() {
                         marginRight: 6,
                       }}
                     >
-                      <Feather name="bell" size={11} color="#8a6f3e" />
-                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: "#8a6f3e" }}>
+                      <Feather name="bell" size={11} color={BRONZE} />
+                      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: BRONZE }}>
                         {fmtShort(c.follow_up_at)}
                       </Text>
                     </View>
@@ -472,6 +482,12 @@ function ClientSheet({
   const router = useRouter();
   const { user } = useAuth();
   const dialog = useBrandDialog();
+  const { t } = useT("crm");
+  const eventLabel = (type: string | null) => {
+    const k = type?.trim();
+    if (k && KNOWN_EVENT_TYPES.includes(k)) return t(`eventTypes.${k}`);
+    return eventTypeLabel(type, t("sheet.eventInquiry"));
+  };
 
   const [events, setEvents] = useState<EventRow[]>([]);
   const [notes, setNotes] = useState<NoteRow[]>([]);
@@ -523,7 +539,7 @@ function ClientSheet({
       .single();
     setSavingNote(false);
     if (err) {
-      dialog.show({ icon: "alert-circle", title: "Couldn't save note", message: err.message });
+      dialog.show({ icon: "alert-circle", title: t("sheet.noteFailed"), message: err.message });
       return;
     }
     setNotes((prev) => [data as NoteRow, ...prev]);
@@ -534,10 +550,10 @@ function ClientSheet({
   function removeNote(n: NoteRow) {
     dialog.show({
       icon: "trash-2",
-      title: "Delete this note?",
-      message: "It'll be gone for good.",
-      confirmLabel: "Delete",
-      cancelLabel: "Keep",
+      title: t("sheet.deleteNote.title"),
+      message: t("sheet.deleteNote.body"),
+      confirmLabel: t("sheet.deleteNote.confirm"),
+      cancelLabel: t("sheet.deleteNote.keep"),
       destructive: true,
       onConfirm: () => {
         void (async () => {
@@ -568,7 +584,7 @@ function ClientSheet({
     );
     setSavingFollow(false);
     if (err) {
-      dialog.show({ icon: "alert-circle", title: "Couldn't set reminder", message: err.message });
+      dialog.show({ icon: "alert-circle", title: t("sheet.reminderFailed"), message: err.message });
       return;
     }
     setFollowUpAt(at);
@@ -589,9 +605,8 @@ function ClientSheet({
     if (!threadId) {
       dialog.show({
         icon: "message-circle",
-        title: "No conversation yet",
-        message:
-          "You don't have a message thread with this client yet — reply to one of their inquiries from the Inbox to start one.",
+        title: t("sheet.noThread.title"),
+        message: t("sheet.noThread.body"),
       });
       return;
     }
@@ -634,7 +649,7 @@ function ClientSheet({
                 {client.host_name}
               </Text>
               <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-                Client since {fmtDate(client.first_inquiry_at)}
+                {t("sheet.clientSince", { date: fmtDate(client.first_inquiry_at) })}
               </Text>
             </View>
             <Pressable
@@ -668,18 +683,18 @@ function ClientSheet({
               height: 44,
             }}
           >
-            <Feather name="message-circle" size={15} color={INK} />
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>Message</Text>
+            <Feather name="message-circle" size={15} color={ON_GOLD} />
+            <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 14}}>{t("sheet.message")}</Text>
           </Pressable>
 
           {/* Follow-up reminder */}
           <Text style={sectionTitleStyle}>
-            Follow-up reminder
+            {t("sheet.followUpTitle")}
           </Text>
           {followUpAt ? (
             <View
               style={{
-                backgroundColor: "#f2e7cb",
+                backgroundColor: GOLD_SOFT,
                 borderWidth: 1,
                 borderColor: GOLD,
                 borderRadius: 20,
@@ -688,12 +703,12 @@ function ClientSheet({
                 alignItems: "center",
               }}
             >
-              <Feather name="bell" size={16} color="#8a6f3e" />
-              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: "#8a6f3e", fontSize: 13}}>
-                We'll ping you on {fmtDate(followUpAt)}.
+              <Feather name="bell" size={16} color={BRONZE} />
+              <Text style={{ fontFamily: SERIF_BOLD, flex: 1, marginLeft: 10, color: BRONZE, fontSize: 13}}>
+                {t("sheet.followUpSet", { date: fmtDate(followUpAt) })}
               </Text>
               <Pressable onPress={() => void setFollowUp(null)} hitSlop={8} disabled={savingFollow}>
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13}}>Clear</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 13}}>{t("sheet.clear")}</Text>
               </Pressable>
             </View>
           ) : (
@@ -711,7 +726,7 @@ function ClientSheet({
                     opacity: savingFollow ? 0.6 : 1,
                   }}
                 >
-                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{f.label}</Text>
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>{t(`followUps.${f.key}`)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -719,7 +734,7 @@ function ClientSheet({
 
           {/* Notes */}
           <Text style={sectionTitleStyle}>
-            Notes
+            {t("sheet.notesTitle")}
           </Text>
           <View
             style={{
@@ -733,7 +748,7 @@ function ClientSheet({
             <TextInput
               value={noteText}
               onChangeText={setNoteText}
-              placeholder="Add a private note — pricing, preferences, kids' names…"
+              placeholder={t("sheet.notePlaceholder")}
               placeholderTextColor={PLACEHOLDER}
               multiline
               style={{ fontFamily: SERIF, minHeight: 60, fontSize: 14, color: INK, textAlignVertical: "top" }}
@@ -744,7 +759,7 @@ function ClientSheet({
               style={{
                 marginTop: 8,
                 alignSelf: "flex-end",
-                backgroundColor: noteText.trim() ? GOLD : "#e0d2b0",
+                backgroundColor: noteText.trim() ? GOLD : GOLD_MUTED,
                 borderRadius: 999,
                 paddingHorizontal: 16,
                 height: 36,
@@ -752,16 +767,16 @@ function ClientSheet({
               }}
             >
               {savingNote ? (
-                <ActivityIndicator size="small" color={INK} />
+                <ActivityIndicator size="small" color={ON_GOLD} />
               ) : (
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
                     fontSize: 13,
-                    color: INK_DIM,
+                    color: ON_GOLD,
                   }}
                 >
-                  Save note
+                  {t("sheet.saveNote")}
                 </Text>
               )}
             </Pressable>
@@ -797,10 +812,10 @@ function ClientSheet({
 
           {/* Events */}
           <Text style={sectionTitleStyle}>
-            Events
+            {t("sheet.eventsTitle")}
           </Text>
           {events.length === 0 ? (
-            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}>No inquiries on record yet.</Text>
+            <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}>{t("sheet.noEvents")}</Text>
           ) : (
             events.map((e) => {
               const booked =
@@ -826,11 +841,11 @@ function ClientSheet({
                         color: INK,
                       }}
                     >
-                      {eventTypeLabel(e.event_type, "Event inquiry")}
+                      {eventLabel(e.event_type)}
                     </Text>
                     <View
                       style={{
-                        backgroundColor: booked ? INK : SURFACE,
+                        backgroundColor: booked ? SELECTED : SURFACE,
                         borderRadius: 999,
                         paddingHorizontal: 10,
                         paddingVertical: 4,
@@ -840,21 +855,21 @@ function ClientSheet({
                         style={{
                           fontFamily: SERIF_BOLD,
                           fontSize: 11,
-                          color: booked ? "#fff" : INK_DIM,
+                          color: booked ? ON_SELECTED : INK_DIM,
                         }}
                       >
-                        {booked ? "Booked" : "Inquiry"}
+                        {booked ? t("sheet.status.booked") : t("sheet.status.inquiry")}
                       </Text>
                     </View>
                   </View>
                   <Text style={{ fontFamily: SERIF, marginTop: 4, color: INK_DIM, fontSize: 13 }}>
                     {[
                       e.event_date ? fmtDate(e.event_date) : null,
-                      e.guest_count ? `${e.guest_count} guests` : null,
+                      e.guest_count ? t("sheet.guests", { count: e.guest_count }) : null,
                       e.location?.trim() || null,
                     ]
                       .filter(Boolean)
-                      .join(" · ") || `Received ${fmtDate(e.created_at)}`}
+                      .join(" · ") || t("sheet.received", { date: fmtDate(e.created_at) })}
                   </Text>
                 </View>
               );

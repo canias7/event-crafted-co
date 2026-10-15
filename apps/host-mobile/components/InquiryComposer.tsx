@@ -19,21 +19,22 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Text inputs: page fill, hairline, ink text (theme-aware).
+const INPUT_STYLE = { fontFamily: SERIF, backgroundColor: C.page, borderColor: C.border, color: C.text };
+const KEYBOARD = IS_DARK ? "dark" : "light";
 
 type EventType = "wedding" | "birthday" | "holiday_dinner" | "other";
 
-const EVENT_TYPES: { key: EventType; label: string }[] = [
-  { key: "wedding", label: "Wedding" },
-  { key: "birthday", label: "Birthday" },
-  { key: "holiday_dinner", label: "Holiday dinner" },
-  { key: "other", label: "Other" },
-];
+// Saved values; labels come from inquiryComposer.eventTypes.<key>.
+const EVENT_TYPES: EventType[] = ["wedding", "birthday", "holiday_dinner", "other"];
 
 export function InquiryComposer({
   visible,
@@ -48,6 +49,7 @@ export function InquiryComposer({
   onClose: () => void;
   onSubmitted?: (inquiryId: string) => void;
 }) {
+  const { t } = useT("inquiryComposer");
   const { user } = useAuth();
   const [eventType, setEventType] = useState<EventType>("wedding");
   const [eventDate, setEventDate] = useState("");
@@ -70,11 +72,11 @@ export function InquiryComposer({
 
   async function submit() {
     if (!user?.id || !vendorId) {
-      Alert.alert("Sign in first", "You need to be logged in to send an inquiry.");
+      Alert.alert(t("signInTitle"), t("signInBody"));
       return;
     }
     if (!message.trim()) {
-      Alert.alert("Message is required");
+      Alert.alert(t("messageRequired"));
       return;
     }
     setSubmitting(true);
@@ -120,11 +122,14 @@ export function InquiryComposer({
       reset();
       onClose();
       onSubmitted?.((data as { id: string }).id);
-      Alert.alert("Sent", `${vendorName ?? "The vendor"} will get back to you soon.`);
+      Alert.alert(
+        t("sentTitle"),
+        vendorName ? t("sentBody", { name: vendorName }) : t("sentBodyNoName"),
+      );
     } catch (err) {
       Alert.alert(
-        "Couldn't send inquiry",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("errorTitle"),
+        (err as { message?: string })?.message ?? t("errorBody"),
       );
     } finally {
       setSubmitting(false);
@@ -140,24 +145,29 @@ export function InquiryComposer({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
         <KeyboardAvoidingView
           behavior="padding"
           style={{ flex: 1 }}
         >
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Feather name="x" size={22} color="#14161a" />
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderBottomColor: C.border }}>
+            <Pressable
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t("close")}
+            >
+              <Feather name="x" size={22} color={C.text} />
             </Pressable>
-            <Text style={{ fontFamily: SERIF_BOLD }} className="text-base text-foreground">
-              Inquire
+            <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-base">
+              {t("title")}
             </Text>
             <Pressable onPress={submit} hitSlop={8} disabled={!canSubmit}>
               <Text
                 className="text-sm"
-                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? "#14161a" : "#746a58" }}
+                style={{ fontFamily: SERIF_BOLD, color: canSubmit ? C.text : C.placeholder }}
               >
-                {submitting ? "Sending…" : "Send"}
+                {submitting ? t("sending") : t("send")}
               </Text>
             </Pressable>
           </View>
@@ -168,38 +178,40 @@ export function InquiryComposer({
           >
             {vendorName ? (
               <View>
-                <Text style={{ fontFamily: SERIF }} className="text-xs uppercase tracking-wide text-muted-foreground">
-                  To
+                <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-xs uppercase tracking-wide">
+                  {t("to")}
                 </Text>
-                <Text style={{ fontFamily: SERIF_BOLD }} className="mt-1 text-base text-foreground">
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="mt-1 text-base">
                   {vendorName}
                 </Text>
               </View>
             ) : null}
 
             <View>
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
-                Event type
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-sm mb-2">
+                {t("eventType")}
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {EVENT_TYPES.map((t) => {
-                  const active = eventType === t.key;
+                {EVENT_TYPES.map((type) => {
+                  const active = eventType === type;
                   return (
                     <Pressable
-                      key={t.key}
-                      onPress={() => setEventType(t.key)}
+                      key={type}
+                      onPress={() => setEventType(type)}
                       className={`rounded-full px-4 py-2 active:opacity-70 ${
- active
-                          ? "bg-foreground"
-                          : "border border-border bg-background"
+                        active ? "" : "border"
                       }`}
+                      style={
+                        active
+                          ? { backgroundColor: C.selected }
+                          : { backgroundColor: C.page, borderColor: C.border }
+                      }
                     >
-                      <Text style={{ fontFamily: SERIF_BOLD }}
-                        className={`text-sm ${
-                          active ? "text-white" : "text-foreground"
-                        }`}
+                      <Text
+                        style={{ fontFamily: SERIF_BOLD, color: active ? C.onSelected : C.text }}
+                        className="text-sm"
                       >
-                        {t.label}
+                        {t(`eventTypes.${type}`)}
                       </Text>
                     </Pressable>
                   );
@@ -208,29 +220,29 @@ export function InquiryComposer({
             </View>
 
             <Field
-              label="Event date"
-              placeholder="YYYY-MM-DD"
+              label={t("eventDate")}
+              placeholder={t("eventDatePlaceholder")}
               value={eventDate}
               onChangeText={setEventDate}
               autoCapitalize="none"
             />
             <Field
-              label="Guest count"
-              placeholder="e.g. 80"
+              label={t("guestCount")}
+              placeholder={t("guestCountPlaceholder")}
               value={guestCount}
               onChangeText={(v) => setGuestCount(v.replace(/[^0-9]/g, ""))}
               keyboardType="number-pad"
             />
             <Field
-              label="Location"
-              placeholder="City, State"
+              label={t("location")}
+              placeholder={t("locationPlaceholder")}
               value={location}
               onChangeText={setLocation}
             />
             <View className="flex-row gap-3">
               <View style={{ flex: 1 }}>
                 <Field
-                  label="Budget min ($)"
+                  label={t("budgetMin")}
                   placeholder="0"
                   value={budgetMin}
                   onChangeText={setBudgetMin}
@@ -239,7 +251,7 @@ export function InquiryComposer({
               </View>
               <View style={{ flex: 1 }}>
                 <Field
-                  label="Budget max ($)"
+                  label={t("budgetMax")}
                   placeholder="0"
                   value={budgetMax}
                   onChangeText={setBudgetMax}
@@ -249,18 +261,19 @@ export function InquiryComposer({
             </View>
 
             <View>
-              <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">
-                Message
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-sm mb-2">
+                {t("message")}
               </Text>
-              <TextInput style={{ fontFamily: SERIF }}
+              <TextInput style={INPUT_STYLE}
+                keyboardAppearance={KEYBOARD}
                 value={message}
                 onChangeText={setMessage}
-                placeholder="Tell the vendor about your event…"
+                placeholder={t("messagePlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
-                className="min-h-[140px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="min-h-[140px] rounded-xl border px-4 py-3 text-base"
               />
             </View>
           </ScrollView>
@@ -287,15 +300,16 @@ function Field({
 }) {
   return (
     <View>
-      <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-foreground mb-2">{label}</Text>
-      <TextInput style={{ fontFamily: SERIF }}
+      <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-sm mb-2">{label}</Text>
+      <TextInput style={INPUT_STYLE}
+        keyboardAppearance={KEYBOARD}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={PLACEHOLDER}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+        className="rounded-xl border px-4 py-3 text-base"
       />
     </View>
   );

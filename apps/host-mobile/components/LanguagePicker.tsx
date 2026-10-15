@@ -1,0 +1,63 @@
+// English / Español / Русский pills. Used in Settings and on the
+// sign-in screens; the choice is saved on the device (lib/i18n.ts) and
+// every screen that reads its text through useT() switches at once.
+// Selected = ink fill with a white label (brand rule); on dark screens
+// the selected pill is cream with an ink label. tone="light" (the
+// default) follows the app theme (lib/theme.ts); tone="dark" always
+// draws the dark look, for pills over a photo or the ink page.
+import { Pressable, Text, View } from "react-native";
+import { LANGUAGES, setLanguage, useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
+
+const INK = "#14161a";
+const CREAM = "#f4f1ea";
+const SERIF_BOLD = "LibreBaskerville-Bold";
+
+export function LanguagePicker({ tone = "light" }: { tone?: "light" | "dark" }) {
+  const { lang, t } = useT("common");
+  const dark = tone === "dark";
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t("language.title")}
+      style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+    >
+      {LANGUAGES.map((l) => {
+        const on = l.code === lang;
+        return (
+          <Pressable
+            key={l.code}
+            onPress={() => setLanguage(l.code)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            hitSlop={6}
+            style={{
+              height: 36,
+              paddingHorizontal: 16,
+              borderRadius: 999,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: on
+                ? dark ? CREAM : C.selected
+                : dark ? "rgba(255,255,255,0.15)" : C.border,
+              backgroundColor: on
+                ? dark ? CREAM : C.selected
+                : dark ? "transparent" : C.field,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: SERIF_BOLD,
+                fontSize: 14,
+                color: on ? (dark ? INK : C.onSelected) : dark ? CREAM : C.text,
+              }}
+            >
+              {l.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}

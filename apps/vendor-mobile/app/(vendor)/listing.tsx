@@ -27,13 +27,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import {
-  CATEGORY_GROUPS,
-  PRICING_MODELS,
-  PRICING_MODEL_LABELS,
-} from "@vendora/core";
+import { CATEGORY_GROUPS, PRICING_MODELS } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { i18n, useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { supabase } from "@/lib/supabase";
+import { C } from "@/lib/theme";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { FaqsSection } from "@/components/listing/Sections";
 import { DetailsSection } from "@/components/listing/DetailsSection";
@@ -42,16 +41,16 @@ import { wizardRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 // Editorial palette — kept in lockstep with edit-profile.tsx and the
 // vendor profile screen so the listing builder doesn't feel like a
 // different app section.
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const GOLD = "#c9a86a";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const GOLD = C.gold;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -113,6 +112,8 @@ export default function ListingScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const dialog = useBrandDialog();
+  const { t } = useT("listing");
+  const categoryNames = useCategoryNames();
   const [photoUploading, setPhotoUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{
     done: number;
@@ -145,7 +146,7 @@ export default function ListingScreen() {
         .eq("id", routeId)
         .eq("user_id", user.id)
         .maybeSingle();
-      if (error) setSetupError(`Couldn't load this listing: ${error.message}`);
+      if (error) setSetupError(i18n.t("listing.errors.loadListing", { message: error.message }));
       prof = (data as ProfileRow | null) ?? null;
     } else {
       // Legacy/onboarding path — pick this user's first listing, or
@@ -158,7 +159,7 @@ export default function ListingScreen() {
         .order("created_at", { ascending: true })
         .limit(1);
       if (selErr) {
-        setSetupError(`Couldn't load your profile: ${selErr.message}`);
+        setSetupError(i18n.t("listing.errors.loadProfile", { message: selErr.message }));
       }
       prof = ((rows ?? []) as ProfileRow[])[0] ?? null;
       if (!prof) {
@@ -181,7 +182,7 @@ export default function ListingScreen() {
           .select(PROFILE_COLS)
           .single();
         if (insErr) {
-          setSetupError(`Couldn't set up your profile: ${insErr.message}`);
+          setSetupError(i18n.t("listing.errors.setupProfile", { message: insErr.message }));
         }
         prof = (created as ProfileRow | null) ?? null;
       }
@@ -241,17 +242,14 @@ export default function ListingScreen() {
     if (!profile?.id || !user?.id) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
-        "Library access needed",
-        "Enable photo library access in Settings to upload listing photos.",
-      );
+      Alert.alert(t("photos.accessTitle"), t("photos.accessMessage"));
       return;
     }
     const remaining = MAX_PHOTOS - photos.length;
     if (remaining <= 0) {
       Alert.alert(
-        "Photo limit reached",
-        `Listings cap at ${MAX_PHOTOS} photos. Delete a photo to add a new one.`,
+        t("photos.limitTitle"),
+        t("photos.limitMessage", { count: MAX_PHOTOS }),
       );
       return;
     }
@@ -294,8 +292,8 @@ export default function ListingScreen() {
     });
     if (heicCount > 0) {
       Alert.alert(
-        "Some photos were skipped",
-        `${heicCount} HEIC photo${heicCount === 1 ? "" : "s"} skipped. Open the Photos app → Settings → Camera → Formats → Most Compatible to upload as JPEG instead.`,
+        t("photos.skippedTitle"),
+        t("photos.skippedMessage", { count: heicCount }),
       );
     }
     if (assets.length === 0) return;
@@ -335,7 +333,7 @@ export default function ListingScreen() {
           const arrayBuffer = await (await fetch(upUri)).arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
           if (bytes.byteLength === 0) {
-            throw new Error("Empty file");
+            throw new Error(t("photos.emptyFile"));
           }
           const up = await supabase.storage
             .from("vendor-portfolios")
@@ -353,7 +351,7 @@ export default function ListingScreen() {
           // Don't bail the whole batch on a single bad asset — keep
           // the others moving and report the partial at the end.
           if (!firstError) {
-            firstError = (err as { message?: string }) ?? { message: "upload failed" };
+            firstError = (err as { message?: string }) ?? { message: t("photos.uploadFailed") };
           }
           // eslint-disable-next-line no-console
           console.warn("[listing] photo upload failed", myIdx, err);
@@ -376,7 +374,7 @@ export default function ListingScreen() {
           r !== null,
       );
       if (successful.length === 0) {
-        throw firstError ?? new Error("Upload failed");
+        throw firstError ?? new Error(t("photos.uploadFailed"));
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: ins, error } = await (supabase as any)
@@ -395,14 +393,17 @@ export default function ListingScreen() {
       );
       if (successful.length < assets.length) {
         Alert.alert(
-          "Partial upload",
-          `${successful.length} of ${assets.length} photos uploaded. Try again for the rest.`,
+          t("photos.partialTitle"),
+          t("photos.partialMessage", {
+            done: successful.length,
+            count: assets.length,
+          }),
         );
       }
     } catch (err) {
       Alert.alert(
-        "Couldn't upload photos",
-        (err as { message?: string })?.message ?? "Try again in a moment.",
+        t("photos.uploadError"),
+        (err as { message?: string })?.message ?? t("photos.tryAgainSoon"),
       );
     } finally {
       setPhotoUploading(false);
@@ -413,9 +414,9 @@ export default function ListingScreen() {
   async function deletePhoto(p: PortfolioRow) {
     if (!profile?.id) return;
     const ok = await new Promise<boolean>((resolve) => {
-      Alert.alert("Delete photo?", "This removes it from your listing.", [
-        { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-        { text: "Delete", style: "destructive", onPress: () => resolve(true) },
+      Alert.alert(t("photos.deleteTitle"), t("photos.deleteMessage"), [
+        { text: t("cancel"), style: "cancel", onPress: () => resolve(false) },
+        { text: t("delete"), style: "destructive", onPress: () => resolve(true) },
       ]);
     });
     if (!ok) return;
@@ -425,7 +426,7 @@ export default function ListingScreen() {
       .delete()
       .eq("id", p.id);
     if (error) {
-      Alert.alert("Couldn't delete", error.message);
+      Alert.alert(t("photos.deleteError"), error.message);
       return;
     }
     await supabase.storage.from("vendor-portfolios").remove([p.storage_path]);
@@ -449,7 +450,7 @@ export default function ListingScreen() {
       .update({ display_order: newOrder })
       .eq("id", target.id);
     if (error) {
-      Alert.alert("Couldn't update cover", error.message);
+      Alert.alert(t("photos.coverError"), error.message);
       return;
     }
     setPhotos((curr) =>
@@ -468,23 +469,23 @@ export default function ListingScreen() {
       text: string;
       style?: "default" | "cancel" | "destructive";
       onPress?: () => void;
-    }> = [{ text: "Cancel", style: "cancel" }];
+    }> = [{ text: t("cancel"), style: "cancel" }];
     if (!isCover) {
       options.unshift({
-        text: "Make cover",
+        text: t("photos.makeCover"),
         onPress: () => {
           void makeCover(p);
         },
       });
     }
     options.push({
-      text: "Delete",
+      text: t("delete"),
       style: "destructive",
       onPress: () => {
         void deletePhoto(p);
       },
     });
-    Alert.alert("Photo options", undefined, options);
+    Alert.alert(t("photos.options"), undefined, options);
   }
 
   function buildPayload(): Record<string, unknown> {
@@ -526,22 +527,22 @@ export default function ListingScreen() {
     // category picker or photo upload.
     if (requireComplete) {
       const missing: string[] = [];
-      if (!category) missing.push("Category");
+      if (!category) missing.push(t("missing.category"));
       if (photos.length < MIN_PHOTOS)
-        missing.push(`At least ${MIN_PHOTOS} photos`);
-      if (!location.trim()) missing.push("Location");
-      if (pricingModels.length === 0) missing.push("A pricing model");
+        missing.push(t("missing.photos", { count: MIN_PHOTOS }));
+      if (!location.trim()) missing.push(t("missing.location"));
+      if (pricingModels.length === 0) missing.push(t("missing.pricingModel"));
       // A minimum price is required unless pricing is marked custom.
       if (
         !customPricing &&
         (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
       )
-        missing.push("A minimum price (or turn on Custom pricing)");
+        missing.push(t("missing.minPrice"));
       if (missing.length > 0) {
         dialog.show({
           icon: "list",
-          title: "Can't publish yet",
-          message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+          title: t("missing.title"),
+          message: `${t("missing.intro")}\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
         });
         return;
       }
@@ -570,7 +571,7 @@ export default function ListingScreen() {
       .eq("id", profile.id);
     if (error) {
       setBusy(false);
-      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
+      dialog.show({ icon: "alert-circle", title: t("saved.failed"), message: error.message });
       return;
     }
     if (publish) {
@@ -611,26 +612,26 @@ export default function ListingScreen() {
       dialog.show({
         icon: publish ? "send" : toDraft ? "file-text" : "check",
         title: publish
-          ? "Submitted for review"
+          ? t("saved.submittedTitle")
           : toDraft
-            ? "Saved as draft"
-            : "Changes saved",
+            ? t("saved.draftTitle")
+            : t("saved.changesTitle"),
         message: publish
-          ? "We'll review your listing within 2–3 business days."
+          ? t("saved.submittedMessage")
           : toDraft
-            ? "Your listing is out of review until you publish it again."
-            : "Your listing is up to date.",
-        buttonLabel: publish ? "Done" : "OK",
+            ? t("saved.draftMessage")
+            : t("saved.changesMessage"),
+        buttonLabel: publish ? t("done") : t("ok"),
         onClose: () => router.back(),
       });
       return;
     }
     dialog.show({
       icon: publish ? "send" : "check",
-      title: publish ? "Submitted for review" : "Saved",
+      title: publish ? t("saved.submittedTitle") : t("saved.savedTitle"),
       message: publish
-        ? "We'll review your listing within 2–3 business days."
-        : "Your progress is safe.",
+        ? t("saved.submittedMessage")
+        : t("saved.savedMessage"),
     });
   }
 
@@ -638,9 +639,9 @@ export default function ListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
         <View className="flex-1 items-center justify-center">
-          <Text className="text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+          <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -648,19 +649,20 @@ export default function ListingScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
         <View className="flex-1 items-center justify-center px-6 gap-4">
-          <Text className="text-base text-foreground text-center" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="text-base text-center" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
             {setupError
               ? setupError
-              : "Couldn't open the listing editor."}
+              : t("errors.openEditor")}
           </Text>
           <Pressable
             onPress={loadAll}
-            className="rounded-full bg-accent px-6 py-3 active:opacity-80"
+            className="rounded-full px-6 py-3 active:opacity-80"
+            style={{ backgroundColor: C.gold }}
           >
-            <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              Try again
+            <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.onGold }}>
+              {t("tryAgain")}
             </Text>
           </Pressable>
         </View>
@@ -670,10 +672,10 @@ export default function ListingScreen() {
 
   const heading =
     status === "approved"
-      ? "Edit listing"
+      ? t("heading.edit")
       : status === "pending"
-        ? "Under review"
-        : "New listing";
+        ? t("heading.review")
+        : t("heading.new");
 
   return (
     <View style={{ flex: 1, backgroundColor: CREAM }}>
@@ -719,6 +721,8 @@ export default function ListingScreen() {
               fontFamily: SERIF_BOLD,
               fontSize: 24,
               color: INK,
+              flexShrink: 1,
+              textAlign: "center",
             }}
           >
             {heading}
@@ -735,32 +739,35 @@ export default function ListingScreen() {
           {status === "pending" ? (
             <BannerCard
               tone="accent"
-              title="Submitted for review"
-              body="We hand-review every listing within 2–3 business days. You'll get an email when it's live."
+              title={t("banner.pendingTitle")}
+              body={t("banner.pendingBody")}
             />
           ) : status === "approved" ? (
             <BannerCard
               tone="good"
-              title="Live in the directory"
-              body="Edits save instantly to your live listing."
+              title={t("banner.liveTitle")}
+              body={t("banner.liveBody")}
             />
           ) : null}
 
           {/* STEP 1 · IDENTITY */}
           <StepHeader
-            step="STEP 1 · IDENTITY"
-            title="Introduce yourself."
-            body="Photos and a few sentences are usually enough to make a host stop scrolling."
+            step={t("steps.identity.step")}
+            title={t("steps.identity.title")}
+            body={t("steps.identity.body")}
           />
 
           {/* Listing photos */}
           <SectionBlock
-            title="Listing photos"
-            subtitle={`3–${MAX_PHOTOS} photos. Your first becomes the cover.`}
+            title={t("photos.title")}
+            subtitle={t("photos.subtitle", { min: MIN_PHOTOS, max: MAX_PHOTOS })}
             footnote={
               uploadProgress
-                ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
-                : "Bright, recent photos work best. Drag to reorder once uploaded."
+                ? t("photos.progress", {
+                    done: uploadProgress.done,
+                    total: uploadProgress.total,
+                  })
+                : t("photos.footnote")
             }
           >
             <PhotoGrid
@@ -784,7 +791,7 @@ export default function ListingScreen() {
                     marginBottom: 8,
                   }}
                 >
-                  +{photos.length - 5} more
+                  {t("photos.more", { count: photos.length - 5 })}
                 </Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {photos.slice(5).map((p) => (
@@ -812,11 +819,11 @@ export default function ListingScreen() {
               identity profile (auto-synced), so we don't ask for them
               here. Just category + where + starting price. */}
           <SectionBlock
-            title="The basics"
-            subtitle="Where you work and where you start."
-            footnote="Set your business name + bio once from your profile — they sync to every listing automatically."
+            title={t("basics.title")}
+            subtitle={t("basics.subtitle")}
+            footnote={t("basics.footnote")}
           >
-            <FieldLabel required>Category</FieldLabel>
+            <FieldLabel required>{t("basics.category")}</FieldLabel>
             <Pressable onPress={() => setCategoryPickerOpen(true)}>
               <View style={fieldBox()}>
                 <Text
@@ -828,24 +835,24 @@ export default function ListingScreen() {
                   }}
                   numberOfLines={1}
                 >
-                  {category || "Pick a category"}
+                  {category ? categoryNames.sub(category) : t("basics.pickCategory")}
                 </Text>
                 <Feather name="chevron-down" size={18} color={INK_DIM} />
               </View>
             </Pressable>
 
             <View style={{ height: 14 }} />
-            <FieldLabel required>Location</FieldLabel>
+            <FieldLabel required>{t("basics.location")}</FieldLabel>
             <TextField
               value={location}
               onChangeText={setLocation}
-              placeholder="City, State"
+              placeholder={t("basics.locationPlaceholder")}
             />
 
             <View style={{ height: 16 }} />
-            <FieldLabel required>Pricing model</FieldLabel>
+            <FieldLabel required>{t("basics.pricingModel")}</FieldLabel>
             <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 2 }}>
-              Pick all that apply.
+              {t("basics.pickAll")}
             </Text>
             <View
               style={{
@@ -872,18 +879,18 @@ export default function ListingScreen() {
                       paddingVertical: 10,
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: active ? INK : BORDER,
-                      backgroundColor: active ? INK : "#ffffff",
+                      borderColor: active ? C.selected : BORDER,
+                      backgroundColor: active ? C.selected : C.field,
                     }}
                   >
                     <Text
                       style={{
                         fontFamily: SERIF_BOLD,
                         fontSize: 13,
-                        color: active ? "#ffffff" : INK,
+                        color: active ? C.onSelected : INK,
                       }}
                     >
-                      {PRICING_MODEL_LABELS[m]}
+                      {t(`pricingModels.${m}`)}
                     </Text>
                   </Pressable>
                 );
@@ -891,11 +898,11 @@ export default function ListingScreen() {
             </View>
 
             <View style={{ height: 16 }} />
-            <FieldLabel>Typical price range</FieldLabel>
+            <FieldLabel>{t("basics.priceRange")}</FieldLabel>
             <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
-                  Minimum
+                  {t("basics.minimum")}
                 </Text>
                 <View style={fieldBox()}>
                   <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16, marginRight: 6 }}>
@@ -913,7 +920,7 @@ export default function ListingScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginBottom: 4 }}>
-                  Maximum (optional)
+                  {t("basics.maximum")}
                 </Text>
                 <View style={fieldBox()}>
                   <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16, marginRight: 6 }}>
@@ -941,7 +948,7 @@ export default function ListingScreen() {
               }}
             >
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <FieldLabel>Custom pricing</FieldLabel>
+                <FieldLabel>{t("basics.customPricing")}</FieldLabel>
                 <Text
                   style={{
                     fontFamily: SERIF,
@@ -951,7 +958,7 @@ export default function ListingScreen() {
                     marginTop: 2,
                   }}
                 >
-                  Final pricing may vary by event details.
+                  {t("basics.customPricingHint")}
                 </Text>
               </View>
               <View
@@ -959,7 +966,7 @@ export default function ListingScreen() {
                   width: 52,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: customPricing ? INK : BORDER,
+                  backgroundColor: customPricing ? C.selected : BORDER,
                   padding: 3,
                   justifyContent: "center",
                 }}
@@ -969,7 +976,7 @@ export default function ListingScreen() {
                     width: 24,
                     height: 24,
                     borderRadius: 999,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: customPricing ? C.onSelected : "#ffffff",
                     alignSelf: customPricing ? "flex-end" : "flex-start",
                   }}
                 />
@@ -979,12 +986,12 @@ export default function ListingScreen() {
 
           {/* STEP 2 · DETAILS */}
           <StepHeader
-            step="STEP 2 · DETAILS"
-            title="The fine print."
+            step={t("steps.details.step")}
+            title={t("steps.details.title")}
             body={
               category
-                ? "Structured fields hosts filter on. The more specific, the better."
-                : "Pick a category above to unlock structured details."
+                ? t("steps.details.body")
+                : t("steps.details.locked")
             }
           />
           {profile?.id && category ? (
@@ -992,14 +999,14 @@ export default function ListingScreen() {
               <DetailsSection vendorId={profile.id} category={category} />
             </View>
           ) : (
-            <EmptyCard body="Pick a category above to unlock structured details." />
+            <EmptyCard body={t("steps.details.locked")} />
           )}
 
           {/* STEP 3 · FAQs */}
           <StepHeader
-            step="STEP 3 · FAQs"
-            title="Common questions."
-            body="Answer the first three or four hosts will ask — saves you typing later."
+            step={t("steps.faqs.step")}
+            title={t("steps.faqs.title")}
+            body={t("steps.faqs.body")}
           />
           {profile?.id ? (
             <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
@@ -1041,7 +1048,7 @@ export default function ListingScreen() {
               style={[publishPillStyle, { flex: 1 }]}
             >
               <Text style={publishPillText}>
-                {busy ? "Saving…" : "Save changes"}
+                {busy ? t("actions.saving") : t("actions.saveChanges")}
               </Text>
             </Pressable>
           ) : status === "pending" ? (
@@ -1054,7 +1061,7 @@ export default function ListingScreen() {
                 style={[savePillStyle, { flex: 1 }]}
               >
                 <Text style={savePillText}>
-                  {busy ? "Saving…" : "Save draft"}
+                  {busy ? t("actions.saving") : t("actions.saveDraft")}
                 </Text>
               </Pressable>
               <Pressable
@@ -1065,7 +1072,7 @@ export default function ListingScreen() {
                 style={[publishPillStyle, { flex: 1 }]}
               >
                 <Text style={publishPillText}>
-                  {busy ? "Saving…" : "Save changes"}
+                  {busy ? t("actions.saving") : t("actions.saveChanges")}
                 </Text>
               </Pressable>
             </>
@@ -1077,7 +1084,7 @@ export default function ListingScreen() {
                 style={[savePillStyle, { flex: 1 }]}
               >
                 <Text style={savePillText}>
-                  {busy ? "Saving…" : "Save draft"}
+                  {busy ? t("actions.saving") : t("actions.saveDraft")}
                 </Text>
               </Pressable>
               <Pressable
@@ -1089,10 +1096,10 @@ export default function ListingScreen() {
               >
                 <Text style={publishPillText}>
                   {busy
-                    ? "Publishing…"
+                    ? t("actions.publishing")
                     : status === "rejected"
-                      ? "Re-submit"
-                      : "Publish"}
+                      ? t("actions.resubmit")
+                      : t("actions.publish")}
                 </Text>
               </Pressable>
             </>
@@ -1120,12 +1127,12 @@ export default function ListingScreen() {
             }}
           >
             <Pressable onPress={() => setCategoryPickerOpen(false)} hitSlop={8}>
-              <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>Cancel</Text>
+              <Text style={{ fontFamily: SERIF, fontSize: 16, color: INK_DIM }}>{t("cancel")}</Text>
             </Pressable>
             <Text
               style={{ fontSize: 16, color: INK, fontFamily: SERIF_BOLD }}
             >
-              Category
+              {t("basics.category")}
             </Text>
             <View style={{ width: 60 }} />
           </View>
@@ -1142,12 +1149,12 @@ export default function ListingScreen() {
                     color: INK_DIM,
                   }}
                 >
-                  {group.name.toUpperCase()}
+                  {categoryNames.group(group.slug, group.name).toUpperCase()}
                 </Text>
                 <View
                   style={{
                     marginHorizontal: 20,
-                    backgroundColor: "#fbf9f4",
+                    backgroundColor: C.card,
                     borderRadius: 20,
                     borderWidth: 1,
                     borderColor: BORDER,
@@ -1201,7 +1208,7 @@ export default function ListingScreen() {
                             }}
                             numberOfLines={1}
                           >
-                            {sub}
+                            {categoryNames.sub(sub)}
                           </Text>
                           {active ? (
                             <Feather name="check" size={20} color={INK} />
@@ -1238,7 +1245,7 @@ function CircleButton({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: "#fbf9f4",
+        backgroundColor: C.card,
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.7 : 1,
@@ -1365,7 +1372,7 @@ function FieldLabel({
       </Text>
       {required ? (
         <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#b23a34" }}
+          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.error }}
         />
       ) : null}
     </View>
@@ -1418,6 +1425,7 @@ function PhotoGrid({
   uploading: boolean;
   onLongPress: (p: PortfolioRow) => void;
 }) {
+  const { t } = useT("listing");
   // Cover (big square left) + 2×2 thumbs grid right. Empty slots are
   // dashed-border placeholders matching the rest of the editorial
   // empty-state pattern.
@@ -1445,7 +1453,8 @@ function PhotoGrid({
                 position: "absolute",
                 top: 10,
                 left: 10,
-                backgroundColor: INK,
+                // Badge over the photo: fixed ink in both themes.
+                backgroundColor: "#14161a",
                 paddingHorizontal: 10,
                 paddingVertical: 4,
                 borderRadius: 999,
@@ -1454,12 +1463,12 @@ function PhotoGrid({
               <Text
                 style={{
                   fontFamily: SERIF_BOLD,
-                  color: CREAM,
+                  color: "#f4f1ea",
                   fontSize: 11,
                   letterSpacing: 1.2,
                 }}
               >
-                COVER
+                {t("photos.cover")}
               </Text>
             </View>
           </View>
@@ -1474,7 +1483,7 @@ function PhotoGrid({
                 marginTop: 8,
               }}
             >
-              {uploading ? "Uploading…" : "Add cover photo"}
+              {uploading ? t("photos.uploading") : t("photos.addCover")}
             </Text>
           </View>
         )}
@@ -1561,8 +1570,8 @@ function BannerCard({
 }) {
   // "accent" is the waiting look (gold tint, champagne edge); "good" is a
   // plain card, since green is kept for live signals.
-  const accentBg = tone === "accent" ? "#f2e7cb" : "#fbf9f4";
-  const accentBorder = tone === "accent" ? "#c9a86a" : "#e6e1d5";
+  const accentBg = tone === "accent" ? C.pending : C.card;
+  const accentBorder = tone === "accent" ? C.gold : C.border;
   return (
     <View
       style={{
@@ -1626,7 +1635,7 @@ function fieldBox(multiline = false) {
   return {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: "#fbf9f4",
+    backgroundColor: C.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER,
@@ -1654,7 +1663,7 @@ const savePillStyle = {
   borderRadius: 999,
   borderWidth: 1,
   borderColor: BORDER,
-  backgroundColor: "#ffffff",
+  backgroundColor: C.field,
   height: 52,
   justifyContent: "center" as const,
   alignItems: "center" as const,
@@ -1677,6 +1686,6 @@ const publishPillStyle = {
 const publishPillText = {
   fontFamily: SERIF_BOLD,
   fontSize: 15,
-  color: INK,
+  color: C.onGold,
 };
 

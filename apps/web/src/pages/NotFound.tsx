@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
 import { Footer } from "@/components/public/Footer";
 
-// 404, in the dark public layout: the nav, a short note and the footer
+// 404, in the public layout: the nav, a short note and the footer
 // (with the language switcher), so a wrong link still feels like Vendora.
 const NotFound = () => {
   const location = useLocation();
@@ -16,12 +16,12 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PublicNav tone="dark" />
       <main id="main-content" className="container mx-auto px-5 py-24 text-center md:px-8 md:py-32">
-        <p className="m-0 font-label text-gold">404</p>
+        <p className="m-0 font-label text-accent">404</p>
         <h1 className="m-0 mt-3 text-[36px] leading-tight md:text-[48px]">{t("title")}</h1>
-        <p className="m-0 mx-auto mt-4 max-w-md text-[16px] leading-relaxed text-[#f4f1ea]/80">
+        <p className="m-0 mx-auto mt-4 max-w-md text-[16px] leading-relaxed text-muted-foreground">
           {t("body")}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
@@ -33,7 +33,7 @@ const NotFound = () => {
           </Link>
           <Link
             to="/vendors"
-            className="inline-flex h-11 items-center gap-1.5 text-[15px] font-bold text-gold transition-colors hover:text-white"
+            className="inline-flex h-11 items-center gap-1.5 text-[15px] font-bold text-accent underline-offset-4 hover:underline"
           >
             {t("browse_vendors")} <ArrowRight className="h-4 w-4" />
           </Link>

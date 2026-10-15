@@ -144,7 +144,7 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
           <Link
             to={otherSidePath}
             className="font-medium pb-px"
-            style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
+            style={{ borderBottom: "0.5px solid currentColor", color: "hsl(var(--foreground))" }}
           >
             {otherSideLabel}
           </Link>
@@ -199,6 +199,9 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             <input
               className="auth-input pr-10"
               type={showPassword ? "text" : "password"}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -235,9 +238,9 @@ export default function SignupPage({ role = "host" }: { role?: "host" | "vendor"
             style={{
               width: 16,
               height: 16,
-              border: "1px solid rgba(255,255,255,0.4)",
+              border: "1px solid hsl(var(--foreground) / 0.4)",
               borderRadius: "3px",
-              background: adult ? "#c9a86a" : "rgba(255,255,255,0.06)",
+              background: adult ? "#c9a86a" : "hsl(var(--card))",
               marginTop: "1px",
               padding: 0,
             }}

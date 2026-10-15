@@ -16,21 +16,14 @@ import {
 // Compact language switcher for nav rails. Persists choice via the
 // detector's localStorage cache (i18next handles that internally).
 //
-// `tone` controls hover color so it works against both dark hero
-// backgrounds (PublicNav) and light dashboards.
+// It follows the site theme (light by default, dark with the switch);
+// `tone` is kept only so old call sites compile.
 
-export function LanguageSwitcher({
-  tone = "dark",
-}: {
-  tone?: "dark" | "light";
-}) {
+export function LanguageSwitcher(_props: { tone?: "dark" | "light" } = {}) {
   const { i18n, t } = useTranslation();
   const current = (i18n.resolvedLanguage ?? "en") as SupportedLanguage;
 
-  const triggerClass =
-    tone === "dark"
-      ? "text-[#f4f1ea]/80 hover:text-[#f4f1ea]"
-      : "text-muted-foreground hover:text-accent";
+  const triggerClass = "text-muted-foreground hover:text-accent";
 
   return (
     <DropdownMenu>

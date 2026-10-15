@@ -26,9 +26,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 import { FaqsSection } from "@/components/listing/Sections";
 import {
-  CREAM,
+  PAGE,
   INK,
   INK_DIM,
   BORDER,
@@ -129,6 +131,17 @@ export default function FoodListingScreen() {
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const dialog = useBrandDialog();
+  const { t: tw, tObject: twObject } = useT("listingWizard");
+  const { t, tObject } = useT("foodListing");
+  // Options are saved in English; chips show them in the app's language.
+  const valueLabels: Record<string, string> = {
+    ...(twObject<Record<string, string>>("values") ?? {}),
+    ...(tObject<Record<string, string>>("values") ?? {}),
+  };
+  const chipLabel = (v: string) => valueLabels[v] ?? v;
+  const chipLabels = (opts: readonly string[]) => opts.map(chipLabel);
+  const chipValue = (opts: readonly string[], label: string) =>
+    opts.find((o) => chipLabel(o) === label) ?? label;
 
   // Basics
   const [businessName, setBusinessName] = useState("");
@@ -314,7 +327,7 @@ export default function FoodListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
+      dialog.show({ icon: "alert-circle", title: tw("dialogs.saveFailed"), message: error.message });
       return false;
     }
     if (status) {
@@ -325,19 +338,19 @@ export default function FoodListingScreen() {
 
   function missingForPublish(): string[] {
     const missing: string[] = [];
-    if (!businessName.trim()) missing.push("Business / listing name");
-    if (!tagline.trim()) missing.push("Short tagline");
-    if (!oneLiner.trim()) missing.push("What you do (one line)");
-    if (!serviceAreas.trim()) missing.push("Service areas");
-    if (!yearsInBusiness.trim()) missing.push("Years in business");
-    if (!description.trim()) missing.push("Full description");
-    if (offerings.length === 0) missing.push("At least one offering");
+    if (!businessName.trim()) missing.push(tw("missing.businessListingName"));
+    if (!tagline.trim()) missing.push(tw("missing.shortTagline"));
+    if (!oneLiner.trim()) missing.push(t("missing.whatYouDoOneLine"));
+    if (!serviceAreas.trim()) missing.push(tw("missing.serviceAreas"));
+    if (!yearsInBusiness.trim()) missing.push(tw("missing.yearsInBusiness"));
+    if (!description.trim()) missing.push(tw("missing.fullDescription"));
+    if (offerings.length === 0) missing.push(t("missing.atLeastOneOffering"));
     if (
       pricingType !== "Custom" &&
       (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
     )
-      missing.push("Starting price (or choose Custom pricing)");
-    if (photoCount < MIN_PHOTOS) missing.push(`At least ${MIN_PHOTOS} photos`);
+      missing.push(tw("missing.startingPriceOrChooseCustomPricing"));
+    if (photoCount < MIN_PHOTOS) missing.push(tw("missing.minPhotos", { count: MIN_PHOTOS }));
     return missing;
   }
 
@@ -346,7 +359,7 @@ export default function FoodListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
+    if (ok) dialog.show({ title: tw("dialogs.saved"), message: tw("dialogs.savedMessage") });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -362,7 +375,7 @@ export default function FoodListingScreen() {
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change category",
+        title: tw("dialogs.categoryFailed"),
         message: error.message,
       });
       return;
@@ -381,8 +394,10 @@ export default function FoodListingScreen() {
     if (missing.length > 0) {
       dialog.show({
         icon: "list",
-        title: "Can't publish yet",
-        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+        title: tw("dialogs.cantPublish"),
+        message: tw("dialogs.cantPublishMessage", {
+          list: missing.map((m) => `• ${m}`).join("\n"),
+        }),
       });
       return;
     }
@@ -397,9 +412,9 @@ export default function FoodListingScreen() {
       .catch(() => {});
     dialog.show({
       icon: "send",
-      title: "Submitted for review",
-      message: "We'll review your listing within 2–3 business days.",
-      buttonLabel: "Done",
+      title: tw("dialogs.submitted"),
+      message: tw("dialogs.submittedMessage"),
+      buttonLabel: tw("dialogs.done"),
       onClose: () => router.back(),
     });
   }
@@ -412,8 +427,8 @@ export default function FoodListingScreen() {
     if (ok) {
       dialog.show({
         icon: "file-text",
-        title: "Saved as draft",
-        message: "Your listing is out of review until you publish it again.",
+        title: tw("dialogs.savedAsDraft"),
+        message: tw("dialogs.savedAsDraftMessage"),
         onClose: () => router.back(),
       });
     }
@@ -426,8 +441,8 @@ export default function FoodListingScreen() {
     setBusy(false);
     if (ok) {
       dialog.show({
-        title: "Changes saved",
-        message: "Your listing is up to date.",
+        title: tw("dialogs.changesSaved"),
+        message: tw("dialogs.changesSavedMessage"),
         onClose: () => router.back(),
       });
     }
@@ -439,10 +454,9 @@ export default function FoodListingScreen() {
     if (!profile?.id || busy) return;
     dialog.show({
       icon: "trash-2",
-      title: "Delete this listing?",
-      message:
-        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      confirmLabel: "Delete listing",
+      title: tw("dialogs.deleteTitle"),
+      message: tw("dialogs.deleteMessage"),
+      confirmLabel: tw("deleteListing"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -455,7 +469,7 @@ export default function FoodListingScreen() {
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't delete",
+            title: tw("dialogs.deleteFailed"),
             message: error.message,
           });
         } else {
@@ -469,19 +483,19 @@ export default function FoodListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{tw("loading")}</Text>
         </View>
       </SafeAreaView>
     );
   }
   if (!profile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
-            Couldn&rsquo;t load this listing.
+            {tw("loadFailed")}
           </Text>
         </View>
       </SafeAreaView>
@@ -491,7 +505,7 @@ export default function FoodListingScreen() {
   const yesNo = ["Yes", "No"];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -515,7 +529,7 @@ export default function FoodListingScreen() {
               color: INK,
             }}
           >
-            {status === "draft" ? "New listing" : "Edit listing"}
+            {status === "draft" ? tw("newListing") : tw("editListing")}
           </Text>
           <TouchableOpacity
             onPress={saveDraftHeader}
@@ -528,17 +542,17 @@ export default function FoodListingScreen() {
               height: 36,
               justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              backgroundColor: busy ? C.page : C.field,
               borderColor: BORDER,
             }}
           >
             <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>
-              {status === "draft" ? "Save draft" : "Save"}
+              {status === "draft" ? tw("saveDraft") : tw("save")}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <StepRail steps={STEPS} step={step} onJump={setStep} />
+        <StepRail steps={chipLabels(STEPS)} step={step} onJump={setStep} />
 
         <ScrollView
           contentContainerStyle={{
@@ -552,50 +566,50 @@ export default function FoodListingScreen() {
           {step === 0 ? (
             <>
               <StepTitle
-                title="Basics"
-                sub="Tell clients the essentials about your business."
+                title={tw("headings.basics")}
+                sub={tw("subs.tellClientsTheEssentialsAboutYour")}
               />
               <CategoryField
                 value={profile.category}
                 onPress={() => setCategoryPickerOpen(true)}
               />
-              <Field label="Business / listing name" required>
+              <Field label={tw("labels.businessListingName")} required>
                 <Input
                   value={businessName}
                   onChangeText={setBusinessName}
-                  placeholder="e.g., Bella's Catering"
+                  placeholder={t("placeholders.egBellasCatering")}
                 />
               </Field>
-              <Field label="Short tagline" required>
+              <Field label={tw("labels.shortTagline")} required>
                 <Input
                   value={tagline}
                   onChangeText={setTagline}
-                  placeholder="e.g., Elevated flavors. Unforgettable events."
+                  placeholder={t("placeholders.egElevatedFlavorsUnforgettableEvents")}
                 />
               </Field>
-              <Field label="What you do (one line)" required>
+              <Field label={tw("labels.whatYouDoOneLine")} required>
                 <Input
                   value={oneLiner}
                   onChangeText={setOneLiner}
-                  placeholder="e.g., Full-service catering for weddings and events"
+                  placeholder={t("placeholders.egFullServiceCateringForWeddings")}
                 />
               </Field>
-              <Field label="Service areas (cities, regions, states)" required>
+              <Field label={tw("labels.serviceAreasCitiesRegionsStates")} required>
                 <Input
                   value={serviceAreas}
                   onChangeText={setServiceAreas}
-                  placeholder="Add areas"
+                  placeholder={tw("placeholders.addAreas")}
                 />
               </Field>
-              <Field label="Years in business" required>
+              <Field label={tw("labels.yearsInBusiness")} required>
                 <Input
                   value={yearsInBusiness}
                   onChangeText={(v) => setYearsInBusiness(v.replace(/[^0-9]/g, "").slice(0, 3))}
-                  placeholder="e.g., 8"
+                  placeholder={tw("placeholders.eg8")}
                   keyboardType="number-pad"
                 />
               </Field>
-              <Field label="Website">
+              <Field label={tw("labels.website")}>
                 <Input
                   value={website}
                   onChangeText={setWebsite}
@@ -604,7 +618,7 @@ export default function FoodListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Instagram (optional)">
+              <Field label={tw("labels.instagramOptional")}>
                 <Input
                   value={instagram}
                   onChangeText={setInstagram}
@@ -614,26 +628,26 @@ export default function FoodListingScreen() {
               </Field>
 
               <StepTitle
-                title="About your business"
-                sub="Give clients the story."
+                title={tw("headings.aboutYourBusiness")}
+                sub={tw("subs.giveClientsTheStory")}
                 topGap
               />
-              <Field label="Full description" required>
+              <Field label={tw("labels.fullDescription")} required>
                 <Input
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Describe your food, your service, and what clients can expect."
+                  placeholder={t("placeholders.describeYourFoodYourServiceAnd")}
                   multiline
                 />
               </Field>
-              <Field label="Best for (select all that apply)">
-                <ChipMulti options={BEST_FOR} selected={bestFor} onChange={setBestFor} />
+              <Field label={tw("labels.bestForSelectAllThatApply")}>
+                <ChipMulti options={chipLabels(BEST_FOR)} selected={bestFor.map(chipLabel)} onChange={(next) => setBestFor(next.map((l) => chipValue(BEST_FOR, l)))} />
               </Field>
-              <Field label="What makes you unique">
+              <Field label={tw("labels.whatMakesYouUnique")}>
                 <Input
                   value={unique}
                   onChangeText={setUnique}
-                  placeholder="e.g., Wood-fired everything, recipes from my grandmother"
+                  placeholder={t("placeholders.egWoodFiredEverythingRecipesFrom")}
                   multiline
                 />
               </Field>
@@ -642,43 +656,43 @@ export default function FoodListingScreen() {
 
           {step === 1 ? (
             <>
-              <StepTitle title="Menu & offerings" sub="Show clients what you serve." />
-              <Field label="What you offer (select all that apply)" required>
+              <StepTitle title={t("headings.menuOfferings")} sub={t("subs.showClientsWhatYouServe")} />
+              <Field label={tw("labels.whatYouOfferSelectAllThat")} required>
                 <ChipMulti
-                  options={OFFERINGS}
-                  selected={offerings}
-                  onChange={setOfferings}
+                  options={chipLabels(OFFERINGS)}
+                  selected={offerings.map(chipLabel)}
+                  onChange={(next) => setOfferings(next.map((l) => chipValue(OFFERINGS, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="Cuisine / style">
+              <Field label={t("labels.cuisineStyle")}>
                 <Input
                   value={cuisineStyle}
                   onChangeText={setCuisineStyle}
-                  placeholder="e.g., Modern Italian, Southern comfort, Fusion"
+                  placeholder={t("placeholders.egModernItalianSouthernComfortFusion")}
                 />
               </Field>
-              <Field label="Sample menu / popular items">
+              <Field label={t("labels.sampleMenuPopularItems")}>
                 <Input
                   value={sampleMenu}
                   onChangeText={(v) => setSampleMenu(v.slice(0, 500))}
-                  placeholder="List a few popular dishes or share a sample menu…"
+                  placeholder={t("placeholders.listAFewPopularDishesOr")}
                   multiline
                 />
               </Field>
-              <Field label="Dietary accommodations (select all that apply)">
+              <Field label={t("labels.dietaryAccommodationsSelectAllThatApply")}>
                 <ChipMulti
-                  options={DIETARY}
-                  selected={dietary}
-                  onChange={setDietary}
+                  options={chipLabels(DIETARY)}
+                  selected={dietary.map(chipLabel)}
+                  onChange={(next) => setDietary(next.map((l) => chipValue(DIETARY, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="Custom menu available?">
+              <Field label={t("labels.customMenuAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={customMenu}
-                  onChange={(v) => setCustomMenu(v as typeof customMenu)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(customMenu)}
+                  onChange={(v) => setCustomMenu(chipValue(yesNo, v) as typeof customMenu)}
                 />
               </Field>
             </>
@@ -686,109 +700,109 @@ export default function FoodListingScreen() {
 
           {step === 2 ? (
             <>
-              <StepTitle title="Service details" sub="How you show up on the day." />
-              <Field label="Service style (select all that apply)">
+              <StepTitle title={t("headings.serviceDetails")} sub={t("subs.howYouShowUpOnThe")} />
+              <Field label={tw("labels.serviceStyleSelectAllThatApply")}>
                 <ChipMulti
-                  options={SERVICE_STYLES}
-                  selected={serviceStyles}
-                  onChange={setServiceStyles}
+                  options={chipLabels(SERVICE_STYLES)}
+                  selected={serviceStyles.map(chipLabel)}
+                  onChange={(next) => setServiceStyles(next.map((l) => chipValue(SERVICE_STYLES, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="Setup / breakdown included?">
+              <Field label={tw("labels.setupBreakdownIncluded")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={setupIncluded}
-                  onChange={(v) => setSetupIncluded(v as typeof setupIncluded)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(setupIncluded)}
+                  onChange={(v) => setSetupIncluded(chipValue(yesNo, v) as typeof setupIncluded)}
                 />
               </Field>
-              <Field label="Staffing included?">
+              <Field label={t("labels.staffingIncluded")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={staffingIncluded}
-                  onChange={(v) => setStaffingIncluded(v as typeof staffingIncluded)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(staffingIncluded)}
+                  onChange={(v) => setStaffingIncluded(chipValue(yesNo, v) as typeof staffingIncluded)}
                 />
               </Field>
-              <Field label="Minimum guest count">
+              <Field label={t("labels.minimumGuestCount")}>
                 <Input
                   value={minGuests}
                   onChangeText={(v) => setMinGuests(v.replace(/[^0-9]/g, ""))}
-                  placeholder="e.g., 25"
+                  placeholder={t("placeholders.eg25")}
                   keyboardType="number-pad"
                 />
               </Field>
-              <Field label="Lead time required">
+              <Field label={tw("labels.leadTimeRequired")}>
                 <Input
                   value={leadTime}
                   onChangeText={setLeadTime}
-                  placeholder="e.g., 2 weeks notice"
+                  placeholder={tw("placeholders.eg2WeeksNotice")}
                 />
               </Field>
 
-              <StepTitle title="Equipment & logistics" sub="What you need on-site." topGap />
-              <Field label="Kitchen access required?">
+              <StepTitle title={t("headings.equipmentLogistics")} sub={t("subs.whatYouNeedOnSite")} topGap />
+              <Field label={t("labels.kitchenAccessRequired")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={kitchenAccess}
-                  onChange={(v) => setKitchenAccess(v as typeof kitchenAccess)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(kitchenAccess)}
+                  onChange={(v) => setKitchenAccess(chipValue(yesNo, v) as typeof kitchenAccess)}
                 />
               </Field>
-              <Field label="On-site cooking?">
+              <Field label={t("labels.onSiteCooking")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={onSiteCooking}
-                  onChange={(v) => setOnSiteCooking(v as typeof onSiteCooking)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(onSiteCooking)}
+                  onChange={(v) => setOnSiteCooking(chipValue(yesNo, v) as typeof onSiteCooking)}
                 />
               </Field>
-              <Field label="Power / water needs">
+              <Field label={t("labels.powerWaterNeeds")}>
                 <Input
                   value={powerWater}
                   onChangeText={setPowerWater}
-                  placeholder="e.g., One 120V outlet; water hookup preferred"
+                  placeholder={t("placeholders.egOne120vOutletWaterHookup")}
                 />
               </Field>
-              <Field label="Travel / delivery available?">
+              <Field label={tw("labels.travelDeliveryAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={travelAvailable}
-                  onChange={(v) => setTravelAvailable(v as typeof travelAvailable)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(travelAvailable)}
+                  onChange={(v) => setTravelAvailable(chipValue(yesNo, v) as typeof travelAvailable)}
                 />
               </Field>
 
-              <StepTitle title="Licensing & policies" sub="The paperwork side." topGap />
-              <Field label="Liquor license (if applicable)">
+              <StepTitle title={t("headings.licensingPolicies")} sub={t("subs.thePaperworkSide")} topGap />
+              <Field label={t("labels.liquorLicenseIfApplicable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={liquorLicense}
-                  onChange={(v) => setLiquorLicense(v as typeof liquorLicense)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(liquorLicense)}
+                  onChange={(v) => setLiquorLicense(chipValue(yesNo, v) as typeof liquorLicense)}
                 />
               </Field>
-              <Field label="BYO alcohol allowed?">
+              <Field label={t("labels.byoAlcoholAllowed")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={byoAlcohol}
-                  onChange={(v) => setByoAlcohol(v as typeof byoAlcohol)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(byoAlcohol)}
+                  onChange={(v) => setByoAlcohol(chipValue(yesNo, v) as typeof byoAlcohol)}
                 />
               </Field>
-              <Field label="Insurance certificate available?">
+              <Field label={t("labels.insuranceCertificateAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={insuranceCert}
-                  onChange={(v) => setInsuranceCert(v as typeof insuranceCert)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(insuranceCert)}
+                  onChange={(v) => setInsuranceCert(chipValue(yesNo, v) as typeof insuranceCert)}
                 />
               </Field>
-              <Field label="Tasting available?">
+              <Field label={t("labels.tastingAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={tastingAvailable}
-                  onChange={(v) => setTastingAvailable(v as typeof tastingAvailable)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(tastingAvailable)}
+                  onChange={(v) => setTastingAvailable(chipValue(yesNo, v) as typeof tastingAvailable)}
                 />
               </Field>
-              <Field label="Cancellation policy">
+              <Field label={t("labels.cancellationPolicy")}>
                 <Input
                   value={cancellationPolicy}
                   onChangeText={setCancellationPolicy}
-                  placeholder="e.g., Full refund up to 30 days out"
+                  placeholder={t("placeholders.egFullRefundUpTo30")}
                   multiline
                 />
               </Field>
@@ -797,50 +811,50 @@ export default function FoodListingScreen() {
 
           {step === 3 ? (
             <>
-              <StepTitle title="Pricing" sub="Where your pricing starts." />
-              <Field label="Pricing type">
+              <StepTitle title={tw("headings.pricing")} sub={tw("subs.whereYourPricingStarts")} />
+              <Field label={tw("labels.pricingType")}>
                 <ChipSingle
-                  options={PRICING_TYPES}
-                  selected={pricingType}
-                  onChange={setPricingType}
+                  options={chipLabels(PRICING_TYPES)}
+                  selected={chipLabel(pricingType)}
+                  onChange={(l) => setPricingType(chipValue(PRICING_TYPES, l))}
                 />
               </Field>
-              <Field label="Starting price (USD)" required>
+              <Field label={tw("labels.startingPriceUsd")} required>
                 <Input
                   value={priceMin}
                   onChangeText={(v) => setPriceMin(v.replace(/[^0-9.]/g, ""))}
-                  placeholder="e.g., 45"
+                  placeholder={tw("placeholders.eg45")}
                   keyboardType="decimal-pad"
                 />
               </Field>
-              <Field label="Minimum spend / minimum hours">
+              <Field label={t("labels.minimumSpendMinimumHours")}>
                 <Input
                   value={minSpend}
                   onChangeText={setMinSpend}
-                  placeholder="e.g., $1,500 minimum or 4-hour minimum"
+                  placeholder={t("placeholders.eg1500MinimumOr4")}
                 />
               </Field>
-              <Field label="What's included in pricing">
+              <Field label={tw("labels.whatsIncludedInPricing")}>
                 <Input
                   value={priceIncludes}
                   onChangeText={setPriceIncludes}
-                  placeholder="e.g., Staff, setup, disposables, cake cutting"
+                  placeholder={t("placeholders.egStaffSetupDisposablesCakeCutting")}
                   multiline
                 />
               </Field>
-              <Field label="Additional fees (travel, overtime, staff, etc.)">
+              <Field label={t("labels.additionalFeesTravelOvertimeStaffEtc")}>
                 <Input
                   value={additionalFees}
                   onChangeText={setAdditionalFees}
-                  placeholder="e.g., $1/mile beyond 25 miles, $50/hr overtime"
+                  placeholder={t("placeholders.eg1MileBeyond25Miles")}
                   multiline
                 />
               </Field>
-              <Field label="Payment schedule / deposit">
+              <Field label={t("labels.paymentScheduleDeposit")}>
                 <Input
                   value={paymentSchedule}
                   onChangeText={setPaymentSchedule}
-                  placeholder="e.g., 30% deposit to book, balance 7 days out"
+                  placeholder={t("placeholders.eg30DepositToBookBalance")}
                 />
               </Field>
             </>
@@ -849,11 +863,11 @@ export default function FoodListingScreen() {
           {step === 4 ? (
             <>
               <StepTitle
-                title="Photos & media"
-                sub="Add food photos and signature items — listings with menus get 3× more inquiries."
+                title={tw("headings.photosMedia")}
+                sub={t("subs.addFoodPhotosAndSignatureItems")}
               />
               <ListingPhotosGrid vendorId={profile.id} onCount={setPhotoCount} />
-              <Field label="Video (optional)">
+              <Field label={tw("labels.videoOptional")}>
                 <Input
                   value={videoUrl}
                   onChangeText={setVideoUrl}
@@ -863,10 +877,10 @@ export default function FoodListingScreen() {
                 />
               </Field>
 
-              <StepTitle title="FAQs" sub="Answer what clients will ask first." topGap />
+              <StepTitle title={tw("headings.faqs")} sub={tw("subs.answerWhatClientsWillAskFirst")} topGap />
               <FaqsSection vendorId={profile.id} />
 
-              <StepTitle title="Review" sub="Almost there." topGap />
+              <StepTitle title={tw("headings.review")} sub={tw("subs.almostThere")} topGap />
               <ReviewChecklist missing={missingForPublish()} />
             </>
           ) : null}
@@ -878,7 +892,7 @@ export default function FoodListingScreen() {
                 activeOpacity={0.85}
                 style={darkPill}
               >
-                <Text style={darkPillText}>Continue</Text>
+                <Text style={darkPillText}>{tw("continue")}</Text>
               </TouchableOpacity>
             ) : status === "pending" ? (
               <>
@@ -888,7 +902,7 @@ export default function FoodListingScreen() {
                   activeOpacity={0.85}
                   style={darkPillFor(busy)}
                 >
-                  <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                  <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={withdrawToDraft}
@@ -896,7 +910,7 @@ export default function FoodListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Withdraw to draft</Text>
+                  <Text style={lightPillText}>{tw("withdrawToDraft")}</Text>
                 </TouchableOpacity>
               </>
             ) : status === "approved" ? (
@@ -906,7 +920,7 @@ export default function FoodListingScreen() {
                 activeOpacity={0.85}
                 style={darkPillFor(busy)}
               >
-                <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -918,10 +932,10 @@ export default function FoodListingScreen() {
                 >
                   <Text style={darkPillText}>
                     {busy
-                      ? "Publishing…"
+                      ? tw("publishing")
                       : status === "rejected"
-                        ? "Re-submit"
-                        : "Publish"}
+                        ? tw("resubmit")
+                        : tw("publish")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -930,7 +944,7 @@ export default function FoodListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Save draft</Text>
+                  <Text style={lightPillText}>{tw("saveDraft")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -941,7 +955,7 @@ export default function FoodListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
-                  ← Back to {STEPS[step - 1]}
+                  {tw("backTo", { step: chipLabel(STEPS[step - 1]) })}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -952,8 +966,8 @@ export default function FoodListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#b23a34", fontSize: 14}}>
-                  Delete listing
+                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: C.error, fontSize: 14}}>
+                  {tw("deleteListing")}
                 </Text>
               </TouchableOpacity>
             ) : null}

@@ -1,8 +1,8 @@
 // Shared shell for the auth form pages (/login/host, /login/vendor,
 // /signup/host, /signup/vendor, /forgot-password, /reset-password,
 // /check-email). Kept simple (owner's call, Oct 2026): the site's top
-// menu, then a title, a subtitle and the form straight on the plain ink
-// page, with no rings, glows or card around it. Page-specific content
+// menu, then a title, a subtitle and the form straight on the plain
+// page (light or dark, following the site theme), with no rings, glows or card around it. Page-specific content
 // (form fields, copy, role-specific labels) goes through props. The
 // .auth-input / .auth-submit classes below style the forms' fields and
 // gold submit pill.
@@ -43,15 +43,15 @@ export function GlassyAuthShell({
     <AuthLayout side={side}>
       <div>
         <h1 className="auth-headline m-0 text-[32px] md:text-[40px] leading-[1.1]" style={{ letterSpacing: "-0.5px" }}>
-          {title} <span className="text-gold">{titleAccent}</span>
+          {title} <span className="text-accent">{titleAccent}</span>
         </h1>
-        <p className="m-0 mt-3 mb-8 text-[15px] text-[#f4f1ea]/80">{subtitle}</p>
+        <p className="m-0 mt-3 mb-8 text-[15px] text-muted-foreground">{subtitle}</p>
 
         {/* The form sits straight on the page: no card around it. */}
         {children}
 
         {belowCardLink && <div className="mt-8 flex flex-col gap-1.5 text-[14px]">{belowCardLink}</div>}
-        <div className="mt-3 text-[14px] text-[#f4f1ea]/80">{topRight}</div>
+        <div className="mt-3 text-[14px] text-muted-foreground">{topRight}</div>
       </div>
       {/* KEYFRAMES — namespaced to the auth shell */}
       <style>{`
@@ -60,22 +60,27 @@ export function GlassyAuthShell({
           width: 100%;
           height: 44px;
           padding: 0 16px;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.15);
+          background: #ffffff;
+          border: 1px solid hsl(var(--border));
           border-radius: 12px;
           font-size: 14px;
-          color: #f4f1ea;
+          color: hsl(var(--foreground));
           outline: none;
           transition: all 0.2s;
           font-family: inherit;
         }
+        .dark .auth-input {
+          background: rgba(255,255,255,0.05);
+        }
         .auth-input:focus {
           border-color: rgba(201,168,106,0.8);
-          background: rgba(255,255,255,0.08);
           box-shadow: 0 0 0 3px rgba(201,168,106,0.18);
         }
+        .dark .auth-input:focus {
+          background: rgba(255,255,255,0.08);
+        }
         .auth-input::placeholder {
-          color: rgba(244,241,234,0.6);
+          color: hsl(var(--placeholder));
         }
         .auth-submit {
           width: 100%;

@@ -645,10 +645,7 @@ export default function VendorSubscriptionPage() {
           )}
           {!PLANS_PAUSED && offerActive && countdown && (
             <div
-              className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden"
-              style={{
-                background: "hsl(var(--foreground))",
-              }}
+              className="flex-1 min-w-0 rounded-2xl px-6 md:px-8 py-6 md:py-7 relative overflow-hidden bg-ink dark:border dark:border-border"
             >
               {/* Soft glow accent in the top-right so the dark block
                   doesn't read as a flat rectangle. */}
@@ -667,7 +664,7 @@ export default function VendorSubscriptionPage() {
                     style={{
                       background:
                         "linear-gradient(135deg, #c9a86a 0%, #e9dcc0 100%)",
-                      color: "#f4f1ea",
+                      color: "#14161a",
                     }}
                   >
                     <Flame className="w-3 h-3" />
@@ -766,7 +763,7 @@ export default function VendorSubscriptionPage() {
                         {tier.wasMonthly && offerActive && !isCurrent && (
                           <span
                             className="text-[9px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded"
-                            style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
+                            style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }}
                           >
                             {t("subscription.save_pct", {
                               pct: Math.round((1 - tier.priceMonthly / tier.wasMonthly) * 100),

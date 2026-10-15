@@ -12,6 +12,12 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/lib/auth";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 import { SHADOW } from "@/lib/ui";
+import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
+
+// Inactive tab icons: warm grey on the cream bar, a lighter warm grey on
+// the dark one so they still read.
+const ICON_IDLE = IS_DARK ? C.placeholder : "#6f6a60";
 
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   explore: "search",
@@ -22,7 +28,7 @@ const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 
 const ORDER = ["explore", "inbox", "events", "profile"];
 
-function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+function FloatingTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const focusedRoute = state.routes[state.index]?.name;
   // Hide the floating bar on screens that own the bottom — the
@@ -55,7 +61,10 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           // Warm card cream, same as vendor's floating bar. The old
           // #f5f5f5 was a cold grey that read as a different app
           // against the cream page.
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
+          // Dark: the shadow doesn't show on ink, so a hairline edges the bar.
+          borderWidth: IS_DARK ? 1 : 0,
+          borderColor: C.border,
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -83,19 +92,22 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 }
               }}
               hitSlop={6}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isFocused }}
+              accessibilityLabel={descriptors[route.key]?.options.title}
               style={{
                 width: 48,
                 height: 48,
                 borderRadius: 999,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFocused ? "#14161a" : "transparent",
+                backgroundColor: isFocused ? C.selected : "transparent",
               }}
             >
               <Feather
                 name={iconName}
                 size={20}
-                color={isFocused ? "#ffffff" : "#6f6a60"}
+                color={isFocused ? C.onSelected : ICON_IDLE}
               />
             </Pressable>
           );
@@ -107,14 +119,15 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function HostLayout() {
   const { loading, user } = useAuth();
+  const { t } = useT("hostTabs");
   // Wire push-tap → deep-link routing once the tab navigator is mounted.
   // Both cold-start taps (app killed) and warm taps go through here.
   usePushNotificationTapHandler();
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: C.page }}>
+        <ActivityIndicator color={C.text} />
       </View>
     );
   }
@@ -132,12 +145,13 @@ export default function HostLayout() {
         // ~76px tall (64 + safe-area), so anything that ends near
         // the bottom should add some extra padding.
         tabBarStyle: { position: "absolute" },
+        sceneStyle: { backgroundColor: C.page },
       }}
     >
-      <Tabs.Screen name="explore" options={{ title: "Explore" }} />
-      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
-      <Tabs.Screen name="events" options={{ title: "Events" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen name="explore" options={{ title: t("explore") }} />
+      <Tabs.Screen name="inbox" options={{ title: t("inbox") }} />
+      <Tabs.Screen name="events" options={{ title: t("events") }} />
+      <Tabs.Screen name="profile" options={{ title: t("profile") }} />
       {/* Vendor detail — opened from Explore card tap; not a tab. */}
       <Tabs.Screen name="vendor/[id]" options={{ href: null }} />
       {/* Conversation — opened from Inbox row tap; not a tab. */}

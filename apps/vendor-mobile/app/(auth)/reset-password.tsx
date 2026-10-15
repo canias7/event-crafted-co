@@ -44,25 +44,27 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
 // Same palette as welcome / signup / login.
-const PAGE = "#14161a";
-const INK = "#f4f1ea";
-const INK_ON_GOLD = "#14161a";
-const GOLD = "#c9a86a";
+const PAGE = C.page;
+const INK = C.text;
+const INK_ON_GOLD = C.onGold;
+const GOLD = C.gold;
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
-const BRONZE = "#c9a86a";
+const BRONZE = C.accentText;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#f4f1ea";
-const SUBTLE = "#a39a88";
-const BORDER = "rgba(255,255,255,0.15)";
-const FIELD_BG = "rgba(255,255,255,0.05)";
-const FIELD_BORDER = "rgba(255,255,255,0.15)";
-const ERROR = "#e0716a";
+const INK_DIM = C.text;
+const SUBTLE = C.placeholder;
+const BORDER = C.border;
+const FIELD_BG = IS_DARK ? "rgba(255,255,255,0.05)" : C.field;
+const FIELD_BORDER = C.border;
+const ERROR = C.error;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -92,6 +94,7 @@ function one(v: unknown): string | null {
 export default function ResetPasswordScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("resetPassword");
   const [state, setState] = useState<State>("loading");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -163,7 +166,7 @@ export default function ResetPasswordScreen() {
         });
         if (!mounted.current) return;
         if (e) {
-          setError("This reset link has expired. Request a new one.");
+          setError(t("errors.expired"));
           setState("error");
           return;
         }
@@ -183,7 +186,7 @@ export default function ResetPasswordScreen() {
         });
         if (!mounted.current) return;
         if (e) {
-          setError("This reset link has expired. Request a new one.");
+          setError(t("errors.expired"));
           setState("error");
           return;
         }
@@ -206,7 +209,7 @@ export default function ResetPasswordScreen() {
       // Do not spin forever if no link is coming at all.
       if (!waitedForUrl) return;
       settled.current = true;
-      setError("We couldn't read that reset link. Request a new one.");
+      setError(t("errors.unreadable"));
       setState("error");
     })();
   }, [routeTokenHash, routeType, routeError, url, waitedForUrl]);
@@ -214,7 +217,7 @@ export default function ResetPasswordScreen() {
   async function onSubmit() {
     setError(null);
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("errors.tooShort"));
       return;
     }
     setState("submitting");
@@ -238,7 +241,7 @@ export default function ResetPasswordScreen() {
           justifyContent: "center",
         }}
       >
-        <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+        <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={PAGE} />
         <ActivityIndicator color={GOLD} />
       </View>
     );
@@ -248,7 +251,7 @@ export default function ResetPasswordScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
         <AuthBackdrop />
-        <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+        <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={PAGE} />
         <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
           <Pressable
             onPress={() => router.replace("/(auth)/login")}
@@ -256,19 +259,19 @@ export default function ResetPasswordScreen() {
             style={{ alignSelf: "flex-start", paddingVertical: 8 }}
           >
             <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 16}}>
-              ← Back
+              ← {t("back")}
             </Text>
           </Pressable>
 
           <AuthCard>
           <StepHeader
-            eyebrow="RESET PASSWORD"
+            eyebrow={t("eyebrow")}
             title={
-              error?.startsWith("We couldn't read")
-                ? "Link didn't open"
-                : "Link expired"
+              error === t("errors.unreadable")
+                ? t("linkError.didntOpen")
+                : t("linkError.expired")
             }
-            subtitle={error ?? "This password reset link is no longer valid."}
+            subtitle={error ?? t("linkError.invalid")}
           />
 
           <TouchableOpacity
@@ -276,7 +279,7 @@ export default function ResetPasswordScreen() {
             activeOpacity={0.85}
             style={{ ...primaryBtn, marginTop: 28 }}
           >
-            <Text style={primaryBtnText}>Request a new link</Text>
+            <Text style={primaryBtnText}>{t("linkError.requestNew")}</Text>
           </TouchableOpacity>
           </AuthCard>
         </View>
@@ -287,7 +290,7 @@ export default function ResetPasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }}>
       <AuthBackdrop />
-      <StatusBar barStyle="light-content" backgroundColor={PAGE} />
+      <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={PAGE} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -304,19 +307,15 @@ export default function ResetPasswordScreen() {
         >
           <AuthCard>
           <StepHeader
-            eyebrow={state === "done" ? "ALL SET" : "RESET PASSWORD"}
-            title={state === "done" ? "Password updated" : "Set a new password"}
-            subtitle={
-              state === "done"
-                ? "You're signed in. Sending you to your profile…"
-                : "Pick a password you don't use elsewhere. At least 8 characters."
-            }
+            eyebrow={state === "done" ? t("done.eyebrow") : t("eyebrow")}
+            title={state === "done" ? t("done.title") : t("form.title")}
+            subtitle={state === "done" ? t("done.subtitle") : t("form.subtitle")}
           />
 
           {state === "done" ? null : (
             <View style={{ marginTop: 28, gap: 20 }}>
               <View>
-                <Text style={fieldLabel}>NEW PASSWORD</Text>
+                <Text style={fieldLabel}>{t("form.label")}</Text>
                 <View style={inputRow}>
                   <MaterialCommunityIcons
                     name="lock-outline"
@@ -332,7 +331,7 @@ export default function ResetPasswordScreen() {
                     placeholder="••••••••"
                     placeholderTextColor={SUBTLE}
                     selectionColor={GOLD}
-                    keyboardAppearance="dark"
+                    keyboardAppearance={IS_DARK ? "dark" : "light"}
                     style={inputText}
                   />
                   <TouchableOpacity
@@ -342,7 +341,7 @@ export default function ResetPasswordScreen() {
                     style={{ paddingLeft: 10 }}
                   >
                     <Text style={{ fontFamily: SERIF_BOLD, color: BRONZE, fontSize: 14}}>
-                      {showPassword ? "Hide" : "Show"}
+                      {showPassword ? t("form.hide") : t("form.show")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -357,7 +356,7 @@ export default function ResetPasswordScreen() {
                 style={primaryBtnFor(state === "submitting" || password.length < 8)}
               >
                 <Text style={primaryBtnTextFor(state === "submitting" || password.length < 8)}>
-                  {state === "submitting" ? "Saving…" : "Save password"}
+                  {state === "submitting" ? t("form.saving") : t("form.save")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -448,7 +447,7 @@ const primaryBtnText = {
 // On gold over cream that fades BOTH fill and label toward the page, so
 // it read as broken rather than as "nothing typed yet". Give the state
 // its own solid colours instead, and keep the lift for the live one.
-const GOLD_MUTED = "#e0d2b0";
+const GOLD_MUTED = C.goldMuted;
 function primaryBtnFor(disabled: boolean) {
   return disabled ? { ...primaryBtn, backgroundColor: GOLD_MUTED } : primaryBtn;
 }

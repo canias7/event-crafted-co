@@ -22,20 +22,30 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { eventTypeLabel } from "@vendora/core";
+import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const INK = C.text;
+const INK_DIM = C.textDim;
+const BORDER = C.border;
 // Primary button fill — gold pill, ink label.
-const GOLD = "#c9a86a";
-const PENDING_FG = "#8a6f3e";
-const PENDING_BG = "#f2e7cb";
-const ERROR = "#b23a34";
+const GOLD = C.gold;
+const PENDING_FG = C.pendingText;
+const PENDING_BG = C.pending;
+const ERROR = C.error;
+// Problem tint for the error box.
+const ERROR_BG = IS_DARK ? "rgba(224,113,106,0.12)" : "#f7ece9";
+const ERROR_EDGE = IS_DARK ? "rgba(224,113,106,0.4)" : "#e6c9c2";
+// The "up next" summary card is the selected fill (ink in light, cream in
+// dark). Its text is the page colour, and its overlays are drawn in that
+// colour's RGB at low alpha.
+const ON_SUMMARY = C.page;
+const ON_SUMMARY_RGB = IS_DARK ? "20,22,26" : "250,245,236";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
@@ -47,7 +57,7 @@ const PAGE_TITLE = {
   fontSize: 38,
   lineHeight: 44,
   letterSpacing: -0.5,
-  color: "#14161a",
+  color: C.text,
   marginTop: 8,
 } as const;
 
@@ -99,6 +109,7 @@ interface VendorChip {
 interface HostEvent {
   key: string;
   title: string;
+  eventType: string | null;
   eventDate: Date | null;
   location: string | null;
   vendors: VendorChip[];
@@ -113,7 +124,19 @@ function asDate(dateStr: string | null): Date | null {
   return new Date(y, m - 1, d);
 }
 
-function groupIntoEvents(rows: RawInquiry[]): HostEvent[] {
+type TFn = (key: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+// Event type in the app's language; unknown values fall back to the
+// shared English formatter.
+function eventTitle(event: HostEvent, t: TFn): string {
+  const type = event.eventType?.trim();
+  if (!type) return t("eventTypes.fallback");
+  const key = `eventTypes.${type}`;
+  const label = t(key);
+  return label === `events.${key}` ? event.title : label;
+}
+
+function groupIntoEvents(rows: RawInquiry[], vendorFallback: string): HostEvent[] {
   const map = new Map<string, HostEvent>();
   for (const r of rows) {
     const dateStr = r.event_date ?? "tbd";
@@ -122,6 +145,7 @@ function groupIntoEvents(rows: RawInquiry[]): HostEvent[] {
       map.set(key, {
         key,
         title: eventTypeLabel(r.event_type),
+        eventType: r.event_type,
         eventDate: asDate(r.event_date),
         location: r.location,
         vendors: [],
@@ -130,7 +154,7 @@ function groupIntoEvents(rows: RawInquiry[]): HostEvent[] {
     map.get(key)!.vendors.push({
       inquiry_id: r.id,
       vendor_id: r.vendor_id,
-      name: r.vendor?.business_name ?? "Vendor",
+      name: r.vendor?.business_name ?? vendorFallback,
       status: r.status,
     });
   }
@@ -149,23 +173,23 @@ function daysUntil(date: Date): number {
   return Math.round((t.getTime() - today.getTime()) / 86_400_000);
 }
 
-function relativeLabel(date: Date): string {
+function relativeLabel(date: Date, t: TFn, locale: string): string {
   const d = daysUntil(date);
-  if (d < 0) return `${Math.abs(d)} ${Math.abs(d) === 1 ? "day" : "days"} ago`;
-  if (d === 0) return "Today";
-  if (d === 1) return "Tomorrow";
-  if (d < 7) return `In ${d} days`;
-  if (d < 14) return "Next week";
-  if (d < 30) return `In ${Math.round(d / 7)} weeks`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d < 0) return t("relative.daysAgo", { count: Math.abs(d) });
+  if (d === 0) return t("relative.today");
+  if (d === 1) return t("relative.tomorrow");
+  if (d < 7) return t("relative.inDays", { count: d });
+  if (d < 14) return t("relative.nextWeek");
+  if (d < 30) return t("relative.inWeeks", { count: Math.round(d / 7) });
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
-function fmtMonthYear(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+function fmtMonthYear(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, { month: "long", year: "numeric" });
 }
 
-function fmtFullDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
+function fmtFullDate(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -173,6 +197,7 @@ function fmtFullDate(date: Date): string {
 }
 
 export default function EventsScreen() {
+  const { t, locale } = useT("events");
   const { user } = useAuth();
   const router = useRouter();
   const [events, setEvents] = useState<HostEvent[]>([]);
@@ -198,7 +223,7 @@ export default function EventsScreen() {
           { p_inquiry_id: inquiryId },
         );
         if (error || !data) {
-          Alert.alert("Couldn't open this thread", error?.message ?? "Try again from the inbox.");
+          Alert.alert(t("openError.title"), error?.message ?? t("openError.body"));
           return;
         }
         router.push(`/(host)/thread/${data as string}` as never);
@@ -207,7 +232,7 @@ export default function EventsScreen() {
       // 2+ vendors on the same event date: jump to inbox.
       router.push("/(host)/inbox" as never);
     },
-    [router],
+    [router, t],
   );
 
   const load = useCallback(
@@ -225,7 +250,7 @@ export default function EventsScreen() {
         .eq("host_id", user.id)
         .order("event_date", { ascending: true, nullsFirst: false });
       if (e) setError(e.message);
-      else setEvents(groupIntoEvents((data ?? []) as RawInquiry[]));
+      else setEvents(groupIntoEvents((data ?? []) as RawInquiry[], t("vendorFallback")));
       if (isRefresh) setRefreshing(false);
       else setLoading(false);
     },
@@ -329,14 +354,15 @@ export default function EventsScreen() {
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={PAGE_TITLE}>Events</Text>
+              <Text style={PAGE_TITLE}>{t("title")}</Text>
               <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-                {upcoming.length} upcoming · {fmtMonthYear(today)}
+                {t("subtitle", { count: upcoming.length, month: fmtMonthYear(today, locale) })}
               </Text>
             </View>
             <Pressable
               onPress={() => setShowPast((v) => !v)}
               hitSlop={6}
+              accessibilityLabel={t("filterPast")}
             >
               {({ pressed }) => (
                 <View
@@ -344,7 +370,7 @@ export default function EventsScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 999,
-                    backgroundColor: showPast ? INK : CREAM_DEEP,
+                    backgroundColor: showPast ? C.selected : CREAM_DEEP,
                     alignItems: "center",
                     justifyContent: "center",
                     opacity: pressed ? 0.85 : 1,
@@ -353,7 +379,7 @@ export default function EventsScreen() {
                   <Feather
                     name="filter"
                     size={18}
-                    color={showPast ? CREAM : INK}
+                    color={showPast ? ON_SUMMARY : INK}
                   />
                 </View>
               )}
@@ -398,7 +424,7 @@ export default function EventsScreen() {
                   marginBottom: 10,
                 }}
               >
-                {filteredByDay.length === 0 ? "Nothing on this day" : "On this day"}
+                {filteredByDay.length === 0 ? t("nothingOnDay") : t("onThisDay")}
               </Text>
               {filteredByDay.map((e) => (
                 <EventRow key={e.key} event={e} onOpen={() => openEvent(e)} />
@@ -434,7 +460,7 @@ export default function EventsScreen() {
                         fontSize: 17,
                       }}
                     >
-                      Up next
+                      {t("upNext")}
                     </Text>
                   </View>
                   <UpNextCard event={upNext} onOpen={() => openEvent(upNext)} />
@@ -459,14 +485,14 @@ export default function EventsScreen() {
                         color: INK,
                       }}
                     >
-                      This month
+                      {t("thisMonth")}
                     </Text>
                     <Pressable
                       onPress={() => router.push("/(host)/inbox" as never)}
                       hitSlop={6}
                     >
                       <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 13 }}>
-                        See all
+                        {t("seeAll")}
                       </Text>
                     </Pressable>
                   </View>
@@ -483,9 +509,9 @@ export default function EventsScreen() {
                     marginHorizontal: 20,
                     marginTop: 16,
                     borderRadius: 12,
-                    backgroundColor: "#f7ece9",
+                    backgroundColor: ERROR_BG,
                     borderWidth: 1,
-                    borderColor: "#e6c9c2",
+                    borderColor: ERROR_EDGE,
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                   }}
@@ -498,7 +524,7 @@ export default function EventsScreen() {
                         fontSize: 13,
                       }}
                     >
-                      Try again
+                      {t("retry")}
                     </Text>
                   </Pressable>
                 </View>
@@ -524,7 +550,7 @@ export default function EventsScreen() {
                       marginTop: 12,
                     }}
                   >
-                    No events yet. When you book a vendor, the event lands here.
+                    {t("empty")}
                   </Text>
                 </View>
               ) : null}
@@ -547,8 +573,9 @@ function DayPill({
   hasEvent: boolean;
   onPress: () => void;
 }) {
+  const { locale } = useT("events");
   const dow = date
-    .toLocaleDateString(undefined, { weekday: "short" })
+    .toLocaleDateString(locale, { weekday: "short" })
     .slice(0, 3)
     .toUpperCase();
   const day = date.getDate();
@@ -561,13 +588,13 @@ function DayPill({
         paddingVertical: 12,
         paddingHorizontal: 8,
         borderRadius: 20,
-        backgroundColor: isSelected ? INK : CREAM_DEEP,
+        backgroundColor: isSelected ? C.selected : CREAM_DEEP,
         alignItems: "center",
       }}
     >
       <Text
         style={{ fontFamily: SERIF_BOLD,
-          color: isSelected ? "#ffffff" : INK_DIM,
+          color: isSelected ? C.onSelected : INK_DIM,
           fontSize: 11,
           letterSpacing: 0.6,
         }}
@@ -577,7 +604,7 @@ function DayPill({
       <Text
         style={{
           marginTop: 2,
-          color: isSelected ? "#ffffff" : INK,
+          color: isSelected ? C.onSelected : INK,
           fontSize: 22,
           fontFamily: SERIF_BOLD,
         }}
@@ -592,7 +619,7 @@ function DayPill({
           borderRadius: 999,
           backgroundColor: hasEvent
             ? isSelected
-              ? CREAM
+              ? ON_SUMMARY
               : INK
             : "transparent",
         }}
@@ -664,7 +691,7 @@ function VendorBubbles({
   );
 }
 
-function statusOf(vendors: VendorChip[]): {
+function statusOf(vendors: VendorChip[], t: TFn): {
   text: string;
   fg: string;
   bg: string;
@@ -674,35 +701,37 @@ function statusOf(vendors: VendorChip[]): {
     (v) => v.status === "new" || v.status === "replied" || v.status === "drafted",
   ).length;
   if (vendors.length > 0 && won === vendors.length) {
-    return { text: "Confirmed", fg: "#ffffff", bg: INK };
+    return { text: t("status.confirmed"), fg: C.onSelected, bg: C.selected };
   }
   if (pending > 0) {
     return {
-      text: `Awaiting ${pending}`,
+      text: t("status.awaiting", { count: pending }),
       fg: PENDING_FG,
       bg: PENDING_BG,
     };
   }
   return {
-    text: `${vendors.length} ${vendors.length === 1 ? "inquiry" : "inquiries"}`,
+    text: t("status.inquiries", { count: vendors.length }),
     fg: INK_DIM,
     bg: CREAM_DEEP,
   };
 }
 
 function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
+  const { t, locale } = useT("events");
   const confirmed = event.vendors.filter((v) => v.status === "won").length;
   const summary =
     confirmed > 0
-      ? `${confirmed} ${confirmed === 1 ? "vendor" : "vendors"} confirmed`
-      : `${event.vendors.length} ${event.vendors.length === 1 ? "vendor" : "vendors"} pending`;
+      ? t("summary.confirmed", { count: confirmed })
+      : t("summary.pending", { count: event.vendors.length });
 
   return (
     <View style={{ paddingHorizontal: 20 }}>
       <View
         style={{
-          // Dark summary card: stays ink; card radius and padding.
-          backgroundColor: INK,
+          // Summary card: the selected fill (ink in light, cream in
+          // dark); card radius and padding.
+          backgroundColor: C.selected,
           borderRadius: 20,
           padding: 16,
         }}
@@ -716,7 +745,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                 paddingHorizontal: 10,
                 paddingVertical: 5,
                 borderRadius: 999,
-                backgroundColor: "rgba(250,245,236,0.10)",
+                backgroundColor: `rgba(${ON_SUMMARY_RGB},0.10)`,
                 flexDirection: "row",
                 alignItems: "center",
               }}
@@ -731,7 +760,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                 }}
               />
               <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 12,}}>
-                {relativeLabel(event.eventDate)}
+                {relativeLabel(event.eventDate, t, locale)}
               </Text>
             </View>
           ) : (
@@ -750,17 +779,17 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
             fontSize: 28,
           }}
         >
-          {event.title}
+          {eventTitle(event, t)}
         </Text>
         <Text
           style={{ fontFamily: SERIF,
             marginTop: 6,
-            color: "rgba(250,245,236,0.65)",
+            color: `rgba(${ON_SUMMARY_RGB},0.65)`,
             fontSize: 14,
           }}
         >
           {[
-            event.eventDate ? fmtFullDate(event.eventDate) : null,
+            event.eventDate ? fmtFullDate(event.eventDate, locale) : null,
             event.location,
           ]
             .filter(Boolean)
@@ -770,7 +799,7 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
         <View
           style={{
             height: 1,
-            backgroundColor: "rgba(250,245,236,0.15)",
+            backgroundColor: `rgba(${ON_SUMMARY_RGB},0.15)`,
             marginTop: 20,
             marginBottom: 16,
           }}
@@ -818,13 +847,13 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
                   opacity: pressed ? 0.85 : 1,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13,}}>
-                  View
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 13,}}>
+                  {t("view")}
                 </Text>
                 <Feather
                   name="chevron-right"
                   size={14}
-                  color={INK}
+                  color={C.onGold}
                   style={{ marginLeft: 2 }}
                 />
               </View>
@@ -837,13 +866,14 @@ function UpNextCard({ event, onOpen }: { event: HostEvent; onOpen: () => void })
 }
 
 function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
-  const status = statusOf(event.vendors);
+  const { t, locale } = useT("events");
+  const status = statusOf(event.vendors, t);
   const month = event.eventDate
-    ? event.eventDate.toLocaleDateString(undefined, { month: "short" }).toUpperCase()
+    ? event.eventDate.toLocaleDateString(locale, { month: "short" }).toUpperCase()
     : null;
   const day = event.eventDate ? event.eventDate.getDate() : null;
   const dow = event.eventDate
-    ? event.eventDate.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase()
+    ? event.eventDate.toLocaleDateString(locale, { weekday: "short" }).toUpperCase()
     : null;
 
   return (
@@ -851,7 +881,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
       {({ pressed }) => (
       <View
         style={{
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 20,
           borderWidth: 1,
           borderColor: BORDER,
@@ -875,7 +905,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
         <Text
           style={{ fontFamily: SERIF_BOLD, color: INK_DIM, fontSize: 10, letterSpacing: 0.6 }}
         >
-          {month ?? "TBD"}
+          {month ?? t("dateTbd")}
         </Text>
         <Text
           style={{
@@ -907,13 +937,13 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
           }}
           numberOfLines={1}
         >
-          {event.title}
+          {eventTitle(event, t)}
         </Text>
         <Text
           style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 12 }}
           numberOfLines={1}
         >
-          {event.location ?? "Location TBD"}
+          {event.location ?? t("locationTbd")}
         </Text>
         <View
           style={{
@@ -928,8 +958,7 @@ function EventRow({ event, onOpen }: { event: HostEvent; onOpen: () => void }) {
             <Text
               style={{ fontFamily: SERIF_BOLD, marginLeft: 8, color: INK_DIM, fontSize: 12,}}
             >
-              {event.vendors.length}{" "}
-              {event.vendors.length === 1 ? "vendor" : "vendors"}
+              {t("vendors", { count: event.vendors.length })}
             </Text>
           </View>
           <View

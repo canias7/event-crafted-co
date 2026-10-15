@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, ChevronRight, FileText, LogOut, Lock, Mail, Trash2 } from "lucide-react";
+import { Bell, ChevronRight, FileText, Globe, LogOut, Lock, Mail, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,19 @@ import { DashboardSidebar } from "@/components/shared/DashboardSidebar";
 import { MobileNav } from "@/components/shared/MobileNav";
 import { customerNavItems, getLastDashboardSide, vendorNavItems } from "@/data/navItems";
 import { EmailMenu } from "@/components/shared/EmailMenu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_LABELS,
+  changeLanguage,
+  type SupportedLanguage,
+} from "@/i18n";
 
 // Account settings — rowed-card layout. Each row is icon + title +
 // subtitle on the left, value or action pill on the right, divided by
@@ -17,7 +30,8 @@ import { EmailMenu } from "@/components/shared/EmailMenu";
 export default function SettingsPage() {
   const { user, profile, isApprovedVendor, signOut } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation("settings");
+  const { t, i18n } = useTranslation("settings");
+  const currentLang = (i18n.resolvedLanguage ?? "en") as SupportedLanguage;
 
   const lastSide = getLastDashboardSide();
   const useVendorNav =
@@ -85,6 +99,31 @@ export default function SettingsPage() {
                     {t("notifications_row.manage")}
                     <ChevronRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
+                }
+              />
+              <RowDivider />
+              {/* Language (owner's call, Oct 2026): the same choice as the
+                  footer's switcher, saved in this browser. */}
+              <SettingRow
+                Icon={Globe}
+                title={t("language.title")}
+                subtitle={t("language.subtitle")}
+                right={
+                  <Select
+                    value={currentLang}
+                    onValueChange={(v) => void changeLanguage(v as SupportedLanguage)}
+                  >
+                    <SelectTrigger className="h-9 w-auto min-w-[130px] rounded-full text-sm font-bold" aria-label={t("language.title")}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      {SUPPORTED_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang} value={lang}>
+                          <span lang={lang}>{LANGUAGE_LABELS[lang]}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 }
               />
               <RowDivider />
@@ -188,7 +227,7 @@ function SettingRow({
           background: destructive
             ? "hsl(var(--destructive) / 0.1)"
             : "hsl(var(--muted))",
-          color: destructive ? "#b23a34" : "#f4f1ea",
+          color: destructive ? "hsl(var(--destructive))" : "hsl(var(--foreground))",
         }}
         aria-hidden
       >
@@ -196,7 +235,7 @@ function SettingRow({
       </span>
       <div className="flex-1 min-w-0">
         <p
-          className={`text-[15px] font-semibold leading-tight ${
+          className={`text-[15px] font-semibold leading-tight break-words hyphens-auto ${
             destructive ? "text-destructive" : "text-foreground"
           }`}
         >
@@ -218,8 +257,8 @@ function RowDivider() {
     <div
       aria-hidden
       style={{
-        height: "0.5px",
-        background: "rgba(255,255,255,0.06)",
+        height: "1px",
+        background: "hsl(var(--border))",
         marginLeft: "1.25rem",
         marginRight: "1.25rem",
       }}

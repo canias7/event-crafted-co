@@ -33,6 +33,7 @@ import { Check, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/lib/theme";
 
 interface LinkDetails {
   id: string;
@@ -101,6 +102,7 @@ function startErrorDetail(t: TFunction, detail: string | null): string {
 export default function PayLinkCheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation("checkout");
+  const { theme } = useTheme();
   const [searchParams] = useSearchParams();
   // Stripe appends redirect_status (succeeded | failed | pending) when it
   // returns from a redirect-based method (e.g. 3DS). Only treat the
@@ -351,13 +353,7 @@ export default function PayLinkCheckoutPage() {
         </div>
 
         {/* Amount + title */}
-        <div
-          className="rounded-2xl p-6 mb-4"
-          style={{
-            background: "rgba(255,255,255,0.6)",
-            border: "0.5px solid rgba(0,0,0,0.08)",
-          }}
-        >
+        <div className="rounded-2xl p-6 mb-4 bg-card border border-border">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
             {t("payLink.amountDue")}
           </div>
@@ -411,14 +407,26 @@ export default function PayLinkCheckoutPage() {
                 // Cyrillic letters for the Russian card form.
                 { cssSrc: PT_SERIF_CSS },
               ],
+              // The card form follows the site theme: white fields and ink
+              // text in light, dark fields and cream text in dark.
               appearance: {
-                theme: "stripe",
+                theme: theme === "dark" ? "night" : "stripe",
                 variables: {
-                  colorPrimary: "#14161a",
-                  colorBackground: "#ffffff",
-                  colorText: "#14161a",
-                  colorTextSecondary: "#14161a",
-                  colorDanger: "#b23a34",
+                  ...(theme === "dark"
+                    ? {
+                        colorPrimary: "#c9a86a",
+                        colorBackground: "#282a2e",
+                        colorText: "#f4f1ea",
+                        colorTextSecondary: "#f4f1ea",
+                        colorDanger: "#d75a52",
+                      }
+                    : {
+                        colorPrimary: "#14161a",
+                        colorBackground: "#ffffff",
+                        colorText: "#14161a",
+                        colorTextSecondary: "#14161a",
+                        colorDanger: "#b23a34",
+                      }),
                   fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif",
                   borderRadius: "12px",
                 },

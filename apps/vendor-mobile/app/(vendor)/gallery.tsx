@@ -46,25 +46,31 @@ import { supabase } from "@/lib/supabase";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { C, IS_DARK } from "@/lib/theme";
 import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { useT } from "@/lib/i18n";
 
 // Cream editorial palette — matches the Inbox restyle / reference mock.
+// WHITE is only for the black lightbox; chrome uses C.
 const WHITE = "#ffffff";
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+const GOLD = C.gold;
 // Gold as text on a light surface is bronze (champagne is too faint to read).
-const BRONZE = "#8a6f3e";
-const ERROR = "#b23a34";
+const BRONZE = C.accentText;
+const ERROR = C.error;
+// Danger label on the floating bulk-action bar (a "selected" fill: ink
+// on light, cream on dark).
+const BAR_DANGER = IS_DARK ? "#b23a34" : "#ff8a80";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -142,6 +148,7 @@ export default function GalleryScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const dialog = useBrandDialog();
+  const { t, locale } = useT("gallery");
 
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -290,7 +297,7 @@ export default function GalleryScreen() {
     if (!user?.id || uploading) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Library access needed", "Enable photo access in Settings to upload.");
+      Alert.alert(t("alerts.library.title"), t("alerts.library.message"));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -316,16 +323,17 @@ export default function GalleryScreen() {
       if (capBytes !== null && usedBytes >= capBytes) {
         // Plans paused (lib/plans.ts): no upgrade offer, just how to free space.
         Alert.alert(
-          "Gallery storage full",
+          t("alerts.storageFull.title"),
+          t(PLANS_PAUSED ? "alerts.storageFull.messagePaused" : "alerts.storageFull.message", {
+            cap: formatBytesLabel(capBytes),
+            used: formatBytesLabel(usedBytes),
+          }),
           PLANS_PAUSED
-            ? `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) to add more.`
-            : `Your plan includes ${formatBytesLabel(capBytes)} of gallery storage and you've used ${formatBytesLabel(usedBytes)}. Delete some images (and empty Trash) or upgrade your plan to add more.`,
-          PLANS_PAUSED
-            ? [{ text: "OK" }]
+            ? [{ text: t("alerts.ok") }]
             : [
-                { text: "Not now", style: "cancel" },
+                { text: t("alerts.storageFull.notNow"), style: "cancel" },
                 {
-                  text: "Upgrade plan",
+                  text: t("alerts.storageFull.upgrade"),
                   onPress: () => router.push("/(vendor)/subscription" as never),
                 },
               ],
@@ -355,8 +363,8 @@ export default function GalleryScreen() {
         try {
           const { uri, mime } = await compressForUpload(a);
           const bytes = new Uint8Array(await (await fetch(uri)).arrayBuffer());
-          if (bytes.byteLength === 0) throw new Error("Empty file");
-          if (bytes.byteLength > MAX_FILE_BYTES) throw new Error("Over 20 MB");
+          if (bytes.byteLength === 0) throw new Error(t("errors.emptyFile"));
+          if (bytes.byteLength > MAX_FILE_BYTES) throw new Error(t("errors.tooLarge"));
           const path = `${user!.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
           const up = await supabase.storage
             .from(BUCKET)
@@ -375,7 +383,7 @@ export default function GalleryScreen() {
             file_size_bytes: bytes.byteLength,
           };
         } catch (err) {
-          if (!firstError) firstError = (err as { message?: string }) ?? { message: "failed" };
+          if (!firstError) firstError = (err as { message?: string }) ?? { message: t("errors.failed") };
         } finally {
           done++;
           setUploadProgress({ done, total: assets.length });
@@ -388,16 +396,16 @@ export default function GalleryScreen() {
         Array.from({ length: Math.min(UPLOAD_CONCURRENCY, assets.length) }, () => worker()),
       );
       const ok = rows.filter((r): r is Record<string, unknown> => r !== null);
-      if (ok.length === 0) throw firstError ?? new Error("Upload failed");
+      if (ok.length === 0) throw firstError ?? new Error(t("errors.uploadFailed"));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from("vendor_gallery_images").insert(ok);
       if (error) throw error;
       await load();
       if (ok.length < assets.length) {
-        Alert.alert("Partial upload", `${ok.length} of ${assets.length} uploaded.`);
+        Alert.alert(t("alerts.partial.title"), t("alerts.partial.message", { done: ok.length, total: assets.length }));
       }
     } catch (err) {
-      Alert.alert("Couldn't upload", (err as { message?: string })?.message ?? "Try again.");
+      Alert.alert(t("alerts.uploadFailed.title"), (err as { message?: string })?.message ?? t("alerts.uploadFailed.message"));
     } finally {
       setUploading(false);
       setUploadProgress(null);
@@ -458,7 +466,7 @@ export default function GalleryScreen() {
       .select("id, name, display_order, cover_image_id")
       .single();
     if (error) {
-      Alert.alert("Couldn't create album", error.message);
+      Alert.alert(t("alerts.createAlbumFailed"), error.message);
       return;
     }
     setAlbums((cur) => [...cur, data as Album]);
@@ -486,7 +494,7 @@ export default function GalleryScreen() {
       .from("vendor_gallery_albums")
       .update({ cover_image_id: imageId })
       .eq("id", albumId);
-    Alert.alert("Cover set", "This photo is now the album cover.");
+    Alert.alert(t("alerts.coverSet.title"), t("alerts.coverSet.message"));
   }
 
   function toggleSelect(id: string) {
@@ -508,14 +516,14 @@ export default function GalleryScreen() {
     if (ids.length === 0) return;
     const inTrash = tab === "trash";
     Alert.alert(
-      inTrash ? "Delete forever?" : "Move to trash?",
+      inTrash ? t("confirm.deleteForever") : t("confirm.moveToTrash"),
       inTrash
-        ? `${ids.length} photo${ids.length === 1 ? "" : "s"} will be permanently deleted.`
-        : `${ids.length} photo${ids.length === 1 ? "" : "s"} move to trash (restore within 30 days).`,
+        ? t("confirm.deleteMessage", { count: ids.length })
+        : t("confirm.trashMessage", { count: ids.length }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("actions.cancel"), style: "cancel" },
         {
-          text: inTrash ? "Delete" : "Move to trash",
+          text: inTrash ? t("actions.delete") : t("actions.moveToTrash"),
           style: "destructive",
           onPress: async () => {
             if (inTrash) await purge(images.filter((r) => ids.includes(r.id)));
@@ -533,7 +541,7 @@ export default function GalleryScreen() {
   const tile = Math.floor((W - 40 - (cols - 1) * 6) / cols);
 
   const albumName = (id: string | null) =>
-    id ? albums.find((a) => a.id === id)?.name ?? "Album" : null;
+    id ? albums.find((a) => a.id === id)?.name ?? t("album") : null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
@@ -565,27 +573,27 @@ export default function GalleryScreen() {
               flexShrink: 1,
             }}
           >
-            Gallery
+            {t("title")}
           </Text>
           <Pressable
             onPress={uploadImages}
             disabled={uploading}
-            style={[pillStyle(true), { backgroundColor: uploading ? "#e0d2b0" : GOLD }]}
+            style={[pillStyle(true), { backgroundColor: uploading ? C.goldMuted : GOLD }]}
           >
             {uploading ? (
-              <ActivityIndicator size="small" color={INK} />
+              <ActivityIndicator size="small" color={C.onGold} />
             ) : (
-              <Feather name="plus" size={15} color={INK} />
+              <Feather name="plus" size={15} color={C.onGold} />
             )}
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13, marginLeft: 6 }}>
+            <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 13, marginLeft: 6 }}>
               {uploading && uploadProgress
                 ? `${uploadProgress.done}/${uploadProgress.total}`
-                : "Upload"}
+                : t("upload")}
             </Text>
           </Pressable>
         </View>
         <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-          Your media library — upload once, reuse across listings.
+          {t("subtitle")}
         </Text>
 
         {/* Three tabs instead of two scrolling chip rows. Albums and Trash
@@ -596,9 +604,9 @@ export default function GalleryScreen() {
             value={tab}
             onChange={(k) => setTab(k as GalleryTab)}
             tabs={[
-              { key: "media", icon: "image", label: "My Media" },
-              { key: "albums", icon: "folder", label: "Albums" },
-              { key: "trash", icon: "trash-2", label: trashCount ? `Trash ${trashCount}` : "Trash" },
+              { key: "media", icon: "image", label: t("tabs.media") },
+              { key: "albums", icon: "folder", label: t("tabs.albums") },
+              { key: "trash", icon: "trash-2", label: trashCount ? t("tabs.trashCount", { count: trashCount }) : t("tabs.trash") },
             ]}
           />
         </View>
@@ -609,10 +617,10 @@ export default function GalleryScreen() {
                 and select toggles all live behind Options now — they were
                 four controls competing with the search field for one row. */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 }}>
-              <SearchField value={search} onChangeText={setSearch} placeholder="Search your gallery..." />
+              <SearchField value={search} onChangeText={setSearch} placeholder={t("searchPlaceholder")} />
               <ToolbarButton
                 icon="sliders"
-                label="Options"
+                label={t("options.button")}
                 active={!!smart || dense || selectMode}
                 onPress={() => setOptionsOpen(true)}
               />
@@ -634,7 +642,7 @@ export default function GalleryScreen() {
                 hitSlop={6}
                 style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
               >
-                <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{sortLabel(sort)}</Text>
+                <Text style={{ fontFamily: SERIF, fontSize: 13, color: INK }}>{t(`sort.${sort}`)}</Text>
                 <Feather name="chevron-down" size={14} color={INK} />
               </Pressable>
               <View
@@ -661,7 +669,7 @@ export default function GalleryScreen() {
           <View style={{ marginTop: 20 }}>
             <AlbumRow
               icon="image"
-              name="All photos"
+              name={t("albums.all")}
               count={images.filter((r) => !r.deleted_at).length}
               onPress={() => {
                 setActiveAlbum(ALL);
@@ -674,7 +682,7 @@ export default function GalleryScreen() {
             {albums.length === 0 ? null : (
               <AlbumRow
                 icon="folder"
-                name="Uncategorized"
+                name={t("albums.uncategorized")}
                 count={images.filter((r) => !r.deleted_at && !r.album_id).length}
                 onPress={() => {
                   setActiveAlbum(NONE);
@@ -710,7 +718,7 @@ export default function GalleryScreen() {
               }}
             >
               <Feather name="folder-plus" size={16} color={INK} />
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>New album</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>{t("albums.new")}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -741,7 +749,7 @@ export default function GalleryScreen() {
                     : "image-multiple-outline"
                 }
                 size={64}
-                color="#c9a86a"
+                color={GOLD}
               />
             </View>
             <Text
@@ -754,17 +762,17 @@ export default function GalleryScreen() {
               }}
             >
               {tab === "trash"
-                ? "Trash is empty"
+                ? t("empty.trash.title")
                 : search || smart
-                  ? "No matches"
-                  : "Your gallery is empty"}
+                  ? t("empty.noMatches.title")
+                  : t("empty.gallery.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
               {tab === "trash"
-                ? "Deleted photos land here for 30 days."
+                ? t("empty.trash.body")
                 : search || smart
-                  ? "Try a different search or filter."
-                  : "Upload photos to use across your listings."}
+                  ? t("empty.noMatches.body")
+                  : t("empty.gallery.body")}
             </Text>
             {activeAlbum !== TRASH && !search && !smart ? (
               <Pressable
@@ -780,9 +788,9 @@ export default function GalleryScreen() {
                   gap: 8,
                 }}
               >
-                <Feather name="upload" size={15} color={INK} />
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-                  Upload your first photo
+                <Feather name="upload" size={15} color={C.onGold} />
+                <Text style={{ flexShrink: 1, fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}>
+                  {t("empty.uploadFirst")}
                 </Text>
               </Pressable>
             ) : null}
@@ -833,11 +841,11 @@ export default function GalleryScreen() {
                   {listView ? (
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text numberOfLines={1} style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 14}}>
-                        {img.caption || fileNameFromUrl(img.image_url) || "Untitled"}
+                        {img.caption || fileNameFromUrl(img.image_url) || t("untitled")}
                       </Text>
                       <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12, marginTop: 2 }}>
                         {albumName(img.album_id) ? `${albumName(img.album_id)} · ` : ""}
-                        {new Date(img.created_at).toLocaleDateString()}
+                        {new Date(img.created_at).toLocaleDateString(locale)}
                       </Text>
                     </View>
                   ) : null}
@@ -850,14 +858,14 @@ export default function GalleryScreen() {
                         width: 22,
                         height: 22,
                         borderRadius: 999,
-                        backgroundColor: isSel ? INK : "rgba(255,255,255,0.85)",
+                        backgroundColor: isSel ? C.selected : "rgba(255,255,255,0.85)",
                         borderWidth: 1,
-                        borderColor: isSel ? INK : BORDER,
+                        borderColor: isSel ? C.selected : BORDER,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      {isSel ? <Feather name="check" size={13} color={WHITE} /> : null}
+                      {isSel ? <Feather name="check" size={13} color={C.onSelected} /> : null}
                     </View>
                   ) : img.caption && !listView ? (
                     <View style={{ position: "absolute", bottom: 6, right: 6, width: 20, height: 20, borderRadius: 999, backgroundColor: "rgba(10,10,10,0.7)", alignItems: "center", justifyContent: "center" }}>
@@ -879,15 +887,14 @@ export default function GalleryScreen() {
             onPress={() =>
               dialog.show({
                 icon: "camera",
-                title: "Better photos, more bookings",
-                message:
-                  "• Shoot in daylight — natural light beats any filter.\n\n• Show real events: guests, details, and the room at its best.\n\n• Lead with your strongest shot — the first photo is your cover everywhere.\n\n• Add captions so photos are easy to find and reuse.",
-                buttonLabel: "Got it",
+                title: t("tip.dialogTitle"),
+                message: t("tip.dialogBody"),
+                buttonLabel: t("tip.gotIt"),
               })
             }
             style={{
               marginTop: 20,
-              backgroundColor: "#ece7db",
+              backgroundColor: SURFACE,
               borderRadius: 20,
               padding: 16,
               flexDirection: "row",
@@ -910,11 +917,9 @@ export default function GalleryScreen() {
               <Feather name="zap" size={18} color={GOLD} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: BRONZE }}>Pro tip</Text>
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: BRONZE }}>{t("tip.label")}</Text>
               <Text style={{ fontFamily: SERIF, marginTop: 2, fontSize: 13, lineHeight: 19, color: INK }}>
-                {hasAnyPhotos
-                  ? "Create albums to keep your photos organized by event type, client, or service."
-                  : "Shoot in daylight and lead with your strongest photo — it becomes your cover everywhere."}
+                {hasAnyPhotos ? t("tip.albums") : t("tip.daylight")}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={INK_DIM} />
@@ -944,25 +949,19 @@ export default function GalleryScreen() {
           >
             <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 999, backgroundColor: BORDER }} />
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 22, color: INK, marginTop: 16 }}>
-              Options
+              {t("options.title")}
             </Text>
 
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, marginTop: 20 }}>
-              SMART COLLECTIONS
+              {t("options.smart")}
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
               {(
-                [
-                  ["recent7", "Last 7 days"],
-                  ["recent30", "Last 30 days"],
-                  ["portraits", "Portraits"],
-                  ["landscapes", "Landscapes"],
-                  ["large", "Large"],
-                ] as [Exclude<SmartFilter, null>, string][]
-              ).map(([key, label]) => (
+                ["recent7", "recent30", "portraits", "landscapes", "large"] as Exclude<SmartFilter, null>[]
+              ).map((key) => (
                 <Chip
                   key={key}
-                  label={label}
+                  label={t(`options.smartFilters.${key}`)}
                   small
                   active={smart === key}
                   onPress={() => setSmart(smart === key ? null : key)}
@@ -971,11 +970,11 @@ export default function GalleryScreen() {
             </View>
 
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, letterSpacing: 1, color: INK_DIM, marginTop: 24 }}>
-              LAYOUT
+              {t("options.layout")}
             </Text>
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              <Chip label="Comfortable" small active={!dense} onPress={() => setDense(false)} />
-              <Chip label="Dense" small active={dense} onPress={() => setDense(true)} />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+              <Chip label={t("options.comfortable")} small active={!dense} onPress={() => setDense(false)} />
+              <Chip label={t("options.dense")} small active={dense} onPress={() => setDense(true)} />
             </View>
 
             <Pressable
@@ -988,7 +987,7 @@ export default function GalleryScreen() {
                 marginTop: 24,
                 height: 52,
                 borderRadius: 999,
-                backgroundColor: selectMode ? WHITE : GOLD,
+                backgroundColor: selectMode ? C.field : GOLD,
                 borderWidth: selectMode ? 1 : 0,
                 borderColor: BORDER,
                 alignItems: "center",
@@ -997,9 +996,9 @@ export default function GalleryScreen() {
                 gap: 8,
               }}
             >
-              <Feather name={selectMode ? "x" : "check-square"} size={16} color={INK} />
-              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
-                {selectMode ? "Exit select mode" : "Select photos"}
+              <Feather name={selectMode ? "x" : "check-square"} size={16} color={selectMode ? INK : C.onGold} />
+              <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: selectMode ? INK : C.onGold }}>
+                {selectMode ? t("options.exitSelect") : t("options.select")}
               </Text>
             </Pressable>
           </Pressable>
@@ -1016,7 +1015,7 @@ export default function GalleryScreen() {
             left: 16,
             right: 16,
             bottom: 28,
-            backgroundColor: INK,
+            backgroundColor: C.selected,
             borderRadius: 20,
             paddingVertical: 12,
             paddingHorizontal: 16,
@@ -1025,14 +1024,14 @@ export default function GalleryScreen() {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, color: WHITE}}>{selected.size} selected</Text>
+          <Text style={{ fontFamily: SERIF_BOLD, color: C.onSelected}}>{t("selected", { count: selected.size })}</Text>
           <View style={{ flexDirection: "row", gap: 20 }}>
             {tab === "trash" ? (
-              <BarAction icon="rotate-ccw" label="Restore" onPress={async () => { await restore([...selected]); exitSelect(); }} />
+              <BarAction icon="rotate-ccw" label={t("actions.restore")} onPress={async () => { await restore([...selected]); exitSelect(); }} />
             ) : (
-              <BarAction icon="folder" label="Move" onPress={() => setMoveOpen(true)} />
+              <BarAction icon="folder" label={t("actions.move")} onPress={() => setMoveOpen(true)} />
             )}
-            <BarAction icon="trash-2" label={tab === "trash" ? "Delete" : "Trash"} onPress={confirmBulkDelete} danger />
+            <BarAction icon="trash-2" label={tab === "trash" ? t("actions.delete") : t("actions.trash")} onPress={confirmBulkDelete} danger />
           </View>
         </View>
       ) : null}
@@ -1057,41 +1056,41 @@ export default function GalleryScreen() {
                       <TextInput
                         value={captionDraft}
                         onChangeText={setCaptionDraft}
-                        placeholder="Add a caption…"
+                        placeholder={t("lightbox.addCaption")}
                         placeholderTextColor="rgba(255,255,255,0.5)"
                         autoFocus
                         style={{ fontFamily: SERIF, flex: 1, color: WHITE, fontSize: 15, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingVertical: 6 }}
                       />
                       <Pressable onPress={() => saveCaption(lightbox)} hitSlop={8}>
-                        <Text style={{ fontFamily: SERIF_BOLD, color: "#c9a86a"}}>Save</Text>
+                        <Text style={{ fontFamily: SERIF_BOLD, color: "#c9a86a"}}>{t("lightbox.save")}</Text>
                       </Pressable>
                     </View>
                   ) : (
                     <Pressable onPress={() => { setCaptionDraft(lightbox.caption ?? ""); setEditingCaption(true); }}>
                       <Text style={{ fontFamily: SERIF, color: lightbox.caption ? WHITE : "rgba(255,255,255,0.5)", fontSize: 15 }}>
-                        {lightbox.caption || "Add a caption…"}
+                        {lightbox.caption || t("lightbox.addCaption")}
                       </Text>
                     </Pressable>
                   )}
                   <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: 16 }}>
                     {lightbox.deleted_at ? (
-                      <LbAction icon="rotate-ccw" label="Restore" onPress={async () => { await restore([lightbox.id]); setLightbox(null); }} />
+                      <LbAction icon="rotate-ccw" label={t("actions.restore")} onPress={async () => { await restore([lightbox.id]); setLightbox(null); }} />
                     ) : (
-                      <LbAction icon="folder" label="Move" onPress={() => { setSelected(new Set([lightbox.id])); setMoveOpen(true); }} />
+                      <LbAction icon="folder" label={t("actions.move")} onPress={() => { setSelected(new Set([lightbox.id])); setMoveOpen(true); }} />
                     )}
                     {activeAlbum !== ALL && activeAlbum !== NONE && activeAlbum !== TRASH ? (
-                      <LbAction icon="star" label="Cover" onPress={() => setAlbumCover(activeAlbum, lightbox.id)} />
+                      <LbAction icon="star" label={t("lightbox.cover")} onPress={() => setAlbumCover(activeAlbum, lightbox.id)} />
                     ) : null}
                     <LbAction
                       icon="trash-2"
-                      label={lightbox.deleted_at ? "Delete" : "Trash"}
+                      label={lightbox.deleted_at ? t("actions.delete") : t("actions.trash")}
                       danger
                       onPress={() => {
                         const img = lightbox;
-                        Alert.alert(img.deleted_at ? "Delete forever?" : "Move to trash?", undefined, [
-                          { text: "Cancel", style: "cancel" },
+                        Alert.alert(img.deleted_at ? t("confirm.deleteForever") : t("confirm.moveToTrash"), undefined, [
+                          { text: t("actions.cancel"), style: "cancel" },
                           {
-                            text: img.deleted_at ? "Delete" : "Trash",
+                            text: img.deleted_at ? t("actions.delete") : t("actions.trash"),
                             style: "destructive",
                             onPress: async () => {
                               if (img.deleted_at) await purge([img]);
@@ -1111,25 +1110,26 @@ export default function GalleryScreen() {
       </Modal>
 
       {/* New album */}
-      <CenterModal visible={newAlbumOpen} onClose={() => setNewAlbumOpen(false)} title="New album">
+      <CenterModal visible={newAlbumOpen} onClose={() => setNewAlbumOpen(false)} title={t("albums.new")}>
         <TextInput
           value={newAlbumName}
           onChangeText={setNewAlbumName}
-          placeholder="Album name"
+          placeholder={t("albums.namePlaceholder")}
           placeholderTextColor={PLACEHOLDER}
+          keyboardAppearance={IS_DARK ? "dark" : "light"}
           autoFocus
           style={{ fontFamily: SERIF, marginTop: 16, borderWidth: 1, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: INK, fontSize: 15 }}
         />
-        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-          <SmallBtn label="Cancel" onPress={() => setNewAlbumOpen(false)} />
-          <SmallBtn label="Create" primary onPress={createAlbum} />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+          <SmallBtn label={t("actions.cancel")} onPress={() => setNewAlbumOpen(false)} />
+          <SmallBtn label={t("albums.create")} primary onPress={createAlbum} />
         </View>
       </CenterModal>
 
       {/* Move to album */}
-      <CenterModal visible={moveOpen} onClose={() => setMoveOpen(false)} title="Move to">
+      <CenterModal visible={moveOpen} onClose={() => setMoveOpen(false)} title={t("albums.moveTo")}>
         <View style={{ marginTop: 12, gap: 4 }}>
-          <MoveRow label="Uncategorized" onPress={async () => { await moveToAlbum([...selected], null); setMoveOpen(false); exitSelect(); }} />
+          <MoveRow label={t("albums.uncategorized")} onPress={async () => { await moveToAlbum([...selected], null); setMoveOpen(false); exitSelect(); }} />
           {albums.map((a) => (
             <MoveRow key={a.id} label={a.name} onPress={async () => { await moveToAlbum([...selected], a.id); setMoveOpen(false); exitSelect(); }} />
           ))}
@@ -1150,7 +1150,7 @@ function pillStyle(filled: boolean) {
     height: 36,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: filled ? GOLD : WHITE,
+    backgroundColor: filled ? GOLD : C.field,
     borderWidth: filled ? 0 : 1,
     borderColor: BORDER,
   };
@@ -1175,10 +1175,10 @@ function SegBtn({
         height: 40,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: active ? INK : "transparent",
+        backgroundColor: active ? C.selected : "transparent",
       }}
     >
-      <Feather name={icon} size={17} color={active ? WHITE : INK} />
+      <Feather name={icon} size={17} color={active ? C.onSelected : INK} />
     </Pressable>
   );
 }
@@ -1196,6 +1196,7 @@ function AlbumRow({
   count: number;
   onPress: () => void;
 }) {
+  const { t } = useT("gallery");
   return (
     <Pressable
       onPress={onPress}
@@ -1229,7 +1230,7 @@ function AlbumRow({
           {name}
         </Text>
         <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 1 }}>
-          {count} {count === 1 ? "photo" : "photos"}
+          {t("photoCount", { count })}
         </Text>
       </View>
       <Feather name="chevron-right" size={18} color={INK_DIM} />
@@ -1261,22 +1262,22 @@ function Chip({
         height: small ? 38 : 46,
         paddingHorizontal: 16,
         borderRadius: 999,
-        backgroundColor: active ? INK : small ? SURFACE : CARD,
+        backgroundColor: active ? C.selected : small ? SURFACE : CARD,
         borderWidth: small ? 0 : 1,
-        borderColor: active && !small ? INK : BORDER,
+        borderColor: active && !small ? C.selected : BORDER,
       }}
     >
       {icon ? (
         <Feather
           name={icon}
           size={14}
-          color={active ? WHITE : INK}
+          color={active ? C.onSelected : INK}
           style={{ marginRight: 6 }}
         />
       ) : null}
       <Text
         style={{
-          color: active ? WHITE : INK,
+          color: active ? C.onSelected : INK,
           fontSize: small ? 13.5 : 15,
           fontWeight: "600",
           ...(small ? {} : { fontFamily: SERIF }),
@@ -1291,8 +1292,8 @@ function Chip({
 function BarAction({ icon, label, onPress, danger }: { icon: keyof typeof Feather.glyphMap; label: string; onPress: () => void; danger?: boolean }) {
   return (
     <Pressable onPress={onPress} style={{ alignItems: "center" }} hitSlop={8}>
-      <Feather name={icon} size={18} color={danger ? "#ff8a80" : WHITE} />
-      <Text style={{ fontFamily: SERIF, color: danger ? "#ff8a80" : WHITE, fontSize: 11, marginTop: 2 }}>{label}</Text>
+      <Feather name={icon} size={18} color={danger ? BAR_DANGER : C.onSelected} />
+      <Text style={{ fontFamily: SERIF, color: danger ? BAR_DANGER : C.onSelected, fontSize: 11, marginTop: 2 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -1330,14 +1331,14 @@ function SmallBtn({ label, onPress, primary }: { label: string; onPress: () => v
         paddingHorizontal: 20,
         height: 44,
         borderRadius: 999,
-        backgroundColor: primary ? GOLD : WHITE,
+        backgroundColor: primary ? GOLD : C.field,
         borderWidth: primary ? 0 : 1,
         borderColor: BORDER,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD, color: INK}}>{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: primary ? C.onGold : INK }}>{label}</Text>
     </Pressable>
   );
 }
@@ -1354,13 +1355,4 @@ function MoveRow({ label, onPress }: { label: string; onPress: () => void }) {
 function cycleSort(sort: SortMode, set: (s: SortMode) => void) {
   const order: SortMode[] = ["newest", "oldest", "name_asc", "name_desc"];
   return () => set(order[(order.indexOf(sort) + 1) % order.length]);
-}
-
-function sortLabel(sort: SortMode): string {
-  return {
-    newest: "Sort: Newest first",
-    oldest: "Sort: Oldest first",
-    name_asc: "Sort: Name A–Z",
-    name_desc: "Sort: Name Z–A",
-  }[sort];
 }

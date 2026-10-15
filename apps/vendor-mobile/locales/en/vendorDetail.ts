@@ -1,0 +1,32 @@
+export default {
+  loading: "Loading…",
+  notFound: "Listing not found.",
+  noPhotos: "No listing photos yet",
+  vendorFallback: "Vendor",
+  thisVendor: "This vendor",
+  shareMessage: "{{name}} on Vendora — {{url}}",
+  marketplaceListing: "Marketplace listing",
+  pricingVaries: "Pricing varies by event details.",
+  pricingOnRequest: "Pricing on request",
+  viewOnWeb: "View on web",
+  price: {
+    from: "From {{amount}}",
+    upTo: "Up to {{amount}}",
+    custom: "Custom pricing",
+  },
+  pricingModels: {
+    fixed_packages: "Fixed Packages",
+    hourly: "Hourly",
+    per_person: "Per Person",
+    starting_at: "Starting At",
+    custom_quote: "Custom Quote",
+  },
+  stats: {
+    verified: "Verified",
+    new: "New",
+    checked: "Vendora-checked",
+    justListed: "Just listed",
+    faqs_one: "FAQ",
+    faqs_other: "FAQs",
+  },
+};

@@ -49,20 +49,20 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#14161a] text-[#f4f1ea]">
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <AuthTopBar />
       <main
         id="main-content"
         className="relative z-[2] flex min-h-screen items-center justify-center px-5 pb-16 pt-32 md:px-8"
       >
-        <div className="w-full max-w-md rounded-2xl border border-white/15 bg-white/[0.03] p-6 text-center md:p-8">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center md:p-8">
           <h1 className="font-editorial text-3xl leading-tight md:text-4xl">
             {t("deletion_gate.title")}
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed">
             {t("deletion_gate.body", { date })}
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-[#f4f1ea]/80">
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             {t("deletion_gate.note")}
           </p>
           <div className="mt-8 flex flex-col gap-3">

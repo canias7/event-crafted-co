@@ -15,6 +15,16 @@ import { vendorNavItems } from "@/data/navItems";
 import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { useRealtime } from "@/lib/realtime";
 import { intlLocale, moneyLocale, siteIsEnglish, siteLocaleOr } from "@/lib/intlLocale";
+import { OutsidePaymentsDialog, formatReceivedOn } from "@/components/vendor/OutsidePaymentsDialog";
+import { ExpensesDialog } from "@/components/vendor/ExpensesDialog";
+import {
+  OverviewRangeBar,
+  formatRangeDates,
+  loadSavedRange,
+  toIsoDate,
+  type OverviewRange,
+  type RangeBucket,
+} from "@/components/vendor/OverviewRangeBar";
 
 interface Balance {
   available_cents: number;
@@ -264,13 +274,25 @@ function OverviewTab({
   // daily revenue series for the wave chart.
   const [leads, setLeads] = useState<{ new: number; active: number; won: number; lost: number; total: number }>({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
   const [expenses, setExpenses] = useState<{ total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> }>({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
-  const [revenue30d, setRevenue30d] = useState<number>(0);
-  const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
-  // Daily revenue series for the last 30 days — drives the line chart.
-  const [revenueSeries, setRevenueSeries] = useState<number[]>([]);
+  // The period everything below follows (OverviewRangeBar): revenue for
+  // it and for the same-length period before, plus the chart's buckets.
+  const [range, setRange] = useState<OverviewRange>(() => loadSavedRange());
+  const [revenueTotal, setRevenueTotal] = useState<number>(0);
+  const [revenuePrev, setRevenuePrev] = useState<number>(0);
+  const [revenueSeries, setRevenueSeries] = useState<Array<{ start: string; cents: number }>>([]);
+  // Keeps the cards on screen while a new period loads (only the very
+  // first load shows skeletons).
+  const loadedOnce = useRef(false);
+  // "Record a payment" dialog (payments received outside Vendora); a
+  // save or delete bumps reloadKey so the cards refetch.
+  const [outsideOpen, setOutsideOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   // Recent paid invoices across the whole account (replaces the
   // single-listing Stripe transactions table that used to live here).
-  const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; invoice_number: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null }>>([]);
+  // Recent activity: paid invoices plus payments recorded outside
+  // Vendora, newest first. `label` is the invoice number or how it was paid.
+  const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; label: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null; outside: boolean }>>([]);
   // Upcoming appointments across the whole account — confirmed and
   // proposed meetings scheduled from now on, soonest first.
   const [upcomingAppts, setUpcomingAppts] = useState<Array<{ id: string; kind: string; title: string | null; location: string | null; scheduled_at: string; status: string; host_name: string | null }>>([]);
@@ -282,13 +304,22 @@ function OverviewTab({
   // Stable string key for the useEffect dep so we don't refire on
   // every render just because listings is re-derived.
   const accountKey = accountVendorIds.join(",");
+  const rangeKey = `${toIsoDate(range.from)}|${toIsoDate(range.to)}|${range.bucket}`;
+  // What the cards call the period: the quick pick's name ("Last 30
+  // days"), or the dates for a custom range.
+  const periodLabel =
+    range.preset === "custom"
+      ? formatRangeDates(range.from, range.to)
+      : t(`range.presets.${range.preset}`);
 
   useEffect(() => {
-    if (!userId || accountVendorIds.length === 0) {
+    // Recorded payments are account-level, so the Overview loads even
+    // before the vendor has a listing.
+    if (!userId) {
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
-      setRevenue30d(0);
-      setRevenue30dPrev(0);
+      setRevenueTotal(0);
+      setRevenuePrev(0);
       setRevenueSeries([]);
       setRecentInvoices([]);
       setUpcomingAppts([]);
@@ -296,7 +327,7 @@ function OverviewTab({
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    if (!loadedOnce.current) setLoading(true);
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
@@ -307,25 +338,35 @@ function OverviewTab({
       // 10k rows of inquiries/expenses/invoices into the browser to reduce
       // them client-side. Recent paid invoices + upcoming appointments stay
       // small (≤5-row) client fetches since they render row-by-row.
+      const hasListings = accountVendorIds.length > 0;
+      const none = Promise.resolve({ data: [] as unknown[] });
       const [
         { data: analytics },
         { data: recentPaid },
         { data: upcomingApptRows },
+        { data: recentOutside },
       ] = await Promise.all([
-        db.rpc("vendor_overview_analytics"),
+        db.rpc("vendor_overview_range", {
+          p_from: toIsoDate(range.from),
+          p_to: toIsoDate(range.to),
+          p_bucket: range.bucket,
+          p_tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        }),
         // Recent paid invoices across the whole account — replaces
         // the Stripe transactions feed for the Recent activity table.
-        db
-          .from("invoices")
-          .select("id, invoice_number, total_cents, paid_at, currency, bill_to_name")
-          .in("vendor_id", accountVendorIds)
-          .eq("status", "paid")
-          .order("paid_at", { ascending: false })
-          .limit(5),
+        hasListings
+          ? db
+              .from("invoices")
+              .select("id, invoice_number, total_cents, paid_at, currency, bill_to_name")
+              .in("vendor_id", accountVendorIds)
+              .eq("status", "paid")
+              .order("paid_at", { ascending: false })
+              .limit(5)
+          : none,
         // Upcoming appointments — confirmed (accepted) or still-proposed
         // meetings scheduled from now on, soonest first. Mirrors the
         // calendar's "upcoming" filter so the Overview agrees with it.
-        db
+        !hasListings ? none : db
           .from("appointments")
           .select(
             "id, kind, title, location, scheduled_at, status, host:profiles!appointments_host_id_fkey(display_name)",
@@ -335,15 +376,21 @@ function OverviewTab({
           .gte("scheduled_at", now.toISOString())
           .order("scheduled_at", { ascending: true })
           .limit(5),
+        // Payments the vendor recorded themselves (cash, Zelle…).
+        db
+          .from("vendor_outside_payments")
+          .select("id, amount_cents, received_on, method, client_name")
+          .order("received_on", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(5),
       ]);
       if (cancelled) return;
 
-      // Apply the server-aggregated overview metrics. The RPC mirrors the
-      // old client math: leads collapsed per (vendor_id, host_id) with the
-      // won > active(replied/drafted) > new > lost priority; expenses summed
-      // per line-item label with a top-3 + "Other" rollup; revenue from paid
-      // invoices over the current vs previous 30-day window; and a 30-bucket
-      // daily revenue series.
+      // Apply the server-aggregated metrics for the chosen period: leads
+      // collapsed per (vendor_id, host_id) with the won > active > new >
+      // lost priority; expenses per line item, top 3 + "Other"; revenue
+      // (invoices paid through Vendora + recorded payments) for the period
+      // and the one before; and the chart's day / week / month buckets.
       const a = (analytics ?? {}) as {
         leads?: { new: number; active: number; won: number; lost: number; total: number };
         expenses?: {
@@ -352,31 +399,55 @@ function OverviewTab({
           categoryCount: number;
           topCategories: Array<{ label: string; cents: number }>;
         };
-        revenue30d?: number;
-        revenue30dPrev?: number;
-        revenueSeries?: number[];
+        revenue?: number;
+        revenuePrev?: number;
+        series?: Array<{ start: string; cents: number }>;
       };
       setLeads(a.leads ?? { new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses(
         a.expenses ?? { total: 0, count: 0, categoryCount: 0, topCategories: [] },
       );
-      setRevenue30d(a.revenue30d ?? 0);
-      setRevenue30dPrev(a.revenue30dPrev ?? 0);
-      setRevenueSeries(
-        Array.isArray(a.revenueSeries) && a.revenueSeries.length === 30
-          ? a.revenueSeries
-          : new Array<number>(30).fill(0),
-      );
+      setRevenueTotal(a.revenue ?? 0);
+      setRevenuePrev(a.revenuePrev ?? 0);
+      setRevenueSeries(Array.isArray(a.series) ? a.series : []);
 
+      const paidRows = ((recentPaid ?? []) as Array<{
+        id: string;
+        invoice_number: string;
+        total_cents: number;
+        paid_at: string;
+        currency: string;
+        bill_to_name: string | null;
+      }>).map((inv) => ({
+        id: inv.id,
+        label: inv.invoice_number,
+        total_cents: inv.total_cents,
+        paid_at: inv.paid_at,
+        currency: inv.currency,
+        bill_to_name: inv.bill_to_name,
+        outside: false,
+      }));
+      const outsideRows = ((recentOutside ?? []) as Array<{
+        id: string;
+        amount_cents: number;
+        received_on: string;
+        method: string;
+        client_name: string | null;
+      }>).map((p) => ({
+        id: `op-${p.id}`,
+        label: t(`outside.methods.${p.method}`),
+        total_cents: p.amount_cents,
+        // Noon UTC of the day received, the same moment the revenue
+        // lookup counts it at, so it sorts among the invoices.
+        paid_at: `${p.received_on}T12:00:00Z`,
+        currency: "usd",
+        bill_to_name: p.client_name,
+        outside: true,
+      }));
       setRecentInvoices(
-        (recentPaid ?? []) as Array<{
-          id: string;
-          invoice_number: string;
-          total_cents: number;
-          paid_at: string;
-          currency: string;
-          bill_to_name: string | null;
-        }>,
+        [...paidRows, ...outsideRows]
+          .sort((x, y) => (x.paid_at < y.paid_at ? 1 : -1))
+          .slice(0, 5),
       );
 
       setUpcomingAppts(
@@ -398,11 +469,12 @@ function OverviewTab({
           host_name: a.host?.display_name ?? null,
         })),
       );
+      loadedOnce.current = true;
       setLoading(false);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey, userId]);
+  }, [accountKey, userId, reloadKey, rangeKey]);
 
   if (loading) {
     // Match the real layout (revenue + recent row, three KPI cards, then
@@ -428,9 +500,23 @@ function OverviewTab({
       {/* Top row — the 30-day revenue wave on the left, recent
           activity on the right. Each takes half the width on large
           desktops; they stack full width below xl. */}
+      <OverviewRangeBar value={range} onChange={setRange} />
       <div className="xl:flex xl:items-start xl:gap-4 mb-4">
         <div className="xl:w-1/2 mb-4 xl:mb-0">
-          <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
+          <OverviewRevenueChart
+            series={revenueSeries}
+            bucket={range.bucket}
+            total={revenueTotal}
+            previousTotal={revenuePrev}
+            periodLabel={periodLabel}
+            currency={currency}
+            onRecord={() => setOutsideOpen(true)}
+          />
+          <OutsidePaymentsDialog
+            open={outsideOpen}
+            onOpenChange={setOutsideOpen}
+            onChanged={() => setReloadKey((k) => k + 1)}
+          />
         </div>
 
         {/* Recent activity — paid invoices across the whole account.
@@ -473,8 +559,10 @@ function OverviewTab({
                   {recentInvoices.map((inv) => (
                     <tr key={inv.id}>
                       <td className="font-medium truncate max-w-[320px]">{inv.bill_to_name ?? "—"}</td>
-                      <td className="text-muted-foreground">{inv.invoice_number}</td>
-                      <td className="text-muted-foreground">{formatDate(inv.paid_at)}</td>
+                      <td className="text-muted-foreground">{inv.label}</td>
+                      <td className="text-muted-foreground">
+                        {inv.outside ? formatReceivedOn(inv.paid_at.slice(0, 10)) : formatDate(inv.paid_at)}
+                      </td>
                       <td className="num font-semibold">{formatMoney(inv.total_cents, inv.currency || currency)}</td>
                     </tr>
                   ))}
@@ -490,9 +578,20 @@ function OverviewTab({
           them tightens the page. Three across on desktop, stacks on
           narrow screens; nudged a touch narrower on wide monitors. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 xl:w-11/12">
-        <OverviewLeadsCard leads={leads} />
-        <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
-        <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
+        <OverviewLeadsCard leads={leads} period={periodLabel} />
+        <OverviewCashflowCard moneyIn={revenueTotal} moneyOut={expenses.total} currency={currency} period={periodLabel} />
+        <OverviewExpensesCard
+          expenses={expenses}
+          currency={currency}
+          period={periodLabel}
+          onViewAll={onViewExpenses}
+          onRecord={() => setExpenseOpen(true)}
+        />
+        <ExpensesDialog
+          open={expenseOpen}
+          onOpenChange={setExpenseOpen}
+          onChanged={() => setReloadKey((k) => k + 1)}
+        />
       </div>
 
       {/* Upcoming appointments — confirmed / proposed meetings across
@@ -629,75 +728,145 @@ function niceAxisCeil(n: number): number {
 }
 
 function OverviewRevenueChart({
-  series: rawSeries,
-  currency,
+  series: raw,
+  bucket,
+  total,
   previousTotal,
+  periodLabel,
+  currency,
+  onRecord,
 }: {
-  series: number[];
-  currency: string;
+  // One entry per day / week / month in the chosen period, oldest first;
+  // start is the bucket's first day (YYYY-MM-DD).
+  series: Array<{ start: string; cents: number }>;
+  bucket: RangeBucket;
+  total: number;
+  // Revenue in the same-length period just before, for the change badge.
   previousTotal: number;
+  periodLabel: string;
+  currency: string;
+  // Opens "Record a payment" (payments received outside Vendora).
+  onRecord: () => void;
 }) {
   const { t } = useTranslation("vendorPayments");
   const dateLoc = cardDateLocale();
-  // Guard against an empty series on first render (state initializes to
-  // [] before the useEffect query resolves). The chart math below
-  // dereferences pts[0] unconditionally, so an empty input would crash
-  // — fall back to 30 zero-buckets and the ghost-wave path takes over.
-  const series = rawSeries.length > 0 ? rawSeries : new Array(30).fill(0);
-  const max = series.reduce((m, v) => (v > m ? v : m), 0);
-  const total = series.reduce((s, v) => s + v, 0);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  useEffect(() => setHoverIdx(null), [raw]);
+
+  const series = raw.length > 0 ? raw : [{ start: "", cents: 0 }];
+  const values = series.map((p) => p.cents);
+  const n = values.length;
+  const max = values.reduce((m, v) => (v > m ? v : m), 0);
   const hasData = max > 0;
-  // Delta vs prior 30-day window. Hidden when there's no comparison
-  // baseline yet (vendor's first month with revenue).
   const deltaPct =
     previousTotal > 0 ? ((total - previousTotal) / previousTotal) * 100 : null;
   const deltaPositive = deltaPct !== null && deltaPct >= 0;
+  // A daily line reads best over a few weeks; short ranges and weekly /
+  // monthly groups are bars.
+  const asLine = bucket === "day" && n > 14;
 
-  // Hovered day index drives the crosshair / marker / tooltip. Null
-  // = pointer is outside the plot area.
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-
-  // X-axis label dates — 5 evenly-spaced markers across the 30-day
-  // window, starting 29 days ago through today. Same set every
-  // render (the chart's window doesn't slide mid-session), but
-  // recomputed on mount so it tracks the calendar date the vendor
-  // opens the page.
-  const xAxisLabels = useMemo(() => {
-    const labels: string[] = [];
-    const now = new Date();
-    const offsets = [29, 22, 15, 8, 0];
-    for (const off of offsets) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - off);
-      labels.push(d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" }));
+  const parse = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, (m ?? 1) - 1, d ?? 1);
+  };
+  const spansYears =
+    raw.length > 1 && raw[0].start.slice(0, 4) !== raw[raw.length - 1].start.slice(0, 4);
+  // Short label under the chart.
+  const axisLabel = (iso: string) => {
+    if (!iso) return "";
+    const d = parse(iso);
+    if (bucket === "month") {
+      return d.toLocaleDateString(dateLoc, spansYears ? { month: "short", year: "2-digit" } : { month: "short" });
     }
-    return labels;
-  }, [dateLoc]);
+    return d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" });
+  };
+  // Longer label in the tooltip.
+  const hoverLabel = (iso: string) => {
+    if (!iso) return "";
+    const d = parse(iso);
+    if (bucket === "month") return d.toLocaleDateString(dateLoc, { month: "long", year: "numeric" });
+    const day = d.toLocaleDateString(dateLoc, { month: "short", day: "numeric", year: "numeric" });
+    return bucket === "week" ? t("revenue.week_of", { date: day }) : day;
+  };
+
+  const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 620, H = 200;
+  const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+  const plotMax = hasData ? niceAxisCeil(max) : 1;
+  const y = (v: number) => PAD_T + plotH - (v / plotMax) * plotH;
+  const slot = plotW / n;
+  const xBar = (i: number) => PAD_L + slot * (i + 0.5);
+  const xLine = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const xAt = asLine ? xLine : xBar;
+
+  const onMove = (e: React.MouseEvent<SVGRectElement>) => {
+    if (!hasData) return;
+    const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
+    const vbX = ((e.clientX - rect.left) / rect.width) * W;
+    const idx = asLine
+      ? Math.round(((vbX - PAD_L) / plotW) * (n - 1))
+      : Math.floor((vbX - PAD_L) / slot);
+    setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
+  };
+  const showHover = hoverIdx !== null && hasData;
+
+  // Line path: Catmull-Rom smoothed, control points clamped to each
+  // segment so the curve never dips under the $0 line.
+  let linePath = "";
+  let areaPath = "";
+  if (asLine) {
+    const shown = hasData
+      ? values
+      : values.map((_, i) => (0.55 + 0.35 * Math.sin((i / Math.max(1, n - 1)) * Math.PI * 1.4 - Math.PI / 6)) * plotMax);
+    const pts = shown.map((v, i) => ({ x: xLine(i), y: y(v) }));
+    const tension = 0.2;
+    linePath = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] ?? pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] ?? pts[i + 1];
+      const c1x = p1.x + (p2.x - p0.x) * tension;
+      let c1y = p1.y + (p2.y - p0.y) * tension;
+      const c2x = p2.x - (p3.x - p1.x) * tension;
+      let c2y = p2.y - (p3.y - p1.y) * tension;
+      const lo = Math.min(p1.y, p2.y), hi = Math.max(p1.y, p2.y);
+      c1y = Math.min(Math.max(c1y, lo), hi);
+      c2y = Math.min(Math.max(c2y, lo), hi);
+      linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
+  }
+
+  // Labels under the chart: every bar when there are a dozen or fewer,
+  // otherwise about six spread evenly (always the first and last).
+  const labelIdx = (() => {
+    if (!asLine && n <= 12) return series.map((_, i) => i);
+    const want = Math.min(6, n);
+    if (want <= 1) return [0];
+    return Array.from({ length: want }, (_, k) => Math.round((k * (n - 1)) / (want - 1)));
+  })();
 
   return (
     <div
-      className="rounded-2xl px-7 pt-6 pb-5"
-      style={{
-        background: "hsl(var(--card))",
-        border: "1px solid hsl(var(--border))",
-      }}
+      className="rounded-2xl px-5 md:px-7 pt-6 pb-5"
+      style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
     >
-      <div className="flex items-end justify-between mb-4">
-        <div>
+      <div className="flex items-end justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <div
             className="text-[22px] font-semibold leading-tight"
-            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#f4f1ea" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "hsl(var(--foreground))" }}
           >
-            {t("revenue.title")}
+            {t("revenue.title_period", { period: periodLabel })}
           </div>
           <div className="text-[13px] mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
             {t("revenue.subtitle")}
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <div
             className="text-[28px] font-semibold leading-none"
-            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "#f4f1ea" }}
+            style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "hsl(var(--foreground))" }}
           >
             {formatMoney(total, currency)}
           </div>
@@ -705,6 +874,7 @@ function OverviewRevenueChart({
             <div
               className="text-xs font-semibold mt-1"
               style={{ color: deltaPositive ? "hsl(var(--accent))" : "hsl(var(--destructive))" }}
+              title={t("revenue.vs_previous")}
             >
               {deltaPositive ? "▲" : "▼"} {Math.abs(deltaPct).toFixed(1)}%
             </div>
@@ -712,100 +882,42 @@ function OverviewRevenueChart({
         </div>
       </div>
 
-      {(() => {
-        const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 620, H = 200;
-        const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
-        const n = series.length;
-        const plotted = hasData
-          ? series
-          : Array.from({ length: n }, (_, i) =>
-              0.55 + 0.35 * Math.sin((i / (n - 1)) * Math.PI * 1.4 - Math.PI / 6),
+      <div className="flex justify-end mb-3">
+        <button
+          type="button"
+          onClick={onRecord}
+          className="text-xs font-bold text-accent hover:underline underline-offset-4"
+        >
+          {t("revenue.record")}
+        </button>
+      </div>
+
+      <div className="relative">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
+          <defs>
+            <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" style={{ stopColor: "hsl(var(--accent))" }} stopOpacity={hasData ? 0.18 : 0.08} />
+              <stop offset="100%" style={{ stopColor: "hsl(var(--accent))" }} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {[0, 0.5, 1].map((tick) => {
+            const yy = PAD_T + plotH - tick * plotH;
+            return (
+              <g key={tick}>
+                <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} className="stroke-border" strokeWidth="1" />
+                <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" className="fill-foreground">
+                  {hasData ? (tick === 0 ? "$0" : formatMoneyCompact(plotMax * tick, currency)) : ""}
+                </text>
+              </g>
             );
-        const plotMax = hasData ? niceAxisCeil(max) : 1;
-        const x = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
-        const y = (v: number) => PAD_T + plotH - (v / plotMax) * plotH;
-        // Smooth the line into a wave with a Catmull-Rom-to-Bezier
-        // conversion — tension 0.2 ≈ Chart.js's `tension: 0.4` look.
-        // The area path reuses the same curve so the fill hugs the
-        // line instead of cutting in straight segments underneath.
-        //
-        // Control-point y values are clamped to each segment's
-        // [min, max] range so the bezier can't overshoot. Without
-        // this the segment AFTER a peak — going from zero to zero
-        // with a peak as p0 — sets c1y = p1.y + (p2.y - p0.y) * t,
-        // which is *below* the baseline because (p2 - p0) is a
-        // positive delta. The curve then dips visibly under the
-        // "$0" gridline.
-        const pts = plotted.map((v, i) => ({ x: x(i), y: y(v) }));
-        const tension = 0.2;
-        let linePath = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-        for (let i = 0; i < pts.length - 1; i++) {
-          const p0 = pts[i - 1] ?? pts[i];
-          const p1 = pts[i];
-          const p2 = pts[i + 1];
-          const p3 = pts[i + 2] ?? pts[i + 1];
-          const c1x = p1.x + (p2.x - p0.x) * tension;
-          let c1y = p1.y + (p2.y - p0.y) * tension;
-          const c2x = p2.x - (p3.x - p1.x) * tension;
-          let c2y = p2.y - (p3.y - p1.y) * tension;
-          const segMinY = Math.min(p1.y, p2.y);
-          const segMaxY = Math.max(p1.y, p2.y);
-          c1y = Math.min(Math.max(c1y, segMinY), segMaxY);
-          c2y = Math.min(Math.max(c2y, segMinY), segMaxY);
-          linePath += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-        }
-        const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${PAD_T + plotH} L${pts[0].x.toFixed(1)},${PAD_T + plotH} Z`;
-
-        // Snap hover to the nearest data point so the tooltip shows
-        // a real per-day value, not an interpolated curve value.
-        const onMove = (e: React.MouseEvent<SVGRectElement>) => {
-          if (!hasData) return;
-          const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
-          const vbX = ((e.clientX - rect.left) / rect.width) * W;
-          const frac = (vbX - PAD_L) / plotW;
-          const idx = Math.round(frac * (n - 1));
-          setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
-        };
-        const onLeave = () => setHoverIdx(null);
-
-        // Compute hover artifacts. Marker + crosshair share the same
-        // x; the tooltip is HTML overlaid above the marker.
-        const showHover = hoverIdx !== null && hasData;
-        const hoverX = showHover ? x(hoverIdx!) : 0;
-        const hoverY = showHover ? y(series[hoverIdx!]) : 0;
-        const hoverDate = (() => {
-          if (!showHover) return "";
-          const d = new Date();
-          d.setDate(d.getDate() - (n - 1 - (hoverIdx as number)));
-          return d.toLocaleDateString(dateLoc, { month: "short", day: "numeric" });
-        })();
-
-        return (
-          <div className="relative">
-            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
-              <defs>
-                <linearGradient id="cockpit-area-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c9a86a" stopOpacity={hasData ? 0.18 : 0.08} />
-                  <stop offset="100%" stopColor="#c9a86a" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {/* Horizontal grid lines + y-axis tick labels */}
-              {[0, 0.5, 1].map((t) => {
-                const yy = PAD_T + plotH - t * plotH;
-                return (
-                  <g key={t}>
-                    <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                    <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#f4f1ea">
-                      {hasData ? (t === 0 ? "$0" : formatMoneyCompact(plotMax * t, currency)) : ""}
-                    </text>
-                  </g>
-                );
-              })}
+          })}
+          {asLine ? (
+            <>
               <path d={areaPath} fill="url(#cockpit-area-grad)" style={hasData ? undefined : { opacity: 0.5 }} />
               <path
                 d={linePath}
                 fill="none"
-                stroke="#c9a86a"
+                className="stroke-accent"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -813,85 +925,86 @@ function OverviewRevenueChart({
               />
               {showHover ? (
                 <>
-                  <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="#c9a86a" strokeOpacity="0.45" strokeWidth="1" />
-                  <circle cx={hoverX} cy={hoverY} r="4.5" fill="#ffffff" stroke="#c9a86a" strokeWidth="2.5" />
+                  <line x1={xLine(hoverIdx!)} y1={PAD_T} x2={xLine(hoverIdx!)} y2={PAD_T + plotH} className="stroke-accent" strokeOpacity="0.45" strokeWidth="1" />
+                  <circle cx={xLine(hoverIdx!)} cy={y(values[hoverIdx!])} r="4.5" className="fill-card stroke-accent" strokeWidth="2.5" />
                 </>
               ) : null}
-              {/* Hit-test rect — captures pointer moves and converts
-                  them to a snapped day index. Sits on top of all the
-                  path geometry so events don't fall through. */}
-              <rect
-                x={PAD_L}
-                y={PAD_T}
-                width={plotW}
-                height={plotH}
-                fill="transparent"
-                style={{ cursor: hasData ? "crosshair" : "default" }}
-                onMouseMove={onMove}
-                onMouseLeave={onLeave}
-              />
-            </svg>
-            {showHover ? (
-              <div
-                className="absolute pointer-events-none text-xs font-semibold rounded-lg px-2.5 py-1.5 whitespace-nowrap"
-                style={{
-                  left: `${(hoverX / W) * 100}%`,
-                  top: `${(hoverY / H) * 100}%`,
-                  transform: "translate(-50%, calc(-100% - 12px))",
-                  background: "#f4f1ea",
-                  color: "#14161a",
-                  boxShadow: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
-                }}
-              >
-                {formatMoney(series[hoverIdx as number], currency)}
-                <span className="block font-normal text-[11px] mt-0.5" style={{ color: "rgba(244,241,234,0.7)" }}>
-                  {hoverDate}
-                </span>
-                {/* Triangle pointer below the tip */}
-                <span
-                  className="absolute left-1/2 -translate-x-1/2 top-full block"
-                  style={{
-                    width: 0,
-                    height: 0,
-                    borderLeft: "5px solid transparent",
-                    borderRight: "5px solid transparent",
-                    borderTop: "5px solid #14161a",
-                  }}
+            </>
+          ) : (
+            values.map((v, i) => {
+              const shown = hasData ? v : (0.25 + 0.2 * Math.sin(i * 0.9)) * plotMax;
+              const barW = Math.min(slot * 0.62, 48);
+              const top = y(shown);
+              return (
+                <rect
+                  key={i}
+                  x={xBar(i) - barW / 2}
+                  y={top}
+                  width={barW}
+                  height={Math.max(0, PAD_T + plotH - top)}
+                  rx={3}
+                  className="fill-accent"
+                  style={{ opacity: !hasData ? 0.15 : hoverIdx === null || hoverIdx === i ? 0.9 : 0.45 }}
                 />
-              </div>
-            ) : null}
-            {/* X-axis labels — 5 evenly-spaced calendar dates beneath
-                the SVG so they can't be clipped by the plot. Margins
-                match the SVG's PAD_L / PAD_R so labels line up under
-                the plot area, not the y-axis label gutter. */}
-            <div
-              className="flex justify-between text-[11px] mt-2"
+              );
+            })
+          )}
+          <rect
+            x={PAD_L}
+            y={PAD_T}
+            width={plotW}
+            height={plotH}
+            fill="transparent"
+            style={{ cursor: hasData ? "crosshair" : "default" }}
+            onMouseMove={onMove}
+            onMouseLeave={() => setHoverIdx(null)}
+          />
+        </svg>
+        {showHover ? (
+          <div
+            className="absolute pointer-events-none text-xs font-semibold rounded-lg px-2.5 py-1.5 whitespace-nowrap"
+            style={{
+              left: `${(xAt(hoverIdx!) / W) * 100}%`,
+              top: `${(y(values[hoverIdx!]) / H) * 100}%`,
+              transform: "translate(-50%, calc(-100% - 12px))",
+              background: "hsl(var(--foreground))",
+              color: "hsl(var(--background))",
+              boxShadow: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
+            }}
+          >
+            {formatMoney(values[hoverIdx!], currency)}
+            <span className="block font-normal text-[11px] mt-0.5" style={{ color: "hsl(var(--background) / 0.75)" }}>
+              {hoverLabel(series[hoverIdx!].start)}
+            </span>
+          </div>
+        ) : null}
+        {/* Labels under the chart, placed at their bucket's x. */}
+        <div className="relative h-4 mt-2 text-[11px]" style={{ color: "hsl(var(--muted-foreground))" }}>
+          {labelIdx.map((i, k) => (
+            <span
+              key={i}
+              className={`absolute whitespace-nowrap ${!asLine && n > 6 && labelIdx.length === n && (n - 1 - i) % 2 === 1 ? "hidden sm:inline" : ""}`}
               style={{
-                color: "hsl(var(--muted-foreground))",
-                paddingLeft: `${(50 / 620) * 100}%`,
-                paddingRight: `${(8 / 620) * 100}%`,
+                left: `${(xAt(i) / W) * 100}%`,
+                transform:
+                  asLine && k === 0 ? "translateX(0)" : asLine && k === labelIdx.length - 1 ? "translateX(-100%)" : "translateX(-50%)",
               }}
             >
-              {xAxisLabels.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
+              {axisLabel(series[i].start)}
+            </span>
+          ))}
+        </div>
+        {!hasData && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              className="text-xs italic rounded-full px-3 py-1.5"
+              style={{ color: "hsl(var(--foreground))", background: "hsl(var(--muted))" }}
+            >
+              {t("revenue.empty_period")}
             </div>
-            {!hasData && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div
-                  className="text-xs italic rounded-full px-3 py-1.5"
-                  style={{
-                    color: "hsl(var(--foreground))",
-                    background: "hsl(var(--muted))",
-                  }}
-                >
-                  {t("revenue.empty")}
-                </div>
-              </div>
-            )}
           </div>
-        );
-      })()}
+        )}
+      </div>
     </div>
   );
 }
@@ -914,15 +1027,17 @@ function OverviewRevenueChart({
 //   Lost  = warm gray — lost + expired
 function OverviewLeadsCard({
   leads,
+  period,
 }: {
   leads: { new: number; active: number; won: number; lost: number; total: number };
+  period: string;
 }) {
   const { t } = useTranslation("vendorPayments");
   const rows: Array<{ label: string; count: number; color: string }> = [
-    { label: t("leads.new"),    count: leads.new,    color: "#c9a86a" }, // champagne — new, needs a reply
-    { label: t("leads.active"), count: leads.active, color: "#c9a86a" }, // bronze — in conversation
-    { label: t("leads.won"),    count: leads.won,    color: "#f4f1ea" }, // ink — converted
-    { label: t("leads.lost"),   count: leads.lost,   color: "#d9d1bf" }, // sand — lost/expired
+    { label: t("leads.new"),    count: leads.new,    color: "hsl(var(--accent))" }, // champagne — new, needs a reply
+    { label: t("leads.active"), count: leads.active, color: "hsl(var(--accent))" }, // bronze — in conversation
+    { label: t("leads.won"),    count: leads.won,    color: "hsl(var(--foreground))" }, // ink — converted
+    { label: t("leads.lost"),   count: leads.lost,   color: "hsl(var(--foreground) / 0.3)" }, // sand — lost/expired
   ];
   const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
   const wonRate = leads.total > 0 ? Math.round((leads.won / leads.total) * 100) : 0;
@@ -931,7 +1046,7 @@ function OverviewLeadsCard({
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="cockpit-chart-title">{t("leads.title")}</div>
-          <div className="cockpit-chart-sub">{t("leads.subtitle")}</div>
+          <div className="cockpit-chart-sub">{t("leads.subtitle", { period })}</div>
         </div>
         <div className="text-right">
           <div className="cockpit-kpi-label">{t("leads.total")}</div>
@@ -950,7 +1065,7 @@ function OverviewLeadsCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255,255,255,0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "hsl(var(--muted))" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.count > 0 ? 1 : 0 }}
@@ -985,17 +1100,19 @@ function OverviewCashflowCard({
   moneyIn,
   moneyOut,
   currency,
+  period,
 }: {
   moneyIn: number;
   moneyOut: number;
   currency: string;
+  period: string;
 }) {
   const { t } = useTranslation("vendorPayments");
   const net = moneyIn - moneyOut;
   const netPositive = net >= 0;
   const rows: Array<{ label: string; value: number; color: string }> = [
-    { label: t("cashflow.money_in"),  value: moneyIn,  color: "#c9a86a" }, // bronze
-    { label: t("cashflow.money_out"), value: moneyOut, color: "#f4f1ea" }, // ink
+    { label: t("cashflow.money_in"),  value: moneyIn,  color: "hsl(var(--accent))" }, // bronze
+    { label: t("cashflow.money_out"), value: moneyOut, color: "hsl(var(--foreground))" }, // ink
   ];
   const max = Math.max(moneyIn, moneyOut, 1);
   // Net margin — net as a share of money in. Only meaningful once the
@@ -1006,7 +1123,7 @@ function OverviewCashflowCard({
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="cockpit-chart-title">{t("cashflow.title")}</div>
-          <div className="cockpit-chart-sub">{t("cashflow.subtitle")}</div>
+          <div className="cockpit-chart-sub">{t("cashflow.subtitle", { period })}</div>
         </div>
         <div className="text-right">
           <div className="cockpit-kpi-label">{t("cashflow.net")}</div>
@@ -1030,7 +1147,7 @@ function OverviewCashflowCard({
               return (
                 <div key={r.label} className="flex items-center gap-2">
                   <div className="w-20 text-xs text-foreground font-bold shrink-0 truncate">{r.label}</div>
-                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "rgba(255,255,255,0.12)" }}>
+                  <div className="flex-1 h-5 rounded overflow-hidden relative" style={{ background: "hsl(var(--muted))" }}>
                     <div
                       className="h-full transition-all"
                       style={{ width: `${pct}%`, background: r.color, opacity: r.value > 0 ? 1 : 0 }}
@@ -1067,17 +1184,22 @@ function OverviewExpensesCard({
   expenses,
   currency,
   onViewAll,
+  onRecord,
+  period,
 }: {
   expenses: { total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> };
   currency: string;
   onViewAll?: () => void;
+  // Opens "Record an expense".
+  onRecord: () => void;
+  period: string;
 }) {
   const { t } = useTranslation("vendorPayments");
   // Brand ramp (ink → bronze → champagne → sand) so a vendor scanning
   // the page picks up category rank by tone.
-  const palette = ["#f4f1ea", "#c9a86a", "#c9a86a", "#d9d1bf"];
+  const palette = ["hsl(var(--foreground))", "hsl(var(--accent))", "hsl(var(--gold))", "hsl(var(--foreground) / 0.3)"];
   const rows = expenses.topCategories.map((c, i) => ({
-    ...c, color: palette[i] ?? "#ece7db",
+    ...c, color: palette[i] ?? "hsl(var(--muted))",
   }));
   // The overview RPC rolls the 4th+ item into an English "Other" bucket;
   // every other label is the vendor's own line-item name.
@@ -1096,7 +1218,7 @@ function OverviewExpensesCard({
       <div className="flex items-baseline justify-between mb-3 gap-3">
         <div className="min-w-0">
           <div className="cockpit-chart-title truncate">{t("expenses.title")}</div>
-          <div className="cockpit-chart-sub">{t("expenses.subtitle")}</div>
+          <div className="cockpit-chart-sub">{t("expenses.subtitle", { period })}</div>
         </div>
         {onViewAll ? (
           <button
@@ -1108,6 +1230,13 @@ function OverviewExpensesCard({
           </button>
         ) : null}
       </div>
+      <button
+        type="button"
+        onClick={onRecord}
+        className="mb-3 text-xs font-bold text-accent hover:underline underline-offset-4"
+      >
+        {t("expenses.record")}
+      </button>
       {expenses.count === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
           {t("expenses.empty")}
@@ -1118,7 +1247,7 @@ function OverviewExpensesCard({
             <svg viewBox="0 0 100 100" className="w-[110px] h-[110px] shrink-0 -rotate-90" aria-hidden>
               {/* Faint background ring so the donut feels seated even
                   when one segment dominates the total. */}
-              <circle cx="50" cy="50" r={RING_R} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={RING_W} />
+              <circle cx="50" cy="50" r={RING_R} fill="none" className="stroke-muted" strokeWidth={RING_W} />
               {rows.map((r) => {
                 const len = expenses.total > 0 ? (r.cents / expenses.total) * CIRC : 0;
                 const offset = dashOffset;
@@ -1128,7 +1257,7 @@ function OverviewExpensesCard({
                     key={r.label}
                     cx="50" cy="50" r={RING_R}
                     fill="none"
-                    stroke={r.color}
+                    style={{ stroke: r.color }}
                     strokeWidth={RING_W}
                     strokeDasharray={`${len} ${CIRC - len}`}
                     strokeDashoffset={-offset}

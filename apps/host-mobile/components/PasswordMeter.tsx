@@ -1,18 +1,23 @@
 import { Text, View } from "react-native";
 import { passwordChecks, passwordProblem } from "@/lib/password";
+import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-// Strength bar under the sign-up password field (dark sign-up screens): one segment per rule
+// Strength bar under the sign-up password field (sign-up screen, follows the app theme): one segment per rule
 // (8+ characters, upper- and lowercase, a number, a symbol), champagne when
 // met. The line under it names what's still missing. A breach-list check
 // runs on the server when the user continues, so the "ready" line says so.
-const GOLD = "#c9a86a";
-const SURFACE = "rgba(255,255,255,0.12)";
-const INK = "#f4f1ea";
-const BRONZE = "#c9a86a";
+const GOLD = C.gold;
+const SURFACE = C.surface;
+const INK = C.text;
+const BRONZE = C.accentText;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 
 export function PasswordMeter({ password }: { password: string }) {
+  // Subscribes to the language so the rule line (from lib/password)
+  // re-renders in the new language too.
+  const { t } = useT("passwordMeter");
   if (password.length === 0) return null;
   const checks = passwordChecks(password);
   const met = checks.filter(Boolean).length;
@@ -21,7 +26,7 @@ export function PasswordMeter({ password }: { password: string }) {
     <View style={{ marginTop: 10 }}>
       <View
         accessibilityRole="progressbar"
-        accessibilityLabel={`Password strength: ${met} of 4 rules met`}
+        accessibilityLabel={t("strength", { met, total: checks.length })}
         style={{ flexDirection: "row", gap: 4 }}
       >
         {checks.map((ok, i) => (
@@ -42,7 +47,7 @@ export function PasswordMeter({ password }: { password: string }) {
         </Text>
       ) : (
         <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 13, marginTop: 6 }}>
-          Strong password. We'll also check it hasn't leaked.
+          {t("strong")}
         </Text>
       )}
     </View>

@@ -53,10 +53,10 @@ function StatusDot({
     typeof tone,
     { dot: string; text: string; bg: string; border: string }
   > = {
-    good: { dot: "#14161a", text: "#14161a", bg: "#f4f1ea", border: "transparent" },
-    info: { dot: "#c9a86a", text: "#f4f1ea", bg: "rgba(255,255,255,0.06)", border: "transparent" },
-    warn: { dot: "#f4f1ea", text: "#f4f1ea", bg: "transparent", border: "rgba(255,255,255,0.3)" },
-    bad: { dot: "#f4f1ea", text: "#f4f1ea", bg: "transparent", border: "rgba(255,255,255,0.3)" },
+    good: { dot: "hsl(var(--primary-foreground))", text: "hsl(var(--primary-foreground))", bg: "hsl(var(--primary))", border: "transparent" },
+    info: { dot: "hsl(var(--accent))", text: "hsl(var(--foreground))", bg: "hsl(var(--muted))", border: "transparent" },
+    warn: { dot: "hsl(var(--foreground))", text: "hsl(var(--foreground))", bg: "transparent", border: "hsl(var(--foreground) / 0.3)" },
+    bad: { dot: "hsl(var(--foreground))", text: "hsl(var(--foreground))", bg: "transparent", border: "hsl(var(--foreground) / 0.3)" },
   };
   const c = palette[tone];
   return (
@@ -169,13 +169,13 @@ export function VendoraPayConnection() {
           <div
             className="rounded-2xl p-5 flex items-start gap-4 flex-wrap"
             style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
             }}
           >
             <div
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.16)", color: "#f4f1ea" }}
+              style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }}
             >
               <Landmark className="w-5 h-5" />
             </div>
@@ -199,7 +199,7 @@ export function VendoraPayConnection() {
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
                 background: "hsl(var(--muted))",
-                color: "#f4f1ea",
+                color: "hsl(var(--foreground))",
               }}
               aria-hidden
             >
@@ -236,7 +236,7 @@ export function VendoraPayConnection() {
               )}
               <p
                 className="text-[12px] text-muted-foreground mt-3 pl-3"
-                style={{ borderLeft: "2px solid rgba(255,255,255,0.25)" }}
+                style={{ borderLeft: "2px solid hsl(var(--foreground) / 0.25)" }}
               >
                 {t("pay.settle_note")}
               </p>
@@ -263,7 +263,7 @@ export function VendoraPayConnection() {
               className="shrink-0 w-11 h-11 rounded-xl inline-flex items-center justify-center"
               style={{
                 background: "hsl(var(--muted))",
-                color: "#f4f1ea",
+                color: "hsl(var(--foreground))",
               }}
               aria-hidden
             >
@@ -285,7 +285,7 @@ export function VendoraPayConnection() {
               </p>
               <p
                 className="text-[12px] text-muted-foreground mt-3 pl-3"
-                style={{ borderLeft: "2px solid rgba(255,255,255,0.25)" }}
+                style={{ borderLeft: "2px solid hsl(var(--foreground) / 0.25)" }}
               >
                 {t("pay.verification_note")}
               </p>

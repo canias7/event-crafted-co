@@ -1,5 +1,5 @@
-// Public Explore: vendor work to browse, on the dark brand pages (ink,
-// cream text, champagne gold). Lives at /explore so anyone (signed in or
+// Public Explore: vendor work to browse, in the site theme (light or
+// dark; the reel itself stays black like a media player). Lives at /explore so anyone (signed in or
 // not) can browse. Layout from the owner's mockups: an open two-column
 // gallery for the feed, and one large reel at a time for reels. The tab
 // is in the URL (?tab=reels) so it can be linked to.
@@ -27,9 +27,9 @@ import { supabase } from "@/integrations/supabase/client";
 import i18n from "@/i18n";
 import { useCategoryNames } from "@/lib/categoryNames";
 
-const INK = "#14161a";
-const GOLD = "#c9a86a";
-const SOFT = "rgba(244,241,234,0.72)";
+// Secondary text on the reel's dark scrim (over video, so light in both
+// themes).
+const OVERLAY_SOFT = "rgba(244,241,234,0.72)";
 const PAGE_SIZE = 12;
 const ALL = "all";
 
@@ -228,7 +228,7 @@ export default function PublicExplorePage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: INK, color: "#f4f1ea" }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PublicNav tone="dark" />
 
       <main id="main-content" className="container mx-auto px-5 pb-16 pt-8 md:px-8 md:pb-24 md:pt-12">
@@ -236,13 +236,13 @@ export default function PublicExplorePage() {
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="m-0 text-[40px] leading-none md:text-[52px]">{t("title")}</h1>
-            <p className="m-0 mt-3 text-[15px] md:text-base" style={{ color: SOFT }}>
+            <p className="m-0 mt-3 text-[15px] md:text-base text-muted-foreground">
               {t(`tabs.${tab}.sub`)}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <label className="flex h-11 min-w-[180px] flex-1 items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-4 transition-colors focus-within:border-white/40 md:w-80 md:flex-none">
-              <Search className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+            <label className="flex h-11 min-w-[180px] flex-1 items-center gap-2.5 rounded-xl border border-border bg-card px-4 transition-colors focus-within:border-foreground/40 md:w-80 md:flex-none">
+              <Search className="h-4 w-4 shrink-0 text-accent" aria-hidden />
               <span className="sr-only">{t("search.label")}</span>
               <input
                 value={query}
@@ -251,10 +251,10 @@ export default function PublicExplorePage() {
                   setShown(PAGE_SIZE);
                 }}
                 placeholder={t("search.placeholder")}
-                className="w-full min-w-0 bg-transparent text-[14px] text-[#f4f1ea] outline-none placeholder:text-[#f4f1ea]/60"
+                className="w-full min-w-0 bg-transparent text-[14px] text-foreground outline-none placeholder:text-placeholder"
               />
               {query && (
-                <button type="button" onClick={() => setQuery("")} aria-label={t("search.clear")} className="hover:text-gold">
+                <button type="button" onClick={() => setQuery("")} aria-label={t("search.clear")} className="hover:text-accent">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -266,7 +266,7 @@ export default function PublicExplorePage() {
         </div>
 
         {/* ═══════ TABS + category ═══════ */}
-        <div className="mt-6 flex items-center justify-between gap-4 border-b border-white/15">
+        <div className="mt-6 flex items-center justify-between gap-4 border-b border-border">
           <div className="no-scrollbar flex gap-6 overflow-x-auto" role="tablist" aria-label={t("tablistLabel")}>
             {TABS.map((item) => (
               <button
@@ -277,8 +277,8 @@ export default function PublicExplorePage() {
                 onClick={() => pickTab(item.id)}
                 className={`relative shrink-0 pb-3 pt-2 text-[15px] font-bold transition-colors ${
                   tab === item.id
-                    ? "text-gold after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-gold"
-                    : "text-[#f4f1ea]/80 hover:text-white"
+                    ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-accent"
+                    : "text-muted-foreground hover:text-accent"
                 }`}
               >
                 {t(`tabs.${item.id}.label`)}
@@ -296,10 +296,10 @@ export default function PublicExplorePage() {
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i}>
                     <div className="flex items-center gap-3">
-                      <Skeleton className="h-10 w-10 rounded-full bg-white/10" />
-                      <Skeleton className="h-4 w-40 bg-white/10" />
+                      <Skeleton className="h-10 w-10 rounded-full bg-muted" />
+                      <Skeleton className="h-4 w-40 bg-muted" />
                     </div>
-                    <Skeleton className="mt-3 aspect-square w-full rounded-2xl bg-white/10 md:aspect-[4/3]" />
+                    <Skeleton className="mt-3 aspect-square w-full rounded-2xl bg-muted md:aspect-[4/3]" />
                   </div>
                 ))}
               </div>
@@ -325,7 +325,7 @@ export default function PublicExplorePage() {
                     <button
                       type="button"
                       onClick={() => setShown((n) => n + PAGE_SIZE)}
-                      className="inline-flex h-11 items-center rounded-full border border-white/15 bg-white/[0.04] px-6 text-[14px] font-bold transition-colors hover:border-white/40"
+                      className="inline-flex h-11 items-center rounded-full border border-border bg-card px-6 text-[14px] font-bold transition-colors hover:border-foreground/40"
                     >
                       {t("showMore")}
                     </button>
@@ -336,7 +336,7 @@ export default function PublicExplorePage() {
 
           {tab === "reels" &&
             (loading ? (
-              <Skeleton className="mx-auto aspect-[9/16] w-full max-w-[300px] rounded-2xl bg-white/10" />
+              <Skeleton className="mx-auto aspect-[9/16] w-full max-w-[300px] rounded-2xl bg-muted" />
             ) : (
               <ReelsView
                 reels={visibleReels}
@@ -381,7 +381,7 @@ function CategorySelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={t("category.label")}
-        className={`h-11 w-[188px] shrink-0 rounded-full border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea] ${className}`}
+        className={`h-11 w-[188px] shrink-0 rounded-full border-border bg-card px-4 text-[14px] font-bold text-foreground ${className}`}
       >
         <SelectValue>{triggerLabel}</SelectValue>
       </SelectTrigger>
@@ -401,13 +401,13 @@ function Avatar({ src, name, size }: { src: string | null; name: string | null; 
   return (
     <span
       className="flex shrink-0 items-center justify-center overflow-hidden rounded-full p-[2px]"
-      style={{ width: size, height: size, background: GOLD }}
+      style={{ width: size, height: size, background: "hsl(var(--gold))" }}
     >
-      <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2" style={{ borderColor: INK, background: "#24262b" }}>
+      <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-background bg-muted">
         {src ? (
           <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <span className="text-[15px] font-bold" style={{ color: GOLD }}>
+          <span className="text-[15px] font-bold text-accent">
             {(name ?? "V")[0]?.toUpperCase()}
           </span>
         )}
@@ -434,7 +434,7 @@ function IconAction({
       onClick={onClick}
       aria-label={label}
       aria-pressed={pressed}
-      className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/[0.06]"
+      className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted"
     >
       {children}
     </button>
@@ -465,24 +465,24 @@ function FeedPost({
     .join(" · ");
 
   return (
-    <article className="min-w-0 border-b border-white/15 pb-8">
+    <article className="min-w-0 border-b border-border pb-8">
       <header className="flex items-center gap-3">
         <Link to={href} tabIndex={-1} aria-hidden>
           <Avatar src={avatar} name={name} size={40} />
         </Link>
         <div className="min-w-0">
-          <Link to={href} className="block truncate text-[15px] font-bold transition-colors hover:text-gold">
+          <Link to={href} className="block truncate text-[15px] font-bold transition-colors hover:text-accent">
             {name}
           </Link>
           {meta && (
-            <p className="m-0 truncate text-[12.5px]" style={{ color: SOFT }}>
+            <p className="m-0 truncate text-[12.5px] text-muted-foreground">
               {meta}
             </p>
           )}
         </div>
       </header>
 
-      <Link to={href} className="group mt-3 block overflow-hidden rounded-2xl bg-white/5" aria-label={t("post.viewProfileOf", { name })}>
+      <Link to={href} className="group mt-3 block overflow-hidden rounded-2xl bg-muted" aria-label={t("post.viewProfileOf", { name })}>
         <img
           src={item.image}
           alt={item.caption ?? t("post.workBy", { name })}
@@ -493,7 +493,7 @@ function FeedPost({
 
       <div className="-ml-2 mt-2 flex items-center">
         <IconAction label={saved ? t("post.unsave", { name }) : t("post.save", { name })} pressed={saved} onClick={onSave}>
-          <Heart className={`h-[22px] w-[22px] ${saved ? "fill-gold text-gold" : ""}`} />
+          <Heart className={`h-[22px] w-[22px] ${saved ? "fill-gold text-accent" : ""}`} />
         </IconAction>
         <IconAction label={t("post.share", { name })} onClick={() => shareVendor(name, href)}>
           <Share className="h-[20px] w-[20px]" />
@@ -503,7 +503,7 @@ function FeedPost({
       {item.caption && <p className="m-0 mt-1 font-serif text-[15px] italic leading-relaxed">{item.caption}</p>}
       <Link
         to={href}
-        className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-gold transition-colors hover:text-white"
+        className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-accent underline-offset-4 hover:underline"
       >
         {t("post.viewProfile")} <ArrowRight className="h-3.5 w-3.5" />
       </Link>
@@ -545,12 +545,12 @@ function ReelsView({
   if (reels.length === 0) {
     return (
       <div className="flex justify-center">
-        <div className="flex aspect-[9/16] w-full max-w-[300px] flex-col items-center justify-center rounded-2xl border border-white/15 bg-white/[0.03] px-6 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15">
-            <Play className="h-5 w-5 text-gold" aria-hidden />
+        <div className="flex aspect-[9/16] w-full max-w-[300px] flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full border border-border">
+            <Play className="h-5 w-5 text-accent" aria-hidden />
           </span>
           <h2 className="m-0 mt-5 text-[24px] leading-tight">{filtered ? t("reels.emptyFiltered") : t("reels.empty")}</h2>
-          <p className="m-0 mt-2 text-[14px] leading-relaxed" style={{ color: SOFT }}>
+          <p className="m-0 mt-2 text-[14px] leading-relaxed text-muted-foreground">
             {filtered
               ? t("empty.tryAnother")
               : t("reels.emptyBody")}
@@ -575,9 +575,9 @@ function ReelsView({
   const saved = isSaved(reel.vendorId);
   const go = (d: number) => setIndex(Math.max(0, Math.min(reels.length - 1, current + d)));
   const navButton =
-    "flex h-11 w-11 items-center justify-center rounded-full border border-white/15 transition-colors hover:border-white/40 disabled:pointer-events-none disabled:text-[#f4f1ea]/30";
+    "flex h-11 w-11 items-center justify-center rounded-full border border-border transition-colors hover:border-foreground/40 disabled:pointer-events-none disabled:text-muted-foreground/40";
   const reelAction =
-    "flex h-11 min-w-11 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-full text-[12px] font-bold transition-colors hover:text-gold md:h-auto md:rounded-xl md:px-2 md:py-1";
+    "flex h-11 min-w-11 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-full text-[12px] font-bold transition-colors hover:text-accent md:h-auto md:rounded-xl md:px-2 md:py-1";
 
   return (
     <section
@@ -616,7 +616,7 @@ function ReelsView({
           className="h-full w-full cursor-pointer object-cover"
         />
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 pr-16 pt-16"
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 pr-16 pt-16 text-[#f4f1ea]"
           style={{ background: "linear-gradient(0deg, rgba(10,11,14,0.85), rgba(10,11,14,0))" }}
         >
           <Avatar src={avatarOf(vendor)} name={name} size={40} />
@@ -626,7 +626,7 @@ function ReelsView({
               <p className="m-0 line-clamp-2 font-serif text-[13.5px] italic leading-snug">{reel.caption}</p>
             )}
             {vendor?.category && (
-              <p className="m-0 truncate text-[12px]" style={{ color: SOFT }}>
+              <p className="m-0 truncate text-[12px]" style={{ color: OVERLAY_SOFT }}>
                 {categoryNames.sub(vendor.category)}
               </p>
             )}
@@ -654,7 +654,7 @@ function ReelsView({
             aria-label={saved ? t("reels.saved") : t("reels.save")}
             className={reelAction}
           >
-            <Heart className={`h-6 w-6 ${saved ? "fill-gold text-gold" : ""}`} aria-hidden />
+            <Heart className={`h-6 w-6 ${saved ? "fill-gold text-accent" : ""}`} aria-hidden />
             <span className="hidden md:inline">{saved ? t("reels.saved") : t("reels.save")}</span>
           </button>
           <button type="button" onClick={() => shareVendor(name, href)} aria-label={t("reels.share")} className={reelAction}>
@@ -710,7 +710,7 @@ function VendorsGrid({
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-white/10" />
+          <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-muted" />
         ))}
       </div>
     );
@@ -764,7 +764,7 @@ function SavedView({
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-white/10" />
+          <Skeleton key={i} className="aspect-[4/3] w-full rounded-2xl bg-muted" />
         ))}
       </div>
     );
@@ -800,9 +800,9 @@ function SavedView({
 
 function Empty({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/15 px-6 py-16 text-center">
+    <div className="rounded-2xl border border-border px-6 py-16 text-center">
       <h2 className="m-0 text-[24px] leading-tight">{title}</h2>
-      <p className="m-0 mx-auto mt-2 max-w-sm text-[15px] leading-relaxed" style={{ color: SOFT }}>
+      <p className="m-0 mx-auto mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
         {body}
       </p>
       {children && <div className="mt-6 flex flex-wrap justify-center gap-3">{children}</div>}

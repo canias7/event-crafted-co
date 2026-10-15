@@ -35,6 +35,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useT } from "@/lib/i18n";
+import { LanguagePicker } from "@/components/LanguagePicker";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -47,35 +49,24 @@ const GOLD = "#c9a86a";
 const HAIRLINE = "rgba(255,255,255,0.15)";
 const GLASS = "rgba(255,255,255,0.06)";
 
-const TAGLINE_LINES = ["for those who plan,", "and those who shine."];
-
 // There are no in-app legal screens, so these open the live web pages the
 // same documents are published at.
 const TERMS_URL = "https://eventvendora.com/terms";
 const PRIVACY_URL = "https://eventvendora.com/privacy";
 
+// Card text lives in locales/<lang>/welcome.ts under pillars.<key>.
 const PILLARS = [
-  {
-    icon: "calendar-check-outline",
-    title: "Plan with ease",
-    body: "Organize every detail beautifully.",
-  },
-  {
-    icon: "account-group-outline",
-    title: "Find trusted pros",
-    body: "Connect with verified vendors you can trust.",
-  },
-  {
-    icon: "star-four-points-outline",
-    title: "Create unforgettable",
-    body: "Bring your vision to life seamlessly.",
-  },
+  { key: "plan", icon: "calendar-check-outline" },
+  { key: "pros", icon: "account-group-outline" },
+  { key: "create", icon: "star-four-points-outline" },
 ] as const;
 
 const BADGE = 72;
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { t, tObject } = useT("welcome");
+  const taglineLines = tObject<string[]>("tagline") ?? [];
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 
@@ -162,7 +153,7 @@ export default function WelcomeScreen() {
           </Text>
 
           <View style={{ marginTop: 6 }}>
-            {TAGLINE_LINES.map((line) => (
+            {taglineLines.map((line) => (
               <Text
                 key={line}
                 style={{
@@ -204,7 +195,7 @@ export default function WelcomeScreen() {
               rejects (same reason there's no social-auth row below). */}
           {PILLARS.map((p) => (
             <View
-              key={p.title}
+              key={p.key}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -229,7 +220,7 @@ export default function WelcomeScreen() {
                 <MaterialCommunityIcons name={p.icon} size={compact ? 18 : 21} color={GOLD} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 18 }}>{p.title}</Text>
+                <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 18 }}>{t(`pillars.${p.key}.title`)}</Text>
                 <Text
                   style={{
                     fontFamily: SERIF,
@@ -239,7 +230,7 @@ export default function WelcomeScreen() {
                     marginTop: 1,
                   }}
                 >
-                  {p.body}
+                  {t(`pillars.${p.key}.body`)}
                 </Text>
               </View>
             </View>
@@ -261,7 +252,7 @@ export default function WelcomeScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>Sign up</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>{t("signUp")}</Text>
           </TouchableOpacity>
 
           {/* Secondary on dark: see-through with the white hairline. */}
@@ -280,8 +271,13 @@ export default function WelcomeScreen() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16 }}>Sign in</Text>
+            <Text style={{ fontFamily: SERIF_BOLD, color: CREAM, fontSize: 16 }}>{t("signIn")}</Text>
           </TouchableOpacity>
+
+          {/* Language: English / Español / Русский, centred under the pills. */}
+          <View style={{ alignItems: "center", marginTop: compact ? 10 : 14 }}>
+            <LanguagePicker tone="dark" />
+          </View>
 
           {/* No social-auth row: Google / Apple / Facebook sign-in isn't
               implemented anywhere in this project, and buttons that do
@@ -297,21 +293,21 @@ export default function WelcomeScreen() {
               marginTop: compact ? 9 : 12,
             }}
           >
-            By continuing, you agree to our{" "}
+            {t("legal.before")}
             <Text
               style={{ fontFamily: SERIF_BOLD, color: GOLD }}
               onPress={() => void Linking.openURL(TERMS_URL)}
             >
-              Terms of Service
-            </Text>{" "}
-            and{" "}
+              {t("legal.terms")}
+            </Text>
+            {t("legal.between")}
             <Text
               style={{ fontFamily: SERIF_BOLD, color: GOLD }}
               onPress={() => void Linking.openURL(PRIVACY_URL)}
             >
-              Privacy Policy
+              {t("legal.privacy")}
             </Text>
-            .
+            {t("legal.after")}
           </Text>
         </View>
       </ScrollView>

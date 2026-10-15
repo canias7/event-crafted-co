@@ -23,15 +23,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import {
-  CATEGORY_GROUPS,
-  formatListingPrice,
-  groupOfSub,
-  pricingModelsLabel,
-} from "@vendora/core";
+import { CATEGORY_GROUPS, groupOfSub } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
+
+// Grey icons (idle view tabs): warm grey on light, lighter on dark.
+const ICON_DIM = IS_DARK ? C.placeholder : "#6f6a60";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -45,11 +46,46 @@ const PAGE_TITLE = {
   fontSize: 38,
   lineHeight: 44,
   letterSpacing: -0.5,
-  color: "#14161a",
+  color: C.text,
   marginTop: 8,
 } as const;
 
 type ViewKind = "grid" | "reels" | "buzz" | "listing";
+
+type TFn = (key: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+// Money keeps the US format in every language ($1,234).
+function dollars(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
+
+// Same rules as formatListingPrice in @vendora/core, in the app's language.
+function listingPrice(
+  minCents: number | null | undefined,
+  maxCents: number | null | undefined,
+  t: TFn,
+): string {
+  const hasMin = minCents != null && minCents > 0;
+  const hasMax = maxCents != null && maxCents > 0;
+  if (hasMin && hasMax) {
+    return minCents === maxCents
+      ? dollars(minCents as number)
+      : `${dollars(minCents as number)} – ${dollars(maxCents as number)}`;
+  }
+  if (hasMin) return t("price.from", { price: dollars(minCents as number) });
+  if (hasMax) return t("price.upTo", { price: dollars(maxCents as number) });
+  return t("price.custom");
+}
+
+function pricingModelsText(models: string[] | null | undefined, t: TFn): string {
+  if (!models || models.length === 0) return "";
+  return models
+    .map((m) => {
+      const label = t(`pricingModels.${m}`);
+      return label === `explore.pricingModels.${m}` ? m : label;
+    })
+    .join(" · ");
+}
 
 type Author = { business_name: string | null; logo_url: string | null } | null;
 
@@ -91,6 +127,7 @@ interface ListingRow {
 }
 
 export default function ExploreScreen() {
+  const { t } = useT("explore");
   const { user } = useAuth();
   // Listings is the landing tab: it is the only view with content today
   // (vendor_posts and vendor_reels are both empty), so defaulting to the
@@ -260,34 +297,38 @@ export default function ExploreScreen() {
   }, [loadSaved]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
       <View className="px-5 pt-4 pb-4">
         <Wordmark />
-        <Text style={PAGE_TITLE}>Explore</Text>
-        <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
-          Listings, posts, reels, and buzz from approved vendors
+        <Text style={PAGE_TITLE}>{t("title")}</Text>
+        <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-1 text-sm">
+          {t("subtitle")}
         </Text>
       </View>
 
-      <View className="flex-row border-t border-border">
+      <View className="flex-row border-t" style={{ borderColor: C.border }}>
         <ViewTab
           active={view === "listing"}
           onPress={() => setView("listing")}
+          label={t("tabs.listing")}
           iconName="shopping-bag"
         />
         <ViewTab
           active={view === "grid"}
           onPress={() => setView("grid")}
+          label={t("tabs.grid")}
           iconName="grid"
         />
         <ViewTab
           active={view === "reels"}
           onPress={() => setView("reels")}
+          label={t("tabs.reels")}
           iconName="play"
         />
         <ViewTab
           active={view === "buzz"}
           onPress={() => setView("buzz")}
+          label={t("tabs.buzz")}
           iconName="align-left"
         />
       </View>
@@ -300,24 +341,24 @@ export default function ExploreScreen() {
       >
         {view === "grid" ? (
           posts.length === 0 ? (
-            <EmptyMessage body="No vendor posts yet." />
+            <EmptyMessage body={t("empty.posts")} />
           ) : (
             <PostGrid posts={posts} />
           )
         ) : view === "reels" ? (
           reels.length === 0 ? (
-            <EmptyMessage body="No reels yet." />
+            <EmptyMessage body={t("empty.reels")} />
           ) : (
             <ReelGrid reels={reels} />
           )
         ) : view === "buzz" ? (
           buzz.length === 0 ? (
-            <EmptyMessage body="No buzz yet." />
+            <EmptyMessage body={t("empty.buzz")} />
           ) : (
             <BuzzList items={buzz} />
           )
         ) : listings.length === 0 ? (
-          <EmptyMessage body="No vendor listings yet." />
+          <EmptyMessage body={t("empty.listings")} />
         ) : (
           <ListingFeed
             listings={listings}
@@ -336,27 +377,32 @@ function ViewTab({
   active,
   onPress,
   iconName,
+  label,
 }: {
   active: boolean;
   onPress: () => void;
   iconName: keyof typeof Feather.glyphMap;
+  label: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       className="flex-1 items-center justify-center py-3 active:opacity-60"
       style={{
         // Selected tile: card cream with a 1px ink border — selection
         // reads in ink, and tiles carry no shadow.
-        backgroundColor: active ? "#fbf9f4" : "transparent",
+        backgroundColor: active ? C.card : "transparent",
         borderRadius: active ? 12 : 0,
         borderWidth: active ? 1 : 0,
-        borderColor: "#14161a",
+        borderColor: C.selected,
         marginHorizontal: active ? 4 : 0,
         marginVertical: active ? 4 : 0,
       }}
     >
-      <Feather name={iconName} size={22} color={active ? "#14161a" : "#6f6a60"} />
+      <Feather name={iconName} size={22} color={active ? C.text : ICON_DIM} />
     </Pressable>
   );
 }
@@ -364,7 +410,7 @@ function ViewTab({
 function EmptyMessage({ body }: { body: string }) {
   return (
     <View className="items-center pt-16 px-6">
-      <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground text-center">{body}</Text>
+      <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-sm text-center">{body}</Text>
     </View>
   );
 }
@@ -373,7 +419,7 @@ function EmptyMessage({ body }: { body: string }) {
 function FeedAuthorHeader({ vendor }: { vendor: Author }) {
   return (
     <View className="flex-row items-center gap-3 px-3 py-3">
-      <View className="h-10 w-10 overflow-hidden rounded-full bg-muted">
+      <View className="h-10 w-10 overflow-hidden rounded-full" style={{ backgroundColor: C.surface }}>
         <Image
           source={
             vendor?.logo_url
@@ -384,9 +430,9 @@ function FeedAuthorHeader({ vendor }: { vendor: Author }) {
           resizeMode="cover"
         />
       </View>
-      <Text style={{ fontFamily: SERIF_BOLD }}
+      <Text style={{ fontFamily: SERIF_BOLD, color: C.text }}
         numberOfLines={1}
-        className="flex-1 text-base text-foreground"
+        className="flex-1 text-base"
       >
         {vendor?.business_name ?? "Vendora"}
       </Text>
@@ -395,6 +441,7 @@ function FeedAuthorHeader({ vendor }: { vendor: Author }) {
 }
 
 function PostGrid({ posts }: { posts: PostRow[] }) {
+  const { locale } = useT("explore");
   return (
     <View className="gap-3">
       {posts.map((p) => (
@@ -403,9 +450,9 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             style={{
               borderRadius: 20,
               overflow: "hidden",
-              backgroundColor: "#fbf9f4",
+              backgroundColor: C.card,
               borderWidth: 1,
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
             }}
           >
             <View>
@@ -418,9 +465,9 @@ function PostGrid({ posts }: { posts: PostRow[] }) {
             />
             {p.caption ? (
               <View className="px-4 py-3">
-                <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{p.caption}</Text>
-                <Text style={{ fontFamily: SERIF }} className="mt-1 text-xs text-muted-foreground">
-                  {new Date(p.created_at).toLocaleString()}
+                <Text style={{ fontFamily: SERIF, color: C.text }} className="text-sm">{p.caption}</Text>
+                <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-1 text-xs">
+                  {new Date(p.created_at).toLocaleString(locale)}
                 </Text>
               </View>
             ) : null}
@@ -440,9 +487,9 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             style={{
               borderRadius: 20,
               overflow: "hidden",
-              backgroundColor: "#fbf9f4",
+              backgroundColor: C.card,
               borderWidth: 1,
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
             }}
           >
             <View>
@@ -481,7 +528,7 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
             </View>
             {r.caption ? (
               <View className="px-4 py-3">
-                <Text style={{ fontFamily: SERIF }} className="text-sm text-foreground">{r.caption}</Text>
+                <Text style={{ fontFamily: SERIF, color: C.text }} className="text-sm">{r.caption}</Text>
               </View>
             ) : null}
           </View>
@@ -492,18 +539,19 @@ function ReelGrid({ reels }: { reels: ReelRow[] }) {
 }
 
 function BuzzList({ items }: { items: BuzzRow[] }) {
+  const { locale } = useT("explore");
   return (
     <View className="gap-3 px-5">
       {items.map((b) => (
         // Card: p-1 plus the rows' own 12px inset = the standard 16.
         <View
           key={b.id}
-          className="rounded-[20px] border border-border bg-[#fbf9f4] p-1"
+          className="rounded-[20px] border p-1" style={{ borderColor: C.border, backgroundColor: C.card }}
         >
           <FeedAuthorHeader vendor={b.vendor} />
-          <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-base text-foreground">{b.body}</Text>
-          <Text style={{ fontFamily: SERIF }} className="px-3 pb-3 text-xs text-muted-foreground">
-            {new Date(b.created_at).toLocaleString()}
+          <Text style={{ fontFamily: SERIF, color: C.text }} className="px-3 pb-3 text-base">{b.body}</Text>
+          <Text style={{ fontFamily: SERIF, color: C.textDim }} className="px-3 pb-3 text-xs">
+            {new Date(b.created_at).toLocaleString(locale)}
           </Text>
         </View>
       ))}
@@ -527,6 +575,16 @@ function ListingFeed({
   savedIds: Set<string>;
   onToggleSave: (vendorId: string) => void;
 }) {
+  const { t } = useT("explore");
+  const cat = useCategoryNames();
+  // Groups and subs are keyed by their stored English names; only the
+  // label shown is translated.
+  const groupLabel = (name: string) => {
+    if (name === "Other") return t("other");
+    const slug = CATEGORY_GROUPS.find((g) => g.name === name)?.slug;
+    return slug ? cat.group(slug, name) : name;
+  };
+  const subLabel = (name: string) => (name === "Other" ? t("other") : cat.sub(name));
   const byGroup = new Map<string, Map<string, ListingRow[]>>();
   for (const l of listings) {
     const sub =
@@ -561,14 +619,14 @@ function ListingFeed({
         contentContainerClassName="px-5 gap-2 pb-4"
       >
         <CategoryChip
-          label="All"
+          label={t("all")}
           active={category == null}
           onPress={() => onCategoryChange(null)}
         />
         {orderedGroups.map((g) => (
           <CategoryChip
             key={g}
-            label={g}
+            label={groupLabel(g)}
             active={category === g}
             onPress={() => onCategoryChange(g)}
           />
@@ -590,8 +648,8 @@ function ListingFeed({
           return (
             <View key={groupName}>
               <View className="px-5 mb-3">
-                <Text style={{ fontFamily: SERIF_BOLD }} className="text-lg text-foreground">
-                  {groupName}
+                <Text style={{ fontFamily: SERIF_BOLD, color: C.text }} className="text-lg">
+                  {groupLabel(groupName)}
                 </Text>
               </View>
               <View className="gap-5">
@@ -600,8 +658,8 @@ function ListingFeed({
                   if (rows.length === 0) return null;
                   return (
                     <View key={subName}>
-                      <Text style={{ fontFamily: SERIF_BOLD }} className="px-5 mb-2 text-sm text-muted-foreground">
-                        {subName}
+                      <Text style={{ fontFamily: SERIF_BOLD, color: C.textDim }} className="px-5 mb-2 text-sm">
+                        {subLabel(subName)}
                       </Text>
                       <ScrollView
                         horizontal
@@ -626,8 +684,8 @@ function ListingFeed({
         })}
         {visibleGroups.length === 0 ? (
           <View className="items-center pt-10 px-5">
-            <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground">
-              No listings in this category yet.
+            <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-sm">
+              {t("empty.category")}
             </Text>
           </View>
         ) : null}
@@ -646,10 +704,11 @@ function ListingCard({
   onToggleSave: () => void;
 }) {
   const router = useRouter();
+  const { t } = useT("explore");
   const price =
-    formatListingPrice(listing.price_min_cents, listing.price_max_cents) ||
+    listingPrice(listing.price_min_cents, listing.price_max_cents, t) ||
     null;
-  const models = pricingModelsLabel(listing.pricing_models);
+  const models = pricingModelsText(listing.pricing_models, t);
   return (
     <Pressable
       onPress={() =>
@@ -676,11 +735,11 @@ function ListingCard({
         ) : (
           <View
             className="flex-1 items-center justify-center px-6"
-            style={{ backgroundColor: "#ece7db" }}
+            style={{ backgroundColor: C.surface }}
           >
             <Feather name="image" size={28} color="#a89b8a" />
-            <Text style={{ fontFamily: SERIF }} className="mt-2 text-center text-xs text-muted-foreground">
-              No listing photos yet
+            <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-2 text-center text-xs">
+              {t("noPhotos")}
             </Text>
           </View>
         )}
@@ -692,6 +751,8 @@ function ListingCard({
             onToggleSave();
           }}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={saved ? t("unsave") : t("save")}
           style={{
             position: "absolute",
             top: 12,
@@ -710,25 +771,25 @@ function ListingCard({
         </Pressable>
       </View>
       <View className="mt-3 px-1">
-        <Text style={{ fontFamily: SERIF_BOLD }}
+        <Text style={{ fontFamily: SERIF_BOLD, color: C.text }}
           numberOfLines={1}
-          className="text-base text-foreground"
+          className="text-base"
         >
-          {listing.business_name ?? "Vendor"}
+          {listing.business_name ?? t("vendorFallback")}
         </Text>
-        <Text style={{ fontFamily: SERIF }}
+        <Text style={{ fontFamily: SERIF, color: C.textDim }}
           numberOfLines={1}
-          className="mt-0.5 text-sm text-muted-foreground"
+          className="mt-0.5 text-sm"
         >
-          {listing.location ?? "Marketplace listing"}
+          {listing.location ?? t("locationFallback")}
         </Text>
         {price ? (
-          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-foreground">{price}</Text>
+          <Text style={{ fontFamily: SERIF, color: C.text }} className="mt-1 text-sm">{price}</Text>
         ) : null}
         {models ? (
-          <Text style={{ fontFamily: SERIF }}
+          <Text style={{ fontFamily: SERIF, color: C.textDim }}
             numberOfLines={1}
-            className="mt-0.5 text-xs text-muted-foreground"
+            className="mt-0.5 text-xs"
           >
             {models}
           </Text>
@@ -751,13 +812,17 @@ function CategoryChip({
     <Pressable
       onPress={onPress}
       className={`rounded-full px-4 py-2 active:opacity-70 ${
- active ? "bg-foreground" : "border border-border bg-background"
+        active ? "" : "border"
       }`}
+      style={
+        active
+          ? { backgroundColor: C.selected }
+          : { backgroundColor: C.page, borderColor: C.border }
+      }
     >
-      <Text style={{ fontFamily: SERIF_BOLD }}
-        className={`text-xs ${
-          active ? "text-white" : "text-foreground"
-        }`}
+      <Text
+        style={{ fontFamily: SERIF_BOLD, color: active ? C.onSelected : C.text }}
+        className="text-xs"
       >
         {label}
       </Text>

@@ -816,8 +816,8 @@ export default function InquiryDetailPage() {
       <div
         className="sticky top-0 z-40 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,255,255,0.85)",
-          borderBottom: "0.5px solid rgba(255,255,255,0.08)",
+          background: "hsl(var(--background) / 0.85)",
+          borderBottom: "1px solid hsl(var(--border))",
         }}
       >
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
@@ -839,7 +839,7 @@ export default function InquiryDetailPage() {
             ) : (
               <span
                 className="w-10 h-10 rounded-full inline-flex items-center justify-center font-semibold"
-                style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
+                style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }}
                 aria-hidden
               >
                 {initial}
@@ -1021,8 +1021,8 @@ export default function InquiryDetailPage() {
                         <span
                           className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold"
                           style={{
-                            background: "rgba(255,255,255,0.08)",
-                            color: "#f4f1ea",
+                            background: "hsl(var(--muted))",
+                            color: "hsl(var(--foreground))",
                           }}
                           aria-hidden
                         >
@@ -1253,8 +1253,8 @@ export default function InquiryDetailPage() {
         <div
           className="sticky bottom-0 px-5 md:px-6 py-3 backdrop-blur-md text-center text-sm font-medium text-muted-foreground"
           style={{
-            background: "rgba(255,255,255,0.92)",
-            borderTop: "0.5px solid rgba(255,255,255,0.08)",
+            background: "hsl(var(--background) / 0.92)",
+            borderTop: "1px solid hsl(var(--border))",
           }}
         >
           {inquiry.status === "lost"
@@ -1267,8 +1267,8 @@ export default function InquiryDetailPage() {
       <div
         className="sticky bottom-0 px-5 md:px-6 py-3 backdrop-blur-md"
         style={{
-          background: "rgba(255,255,255,0.92)",
-          borderTop: "0.5px solid rgba(255,255,255,0.08)",
+          background: "hsl(var(--background) / 0.92)",
+          borderTop: "1px solid hsl(var(--border))",
         }}
         onDragOver={(e) => {
           if (Array.from(e.dataTransfer.types).includes("Files")) {
@@ -1567,8 +1567,8 @@ function InquiryIntakeCard({
           <span
             className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold mt-2"
             style={{
-              background: "rgba(255,255,255,0.08)",
-              color: "#f4f1ea",
+              background: "hsl(var(--muted))",
+              color: "hsl(var(--foreground))",
             }}
             aria-hidden
           >
@@ -1598,7 +1598,7 @@ function InquiryIntakeCard({
             ) : null}
           </div>
           {intakeEntries.length > 0 ? (
-            <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+            <div className="border-t pt-3 space-y-1.5" style={{ borderColor: "hsl(var(--border))" }}>
               {intakeEntries.map(([label, val]) => (
                 <div key={label} className="flex items-start gap-2 text-xs">
                   <span className="text-muted-foreground shrink-0">{label}:</span>
@@ -1608,7 +1608,7 @@ function InquiryIntakeCard({
             </div>
           ) : null}
           {inquiry.special_requests ? (
-            <div className="border-t pt-3 text-sm leading-relaxed whitespace-pre-wrap" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+            <div className="border-t pt-3 text-sm leading-relaxed whitespace-pre-wrap" style={{ borderColor: "hsl(var(--border))" }}>
               <MessageBody body={inquiry.special_requests} />
             </div>
           ) : null}

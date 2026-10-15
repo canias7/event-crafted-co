@@ -25,5 +25,11 @@
     "region": "Notificaciones",
     "viewport": "Notificaciones ({hotkey})",
     "item": "Notificación"
+  },
+  "theme": {
+    "toDark": "Cambiar a modo oscuro",
+    "toLight": "Cambiar a modo claro",
+    "dark": "Modo oscuro",
+    "light": "Modo claro"
   }
 }

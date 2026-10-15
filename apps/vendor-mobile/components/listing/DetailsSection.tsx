@@ -24,11 +24,49 @@ import {
   type CategorySchema,
 } from "@vendora/core";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
+import { useCategoryNames } from "@/lib/categoryNames";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Quiet chip text: soft ink in light (as before), dim cream in dark.
+const QUIET_TEXT = IS_DARK ? C.textDim : "rgba(26,22,18,0.55)";
+const CHIP_TEXT = IS_DARK ? C.textDim : "rgba(26,22,18,0.65)";
+// Pressed row: the surface tint in light (as before); a fade in dark,
+// where NativeWind's bg-muted would flash light.
+const ROW_PRESS = IS_DARK ? "active:opacity-70" : "active:bg-muted";
 
 type AttrValue = string | number | boolean | string[] | null;
 type Attrs = Record<string, AttrValue>;
+
+// The schema's text in the app's language, keyed by the English text:
+// section names, labels, suffixes and preset options from the shared
+// listingAttributes namespace (the same words as the website), help text
+// from listingDetails → help. The schema in @vendora/core stays English:
+// option strings are the values saved to category_attributes. A
+// vendor's custom tag shows as typed.
+type SchemaText = Record<"section" | "label" | "suffix" | "help", (text: string) => string> & {
+  option: (text: string, field: string) => string;
+};
+
+function useSchemaText(): SchemaText {
+  const { tObject } = useT("listingAttributes");
+  const { tObject: tOwn } = useT("listingDetails");
+  const lookup = (names: Record<string, string> | undefined) => (text: string) =>
+    names && Object.prototype.hasOwnProperty.call(names, text) ? names[text] : text;
+  const map = (group: string) =>
+    lookup(tObject<Record<string, string> | undefined>(group));
+  const option = map("options");
+  const fieldOptions =
+    tObject<Record<string, Record<string, string>> | undefined>("fieldOptions") ?? {};
+  return {
+    section: map("sections"),
+    label: map("labels"),
+    suffix: map("suffixes"),
+    help: lookup(tOwn<Record<string, string> | undefined>("help")),
+    option: (text, field) => fieldOptions[field]?.[text] ?? option(text),
+  };
+}
 
 export function DetailsSection({
   vendorId,
@@ -38,6 +76,9 @@ export function DetailsSection({
   /** Sub-category currently saved on the vendor (vendor_profiles.category). */
   category: string | null;
 }) {
+  const { t } = useT("listingDetails");
+  const tx = useSchemaText();
+  const { sub } = useCategoryNames();
   const [attrs, setAttrs] = useState<Attrs>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -74,11 +115,11 @@ export function DetailsSection({
         .update({ category_attributes: attrs })
         .eq("id", vendorId);
       if (error) throw error;
-      Alert.alert("Saved", "Details updated.");
+      Alert.alert(t("savedTitle"), t("savedMessage"));
     } catch (err) {
       Alert.alert(
-        "Couldn't save details",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -92,10 +133,9 @@ export function DetailsSection({
   if (!category) {
     return (
       <View className="gap-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Details</Text>
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          Pick a category above to unlock the structured details for your
-          listing.
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+          {t("pickCategory")}
         </Text>
       </View>
     );
@@ -104,9 +144,9 @@ export function DetailsSection({
   if (!schema) {
     return (
       <View className="gap-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Details</Text>
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          No structured details for {category} yet.
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+          {t("noSchema", { category: sub(category) })}
         </Text>
       </View>
     );
@@ -115,8 +155,8 @@ export function DetailsSection({
   if (loading) {
     return (
       <View className="gap-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Details</Text>
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
       </View>
     );
   }
@@ -130,19 +170,20 @@ export function DetailsSection({
   return (
     <View className="gap-5">
       <View>
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Details</Text>
-        <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          Structured fields hosts use to filter and compare. Specific to {category}.
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("title")}</Text>
+        <Text className="mt-0.5 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+          {t("intro", { category: sub(category) })}
         </Text>
       </View>
       {applicableSections.map((section) => (
         <View key={section.name} className="gap-4">
-          <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-            {section.name}
+          <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+            {tx.section(section.name)}
           </Text>
           {section.fields.map((field) => (
             <FieldEditor
               key={field.key}
+              tx={tx}
               field={field}
               value={attrs[field.key] ?? null}
               onChange={(v) => setField(field.key, v)}
@@ -153,10 +194,10 @@ export function DetailsSection({
       <Pressable
         onPress={save}
         disabled={busy}
-        className="rounded-full border border-border bg-white h-11 items-center justify-center active:opacity-80"
+        className="rounded-full border h-11 items-center justify-center active:opacity-80" style={{ borderColor: C.border, backgroundColor: C.field }}
       >
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          {busy ? "Saving…" : "Save details"}
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+          {busy ? t("saving") : t("save")}
         </Text>
       </Pressable>
     </View>
@@ -164,10 +205,12 @@ export function DetailsSection({
 }
 
 function FieldEditor({
+  tx,
   field,
   value,
   onChange,
 }: {
+  tx: SchemaText;
   field: AttributeField;
   value: AttrValue;
   onChange: (v: AttrValue) => void;
@@ -181,19 +224,19 @@ function FieldEditor({
           : "";
     return (
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          {field.label}
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
+          {tx.label(field.label)}
         </Text>
         {field.help ? (
-          <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            {field.help}
+          <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+            {tx.help(field.help)}
           </Text>
         ) : null}
         <View className="mt-2 flex-row items-center gap-2">
           {field.type === "currency" ? (
-            <Text className="text-base text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>$</Text>
+            <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>$</Text>
           ) : null}
-          <TextInput style={{ fontFamily: "LibreBaskerville" }}
+          <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
             value={str}
             onChangeText={(v) => {
               const cleaned = v.replace(/[^0-9.]/g, "");
@@ -210,11 +253,11 @@ function FieldEditor({
             placeholder="0"
             placeholderTextColor={PLACEHOLDER}
             keyboardType={field.type === "int" ? "number-pad" : "decimal-pad"}
-            className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+            className="flex-1 rounded-xl border px-4 py-3 text-base"
           />
           {"suffix" in field && field.suffix ? (
-            <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-              {field.suffix}
+            <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+              {tx.suffix(field.suffix)}
             </Text>
           ) : null}
         </View>
@@ -225,12 +268,12 @@ function FieldEditor({
     return (
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            {field.label}
+          <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
+            {tx.label(field.label)}
           </Text>
           {field.help ? (
-            <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-              {field.help}
+            <Text className="mt-0.5 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+              {tx.help(field.help)}
             </Text>
           ) : null}
         </View>
@@ -251,9 +294,10 @@ function FieldEditor({
       onChange(arr.includes(t) ? arr.filter((x) => x !== t) : [...arr, t]);
     return (
       <TagsField
-        label={field.label}
-        help={field.help}
+        label={tx.label(field.label)}
+        help={field.help ? tx.help(field.help) : undefined}
         options={field.options}
+        optionLabel={(o) => tx.option(o, field.key)}
         value={arr}
         onToggle={toggle}
       />
@@ -262,6 +306,7 @@ function FieldEditor({
   if (field.type === "select") {
     return (
       <SelectField
+        tx={tx}
         field={field}
         value={typeof value === "string" ? value : ""}
         onChange={onChange}
@@ -281,13 +326,16 @@ function TagsField({
   options,
   value,
   onToggle,
+  optionLabel,
 }: {
   label: string;
   help?: string;
   options: string[];
   value: string[];
   onToggle: (t: string) => void;
+  optionLabel: (o: string) => string;
 }) {
+  const { t: tr } = useT("listingDetails");
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const customSelected = value.filter((v) => !options.includes(v));
@@ -305,15 +353,15 @@ function TagsField({
 
   return (
     <View>
-      <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>{label}</Text>
+      <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>{label}</Text>
       {help ? (
-        <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{help}</Text>
+        <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{help}</Text>
       ) : null}
       <View className="mt-2 flex-row flex-wrap gap-2">
         {options.map((opt) => (
           <Chip
             key={opt}
-            text={opt}
+            text={optionLabel(opt)}
             active={value.includes(opt)}
             onPress={() => onToggle(opt)}
           />
@@ -328,16 +376,16 @@ function TagsField({
               alignItems: "center",
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
               paddingLeft: 12,
               paddingRight: 4,
-              backgroundColor: "#fff",
+              backgroundColor: C.field,
             }}
           >
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder="Type and add"
+              placeholder={tr("typeAndAdd")}
               placeholderTextColor={PLACEHOLDER}
               autoFocus
               returnKeyType="done"
@@ -350,7 +398,7 @@ function TagsField({
                 fontSize: 13,
                 minWidth: 96,
                 paddingVertical: 6,
-                color: "#14161a",
+                color: C.text,
               }}
             />
             <Pressable
@@ -360,13 +408,13 @@ function TagsField({
                 width: 26,
                 height: 26,
                 borderRadius: 999,
-                backgroundColor: "#14161a",
+                backgroundColor: C.selected,
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: draft.trim() ? 1 : 0.3,
               }}
             >
-              <Feather name="check" size={13} color="#fff" />
+              <Feather name="check" size={13} color={C.onSelected} />
             </Pressable>
           </View>
         ) : (
@@ -381,12 +429,12 @@ function TagsField({
               borderRadius: 999,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: "#e6e1d5",
+              borderColor: C.border,
             }}
           >
-            <Feather name="plus" size={13} color="rgba(26,22,18,0.55)" />
-            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 13, color: "rgba(26,22,18,0.55)" }}>
-              Add other
+            <Feather name="plus" size={13} color={QUIET_TEXT} />
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 13, color: QUIET_TEXT }}>
+              {tr("addOther")}
             </Text>
           </Pressable>
         )}
@@ -415,16 +463,16 @@ function Chip({
         paddingVertical: 8,
         borderRadius: 999,
         borderWidth: 1,
-        backgroundColor: active ? "#14161a" : "#ffffff",
-        borderColor: active ? "#14161a" : "#e6e1d5",
+        backgroundColor: active ? C.selected : C.field,
+        borderColor: active ? C.selected : C.border,
       }}
     >
-      {active ? <Feather name="check" size={13} color="#ffffff" /> : null}
+      {active ? <Feather name="check" size={13} color={C.onSelected} /> : null}
       <Text
         style={{
           fontFamily: "LibreBaskerville",
           fontSize: 13,
-          color: active ? "#ffffff" : "rgba(26,22,18,0.65)",
+          color: active ? C.onSelected : CHIP_TEXT,
         }}
       >
         {text}
@@ -434,29 +482,33 @@ function Chip({
 }
 
 function SelectField({
+  tx,
   field,
   value,
   onChange,
 }: {
+  tx: SchemaText;
   field: Extract<AttributeField, { type: "select" }>;
   value: string;
   onChange: (v: AttrValue) => void;
 }) {
+  const { t } = useT("listingDetails");
   const [open, setOpen] = useState(false);
+  const label = tx.label(field.label);
   return (
     <View>
-      <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>{field.label}</Text>
+      <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>{label}</Text>
       {field.help ? (
-        <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{field.help}</Text>
+        <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{tx.help(field.help)}</Text>
       ) : null}
       <Pressable
         onPress={() => setOpen(true)}
-        className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
+        className="mt-2 rounded-xl border px-4 py-3 active:opacity-80 flex-row items-center justify-between" style={{ borderColor: C.border, backgroundColor: C.page }}
       >
-        <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          {value || "— pick one —"}
+        <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
+          {value ? tx.option(value, field.key) : t("pickOne")}
         </Text>
-        <Feather name="chevron-down" size={18} color="#746a58" />
+        <Feather name="chevron-down" size={18} color={C.placeholder} />
       </Pressable>
       <Modal
         visible={open}
@@ -464,13 +516,13 @@ function SelectField({
         presentationStyle="pageSheet"
         onRequestClose={() => setOpen(false)}
       >
-        <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderColor: C.border }}>
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("cancel")}</Text>
             </Pressable>
-            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              {field.label}
+            <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+              {label}
             </Text>
             <View style={{ width: 60 }} />
           </View>
@@ -482,20 +534,19 @@ function SelectField({
                   onChange(opt);
                   setOpen(false);
                 }}
-                className="px-5 py-4 active:bg-muted"
+                className={`px-5 py-4 ${ROW_PRESS}`}
               >
                 <Text
-                  className={`text-base ${
-                    value === opt ? "text-foreground" : "text-foreground"
-                  }`}
+                  className="text-base"
                   style={{
+                    color: C.text,
                     fontFamily:
                       value === opt
                         ? "LibreBaskerville-Bold"
                         : "LibreBaskerville",
                   }}
                 >
-                  {opt}
+                  {tx.option(opt, field.key)}
                 </Text>
               </Pressable>
             ))}

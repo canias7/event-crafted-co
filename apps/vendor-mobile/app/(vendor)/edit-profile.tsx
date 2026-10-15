@@ -33,15 +33,21 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { prepareLogoForUpload, type PickedAsset } from "@/lib/imageManipulation";
 import { LogoCropperModal } from "@/components/LogoCropperModal";
+import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const CREAM = "#f4f1ea";
-const INK = "#14161a";
+const CREAM = C.page;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const BORDER = "#e6e1d5";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const BORDER = C.border;
+// Monogram avatar: ink with a cream letter in both themes (avatars keep
+// their ink fill).
+const AVATAR_BG = "#14161a";
+const AVATAR_FG = "#f4f1ea";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -61,6 +67,7 @@ const EMPTY: ProfileForm = {
 export default function EditProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useT("editProfile");
   const [initial, setInitial] = useState<ProfileForm>(EMPTY);
   const [form, setForm] = useState<ProfileForm>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -111,8 +118,8 @@ export default function EditProfileScreen() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
-        "Photos access needed",
-        "Enable Photos access in Settings to pick a logo.",
+        t("alerts.photosAccess.title"),
+        t("alerts.photosAccess.message"),
       );
       return;
     }
@@ -148,8 +155,8 @@ export default function EditProfileScreen() {
       ).buffer;
       if (bytes.byteLength === 0) {
         Alert.alert(
-          "Couldn't read photo",
-          "The processed image came back empty. Try again.",
+          t("alerts.readPhoto.title"),
+          t("alerts.readPhoto.message"),
         );
         return;
       }
@@ -178,8 +185,8 @@ export default function EditProfileScreen() {
       setInitial((prev) => ({ ...prev, logo_url: pub.publicUrl }));
     } catch (e) {
       Alert.alert(
-        "Couldn't update logo",
-        e instanceof Error ? e.message : "Please try again.",
+        t("alerts.logo.title"),
+        e instanceof Error ? e.message : t("alerts.logo.message"),
       );
     } finally {
       setLogoUploading(false);
@@ -192,7 +199,7 @@ export default function EditProfileScreen() {
     // would null out the row and break the auto-sync to the solo
     // listing. Force a value before we even hit the network.
     if (!form.business_name.trim()) {
-      Alert.alert("Add a business name", "Your name is required.");
+      Alert.alert(t("alerts.nameRequired.title"), t("alerts.nameRequired.message"));
       return;
     }
     setSaving(true);
@@ -207,7 +214,7 @@ export default function EditProfileScreen() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      Alert.alert("Couldn't save", error.message);
+      Alert.alert(t("alerts.saveFailed"), error.message);
       return;
     }
     router.back();
@@ -240,12 +247,15 @@ export default function EditProfileScreen() {
           </Pressable>
           <Text
             style={{
+              flexShrink: 1,
+              textAlign: "center",
+              marginHorizontal: 8,
               color: INK,
               fontFamily: SERIF_BOLD,
               fontSize: 20,
             }}
           >
-            Edit profile
+            {t("title")}
           </Text>
           <Pressable
             onPress={save}
@@ -263,7 +273,7 @@ export default function EditProfileScreen() {
                   fontSize: 15,
                 }}
               >
-                Save
+                {t("save")}
               </Text>
             )}
           </Pressable>
@@ -297,7 +307,7 @@ export default function EditProfileScreen() {
                       width: 120,
                       height: 120,
                       borderRadius: 24,
-                      backgroundColor: INK,
+                      backgroundColor: AVATAR_BG,
                       alignItems: "center",
                       justifyContent: "center",
                       overflow: "hidden",
@@ -319,7 +329,7 @@ export default function EditProfileScreen() {
                     ) : (
                       <Text
                         style={{
-                          color: CREAM,
+                          color: AVATAR_FG,
                           fontFamily: SERIF_BOLD,
                           fontSize: 66,
                           lineHeight: 74,
@@ -344,7 +354,7 @@ export default function EditProfileScreen() {
                         <Text
                           style={{ fontFamily: SERIF_BOLD, color: "#ffffff", fontSize: 13 }}
                         >
-                          Uploading…
+                          {t("uploading")}
                         </Text>
                       </View>
                     ) : null}
@@ -361,23 +371,23 @@ export default function EditProfileScreen() {
                         fontSize: 14,
                       }}
                     >
-                      Change photo
+                      {t("changePhoto")}
                     </Text>
                   </Pressable>
                 </View>
 
                 {/* Fields */}
                 <Field
-                  label="BUSINESS NAME"
+                  label={t("fields.businessName.label")}
                   value={form.business_name}
                   onChange={(v) => set("business_name", v)}
-                  placeholder="Chris Cakes"
+                  placeholder={t("fields.businessName.placeholder")}
                 />
                 <Field
-                  label="BIO"
+                  label={t("fields.bio.label")}
                   value={form.bio}
                   onChange={(v) => set("bio", v)}
-                  placeholder="One or two sentences on what makes your work worth booking."
+                  placeholder={t("fields.bio.placeholder")}
                   multiline
                 />
               </>
@@ -435,10 +445,11 @@ function Field({
         onChangeText={onChange}
         placeholder={placeholder}
         placeholderTextColor={PLACEHOLDER}
+        keyboardAppearance={IS_DARK ? "dark" : "light"}
         multiline={multiline}
         style={{ fontFamily: SERIF,
           marginTop: 6,
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: BORDER,

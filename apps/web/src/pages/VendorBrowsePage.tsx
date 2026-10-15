@@ -257,7 +257,7 @@ export default function VendorBrowsePage() {
 
   const activeTile = TILES.find((tile) => sameSet(activeCategories, tile.subs));
   const pill =
-    "inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea] transition-colors hover:border-white/40";
+    "inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-card px-4 text-[14px] font-bold text-foreground transition-colors hover:border-foreground/40";
 
   // What's narrowing the list, as removable pills in the filter bar.
   const activeFilters: { label: string; clear: () => void }[] = [
@@ -284,7 +284,7 @@ export default function VendorBrowsePage() {
   }
 
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: INK }}>
+    <div className="min-h-screen bg-background text-foreground">
       {/* ═══════ HERO — photo, matching the landing page ═══════ */}
       <section className="relative overflow-hidden" style={{ backgroundColor: INK }}>
         <div className="absolute inset-0">
@@ -297,8 +297,17 @@ export default function VendorBrowsePage() {
             className="h-full w-full object-cover"
           />
         </div>
+        {/* Scrim for the light text: in the dark theme it fades into the
+            ink page; in the light theme the band stays dark to its edge. */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 dark:hidden"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(10,11,14,0.62) 0%, rgba(10,11,14,0.4) 40%, rgba(20,22,26,0.7) 78%, rgba(20,22,26,0.82) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 hidden dark:block"
           style={{
             background:
               "linear-gradient(180deg, rgba(10,11,14,0.62) 0%, rgba(10,11,14,0.4) 40%, rgba(20,22,26,0.7) 78%, rgb(20,22,26) 100%)",
@@ -332,10 +341,11 @@ export default function VendorBrowsePage() {
             </p>
           </div>
 
-          {/* Search card */}
+          {/* Search card: cream on the photo in both themes, so
+              .surface-light keeps its tokens light. */}
           <form
             onSubmit={scrollToResults}
-            className="mt-8 flex flex-col gap-2 rounded-2xl p-2 md:flex-row md:items-center"
+            className="surface-light mt-8 flex flex-col gap-2 rounded-2xl p-2 md:flex-row md:items-center"
             style={{ backgroundColor: "rgba(251,249,244,0.97)" }}
           >
             <label className="flex h-12 flex-1 items-center gap-2.5 px-3 md:h-11">
@@ -437,7 +447,7 @@ export default function VendorBrowsePage() {
               <button
                 type="button"
                 onClick={() => setActiveCategories(new Set())}
-                className="inline-flex h-9 items-center gap-1.5 text-[14px] font-bold text-gold transition-colors hover:text-white"
+                className="inline-flex h-9 items-center gap-1.5 text-[14px] font-bold text-accent underline-offset-4 transition-colors hover:underline"
               >
                 {t("browse.allVendors")} <ArrowRight className="h-4 w-4" />
               </button>
@@ -452,8 +462,8 @@ export default function VendorBrowsePage() {
                   type="button"
                   onClick={() => setActiveCategories(selected ? new Set() : new Set(tile.subs))}
                   aria-pressed={selected}
-                  className={`group relative aspect-[4/5] w-[42vw] max-w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl text-left outline-none ring-offset-[#14161a] transition-shadow focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 sm:w-[30vw] lg:w-auto lg:max-w-none ${
-                    selected ? "ring-2 ring-gold ring-offset-2" : ""
+                  className={`group relative aspect-[4/5] w-[42vw] max-w-[200px] shrink-0 snap-start overflow-hidden rounded-2xl text-left outline-none ring-offset-background transition-shadow focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:w-[30vw] lg:w-auto lg:max-w-none ${
+                    selected ? "ring-2 ring-accent ring-offset-2" : ""
                   }`}
                 >
                   <Picture
@@ -495,11 +505,11 @@ export default function VendorBrowsePage() {
                     aria-pressed={selected}
                     className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-[14px] font-bold transition-colors ${
                       selected
-                        ? "border-[#f4f1ea] bg-[#f4f1ea] text-[#14161a]"
-                        : "border-white/15 bg-white/[0.04] text-[#f4f1ea] hover:border-white/40"
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-foreground hover:border-foreground/40"
                     }`}
                   >
-                    <MapPin className={`h-4 w-4 shrink-0 ${selected ? "text-[#14161a]" : "text-gold"}`} aria-hidden />
+                    <MapPin className={`h-4 w-4 shrink-0 ${selected ? "text-primary-foreground" : "text-accent"}`} aria-hidden />
                     {c.label}
                     <span className="font-normal">{c.count}</span>
                   </button>
@@ -514,14 +524,14 @@ export default function VendorBrowsePage() {
           <div className="container mx-auto px-5 md:px-8">
             <h2 className="m-0 text-[32px] leading-tight md:text-[44px]">{t("results.title")}</h2>
             {hiddenByDate > 0 && (
-              <p className="m-0 mt-2 text-[14px] text-[#f4f1ea]/80">
+              <p className="m-0 mt-2 text-[14px] text-muted-foreground">
                 {t("results.hiddenByDate", { count: hiddenByDate })}
               </p>
             )}
             {category !== "All" && slugByCategory[category] && (
               <Link
                 to={`/vendors/category/${slugByCategory[category]}`}
-                className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-gold hover:text-white"
+                className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-accent underline-offset-4 hover:underline"
               >
                 {t("results.viewGroupPage", {
                   group: categoryNames.group(slugByCategory[category], groupOfSub(category) ?? category),
@@ -532,7 +542,7 @@ export default function VendorBrowsePage() {
           </div>
 
           {/* Filter bar: stays at the top while you scroll the results. */}
-          <div className="sticky top-0 z-30 mt-6 border-y border-white/10 bg-[#14161a]/90 backdrop-blur-md">
+          <div className="sticky top-0 z-30 mt-6 border-y border-border bg-background/90 backdrop-blur-md">
             <div className="container mx-auto flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3 md:flex-nowrap md:px-8">
               <p className="m-0 mr-auto shrink-0 text-[14px] font-bold md:mr-0">
                 {loading && vendors.length === 0 ? t("filters.loading") : t("filters.count", { count: filtered.length })}
@@ -545,7 +555,7 @@ export default function VendorBrowsePage() {
                 {activeFilters.map((f, i) => (
                   <span
                     key={`${i}-${f.label}`}
-                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#f4f1ea] px-3 text-[13px] font-bold text-foreground"
+                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 text-[13px] font-bold text-foreground"
                   >
                     {f.label}
                     <button type="button" onClick={f.clear} aria-label={t("filters.remove", { label: f.label })} className="hover:text-accent">
@@ -554,7 +564,7 @@ export default function VendorBrowsePage() {
                   </span>
                 ))}
                 {activeFilters.length > 1 && (
-                  <button type="button" onClick={clearAll} className="shrink-0 text-[13px] font-bold text-gold hover:text-white">
+                  <button type="button" onClick={clearAll} className="shrink-0 text-[13px] font-bold text-accent underline-offset-4 hover:underline">
                     {t("filters.clearAll")}
                   </button>
                 )}
@@ -608,7 +618,7 @@ export default function VendorBrowsePage() {
               <Select value={sort} onValueChange={(v) => setSort(v as keyof typeof sortOptions)}>
                 <SelectTrigger
                   aria-label={t("filters.sortLabel")}
-                  className="h-11 w-[172px] shrink-0 rounded-full border-white/15 bg-white/[0.04] px-4 text-[14px] font-bold text-[#f4f1ea]"
+                  className="h-11 w-[172px] shrink-0 rounded-full border-border bg-card px-4 text-[14px] font-bold text-foreground"
                 >
                   {/* The trigger is a fixed 172px, so a label that doesn't fit
                       there has a shorter form (filters.sortTrigger); the list
@@ -631,12 +641,12 @@ export default function VendorBrowsePage() {
             {vendors.length === 0 && loading ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-white/15 bg-white/[0.03] p-2">
-                    <Skeleton className="aspect-[4/5] w-full rounded-xl bg-white/10" />
+                  <div key={i} className="rounded-2xl border border-border bg-card p-2">
+                    <Skeleton className="aspect-[4/5] w-full rounded-xl bg-muted" />
                     <div className="space-y-2 px-3 pb-3 pt-4">
-                      <Skeleton className="h-3 w-1/3 bg-white/10" />
-                      <Skeleton className="h-5 w-2/3 bg-white/10" />
-                      <Skeleton className="h-4 w-full bg-white/10" />
+                      <Skeleton className="h-3 w-1/3 bg-muted" />
+                      <Skeleton className="h-5 w-2/3 bg-muted" />
+                      <Skeleton className="h-4 w-full bg-muted" />
                     </div>
                   </div>
                 ))}
@@ -651,15 +661,15 @@ export default function VendorBrowsePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...spring, delay: Math.min(i * 0.05, 0.4) }}
                   >
-                    <VendorCard vendor={vendor} eager={i < 4} tone="dark" tall />
+                    <VendorCard vendor={vendor} eager={i < 4} tall />
                   </motion.div>
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/15 px-6 py-20 text-center">
-                <Store className="mx-auto mb-4 h-10 w-10 text-gold" aria-hidden />
+              <div className="rounded-2xl border border-border px-6 py-20 text-center">
+                <Store className="mx-auto mb-4 h-10 w-10 text-accent" aria-hidden />
                 <h3 className="m-0 mb-2 text-2xl">{t("empty.title")}</h3>
-                <p className="m-0 mx-auto max-w-sm text-[15px] text-[#f4f1ea]/80">
+                <p className="m-0 mx-auto max-w-sm text-[15px] text-muted-foreground">
                   {t("empty.body")}
                 </p>
                 <Button variant="outline" className="mt-6" onClick={clearAll}>
@@ -670,13 +680,13 @@ export default function VendorBrowsePage() {
           </div>
         </section>
 
-        <div className="border-t border-white/10">
+        <div className="border-t border-border">
           <ClosingBand
             title={
               <Trans
                 t={t}
                 i18nKey="closing.title"
-                components={{ gold: <span className="font-editorial text-gold" /> }}
+                components={{ gold: <span className="font-editorial text-accent" /> }}
               />
             }
             sub={t("closing.sub")}
@@ -685,7 +695,7 @@ export default function VendorBrowsePage() {
         </div>
       </main>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }

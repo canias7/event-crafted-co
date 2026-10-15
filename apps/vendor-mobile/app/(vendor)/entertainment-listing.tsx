@@ -24,9 +24,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 import { FaqsSection } from "@/components/listing/Sections";
 import {
-  CREAM,
+  PAGE,
   INK,
   INK_DIM,
   BORDER,
@@ -101,6 +103,17 @@ export default function EntertainmentListingScreen() {
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const dialog = useBrandDialog();
+  const { t: tw, tObject: twObject } = useT("listingWizard");
+  const { t, tObject } = useT("entertainmentListing");
+  // Options are saved in English; chips show them in the app's language.
+  const valueLabels: Record<string, string> = {
+    ...(twObject<Record<string, string>>("values") ?? {}),
+    ...(tObject<Record<string, string>>("values") ?? {}),
+  };
+  const chipLabel = (v: string) => valueLabels[v] ?? v;
+  const chipLabels = (opts: readonly string[]) => opts.map(chipLabel);
+  const chipValue = (opts: readonly string[], label: string) =>
+    opts.find((o) => chipLabel(o) === label) ?? label;
 
   // Basics
   const [actName, setActName] = useState("");
@@ -291,7 +304,7 @@ export default function EntertainmentListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
+      dialog.show({ icon: "alert-circle", title: tw("dialogs.saveFailed"), message: error.message });
       return false;
     }
     if (status) {
@@ -302,19 +315,19 @@ export default function EntertainmentListingScreen() {
 
   function missingForPublish(): string[] {
     const missing: string[] = [];
-    if (!actName.trim()) missing.push("Act / business name");
-    if (!tagline.trim()) missing.push("Short tagline");
-    if (!location.trim()) missing.push("Location");
-    if (!serviceAreas.trim()) missing.push("Service areas");
-    if (!yearsInBusiness.trim()) missing.push("Years in business");
-    if (!description.trim()) missing.push("Full description");
-    if (whatYouDo.length === 0) missing.push("What you do (at least one)");
+    if (!actName.trim()) missing.push(t("missing.actBusinessName"));
+    if (!tagline.trim()) missing.push(tw("missing.shortTagline"));
+    if (!location.trim()) missing.push(tw("missing.location"));
+    if (!serviceAreas.trim()) missing.push(tw("missing.serviceAreas"));
+    if (!yearsInBusiness.trim()) missing.push(tw("missing.yearsInBusiness"));
+    if (!description.trim()) missing.push(tw("missing.fullDescription"));
+    if (whatYouDo.length === 0) missing.push(t("missing.whatYouDoAtLeastOne"));
     if (
       pricingType !== "Custom" &&
       (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
     )
-      missing.push("Starting price (or choose Custom pricing)");
-    if (photoCount < MIN_PHOTOS) missing.push(`At least ${MIN_PHOTOS} photos`);
+      missing.push(tw("missing.startingPriceOrChooseCustomPricing"));
+    if (photoCount < MIN_PHOTOS) missing.push(tw("missing.minPhotos", { count: MIN_PHOTOS }));
     return missing;
   }
 
@@ -323,7 +336,7 @@ export default function EntertainmentListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
+    if (ok) dialog.show({ title: tw("dialogs.saved"), message: tw("dialogs.savedMessage") });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -339,7 +352,7 @@ export default function EntertainmentListingScreen() {
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change category",
+        title: tw("dialogs.categoryFailed"),
         message: error.message,
       });
       return;
@@ -358,8 +371,10 @@ export default function EntertainmentListingScreen() {
     if (missing.length > 0) {
       dialog.show({
         icon: "list",
-        title: "Can't publish yet",
-        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+        title: tw("dialogs.cantPublish"),
+        message: tw("dialogs.cantPublishMessage", {
+          list: missing.map((m) => `• ${m}`).join("\n"),
+        }),
       });
       return;
     }
@@ -374,9 +389,9 @@ export default function EntertainmentListingScreen() {
       .catch(() => {});
     dialog.show({
       icon: "send",
-      title: "Submitted for review",
-      message: "We'll review your listing within 2–3 business days.",
-      buttonLabel: "Done",
+      title: tw("dialogs.submitted"),
+      message: tw("dialogs.submittedMessage"),
+      buttonLabel: tw("dialogs.done"),
       onClose: () => router.back(),
     });
   }
@@ -389,8 +404,8 @@ export default function EntertainmentListingScreen() {
     if (ok) {
       dialog.show({
         icon: "file-text",
-        title: "Saved as draft",
-        message: "Your listing is out of review until you publish it again.",
+        title: tw("dialogs.savedAsDraft"),
+        message: tw("dialogs.savedAsDraftMessage"),
         onClose: () => router.back(),
       });
     }
@@ -403,8 +418,8 @@ export default function EntertainmentListingScreen() {
     setBusy(false);
     if (ok) {
       dialog.show({
-        title: "Changes saved",
-        message: "Your listing is up to date.",
+        title: tw("dialogs.changesSaved"),
+        message: tw("dialogs.changesSavedMessage"),
         onClose: () => router.back(),
       });
     }
@@ -416,10 +431,9 @@ export default function EntertainmentListingScreen() {
     if (!profile?.id || busy) return;
     dialog.show({
       icon: "trash-2",
-      title: "Delete this listing?",
-      message:
-        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      confirmLabel: "Delete listing",
+      title: tw("dialogs.deleteTitle"),
+      message: tw("dialogs.deleteMessage"),
+      confirmLabel: tw("deleteListing"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -432,7 +446,7 @@ export default function EntertainmentListingScreen() {
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't delete",
+            title: tw("dialogs.deleteFailed"),
             message: error.message,
           });
         } else {
@@ -446,19 +460,19 @@ export default function EntertainmentListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{tw("loading")}</Text>
         </View>
       </SafeAreaView>
     );
   }
   if (!profile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
-            Couldn&rsquo;t load this listing.
+            {tw("loadFailed")}
           </Text>
         </View>
       </SafeAreaView>
@@ -468,7 +482,7 @@ export default function EntertainmentListingScreen() {
   const yesNo = ["Yes", "No"];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -492,7 +506,7 @@ export default function EntertainmentListingScreen() {
               color: INK,
             }}
           >
-            {status === "draft" ? "New listing" : "Edit listing"}
+            {status === "draft" ? tw("newListing") : tw("editListing")}
           </Text>
           <TouchableOpacity
             onPress={saveDraftHeader}
@@ -505,17 +519,17 @@ export default function EntertainmentListingScreen() {
               height: 36,
               justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              backgroundColor: busy ? C.page : C.field,
               borderColor: BORDER,
             }}
           >
             <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>
-              {status === "draft" ? "Save draft" : "Save"}
+              {status === "draft" ? tw("saveDraft") : tw("save")}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <StepRail steps={STEPS} step={step} onJump={setStep} />
+        <StepRail steps={chipLabels(STEPS)} step={step} onJump={setStep} />
 
         <ScrollView
           contentContainerStyle={{
@@ -529,42 +543,42 @@ export default function EntertainmentListingScreen() {
           {step === 0 ? (
             <>
               <StepTitle
-                title="Basics"
-                sub="Tell clients the essentials about your act."
+                title={tw("headings.basics")}
+                sub={t("subs.tellClientsTheEssentialsAboutYour")}
               />
               <CategoryField
                 value={profile.category}
                 onPress={() => setCategoryPickerOpen(true)}
               />
-              <Field label="Act / business name" required>
+              <Field label={t("labels.actBusinessName")} required>
                 <Input
                   value={actName}
                   onChangeText={setActName}
-                  placeholder="e.g., DJ Alex Beats"
+                  placeholder={t("placeholders.egDjAlexBeats")}
                 />
               </Field>
-              <Field label="Short tagline" required>
+              <Field label={tw("labels.shortTagline")} required>
                 <Input
                   value={tagline}
                   onChangeText={setTagline}
-                  placeholder="e.g., High-energy DJ. Unforgettable moments."
+                  placeholder={t("placeholders.egHighEnergyDjUnforgettableMoments")}
                 />
               </Field>
-              <Field label="Location" required>
+              <Field label={tw("labels.location")} required>
                 <Input
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="Enter city or ZIP code"
+                  placeholder={tw("placeholders.enterCityOrZipCode")}
                 />
               </Field>
-              <Field label="Service areas (cities, regions, states)" required>
+              <Field label={tw("labels.serviceAreasCitiesRegionsStates")} required>
                 <Input
                   value={serviceAreas}
                   onChangeText={setServiceAreas}
-                  placeholder="Add areas"
+                  placeholder={tw("placeholders.addAreas")}
                 />
               </Field>
-              <Field label="Website">
+              <Field label={tw("labels.website")}>
                 <Input
                   value={website}
                   onChangeText={setWebsite}
@@ -573,7 +587,7 @@ export default function EntertainmentListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Instagram (optional)">
+              <Field label={tw("labels.instagramOptional")}>
                 <Input
                   value={instagram}
                   onChangeText={setInstagram}
@@ -581,11 +595,11 @@ export default function EntertainmentListingScreen() {
                   autoCapitalize="none"
                 />
               </Field>
-              <Field label="Years in business" required>
+              <Field label={tw("labels.yearsInBusiness")} required>
                 <Input
                   value={yearsInBusiness}
                   onChangeText={(v) => setYearsInBusiness(v.replace(/[^0-9]/g, "").slice(0, 3))}
-                  placeholder="e.g., 5"
+                  placeholder={tw("placeholders.eg5")}
                   keyboardType="number-pad"
                 />
               </Field>
@@ -595,45 +609,45 @@ export default function EntertainmentListingScreen() {
           {step === 1 ? (
             <>
               <StepTitle
-                title="About your act"
-                sub="Help clients know who you are and what you offer."
+                title={t("headings.aboutYourAct")}
+                sub={t("subs.helpClientsKnowWhoYouAre")}
               />
-              <Field label="Full description" required>
+              <Field label={tw("labels.fullDescription")} required>
                 <Input
                   value={description}
                   onChangeText={(v) => setDescription(v.slice(0, 1000))}
-                  placeholder="Tell clients about your experience, style, and what makes you unique…"
+                  placeholder={t("placeholders.tellClientsAboutYourExperienceStyle")}
                   multiline
                 />
               </Field>
-              <Field label="What you do (select all that apply)" required>
+              <Field label={t("labels.whatYouDoSelectAllThat")} required>
                 <ChipMulti
-                  options={WHAT_YOU_DO}
-                  selected={whatYouDo}
-                  onChange={setWhatYouDo}
+                  options={chipLabels(WHAT_YOU_DO)}
+                  selected={whatYouDo.map(chipLabel)}
+                  onChange={(next) => setWhatYouDo(next.map((l) => chipValue(WHAT_YOU_DO, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="Best for (select all that apply)">
+              <Field label={tw("labels.bestForSelectAllThatApply")}>
                 <ChipMulti
-                  options={BEST_FOR}
-                  selected={bestFor}
-                  onChange={setBestFor}
+                  options={chipLabels(BEST_FOR)}
+                  selected={bestFor.map(chipLabel)}
+                  onChange={(next) => setBestFor(next.map((l) => chipValue(BEST_FOR, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="Style / genre / vibe">
+              <Field label={t("labels.styleGenreVibe")}>
                 <Input
                   value={styleGenre}
                   onChangeText={setStyleGenre}
-                  placeholder="e.g., Top 40, Jazz, Acoustic, High-energy, Elegant…"
+                  placeholder={t("placeholders.egTop40JazzAcousticHigh")}
                 />
               </Field>
-              <Field label="What makes you unique?">
+              <Field label={t("labels.whatMakesYouUnique")}>
                 <Input
                   value={unique}
                   onChangeText={(v) => setUnique(v.slice(0, 500))}
-                  placeholder="Share what sets you apart from other entertainers…"
+                  placeholder={t("placeholders.shareWhatSetsYouApartFrom")}
                   multiline
                 />
               </Field>
@@ -643,46 +657,46 @@ export default function EntertainmentListingScreen() {
           {step === 2 ? (
             <>
               <StepTitle
-                title="Performance details"
-                sub="What a booking with you looks like."
+                title={t("headings.performanceDetails")}
+                sub={t("subs.whatABookingWithYouLooks")}
               />
-              <Field label="Type of performance / act">
+              <Field label={t("labels.typeOfPerformanceAct")}>
                 <Input
                   value={actType}
                   onChangeText={setActType}
-                  placeholder="e.g., Open-format DJ set with live sax"
+                  placeholder={t("placeholders.egOpenFormatDjSetWith")}
                 />
               </Field>
-              <Field label="Typical performance length">
+              <Field label={t("labels.typicalPerformanceLength")}>
                 <Input
                   value={performanceLength}
                   onChangeText={setPerformanceLength}
-                  placeholder="e.g., 4 hours, two 45-minute sets"
+                  placeholder={t("placeholders.eg4HoursTwo45Minute")}
                 />
               </Field>
-              <Field label="Set options / packages">
+              <Field label={t("labels.setOptionsPackages")}>
                 <Input
                   value={setOptions}
                   onChangeText={setSetOptions}
-                  placeholder="e.g., Ceremony + cocktail hour + reception"
+                  placeholder={t("placeholders.egCeremonyCocktailHourReception")}
                   multiline
                 />
               </Field>
-              <Field label="Number of performers / members">
+              <Field label={t("labels.numberOfPerformersMembers")}>
                 <Input
                   value={performerCount}
                   onChangeText={(v) => setPerformerCount(v.replace(/[^0-9]/g, ""))}
-                  placeholder="e.g., 1"
+                  placeholder={t("placeholders.eg1")}
                   keyboardType="number-pad"
                 />
               </Field>
-              <Field label="Audience size (min – max)">
+              <Field label={t("labels.audienceSizeMinMax")}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Input
                       value={audienceMin}
                       onChangeText={(v) => setAudienceMin(v.replace(/[^0-9]/g, ""))}
-                      placeholder="Min"
+                      placeholder={tw("placeholders.min")}
                       keyboardType="number-pad"
                     />
                   </View>
@@ -691,86 +705,86 @@ export default function EntertainmentListingScreen() {
                     <Input
                       value={audienceMax}
                       onChangeText={(v) => setAudienceMax(v.replace(/[^0-9]/g, ""))}
-                      placeholder="Max"
+                      placeholder={tw("placeholders.max")}
                       keyboardType="number-pad"
                     />
                   </View>
                 </View>
               </Field>
 
-              <StepTitle title="What's included" sub="What comes with the booking." topGap />
-              <Field label="What's included in your performance">
+              <StepTitle title={tw("headings.whatsIncluded")} sub={t("subs.whatComesWithTheBooking")} topGap />
+              <Field label={t("labels.whatsIncludedInYourPerformance")}>
                 <Input
                   value={included}
                   onChangeText={setIncluded}
-                  placeholder="e.g., Music curation, requests, wireless mics"
+                  placeholder={t("placeholders.egMusicCurationRequestsWirelessMics")}
                   multiline
                 />
               </Field>
-              <Field label="Equipment / instruments / gear">
+              <Field label={t("labels.equipmentInstrumentsGear")}>
                 <Input
                   value={equipment}
                   onChangeText={setEquipment}
-                  placeholder="e.g., Pioneer setup, 2x QSC K12 speakers"
+                  placeholder={t("placeholders.egPioneerSetup2xQscK12")}
                   multiline
                 />
               </Field>
-              <Field label="Sound / lighting included?">
+              <Field label={t("labels.soundLightingIncluded")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={soundLighting}
-                  onChange={(v) => setSoundLighting(v as typeof soundLighting)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(soundLighting)}
+                  onChange={(v) => setSoundLighting(chipValue(yesNo, v) as typeof soundLighting)}
                 />
               </Field>
-              <Field label="Setup / breakdown included?">
+              <Field label={tw("labels.setupBreakdownIncluded")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={setupIncluded}
-                  onChange={(v) => setSetupIncluded(v as typeof setupIncluded)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(setupIncluded)}
+                  onChange={(v) => setSetupIncluded(chipValue(yesNo, v) as typeof setupIncluded)}
                 />
               </Field>
-              <Field label="MC / announcements included?">
+              <Field label={t("labels.mcAnnouncementsIncluded")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={mcIncluded}
-                  onChange={(v) => setMcIncluded(v as typeof mcIncluded)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(mcIncluded)}
+                  onChange={(v) => setMcIncluded(chipValue(yesNo, v) as typeof mcIncluded)}
                 />
               </Field>
 
-              <StepTitle title="Requirements & logistics" sub="What you need from the venue." topGap />
-              <Field label="Space requirements">
+              <StepTitle title={t("headings.requirementsLogistics")} sub={t("subs.whatYouNeedFromTheVenue")} topGap />
+              <Field label={t("labels.spaceRequirements")}>
                 <Input
                   value={spaceRequirements}
                   onChangeText={setSpaceRequirements}
-                  placeholder="e.g., 10x10 ft covered area, 6-ft table"
+                  placeholder={t("placeholders.eg10x10FtCoveredArea6")}
                 />
               </Field>
-              <Field label="Power requirements">
+              <Field label={t("labels.powerRequirements")}>
                 <Input
                   value={powerRequirements}
                   onChangeText={setPowerRequirements}
-                  placeholder="e.g., Two 120V outlets within 25 ft"
+                  placeholder={t("placeholders.egTwo120vOutletsWithin25")}
                 />
               </Field>
-              <Field label="Load-in / setup time">
+              <Field label={t("labels.loadInSetupTime")}>
                 <Input
                   value={loadInTime}
                   onChangeText={setLoadInTime}
-                  placeholder="e.g., 90 minutes before start"
+                  placeholder={t("placeholders.eg90MinutesBeforeStart")}
                 />
               </Field>
-              <Field label="Parking / load-in access">
+              <Field label={t("labels.parkingLoadInAccess")}>
                 <Input
                   value={parkingAccess}
                   onChangeText={setParkingAccess}
-                  placeholder="e.g., Loading dock or close parking needed"
+                  placeholder={t("placeholders.egLoadingDockOrCloseParking")}
                 />
               </Field>
-              <Field label="Travel / delivery available?">
+              <Field label={tw("labels.travelDeliveryAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={travelAvailable}
-                  onChange={(v) => setTravelAvailable(v as typeof travelAvailable)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(travelAvailable)}
+                  onChange={(v) => setTravelAvailable(chipValue(yesNo, v) as typeof travelAvailable)}
                 />
               </Field>
             </>
@@ -778,81 +792,81 @@ export default function EntertainmentListingScreen() {
 
           {step === 3 ? (
             <>
-              <StepTitle title="Pricing" sub="Where your pricing starts." />
-              <Field label="Pricing type">
+              <StepTitle title={tw("headings.pricing")} sub={tw("subs.whereYourPricingStarts")} />
+              <Field label={tw("labels.pricingType")}>
                 <ChipSingle
-                  options={PRICING_TYPES}
-                  selected={pricingType}
-                  onChange={setPricingType}
+                  options={chipLabels(PRICING_TYPES)}
+                  selected={chipLabel(pricingType)}
+                  onChange={(l) => setPricingType(chipValue(PRICING_TYPES, l))}
                 />
               </Field>
-              <Field label="Starting price (USD)" required>
+              <Field label={tw("labels.startingPriceUsd")} required>
                 <Input
                   value={priceMin}
                   onChangeText={(v) => setPriceMin(v.replace(/[^0-9.]/g, ""))}
-                  placeholder="e.g., 800"
+                  placeholder={t("placeholders.eg800")}
                   keyboardType="decimal-pad"
                 />
               </Field>
-              <Field label="Packages available?">
+              <Field label={tw("labels.packagesAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={packagesAvailable}
-                  onChange={(v) => setPackagesAvailable(v as typeof packagesAvailable)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(packagesAvailable)}
+                  onChange={(v) => setPackagesAvailable(chipValue(yesNo, v) as typeof packagesAvailable)}
                 />
               </Field>
-              <Field label="What's included in the starting price">
+              <Field label={tw("labels.whatsIncludedInTheStartingPrice")}>
                 <Input
                   value={priceIncludes}
                   onChangeText={setPriceIncludes}
-                  placeholder="e.g., 4 hours, sound system, setup"
+                  placeholder={t("placeholders.eg4HoursSoundSystemSetup")}
                   multiline
                 />
               </Field>
 
-              <StepTitle title="Policies & notes" sub="The fine print clients should know." topGap />
-              <Field label="Travel fees">
+              <StepTitle title={tw("headings.policiesNotes")} sub={t("subs.theFinePrintClientsShouldKnow")} topGap />
+              <Field label={tw("labels.travelFees")}>
                 <Input
                   value={travelFees}
                   onChangeText={setTravelFees}
-                  placeholder="e.g., Free within 30 miles, $1/mile after"
+                  placeholder={t("placeholders.egFreeWithin30Miles1")}
                 />
               </Field>
-              <Field label="Overtime / extra time">
+              <Field label={t("labels.overtimeExtraTime")}>
                 <Input
                   value={overtime}
                   onChangeText={setOvertime}
-                  placeholder="e.g., $150/hr past booked time"
+                  placeholder={t("placeholders.eg150HrPastBookedTime")}
                 />
               </Field>
-              <Field label="Additional fees (travel, overtime, etc.)">
+              <Field label={tw("labels.additionalFeesTravelOvertimeEtc")}>
                 <Input
                   value={additionalFees}
                   onChangeText={setAdditionalFees}
-                  placeholder="e.g., Lighting add-on $200"
+                  placeholder={t("placeholders.egLightingAddOn200")}
                   multiline
                 />
               </Field>
-              <Field label="Cancellation / rescheduling policy">
+              <Field label={tw("labels.cancellationReschedulingPolicy")}>
                 <Input
                   value={cancellationPolicy}
                   onChangeText={setCancellationPolicy}
-                  placeholder="e.g., Deposit refundable up to 30 days out"
+                  placeholder={t("placeholders.egDepositRefundableUpTo30")}
                   multiline
                 />
               </Field>
-              <Field label="Deposit / payment terms">
+              <Field label={tw("labels.depositPaymentTerms")}>
                 <Input
                   value={paymentSchedule}
                   onChangeText={setPaymentSchedule}
-                  placeholder="e.g., 25% deposit to book, balance day-of"
+                  placeholder={tw("placeholders.eg25DepositToBookBalance")}
                 />
               </Field>
-              <Field label="Other important notes">
+              <Field label={tw("labels.otherImportantNotes")}>
                 <Input
                   value={otherNotes}
                   onChangeText={setOtherNotes}
-                  placeholder="Anything else clients should know"
+                  placeholder={tw("placeholders.anythingElseClientsShouldKnow")}
                   multiline
                 />
               </Field>
@@ -862,11 +876,11 @@ export default function EntertainmentListingScreen() {
           {step === 4 ? (
             <>
               <StepTitle
-                title="Photos & media"
-                sub="Add a short video or demo reel — listings with media get 3× more inquiries."
+                title={tw("headings.photosMedia")}
+                sub={t("subs.addAShortVideoOrDemo")}
               />
               <ListingPhotosGrid vendorId={profile.id} onCount={setPhotoCount} />
-              <Field label="Video / demo reel (optional)">
+              <Field label={t("labels.videoDemoReelOptional")}>
                 <Input
                   value={videoUrl}
                   onChangeText={setVideoUrl}
@@ -875,7 +889,7 @@ export default function EntertainmentListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Audio samples (optional)">
+              <Field label={t("labels.audioSamplesOptional")}>
                 <Input
                   value={audioUrl}
                   onChangeText={setAudioUrl}
@@ -884,7 +898,7 @@ export default function EntertainmentListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Rider / tech sheet link (optional)">
+              <Field label={t("labels.riderTechSheetLinkOptional")}>
                 <Input
                   value={riderUrl}
                   onChangeText={setRiderUrl}
@@ -894,10 +908,10 @@ export default function EntertainmentListingScreen() {
                 />
               </Field>
 
-              <StepTitle title="FAQs" sub="Answer what clients will ask first." topGap />
+              <StepTitle title={tw("headings.faqs")} sub={tw("subs.answerWhatClientsWillAskFirst")} topGap />
               <FaqsSection vendorId={profile.id} />
 
-              <StepTitle title="Review" sub="Almost there." topGap />
+              <StepTitle title={tw("headings.review")} sub={tw("subs.almostThere")} topGap />
               <ReviewChecklist missing={missingForPublish()} />
             </>
           ) : null}
@@ -909,7 +923,7 @@ export default function EntertainmentListingScreen() {
                 activeOpacity={0.85}
                 style={darkPill}
               >
-                <Text style={darkPillText}>Continue</Text>
+                <Text style={darkPillText}>{tw("continue")}</Text>
               </TouchableOpacity>
             ) : status === "pending" ? (
               <>
@@ -919,7 +933,7 @@ export default function EntertainmentListingScreen() {
                   activeOpacity={0.85}
                   style={darkPillFor(busy)}
                 >
-                  <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                  <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={withdrawToDraft}
@@ -927,7 +941,7 @@ export default function EntertainmentListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Withdraw to draft</Text>
+                  <Text style={lightPillText}>{tw("withdrawToDraft")}</Text>
                 </TouchableOpacity>
               </>
             ) : status === "approved" ? (
@@ -937,7 +951,7 @@ export default function EntertainmentListingScreen() {
                 activeOpacity={0.85}
                 style={darkPillFor(busy)}
               >
-                <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -949,10 +963,10 @@ export default function EntertainmentListingScreen() {
                 >
                   <Text style={darkPillText}>
                     {busy
-                      ? "Publishing…"
+                      ? tw("publishing")
                       : status === "rejected"
-                        ? "Re-submit"
-                        : "Publish"}
+                        ? tw("resubmit")
+                        : tw("publish")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -961,7 +975,7 @@ export default function EntertainmentListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Save draft</Text>
+                  <Text style={lightPillText}>{tw("saveDraft")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -972,7 +986,7 @@ export default function EntertainmentListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
-                  ← Back to {STEPS[step - 1]}
+                  {tw("backTo", { step: chipLabel(STEPS[step - 1]) })}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -983,8 +997,8 @@ export default function EntertainmentListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#b23a34", fontSize: 14}}>
-                  Delete listing
+                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: C.error, fontSize: 14}}>
+                  {tw("deleteListing")}
                 </Text>
               </TouchableOpacity>
             ) : null}

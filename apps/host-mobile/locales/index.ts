@@ -1,0 +1,146 @@
+// Every namespace in locales/<lang>/<namespace>.ts. To add one, create
+// the same file under en/, es/ and ru/ and list it here (imports are
+// spelled out so Metro bundles them with no special config).
+type Tree = { [key: string]: string | string[] | Tree };
+
+import en_accountDeletionGate from "./en/accountDeletionGate";
+import en_categories from "./en/categories";
+import en_common from "./en/common";
+import en_events from "./en/events";
+import en_explore from "./en/explore";
+import en_forgotPassword from "./en/forgotPassword";
+import en_hostTabs from "./en/hostTabs";
+import en_inbox from "./en/inbox";
+import en_inquiryComposer from "./en/inquiryComposer";
+import en_listingAttributes from "./en/listingAttributes";
+import en_login from "./en/login";
+import en_notificationsBell from "./en/notificationsBell";
+import en_password from "./en/password";
+import en_passwordMeter from "./en/passwordMeter";
+import en_profile from "./en/profile";
+import en_pushNotifications from "./en/pushNotifications";
+import en_resetPassword from "./en/resetPassword";
+import en_settings from "./en/settings";
+import en_signup from "./en/signup";
+import en_thread from "./en/thread";
+import en_vendor from "./en/vendor";
+import en_welcome from "./en/welcome";
+import es_accountDeletionGate from "./es/accountDeletionGate";
+import es_categories from "./es/categories";
+import es_common from "./es/common";
+import es_events from "./es/events";
+import es_explore from "./es/explore";
+import es_forgotPassword from "./es/forgotPassword";
+import es_hostTabs from "./es/hostTabs";
+import es_inbox from "./es/inbox";
+import es_inquiryComposer from "./es/inquiryComposer";
+import es_listingAttributes from "./es/listingAttributes";
+import es_login from "./es/login";
+import es_notificationsBell from "./es/notificationsBell";
+import es_password from "./es/password";
+import es_passwordMeter from "./es/passwordMeter";
+import es_profile from "./es/profile";
+import es_pushNotifications from "./es/pushNotifications";
+import es_resetPassword from "./es/resetPassword";
+import es_settings from "./es/settings";
+import es_signup from "./es/signup";
+import es_thread from "./es/thread";
+import es_vendor from "./es/vendor";
+import es_welcome from "./es/welcome";
+import ru_accountDeletionGate from "./ru/accountDeletionGate";
+import ru_categories from "./ru/categories";
+import ru_common from "./ru/common";
+import ru_events from "./ru/events";
+import ru_explore from "./ru/explore";
+import ru_forgotPassword from "./ru/forgotPassword";
+import ru_hostTabs from "./ru/hostTabs";
+import ru_inbox from "./ru/inbox";
+import ru_inquiryComposer from "./ru/inquiryComposer";
+import ru_listingAttributes from "./ru/listingAttributes";
+import ru_login from "./ru/login";
+import ru_notificationsBell from "./ru/notificationsBell";
+import ru_password from "./ru/password";
+import ru_passwordMeter from "./ru/passwordMeter";
+import ru_profile from "./ru/profile";
+import ru_pushNotifications from "./ru/pushNotifications";
+import ru_resetPassword from "./ru/resetPassword";
+import ru_settings from "./ru/settings";
+import ru_signup from "./ru/signup";
+import ru_thread from "./ru/thread";
+import ru_vendor from "./ru/vendor";
+import ru_welcome from "./ru/welcome";
+
+export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
+  en: {
+    accountDeletionGate: en_accountDeletionGate as Tree,
+    categories: en_categories as Tree,
+    common: en_common as Tree,
+    events: en_events as Tree,
+    explore: en_explore as Tree,
+    forgotPassword: en_forgotPassword as Tree,
+    hostTabs: en_hostTabs as Tree,
+    inbox: en_inbox as Tree,
+    inquiryComposer: en_inquiryComposer as Tree,
+    listingAttributes: en_listingAttributes as Tree,
+    login: en_login as Tree,
+    notificationsBell: en_notificationsBell as Tree,
+    password: en_password as Tree,
+    passwordMeter: en_passwordMeter as Tree,
+    profile: en_profile as Tree,
+    pushNotifications: en_pushNotifications as Tree,
+    resetPassword: en_resetPassword as Tree,
+    settings: en_settings as Tree,
+    signup: en_signup as Tree,
+    thread: en_thread as Tree,
+    vendor: en_vendor as Tree,
+    welcome: en_welcome as Tree,
+  },
+  es: {
+    accountDeletionGate: es_accountDeletionGate as Tree,
+    categories: es_categories as Tree,
+    common: es_common as Tree,
+    events: es_events as Tree,
+    explore: es_explore as Tree,
+    forgotPassword: es_forgotPassword as Tree,
+    hostTabs: es_hostTabs as Tree,
+    inbox: es_inbox as Tree,
+    inquiryComposer: es_inquiryComposer as Tree,
+    listingAttributes: es_listingAttributes as Tree,
+    login: es_login as Tree,
+    notificationsBell: es_notificationsBell as Tree,
+    password: es_password as Tree,
+    passwordMeter: es_passwordMeter as Tree,
+    profile: es_profile as Tree,
+    pushNotifications: es_pushNotifications as Tree,
+    resetPassword: es_resetPassword as Tree,
+    settings: es_settings as Tree,
+    signup: es_signup as Tree,
+    thread: es_thread as Tree,
+    vendor: es_vendor as Tree,
+    welcome: es_welcome as Tree,
+  },
+  ru: {
+    accountDeletionGate: ru_accountDeletionGate as Tree,
+    categories: ru_categories as Tree,
+    common: ru_common as Tree,
+    events: ru_events as Tree,
+    explore: ru_explore as Tree,
+    forgotPassword: ru_forgotPassword as Tree,
+    hostTabs: ru_hostTabs as Tree,
+    inbox: ru_inbox as Tree,
+    inquiryComposer: ru_inquiryComposer as Tree,
+    listingAttributes: ru_listingAttributes as Tree,
+    login: ru_login as Tree,
+    notificationsBell: ru_notificationsBell as Tree,
+    password: ru_password as Tree,
+    passwordMeter: ru_passwordMeter as Tree,
+    profile: ru_profile as Tree,
+    pushNotifications: ru_pushNotifications as Tree,
+    resetPassword: ru_resetPassword as Tree,
+    settings: ru_settings as Tree,
+    signup: ru_signup as Tree,
+    thread: ru_thread as Tree,
+    vendor: ru_vendor as Tree,
+    welcome: ru_welcome as Tree,
+  },
+};

@@ -85,5 +85,9 @@
         "subtitle": "Novedades del producto, consejos y ofertas ocasionales (opcional)"
       }
     }
+  },
+  "language": {
+    "title": "Idioma",
+    "subtitle": "El idioma en que ves el sitio"
   }
 }

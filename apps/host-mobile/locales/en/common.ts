@@ -1,0 +1,31 @@
+export default {
+  language: {
+    title: "Language",
+    note: "Pick the language for the app. Messages and listings stay as they were written.",
+  },
+  actions: {
+    cancel: "Cancel",
+    save: "Save",
+    continue: "Continue",
+    back: "Back",
+    done: "Done",
+    close: "Close",
+    retry: "Try again",
+    delete: "Delete",
+    edit: "Edit",
+    ok: "OK",
+  },
+  errors: {
+    generic: "Something went wrong. Please try again.",
+    network: "Couldn't reach Vendora. Check your connection and try again.",
+  },
+  crash: {
+    title: "Something went wrong",
+    body: "Screenshot this screen and send it to support — it shows exactly what broke.",
+    reload: "Reload app",
+  },
+  theme: {
+    title: "Dark mode",
+    note: "The app restarts for a moment to switch.",
+  },
+};

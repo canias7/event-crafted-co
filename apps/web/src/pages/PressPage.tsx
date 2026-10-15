@@ -54,15 +54,15 @@ export default function PressPage() {
   );
 
   return (
-    <div className="min-h-screen text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+    <div className="min-h-screen bg-background text-foreground">
       <PublicNav tone="dark" />
 
       {/* Hero */}
-      <section className="border-b border-white/15 pb-12 pt-12 md:pb-16 md:pt-16">
+      <section className="border-b border-border pb-12 pt-12 md:pb-16 md:pt-16">
         <div className="container mx-auto max-w-5xl px-5 md:px-8">
-          <p className="mb-4 font-label text-gold">{t("hero.eyebrow")}</p>
+          <p className="mb-4 font-label text-accent">{t("hero.eyebrow")}</p>
           <h1 className="mb-5 font-editorial text-5xl leading-[1.0] md:text-6xl">
-            <Trans t={t} i18nKey="hero.title" components={{ gold: <span className="text-gold" /> }} />
+            <Trans t={t} i18nKey="hero.title" components={{ gold: <span className="text-accent" /> }} />
           </h1>
           <p className="mb-8 max-w-2xl text-base leading-relaxed md:text-lg">
             {t("hero.body")}
@@ -72,7 +72,7 @@ export default function PressPage() {
       </section>
 
       {/* Stats */}
-      <section id="main-content" className="border-b border-white/15 py-12">
+      <section id="main-content" className="border-b border-border py-12">
         <div className="container mx-auto max-w-5xl px-5 md:px-8">
           <div className="grid grid-cols-3 gap-4">
             {STATS.map((s, i) => (
@@ -98,12 +98,12 @@ export default function PressPage() {
       {/* Quick facts */}
       <section className="py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 md:px-8">
-          <p className="mb-3 font-label text-gold">{t("facts.eyebrow")}</p>
+          <p className="mb-3 font-label text-accent">{t("facts.eyebrow")}</p>
           <h2 className="mb-10 font-editorial text-4xl">{t("facts.title")}</h2>
           <dl className="space-y-6">
             {QUICK_FACTS.map((id) => (
               <div key={id}>
-                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-gold">{t(`facts.items.${id}.label`)}</dt>
+                <dt className="mb-1.5 text-xs uppercase tracking-[0.3em] text-accent">{t(`facts.items.${id}.label`)}</dt>
                 <dd className="m-0 text-base leading-relaxed">{t(`facts.items.${id}.body`)}</dd>
               </div>
             ))}
@@ -112,19 +112,20 @@ export default function PressPage() {
       </section>
 
       {/* Logo + brand */}
-      <section className="border-t border-white/15 py-14 md:py-20">
+      <section className="border-t border-border py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 md:px-8">
-          <p className="mb-3 font-label text-gold">{t("brand.eyebrow")}</p>
+          <p className="mb-3 font-label text-accent">{t("brand.eyebrow")}</p>
           <h2 className="mb-8 font-editorial text-4xl">{t("brand.title")}</h2>
 
           <div className="mb-6 grid gap-3 md:grid-cols-2">
             {/* The full lockup on both, as in every page's header. It is
                 259px wide: one tile per row below 768px, 24px sides on
-                phones so it fits a 360px screen. */}
-            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#14161a] px-6 py-10 md:p-10">
+                phones so it fits a 360px screen. The tiles show the logo on
+                ink and on ivory, so they keep those colours in both themes. */}
+            <div className="flex items-center justify-center rounded-2xl border border-border bg-[#14161a] px-6 py-10 md:p-10">
               <VendoraLogo size="md" color="#f4f1ea" withTagline />
             </div>
-            <div className="flex items-center justify-center rounded-2xl border border-white/15 bg-[#f4f1ea] px-6 py-10 md:p-10">
+            <div className="flex items-center justify-center rounded-2xl border border-border bg-[#f4f1ea] px-6 py-10 md:p-10">
               <VendoraLogo size="md" color="#14161a" withTagline />
             </div>
           </div>
@@ -137,7 +138,7 @@ export default function PressPage() {
             <a
               href="/pwa-512.png"
               download
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-bold transition-colors hover:border-white/40"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-bold transition-colors hover:border-foreground/40"
             >
               <Download className="h-3 w-3" />
               {t("brand.app_icon", { size: "512×512" })}
@@ -145,7 +146,7 @@ export default function PressPage() {
             <a
               href="/pwa-192.png"
               download
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-bold transition-colors hover:border-white/40"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-bold transition-colors hover:border-foreground/40"
             >
               <Download className="h-3 w-3" />
               {t("brand.app_icon", { size: "192×192" })}
@@ -157,11 +158,11 @@ export default function PressPage() {
             {PALETTE.map((c) => (
               <div key={c.id}>
                 <div
-                  className="h-16 rounded-2xl border border-white/15"
+                  className="h-16 rounded-2xl border border-border"
                   style={{ backgroundColor: c.hex }}
                 />
                 <p className="mt-2 text-sm font-bold">{t(`brand.palette.${c.id}`)}</p>
-                <p className="m-0 text-[11px] tnum text-[#f4f1ea]/80">{c.hex}</p>
+                <p className="m-0 text-[11px] tnum text-muted-foreground">{c.hex}</p>
               </div>
             ))}
           </div>
@@ -169,9 +170,9 @@ export default function PressPage() {
       </section>
 
       {/* Contact */}
-      <section className="border-t border-white/15 py-14 md:py-20">
+      <section className="border-t border-border py-14 md:py-20">
         <div className="container mx-auto max-w-3xl px-5 text-center md:px-8">
-          <p className="mb-3 font-label text-gold">{t("contact.eyebrow")}</p>
+          <p className="mb-3 font-label text-accent">{t("contact.eyebrow")}</p>
           <h2 className="mb-3 font-editorial text-4xl">{t("contact.title")}</h2>
           <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed">
             {t("contact.body")}
@@ -180,7 +181,7 @@ export default function PressPage() {
         </div>
       </section>
 
-      <Footer tone="dark" />
+      <Footer />
     </div>
   );
 }

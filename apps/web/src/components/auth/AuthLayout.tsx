@@ -1,27 +1,37 @@
-// Layout for every sign-in and sign-up page (owner's call, Oct 2026):
-// kept simple on purpose. The site's top menu (PublicNav), the page's
-// content in a narrow column on the plain ink page (no rings, glows or
-// photos), a "Why Vendora" panel beside it (below it on phones), and a
-// bottom bar with the language switcher, since these pages have no
-// footer.
+// Layout for every sign-in and sign-up page (owner's call, Oct 2026): the
+// site's top menu (PublicNav); from 1024px a dimmed venue photo fills the
+// left half with the "Why Vendora" points on it, and the page's content
+// sits in a narrow column on the right; on phones there's no photo and the
+// points follow the content. The photo is the same size and crop on every
+// page (window height, pinned while the form scrolls). The photo is the
+// owner's candlelit reception picture. The theme switch is in the top menu; the site's
+// footer (with the language switcher) sits underneath, as on every page. Colours follow the
+// site theme (light by default); the photo side looks the same in both.
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PublicNav } from "@/components/public/PublicNav";
-import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { Footer } from "@/components/public/Footer";
+import authPhoto from "@/assets/auth/signin-photo.webp";
 
-function Perks() {
+function Perks({ onPhoto = false }: { onPhoto?: boolean }) {
   const { t } = useTranslation("auth");
   const items = t("split.perks.items", { returnObjects: true }) as { title: string; body: string }[];
   return (
-    <aside className="rounded-2xl border border-white/15 bg-white/[0.03] p-5 md:p-8">
-      <p className="font-label text-gold m-0">{t("split.perks.title")}</p>
+    <aside
+      className={
+        onPhoto
+          ? "max-w-md text-[#f4f1ea] [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_0_18px_rgba(0,0,0,0.7)]"
+          : "rounded-2xl border border-border bg-card p-5 md:p-8"
+      }
+    >
+      <p className={onPhoto ? "m-0 font-bold uppercase text-gold text-[16px] tracking-[0.14em]" : "font-label m-0 text-accent"}>{t("split.perks.title")}</p>
       <ul className="m-0 mt-5 p-0 list-none flex flex-col gap-5">
         {items.map((it) => (
           <li key={it.title} className="flex gap-3">
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rotate-45 bg-gold" aria-hidden />
             <span>
-              <span className="block font-bold text-[15px]">{it.title}</span>
-              <span className="mt-1 block text-[14px] leading-relaxed text-[#f4f1ea]/80">{it.body}</span>
+              <span className={`block font-bold ${onPhoto ? "text-[17px]" : "text-[15px]"}`}>{it.title}</span>
+              <span className={`mt-1 block leading-relaxed ${onPhoto ? "text-[15px] text-[#f4f1ea]" : "text-[14px] text-muted-foreground"}`}>{it.body}</span>
             </span>
           </li>
         ))}
@@ -35,21 +45,40 @@ type LinkLike = React.ComponentType<{ to: string; className?: string; children: 
 
 export function AuthLayout({ children }: { side?: Side; children: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col text-[#f4f1ea]" style={{ backgroundColor: "#14161a" }}>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <PublicNav tone="dark" />
-      <main className="flex-1 container flex justify-center py-12 md:py-20">
-        <div className="w-full max-w-[920px] grid gap-10 lg:grid-cols-[440px_1fr] lg:gap-16 items-start">
-          <div>{children}</div>
-          <div className="lg:mt-2">
-            <Perks />
+      <main className="flex-1 grid lg:grid-cols-2 lg:items-start">
+        {/* Photo side (from 1024px): the venue photo, dimmed so the
+            points on it read, the same in light and dark. It's always
+            the height of the window under the menu and stays put while
+            a long form scrolls, so the photo, its crop and the points
+            sit in the same place on every sign-in page. */}
+        <section className="relative hidden overflow-hidden lg:sticky lg:top-24 lg:block lg:h-[calc(100svh-6rem)]">
+          <img
+            src={authPhoto}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-[22%_50%]"
+          />
+          <div className="absolute inset-0 bg-[#0a0b0e]/20" />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(180deg, rgba(10,11,14,0) 30%, rgba(10,11,14,0.82) 58%, rgba(10,11,14,0.94) 100%)" }}
+          />
+          <div className="relative flex h-full items-end px-12 py-14 xl:px-16">
+            <Perks onPhoto />
           </div>
-        </div>
+        </section>
+
+        <section className="flex justify-center px-5 py-12 md:px-8 md:py-20">
+          <div className="w-full max-w-[440px]">
+            {children}
+            <div className="mt-12 lg:hidden">
+              <Perks />
+            </div>
+          </div>
+        </section>
       </main>
-      <div className="container">
-        <div className="flex justify-end border-t border-white/15 py-5">
-          <LanguageSwitcher tone="dark" />
-        </div>
-      </div>
+      <Footer />
     </div>
   );
 }
@@ -77,13 +106,13 @@ export function AuthChoiceCard({
   return (
     <LinkComponent
       to={to}
-      className="group flex items-center gap-4 rounded-2xl border border-white/15 bg-white/[0.03] px-5 py-4 md:px-6 md:py-5 transition-colors hover:border-white/40"
+      className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 md:px-6 md:py-5 transition-colors hover:border-foreground/40"
     >
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-[17px] leading-tight">{title}</span>
-        <span className="mt-1 block text-[13px] leading-relaxed text-[#f4f1ea]/80">{subtitle}</span>
+        <span className="mt-1 block text-[13px] leading-relaxed text-muted-foreground">{subtitle}</span>
       </span>
-      <span className="shrink-0 text-gold transition-transform group-hover:translate-x-0.5">
+      <span className="shrink-0 text-accent transition-transform group-hover:translate-x-0.5">
         <Arrow />
       </span>
     </LinkComponent>
@@ -111,14 +140,14 @@ export function AuthRoleChooser({
       <h1 className="m-0 text-[32px] md:text-[40px] leading-[1.1]" style={{ letterSpacing: "-0.5px" }}>
         {k("heading")}
       </h1>
-      <p className="m-0 mt-3 text-[15px] text-[#f4f1ea]/80">{k("sub")}</p>
+      <p className="m-0 mt-3 text-[15px] text-muted-foreground">{k("sub")}</p>
       <div className="mt-8 flex flex-col gap-3">
         <AuthChoiceCard to={hostTo} title={k("host_title")} subtitle={k("host_subtitle")} LinkComponent={LinkComponent} />
         <AuthChoiceCard to={vendorTo} title={k("vendor_title")} subtitle={k("vendor_subtitle")} LinkComponent={LinkComponent} />
       </div>
-      <p className="m-0 mt-8 text-[14px] text-[#f4f1ea]/80">
+      <p className="m-0 mt-8 text-[14px] text-muted-foreground">
         {k("other_q")}{" "}
-        <LinkComponent to={otherTo} className="font-bold text-gold underline-offset-4 hover:underline">
+        <LinkComponent to={otherTo} className="font-bold text-accent underline-offset-4 hover:underline">
           {k("other_link")}
         </LinkComponent>
       </p>

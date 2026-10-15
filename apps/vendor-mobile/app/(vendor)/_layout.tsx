@@ -1,6 +1,6 @@
-// Vendor mobile tab layout — 5 tabs with a custom floating pill tab bar.
+// Vendor mobile tab layout — 6 tabs with a custom floating pill tab bar.
 //
-// Tabs: Inbox · Gallery · My Profile · Calendar · More. Settings opens
+// Tabs: Inbox · Overview · Gallery · My Profile · Calendar · More. Settings opens
 // from the More menu.
 //
 // Style spec: pill floats ~16px above the bottom safe area, cream bg,
@@ -30,25 +30,23 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { usePushNotificationTapHandler } from "@/lib/pushNotifications";
 import { SHADOW } from "@/lib/ui";
+import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   inbox: "inbox",
+  overview: "bar-chart-2",
   gallery: "image",
   profile: "user",
   calendar: "calendar",
   more: "more-horizontal",
 };
 
-const LABELS: Record<string, string> = {
-  inbox: "Inbox",
-  gallery: "Gallery",
-  profile: "Profile",
-  calendar: "Calendar",
-  more: "More",
-};
+// Tab labels live in locales/<lang>/layout.ts → tabs.<route name>.
+const LABELLED = new Set(["inbox", "overview", "gallery", "profile", "calendar", "more"]);
 
-const ORDER = ["inbox", "gallery", "profile", "calendar", "more"];
+const ORDER = ["inbox", "overview", "gallery", "profile", "calendar", "more"];
 
 // Count of inquiries the vendor has not answered. Re-read whenever the
 // focused tab changes and when the app returns to the foreground, which
@@ -94,8 +92,9 @@ function useNewInquiryCount(focusedRoute: string | undefined): number {
   return count;
 }
 
-function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useT("layout");
   const focusedRoute = state.routes[state.index]?.name;
   // Called before the early return below — the bar is unmounted on
   // full-bleed screens, and a hook after that branch would run
@@ -135,7 +134,10 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
         right: 0,
         bottom: 0,
         paddingBottom: Math.max(insets.bottom, 12),
-        paddingHorizontal: 24,
+        // 16 rather than 24 since the Overview tab made it six: each tab
+        // gets ~3pt more, which keeps "Calendar" and its Spanish and
+        // Russian labels from crowding.
+        paddingHorizontal: 16,
         alignItems: "center",
       }}
     >
@@ -144,9 +146,9 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderWidth: 1,
-          borderColor: "#e6e1d5",
+          borderColor: C.border,
           borderRadius: 999,
           paddingHorizontal: 8,
           paddingVertical: 8,
@@ -213,14 +215,14 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       width: 40,
                       height: 40,
                       borderRadius: 20,
-                      backgroundColor: "#14161a",
+                      backgroundColor: C.selected,
                     }}
                   />
                 ) : null}
                 <Feather
                   name={iconName}
                   size={20}
-                  color={isFocused ? "#ffffff" : "#6f6a60"}
+                  color={isFocused ? C.onSelected : IS_DARK ? C.placeholder : "#6f6a60"}
                 />
                 {route.name === "inbox" && newInquiries > 0 ? (
                   <View
@@ -235,12 +237,12 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                       borderRadius: 9,
                       paddingHorizontal: 5,
                       // Champagne with an ink number: the brand's unread colour.
-                      backgroundColor: "#c9a86a",
+                      backgroundColor: C.gold,
                       // Ring in the bar's own cream so the badge reads as
                       // sitting on top of the icon rather than merging
                       // with it when the tab is active and dark.
                       borderWidth: 1,
-                      borderColor: "#fbf9f4",
+                      borderColor: C.card,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -250,7 +252,7 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                         fontFamily: "LibreBaskerville-Bold",
                         fontSize: 9,
                         lineHeight: 12,
-                        color: "#14161a",
+                        color: C.onGold,
                       }}
                     >
                       {newInquiries > 99 ? "99+" : newInquiries}
@@ -260,14 +262,19 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
               </View>
               <Text
                 numberOfLines={1}
+                // Six tabs leave ~56pt each; long labels ("Calendario",
+                // "Календарь") shrink a little instead of being cut off.
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
                 style={{
                   fontFamily: isFocused ? "LibreBaskerville-Bold" : "LibreBaskerville",
-                  fontSize: 10,
+                  fontSize: 9.5,
+                  letterSpacing: -0.1,
                   marginTop: 2,
-                  color: isFocused ? "#14161a" : "#746a58",
+                  color: isFocused ? C.text : C.placeholder,
                 }}
               >
-                {LABELS[route.name] ?? route.name}
+                {LABELLED.has(route.name) ? t(`tabs.${route.name}`) : route.name}
               </Text>
             </Pressable>
           );
@@ -282,11 +289,12 @@ export default function VendorLayout() {
   // Wire push-tap → deep-link routing once the tab navigator is mounted.
   // Both cold-start taps (app killed) and warm taps go through here.
   usePushNotificationTapHandler();
+  const { t } = useT("layout");
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: C.page }}>
+        <ActivityIndicator color={C.text} />
       </View>
     );
   }
@@ -312,13 +320,16 @@ export default function VendorLayout() {
         // floating bar is ~76px tall (64 + safe-area), so anything that
         // ends near the bottom should add some extra padding.
         tabBarStyle: { position: "absolute" },
+        // Dark theme: paint the scene so no light default shows through.
+        ...(IS_DARK ? { sceneStyle: { backgroundColor: C.page } } : {}),
       }}
     >
-      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
-      <Tabs.Screen name="gallery" options={{ title: "Gallery" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
-      <Tabs.Screen name="calendar" options={{ title: "Calendar" }} />
-      <Tabs.Screen name="more" options={{ title: "More" }} />
+      <Tabs.Screen name="inbox" options={{ title: t("tabs.inbox") }} />
+      <Tabs.Screen name="overview" options={{ title: t("tabs.overview") }} />
+      <Tabs.Screen name="gallery" options={{ title: t("tabs.gallery") }} />
+      <Tabs.Screen name="profile" options={{ title: t("tabs.profile") }} />
+      <Tabs.Screen name="calendar" options={{ title: t("tabs.calendar") }} />
+      <Tabs.Screen name="more" options={{ title: t("tabs.more") }} />
       {/* Listing builder — reached from the Profile tab's "Create
           listing" CTA / 4-segment toggle. Hidden from the bottom nav
           because it's a one-and-done flow per vendor. */}

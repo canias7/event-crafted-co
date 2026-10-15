@@ -15,7 +15,7 @@
 // threads stays open to everyone. We surface that as an upgrade prompt
 // rather than a raw error.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,8 +32,11 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { C } from "@/lib/theme";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
 
 interface VendorResult {
   id: string;
@@ -74,6 +77,8 @@ const MIN_QUERY = 2;
 export default function FindVendorScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t: tr } = useT("findVendor");
+  const categoryNames = useCategoryNames();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<VendorResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -128,18 +133,18 @@ export default function FindVendorScreen() {
         // Plans paused (lib/plans.ts): explain, no "See plans".
         if (PLANS_PAUSED) {
           Alert.alert(
-            "Pro feature",
-            "Starting vendor-to-vendor conversations isn't available on the Free plan yet. Replying to existing conversations stays free.",
+            tr("pro.title"),
+            tr("pro.pausedBody"),
           );
           return;
         }
         Alert.alert(
-          "Pro feature",
-          "Vendor-to-vendor messaging is available on Pro and Premium. Replying to existing conversations stays free.",
+          tr("pro.title"),
+          tr("pro.body"),
           [
-            { text: "Not now", style: "cancel" },
+            { text: tr("pro.notNow"), style: "cancel" },
             {
-              text: "See plans",
+              text: tr("pro.seePlans"),
               onPress: () => router.push("/(vendor)/subscription"),
             },
           ],
@@ -147,8 +152,8 @@ export default function FindVendorScreen() {
         return;
       }
       Alert.alert(
-        "Couldn't start the conversation",
-        error?.message ?? "Please try again in a moment.",
+        tr("startFailed"),
+        error?.message ?? tr("tryAgainLater"),
       );
       return;
     }
@@ -161,13 +166,10 @@ export default function FindVendorScreen() {
   const showEmpty =
     trimmed.length >= MIN_QUERY && !searching && results.length === 0;
 
-  const subtitle = useMemo(
-    () => "Search any approved vendor by business name to start a chat.",
-    [],
-  );
+  const subtitle = tr("subtitle");
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top"]}>
       {/* Header with back — this screen is pushed, not a tab. */}
       <View className="flex-row items-center px-5 pt-2 pb-1">
         <Pressable
@@ -175,42 +177,42 @@ export default function FindVendorScreen() {
           hitSlop={12}
           className="mr-3 active:opacity-60"
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={tr("goBack")}
         >
-          <Feather name="chevron-left" size={26} color="#14161a" />
+          <Feather name="chevron-left" size={26} color={C.text} />
         </Pressable>
         <Text
-          className="text-3xl text-foreground"
-          style={{ fontFamily: "LibreBaskerville-Bold" }}
+          className="text-3xl"
+          style={{ color: C.text, fontFamily: "LibreBaskerville-Bold", flexShrink: 1 }}
         >
-          Find a vendor
+          {tr("title")}
         </Text>
       </View>
-      <Text className="px-5 pb-4 text-[13.5px] leading-[19px] text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>{subtitle}</Text>
+      <Text className="px-5 pb-4 text-[13.5px] leading-[19px]" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>{subtitle}</Text>
 
       {/* Search */}
       <View className="px-5 mb-3">
-        <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-          <Feather name="search" size={16} color="#746a58" />
-          <TextInput style={{ fontFamily: "LibreBaskerville" }}
+        <View className="flex-row items-center rounded-full px-4 py-3" style={{ backgroundColor: C.surface }}>
+          <Feather name="search" size={16} color={C.placeholder} />
+          <TextInput style={{ color: C.text, fontFamily: "LibreBaskerville" }}
             value={query}
             onChangeText={setQuery}
-            placeholder="Search vendors by business name"
+            placeholder={tr("searchPlaceholder")}
             placeholderTextColor={PLACEHOLDER}
             autoFocus
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            className="ml-2 flex-1 text-base text-foreground"
+            className="ml-2 flex-1 text-base"
           />
           {query.length > 0 ? (
             <Pressable
               onPress={() => setQuery("")}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Clear search"
+              accessibilityLabel={tr("clearSearch")}
             >
-              <Feather name="x" size={16} color="#746a58" />
+              <Feather name="x" size={16} color={C.placeholder} />
             </Pressable>
           ) : null}
         </View>
@@ -223,25 +225,27 @@ export default function FindVendorScreen() {
       >
         {searching ? (
           <View className="px-5 py-12 items-center">
-            <ActivityIndicator color="#14161a" />
+            <ActivityIndicator color={C.text} />
           </View>
         ) : showHint ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            Keep typing — enter at least {MIN_QUERY} characters.
+          <Text className="px-5 py-10 text-center text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
+            {tr("hint", { count: MIN_QUERY })}
           </Text>
         ) : showEmpty ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            No approved vendors match “{trimmed}”.
+          <Text className="px-5 py-10 text-center text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
+            {tr("noMatch", { query: trimmed })}
           </Text>
         ) : results.length === 0 ? (
-          <Text className="px-5 py-10 text-center text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            Start typing a business name to find other vendors.
+          <Text className="px-5 py-10 text-center text-sm" style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}>
+            {tr("startTyping")}
           </Text>
         ) : (
           <View className="px-5">
             {results.map((r, i) => {
-              const name = r.business_name ?? "Unnamed vendor";
-              const meta = [r.category, r.location].filter(Boolean).join(" · ");
+              const name = r.business_name ?? tr("unnamed");
+              const meta = [r.category ? categoryNames.sub(r.category) : null, r.location]
+                .filter(Boolean)
+                .join(" · ");
               const isStarting = starting === r.id;
               return (
                 <Pressable
@@ -249,42 +253,42 @@ export default function FindVendorScreen() {
                   onPress={() => void startThread(r)}
                   disabled={starting !== null}
                   className={`flex-row items-center py-3 active:opacity-60 ${
-                    i > 0 ? "border-t border-border" : ""
+                    i > 0 ? "border-t" : ""
                   }`}
-                  style={{ opacity: starting !== null && !isStarting ? 0.5 : 1 }}
+                  style={{ borderColor: C.border, opacity: starting !== null && !isStarting ? 0.5 : 1 }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Start a conversation with ${name}`}
+                  accessibilityLabel={tr("startA11y", { name })}
                 >
                   <View
                     className="h-12 w-12 rounded-full items-center justify-center"
                     style={{ backgroundColor: avatarColor(r.id) }}
                   >
-                    <Text className="text-sm text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                    <Text className="text-sm" style={{ color: "#ffffff", fontFamily: "LibreBaskerville-Bold" }}>
                       {initials(name)}
                     </Text>
                   </View>
                   <View className="ml-3 flex-1">
                     <Text
-                      className="text-base text-foreground"
+                      className="text-base"
                       numberOfLines={1}
-                      style={{ fontFamily: "LibreBaskerville-Bold" }}
+                      style={{ color: C.text, fontFamily: "LibreBaskerville-Bold" }}
                     >
                       {name}
                     </Text>
                     {meta ? (
                       <Text
-                        className="mt-0.5 text-sm text-muted-foreground"
+                        className="mt-0.5 text-sm"
                         numberOfLines={1}
-                        style={{ fontFamily: "LibreBaskerville" }}
+                        style={{ color: C.textDim, fontFamily: "LibreBaskerville" }}
                       >
                         {meta}
                       </Text>
                     ) : null}
                   </View>
                   {isStarting ? (
-                    <ActivityIndicator size="small" color="#14161a" />
+                    <ActivityIndicator size="small" color={C.text} />
                   ) : (
-                    <Feather name="message-circle" size={18} color="#746a58" />
+                    <Feather name="message-circle" size={18} color={C.placeholder} />
                   )}
                 </Pressable>
               );

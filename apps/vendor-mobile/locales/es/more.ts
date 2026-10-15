@@ -1,0 +1,45 @@
+export default {
+  title: "Más",
+  subtitle: "Todo lo demás, a un toque.",
+  appName: "Vendora for Vendors",
+  close: "Cerrar",
+  sections: {
+    business: "TU NEGOCIO",
+    tools: "HERRAMIENTAS",
+    account: "CUENTA",
+    vendora: "VENDORA",
+  },
+  badges: {
+    optional: "Opcional",
+    eligible: "Disponible",
+    new: "Nuevo",
+  },
+  rows: {
+    editProfile: { label: "Editar perfil de marca", body: "Nombre, logo, biografía y más" },
+    team: { label: "Conoce al equipo", body: "Presenta a las personas detrás de tu negocio" },
+    verification: { label: "Verificación", body: "Obtén tu insignia de verificado" },
+    scheduling: { label: "Agenda inteligente", body: "Horarios, servicios y automatizaciones" },
+    crm: { label: "CRM de Vendora", body: "Clientes, notas y seguimientos" },
+    subscription: { label: "Suscripción", body: "Plan, facturación y uso" },
+    settings: { label: "Configuración", body: "Cuenta, contraseña y privacidad" },
+    updates: { label: "Próximas novedades", body: "Lo nuevo y lo que viene" },
+    help: { label: "Ayuda y preguntas frecuentes", body: "Respuestas a dudas comunes" },
+    contact: { label: "Contáctanos", body: "Escríbele al equipo de Vendora" },
+    about: { label: "Acerca de Vendora", body: "Información de la app, términos y políticas" },
+  },
+  support: {
+    title: "Contáctanos",
+    message: "¿Preguntas, problemas o comentarios? Escríbenos y una persona real lo leerá.",
+    confirm: "Escribir a soporte",
+  },
+  about: {
+    title: "Acerca de Vendora",
+    message: "El marketplace premium que conecta a proveedores de eventos con anfitriones.\n\nLos términos del servicio y la política de privacidad están en eventvendora.com.",
+    confirm: "Ver términos y privacidad",
+  },
+  rate: {
+    title: "¿Te gusta Vendora?",
+    body: "Déjanos una reseña y ayuda a otros proveedores.",
+    button: "Califícanos",
+  },
+};

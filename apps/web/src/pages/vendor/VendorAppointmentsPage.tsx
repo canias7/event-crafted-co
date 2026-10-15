@@ -10,6 +10,10 @@
 // Blocking a day writes a vendor_unavailable_dates row for the selected
 // listing only — its public listing page reflects the block immediately
 // via VendorAvailabilityPublic. Other listings stay open.
+//
+// "Block dates" mode (same as the vendor app's): every click toggles one
+// day, "Fill gaps" fills the span between the first and last pick, and a
+// bar under the calendar blocks (or re-opens) all picked days at once.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -18,7 +22,9 @@ import { siteLocaleOr } from "@/lib/intlLocale";
 import {
   ChevronLeft,
   ChevronRight,
+  Info,
   Loader2,
+  MoveHorizontal,
   Pencil,
   Plus,
   X as XIcon,
@@ -152,6 +158,66 @@ function prettyDay(ymd: string, locale?: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+// A vendor blocking a season shouldn't be able to write an unbounded
+// number of rows from one "Fill gaps", so spans cap at a year (as in the
+// app).
+const MAX_RANGE_DAYS = 366;
+
+// Inclusive list of YYYY-MM-DD keys between two days, in either order.
+function datesBetween(a: string, b: string): string[] {
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  const cursor = parseYmd(lo);
+  const end = parseYmd(hi);
+  const out: string[] = [];
+  if (!cursor || !end) return out;
+  while (cursor <= end && out.length < MAX_RANGE_DAYS) {
+    out.push(ymdKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return out;
+}
+
+// "Jun 3 – Jun 10" / "Jun 3 – Jul 2, 2027" for spans of days.
+function prettyRange(a: string, b: string, locale?: string): string {
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  const d1 = parseYmd(lo);
+  const d2 = parseYmd(hi);
+  if (!d1 || !d2) return "";
+  const sameYear = d1.getFullYear() === d2.getFullYear();
+  const left = d1.toLocaleDateString(locale, { month: "short", day: "numeric" });
+  const right = d2.toLocaleDateString(
+    locale,
+    sameYear
+      ? { month: "short", day: "numeric" }
+      : { month: "short", day: "numeric", year: "numeric" },
+  );
+  return `${left} – ${right}`;
+}
+
+// Sorted days → runs of consecutive days, as [first, last] pairs.
+function dayRuns(sorted: string[]): Array<[string, string]> {
+  const runs: Array<[string, string]> = [];
+  for (const d of sorted) {
+    const run = runs[runs.length - 1];
+    const next = run ? parseYmd(run[1]) : null;
+    if (next) next.setDate(next.getDate() + 1);
+    if (run && next && ymdKey(next) === d) run[1] = d;
+    else runs.push([d, d]);
+  }
+  return runs;
+}
+
+// "Oct 3 – Oct 5, Oct 9, Nov 4" for the picked-days summary.
+function describeDays(sorted: string[], locale?: string): string {
+  return dayRuns(sorted)
+    .map(([a, b]) =>
+      a === b
+        ? (parseYmd(a)?.toLocaleDateString(locale, { month: "short", day: "numeric" }) ?? a)
+        : prettyRange(a, b, locale),
+    )
+    .join(", ");
 }
 
 // Appointment display helpers — kinds with a label
@@ -1131,6 +1197,169 @@ export default function VendorAppointmentsPage({
     }
   }
 
+  // ---- "Block dates" mode: pick several days, block them together ----
+  // Each pick remembers which listings already had that day blocked. The
+  // calendar only loads the six weeks on screen, so a day picked in
+  // October and blocked from the November view would otherwise look open.
+  const [selectMode, setSelectMode] = useState(false);
+  const [picked, setPicked] = useState<Map<string, ReadonlySet<string>>>(
+    () => new Map(),
+  );
+  // Why the last click didn't pick anything (or what Fill gaps did).
+  const [pickNote, setPickNote] = useState<string | null>(null);
+  const [multiOpen, setMultiOpen] = useState(false);
+  const [multiTitle, setMultiTitle] = useState("");
+  const [reopenOpen, setReopenOpen] = useState(false);
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setPicked(new Map());
+    setPickNote(null);
+  }
+
+  // Booked and pending days can't be picked: they're already spoken for.
+  const isOpenDay = useCallback(
+    (d: string) => {
+      const st = dayState.get(d);
+      return st !== "booked" && st !== "pending";
+    },
+    [dayState],
+  );
+
+  function togglePick(d: string) {
+    if (!isOpenDay(d)) {
+      setPickNote(
+        dayState.get(d) === "booked"
+          ? t("select.note.booked", { day: capFirst(prettyDay(d, dateLocale)) })
+          : t("select.note.pending", { day: capFirst(prettyDay(d, dateLocale)) }),
+      );
+      return;
+    }
+    setPickNote(null);
+    setPicked((prev) => {
+      const next = new Map(prev);
+      if (next.has(d)) next.delete(d);
+      else next.set(d, new Set(blockListingIds.get(d) ?? []));
+      return next;
+    });
+  }
+
+  const pickedDates = useMemo(() => Array.from(picked.keys()).sort(), [picked]);
+
+  // Picked days still missing a block on at least one target listing.
+  // When that's none of them, the bar's button flips to Unblock.
+  const pickedToBlock = useMemo(() => {
+    const targets = writeTargetIds();
+    if (targets.length === 0) return pickedDates;
+    return pickedDates.filter((d) => targets.some((vid) => !picked.get(d)?.has(vid)));
+  }, [picked, pickedDates, writeTargetIds]);
+  const pickedAllBlocked = pickedDates.length > 0 && pickedToBlock.length === 0;
+
+  // Every open day from the first pick to the last, offered only when
+  // that would add something.
+  const fill = useMemo(() => {
+    if (pickedDates.length < 2) return null;
+    const first = pickedDates[0];
+    const last = pickedDates[pickedDates.length - 1];
+    const span = datesBetween(first, last);
+    const open = span.filter(isOpenDay);
+    if (!open.some((d) => !picked.has(d))) return null;
+    return { first, last, open, skipped: span.length - open.length };
+  }, [pickedDates, picked, isOpenDay]);
+
+  function fillIn() {
+    if (!fill) return;
+    setPicked((prev) => {
+      const next = new Map(prev);
+      for (const d of fill.open) {
+        if (!next.has(d)) next.set(d, new Set(blockListingIds.get(d) ?? []));
+      }
+      return next;
+    });
+    setPickNote(
+      t("select.note.filled", { range: prettyRange(fill.first, fill.last, dateLocale) }) +
+        (fill.skipped > 0 ? " " + t("select.note.skipped", { count: fill.skipped }) : ""),
+    );
+  }
+
+  // What the block dialog calls the days: the day or span when they're in
+  // one unbroken run, otherwise just how many.
+  function nameDays(sorted: string[]): string {
+    const runs = dayRuns(sorted);
+    if (runs.length === 1) {
+      const [a, b] = runs[0];
+      return a === b ? prettyDay(a, dateLocale) : prettyRange(a, b, dateLocale);
+    }
+    return t("select.nameDays", { count: sorted.length });
+  }
+
+  function blockPicked() {
+    if (pickedDates.length === 0 || blocking) return;
+    if (pickedAllBlocked) setReopenOpen(true);
+    else {
+      setMultiTitle("");
+      setMultiOpen(true);
+    }
+  }
+
+  async function commitBlockPicked() {
+    const targetIds = writeTargetIds();
+    if (blocking || targetIds.length === 0 || pickedToBlock.length === 0) return;
+    setBlocking(true);
+    const trimmed = multiTitle.trim();
+    const reason = trimmed.length > 0 ? trimmed : "Blocked manually";
+    // Only the listing/day pairs that aren't blocked yet. Re-writing one
+    // that is would overwrite the title the vendor already gave it, so
+    // ignoreDuplicates backs that up for anything the snapshot missed.
+    const rows = targetIds.flatMap((vid) =>
+      pickedToBlock
+        .filter((d) => !picked.get(d)?.has(vid))
+        .map((date) => ({ vendor_id: vid, date, reason })),
+    );
+    let err: { message: string } | null = null;
+    // A year of days across several listings is a few thousand rows;
+    // chunk so one oversized request can't fail the whole write.
+    for (let i = 0; i < rows.length && !err; i += 400) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await (supabase as any)
+        .from("vendor_unavailable_dates")
+        .upsert(rows.slice(i, i + 400), {
+          onConflict: "vendor_id,date",
+          ignoreDuplicates: true,
+        });
+      err = res.error;
+    }
+    setBlocking(false);
+    setMultiOpen(false);
+    if (err) {
+      toast.error(t("toasts.blockFailed", { message: err.message }));
+      return;
+    }
+    toast.success(t("select.blocked", { count: pickedToBlock.length }));
+    exitSelectMode();
+    void loadCalendar();
+  }
+
+  async function commitUnblockPicked() {
+    const targetIds = writeTargetIds();
+    if (blocking || targetIds.length === 0 || pickedDates.length === 0) return;
+    setBlocking(true);
+    const { error } = await supabase
+      .from("vendor_unavailable_dates")
+      .delete()
+      .in("vendor_id", targetIds)
+      .in("date", pickedDates);
+    setBlocking(false);
+    setReopenOpen(false);
+    if (error) {
+      toast.error(t("toasts.unblockFailed", { message: error.message }));
+      return;
+    }
+    toast.success(t("select.unblocked", { count: pickedDates.length }));
+    exitSelectMode();
+    void loadCalendar();
+  }
+
   function shiftMonth(delta: number) {
     const next = new Date(viewMonth);
     next.setMonth(next.getMonth() + delta);
@@ -1186,6 +1415,31 @@ export default function VendorAppointmentsPage({
               listings — those attach to the account, not a listing. */}
           <>
           <div>
+            {/* View / Block switch, as in the app. Hidden until there's a
+                listing to block dates on. */}
+            {writeTargetIds().length > 0 ? (
+              <div
+                role="group"
+                aria-label={t("select.mode.label")}
+                className="mb-4 flex rounded-full border border-border bg-card p-1"
+              >
+                {([false, true] as const).map((on) => (
+                  <button
+                    key={String(on)}
+                    type="button"
+                    aria-pressed={selectMode === on}
+                    onClick={() => (on ? setSelectMode(true) : exitSelectMode())}
+                    className={`flex-1 min-w-0 h-9 rounded-full px-3 text-sm font-bold transition-colors ${
+                      selectMode === on
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:text-accent"
+                    }`}
+                  >
+                    {on ? t("select.mode.block") : t("select.mode.view")}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-editorial text-2xl">{monthLabel}</h2>
               <div className="flex gap-2">
@@ -1206,7 +1460,19 @@ export default function VendorAppointmentsPage({
               </div>
             </div>
 
-            <div className="card-soft p-4">
+            {/* Gold outline while blocking, so the mode shows on the thing
+                being clicked. */}
+            <div className={`card-soft p-4 ${selectMode ? "!border-gold" : ""}`}>
+              {selectMode ? (
+                <p className="mb-3 flex items-start gap-2 rounded-lg bg-pending px-3 py-2 text-sm text-accent">
+                  {pickNote ? (
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  ) : (
+                    <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
+                  )}
+                  <span className="min-w-0">{pickNote ?? t("select.hint")}</span>
+                </p>
+              ) : null}
               {loading ? (
                 <Skeleton className="h-72 w-full rounded-md" />
               ) : (
@@ -1217,13 +1483,30 @@ export default function VendorAppointmentsPage({
                   dayStatusDots={dayStatusDots}
                   listingColorById={listingColorById}
                   showListingColors={showListingColors}
-                  selectedYmd={selectedYmd}
+                  selectedYmd={selectMode ? null : selectedYmd}
+                  pickedKeys={selectMode ? picked : null}
                   onSelect={(k) => {
+                    if (selectMode) {
+                      togglePick(k);
+                      return;
+                    }
                     setSelectedYmd(k);
                     setDayModalOpen(true);
                   }}
                 />
               )}
+              {selectMode && fill ? (
+                <div className="mt-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={fillIn}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-bold text-foreground hover:text-accent transition-colors"
+                  >
+                    <MoveHorizontal className="h-4 w-4" />
+                    {t("select.fillGaps")}
+                  </button>
+                </div>
+              ) : null}
               {hideLegend ? null : showListingColors ? (
                 // Status legend (account view): each calendar dot is one event,
                 // coloured by status. Matches STATUS_DOT in DayCell.
@@ -1251,6 +1534,85 @@ export default function VendorAppointmentsPage({
               )}
             </div>
           </div>
+
+          {/* Block bar: sticks to the bottom of the window while dates are
+              being picked, so the button stays in reach. Dark in both
+              themes, like the app's. */}
+          {selectMode ? (
+            <div className="sticky bottom-24 lg:bottom-6 z-30">
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-white shadow-soft dark:border dark:border-white/15">
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-sm font-bold">
+                    {pickedDates.length === 0
+                      ? t("select.bar.none")
+                      : t("select.bar.selected", { count: pickedDates.length })}
+                  </p>
+                  <p className="m-0 mt-0.5 flex min-w-0 items-center gap-2 text-xs text-white/75">
+                    <span className="truncate">
+                      {pickedDates.length === 0
+                        ? t("select.bar.clickDates")
+                        : describeDays(pickedDates, dateLocale) +
+                          (pickedToBlock.length > 0 && pickedToBlock.length < pickedDates.length
+                            ? ` · ${t("select.bar.alreadyBlocked", { count: pickedDates.length - pickedToBlock.length })}`
+                            : "")}
+                    </span>
+                    {pickedDates.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPicked(new Map());
+                          setPickNote(null);
+                        }}
+                        className="shrink-0 font-bold text-gold hover:underline"
+                      >
+                        {t("select.bar.clear")}
+                      </button>
+                    ) : null}
+                  </p>
+                </div>
+                {showListingColors ? (
+                  <select
+                    value={blockTarget}
+                    onChange={(e) => setBlockTarget(e.target.value as BlockTarget)}
+                    disabled={blocking}
+                    aria-label={t("day.blockAppliesTo")}
+                    className="h-9 max-w-[45%] rounded-full border border-white/15 bg-transparent px-3 text-xs font-bold text-white outline-none [&>option]:text-ink"
+                  >
+                    <option value="all">{t("day.allListings")}</option>
+                    {listings.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {listingLabel(l, t("day.listingFallback"))}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={exitSelectMode}
+                    className="h-11 rounded-full px-3 text-sm font-bold text-white hover:text-gold transition-colors"
+                  >
+                    {t("select.bar.done")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={blockPicked}
+                    disabled={blocking || pickedDates.length === 0}
+                    className="inline-flex h-11 items-center gap-1.5 rounded-full bg-gold px-5 text-sm font-bold text-ink hover:bg-gold-hover disabled:bg-gold-muted"
+                  >
+                    {blocking ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {blocking
+                      ? t("day.saving")
+                      : pickedDates.length === 0
+                        ? t("select.bar.block")
+                        : pickedAllBlocked
+                          ? t("select.bar.unblockN", { count: pickedDates.length })
+                          : t("select.bar.blockN", { count: pickedToBlock.length })}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {/* Day preview — opens on day click, shows that day's schedule. */}
           <Dialog
@@ -1495,6 +1857,87 @@ export default function VendorAppointmentsPage({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Block the picked dates, with one optional title for all of them. */}
+      <AlertDialog open={multiOpen} onOpenChange={(open) => !blocking && setMultiOpen(open)}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-editorial text-3xl">
+              {t("select.dialog.blockQ", { days: nameDays(pickedToBlock) })}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              {t("select.dialog.body", { count: pickedToBlock.length })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-2">
+            <label
+              htmlFor="multi-block-title"
+              className="block text-xs font-medium text-muted-foreground mb-1.5"
+            >
+              {t("blockDialog.whatIsIt")}{" "}
+              <span className="text-muted-foreground">{t("blockDialog.optional")}</span>
+            </label>
+            <Input
+              id="multi-block-title"
+              value={multiTitle}
+              onChange={(e) => setMultiTitle(e.target.value)}
+              placeholder={t("blockDialog.placeholder")}
+              maxLength={80}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void commitBlockPicked();
+                }
+              }}
+            />
+          </div>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={blocking} className="rounded-full">
+              {t("blockDialog.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void commitBlockPicked();
+              }}
+              disabled={blocking}
+            >
+              {blocking ? t("day.saving") : t("blockDialog.block")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Re-open picked dates that are all blocked already. */}
+      <AlertDialog open={reopenOpen} onOpenChange={(open) => !blocking && setReopenOpen(open)}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-editorial text-3xl">
+              {t("select.dialog.reopenTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed">
+              {describeDays(pickedDates, dateLocale)}
+              {". "}
+              {t("select.dialog.reopenBody", { count: pickedDates.length })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={blocking} className="rounded-full">
+              {t("blockDialog.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void commitUnblockPicked();
+              }}
+              disabled={blocking}
+            >
+              {blocking ? t("day.saving") : t("blockDialog.unblock")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Manual "add appointment" form — vendor-side calendar entry. */}
       <AlertDialog open={addOpen} onOpenChange={setAddOpen}>
         <AlertDialogContent className="rounded-3xl">
@@ -1667,6 +2110,7 @@ function MonthGrid({
   listingColorById,
   showListingColors,
   selectedYmd,
+  pickedKeys = null,
   onSelect,
 }: {
   month: Date;
@@ -1676,6 +2120,9 @@ function MonthGrid({
   listingColorById: Map<string, string>;
   showListingColors: boolean;
   selectedYmd: string | null;
+  // "Block dates" mode: the picked days (drawn gold, not ink, so a dozen
+  // picks don't read as booked).
+  pickedKeys?: ReadonlyMap<string, unknown> | null;
   onSelect: (k: string) => void;
 }) {
   const { t } = useTranslation("vendorAppointments");
@@ -1707,6 +2154,7 @@ function MonthGrid({
           const key = ymdKey(d);
           const state = dayState.get(key) ?? "available";
           const selected = selectedYmd === key;
+          const picked = !!pickedKeys?.has(key);
           return (
             <DayCell
               key={key}
@@ -1718,6 +2166,8 @@ function MonthGrid({
               listingColorById={listingColorById}
               showListingColors={showListingColors}
               selected={selected}
+              picked={picked}
+              picking={!!pickedKeys}
               onClick={() => onSelect(key)}
             />
           );
@@ -1803,6 +2253,8 @@ function DayCell({
   statusDots,
   showListingColors,
   selected,
+  picked = false,
+  picking = false,
   onClick,
 }: {
   day: number;
@@ -1813,9 +2265,14 @@ function DayCell({
   listingColorById: Map<string, string>;
   showListingColors: boolean;
   selected: boolean;
+  picked?: boolean;
+  picking?: boolean;
   onClick: () => void;
 }) {
-  const dimmed = !inMonth ? "text-muted-foreground/50" : "";
+  // A picked day keeps full strength even when it spills over from the
+  // next or previous month.
+  const dimmed = !inMonth && !picked ? "text-muted-foreground/50" : "";
+  const pickedClass = picked ? "!bg-gold !text-ink" : "";
 
   // Account view: the day number with one dot PER event below it, coloured by
   // status (booked / pending / blocked). A day with several appointments shows
@@ -1828,9 +2285,10 @@ function DayCell({
       <div className="flex items-center justify-center py-1">
         <button
           onClick={onClick}
+          aria-pressed={picking ? picked : undefined}
           className={`relative w-10 h-10 rounded-xl flex flex-col items-center justify-center gap-0.5 text-sm font-medium transition hover:bg-secondary/60 ${
             selected ? "ring-2 ring-foreground" : ""
-          } ${dimmed}`}
+          } ${dimmed} ${pickedClass}`}
         >
           <span className="leading-none">{day}</span>
           {statusDots.length > 0 ? (
@@ -1867,17 +2325,18 @@ function DayCell({
     <div className="flex items-center justify-center py-1">
       <button
         onClick={onClick}
+        aria-pressed={picking ? picked : undefined}
         className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium overflow-hidden transition ${
           selected ? "ring-2 ring-foreground" : ""
-        } ${state === "available" ? "hover:bg-secondary/60" : ""} ${baseClass} ${dimmed}`}
+        } ${state === "available" ? "hover:bg-secondary/60" : ""} ${baseClass} ${dimmed} ${pickedClass}`}
       >
-        {state === "blocked" ? (
+        {state === "blocked" && !picked ? (
           <span
             className="absolute inset-0 rounded-xl"
             style={{ background: "hsl(var(--muted))" }}
           />
         ) : null}
-        {state === "blocked" ? (
+        {state === "blocked" && !picked ? (
           <svg
             className="absolute inset-0 w-full h-full"
             aria-hidden

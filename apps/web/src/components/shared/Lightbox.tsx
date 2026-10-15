@@ -54,7 +54,7 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
       role="dialog"
       aria-modal="true"
       aria-label={t("lightbox.label")}
-      className="fixed inset-0 z-[100] bg-foreground/95 backdrop-blur-sm flex items-center justify-center"
+      className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center"
       onClick={onClose}
     >
       <button

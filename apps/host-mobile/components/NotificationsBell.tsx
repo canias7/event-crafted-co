@@ -22,21 +22,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+import { C } from "@/lib/theme";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
-const INK = "#14161a";
-const INK_DIM = "#14161a";
-const CREAM = "#f4f1ea";
+const INK = C.text;
+const INK_DIM = C.textDim;
+const CREAM = C.page;
 // Unread markers are champagne, per the brand (numbers in ink).
-const GOLD = "#c9a86a";
+const GOLD = C.gold;
 
 // Cards carry a 1px hairline instead of a shadow (component standard).
 const CARD_BORDER = {
   borderWidth: 1,
-  borderColor: "#e6e1d5",
+  borderColor: C.border,
 } as const;
 
 function routeFromLink(link: string | null | undefined): string | null {
@@ -59,19 +61,21 @@ function isToday(iso: string) {
   );
 }
 
-function relativeTime(iso: string): string {
+type TFn = (key: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+function relativeTime(iso: string, t: TFn, locale: string): string {
   const now = Date.now();
-  const t = new Date(iso).getTime();
-  const diffMs = Math.max(0, now - t);
+  const then = new Date(iso).getTime();
+  const diffMs = Math.max(0, now - then);
   const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 1) return t("time.justNow");
+  if (diffMin < 60) return t("time.minutes", { count: diffMin });
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffHr < 24) return t("time.hours", { count: diffHr });
   const diffDay = Math.floor(diffHr / 24);
-  if (diffDay === 1) return "Yesterday";
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (diffDay === 1) return t("time.yesterday");
+  if (diffDay < 7) return t("time.days", { count: diffDay });
+  return new Date(iso).toLocaleDateString(locale);
 }
 
 interface NotificationRow {
@@ -106,8 +110,8 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /booking|accepted|confirmed/.test(type) || /booked|confirmed/i.test(title);
   if (isBooking) {
     return (
-      <View style={{ ...box, backgroundColor: INK }}>
-        <Feather name="check" size={22} color="#ffffff" />
+      <View style={{ ...box, backgroundColor: C.selected }}>
+        <Feather name="check" size={22} color={C.onSelected} />
       </View>
     );
   }
@@ -127,7 +131,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /replied/i.test(title);
   if (isPerson && row.actor_image_url) {
     return (
-      <View style={{ ...box, backgroundColor: "#ece7db", overflow: "hidden" }}>
+      <View style={{ ...box, backgroundColor: C.surface, overflow: "hidden" }}>
         <Image
           source={{ uri: row.actor_image_url }}
           style={{ width: 44, height: 44 }}
@@ -139,7 +143,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
   if (isPerson) {
     const initial = (title.trim()[0] ?? "?").toUpperCase();
     return (
-      <View style={{ ...box, backgroundColor: "#ece7db" }}>
+      <View style={{ ...box, backgroundColor: C.surface }}>
         <Text
           style={{
             color: INK,
@@ -157,7 +161,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
     /system|push|test/.test(type) || /push test|claude/i.test(title);
   if (isSystem) {
     return (
-      <View style={{ ...box, backgroundColor: "#ece7db" }}>
+      <View style={{ ...box, backgroundColor: C.surface }}>
         <Feather name="bell" size={20} color={INK_DIM} />
       </View>
     );
@@ -165,7 +169,7 @@ function NotificationIcon({ row }: { row: NotificationRow }) {
 
   const initial = (title.trim()[0] ?? "?").toUpperCase();
   return (
-    <View style={{ ...box, backgroundColor: "#ece7db" }}>
+    <View style={{ ...box, backgroundColor: C.surface }}>
       <Text
         style={{
           color: INK,
@@ -186,6 +190,7 @@ function NotificationItem({
   row: NotificationRow;
   onPress: () => void;
 }) {
+  const { t, locale } = useT("notificationsBell");
   const unread = row.read_at == null;
   return (
     <Pressable onPress={onPress}>
@@ -228,7 +233,7 @@ function NotificationItem({
                 }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 12 }}>
-                  {relativeTime(row.created_at)}
+                  {relativeTime(row.created_at, t, locale)}
                 </Text>
                 {unread ? (
                   <View
@@ -289,7 +294,7 @@ function Section({
       </Text>
       <View
         style={{
-          backgroundColor: "#fbf9f4",
+          backgroundColor: C.card,
           borderRadius: 20,
           overflow: "hidden",
           ...CARD_BORDER,
@@ -302,7 +307,7 @@ function Section({
               <View
                 style={{
                   height: 1,
-                  backgroundColor: "#e6e1d5",
+                  backgroundColor: C.border,
                   marginLeft: 72,
                 }}
               />
@@ -315,8 +320,9 @@ function Section({
 }
 
 export function NotificationsBell({
-  iconColor = "#14161a",
+  iconColor = C.text,
 }: { iconColor?: string }) {
+  const { t } = useT("notificationsBell");
   const { user } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -407,6 +413,8 @@ export function NotificationsBell({
         onPress={() => setOpen(true)}
         hitSlop={8}
         className="active:opacity-60"
+        accessibilityRole="button"
+        accessibilityLabel={t("open")}
       >
         <View>
           <Feather name="bell" size={22} color={iconColor} />
@@ -426,7 +434,7 @@ export function NotificationsBell({
               }}
             >
               <Text
-                style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 10,}}
+                style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 10,}}
               >
                 {unread > 9 ? "9+" : unread}
               </Text>
@@ -458,7 +466,7 @@ export function NotificationsBell({
             }}
           >
             <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-              <Text style={{ fontFamily: SERIF, color: INK, fontSize: 15 }}>Close</Text>
+              <Text style={{ fontFamily: SERIF, color: INK, fontSize: 15 }}>{t("close")}</Text>
             </Pressable>
             <Text
               style={{
@@ -467,7 +475,7 @@ export function NotificationsBell({
                 fontSize: 22,
               }}
             >
-              Notifications
+              {t("title")}
             </Text>
             <Pressable
               onPress={markAllRead}
@@ -476,11 +484,11 @@ export function NotificationsBell({
             >
               <Text
                 style={{ fontFamily: SERIF_BOLD,
-                  color: unread > 0 ? INK : "#746a58",
+                  color: unread > 0 ? INK : C.placeholder,
                   fontSize: 15,
                 }}
               >
-                Mark read
+                {t("markRead")}
               </Text>
             </Pressable>
           </View>
@@ -494,7 +502,7 @@ export function NotificationsBell({
           >
             {loading ? (
               <View style={{ alignItems: "center", paddingTop: 80 }}>
-                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>Loading…</Text>
+                <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14 }}>{t("loading")}</Text>
               </View>
             ) : rows.length === 0 ? (
               <View
@@ -509,18 +517,18 @@ export function NotificationsBell({
                     textAlign: "center",
                   }}
                 >
-                  No notifications yet.
+                  {t("empty")}
                 </Text>
               </View>
             ) : (
               <>
                 <Section
-                  label="TODAY"
+                  label={t("today")}
                   rows={today}
                   onItemPress={openNotification}
                 />
                 <Section
-                  label="EARLIER"
+                  label={t("earlier")}
                   rows={earlier}
                   onItemPress={openNotification}
                 />
@@ -533,7 +541,7 @@ export function NotificationsBell({
                     fontSize: 15,
                   }}
                 >
-                  You&apos;re all caught up.
+                  {t("caughtUp")}
                 </Text>
               </>
             )}

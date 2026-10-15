@@ -1,0 +1,51 @@
+export default {
+  title: "Profile",
+  hostFallback: "Host",
+  memberSince: "Member since {{year}}",
+  verifiedHost: "Verified Host",
+  stats: {
+    inquiries: "Inquiries",
+    booked: "Booked",
+    vendors: "Vendors",
+  },
+  inbox: {
+    title: "Inbox",
+    unread_one: "{{count}} unread",
+    unread_other: "{{count}} unread",
+    caughtUp: "All caught up",
+  },
+  events: {
+    title: "My Events",
+    planned_one: "{{count}} planned",
+    planned_other: "{{count}} planned",
+    planFirst: "Plan your first",
+  },
+  verified: {
+    title: "You're verified",
+    subtitle: "Vendors prioritize verified hosts.",
+    alertTitle: "Verified host",
+    alertBody: "Your identity has been verified — vendors see a badge on your inquiries.",
+  },
+  pending: {
+    title: "Verification pending",
+    subtitle: "We'll reach out within 48 hours.",
+    alertBody: "Your request is in our queue. We'll email you within 48 hours to collect ID.",
+  },
+  become: {
+    title: "Become Verified",
+    retryTitle: "Try verifying again",
+    subtitle: "Build trust with vendors. Faster replies, better matches.",
+  },
+  request: {
+    title: "Request host verification",
+    body: "We'll send your request to our team. Someone will reach out within 48 hours to verify your identity (a photo of a government ID is enough). It typically unlocks faster vendor replies.",
+    notNow: "Not now",
+    confirm: "Request",
+    errorTitle: "Couldn't send request",
+    errorBody: "Please try again in a moment.",
+    sentTitle: "Request received",
+    sentBody: "Thanks — our team will reach out within 48 hours.",
+  },
+  accountSettings: "Account settings",
+  logOut: "Log out",
+};

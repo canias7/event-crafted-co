@@ -23,10 +23,18 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { eventTypeLabel } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 import { Wordmark } from "@/components/Wordmark";
 import { supabase } from "@/lib/supabase";
+import { C, IS_DARK } from "@/lib/theme";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Grey icons (search glass): warm grey on light, lighter on dark.
+const ICON_DIM = IS_DARK ? C.placeholder : "#6f6a60";
+// Problem tint for the error box.
+const ERROR_BG = IS_DARK ? "rgba(224,113,106,0.12)" : "#f7ece9";
+const ERROR_EDGE = IS_DARK ? "rgba(224,113,106,0.4)" : "#e6c9c2";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -39,7 +47,7 @@ const PAGE_TITLE = {
   fontSize: 38,
   lineHeight: 44,
   letterSpacing: -0.5,
-  color: "#14161a",
+  color: C.text,
   marginTop: 8,
 } as const;
 
@@ -81,23 +89,35 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function relativeTime(iso: string | null): string {
+type TFn = (key: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+function relativeTime(iso: string | null, t: TFn, locale: string): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
+  if (m < 1) return t("time.now");
+  if (m < 60) return t("time.minutes", { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return t("time.hours", { count: h });
   const d = Math.floor(h / 24);
-  if (d === 1) return "Yesterday";
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d === 1) return t("time.yesterday");
+  if (d < 7) return t("time.days", { count: d });
+  return new Date(iso).toLocaleDateString(locale, { month: "short", day: "numeric" });
+}
+
+// Event type in the app's language; unknown values fall back to the
+// shared English formatter.
+function eventTypeText(type: string | null, t: TFn): string {
+  const v = type?.trim();
+  if (!v) return t("eventTypes.fallback");
+  const label = t(`eventTypes.${v}`);
+  return label === `inbox.eventTypes.${v}` ? eventTypeLabel(v) : label;
 }
 
 type Filter = "all" | "awaiting" | "replied" | "booked";
 
 export default function InboxScreen() {
+  const { t } = useT("inbox");
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -160,7 +180,7 @@ export default function InboxScreen() {
   }, [rows, filter, search]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }}>
       <ScrollView
         contentContainerClassName="pb-32"
         keyboardShouldPersistTaps="handled"
@@ -168,27 +188,28 @@ export default function InboxScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#14161a"
+            tintColor={C.text}
           />
         }
       >
         <View className="px-5 pt-2 pb-4">
           <Wordmark />
-          <Text style={PAGE_TITLE}>Inbox</Text>
-          <Text style={{ fontFamily: SERIF }} className="mt-1 text-sm text-muted-foreground">
-            Your inquiries to vendors — all in one place
+          <Text style={PAGE_TITLE}>{t("title")}</Text>
+          <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-1 text-sm">
+            {t("subtitle")}
           </Text>
         </View>
 
         <View className="px-5 mb-3">
-          <View className="flex-row items-center rounded-full bg-muted px-4 py-3">
-            <Feather name="search" size={16} color="#6f6a60" />
-            <TextInput style={{ fontFamily: SERIF }}
+          <View className="flex-row items-center rounded-full px-4 py-3" style={{ backgroundColor: C.surface }}>
+            <Feather name="search" size={16} color={ICON_DIM} />
+            <TextInput style={{ fontFamily: SERIF, color: C.text }}
               value={search}
               onChangeText={setSearch}
-              placeholder="Search by vendor, event, or message"
+              placeholder={t("searchPlaceholder")}
               placeholderTextColor={PLACEHOLDER}
-              className="ml-2 flex-1 text-base text-foreground"
+              keyboardAppearance={IS_DARK ? "dark" : "light"}
+              className="ml-2 flex-1 text-base"
             />
           </View>
         </View>
@@ -200,22 +221,22 @@ export default function InboxScreen() {
         >
           <Chip
             active={filter === "all"}
-            label="All"
+            label={t("filters.all")}
             onPress={() => setFilter("all")}
           />
           <Chip
             active={filter === "awaiting"}
-            label="Awaiting"
+            label={t("filters.awaiting")}
             onPress={() => setFilter("awaiting")}
           />
           <Chip
             active={filter === "replied"}
-            label="Replied"
+            label={t("filters.replied")}
             onPress={() => setFilter("replied")}
           />
           <Chip
             active={filter === "booked"}
-            label="Booked"
+            label={t("filters.booked")}
             onPress={() => setFilter("booked")}
           />
         </ScrollView>
@@ -223,15 +244,15 @@ export default function InboxScreen() {
         {error ? (
           <View
             className="mx-5 mb-3 rounded-xl px-4 py-3 border"
-            style={{ backgroundColor: "#f7ece9", borderColor: "#e6c9c2" }}
+            style={{ backgroundColor: ERROR_BG, borderColor: ERROR_EDGE }}
           >
-            <Text style={{ fontFamily: SERIF, color: "#b23a34" }} className="text-sm">{error}</Text>
+            <Text style={{ fontFamily: SERIF, color: C.error }} className="text-sm">{error}</Text>
             <Pressable
               onPress={() => load(false)}
               className="mt-2 active:opacity-70"
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#b23a34" }} className="text-sm">
-                Try again
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.error }} className="text-sm">
+                {t("retry")}
               </Text>
             </Pressable>
           </View>
@@ -240,14 +261,14 @@ export default function InboxScreen() {
         <View className="mt-2">
           {loading ? (
             <View className="items-center pt-16">
-              <ActivityIndicator color="#14161a" />
+              <ActivityIndicator color={C.text} />
             </View>
           ) : filteredRows.length === 0 ? (
             <Empty
               msg={
                 search || filter !== "all"
-                  ? "Nothing matches that filter."
-                  : "No conversations yet. Reach out to a vendor from Explore."
+                  ? t("emptyFiltered")
+                  : t("empty")
               }
             />
           ) : (
@@ -278,14 +299,12 @@ function Chip({
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-center px-4 py-2 rounded-full ${
- active ? "bg-foreground" : "bg-muted"
-      }`}
+      className="flex-row items-center px-4 py-2 rounded-full"
+      style={{ backgroundColor: active ? C.selected : C.surface }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD }}
-        className={`text-sm ${
-          active ? "text-white" : "text-foreground"
-        }`}
+      <Text
+        style={{ fontFamily: SERIF_BOLD, color: active ? C.onSelected : C.text }}
+        className="text-sm"
       >
         {label}
       </Text>
@@ -299,15 +318,17 @@ function Avatar({ seed, label }: { seed: string; label: string }) {
       className="h-12 w-12 rounded-full items-center justify-center"
       style={{ backgroundColor: avatarColor(seed) }}
     >
-      <Text style={{ fontFamily: SERIF_BOLD }} className="text-sm text-white">{label}</Text>
+      <Text style={{ fontFamily: SERIF_BOLD, color: "#ffffff" }} className="text-sm">{label}</Text>
     </View>
   );
 }
 
 function InquiryCard({ row }: { row: InquiryRow }) {
   const router = useRouter();
+  const { t, locale } = useT("inbox");
+  const cat = useCategoryNames();
   const [opening, setOpening] = useState(false);
-  const vendorName = row.vendor_profiles?.[0]?.business_name ?? "Vendor";
+  const vendorName = row.vendor_profiles?.[0]?.business_name ?? t("vendorFallback");
   const category = row.vendor_profiles?.[0]?.category ?? null;
   // Host-side "noteworthy" = vendor has replied and the host hasn't
   // opened it yet. There's no per-thread unread bit on inquiries, so we
@@ -316,7 +337,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
   const isUnread = row.status === "replied" || row.status === "drafted";
   const previewBudget =
     row.budget_max_cents != null
-      ? ` · up to $${Math.round(row.budget_max_cents / 100)}`
+      ? ` · ${t("budgetUpTo", { amount: `$${Math.round(row.budget_max_cents / 100)}` })}`
       : "";
 
   async function open() {
@@ -334,36 +355,37 @@ function InquiryCard({ row }: { row: InquiryRow }) {
   return (
     <Pressable
       onPress={open}
-      className="rounded-[20px] border border-border bg-[#fbf9f4] px-4 py-4 active:opacity-70"
+      className="rounded-[20px] border px-4 py-4 active:opacity-70"
+      style={{ borderColor: C.border, backgroundColor: C.card }}
     >
       <View className="flex-row gap-3">
         <Avatar seed={vendorName} label={initials(vendorName)} />
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-shrink">
-              <Text style={{ fontFamily: SERIF_BOLD }}
-                className="text-base text-foreground"
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text }}
+                className="text-base"
                 numberOfLines={1}
               >
                 {vendorName}
               </Text>
               {isUnread ? (
-                <View className="ml-2 h-2 w-2 rounded-full" style={{ backgroundColor: "#c9a86a" }} />
+                <View className="ml-2 h-2 w-2 rounded-full" style={{ backgroundColor: C.gold }} />
               ) : null}
             </View>
-            <Text style={{ fontFamily: SERIF }} className="text-xs text-muted-foreground">
-              {relativeTime(row.created_at)}
+            <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-xs">
+              {relativeTime(row.created_at, t, locale)}
             </Text>
           </View>
-          <Text style={{ fontFamily: SERIF }} className="mt-0.5 text-xs text-muted-foreground" numberOfLines={1}>
-            {category ? `${category} · ` : ""}
-            {eventTypeLabel(row.event_type)}
+          <Text style={{ fontFamily: SERIF, color: C.textDim }} className="mt-0.5 text-xs" numberOfLines={1}>
+            {category ? `${cat.sub(category)} · ` : ""}
+            {eventTypeText(row.event_type, t)}
             {row.event_date ? ` · ${row.event_date}` : ""}
             {previewBudget}
           </Text>
           {row.special_requests ? (
-            <Text style={{ fontFamily: SERIF }}
-              className="mt-1.5 text-sm text-foreground"
+            <Text style={{ fontFamily: SERIF, color: C.text }}
+              className="mt-1.5 text-sm"
               numberOfLines={2}
             >
               {row.special_requests}
@@ -372,19 +394,19 @@ function InquiryCard({ row }: { row: InquiryRow }) {
           {isUnread ? (
             <View
               className="mt-2 self-start rounded-full px-2 py-0.5"
-              style={{ backgroundColor: "#f2e7cb" }}
+              style={{ backgroundColor: C.pending }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#8a6f3e" }} className="text-[10px] uppercase tracking-wide">
-                Replied
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.pendingText }} className="text-[10px] uppercase tracking-wide">
+                {t("badges.replied")}
               </Text>
             </View>
           ) : row.status === "won" ? (
             <View
               className="mt-2 self-start rounded-full px-2 py-0.5"
-              style={{ backgroundColor: "#14161a" }}
+              style={{ backgroundColor: C.selected }}
             >
-              <Text style={{ fontFamily: SERIF_BOLD, color: "#f4f1ea" }} className="text-[10px] uppercase tracking-wide">
-                Booked
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.page }} className="text-[10px] uppercase tracking-wide">
+                {t("badges.booked")}
               </Text>
             </View>
           ) : null}
@@ -397,7 +419,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
 function Empty({ msg }: { msg: string }) {
   return (
     <View className="px-5 py-16 items-center">
-      <Text style={{ fontFamily: SERIF }} className="text-sm text-muted-foreground text-center">{msg}</Text>
+      <Text style={{ fontFamily: SERIF, color: C.textDim }} className="text-sm text-center">{msg}</Text>
     </View>
   );
 }

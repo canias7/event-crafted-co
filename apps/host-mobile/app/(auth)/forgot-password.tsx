@@ -23,19 +23,21 @@ import { supabase } from "@/lib/supabase";
 import { useKeyboardReveal } from "@/lib/useKeyboardReveal";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
 import { AuthCard } from "@/components/AuthCard";
+import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const CREAM = "#14161a";
-const INK = "#f4f1ea";
+const CREAM = C.page;
+const INK = C.text;
 // Labels on gold buttons stay ink.
-const INK_ON_GOLD = "#14161a";
-const GOLD = "#c9a86a";
+const INK_ON_GOLD = C.onGold;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — solid, not faded.
-const GOLD_MUTED = "#e0d2b0";
-const INK_DIM = "#f4f1ea";
-const PLACEHOLDER = "#a39a88";
-const INK_BORDER = "rgba(255,255,255,0.15)";
-const INPUT_BG = "rgba(255,255,255,0.05)";
-const ERROR = "#e0716a";
+const GOLD_MUTED = C.goldMuted;
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const INK_BORDER = C.border;
+const INPUT_BG = C.field;
+const ERROR = C.error;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -43,6 +45,7 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 export default function ForgotPasswordScreen() {
   const keyboard = useKeyboardReveal();
   const router = useRouter();
+  const { t } = useT("forgotPassword");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -85,7 +88,12 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
-            <Pressable onPress={() => router.back()} hitSlop={8}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t("back")}
+            >
               <Feather name="chevron-left" size={26} color={INK} />
             </Pressable>
           </View>
@@ -102,7 +110,7 @@ export default function ForgotPasswordScreen() {
                   letterSpacing: -1,
                 }}
               >
-                Forgot your password?
+                {t("request.title")}
               </Text>
               <Text
                 style={{ fontFamily: SERIF,
@@ -112,8 +120,7 @@ export default function ForgotPasswordScreen() {
                   lineHeight: 22,
                 }}
               >
-                Enter your email and we'll send a reset link. Tap it on
-                this device to pick a new password.
+                {t("request.body")}
               </Text>
 
               <View style={{ marginTop: 24 }}>
@@ -124,7 +131,7 @@ export default function ForgotPasswordScreen() {
                     letterSpacing: 0.8,
                   }}
                 >
-                  EMAIL
+                  {t("request.email")}
                 </Text>
                 <TextInput
                   value={email}
@@ -134,7 +141,7 @@ export default function ForgotPasswordScreen() {
                   autoComplete="email"
                   returnKeyType="send"
                   onSubmitEditing={onSubmit}
-                  placeholder="you@example.com"
+                  placeholder={t("request.emailPlaceholder")}
                   placeholderTextColor={PLACEHOLDER}
                   style={{ fontFamily: SERIF,
                     marginTop: 6,
@@ -175,7 +182,7 @@ export default function ForgotPasswordScreen() {
                 }}
               >
                 <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
-                  {submitting ? "Sending…" : "Send reset link"}
+                  {submitting ? t("request.sending") : t("request.send")}
                 </Text>
               </Pressable>
             </View>
@@ -189,7 +196,7 @@ export default function ForgotPasswordScreen() {
                   letterSpacing: -1,
                 }}
               >
-                Check your email
+                {t("sent.title")}
               </Text>
               <Text
                 style={{ fontFamily: SERIF,
@@ -199,10 +206,9 @@ export default function ForgotPasswordScreen() {
                   lineHeight: 22,
                 }}
               >
-                If an account exists for{" "}
-                <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{email}</Text>,
-                you'll get a reset link within a minute. Open it on this
-                device to set a new password.
+                {t("sent.before")}{" "}
+                <Text style={{ fontFamily: SERIF_BOLD, color: INK,}}>{email}</Text>
+                {t("sent.after")}
               </Text>
 
               <Pressable
@@ -217,7 +223,7 @@ export default function ForgotPasswordScreen() {
                 }}
               >
                 <Text style={{ fontFamily: SERIF_BOLD, color: INK_ON_GOLD, fontSize: 16,}}>
-                  Back to sign in
+                  {t("sent.backToSignIn")}
                 </Text>
               </Pressable>
             </View>

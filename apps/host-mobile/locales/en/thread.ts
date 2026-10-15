@@ -1,0 +1,42 @@
+// The host's chat with a vendor (app/(host)/thread/[id].tsx). Message
+// bodies stay as they were written.
+export default {
+  conversation: "Conversation",
+  vendorFallback: "Vendor",
+  activeNow: "Active now",
+  today: "Today",
+  yesterday: "Yesterday",
+  menu: {
+    viewProfile: "View vendor profile",
+    mute: "Mute notifications",
+    unmute: "Unmute notifications",
+    report: "Report",
+  },
+  report: {
+    title: "Report this thread",
+    pick: "Pick a reason:",
+    spam: "Spam or scam",
+    harassment: "Harassment or abuse",
+    inappropriate: "Inappropriate content",
+    other: "Something else",
+    failedTitle: "Couldn't send report",
+    failedBody: "Please try again in a moment.",
+    sentTitle: "Report received",
+    sentBody: "Thanks — our team will review this thread.",
+  },
+  attach: {
+    title: "Sending photos arrives soon",
+    body: "Photo attachments will arrive in the next app update. You can already receive photos sent from a vendor's app.",
+  },
+  sendFailed: "Couldn't send",
+  quickReactions: "Quick reactions",
+  voiceMessage: "Voice message",
+  attachment: "Attachment",
+  you: "You",
+  vendor: "Vendor",
+  deleted: "Message deleted",
+  edited: "edited",
+  delivered: "Delivered",
+  empty: "No messages yet — say hi.",
+  placeholder: "Write a message…",
+};

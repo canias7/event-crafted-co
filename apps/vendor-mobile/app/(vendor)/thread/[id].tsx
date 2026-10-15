@@ -28,7 +28,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SHADOW } from "@/lib/ui";
+import { C, IS_DARK } from "@/lib/theme";
 import { compressForUpload } from "@/lib/imageManipulation";
+import { i18n, intlLocale, useT } from "@/lib/i18n";
 
 // Cross-platform attachment shape. Mobile-originated attachments
 // carry { url, kind }; web-originated attachments carry the storage
@@ -70,14 +72,26 @@ function isAudioAttachment(a: AttachmentRef): boolean {
 
 const QUICK_EMOJIS = ["👍", "❤️", "🎉", "🙏", "😂", "🔥", "😍", "😅", "👋", "🤝", "✨", "💯"];
 
-const CREAM = "#f4f1ea";
-const CREAM_DEEP = "#ece7db";
-const INK = "#14161a";
+// CREAM is the page colour; it is also the label on SELECTED fills
+// (avatars, outgoing bubbles, the send button): ink in light shows
+// cream on ink, dark shows ink on cream.
+const CREAM = C.page;
+const CREAM_DEEP = C.surface;
+const CARD = C.card;
+const BORDER = C.border;
+const INK = C.text;
+const SELECTED = C.selected;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+// Quoted-reply chip inside a bubble: a faint wash of the bubble's label.
+const QUOTE_MINE_BG = IS_DARK ? "rgba(20,22,26,0.08)" : "rgba(255,255,255,0.12)";
+const QUOTE_MINE_BAR = IS_DARK ? "rgba(20,22,26,0.5)" : "rgba(255,255,255,0.5)";
+const QUOTE_THEIRS_BG = IS_DARK ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+const SEND_OFF_BG = IS_DARK ? C.surface : "#e6e1d5";
+const SEND_OFF_FG = IS_DARK ? C.placeholder : "#f4f1ea";
 const ACTIVE_GREEN = "#22c55e";
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -116,10 +130,10 @@ function formatDateSeparator(iso: string): string {
   const day = new Date(d);
   day.setHours(0, 0, 0, 0);
   const diff = Math.floor((today.getTime() - day.getTime()) / 86_400_000);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (diff === 0) return i18n.t("thread.dates.today");
+  if (diff === 1) return i18n.t("thread.dates.yesterday");
+  if (diff < 7) return d.toLocaleDateString(intlLocale(), { weekday: "long" });
+  return d.toLocaleDateString(intlLocale(), { month: "short", day: "numeric" });
 }
 
 type EnrichedMessage = DirectMessage & {
@@ -175,6 +189,7 @@ export default function ThreadScreen() {
   const router = useRouter();
   const { id: threadId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { t, lang } = useT("thread");
   const [header, setHeader] = useState<ThreadHeader | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,42 +232,42 @@ export default function ThreadScreen() {
         reason,
       });
       if (error) {
-        Alert.alert("Couldn't send report", "Please try again in a moment.");
+        Alert.alert(t("report.failedTitle"), t("report.failedBody"));
         return;
       }
       Alert.alert(
-        "Report received",
-        "Thanks — our team will review this thread.",
+        t("report.receivedTitle"),
+        t("report.receivedBody"),
       );
     },
-    [user?.id, threadId],
+    [user?.id, threadId, lang],
   );
 
   const onReport = useCallback(() => {
-    Alert.alert("Report this thread", "Pick a reason:", [
-      { text: "Spam or scam", onPress: () => submitReport("spam") },
-      { text: "Harassment or abuse", onPress: () => submitReport("harassment") },
-      { text: "Inappropriate content", onPress: () => submitReport("inappropriate") },
-      { text: "Something else", onPress: () => submitReport("other") },
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("report.title"), t("report.pickReason"), [
+      { text: t("report.reasons.spam"), onPress: () => submitReport("spam") },
+      { text: t("report.reasons.harassment"), onPress: () => submitReport("harassment") },
+      { text: t("report.reasons.inappropriate"), onPress: () => submitReport("inappropriate") },
+      { text: t("report.reasons.other"), onPress: () => submitReport("other") },
+      { text: t("cancel"), style: "cancel" },
     ]);
-  }, [submitReport]);
+  }, [submitReport, lang]);
 
   // Header overflow → quick options with real mute toggle + report.
   const onHeaderMore = useCallback(() => {
-    Alert.alert(header?.otherName ?? "Conversation", undefined, [
+    Alert.alert(header?.otherName ?? t("conversation"), undefined, [
       {
-        text: muted ? "Unmute notifications" : "Mute notifications",
+        text: muted ? t("menu.unmute") : t("menu.mute"),
         onPress: toggleMute,
       },
       {
-        text: "Report",
+        text: t("menu.report"),
         style: "destructive",
         onPress: onReport,
       },
-      { text: "Cancel", style: "cancel" },
+      { text: t("cancel"), style: "cancel" },
     ]);
-  }, [header, muted, toggleMute, onReport]);
+  }, [header, muted, toggleMute, onReport, lang]);
 
   // Pick a photo from the library, upload to the message-attachments
   // bucket, and post a message with the public URL in attachments[].
@@ -263,8 +278,8 @@ export default function ThreadScreen() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
-        "Photos access needed",
-        "Enable Photos access in Settings to send pictures in chat.",
+        t("attach.permissionTitle"),
+        t("attach.permissionBody"),
       );
       return;
     }
@@ -288,7 +303,7 @@ export default function ThreadScreen() {
       const MAX_BYTES = 25 * 1024 * 1024;
       if (blob.size > MAX_BYTES) {
         setSending(false);
-        Alert.alert("Photo too large", "Pick a photo under 25 MB.");
+        Alert.alert(t("attach.tooLargeTitle"), t("attach.tooLargeBody"));
         return;
       }
       const ext = (upUri.split(".").pop() || "jpg").toLowerCase();
@@ -340,13 +355,13 @@ export default function ThreadScreen() {
       if (insErr) throw insErr;
     } catch (e) {
       Alert.alert(
-        "Couldn't send attachment",
-        e instanceof Error ? e.message : "Please try again.",
+        t("attach.failedTitle"),
+        e instanceof Error ? e.message : t("tryAgain"),
       );
     } finally {
       setSending(false);
     }
-  }, [user?.id, threadId, sending]);
+  }, [user?.id, threadId, sending, lang]);
 
   const onEmojiPick = useCallback((emoji: string) => {
     setDraft((v) => v + emoji);
@@ -378,7 +393,7 @@ export default function ThreadScreen() {
     }
 
     setHeader({
-      otherName: data.host?.display_name ?? "Host",
+      otherName: data.host?.display_name ?? i18n.t("thread.host"),
       otherUserId,
       isActive,
     });
@@ -468,7 +483,7 @@ export default function ThreadScreen() {
     });
     setSending(false);
     if (error) {
-      Alert.alert("Couldn't send", error.message);
+      Alert.alert(t("sendFailed"), error.message);
       return;
     }
     setDraft("");
@@ -486,7 +501,7 @@ export default function ThreadScreen() {
     );
   }
 
-  const enriched = useMemo(() => enrichMessages(messages), [messages]);
+  const enriched = useMemo(() => enrichMessages(messages), [messages, lang]);
   const myLastSentId = useMemo(() => {
     for (let i = enriched.length - 1; i >= 0; i--) {
       if (enriched[i].sender_role === "vendor") return enriched[i].id;
@@ -500,7 +515,7 @@ export default function ThreadScreen() {
     <View style={{ flex: 1, backgroundColor: CREAM }}>
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <Header
-          name={header?.otherName ?? "Conversation"}
+          name={header?.otherName ?? t("conversation")}
           initial={initial}
           isActive={!!header?.isActive}
           onBack={() => router.back()}
@@ -567,6 +582,7 @@ function EmojiPickerModal({
   onPick: (e: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useT("thread");
   return (
     <Modal
       visible={visible}
@@ -585,7 +601,7 @@ function EmojiPickerModal({
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={{
-            backgroundColor: "#fbf9f4",
+            backgroundColor: CARD,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 12,
@@ -598,7 +614,7 @@ function EmojiPickerModal({
               width: 48,
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#e6e1d5",
+              backgroundColor: BORDER,
               alignSelf: "center",
               marginBottom: 12,
             }}
@@ -612,7 +628,7 @@ function EmojiPickerModal({
               paddingHorizontal: 4,
             }}
           >
-            Quick reactions
+            {t("quickReactions")}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
             {QUICK_EMOJIS.map((e) => (
@@ -654,6 +670,7 @@ function Header({
   onBack: () => void;
   onMore: () => void;
 }) {
+  const { t } = useT("thread");
   return (
     <View
       style={{
@@ -662,7 +679,7 @@ function Header({
         paddingHorizontal: 20,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#e6e1d5",
+        borderBottomColor: BORDER,
       }}
     >
       <Pressable onPress={onBack} hitSlop={10} style={{ paddingRight: 8 }}>
@@ -674,7 +691,7 @@ function Header({
             width: 42,
             height: 42,
             borderRadius: 999,
-            backgroundColor: INK,
+            backgroundColor: SELECTED,
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -725,7 +742,7 @@ function Header({
               marginTop: 1,
             }}
           >
-            Active now
+            {t("activeNow")}
           </Text>
         ) : null}
       </View>
@@ -751,6 +768,7 @@ function MessageRow({
   isMine: boolean;
   showDelivered: boolean;
 }) {
+  const { t } = useT("thread");
   return (
     <View>
       {m.dateBreak ? <DateSeparator label={m.dateBreak} /> : null}
@@ -771,7 +789,7 @@ function MessageRow({
                   width: 30,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: INK,
+                  backgroundColor: SELECTED,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -840,8 +858,8 @@ function MessageRow({
                     />
                     <Text style={{ fontFamily: SERIF, color: INK, fontSize: 14 }}>
                       {audio
-                        ? "Voice message"
-                        : a.filename ?? "Attachment"}
+                        ? t("voiceMessage")
+                        : a.filename ?? t("attachment")}
                     </Text>
                   </Pressable>
                 );
@@ -853,7 +871,7 @@ function MessageRow({
                 backgroundColor: m.deleted_at
                   ? CREAM_DEEP
                   : isMine
-                    ? INK
+                    ? SELECTED
                     : CREAM_DEEP,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
@@ -876,8 +894,8 @@ function MessageRow({
                     paddingVertical: 6,
                     borderRadius: 8,
                     backgroundColor: isMine
-                      ? "rgba(255,255,255,0.12)"
-                      : "rgba(0,0,0,0.05)",
+                      ? QUOTE_MINE_BG
+                      : QUOTE_THEIRS_BG,
                   }}
                 >
                   <View
@@ -886,7 +904,7 @@ function MessageRow({
                       alignSelf: "stretch",
                       borderRadius: 2,
                       backgroundColor: isMine
-                        ? "rgba(255,255,255,0.5)"
+                        ? QUOTE_MINE_BAR
                         : INK,
                     }}
                   />
@@ -900,7 +918,7 @@ function MessageRow({
                       }}
                       numberOfLines={1}
                     >
-                      {m.replyTo.senderRole === "vendor" ? "You" : "Host"}
+                      {m.replyTo.senderRole === "vendor" ? t("you") : t("host")}
                     </Text>
                     <Text
                       style={{
@@ -912,7 +930,7 @@ function MessageRow({
                       numberOfLines={2}
                     >
                       {m.replyTo.deleted
-                        ? "Message deleted"
+                        ? t("messageDeleted")
                         : m.replyTo.body}
                     </Text>
                   </View>
@@ -926,7 +944,7 @@ function MessageRow({
                   lineHeight: 22,
                 }}
               >
-                {m.deleted_at ? "Message deleted" : m.body}
+                {m.deleted_at ? t("messageDeleted") : m.body}
               </Text>
               {m.edited_at && !m.deleted_at ? (
                 <Text
@@ -938,7 +956,7 @@ function MessageRow({
                     opacity: 0.6,
                   }}
                 >
-                  edited
+                  {t("edited")}
                 </Text>
               ) : null}
             </View>
@@ -956,7 +974,7 @@ function MessageRow({
             marginRight: 4,
           }}
         >
-          Delivered
+          {t("delivered")}
         </Text>
       ) : null}
     </View>
@@ -980,6 +998,7 @@ function DateSeparator({ label }: { label: string }) {
 }
 
 function EmptyState() {
+  const { t } = useT("thread");
   return (
     <View style={{ alignItems: "center", paddingTop: 64, paddingHorizontal: 24 }}>
       <Feather name="message-square" size={28} color={INK_DIM} />
@@ -992,7 +1011,7 @@ function EmptyState() {
           fontSize: 14,
         }}
       >
-        Say hi! Reply to this inquiry to start the conversation.
+        {t("empty")}
       </Text>
     </View>
   );
@@ -1013,6 +1032,7 @@ function Composer({
   onAttach: () => void;
   onEmoji: () => void;
 }) {
+  const { t } = useT("thread");
   const enabled = value.trim().length > 0 && !sending;
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
@@ -1020,7 +1040,7 @@ function Composer({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#fbf9f4",
+          backgroundColor: CARD,
           borderRadius: 999,
           paddingLeft: 16,
           paddingRight: 6,
@@ -1034,7 +1054,7 @@ function Composer({
         <TextInput
           value={value}
           onChangeText={onChange}
-          placeholder="Write a message…"
+          placeholder={t("composerPlaceholder")}
           placeholderTextColor={PLACEHOLDER}
           multiline
           style={{ fontFamily: SERIF,
@@ -1055,13 +1075,13 @@ function Composer({
             width: 38,
             height: 38,
             borderRadius: 999,
-            backgroundColor: enabled ? INK : "#e6e1d5",
+            backgroundColor: enabled ? SELECTED : SEND_OFF_BG,
             alignItems: "center",
             justifyContent: "center",
             marginLeft: 4,
           }}
         >
-          <Feather name="navigation" size={18} color={CREAM} />
+          <Feather name="navigation" size={18} color={enabled ? CREAM : SEND_OFF_FG} />
         </Pressable>
       </View>
     </View>

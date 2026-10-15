@@ -20,5 +20,11 @@
 20261013150000_email_preferences.sql
 # Privacy: remove GPS keys from saved gallery EXIF (uploader no longer stores them).
 20261013160000_strip_gallery_gps.sql
+# Claim links: get_claim_invitation_by_token failed on every call (columns read into the wrong fields); read the row whole.
+20261014200000_fix_claim_invitation_lookup.sql
+# Vendors record payments received outside Vendora (cash, Zelle…); Overview revenue counts them and adds a 12-month view.
+20261015120000_outside_payments_and_yearly_revenue.sql
+# Vendor Overview: any date range (presets or custom) grouped by day / week / month.
+20261015180000_vendor_overview_range.sql
 # Blocked-date titles private: anon/authenticated can't select vendor_unavailable_dates.reason (read via get_vendor_block_reasons).
 20261014120000_private_block_titles.sql

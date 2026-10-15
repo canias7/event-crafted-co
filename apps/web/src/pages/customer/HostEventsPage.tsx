@@ -463,13 +463,7 @@ export default function HostEventsPage() {
                   ))}
                 </div>
               ) : (
-                <div
-                  className="rounded-2xl p-6 text-center text-sm text-muted-foreground"
-                  style={{
-                    background: "rgba(255,255,255,0.5)",
-                    border: "0.5px solid rgba(255,255,255,0.08)",
-                  }}
-                >
+                <div className="rounded-2xl p-6 text-center text-sm text-muted-foreground bg-card border border-border">
                   {t("nothingOnDay")}
                 </div>
               )}
@@ -567,8 +561,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       }}
     >
       <div
-        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5"
-        style={{ background: "rgba(255,255,255,0.08)", color: "#f4f1ea" }}
+        className="w-14 h-14 mx-auto rounded-full inline-flex items-center justify-center mb-5 bg-muted text-foreground"
       >
         <CalendarIcon className="w-6 h-6" />
       </div>
@@ -710,14 +703,13 @@ function CalendarCell({
         {day}
         {hasEvent ? (
           <span
-            className="absolute bottom-1 w-1 h-1 rounded-full"
-            style={{
-              background: selected
-                ? "rgba(255,255,255,0.85)"
+            className={`absolute bottom-1 w-1 h-1 rounded-full ${
+              selected
+                ? "bg-background"
                 : disabled
-                  ? "rgba(255,255,255,0.08)"
-                  : "#f4f1ea",
-            }}
+                  ? "bg-muted-foreground/20"
+                  : "bg-foreground"
+            }`}
           />
         ) : null}
       </button>

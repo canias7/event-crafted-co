@@ -31,6 +31,9 @@ import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
 import { SearchField, ToolbarButton, UnderlineTabs } from "@/components/ui/ToolbarKit";
+import { i18n, intlLocale, useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
+import { C, IS_DARK } from "@/lib/theme";
 
 type Tab = "inquiries" | "partners";
 
@@ -42,16 +45,24 @@ const PHOTO_NUDGE_BELOW = 5;
 
 // Cream editorial palette — matches the reference mock (warmer than the
 // wizards' near-white CREAM).
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const TRACK = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const TRACK = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+const ON_GOLD = C.onGold;
+const SELECTED = C.selected;
+const ON_SELECTED = C.onSelected;
+const FIELD = C.field;
+const BRONZE = C.accentText;
+const ERROR = C.error;
+const ERROR_BG = IS_DARK ? "rgba(224,113,106,0.12)" : "#f7ece9";
+const ERROR_BORDER = IS_DARK ? "rgba(224,113,106,0.35)" : "#e6c9c2";
 // Libre Baskerville, like every other screen. This used to fall back to
 // the platform system serif (Times on iOS), which is why the inbox read
 // as a different typeface from the rest of the app. Android won't
@@ -96,20 +107,33 @@ function relativeTime(iso: string | null): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
+  if (m < 1) return i18n.t("inbox.time.now");
+  if (m < 60) return i18n.t("inbox.time.minutes", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return i18n.t("inbox.time.hours", { n: h });
   const d = Math.floor(h / 24);
-  if (d === 1) return "Yesterday";
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d === 1) return i18n.t("inbox.time.yesterday");
+  if (d < 7) return i18n.t("inbox.time.days", { n: d });
+  return new Date(iso).toLocaleDateString(intlLocale(), { month: "short", day: "numeric" });
+}
+
+// Event types are stored in English ("holiday_dinner"); show the known
+// ones in the app's language and fall back to the core label.
+const KNOWN_EVENT_TYPES = ["wedding", "birthday", "holiday_dinner", "other"];
+function useEventTypeLabel() {
+  const { t } = useT("inbox");
+  return (type: string | null | undefined, fallback: string) => {
+    const k = type?.trim();
+    if (k && KNOWN_EVENT_TYPES.includes(k)) return t(`eventTypes.${k}`);
+    return eventTypeLabel(type, fallback);
+  };
 }
 
 export default function InboxScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const dialog = useBrandDialog();
+  const { t, lang } = useT("inbox");
   const [tab, setTab] = useState<Tab>("inquiries");
   const [search, setSearch] = useState("");
   const [inquiryFilter, setInquiryFilter] = useState<"all" | "new" | "replied" | "booked">("all");
@@ -148,9 +172,9 @@ export default function InboxScreen() {
     if (!setup.complete) {
       return {
         icon: "bullhorn-outline" as const,
-        title: "Stand out. Get more booked.",
-        body: "Complete your profile and get discovered.",
-        cta: "Improve profile",
+        title: t("nudge.setup.title"),
+        body: t("nudge.setup.body"),
+        cta: t("nudge.setup.cta"),
         onPress: () => router.push("/(vendor)/setup"),
       };
     }
@@ -159,14 +183,14 @@ export default function InboxScreen() {
       const route = editorRouteFor(setup.primaryCategory);
       return {
         icon: "image-multiple-outline" as const,
-        title: "Add a few more photos.",
-        body: "Optional — but more photos give hosts a better feel for your work.",
-        cta: "Add photos",
+        title: t("nudge.photos.title"),
+        body: t("nudge.photos.body"),
+        cta: t("nudge.photos.cta"),
         onPress: () => router.push(`/(vendor)/${route}?id=${id}` as never),
       };
     }
     return null;
-  }, [setup, router]);
+  }, [setup, router, lang]);
 
   const load = useCallback(
     async (isRefresh: boolean) => {
@@ -224,7 +248,7 @@ export default function InboxScreen() {
           const other = isA ? r.vendor_b : r.vendor_a;
           return {
             id: r.id,
-            other_business_name: other?.business_name ?? "Vendor",
+            other_business_name: other?.business_name ?? i18n.t("inbox.vendorFallback"),
             other_category: other?.category ?? null,
             last_message_at: r.last_message_at ?? null,
           } as PartnerThread;
@@ -281,10 +305,9 @@ export default function InboxScreen() {
   function showTips() {
     dialog.show({
       icon: "zap",
-      title: "Get more inquiries",
-      message:
-        "• Add photos — listings with 5+ photos get far more inquiries.\n\n• Fill in your description and a starting price so hosts can reach out with confidence.\n\n• Reply fast — hosts book vendors who answer within a day.",
-      buttonLabel: "Got it",
+      title: t("tips.title"),
+      message: t("tips.message"),
+      buttonLabel: t("tips.button"),
     });
   }
 
@@ -319,10 +342,10 @@ export default function InboxScreen() {
               color: INK,
             }}
           >
-            Inbox
+            {t("title")}
           </Text>
           <Text style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-            Inquiries and partner threads — all in one place.
+            {t("subtitle")}
           </Text>
         </View>
 
@@ -332,8 +355,8 @@ export default function InboxScreen() {
             value={tab}
             onChange={(k) => setTab(k as Tab)}
             tabs={[
-              { key: "inquiries", icon: "message-circle", label: "Inquiries" },
-              { key: "partners", icon: "users", label: "Partners" },
+              { key: "inquiries", icon: "message-circle", label: t("tabs.inquiries") },
+              { key: "partners", icon: "users", label: t("tabs.partners") },
             ]}
           />
         </View>
@@ -357,14 +380,14 @@ export default function InboxScreen() {
             onChangeText={setSearch}
             placeholder={
               tab === "inquiries"
-                ? "Search by name, event, or message"
-                : "Search vendors or messages"
+                ? t("search.inquiries")
+                : t("search.partners")
             }
           />
           <ToolbarButton
             icon="sliders"
-            label="Filters"
-            accessibilityLabel="Toggle filters"
+            label={t("filters.button")}
+            accessibilityLabel={t("filters.toggle")}
             active={filterActive}
             onPress={() => setFiltersOpen((v) => !v)}
           />
@@ -381,7 +404,7 @@ export default function InboxScreen() {
               <Chip
                 active={inquiryFilter === "all"}
                 icon="inbox"
-                label="All"
+                label={t("filters.all")}
                 onPress={() => setInquiryFilter("all")}
               />
               <Chip
@@ -390,22 +413,22 @@ export default function InboxScreen() {
                   <MaterialCommunityIcons
                     name="email-outline"
                     size={14}
-                    color={inquiryFilter === "new" ? "#ffffff" : INK}
+                    color={inquiryFilter === "new" ? ON_SELECTED : INK}
                   />
                 }
-                label="New"
+                label={t("filters.new")}
                 onPress={() => setInquiryFilter("new")}
               />
               <Chip
                 active={inquiryFilter === "replied"}
                 icon="corner-up-left"
-                label="Replied"
+                label={t("filters.replied")}
                 onPress={() => setInquiryFilter("replied")}
               />
               <Chip
                 active={inquiryFilter === "booked"}
                 icon="calendar"
-                label="Booked"
+                label={t("filters.booked")}
                 onPress={() => setInquiryFilter("booked")}
               />
             </ScrollView>
@@ -437,19 +460,19 @@ export default function InboxScreen() {
                 <Chip
                   active={partnerFilter === "all"}
                   icon="inbox"
-                  label="All"
+                  label={t("filters.all")}
                   onPress={() => setPartnerFilter("all")}
                 />
                 <Chip
                   active={partnerFilter === "unread"}
                   icon="mail"
-                  label="Unread"
+                  label={t("filters.unread")}
                   onPress={() => setPartnerFilter("unread")}
                 />
                 <Chip
                   active={partnerFilter === "active"}
                   icon="zap"
-                  label="Active"
+                  label={t("filters.active")}
                   onPress={() => setPartnerFilter("active")}
                 />
               </ScrollView>
@@ -465,14 +488,14 @@ export default function InboxScreen() {
                   height: 38,
                   width: 38,
                   borderRadius: 999,
-                  backgroundColor: INK,
+                  backgroundColor: SELECTED,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Find a vendor to message"
+                accessibilityLabel={t("partners.findA11y")}
               >
-                <Feather name="plus" size={18} color="#ffffff" />
+                <Feather name="plus" size={18} color={ON_SELECTED} />
               </TouchableOpacity>
             </View>
           )
@@ -484,17 +507,17 @@ export default function InboxScreen() {
               marginHorizontal: 20,
               marginBottom: 12,
               borderRadius: 12,
-              backgroundColor: "#f7ece9",
+              backgroundColor: ERROR_BG,
               borderWidth: 1,
-              borderColor: "#e6c9c2",
+              borderColor: ERROR_BORDER,
               paddingHorizontal: 16,
               paddingVertical: 12,
             }}
           >
-            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: "#b23a34" }}>{error}</Text>
+            <Text style={{ fontFamily: "LibreBaskerville", fontSize: 14, color: ERROR }}>{error}</Text>
             <Pressable onPress={() => load(false)} hitSlop={6}>
-              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: "#b23a34" }}>
-                Try again
+              <Text style={{ fontFamily: SERIF_BOLD, marginTop: 8, fontSize: 14, color: ERROR }}>
+                {t("tryAgain")}
               </Text>
             </Pressable>
           </View>
@@ -524,10 +547,10 @@ export default function InboxScreen() {
             <View style={{ paddingHorizontal: 20, paddingVertical: 40, alignItems: "center" }}>
               <Text style={{ fontFamily: "LibreBaskerville", textAlign: "center", fontSize: 14, color: INK_DIM }}>
                 {search
-                  ? `No conversations match “${search}”. This searches your existing threads only.`
+                  ? t("partners.noMatchSearch", { search })
                   : partnerFilter !== "all"
-                    ? "No conversations match that filter."
-                    : "No partner conversations yet. Find another vendor to start one."}
+                    ? t("partners.noMatchFilter")
+                    : t("partners.empty")}
               </Text>
               {search ? (
                 <TouchableOpacity
@@ -536,7 +559,7 @@ export default function InboxScreen() {
                   style={{
                     marginTop: 12,
                     borderRadius: 999,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: FIELD,
                     borderWidth: 1,
                     borderColor: BORDER,
                     paddingHorizontal: 20,
@@ -545,7 +568,7 @@ export default function InboxScreen() {
                   }}
                 >
                   <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-                    Clear search
+                    {t("partners.clearSearch")}
                   </Text>
                 </TouchableOpacity>
               ) : null}
@@ -561,8 +584,8 @@ export default function InboxScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-                  Find a vendor
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: ON_GOLD }}>
+                  {t("partners.find")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -588,7 +611,7 @@ export default function InboxScreen() {
             style={{
               marginHorizontal: 20,
               marginTop: 20,
-              backgroundColor: "#ece7db",
+              backgroundColor: TRACK,
               borderRadius: 20,
               padding: 16,
             }}
@@ -601,7 +624,7 @@ export default function InboxScreen() {
                   width: 46,
                   height: 46,
                   borderRadius: 999,
-                  backgroundColor: "#fbf9f4",
+                  backgroundColor: CARD,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -627,7 +650,7 @@ export default function InboxScreen() {
               style={{
                 alignSelf: "flex-start",
                 marginTop: 12,
-                backgroundColor: "#ffffff",
+                backgroundColor: FIELD,
                 borderWidth: 1,
                 borderColor: BORDER,
                 borderRadius: 999,
@@ -679,20 +702,20 @@ function Chip({
         paddingHorizontal: 10,
         height: 42,
         borderRadius: 999,
-        backgroundColor: active ? INK : CARD,
+        backgroundColor: active ? SELECTED : CARD,
         borderWidth: 1,
-        borderColor: active ? INK : BORDER,
+        borderColor: active ? SELECTED : BORDER,
       }}
     >
       {iconNode ??
         (icon ? (
-          <Feather name={icon} size={14} color={active ? "#ffffff" : INK} />
+          <Feather name={icon} size={14} color={active ? ON_SELECTED : INK} />
         ) : null)}
       <Text
         style={{
           fontFamily: SERIF_BOLD,
           fontSize: 14,
-          color: active ? "#ffffff" : INK,
+          color: active ? ON_SELECTED : INK,
         }}
       >
         {label}
@@ -708,6 +731,7 @@ function EmptyState({
   filtered: boolean;
   onTips: () => void;
 }) {
+  const { t } = useT("inbox");
   return (
     <View
       style={{
@@ -725,7 +749,7 @@ function EmptyState({
         <MaterialCommunityIcons
           name="email-open-outline"
           size={64}
-          color="#c9a86a"
+          color={GOLD}
         />
       </View>
       <Text
@@ -737,10 +761,10 @@ function EmptyState({
           textAlign: "center",
         }}
       >
-        {filtered ? "Nothing here." : "No inquiries yet."}
+        {filtered ? t("empty.filteredTitle") : t("empty.title")}
       </Text>
       <Text style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 15, color: INK_DIM, textAlign: "center" }}>
-        {filtered ? "Nothing matches that filter." : "New leads land here."}
+        {filtered ? t("empty.filteredBody") : t("empty.body")}
       </Text>
       {!filtered ? (
         <TouchableOpacity
@@ -757,9 +781,9 @@ function EmptyState({
             gap: 8,
           }}
         >
-          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={INK} />
-          <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}>
-            Tips to get more inquiries
+          <MaterialCommunityIcons name="lightbulb-outline" size={15} color={ON_GOLD} />
+          <Text style={{ fontFamily: SERIF_BOLD, color: ON_GOLD, fontSize: 15}}>
+            {t("empty.tips")}
           </Text>
         </TouchableOpacity>
       ) : null}
@@ -788,11 +812,15 @@ function Avatar({ seed, label }: { seed: string; label: string }) {
 
 function InquiryCard({ row }: { row: InquiryRow }) {
   const router = useRouter();
+  const { t } = useT("inbox");
+  const typeLabel = useEventTypeLabel();
   const [opening, setOpening] = useState(false);
   const seed = row.event_type ?? row.id;
   const isUnread = row.status === "new";
   const previewBudget =
-    row.budget_max_cents != null ? ` · up to $${Math.round(row.budget_max_cents / 100)}` : "";
+    row.budget_max_cents != null
+      ? ` · ${t("card.upTo", { amount: `$${Math.round(row.budget_max_cents / 100)}` })}`
+      : "";
 
   async function open() {
     if (opening) return;
@@ -803,7 +831,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
     });
     setOpening(false);
     if (error || !data) {
-      Alert.alert("Couldn't open conversation", error?.message ?? "Please try again.");
+      Alert.alert(t("card.openFailed"), error?.message ?? t("card.tryAgainBody"));
       return;
     }
     router.push(`/(vendor)/thread/${data as string}` as never);
@@ -823,7 +851,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
       }}
     >
       <View style={{ flexDirection: "row", gap: 12 }}>
-        <Avatar seed={seed} label={initials(eventTypeLabel(row.event_type, "Inquiry"))} />
+        <Avatar seed={seed} label={initials(typeLabel(row.event_type, t("card.inquiry")))} />
         <View style={{ flex: 1 }}>
           <View
             style={{
@@ -841,7 +869,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                   color: INK,
                 }}
               >
-                {eventTypeLabel(row.event_type, "Inquiry")}
+                {typeLabel(row.event_type, t("card.inquiry"))}
               </Text>
               {isUnread ? (
                 <View
@@ -860,14 +888,14 @@ function InquiryCard({ row }: { row: InquiryRow }) {
             </Text>
           </View>
           <Text numberOfLines={1} style={{ fontFamily: "LibreBaskerville", marginTop: 2, fontSize: 13, color: INK_DIM }}>
-            {row.event_date ?? "Date TBD"}
-            {row.guest_count ? ` · ${row.guest_count} guests` : ""}
+            {row.event_date ?? t("card.dateTbd")}
+            {row.guest_count ? ` · ${t("card.guests", { count: row.guest_count })}` : ""}
             {previewBudget}
           </Text>
           {row.special_requests ? (
             <Text
               numberOfLines={2}
-              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: "#14161a" }}
+              style={{ fontFamily: "LibreBaskerville", marginTop: 6, fontSize: 14, color: INK }}
             >
               {row.special_requests}
             </Text>
@@ -890,10 +918,10 @@ function InquiryCard({ row }: { row: InquiryRow }) {
                   fontFamily: SERIF_BOLD,
                   fontSize: 10,
                   letterSpacing: 1,
-                  color: "#8a6f3e",
+                  color: BRONZE,
                 }}
               >
-                NEW
+                {t("card.newBadge")}
               </Text>
             </View>
           ) : null}
@@ -906,6 +934,7 @@ function InquiryCard({ row }: { row: InquiryRow }) {
 function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boolean }) {
   // Partner-to-partner chat now has a native screen.
   const router = useRouter();
+  const categoryNames = useCategoryNames();
   function open() {
     router.push(`/(vendor)/partner-thread/${thread.id}` as never);
   }
@@ -950,7 +979,7 @@ function PartnerRow({ thread, divider }: { thread: PartnerThread; divider: boole
               }}
             >
               <Text style={{ fontFamily: "LibreBaskerville", fontSize: 11, color: INK_DIM }}>
-                {thread.other_category}
+                {categoryNames.sub(thread.other_category)}
               </Text>
             </View>
           ) : null}

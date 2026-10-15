@@ -1,0 +1,80 @@
+export default {
+  title: "Bandeja de entrada",
+  subtitle: "Consultas y conversaciones con socios, todo en un lugar.",
+  vendorFallback: "Proveedor",
+  tryAgain: "Intentar de nuevo",
+  tabs: {
+    inquiries: "Consultas",
+    partners: "Socios",
+  },
+  search: {
+    inquiries: "Busca por nombre, evento o mensaje",
+    partners: "Busca proveedores o mensajes",
+  },
+  filters: {
+    button: "Filtros",
+    toggle: "Mostrar u ocultar filtros",
+    all: "Todas",
+    new: "Nuevas",
+    replied: "Respondidas",
+    booked: "Reservadas",
+    unread: "No leídas",
+    active: "Activas",
+  },
+  time: {
+    now: "ahora",
+    minutes: "{{n}} min",
+    hours: "{{n}} h",
+    days: "{{n}} d",
+    yesterday: "Ayer",
+  },
+  eventTypes: {
+    wedding: "Boda",
+    birthday: "Cumpleaños",
+    holiday_dinner: "Cena festiva",
+    other: "Otro",
+  },
+  nudge: {
+    setup: {
+      title: "Destaca. Consigue más reservas.",
+      body: "Completa tu perfil y haz que te descubran.",
+      cta: "Mejorar perfil",
+    },
+    photos: {
+      title: "Agrega algunas fotos más.",
+      body: "Es opcional, pero con más fotos los anfitriones conocen mejor tu trabajo.",
+      cta: "Agregar fotos",
+    },
+  },
+  tips: {
+    title: "Recibe más consultas",
+    message:
+      "• Agrega fotos: los anuncios con 5 o más fotos reciben muchas más consultas.\n\n• Completa tu descripción y un precio inicial para que los anfitriones te escriban con confianza.\n\n• Responde rápido: los anfitriones reservan a los proveedores que contestan en menos de un día.",
+    button: "Entendido",
+  },
+  partners: {
+    findA11y: "Busca un proveedor para escribirle",
+    noMatchSearch: "Ninguna conversación coincide con “{{search}}”. Solo se buscan tus conversaciones existentes.",
+    noMatchFilter: "Ninguna conversación coincide con ese filtro.",
+    empty: "Aún no tienes conversaciones con socios. Busca otro proveedor para iniciar una.",
+    clearSearch: "Borrar búsqueda",
+    find: "Buscar un proveedor",
+  },
+  empty: {
+    title: "Aún no hay consultas.",
+    body: "Aquí llegan los nuevos clientes potenciales.",
+    filteredTitle: "No hay nada aquí.",
+    filteredBody: "Nada coincide con ese filtro.",
+    tips: "Consejos para recibir más consultas",
+  },
+  card: {
+    inquiry: "Consulta",
+    dateTbd: "Fecha por definir",
+    guests_one: "{{count}} invitado",
+    guests_other: "{{count}} invitados",
+    upTo: "hasta {{amount}}",
+    newBadge: "NUEVA",
+    openFailed: "No se pudo abrir la conversación",
+    tryAgainBody: "Inténtalo de nuevo.",
+  },
+};

@@ -56,7 +56,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen text-foreground" style={{ backgroundColor: INK }}>
+    <div className="min-h-screen bg-background text-foreground">
       {/* ═══════════════ HERO — cinematic full-bleed ═══════════════ */}
       {/* On big desktop screens the video fills the whole window (owner's
           call); the words and buttons keep their normal size, centred in it. */}
@@ -193,10 +193,11 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Search */}
+            {/* Search: a cream field on the video in both themes, so
+                .surface-light keeps its tokens (placeholder) light. */}
             <form
               onSubmit={submitSearch}
-              className="mt-4 flex flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:rounded-full landing-fadeup"
+              className="surface-light mt-4 flex flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:rounded-full landing-fadeup"
               style={{
                 backgroundColor: "rgba(244,241,234,0.96)",
                 animationDelay: "320ms",
@@ -239,7 +240,7 @@ export default function LandingPage() {
       {/* Plan. Connect. Celebrate. */}
       <HowItWorksSection />
 
-      <Footer tone="dark" />
+      <Footer />
 
       {/* Page-local motion. Respect reduced-motion. */}
       <style>{`

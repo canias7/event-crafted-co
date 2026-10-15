@@ -20,18 +20,20 @@ import { SettingsSheet } from "@/components/SettingsSheet";
 import { Wordmark } from "@/components/Wordmark";
 import { useBrandDialog } from "@/components/listing/WizardKit";
 import { hasFreshUpdate } from "./updates";
+import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const GOLD = "#c9a86a";
-const GOLD_SOFT = "#f2e7cb";
+const INK_DIM = C.textDim;
+const GOLD = C.gold;
+const GOLD_SOFT = C.pending;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -43,6 +45,7 @@ const APP_STORE_URL = "https://apps.apple.com/app/id6767470298";
 
 export default function MoreScreen() {
   const router = useRouter();
+  const { t } = useT("more");
   const { user, signOut } = useAuth();
   const dialog = useBrandDialog();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -73,11 +76,10 @@ export default function MoreScreen() {
   function openSupport() {
     dialog.show({
       icon: "help-circle",
-      title: "Contact us",
-      message:
-        "Questions, issues, or feedback? Email us and a real person will read it.",
-      confirmLabel: "Email support",
-      cancelLabel: "Close",
+      title: t("support.title"),
+      message: t("support.message"),
+      confirmLabel: t("support.confirm"),
+      cancelLabel: t("close"),
       onConfirm: () => {
         Linking.openURL(
           `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Vendora support")}`,
@@ -89,10 +91,10 @@ export default function MoreScreen() {
   function openAbout() {
     dialog.show({
       icon: "info",
-      title: "About Vendora",
-      message: `Vendora for Vendors${version ? ` · v${version}` : ""}\n\nThe premium marketplace connecting event vendors with hosts.\n\nTerms of service and privacy policy live at eventvendora.com.`,
-      confirmLabel: "View terms & privacy",
-      cancelLabel: "Close",
+      title: t("about.title"),
+      message: `${t("appName")}${version ? ` · v${version}` : ""}\n\n${t("about.message")}`,
+      confirmLabel: t("about.confirm"),
+      cancelLabel: t("close"),
       onConfirm: () => {
         Linking.openURL("https://eventvendora.com/terms").catch(() => {});
       },
@@ -120,91 +122,91 @@ export default function MoreScreen() {
             color: INK,
           }}
         >
-          More
+          {t("title")}
         </Text>
         <Text style={{ fontFamily: SERIF, marginTop: 4, marginBottom: 24, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-          Everything else, one tap away.
+          {t("subtitle")}
         </Text>
 
-        <MenuSection title="YOUR BUSINESS" first>
+        <MenuSection title={t("sections.business")} first>
           <GroupRow
             icon={<Feather name="edit-3" size={18} color={INK} />}
-            label="Edit brand profile"
-            body="Name, logo, bio, and more"
+            label={t("rows.editProfile.label")}
+            body={t("rows.editProfile.body")}
             onPress={() => router.push("/(vendor)/edit-profile" as never)}
           />
           <GroupRow
             divider
             // Its own icon — it used to share "users" with Vendora CRM.
             icon={<Feather name="user-plus" size={18} color={INK} />}
-            label="Meet the Team"
-            body="Introduce the people behind your business"
-            badge="Optional"
+            label={t("rows.team.label")}
+            body={t("rows.team.body")}
+            badge={t("badges.optional")}
             onPress={() => router.push("/(vendor)/team" as never)}
           />
           <GroupRow
             divider
             icon={<MaterialCommunityIcons name="shield-check-outline" size={19} color={INK} />}
-            label="Verification"
-            body="Get your verified badge"
+            label={t("rows.verification.label")}
+            body={t("rows.verification.body")}
             // The card used to turn gold when the vendor was eligible. A
             // single tinted row inside a shared card reads as a glitch, so
             // the "Eligible" badge carries that signal on its own.
-            badge={verifyEligible ? "Eligible" : "Pro"}
+            badge={verifyEligible ? t("badges.eligible") : "Pro"}
             onPress={() => router.push("/(vendor)/verification" as never)}
           />
         </MenuSection>
 
-        <MenuSection title="TOOLS">
+        <MenuSection title={t("sections.tools")}>
           <GroupRow
             icon={<Feather name="zap" size={18} color={INK} />}
-            label="Smart Scheduling"
-            body="Hours, services, and automations"
-            badge="New"
+            label={t("rows.scheduling.label")}
+            body={t("rows.scheduling.body")}
+            badge={t("badges.new")}
             onPress={() => router.push("/(vendor)/scheduling" as never)}
           />
           <GroupRow
             divider
             icon={<Feather name="users" size={18} color={INK} />}
-            label="Vendora CRM"
-            body="Clients, notes, and follow-ups"
+            label={t("rows.crm.label")}
+            body={t("rows.crm.body")}
             badge="Pro"
             onPress={() => router.push("/(vendor)/crm" as never)}
           />
         </MenuSection>
 
-        <MenuSection title="ACCOUNT">
+        <MenuSection title={t("sections.account")}>
           <GroupRow
             icon={<MaterialCommunityIcons name="crown-outline" size={20} color={INK} />}
-            label="Subscription"
-            body="Plan, billing, and usage"
+            label={t("rows.subscription.label")}
+            body={t("rows.subscription.body")}
             onPress={() => router.push("/(vendor)/subscription" as never)}
           />
           <GroupRow
             divider
             icon={<Feather name="settings" size={18} color={INK} />}
-            label="Settings"
-            body="Account, password, and privacy"
+            label={t("rows.settings.label")}
+            body={t("rows.settings.body")}
             onPress={() => setSettingsOpen(true)}
           />
         </MenuSection>
 
-        <MenuSection title="VENDORA">
+        <MenuSection title={t("sections.vendora")}>
           <GroupRow
             icon={
               <MaterialCommunityIcons name="file-document-edit-outline" size={19} color={INK} />
             }
-            label="Upcoming updates"
-            body="What's new and what's next"
+            label={t("rows.updates.label")}
+            body={t("rows.updates.body")}
             // Same as Verification: the badge replaces the gold card tint.
-            badge={hasFreshUpdate() ? "New" : undefined}
+            badge={hasFreshUpdate() ? t("badges.new") : undefined}
             onPress={() => router.push("/(vendor)/updates" as never)}
           />
           <GroupRow
             divider
             icon={<Feather name="help-circle" size={18} color={INK} />}
-            label="Help & FAQ"
-            body="Answers to common questions"
+            label={t("rows.help.label")}
+            body={t("rows.help.body")}
             onPress={() => {
               Linking.openURL("https://eventvendora.com/help").catch(() => {});
             }}
@@ -212,15 +214,15 @@ export default function MoreScreen() {
           <GroupRow
             divider
             icon={<Feather name="mail" size={18} color={INK} />}
-            label="Contact us"
-            body="Email the Vendora team"
+            label={t("rows.contact.label")}
+            body={t("rows.contact.body")}
             onPress={openSupport}
           />
           <GroupRow
             divider
             icon={<Feather name="info" size={18} color={INK} />}
-            label="About Vendora"
-            body="App info, terms, and policies"
+            label={t("rows.about.label")}
+            body={t("rows.about.body")}
             onPress={openAbout}
           />
         </MenuSection>
@@ -241,10 +243,10 @@ export default function MoreScreen() {
           <MaterialCommunityIcons name="heart-outline" size={26} color={GOLD} />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 16 }}>
-              Love Vendora?
+              {t("rate.title")}
             </Text>
             <Text style={{ fontFamily: SERIF, marginTop: 2, color: INK_DIM, fontSize: 13 }}>
-              Leave us a review and help other vendors.
+              {t("rate.body")}
             </Text>
           </View>
           <Pressable
@@ -254,7 +256,7 @@ export default function MoreScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 5,
-              backgroundColor: "#ffffff",
+              backgroundColor: C.field,
               borderWidth: 1,
               borderColor: BORDER,
               borderRadius: 999,
@@ -264,7 +266,7 @@ export default function MoreScreen() {
           >
             <Feather name="star" size={13} color={INK} />
             <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK }}>
-              Rate us
+              {t("rate.button")}
             </Text>
           </Pressable>
         </View>
@@ -279,7 +281,7 @@ export default function MoreScreen() {
               fontSize: 12,
             }}
           >
-            Vendora for Vendors · v{version}
+            {t("appName")} · v{version}
           </Text>
         ) : null}
       </ScrollView>
@@ -395,7 +397,7 @@ function GroupRow({
                   paddingVertical: 2,
                 }}
               >
-                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, color: "#8a6f3e" }}>
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 10, color: C.pendingText }}>
                   {badge}
                 </Text>
               </View>

@@ -3,8 +3,8 @@
 // signed-in user can't use the app; every screen is replaced by this one,
 // which offers Restore (restore_account_deletion(): clears the date and
 // un-pauses the listings that were paused for the deletion) or Sign out.
-// The website and the other app show the same screen. Dark like the
-// sign-in screens, on the same AuthBackdrop.
+// The website and the other app show the same screen. Follows the app
+// theme like the sign-in screens, on the same AuthBackdrop.
 
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -13,7 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { AuthBackdrop } from "@/components/AuthBackdrop";
-import { BUTTON_HEIGHT, COLORS, RADIUS } from "@/lib/ui";
+import { BUTTON_HEIGHT, RADIUS } from "@/lib/ui";
+import { C } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
@@ -27,8 +29,9 @@ export function AccountDeletionGate({ children }: { children: ReactNode }) {
 function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
   const { refreshDeletion, signOut } = useAuth();
   const [busy, setBusy] = useState<"restore" | "signout" | null>(null);
+  const { t, locale } = useT("accountDeletionGate");
 
-  const date = new Date(scheduledFor).toLocaleDateString("en-US", {
+  const date = new Date(scheduledFor).toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -39,7 +42,7 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
     const { error } = await supabase.rpc("restore_account_deletion");
     if (error) {
       setBusy(null);
-      Alert.alert("Couldn't restore your account", error.message);
+      Alert.alert(t("restoreFailed"), error.message);
       return;
     }
     await refreshDeletion();
@@ -53,34 +56,34 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.ink }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.page }}>
       <AuthBackdrop />
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.ink} />
+      <StatusBar barStyle={C.statusBar === "dark" ? "dark-content" : "light-content"} backgroundColor={C.page} />
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}>
         <View
           style={{
             borderRadius: RADIUS.card,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.15)",
-            backgroundColor: "rgba(255,255,255,0.03)",
+            borderColor: C.border,
+            backgroundColor: C.card,
             padding: 24,
           }}
         >
           <Text
             accessibilityRole="header"
-            style={{ fontFamily: SERIF_BOLD, color: COLORS.ivory, fontSize: 26, lineHeight: 32, textAlign: "center" }}
+            style={{ fontFamily: SERIF_BOLD, color: C.text, fontSize: 26, lineHeight: 32, textAlign: "center" }}
           >
-            Your account is closed
+            {t("title")}
           </Text>
           <Text
-            style={{ fontFamily: SERIF, color: COLORS.ivory, fontSize: 15, lineHeight: 23, marginTop: 16, textAlign: "center" }}
+            style={{ fontFamily: SERIF, color: C.text, fontSize: 15, lineHeight: 23, marginTop: 16, textAlign: "center" }}
           >
-            Your account is scheduled for deletion on {date}. Restore it to keep using Vendora.
+            {t("body", { date })}
           </Text>
           <Text
-            style={{ fontFamily: SERIF, color: "rgba(244,241,234,0.8)", fontSize: 13, lineHeight: 20, marginTop: 12, textAlign: "center" }}
+            style={{ fontFamily: SERIF, color: C.textDim, fontSize: 13, lineHeight: 20, marginTop: 12, textAlign: "center" }}
           >
-            Your listings come back as they were. A canceled plan stays canceled.
+            {t("note")}
           </Text>
 
           <Pressable
@@ -91,17 +94,17 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
               marginTop: 28,
               height: BUTTON_HEIGHT.lg,
               borderRadius: RADIUS.pill,
-              backgroundColor: busy !== null ? COLORS.goldMuted : COLORS.gold,
+              backgroundColor: busy !== null ? C.goldMuted : C.gold,
               opacity: pressed ? 0.9 : 1,
               alignItems: "center",
               justifyContent: "center",
             })}
           >
             {busy === "restore" ? (
-              <ActivityIndicator color={COLORS.ink} />
+              <ActivityIndicator color={C.onGold} />
             ) : (
-              <Text style={{ fontFamily: SERIF_BOLD, color: COLORS.ink, fontSize: 16 }}>
-                Restore account
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 16 }}>
+                {t("restore")}
               </Text>
             )}
           </Pressable>
@@ -114,17 +117,18 @@ function DeletionScheduledScreen({ scheduledFor }: { scheduledFor: string }) {
               height: BUTTON_HEIGHT.lg,
               borderRadius: RADIUS.pill,
               borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.15)",
+              borderColor: C.border,
+              backgroundColor: C.field,
               opacity: pressed ? 0.8 : 1,
               alignItems: "center",
               justifyContent: "center",
             })}
           >
             {busy === "signout" ? (
-              <ActivityIndicator color={COLORS.ivory} />
+              <ActivityIndicator color={C.text} />
             ) : (
-              <Text style={{ fontFamily: SERIF_BOLD, color: COLORS.ivory, fontSize: 16 }}>
-                Sign out
+              <Text style={{ fontFamily: SERIF_BOLD, color: C.text, fontSize: 16 }}>
+                {t("signOut")}
               </Text>
             )}
           </Pressable>

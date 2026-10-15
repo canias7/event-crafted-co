@@ -19,22 +19,25 @@ import { useAuth } from "@/lib/auth";
 import { tryRegisterPushToken } from "@/lib/pushNotifications";
 import { supabase } from "@/lib/supabase";
 import { useBrandDialog } from "@/components/listing/WizardKit";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { LANGUAGES, useT } from "@/lib/i18n";
+import { C, IS_DARK, setDarkMode } from "@/lib/theme";
 
-// Cream Vendora palette — same tokens as the tab screens.
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const BORDER = "#e6e1d5";
-const INK = "#14161a";
+// Vendora palette (light / dark, lib/theme.ts) — same tokens as the tab screens.
+const CARD = C.card;
+const SURFACE = C.surface;
+const BORDER = C.border;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const PLACEHOLDER = "#746a58";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const PLACEHOLDER = C.placeholder;
+const GOLD = C.gold;
 // Disabled fill for the gold pill — solid, not faded, so "unavailable"
 // never reads as "broken".
-const GOLD_MUTED = "#e0d2b0";
-const GOLD_SOFT = "#f2e7cb";
+const GOLD_MUTED = C.goldMuted;
+const GOLD_SOFT = C.pending;
 const SERIF = "LibreBaskerville";
 const SERIF_BOLD = "LibreBaskerville-Bold";
 const SERIF_ITALIC = "LibreBaskerville-Italic";
@@ -64,6 +67,8 @@ export function SettingsSheet({
 }) {
   const { user } = useAuth();
   const dialog = useBrandDialog();
+  const { t: tc, lang } = useT("common");
+  const { t } = useT("settingsSheet");
 
   // "Account" view vs inline "Change password" form. The sheet swaps
   // its body when the password row is tapped so the design stays
@@ -74,7 +79,6 @@ export function SettingsSheet({
   const [pwdSubmitting, setPwdSubmitting] = useState(false);
 
   const [emailVerified, setEmailVerified] = useState(false);
-  const [language, setLanguage] = useState("en-US");
   const [pushOn, setPushOn] = useState(true);
   const [pushBusy, setPushBusy] = useState(false);
 
@@ -82,19 +86,10 @@ export function SettingsSheet({
     const { data } = await supabase.auth.getUser();
     setEmailVerified(!!data?.user?.email_confirmed_at);
     if (user?.id) {
-      const [{ data: prof }, { count }] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("profiles")
-          .select("preferred_language")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("device_push_tokens")
-          .select("token", { count: "exact", head: true })
-          .eq("user_id", user.id),
-      ]);
-      setLanguage(prof?.preferred_language ?? "en-US");
+      const { count } = await supabase
+        .from("device_push_tokens")
+        .select("token", { count: "exact", head: true })
+        .eq("user_id", user.id);
       setPushOn((count ?? 0) > 0);
     }
   }, [user?.id]);
@@ -120,16 +115,16 @@ export function SettingsSheet({
     if (newPwd.length < 8) {
       dialog.show({
         icon: "lock",
-        title: "Password too short",
-        message: "Must be at least 8 characters.",
+        title: t("dialogs.tooShort.title"),
+        message: t("dialogs.tooShort.message"),
       });
       return;
     }
     if (newPwd !== confirmPwd) {
       dialog.show({
         icon: "lock",
-        title: "Passwords don't match",
-        message: "Please re-type the new password.",
+        title: t("dialogs.mismatch.title"),
+        message: t("dialogs.mismatch.message"),
       });
       return;
     }
@@ -139,7 +134,7 @@ export function SettingsSheet({
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change password",
+        title: t("dialogs.changeFailed"),
         message: error.message,
       });
       return;
@@ -149,8 +144,8 @@ export function SettingsSheet({
     setView("main");
     dialog.show({
       icon: "check-circle",
-      title: "Password updated",
-      message: "Your new password is active.",
+      title: t("dialogs.updated.title"),
+      message: t("dialogs.updated.message"),
     });
   }
 
@@ -182,9 +177,8 @@ export function SettingsSheet({
           setPushOn(false);
           dialog.show({
             icon: "bell",
-            title: "Push permission needed",
-            message:
-              "Enable notifications for Vendora in your device Settings to receive pushes.",
+            title: t("dialogs.pushPermission.title"),
+            message: t("dialogs.pushPermission.message"),
           });
         }
       } catch {
@@ -197,28 +191,19 @@ export function SettingsSheet({
   function onTwoStep() {
     dialog.show({
       icon: "shield",
-      title: "Two-step verification",
-      message:
-        "Stronger sign-in is on the roadmap. Today every login already uses an email-code check; the toggle will switch to authenticator-app 2FA when it ships.",
+      title: t("dialogs.twoStep.title"),
+      message: t("dialogs.twoStep.message"),
     });
   }
 
-  function onLanguage() {
-    dialog.show({
-      icon: "globe",
-      title: "Language",
-      message:
-        "More languages are on the way. The app currently runs in English (US).",
-    });
-  }
 
   function onSignOutPress() {
     dialog.show({
       icon: "log-out",
-      title: "Sign out",
-      message: "Are you sure?",
-      confirmLabel: "Sign out",
-      cancelLabel: "Cancel",
+      title: t("dialogs.signOut.title"),
+      message: t("dialogs.signOut.message"),
+      confirmLabel: t("dialogs.signOut.confirm"),
+      cancelLabel: tc("actions.cancel"),
       destructive: true,
       onConfirm: () => {
         onClose();
@@ -230,11 +215,10 @@ export function SettingsSheet({
   function onDeleteAccount() {
     dialog.show({
       icon: "trash-2",
-      title: "Delete your account?",
-      message:
-        "Deleting closes your account now and signs you out. If you have a paid plan, it's canceled right away with no refund for the rest of the current billing period. Everything, including your listings, messages and uploaded files, is permanently deleted after 30 days. Sign in before then to restore it.",
-      confirmLabel: "Delete account",
-      cancelLabel: "Cancel",
+      title: t("dialogs.delete.title"),
+      message: t("dialogs.delete.message"),
+      confirmLabel: t("dialogs.delete.confirm"),
+      cancelLabel: tc("actions.cancel"),
       destructive: true,
       onConfirm: () => {
         void (async () => {
@@ -249,10 +233,10 @@ export function SettingsSheet({
             const code = await readFunctionError(error);
             dialog.show({
               icon: "alert-circle",
-              title: "Couldn't delete account",
+              title: t("dialogs.deleteFailed.title"),
               message:
                 code === "subscription_cancel_failed"
-                  ? "We couldn't cancel your plan, so your account wasn't deleted. Try again in a moment, or email hello@eventvendora.com."
+                  ? t("dialogs.deleteFailed.cancelFailed")
                   : error.message,
             });
             return;
@@ -323,7 +307,7 @@ export function SettingsSheet({
                     letterSpacing: -0.5,
                   }}
                 >
-                  Account
+                  {t("title")}
                 </Text>
                 <Pressable
                   onPress={onClose}
@@ -349,7 +333,7 @@ export function SettingsSheet({
                   lineHeight: 19,
                 }}
               >
-                Sign-in details and how Vendora reaches you.
+                {t("subtitle")}
               </Text>
 
               {/* SIGN IN */}
@@ -363,7 +347,7 @@ export function SettingsSheet({
                   letterSpacing: 1.2,
                 }}
               >
-                SIGN IN
+                {t("sections.signIn")}
               </Text>
               <View
                 style={{
@@ -376,7 +360,7 @@ export function SettingsSheet({
               >
                 <SettingsRow
                   icon="mail"
-                  label="EMAIL"
+                  label={t("rows.email")}
                   body={email || "—"}
                   right={
                     emailVerified ? (
@@ -395,18 +379,18 @@ export function SettingsSheet({
                             width: 6,
                             height: 6,
                             borderRadius: 999,
-                            backgroundColor: "#8a6f3e",
+                            backgroundColor: C.pendingText,
                             marginRight: 5,
                           }}
                         />
                         <Text
                           style={{
                             fontFamily: SERIF_BOLD,
-                            color: "#8a6f3e",
+                            color: C.pendingText,
                             fontSize: 12,
                           }}
                         >
-                          Verified
+                          {t("rows.verified")}
                         </Text>
                       </View>
                     ) : null
@@ -415,15 +399,15 @@ export function SettingsSheet({
                 <RowDivider />
                 <SettingsRow
                   icon="lock"
-                  label="Change password"
-                  body="Tap to update"
+                  label={t("rows.password.label")}
+                  body={t("rows.password.body")}
                   onPress={() => setView("password")}
                 />
                 <RowDivider />
                 <SettingsRow
                   icon="shield"
-                  label="Two-step verification"
-                  body="Off — recommended for vendors"
+                  label={t("rows.twoStep.label")}
+                  body={t("rows.twoStep.body")}
                   right={<Toggle value={false} onPress={onTwoStep} />}
                   onPress={onTwoStep}
                 />
@@ -440,7 +424,7 @@ export function SettingsSheet({
                   letterSpacing: 1.2,
                 }}
               >
-                PREFERENCES
+                {t("sections.preferences")}
               </Text>
               <View
                 style={{
@@ -453,17 +437,27 @@ export function SettingsSheet({
               >
                 <SettingsRow
                   icon="bell"
-                  label="Push notifications"
-                  body="Bookings, messages, reminders"
+                  label={t("rows.push.label")}
+                  body={t("rows.push.body")}
                   right={<Toggle value={pushOn} onPress={togglePush} disabled={pushBusy} />}
                   onPress={togglePush}
                 />
                 <RowDivider />
                 <SettingsRow
                   icon="globe"
-                  label="Language"
-                  body={language === "en-US" ? "English (US)" : language}
-                  onPress={onLanguage}
+                  label={tc("language.title")}
+                  body={LANGUAGES.find((l) => l.code === lang)?.label ?? ""}
+                />
+                <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -4 }}>
+                  <LanguagePicker />
+                </View>
+                <RowDivider />
+                <SettingsRow
+                  icon="moon"
+                  label={tc("theme.title")}
+                  body={tc("theme.note")}
+                  right={<Toggle value={IS_DARK} onPress={() => void setDarkMode(!IS_DARK)} />}
+                  onPress={() => void setDarkMode(!IS_DARK)}
                 />
               </View>
 
@@ -472,7 +466,7 @@ export function SettingsSheet({
                 onPress={onSignOutPress}
                 style={{
                   marginTop: 24,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: C.field,
                   borderWidth: 1,
                   borderColor: BORDER,
                   borderRadius: 999,
@@ -491,7 +485,7 @@ export function SettingsSheet({
                     marginLeft: 8,
                   }}
                 >
-                  Log out
+                  {t("logOut")}
                 </Text>
               </Pressable>
 
@@ -502,7 +496,7 @@ export function SettingsSheet({
                 onPress={onDeleteAccount}
                 style={{
                   marginTop: 12,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: C.field,
                   borderWidth: 1,
                   borderColor: BORDER,
                   borderRadius: 999,
@@ -512,16 +506,16 @@ export function SettingsSheet({
                   justifyContent: "center",
                 }}
               >
-                <Feather name="trash-2" size={16} color="#b23a34" />
+                <Feather name="trash-2" size={16} color={C.error} />
                 <Text
                   style={{
                     fontFamily: SERIF_BOLD,
-                    color: "#b23a34",
+                    color: C.error,
                     fontSize: 16,
                     marginLeft: 8,
                   }}
                 >
-                  Delete account
+                  {t("deleteAccount")}
                 </Text>
               </Pressable>
 
@@ -536,9 +530,7 @@ export function SettingsSheet({
                   paddingHorizontal: 12,
                 }}
               >
-                Deleting closes your account right away. Your listings, messages,
-                reviews and files are permanently deleted after 30 days unless you
-                sign back in and restore it.
+                {t("deleteNote")}
               </Text>
             </ScrollView>
           ) : (
@@ -581,7 +573,7 @@ export function SettingsSheet({
                     fontSize: 20,
                   }}
                 >
-                  Change password
+                  {t("password.title")}
                 </Text>
                 <View style={{ width: 32 }} />
               </View>
@@ -594,8 +586,7 @@ export function SettingsSheet({
                   lineHeight: 20,
                 }}
               >
-                At least 8 characters. Pick something you don&apos;t use
-                anywhere else.
+                {t("password.subtitle")}
               </Text>
 
               <Text
@@ -607,7 +598,7 @@ export function SettingsSheet({
                   letterSpacing: 1,
                 }}
               >
-                NEW PASSWORD
+                {t("password.new")}
               </Text>
               <TextInput
                 secureTextEntry
@@ -637,7 +628,7 @@ export function SettingsSheet({
                   letterSpacing: 1,
                 }}
               >
-                CONFIRM PASSWORD
+                {t("password.confirm")}
               </Text>
               <TextInput
                 secureTextEntry
@@ -674,9 +665,9 @@ export function SettingsSheet({
                 }}
               >
                 <Text
-                  style={{ fontFamily: SERIF_BOLD, color: INK, fontSize: 15}}
+                  style={{ fontFamily: SERIF_BOLD, color: C.onGold, fontSize: 15}}
                 >
-                  {pwdSubmitting ? "Saving…" : "Save password"}
+                  {pwdSubmitting ? t("password.saving") : t("password.save")}
                 </Text>
               </Pressable>
             </ScrollView>
@@ -799,7 +790,7 @@ function Toggle({
         width: 48,
         height: 28,
         borderRadius: 999,
-        backgroundColor: value ? INK : "#d6d1c6",
+        backgroundColor: value ? C.selected : IS_DARK ? "rgba(255,255,255,0.2)" : "#d6d1c6",
         padding: 3,
         opacity: disabled ? 0.6 : 1,
       }}
@@ -809,7 +800,8 @@ function Toggle({
           width: 22,
           height: 22,
           borderRadius: 999,
-          backgroundColor: "#ffffff",
+          // White knob; on the cream "on" track in dark it turns ink.
+          backgroundColor: value ? C.onSelected : "#ffffff",
           transform: [{ translateX: value ? 20 : 0 }],
         }}
       />

@@ -1,0 +1,68 @@
+// Packages, FAQs and policies sections (components/listing/Sections.tsx).
+export default {
+  "add": "+ Add",
+  "loading": "Loading…",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "save": "Save",
+  "saving": "Saving…",
+  "tryAgain": "Try again.",
+  "cantUndo": "This can't be undone.",
+  "deleteError": "Couldn't delete",
+  "packages": {
+    "title": "Packages",
+    "subtitle": "Pricing tiers and what's included",
+    "empty": "No packages yet. Add a pricing tier to give hosts a clear option.",
+    "inactive": "inactive",
+    "more_one": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "nameRequired": "Name is required",
+    "priceNumber": "Price must be a number",
+    "saveError": "Couldn't save package",
+    "deleteTitle": "Delete package?",
+    "edit": "Edit package",
+    "new": "New package",
+    "name": "Name",
+    "namePlaceholder": "Standard package",
+    "description": "Description",
+    "descriptionPlaceholder": "One or two sentences.",
+    "price": "Price ($)",
+    "includes": "What's included",
+    "includesHint": "One item per line.",
+    "includesPlaceholder": "4 hours of coverage\nEdited photo gallery\nLocation scouting",
+    "active": "Active"
+  },
+  "faqs": {
+    "title": "FAQs",
+    "subtitle": "Common questions hosts ask",
+    "empty": "No FAQs yet. Adding 3-5 saves you time on first-touch replies.",
+    "bothRequired": "Question and answer are both required",
+    "saveError": "Couldn't save FAQ",
+    "deleteTitle": "Delete FAQ?",
+    "edit": "Edit FAQ",
+    "new": "New FAQ",
+    "question": "Question",
+    "questionPlaceholder": "Do you travel for events?",
+    "answer": "Answer",
+    "answerPlaceholder": "Yes, we cover anywhere within 100 miles…"
+  },
+  "policies": {
+    "title": "Policies",
+    "subtitle": "Cancellation, deposits, payment terms",
+    "savedTitle": "Saved",
+    "savedMessage": "Policies updated.",
+    "saveError": "Couldn't save policies",
+    "deposit": "Deposit (%)",
+    "cancellation": "Cancellation policy",
+    "reschedule": "Reschedule window (days)",
+    "notes": "Notes",
+    "notesPlaceholder": "Any additional terms hosts should know.",
+    "save": "Save policies",
+    "options": {
+      "none": "— pick a policy —",
+      "flexible": "Flexible (full refund up to 7 days before)",
+      "moderate": "Moderate (50% up to 30 days before)",
+      "strict": "Strict (no refund)"
+    }
+  }
+};

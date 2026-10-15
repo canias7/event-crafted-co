@@ -18,8 +18,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
+import { C, IS_DARK } from "@/lib/theme";
 
-const PLACEHOLDER = "#746a58";
+const PLACEHOLDER = C.placeholder;
+// Pressed row: the surface tint in light (as before); a fade in dark,
+// where NativeWind's bg-muted would flash light.
+const ROW_PRESS = IS_DARK ? "active:opacity-70" : "active:bg-muted";
 
 // ----------------------------------------------------------------------------
 // Section header — section title + add button.
@@ -32,12 +37,13 @@ function SectionHeader({
   subtitle?: string;
   onAdd?: () => void;
 }) {
+  const { t } = useT("listingSections");
   return (
     <View className="flex-row items-end justify-between">
       <View className="flex-1 pr-3">
-        <Text className="text-lg text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>{title}</Text>
+        <Text className="text-lg" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{title}</Text>
         {subtitle ? (
-          <Text className="mt-0.5 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="mt-0.5 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
             {subtitle}
           </Text>
         ) : null}
@@ -46,9 +52,9 @@ function SectionHeader({
         <Pressable
           onPress={onAdd}
           hitSlop={6}
-          className="rounded-full border border-border bg-white px-3 h-9 justify-center active:opacity-70"
+          className="rounded-full border px-3 h-9 justify-center active:opacity-70" style={{ borderColor: C.border, backgroundColor: C.field }}
         >
-          <Text className="text-xs text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>+ Add</Text>
+          <Text className="text-xs" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("add")}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -90,6 +96,7 @@ const EMPTY_PACK: PackDraft = {
 };
 
 export function PackagesSection({ vendorId }: { vendorId: string }) {
+  const { t } = useT("listingSections");
   const [items, setItems] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<PackDraft | null>(null);
@@ -118,11 +125,11 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
     const trimmed = editing.name.trim();
     const cents = Math.round(Number.parseFloat(editing.price || "0") * 100);
     if (!trimmed) {
-      Alert.alert("Name is required");
+      Alert.alert(t("packages.nameRequired"));
       return;
     }
     if (!Number.isFinite(cents) || cents < 0) {
-      Alert.alert("Price must be a number");
+      Alert.alert(t("packages.priceNumber"));
       return;
     }
     setBusy(true);
@@ -161,8 +168,8 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
       await load();
     } catch (err) {
       Alert.alert(
-        "Couldn't save package",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("packages.saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -170,10 +177,10 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
   }
 
   async function remove(id: string) {
-    Alert.alert("Delete package?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("packages.deleteTitle"), t("cantUndo"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("delete"),
         style: "destructive",
         onPress: async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,7 +188,7 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
             .from("vendor_packages")
             .delete()
             .eq("id", id);
-          if (error) Alert.alert("Couldn't delete", error.message);
+          if (error) Alert.alert(t("deleteError"), error.message);
           else load();
         },
       },
@@ -191,33 +198,33 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
   return (
     <View className="gap-3">
       <SectionHeader
-        title="Packages"
-        subtitle="Pricing tiers and what's included"
+        title={t("packages.title")}
+        subtitle={t("packages.subtitle")}
         onAdd={() => setEditing({ ...EMPTY_PACK })}
       />
       {loading ? (
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
       ) : items.length === 0 ? (
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          No packages yet. Add a pricing tier to give hosts a clear option.
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+          {t("packages.empty")}
         </Text>
       ) : (
         items.map((p) => (
           <View
             key={p.id}
-            className="rounded-[20px] border border-border bg-[#fbf9f4] p-4"
+            className="rounded-[20px] border p-4" style={{ borderColor: C.border, backgroundColor: C.card }}
           >
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
                   {p.name}
                 </Text>
-                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                  ${(p.price_cents / 100).toLocaleString()}
-                  {p.is_active ? "" : " · inactive"}
+                <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+                  ${(p.price_cents / 100).toLocaleString("en-US")}
+                  {p.is_active ? "" : ` · ${t("packages.inactive")}`}
                 </Text>
                 {p.description ? (
-                  <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                  <Text className="mt-1 text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
                     {p.description}
                   </Text>
                 ) : null}
@@ -226,15 +233,15 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                     {p.includes.slice(0, 4).map((line, idx) => (
                       <Text
                         key={idx}
-                        className="text-xs text-muted-foreground"
-                        style={{ fontFamily: "LibreBaskerville" }}
+                        className="text-xs"
+                        style={{ fontFamily: "LibreBaskerville", color: C.textDim }}
                       >
                         • {line}
                       </Text>
                     ))}
                     {p.includes.length > 4 ? (
-                      <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                        +{p.includes.length - 4} more
+                      <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+                        {t("packages.more", { count: p.includes.length - 4 })}
                       </Text>
                     ) : null}
                   </View>
@@ -255,14 +262,14 @@ export function PackagesSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="edit-2" size={18} color="#746a58" />
+                  <Feather name="edit-2" size={18} color={C.placeholder} />
                 </Pressable>
                 <Pressable
                   onPress={() => remove(p.id)}
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="trash-2" size={18} color="#b23a34" />
+                  <Feather name="trash-2" size={18} color={C.error} />
                 </Pressable>
               </View>
             </View>
@@ -293,6 +300,7 @@ function PackEditorModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const { t } = useT("listingSections");
   return (
     <Modal
       visible={draft != null}
@@ -301,17 +309,17 @@ function PackEditorModal({
       onRequestClose={onClose}
     >
       {draft ? (
-        <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderColor: C.border }}>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("cancel")}</Text>
             </Pressable>
-            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              {draft.id ? "Edit package" : "New package"}
+            <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+              {draft.id ? t("packages.edit") : t("packages.new")}
             </Text>
             <Pressable onPress={onSave} hitSlop={8} disabled={busy}>
-              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                {busy ? "Saving…" : "Save"}
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {busy ? t("saving") : t("save")}
               </Text>
             </Pressable>
           </View>
@@ -320,66 +328,66 @@ function PackEditorModal({
             contentContainerClassName="px-5 py-4 gap-4 pb-24"
           >
             <View>
-              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Name
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {t("packages.name")}
               </Text>
-              <TextInput style={{ fontFamily: "LibreBaskerville" }}
+              <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
                 value={draft.name}
                 onChangeText={(v) => onChange({ ...draft, name: v })}
-                placeholder="Standard package"
+                placeholder={t("packages.namePlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
-                className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 rounded-xl border px-4 py-3 text-base"
               />
             </View>
             <View>
-              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Description
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {t("packages.description")}
               </Text>
-              <TextInput style={{ fontFamily: "LibreBaskerville" }}
+              <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
                 value={draft.description}
                 onChangeText={(v) => onChange({ ...draft, description: v })}
-                placeholder="One or two sentences."
+                placeholder={t("packages.descriptionPlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                className="mt-2 min-h-[80px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 min-h-[80px] rounded-xl border px-4 py-3 text-base"
               />
             </View>
             <View>
-              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Price ($)
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {t("packages.price")}
               </Text>
-              <TextInput style={{ fontFamily: "LibreBaskerville" }}
+              <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
                 value={draft.price}
                 onChangeText={(v) => onChange({ ...draft, price: v })}
                 placeholder="0"
                 placeholderTextColor={PLACEHOLDER}
                 keyboardType="decimal-pad"
-                className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 rounded-xl border px-4 py-3 text-base"
               />
             </View>
             <View>
-              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                What's included
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {t("packages.includes")}
               </Text>
-              <Text className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-                One item per line.
+              <Text className="mt-1 text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+                {t("packages.includesHint")}
               </Text>
-              <TextInput style={{ fontFamily: "LibreBaskerville" }}
+              <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
                 value={draft.includes}
                 onChangeText={(v) => onChange({ ...draft, includes: v })}
-                placeholder={"4 hours of coverage\nEdited photo gallery\nLocation scouting"}
+                placeholder={t("packages.includesPlaceholder")}
                 placeholderTextColor={PLACEHOLDER}
                 multiline
                 numberOfLines={5}
                 textAlignVertical="top"
-                className="mt-2 min-h-[120px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                className="mt-2 min-h-[120px] rounded-xl border px-4 py-3 text-base"
               />
             </View>
             <View className="flex-row items-center justify-between">
-              <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                Active
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {t("packages.active")}
               </Text>
               <Switch
                 value={draft.is_active}
@@ -415,6 +423,7 @@ interface FaqDraft {
 const EMPTY_FAQ: FaqDraft = { question: "", answer: "" };
 
 export function FaqsSection({ vendorId }: { vendorId: string }) {
+  const { t } = useT("listingSections");
   const [items, setItems] = useState<Faq[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<FaqDraft | null>(null);
@@ -441,7 +450,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
     const q = editing.question.trim();
     const a = editing.answer.trim();
     if (!q || !a) {
-      Alert.alert("Question and answer are both required");
+      Alert.alert(t("faqs.bothRequired"));
       return;
     }
     setBusy(true);
@@ -471,8 +480,8 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
       await load();
     } catch (err) {
       Alert.alert(
-        "Couldn't save FAQ",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("faqs.saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -480,10 +489,10 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
   }
 
   async function remove(id: string) {
-    Alert.alert("Delete FAQ?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("faqs.deleteTitle"), t("cantUndo"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("delete"),
         style: "destructive",
         onPress: async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -491,7 +500,7 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
             .from("vendor_faqs")
             .delete()
             .eq("id", id);
-          if (error) Alert.alert("Couldn't delete", error.message);
+          if (error) Alert.alert(t("deleteError"), error.message);
           else load();
         },
       },
@@ -501,28 +510,28 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
   return (
     <View className="gap-3">
       <SectionHeader
-        title="FAQs"
-        subtitle="Common questions hosts ask"
+        title={t("faqs.title")}
+        subtitle={t("faqs.subtitle")}
         onAdd={() => setEditing({ ...EMPTY_FAQ })}
       />
       {loading ? (
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
       ) : items.length === 0 ? (
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          No FAQs yet. Adding 3-5 saves you time on first-touch replies.
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>
+          {t("faqs.empty")}
         </Text>
       ) : (
         items.map((f) => (
           <View
             key={f.id}
-            className="rounded-[20px] border border-border bg-[#fbf9f4] p-4"
+            className="rounded-[20px] border p-4" style={{ borderColor: C.border, backgroundColor: C.card }}
           >
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
+                <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
                   {f.question}
                 </Text>
-                <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+                <Text className="mt-1 text-sm" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
                   {f.answer}
                 </Text>
               </View>
@@ -538,14 +547,14 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="edit-2" size={18} color="#746a58" />
+                  <Feather name="edit-2" size={18} color={C.placeholder} />
                 </Pressable>
                 <Pressable
                   onPress={() => remove(f.id)}
                   hitSlop={8}
                   className="active:opacity-70"
                 >
-                  <Feather name="trash-2" size={18} color="#b23a34" />
+                  <Feather name="trash-2" size={18} color={C.error} />
                 </Pressable>
               </View>
             </View>
@@ -560,19 +569,19 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
       >
         {editing ? (
           <SafeAreaView
-            className="flex-1 bg-background"
+            className="flex-1" style={{ backgroundColor: C.page }}
             edges={["top", "bottom"]}
           >
-            <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+            <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderColor: C.border }}>
               <Pressable onPress={() => setEditing(null)} hitSlop={8}>
-                <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+                <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("cancel")}</Text>
               </Pressable>
-              <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                {editing.id ? "Edit FAQ" : "New FAQ"}
+              <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                {editing.id ? t("faqs.edit") : t("faqs.new")}
               </Text>
               <Pressable onPress={save} hitSlop={8} disabled={busy}>
-                <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  {busy ? "Saving…" : "Save"}
+                <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                  {busy ? t("saving") : t("save")}
                 </Text>
               </Pressable>
             </View>
@@ -581,32 +590,32 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
               contentContainerClassName="px-5 py-4 gap-4 pb-24"
             >
               <View>
-                <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  Question
+                <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                  {t("faqs.question")}
                 </Text>
-                <TextInput style={{ fontFamily: "LibreBaskerville" }}
+                <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
                   value={editing.question}
                   onChangeText={(v) =>
                     setEditing({ ...editing, question: v })
                   }
-                  placeholder="Do you travel for events?"
+                  placeholder={t("faqs.questionPlaceholder")}
                   placeholderTextColor={PLACEHOLDER}
-                  className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                  className="mt-2 rounded-xl border px-4 py-3 text-base"
                 />
               </View>
               <View>
-                <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-                  Answer
+                <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+                  {t("faqs.answer")}
                 </Text>
-                <TextInput style={{ fontFamily: "LibreBaskerville" }}
+                <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
                   value={editing.answer}
                   onChangeText={(v) => setEditing({ ...editing, answer: v })}
-                  placeholder="Yes, we cover anywhere within 100 miles…"
+                  placeholder={t("faqs.answerPlaceholder")}
                   placeholderTextColor={PLACEHOLDER}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
-                  className="mt-2 min-h-[120px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+                  className="mt-2 min-h-[120px] rounded-xl border px-4 py-3 text-base"
                 />
               </View>
             </ScrollView>
@@ -623,14 +632,16 @@ export function FaqsSection({ vendorId }: { vendorId: string }) {
 // reschedule_window_days (int), policy_notes (text). Edited inline.
 // ============================================================================
 
+// Stored values; labels come from listingSections → policies.options.
 const CANCELLATION_OPTIONS = [
-  { value: "", label: "— pick a policy —" },
-  { value: "flexible", label: "Flexible (full refund up to 7 days before)" },
-  { value: "moderate", label: "Moderate (50% up to 30 days before)" },
-  { value: "strict", label: "Strict (no refund)" },
+  { value: "", key: "none" },
+  { value: "flexible", key: "flexible" },
+  { value: "moderate", key: "moderate" },
+  { value: "strict", key: "strict" },
 ] as const;
 
 export function PoliciesSection({ vendorId }: { vendorId: string }) {
+  const { t } = useT("listingSections");
   const [depositPct, setDepositPct] = useState("");
   const [cancellation, setCancellation] = useState("");
   const [reschedule, setReschedule] = useState("");
@@ -685,11 +696,11 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         .update(payload)
         .eq("id", vendorId);
       if (error) throw error;
-      Alert.alert("Saved", "Policies updated.");
+      Alert.alert(t("policies.savedTitle"), t("policies.savedMessage"));
     } catch (err) {
       Alert.alert(
-        "Couldn't save policies",
-        (err as { message?: string })?.message ?? "Try again.",
+        t("policies.saveError"),
+        (err as { message?: string })?.message ?? t("tryAgain"),
       );
     } finally {
       setBusy(false);
@@ -699,82 +710,82 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
   if (loading) {
     return (
       <View className="gap-3">
-        <SectionHeader title="Policies" />
-        <Text className="text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <SectionHeader title={t("policies.title")} />
+        <Text className="text-xs" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("loading")}</Text>
       </View>
     );
   }
 
-  const cancellationLabel =
-    CANCELLATION_OPTIONS.find((o) => o.value === cancellation)?.label ??
-    "— pick a policy —";
+  const cancellationKey =
+    CANCELLATION_OPTIONS.find((o) => o.value === cancellation)?.key ?? "none";
+  const cancellationLabel = t(`policies.options.${cancellationKey}`);
 
   return (
     <View className="gap-4">
       <SectionHeader
-        title="Policies"
-        subtitle="Cancellation, deposits, payment terms"
+        title={t("policies.title")}
+        subtitle={t("policies.subtitle")}
       />
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          Deposit (%)
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+          {t("policies.deposit")}
         </Text>
-        <TextInput style={{ fontFamily: "LibreBaskerville" }}
+        <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
           value={depositPct}
           onChangeText={setDepositPct}
           placeholder="25"
           placeholderTextColor={PLACEHOLDER}
           keyboardType="number-pad"
-          className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+          className="mt-2 rounded-xl border px-4 py-3 text-base"
         />
       </View>
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          Cancellation policy
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+          {t("policies.cancellation")}
         </Text>
         <Pressable
           onPress={() => setPickerOpen(true)}
-          className="mt-2 rounded-xl border border-border bg-background px-4 py-3 active:opacity-80 flex-row items-center justify-between"
+          className="mt-2 rounded-xl border px-4 py-3 active:opacity-80 flex-row items-center justify-between" style={{ borderColor: C.border, backgroundColor: C.page }}
         >
-          <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
+          <Text className="text-base" style={{ fontFamily: "LibreBaskerville", color: C.text }}>
             {cancellationLabel}
           </Text>
-          <Feather name="chevron-down" size={18} color="#746a58" />
+          <Feather name="chevron-down" size={18} color={C.placeholder} />
         </Pressable>
       </View>
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          Reschedule window (days)
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+          {t("policies.reschedule")}
         </Text>
-        <TextInput style={{ fontFamily: "LibreBaskerville" }}
+        <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
           value={reschedule}
           onChangeText={setReschedule}
           placeholder="14"
           placeholderTextColor={PLACEHOLDER}
           keyboardType="number-pad"
-          className="mt-2 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+          className="mt-2 rounded-xl border px-4 py-3 text-base"
         />
       </View>
       <View>
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>Notes</Text>
-        <TextInput style={{ fontFamily: "LibreBaskerville" }}
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>{t("policies.notes")}</Text>
+        <TextInput style={{ fontFamily: "LibreBaskerville", borderColor: C.border, backgroundColor: C.page, color: C.text }}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Any additional terms hosts should know."
+          placeholder={t("policies.notesPlaceholder")}
           placeholderTextColor={PLACEHOLDER}
           multiline
           numberOfLines={3}
           textAlignVertical="top"
-          className="mt-2 min-h-[80px] rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
+          className="mt-2 min-h-[80px] rounded-xl border px-4 py-3 text-base"
         />
       </View>
       <Pressable
         onPress={save}
         disabled={busy}
-        className="rounded-full border border-border bg-white h-11 items-center justify-center active:opacity-80"
+        className="rounded-full border h-11 items-center justify-center active:opacity-80" style={{ borderColor: C.border, backgroundColor: C.field }}
       >
-        <Text className="text-sm text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-          {busy ? "Saving…" : "Save policies"}
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+          {busy ? t("saving") : t("policies.save")}
         </Text>
       </Pressable>
 
@@ -784,13 +795,13 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
         presentationStyle="pageSheet"
         onRequestClose={() => setPickerOpen(false)}
       >
-        <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-          <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: C.page }} edges={["top", "bottom"]}>
+          <View className="flex-row items-center justify-between px-5 py-3 border-b" style={{ borderColor: C.border }}>
             <Pressable onPress={() => setPickerOpen(false)} hitSlop={8}>
-              <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Cancel</Text>
+              <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: C.textDim }}>{t("cancel")}</Text>
             </Pressable>
-            <Text className="text-base text-foreground" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              Cancellation policy
+            <Text className="text-base" style={{ fontFamily: "LibreBaskerville-Bold", color: C.text }}>
+              {t("policies.cancellation")}
             </Text>
             <View style={{ width: 60 }} />
           </View>
@@ -802,22 +813,19 @@ export function PoliciesSection({ vendorId }: { vendorId: string }) {
                   setCancellation(o.value);
                   setPickerOpen(false);
                 }}
-                className="px-5 py-4 active:bg-muted"
+                className={`px-5 py-4 ${ROW_PRESS}`}
               >
                 <Text
-                  className={`text-base ${
-                    cancellation === o.value
-                      ? "text-foreground"
-                      : "text-foreground"
-                  }`}
+                  className="text-base"
                   style={{
+                    color: C.text,
                     fontFamily:
                       cancellation === o.value
                         ? "LibreBaskerville-Bold"
                         : "LibreBaskerville",
                   }}
                 >
-                  {o.label}
+                  {t(`policies.options.${o.key}`)}
                 </Text>
               </Pressable>
             ))}

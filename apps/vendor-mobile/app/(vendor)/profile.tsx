@@ -25,33 +25,39 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
-import { formatListingPrice, pricingModelsLabel } from "@vendora/core";
+import { usePriceLabels } from "@/lib/priceLabels";
 import type { VendorProfile } from "@vendora/core";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { loadSetupState, type SetupState } from "@/lib/setupChecklist";
 import { editorRouteFor, useBrandDialog } from "@/components/listing/WizardKit";
 import { Wordmark } from "@/components/Wordmark";
+import { C, IS_DARK } from "@/lib/theme";
 import { PLANS_PAUSED } from "@/lib/plans";
+import { useT } from "@/lib/i18n";
+import { useCategoryNames } from "@/lib/categoryNames";
 
 // Vendora light theme (the user's reference design): warm cream page,
 // gold accents. Every block — the identity card included — is CARD on
 // PAGE with a hairline BORDER.
+// WHITE is only for logo backdrops (logos always sit on white).
 const WHITE = "#ffffff";
-const PAGE = "#f4f1ea";
-const CARD = "#fbf9f4";
-const SURFACE = "#ece7db";
-const INK = "#14161a";
+const PAGE = C.page;
+const CARD = C.card;
+const SURFACE = C.surface;
+const INK = C.text;
 // Secondary text is the same black as headings; hierarchy comes from
 // size, weight and family instead. The old value was a cool blue-grey
 // (#5e636e, hue 220) which read as washed-out on the warm cream page.
-const INK_DIM = "#14161a";
-const BORDER = "#e6e1d5";
-const GOLD = "#c9a86a";
+const INK_DIM = C.textDim;
+const BORDER = C.border;
+const GOLD = C.gold;
 // Champagne bronze — the landing page's text accent. #c9a86a is
 // reserved for fills and glyphs; as words on cream it only reaches
 // 2:1, so every gold *label* uses this instead.
-const BRONZE = "#8a6f3e";
+const BRONZE = C.accentText;
+// "Problem" pill tint: opaque so it reads over a cover photo.
+const ERROR_TINT = IS_DARK ? "#3a2220" : "#f7ece9";
 // The identity card used to be the one dark block on a cream page.
 // It now uses the same CARD + BORDER as every other block, so these
 // are the cream equivalents of the old on-dark tokens.
@@ -76,13 +82,14 @@ function statusRank(s: string | null): number {
 }
 
 // Status pill copy + tones for a listing card (matches web's Live /
-// Pending review / Rejected / Draft directory-card pills).
+// Pending review / Rejected / Draft directory-card pills). The label is
+// a key under status.* in locales/<lang>/profile.ts.
 function statusMeta(s: string | null): { label: string; bg: string; fg: string } {
-  if (s === "approved") return { label: "Live", bg: INK, fg: WHITE };
-  if (s === "rejected") return { label: "Rejected", bg: "#f7ece9", fg: "#b23a34" };
+  if (s === "approved") return { label: "live", bg: C.selected, fg: C.onSelected };
+  if (s === "rejected") return { label: "rejected", bg: ERROR_TINT, fg: C.error };
   if (s === "pending" || s === "submitted")
-    return { label: "Pending review", bg: "#f2e7cb", fg: BRONZE };
-  return { label: "Draft", bg: SURFACE, fg: INK };
+    return { label: "pending", bg: C.pending, fg: C.pendingText };
+  return { label: "draft", bg: SURFACE, fg: INK };
 }
 
 // Studio-tier verified seal — the 16-point starburst + check used on
@@ -97,7 +104,7 @@ function StudioBadge({ size = 20 }: { size?: number }) {
       <Path
         d="M21 33 L29 41 L44 24"
         fill="none"
-        stroke="#ffffff"
+        stroke={IS_DARK ? C.onGold : "#ffffff"}
         strokeWidth={5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -109,6 +116,7 @@ function StudioBadge({ size = 20 }: { size?: number }) {
 export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useT("profile");
 
   // Identity lives on public.profiles (separate from any one listing —
   // migration 20260512150000). Falls back to the primary vendor_profiles
@@ -264,7 +272,9 @@ export default function ProfileScreen() {
     const slugOrId = primary.slug ?? primary.id;
     const url = `https://eventvendora.com/vendors/${slugOrId}`;
     await Share.share({
-      message: `${identity.business_name ?? "Check out my listing"} on Vendora — ${url}`,
+      message: identity.business_name
+        ? t("share.message", { name: identity.business_name, url })
+        : t("share.fallback", { url }),
       url,
     }).catch(() => {});
   }
@@ -283,18 +293,18 @@ export default function ProfileScreen() {
       // Plans paused (lib/plans.ts): state the limit, no "Upgrade plan".
       if (PLANS_PAUSED) {
         Alert.alert(
-          "Listing limit reached",
-          `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}.`,
+          t("limit.title"),
+          t("limit.message", { count: listingCap }),
         );
         return;
       }
       Alert.alert(
-        "Listing limit reached",
-        `Your plan allows ${listingCap} listing${listingCap === 1 ? "" : "s"}. Upgrade your plan to add more.`,
+        t("limit.title"),
+        t("limit.messageUpgrade", { count: listingCap }),
         [
-          { text: "Not now", style: "cancel" },
+          { text: t("limit.notNow"), style: "cancel" },
           {
-            text: "Upgrade plan",
+            text: t("limit.upgrade"),
             onPress: () => router.push("/(vendor)/subscription" as never),
           },
         ],
@@ -309,12 +319,12 @@ export default function ProfileScreen() {
       .single();
     if (error || !data?.id) {
       Alert.alert(
-        "Couldn't create listing",
+        t("createError.title"),
         error?.message?.includes("listing_cap_reached")
           ? PLANS_PAUSED
-            ? "Your plan's listing limit is reached."
-            : "Your plan's listing limit is reached. Upgrade your plan to add more."
-          : (error?.message ?? "Unknown error"),
+            ? t("createError.cap")
+            : t("createError.capUpgrade")
+          : (error?.message ?? t("createError.unknown")),
       );
       return;
     }
@@ -343,10 +353,10 @@ export default function ProfileScreen() {
               letterSpacing: -0.5,
             }}
           >
-            My Profile
+            {t("title")}
           </Text>
           <Text style={{ fontFamily: SERIF, marginTop: 4, fontSize: 13, lineHeight: 19, color: INK_DIM }}>
-            Manage how your business appears on Vendora.
+            {t("subtitle")}
           </Text>
 
           {/* "You're almost live!" — setup progress, as one slim row with a
@@ -365,7 +375,7 @@ export default function ProfileScreen() {
           <View style={{ marginTop: 16 }}>
             <BrandCard
               logoUrl={identity.logo_url}
-              businessName={identity.business_name ?? user?.email ?? "Vendor"}
+              businessName={identity.business_name ?? user?.email ?? t("vendorFallback")}
               bio={identity.bio}
               ratingAvg={ratingAvg}
               joined={joinedYear(profileCreatedAt)}
@@ -428,6 +438,7 @@ function BrandCard({
   onEditIdentity: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
+  const { t } = useT("profile");
   return (
     <View
       style={{
@@ -471,7 +482,7 @@ function BrandCard({
             color: BRONZE,
           }}
         >
-          {flipped ? "BACK" : "BIO"}
+          {flipped ? t("card.back") : t("card.bio")}
         </Text>
       </Pressable>
 
@@ -485,7 +496,7 @@ function BrandCard({
               color: BRONZE,
             }}
           >
-            ABOUT {businessName.toUpperCase()}
+            {t("card.about", { name: businessName.toUpperCase() })}
           </Text>
           <Text
             style={{
@@ -496,7 +507,7 @@ function BrandCard({
               color: bio?.trim() ? INK : BRONZE,
             }}
           >
-            {bio?.trim() ? bio : `No bio yet for ${businessName}.`}
+            {bio?.trim() ? bio : t("card.noBio", { name: businessName })}
           </Text>
         </View>
       ) : (
@@ -555,7 +566,7 @@ function BrandCard({
                       color: BRONZE,
                     }}
                   >
-                    Verified
+                    {t("card.verified")}
                   </Text>
                 </View>
               ) : null}
@@ -573,26 +584,26 @@ function BrandCard({
             <View style={{ flex: 1, alignItems: "center" }}>
               <CardStat
                 value={ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
-                label="RATING"
+                label={t("card.rating")}
               />
             </View>
             <View
               style={{ width: 1, height: 34, backgroundColor: BORDER }}
             />
             <View style={{ flex: 1, alignItems: "center" }}>
-              <CardStat value={joined} label="JOINED" />
+              <CardStat value={joined} label={t("card.joined")} />
             </View>
           </View>
 
           <View style={{ marginTop: 20, flexDirection: "row", gap: 12 }}>
             <OutlineBtn
               icon="share-variant-outline"
-              label="Share profile"
+              label={t("card.share")}
               onPress={onShare}
             />
             <OutlineBtn
               icon="pencil-outline"
-              label="Edit identity"
+              label={t("card.editIdentity")}
               onPress={onEditIdentity}
             />
           </View>
@@ -651,12 +662,14 @@ function OutlineBtn({
         borderColor: BORDER,
         borderRadius: 999,
         height: 44,
-        backgroundColor: WHITE,
+        backgroundColor: C.field,
       }}
     >
       <MaterialCommunityIcons name={icon} size={15} color={GOLD} />
       <Text
-        style={{ fontFamily: SERIF_BOLD, marginLeft: 7, fontSize: 14, color: INK }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{ flexShrink: 1, fontFamily: SERIF_BOLD, marginLeft: 7, fontSize: 14, color: INK }}
       >
         {label}
       </Text>
@@ -681,7 +694,7 @@ function Avatar({
         height: 72,
         borderRadius: 36,
         overflow: "hidden",
-        backgroundColor: logoUrl ? WHITE : "#ece7db",
+        backgroundColor: logoUrl ? WHITE : SURFACE,
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -700,7 +713,7 @@ function Avatar({
           style={{
             fontFamily: SERIF,
             fontSize: 31,
-            color: "#14161a",
+            color: INK,
           }}
         >
           {initial}
@@ -756,6 +769,7 @@ function EmptyState({
           fontFamily: SERIF_BOLD,
           fontSize: 24,
           color: INK,
+          textAlign: "center",
         }}
       >
         {title}
@@ -785,7 +799,7 @@ function EmptyState({
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: C.onGold }}>
             {ctaLabel}
           </Text>
         </TouchableOpacity>
@@ -814,10 +828,11 @@ function ListingTab({
   onCreateNew: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useT("profile");
   if (loading) {
     return (
       <View className="items-center px-4 pt-10">
-        <Text className="text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>Loading…</Text>
+        <Text className="text-sm" style={{ fontFamily: "LibreBaskerville", color: INK_DIM }}>{t("loading")}</Text>
       </View>
     );
   }
@@ -825,9 +840,9 @@ function ListingTab({
     return (
       <EmptyState
         icon="shopping-bag"
-        title="No listings yet"
-        body="Add your location and starting prices to publish your first listing."
-        ctaLabel="Create listing"
+        title={t("empty.title")}
+        body={t("empty.body")}
+        ctaLabel={t("empty.cta")}
         onCta={onCreateNew}
       />
     );
@@ -841,14 +856,16 @@ function ListingTab({
       <View
         style={{
           flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
-        <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
-          {listings.length}
-          {listingCap !== null ? ` of ${listingCap}` : ""} listing
-          {listingCap === 1 && listings.length === 1 ? "" : "s"}
+        <Text style={{ flexShrink: 1, fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>
+          {listingCap !== null
+            ? t("countOfCap", { count: listingCap, done: listings.length })
+            : t("count", { count: listings.length })}
         </Text>
         {underCap ? (
           <TouchableOpacity
@@ -863,13 +880,13 @@ function ListingTab({
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: INK }}>
-              New listing
+            <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: C.onGold }}>
+              {t("newListing")}
             </Text>
           </TouchableOpacity>
         ) : PLANS_PAUSED ? (
           <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK }}>
-            Listing limit reached
+            {t("limit.title")}
           </Text>
         ) : (
           <UpgradeLink />
@@ -891,13 +908,14 @@ function ListingTab({
 // in-app subscription screen (plans upgrade in-app now, not on web).
 function UpgradeLink() {
   const router = useRouter();
+  const { t } = useT("profile");
   return (
     <Pressable
       onPress={() => router.push("/(vendor)/subscription" as never)}
       hitSlop={8}
     >
       <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: INK, textDecorationLine: "underline" }}>
-        Upgrade for more listings
+        {t("upgradeLink")}
       </Text>
     </Pressable>
   );
@@ -915,6 +933,9 @@ function ListingCard({
   const [heroUrl, setHeroUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const dialog = useBrandDialog();
+  const { t } = useT("profile");
+  const { sub } = useCategoryNames();
+  const priceLabels = usePriceLabels();
 
   const status = listing.application_status ?? "draft";
   const isApproved = status === "approved";
@@ -923,7 +944,7 @@ function ListingCard({
   // browsing and not taking new inquiries until the vendor resumes it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isPaused = isApproved && !!(listing as any).paused_at;
-  const meta = isPaused ? { label: "Paused", bg: SURFACE, fg: INK } : statusMeta(status);
+  const meta = isPaused ? { label: "paused", bg: SURFACE, fg: INK } : statusMeta(status);
 
   // Cover = first portfolio image (the gallery photos for this listing).
   useEffect(() => {
@@ -965,7 +986,7 @@ function ListingCard({
       if (error) {
         dialog.show({
           icon: "alert-circle",
-          title: pausing ? "Couldn't pause listing" : "Couldn't resume listing",
+          title: pausing ? t("pause.failed") : t("pause.resumeFailed"),
           message: error.message,
         });
       } else onChanged();
@@ -976,10 +997,9 @@ function ListingCard({
     }
     dialog.show({
       icon: "pause-circle",
-      title: "Pause this listing?",
-      message:
-        "It's hidden from search and browsing, and your page tells hosts you're not taking new inquiries. Your chats, calendar and reviews stay as they are. Resume anytime.",
-      confirmLabel: "Pause",
+      title: t("pause.title"),
+      message: t("pause.message"),
+      confirmLabel: t("pause.confirm"),
       onConfirm: apply,
     });
   }
@@ -987,10 +1007,9 @@ function ListingCard({
   async function unpublish() {
     dialog.show({
       icon: "eye-off",
-      title: "Remove from marketplace?",
-      message:
-        "Your listing leaves the marketplace but your photos, packages, and other data stay. You can re-publish anytime.",
-      confirmLabel: "Remove",
+      title: t("unpublish.title"),
+      message: t("unpublish.message"),
+      confirmLabel: t("unpublish.confirm"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -1003,7 +1022,7 @@ function ListingCard({
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't remove listing",
+            title: t("unpublish.failed"),
             message: error.message,
           });
         } else onChanged();
@@ -1014,10 +1033,9 @@ function ListingCard({
   async function destroy() {
     dialog.show({
       icon: "trash-2",
-      title: "Delete this listing?",
-      message:
-        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      confirmLabel: "Delete listing",
+      title: t("delete.title"),
+      message: t("delete.message"),
+      confirmLabel: t("delete.confirm"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -1030,7 +1048,7 @@ function ListingCard({
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't delete listing",
+            title: t("delete.failed"),
             message: error.message,
           });
         } else onChanged();
@@ -1066,9 +1084,9 @@ function ListingCard({
             className="flex-1 items-center justify-center px-6"
             style={{ backgroundColor: SURFACE }}
           >
-            <Feather name="image" size={28} color="#746a58" />
-            <Text className="mt-2 text-center text-xs text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-              No listing photos yet
+            <Feather name="image" size={28} color={C.placeholder} />
+            <Text className="mt-2 text-center text-xs" style={{ fontFamily: "LibreBaskerville", color: INK_DIM }}>
+              {t("card.noPhotos")}
             </Text>
           </View>
         )}
@@ -1086,7 +1104,7 @@ function ListingCard({
           }}
         >
           <Text style={{ fontFamily: SERIF_BOLD, fontSize: 11, color: meta.fg }}>
-            {meta.label}
+            {t(`status.${meta.label}`)}
           </Text>
         </View>
 
@@ -1105,8 +1123,8 @@ function ListingCard({
             }}
           >
             <Feather name="clock" size={28} color="#fff" />
-            <Text className="mt-2 text-center text-xs text-white" style={{ fontFamily: "LibreBaskerville-Bold" }}>
-              Under review
+            <Text className="mt-2 text-center text-xs" style={{ fontFamily: "LibreBaskerville-Bold", color: "#ffffff" }}>
+              {t("underReview")}
             </Text>
           </View>
         ) : null}
@@ -1135,25 +1153,21 @@ function ListingCard({
       <View className="mt-3 px-1">
         <Text
           numberOfLines={1}
-          className={
-            isPending ? "text-base text-foreground" : "text-base text-foreground"
-          }
-          style={{ fontFamily: "LibreBaskerville-Bold" }}
+          className="text-base"
+          style={{ fontFamily: "LibreBaskerville-Bold", color: INK }}
         >
-          {listing.business_name?.trim() || listing.category || "Your listing"}
+          {listing.business_name?.trim() || (listing.category ? sub(listing.category) : null) || t("yourListing")}
         </Text>
-        <Text numberOfLines={1} className="mt-0.5 text-sm text-muted-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-          {listing.category ?? "—"}
+        <Text numberOfLines={1} className="mt-0.5 text-sm" style={{ fontFamily: "LibreBaskerville", color: INK_DIM }}>
+          {listing.category ? sub(listing.category) : "—"}
           {listing.location ? ` · ${listing.location}` : ""}
         </Text>
-        {formatListingPrice(listing.price_min_cents, listing.price_max_cents) ? (
-          <Text className="mt-1 text-sm text-foreground" style={{ fontFamily: "LibreBaskerville" }}>
-            {formatListingPrice(listing.price_min_cents, listing.price_max_cents)}
-          </Text>
-        ) : null}
+        <Text className="mt-1 text-sm" style={{ fontFamily: "LibreBaskerville", color: INK }}>
+          {priceLabels.listingPrice(listing.price_min_cents, listing.price_max_cents)}
+        </Text>
         {(() => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const models = pricingModelsLabel((listing as any).pricing_models);
+          const models = priceLabels.models((listing as any).pricing_models);
           return models ? (
             <Text
               style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM, marginTop: 2 }}
@@ -1212,6 +1226,7 @@ function SetupRow({
   total: number;
   onPress: () => void;
 }) {
+  const { t } = useT("profile");
   const pct = total > 0 ? Math.max(0, Math.min(1, done / total)) : 0;
   return (
     <TouchableOpacity
@@ -1233,13 +1248,13 @@ function SetupRow({
       <MaterialCommunityIcons name="rocket-launch-outline" size={22} color={GOLD} />
       <View style={{ flex: 1 }}>
         <View
-          style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}
+          style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 8, justifyContent: "space-between", alignItems: "baseline" }}
         >
-          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
-            You&rsquo;re almost live!
+          <Text style={{ flexShrink: 1, fontFamily: SERIF_BOLD, fontSize: 15, color: INK }}>
+            {t("setup.title")}
           </Text>
           <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK }}>
-            {done} of {total} done
+            {t("setup.progress", { done, total })}
           </Text>
         </View>
         <View

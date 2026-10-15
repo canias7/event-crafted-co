@@ -72,6 +72,10 @@
         "photos": {
           "q": "¿Por qué mis fotos tardan en subir?",
           "a": "Las fotos grandes se reducen antes de subirse, así que un lote grande puede tardar un poco. En el sitio, cada foto puede pesar hasta 10 MB, con un máximo de 100 por anuncio. Las fotos HEIC del iPhone todavía no son compatibles, así que conviértelas a JPEG primero. Si una carga parece atascada por más de un minuto, revisa tu conexión, actualiza la página e inténtalo de nuevo."
+        },
+        "bookkeeping": {
+          "q": "¿Cómo registro el dinero que me pagaron fuera de Vendora y mis gastos?",
+          "a": "En tu panel de proveedor, abre Estudio web → Resumen. En el gráfico de Ingresos, elige \"Registrar un pago\" para anotar efectivo, Zelle, un cheque o cualquier pago que no pasó por Vendora. En la tarjeta de Gastos operativos, elige \"Registrar un gasto\". Ambos cuentan en tus ingresos y tu flujo de caja, y solo tú puedes verlos. Usa el selector de periodo arriba en Resumen para elegir cualquier fecha y agrupar el gráfico por día, semana o mes."
         }
       }
     },

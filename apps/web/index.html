@@ -27,12 +27,15 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <script>
-    // Single light palette for everyone. No user-facing theme toggle,
-    // no OS-preference auto-flip — the dark palette was never fully
-    // implemented and caused white-text-on-cream visibility bugs on
-    // dark-mode machines. Pinning colorScheme to light so native
-    // controls (scrollbars, form widgets) match.
-    document.documentElement.style.colorScheme = "light";
+    // Light by default; dark when the visitor turned it on (theme switch,
+    // src/lib/theme.ts). Applied before first paint so nothing flashes.
+    (function () {
+      var dark = false;
+      try { dark = localStorage.getItem("vendora-theme") === "dark"; } catch (e) {}
+      var root = document.documentElement;
+      if (dark) root.classList.add("dark");
+      root.style.colorScheme = dark ? "dark" : "light";
+    })();
   </script>
 </head>
   <body>

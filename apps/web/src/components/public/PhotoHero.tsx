@@ -9,7 +9,8 @@ const SECONDARY =
   "inline-flex h-11 items-center gap-1.5 text-[15px] font-bold text-[#f4f1ea] transition-colors hover:text-gold";
 
 // Dark photo header for the How it works and For vendors pages, in the
-// landing page's style (it fades into the ink page below): the overlaid nav, an eyebrow, a headline with one
+// landing page's style (in the dark theme it fades into the ink page below;
+// in the light theme it stays a dark photo band): the overlaid nav, an eyebrow, a headline with one
 // gold word (pass it in `title`), a line of copy, a gold button and a
 // quiet link. The headline and copy get the same readability halo and
 // shadow as the landing hero.
@@ -43,8 +44,18 @@ export function PhotoHero({
           className={`h-full w-full object-cover ${position}`}
         />
       </div>
+      {/* The scrim keeps the light text readable over the photo. Dark theme:
+          it fades into the ink page. Light theme: the band stays dark to its
+          edge, so the text never sits on a pale fade. */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 dark:hidden"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(10,11,14,0.66) 0%, rgba(10,11,14,0.45) 45%, rgba(20,22,26,0.7) 78%, rgba(20,22,26,0.82) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 hidden dark:block"
         style={{
           background:
             "linear-gradient(180deg, rgba(10,11,14,0.66) 0%, rgba(10,11,14,0.45) 45%, rgba(20,22,26,0.7) 78%, rgb(20,22,26) 100%)",
@@ -90,7 +101,7 @@ export function PhotoHero({
   );
 }
 
-// Dark closing band with one headline and one gold button, used at the
+// Closing band (page colour, follows the theme) with one headline and one gold button, used at the
 // end of the How it works and For vendors pages.
 export function ClosingBand({
   title,
@@ -102,12 +113,12 @@ export function ClosingBand({
   cta: { label: string; to: string };
 }) {
   return (
-    <section className="px-5 py-16 text-center md:px-8 md:py-24" style={{ backgroundColor: INK }}>
-      <h2 className="m-0 mx-auto max-w-2xl text-[30px] leading-tight text-[#f4f1ea] md:text-[42px]">
+    <section className="bg-background px-5 py-16 text-center md:px-8 md:py-24">
+      <h2 className="m-0 mx-auto max-w-2xl text-[30px] leading-tight text-foreground md:text-[42px]">
         {title}
       </h2>
       {sub && (
-        <p className="m-0 mx-auto mt-4 max-w-md text-[16px] leading-relaxed" style={{ color: "rgba(244,241,234,0.85)" }}>
+        <p className="m-0 mx-auto mt-4 max-w-md text-[16px] leading-relaxed text-muted-foreground">
           {sub}
         </p>
       )}

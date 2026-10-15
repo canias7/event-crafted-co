@@ -25,9 +25,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
+import { C } from "@/lib/theme";
 import { FaqsSection } from "@/components/listing/Sections";
 import {
-  CREAM,
+  PAGE,
   INK,
   INK_DIM,
   BORDER,
@@ -107,6 +109,17 @@ export default function BeautyListingScreen() {
   const [step, setStep] = useState(0);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const dialog = useBrandDialog();
+  const { t: tw, tObject: twObject } = useT("listingWizard");
+  const { t, tObject } = useT("beautyListing");
+  // Options are saved in English; chips show them in the app's language.
+  const valueLabels: Record<string, string> = {
+    ...(twObject<Record<string, string>>("values") ?? {}),
+    ...(tObject<Record<string, string>>("values") ?? {}),
+  };
+  const chipLabel = (v: string) => valueLabels[v] ?? v;
+  const chipLabels = (opts: readonly string[]) => opts.map(chipLabel);
+  const chipValue = (opts: readonly string[], label: string) =>
+    opts.find((o) => chipLabel(o) === label) ?? label;
 
   // Basics
   const [businessName, setBusinessName] = useState("");
@@ -268,7 +281,7 @@ export default function BeautyListingScreen() {
       })
       .eq("id", profile.id);
     if (error) {
-      dialog.show({ icon: "alert-circle", title: "Save failed", message: error.message });
+      dialog.show({ icon: "alert-circle", title: tw("dialogs.saveFailed"), message: error.message });
       return false;
     }
     if (status) {
@@ -279,19 +292,19 @@ export default function BeautyListingScreen() {
 
   function missingForPublish(): string[] {
     const missing: string[] = [];
-    if (!businessName.trim()) missing.push("Business / listing name");
-    if (!tagline.trim()) missing.push("Short tagline");
-    if (!location.trim()) missing.push("Location");
-    if (!serviceAreas.trim()) missing.push("Service areas");
-    if (!yearsInBusiness.trim()) missing.push("Years in business");
-    if (!description.trim()) missing.push("Full description");
-    if (services.length === 0) missing.push("Services (at least one)");
+    if (!businessName.trim()) missing.push(tw("missing.businessListingName"));
+    if (!tagline.trim()) missing.push(tw("missing.shortTagline"));
+    if (!location.trim()) missing.push(tw("missing.location"));
+    if (!serviceAreas.trim()) missing.push(tw("missing.serviceAreas"));
+    if (!yearsInBusiness.trim()) missing.push(tw("missing.yearsInBusiness"));
+    if (!description.trim()) missing.push(tw("missing.fullDescription"));
+    if (services.length === 0) missing.push(t("missing.servicesAtLeastOne"));
     if (
       pricingType !== "Custom" &&
       (!priceMin.trim() || Number.parseFloat(priceMin) <= 0)
     )
-      missing.push("Starting price (or choose Custom pricing)");
-    if (photoCount < MIN_PHOTOS) missing.push(`At least ${MIN_PHOTOS} photos`);
+      missing.push(tw("missing.startingPriceOrChooseCustomPricing"));
+    if (photoCount < MIN_PHOTOS) missing.push(tw("missing.minPhotos", { count: MIN_PHOTOS }));
     return missing;
   }
 
@@ -300,7 +313,7 @@ export default function BeautyListingScreen() {
     setBusy(true);
     const ok = await persist();
     setBusy(false);
-    if (ok) dialog.show({ title: "Saved", message: "Your progress is safe." });
+    if (ok) dialog.show({ title: tw("dialogs.saved"), message: tw("dialogs.savedMessage") });
   }
 
   // Change the marketplace category from inside the wizard. Picking a
@@ -316,7 +329,7 @@ export default function BeautyListingScreen() {
     if (error) {
       dialog.show({
         icon: "alert-circle",
-        title: "Couldn't change category",
+        title: tw("dialogs.categoryFailed"),
         message: error.message,
       });
       return;
@@ -335,8 +348,10 @@ export default function BeautyListingScreen() {
     if (missing.length > 0) {
       dialog.show({
         icon: "list",
-        title: "Can't publish yet",
-        message: `Add the following first:\n\n${missing.map((m) => `• ${m}`).join("\n")}`,
+        title: tw("dialogs.cantPublish"),
+        message: tw("dialogs.cantPublishMessage", {
+          list: missing.map((m) => `• ${m}`).join("\n"),
+        }),
       });
       return;
     }
@@ -351,9 +366,9 @@ export default function BeautyListingScreen() {
       .catch(() => {});
     dialog.show({
       icon: "send",
-      title: "Submitted for review",
-      message: "We'll review your listing within 2–3 business days.",
-      buttonLabel: "Done",
+      title: tw("dialogs.submitted"),
+      message: tw("dialogs.submittedMessage"),
+      buttonLabel: tw("dialogs.done"),
       onClose: () => router.back(),
     });
   }
@@ -366,8 +381,8 @@ export default function BeautyListingScreen() {
     if (ok) {
       dialog.show({
         icon: "file-text",
-        title: "Saved as draft",
-        message: "Your listing is out of review until you publish it again.",
+        title: tw("dialogs.savedAsDraft"),
+        message: tw("dialogs.savedAsDraftMessage"),
         onClose: () => router.back(),
       });
     }
@@ -380,8 +395,8 @@ export default function BeautyListingScreen() {
     setBusy(false);
     if (ok) {
       dialog.show({
-        title: "Changes saved",
-        message: "Your listing is up to date.",
+        title: tw("dialogs.changesSaved"),
+        message: tw("dialogs.changesSavedMessage"),
         onClose: () => router.back(),
       });
     }
@@ -393,10 +408,9 @@ export default function BeautyListingScreen() {
     if (!profile?.id || busy) return;
     dialog.show({
       icon: "trash-2",
-      title: "Delete this listing?",
-      message:
-        "All photos, packages, FAQs, and inquiries tied to this listing will be permanently removed. This can't be undone.",
-      confirmLabel: "Delete listing",
+      title: tw("dialogs.deleteTitle"),
+      message: tw("dialogs.deleteMessage"),
+      confirmLabel: tw("deleteListing"),
       destructive: true,
       onConfirm: async () => {
         setBusy(true);
@@ -409,7 +423,7 @@ export default function BeautyListingScreen() {
         if (error) {
           dialog.show({
             icon: "alert-circle",
-            title: "Couldn't delete",
+            title: tw("dialogs.deleteFailed"),
             message: error.message,
           });
         } else {
@@ -423,19 +437,19 @@ export default function BeautyListingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>Loading…</Text>
+          <Text style={{ fontFamily: SERIF, color: INK_DIM }}>{tw("loading")}</Text>
         </View>
       </SafeAreaView>
     );
   }
   if (!profile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
           <Text style={{ fontFamily: SERIF, color: INK_DIM, textAlign: "center" }}>
-            Couldn&rsquo;t load this listing.
+            {tw("loadFailed")}
           </Text>
         </View>
       </SafeAreaView>
@@ -445,7 +459,7 @@ export default function BeautyListingScreen() {
   const yesNo = ["Yes", "No"];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: CREAM }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: PAGE }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
@@ -469,7 +483,7 @@ export default function BeautyListingScreen() {
               color: INK,
             }}
           >
-            {status === "draft" ? "New listing" : "Edit listing"}
+            {status === "draft" ? tw("newListing") : tw("editListing")}
           </Text>
           <TouchableOpacity
             onPress={saveDraftHeader}
@@ -482,17 +496,17 @@ export default function BeautyListingScreen() {
               height: 36,
               justifyContent: "center",
               // Solid disabled colours rather than a blanket fade.
-              backgroundColor: busy ? "#f4f1ea" : "#ffffff",
+              backgroundColor: busy ? C.page : C.field,
               borderColor: BORDER,
             }}
           >
             <Text style={{ fontFamily: "LibreBaskerville-Bold", fontSize: 13, color: INK }}>
-              {status === "draft" ? "Save draft" : "Save"}
+              {status === "draft" ? tw("saveDraft") : tw("save")}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <StepRail steps={STEPS} step={step} onJump={setStep} />
+        <StepRail steps={chipLabels(STEPS)} step={step} onJump={setStep} />
 
         <ScrollView
           contentContainerStyle={{
@@ -506,42 +520,42 @@ export default function BeautyListingScreen() {
           {step === 0 ? (
             <>
               <StepTitle
-                title="Basics"
-                sub="Tell clients the essentials about your business."
+                title={tw("headings.basics")}
+                sub={tw("subs.tellClientsTheEssentialsAboutYour")}
               />
               <CategoryField
                 value={profile.category}
                 onPress={() => setCategoryPickerOpen(true)}
               />
-              <Field label="Business / listing name" required>
+              <Field label={tw("labels.businessListingName")} required>
                 <Input
                   value={businessName}
                   onChangeText={setBusinessName}
-                  placeholder="e.g., Glow Beauty Studio"
+                  placeholder={t("placeholders.egGlowBeautyStudio")}
                 />
               </Field>
-              <Field label="Short tagline" required>
+              <Field label={tw("labels.shortTagline")} required>
                 <Input
                   value={tagline}
                   onChangeText={setTagline}
-                  placeholder="e.g., Camera-ready looks that last all night."
+                  placeholder={t("placeholders.egCameraReadyLooksThatLast")}
                 />
               </Field>
-              <Field label="Location" required>
+              <Field label={tw("labels.location")} required>
                 <Input
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="Enter city or ZIP code"
+                  placeholder={tw("placeholders.enterCityOrZipCode")}
                 />
               </Field>
-              <Field label="Service areas (cities, regions, states)" required>
+              <Field label={tw("labels.serviceAreasCitiesRegionsStates")} required>
                 <Input
                   value={serviceAreas}
                   onChangeText={setServiceAreas}
-                  placeholder="Add areas"
+                  placeholder={tw("placeholders.addAreas")}
                 />
               </Field>
-              <Field label="Website">
+              <Field label={tw("labels.website")}>
                 <Input
                   value={website}
                   onChangeText={setWebsite}
@@ -550,7 +564,7 @@ export default function BeautyListingScreen() {
                   keyboardType="url"
                 />
               </Field>
-              <Field label="Instagram (optional)">
+              <Field label={tw("labels.instagramOptional")}>
                 <Input
                   value={instagram}
                   onChangeText={setInstagram}
@@ -558,11 +572,11 @@ export default function BeautyListingScreen() {
                   autoCapitalize="none"
                 />
               </Field>
-              <Field label="Years in business" required>
+              <Field label={tw("labels.yearsInBusiness")} required>
                 <Input
                   value={yearsInBusiness}
                   onChangeText={(v) => setYearsInBusiness(v.replace(/[^0-9]/g, "").slice(0, 3))}
-                  placeholder="e.g., 4"
+                  placeholder={t("placeholders.eg4")}
                   keyboardType="number-pad"
                 />
               </Field>
@@ -572,44 +586,44 @@ export default function BeautyListingScreen() {
           {step === 1 ? (
             <>
               <StepTitle
-                title="About your business"
-                sub="Give clients the story."
+                title={tw("headings.aboutYourBusiness")}
+                sub={tw("subs.giveClientsTheStory")}
               />
-              <Field label="Full description" required>
+              <Field label={tw("labels.fullDescription")} required>
                 <Input
                   value={description}
                   onChangeText={(v) => setDescription(v.slice(0, 1000))}
-                  placeholder="Describe your work, your approach, and what clients can expect."
+                  placeholder={t("placeholders.describeYourWorkYourApproachAnd")}
                   multiline
                 />
               </Field>
-              <Field label="What you do (one line)">
+              <Field label={tw("labels.whatYouDoOneLine")}>
                 <Input
                   value={oneLiner}
                   onChangeText={setOneLiner}
-                  placeholder="e.g., Bridal hair & makeup that lasts"
+                  placeholder={t("placeholders.egBridalHairMakeupThatLasts")}
                 />
               </Field>
-              <Field label="Best for (select all that apply)">
+              <Field label={tw("labels.bestForSelectAllThatApply")}>
                 <ChipMulti
-                  options={BEST_FOR}
-                  selected={bestFor}
-                  onChange={setBestFor}
+                  options={chipLabels(BEST_FOR)}
+                  selected={bestFor.map(chipLabel)}
+                  onChange={(next) => setBestFor(next.map((l) => chipValue(BEST_FOR, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="Specialties / signature style">
+              <Field label={t("labels.specialtiesSignatureStyle")}>
                 <Input
                   value={specialties}
                   onChangeText={setSpecialties}
-                  placeholder="e.g., Soft glam, natural skin-first looks"
+                  placeholder={t("placeholders.egSoftGlamNaturalSkinFirst")}
                 />
               </Field>
-              <Field label="What makes you unique">
+              <Field label={tw("labels.whatMakesYouUnique")}>
                 <Input
                   value={unique}
                   onChangeText={(v) => setUnique(v.slice(0, 500))}
-                  placeholder="Share what sets you apart…"
+                  placeholder={t("placeholders.shareWhatSetsYouApart")}
                   multiline
                 />
               </Field>
@@ -619,65 +633,65 @@ export default function BeautyListingScreen() {
           {step === 2 ? (
             <>
               <StepTitle
-                title="Services"
-                sub="Select what you offer and how you work."
+                title={t("headings.services")}
+                sub={tw("subs.selectWhatYouOfferAndHow")}
               />
-              <Field label="Services (select all that apply)" required>
+              <Field label={t("labels.servicesSelectAllThatApply")} required>
                 <ChipMulti
-                  options={SERVICES}
-                  selected={services}
-                  onChange={setServices}
+                  options={chipLabels(SERVICES)}
+                  selected={services.map(chipLabel)}
+                  onChange={(next) => setServices(next.map((l) => chipValue(SERVICES, l)))}
                   allowCustom
                 />
               </Field>
-              <Field label="On-location or studio?">
+              <Field label={t("labels.onLocationOrStudio")}>
                 <ChipSingle
-                  options={["On-location", "Studio", "Both"]}
-                  selected={workSetting}
-                  onChange={(v) => setWorkSetting(v as typeof workSetting)}
+                  options={chipLabels(["On-location", "Studio", "Both"])}
+                  selected={chipLabel(workSetting)}
+                  onChange={(v) => setWorkSetting(chipValue(["On-location", "Studio", "Both"], v) as typeof workSetting)}
                 />
               </Field>
-              <Field label="Largest party you can take">
+              <Field label={t("labels.largestPartyYouCanTake")}>
                 <Input
                   value={maxPartySize}
                   onChangeText={(v) => setMaxPartySize(v.replace(/[^0-9]/g, ""))}
-                  placeholder="e.g., 8"
+                  placeholder={tw("placeholders.eg8")}
                   keyboardType="number-pad"
                 />
               </Field>
-              <Field label="Trials available?">
+              <Field label={t("labels.trialsAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={trialsAvailable}
-                  onChange={(v) => setTrialsAvailable(v as typeof trialsAvailable)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(trialsAvailable)}
+                  onChange={(v) => setTrialsAvailable(chipValue(yesNo, v) as typeof trialsAvailable)}
                 />
               </Field>
-              <Field label="Stay-through / touch-up services?">
+              <Field label={t("labels.stayThroughTouchUpServices")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={touchUps}
-                  onChange={(v) => setTouchUps(v as typeof touchUps)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(touchUps)}
+                  onChange={(v) => setTouchUps(chipValue(yesNo, v) as typeof touchUps)}
                 />
               </Field>
-              <Field label="Early start times available?">
+              <Field label={t("labels.earlyStartTimesAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={earlyStarts}
-                  onChange={(v) => setEarlyStarts(v as typeof earlyStarts)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(earlyStarts)}
+                  onChange={(v) => setEarlyStarts(chipValue(yesNo, v) as typeof earlyStarts)}
                 />
               </Field>
-              <Field label="Assistants / team available?">
+              <Field label={t("labels.assistantsTeamAvailable")}>
                 <ChipSingle
-                  options={yesNo}
-                  selected={teamAvailable}
-                  onChange={(v) => setTeamAvailable(v as typeof teamAvailable)}
+                  options={chipLabels(yesNo)}
+                  selected={chipLabel(teamAvailable)}
+                  onChange={(v) => setTeamAvailable(chipValue(yesNo, v) as typeof teamAvailable)}
                 />
               </Field>
-              <Field label="Products you use">
+              <Field label={t("labels.productsYouUse")}>
                 <Input
                   value={products}
                   onChangeText={setProducts}
-                  placeholder="e.g., Charlotte Tilbury, NARS, pro-grade lace"
+                  placeholder={t("placeholders.egCharlotteTilburyNarsProGrade")}
                   multiline
                 />
               </Field>
@@ -686,72 +700,72 @@ export default function BeautyListingScreen() {
 
           {step === 3 ? (
             <>
-              <StepTitle title="Pricing" sub="Where your pricing starts." />
-              <Field label="Pricing type">
+              <StepTitle title={tw("headings.pricing")} sub={tw("subs.whereYourPricingStarts")} />
+              <Field label={tw("labels.pricingType")}>
                 <ChipSingle
-                  options={PRICING_TYPES}
-                  selected={pricingType}
-                  onChange={setPricingType}
+                  options={chipLabels(PRICING_TYPES)}
+                  selected={chipLabel(pricingType)}
+                  onChange={(l) => setPricingType(chipValue(PRICING_TYPES, l))}
                 />
               </Field>
-              <Field label="Starting price (USD)" required>
+              <Field label={tw("labels.startingPriceUsd")} required>
                 <Input
                   value={priceMin}
                   onChangeText={(v) => setPriceMin(v.replace(/[^0-9.]/g, ""))}
-                  placeholder="e.g., 95"
+                  placeholder={t("placeholders.eg95")}
                   keyboardType="decimal-pad"
                 />
               </Field>
-              <Field label="Minimum spend / party minimum">
+              <Field label={t("labels.minimumSpendPartyMinimum")}>
                 <Input
                   value={minSpend}
                   onChangeText={setMinSpend}
-                  placeholder="e.g., 4-person minimum for on-location"
+                  placeholder={t("placeholders.eg4PersonMinimumForOn")}
                 />
               </Field>
-              <Field label="Travel fees">
+              <Field label={tw("labels.travelFees")}>
                 <Input
                   value={travelFees}
                   onChangeText={setTravelFees}
-                  placeholder="e.g., Free within 20 miles, $1/mile after"
+                  placeholder={t("placeholders.egFreeWithin20Miles1")}
                 />
               </Field>
-              <Field label="What's included in the starting price">
+              <Field label={tw("labels.whatsIncludedInTheStartingPrice")}>
                 <Input
                   value={priceIncludes}
                   onChangeText={setPriceIncludes}
-                  placeholder="e.g., Lashes included, touch-up kit"
+                  placeholder={t("placeholders.egLashesIncludedTouchUpKit")}
                   multiline
                 />
               </Field>
-              <Field label="Add-ons">
+              <Field label={t("labels.addOns")}>
                 <Input
                   value={addOns}
                   onChangeText={setAddOns}
-                  placeholder="e.g., Trial +$85, extensions styling +$40"
+                  placeholder={t("placeholders.egTrial85ExtensionsStyling40")}
                   multiline
                 />
               </Field>
-              <Field label="Deposit / payment terms">
+              <Field label={tw("labels.depositPaymentTerms")}>
                 <Input
                   value={paymentSchedule}
                   onChangeText={setPaymentSchedule}
-                  placeholder="e.g., 25% deposit to book, balance day-of"
+                  placeholder={tw("placeholders.eg25DepositToBookBalance")}
                 />
               </Field>
-              <Field label="Cancellation / rescheduling policy">
+              <Field label={tw("labels.cancellationReschedulingPolicy")}>
                 <Input
                   value={cancellationPolicy}
                   onChangeText={setCancellationPolicy}
-                  placeholder="e.g., Deposit transferable up to 30 days out"
+                  placeholder={tw("placeholders.egDepositTransferableUpTo30")}
                   multiline
                 />
               </Field>
-              <Field label="Other important notes">
+              <Field label={tw("labels.otherImportantNotes")}>
                 <Input
                   value={otherNotes}
                   onChangeText={setOtherNotes}
-                  placeholder="Anything else clients should know"
+                  placeholder={tw("placeholders.anythingElseClientsShouldKnow")}
                   multiline
                 />
               </Field>
@@ -761,11 +775,11 @@ export default function BeautyListingScreen() {
           {step === 4 ? (
             <>
               <StepTitle
-                title="Photos & media"
-                sub="Close-ups of finished looks get up to 3× more inquiries."
+                title={tw("headings.photosMedia")}
+                sub={t("subs.closeUpsOfFinishedLooksGet")}
               />
               <ListingPhotosGrid vendorId={profile.id} onCount={setPhotoCount} />
-              <Field label="Portfolio link (optional)">
+              <Field label={t("labels.portfolioLinkOptional")}>
                 <Input
                   value={portfolioUrl}
                   onChangeText={setPortfolioUrl}
@@ -775,10 +789,10 @@ export default function BeautyListingScreen() {
                 />
               </Field>
 
-              <StepTitle title="FAQs" sub="Answer what clients will ask first." topGap />
+              <StepTitle title={tw("headings.faqs")} sub={tw("subs.answerWhatClientsWillAskFirst")} topGap />
               <FaqsSection vendorId={profile.id} />
 
-              <StepTitle title="Review" sub="Almost there." topGap />
+              <StepTitle title={tw("headings.review")} sub={tw("subs.almostThere")} topGap />
               <ReviewChecklist missing={missingForPublish()} />
             </>
           ) : null}
@@ -790,7 +804,7 @@ export default function BeautyListingScreen() {
                 activeOpacity={0.85}
                 style={darkPill}
               >
-                <Text style={darkPillText}>Continue</Text>
+                <Text style={darkPillText}>{tw("continue")}</Text>
               </TouchableOpacity>
             ) : status === "pending" ? (
               <>
@@ -800,7 +814,7 @@ export default function BeautyListingScreen() {
                   activeOpacity={0.85}
                   style={darkPillFor(busy)}
                 >
-                  <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                  <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={withdrawToDraft}
@@ -808,7 +822,7 @@ export default function BeautyListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Withdraw to draft</Text>
+                  <Text style={lightPillText}>{tw("withdrawToDraft")}</Text>
                 </TouchableOpacity>
               </>
             ) : status === "approved" ? (
@@ -818,7 +832,7 @@ export default function BeautyListingScreen() {
                 activeOpacity={0.85}
                 style={darkPillFor(busy)}
               >
-                <Text style={darkPillText}>{busy ? "Saving…" : "Save changes"}</Text>
+                <Text style={darkPillText}>{busy ? tw("saving") : tw("saveChanges")}</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -830,10 +844,10 @@ export default function BeautyListingScreen() {
                 >
                   <Text style={darkPillText}>
                     {busy
-                      ? "Publishing…"
+                      ? tw("publishing")
                       : status === "rejected"
-                        ? "Re-submit"
-                        : "Publish"}
+                        ? tw("resubmit")
+                        : tw("publish")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -842,7 +856,7 @@ export default function BeautyListingScreen() {
                   activeOpacity={0.7}
                   style={lightPillFor(busy)}
                 >
-                  <Text style={lightPillText}>Save draft</Text>
+                  <Text style={lightPillText}>{tw("saveDraft")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -853,7 +867,7 @@ export default function BeautyListingScreen() {
                 style={{ alignItems: "center", paddingVertical: 8 }}
               >
                 <Text style={{ fontFamily: SERIF, color: INK_DIM, fontSize: 14}}>
-                  ← Back to {STEPS[step - 1]}
+                  {tw("backTo", { step: chipLabel(STEPS[step - 1]) })}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -864,8 +878,8 @@ export default function BeautyListingScreen() {
                 activeOpacity={0.7}
                 style={{ alignItems: "center", paddingVertical: 10 }}
               >
-                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: "#b23a34", fontSize: 14}}>
-                  Delete listing
+                <Text style={{ fontFamily: "LibreBaskerville-Bold", color: C.error, fontSize: 14}}>
+                  {tw("deleteListing")}
                 </Text>
               </TouchableOpacity>
             ) : null}

@@ -23,7 +23,7 @@ export function VendorFaqList({ items, title, eyebrow }: Props) {
     <div>
       <p
         className="font-label mb-3"
-        style={{ color: "#f4f1ea", letterSpacing: "0.22em" }}
+        style={{ color: "hsl(var(--foreground))", letterSpacing: "0.22em" }}
       >
         {eyebrow ?? t("faq.eyebrow")}
       </p>

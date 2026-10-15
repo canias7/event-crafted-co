@@ -105,7 +105,7 @@ export default function ResetPasswordPage() {
     <Link
       to="/login"
       className="pb-px font-medium"
-      style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
+      style={{ borderBottom: "0.5px solid currentColor", color: "hsl(var(--foreground))" }}
     >
       {t("shared.back_to_sign_in")}
     </Link>
@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
             type="button"
             onClick={() => setHandOffToApp(false)}
             className="self-center pb-px font-medium"
-            style={{ borderBottom: "0.5px solid currentColor", color: "#f4f1ea" }}
+            style={{ borderBottom: "0.5px solid currentColor", color: "hsl(var(--foreground))" }}
           >
             {t("reset.app.use_browser")}
           </button>
@@ -168,14 +168,14 @@ export default function ResetPasswordPage() {
           <div
             className="rounded-xl"
             style={{
-              background: "rgba(220,38,38,0.06)",
-              border: "0.5px solid rgba(220,38,38,0.3)",
+              background: "hsl(var(--destructive) / 0.08)",
+              border: "1px solid hsl(var(--destructive) / 0.3)",
               padding: "16px 18px",
             }}
           >
             <p
               className="leading-relaxed"
-              style={{ fontSize: "14px", color: "#f4f1ea" }}
+              style={{ fontSize: "14px", color: "hsl(var(--foreground))" }}
             >
               {t("reset.form.invalid_link")}
             </p>
@@ -205,6 +205,9 @@ export default function ResetPasswordPage() {
                 id="new-password"
                 className="auth-input pr-10"
                 type={showPassword ? "text" : "password"}
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
@@ -255,6 +258,9 @@ export default function ResetPasswordPage() {
               id="confirm"
               className="auth-input"
               type={showPassword ? "text" : "password"}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               minLength={8}

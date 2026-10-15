@@ -94,7 +94,7 @@ export function ListingPicker({
             type="button"
             className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition-colors"
             style={{
-              background: "#ffffff",
+              background: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
             }}
           >
@@ -102,8 +102,8 @@ export function ListingPicker({
               <span
                 className="w-9 h-9 rounded-full shrink-0 overflow-hidden inline-flex items-center justify-center text-xs font-medium"
                 style={{
-                  background: "rgba(255,255,255,0.08)",
-                  color: "#f4f1ea",
+                  background: "hsl(var(--muted))",
+                  color: "hsl(var(--foreground))",
                 }}
               >
                 {selected?.logo_url ? (

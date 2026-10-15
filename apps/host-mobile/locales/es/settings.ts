@@ -1,0 +1,38 @@
+export default {
+  title: "Configuración de la cuenta",
+  sections: {
+    profile: "Perfil",
+    notifications: "Notificaciones",
+    help: "Ayuda y legal",
+    session: "Sesión",
+    danger: "Zona de peligro",
+  },
+  displayName: "Nombre visible",
+  namePlaceholder: "Tu nombre",
+  email: "Correo",
+  emailHint: "Aún no se puede cambiar el correo. Escríbenos si necesitas cambiar el correo de la cuenta.",
+  save: "Guardar",
+  nameRequired: "El nombre visible es obligatorio",
+  saveError: "No se pudo guardar",
+  savedTitle: "Guardado",
+  savedBody: "Tu nombre visible se actualizó.",
+  replyEmail: {
+    title: "Respuestas de proveedores por correo",
+    hint: "Recibe un correo cuando un proveedor responda a tu consulta y aún no la hayas leído.",
+  },
+  links: {
+    help: "Ayuda y preguntas frecuentes",
+    terms: "Términos del servicio",
+    privacy: "Política de privacidad",
+  },
+  signOut: "Cerrar sesión",
+  deleteAccount: "Eliminar cuenta",
+  submitting: "Enviando…",
+  deleteConfirm: {
+    title: "¿Eliminar la cuenta?",
+    body: "Al eliminarla, tu cuenta se cierra ahora y se cierra tu sesión. Cualquier plan activo se cancela de inmediato, sin reembolso por el resto del periodo de facturación actual. Todo, incluidas tus consultas, mensajes y proveedores guardados, se elimina para siempre después de 30 días. Inicia sesión antes de ese plazo para recuperarla.",
+    cancel: "Cancelar",
+    confirm: "Eliminar",
+  },
+  deleteError: "No se pudo eliminar la cuenta",
+};
