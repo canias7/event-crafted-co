@@ -75,7 +75,7 @@
         },
         "bookkeeping": {
           "q": "¿Cómo registro el dinero que me pagaron fuera de Vendora y mis gastos?",
-          "a": "En tu panel de proveedor, abre Estudio web → Resumen. En el gráfico de Ingresos, elige \"Registrar un pago\" para anotar efectivo, Zelle, un cheque o cualquier pago que no pasó por Vendora. En la tarjeta de Gastos operativos, elige \"Registrar un gasto\". Ambos cuentan en tus ingresos y tu flujo de caja, y solo tú puedes verlos. Cambia el gráfico entre 30 días y 12 meses para ver el panorama completo."
+          "a": "En tu panel de proveedor, abre Estudio web → Resumen. En el gráfico de Ingresos, elige \"Registrar un pago\" para anotar efectivo, Zelle, un cheque o cualquier pago que no pasó por Vendora. En la tarjeta de Gastos operativos, elige \"Registrar un gasto\". Ambos cuentan en tus ingresos y tu flujo de caja, y solo tú puedes verlos. Usa el selector de periodo arriba en Resumen para elegir cualquier fecha y agrupar el gráfico por día, semana o mes."
         }
       }
     },
