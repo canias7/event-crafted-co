@@ -6,11 +6,11 @@
   },
   "recent": {
     "title": "Actividad reciente",
-    "subtitle": "Últimas facturas pagadas de todos los anuncios de tu cuenta",
+    "subtitle": "Pagos más recientes de todos los anuncios de la cuenta",
     "view_all": "Ver todo →",
-    "empty": "Aún no hay facturas pagadas. Cuando tus clientes paguen, aparecerán aquí.",
+    "empty": "Aún no hay pagos. Aquí aparecen las facturas pagadas y los pagos que registres.",
     "customer": "Cliente",
-    "invoice": "Factura",
+    "invoice": "Factura / método",
     "date": "Fecha",
     "amount": "Monto"
   },
@@ -37,8 +37,14 @@
   },
   "revenue": {
     "title": "Ingresos · últimos 30 días",
-    "subtitle": "Totales diarios de facturas pagadas",
-    "empty": "No hay facturas pagadas en los últimos 30 días"
+    "subtitle": "Facturas pagadas y pagos que registraste",
+    "empty": "Sin ingresos en los últimos 30 días",
+    "title_year": "Ingresos · últimos 12 meses",
+    "empty_year": "Sin ingresos en los últimos 12 meses",
+    "range_label": "Periodo",
+    "range_30d": "30 días",
+    "range_12m": "12 meses",
+    "record": "+ Registrar un pago"
   },
   "leads": {
     "title": "Consultas",
@@ -222,6 +228,34 @@
         "summary": "Hora del cóctel, cena servida a la mesa y estación de postres, con degustación incluida al reservar.",
         "content": "# Propuesta de banquete — [Nombre del evento]\n\nGracias por considerarnos para el [Fecha del evento]. Según lo que platicamos, este es el menú que recomendamos para tu [tipo de evento] de [Número de invitados] invitados.\n\n## Hora del cóctel\n- 4 bocadillos a elegir, servidos por meseros\n- Mesa de carnes frías y quesos\n- Barra libre (cerveza, vino, cóctel de la casa)\n\n## Cena servida a la mesa\n- Ensalada de temporada a elegir\n- Dos opciones de plato fuerte (una vegetariana)\n- Guarniciones al centro para compartir\n- Servicio del pastel de bodas (pastel por parte del cliente)\n\n## Postre\n- Estación de postres de medianoche\n- Barra de café, té y espresso\n\n## Servicio\n- Montaje y desmontaje\n- 5 meseros durante 6 horas\n- 2 bartenders\n- Toda la vajilla, mantelería y cristalería\n\n## Inversión\n- Comida por invitado: $[Monto] × [Número de invitados] = $[Subtotal]\n- Paquete de bar: $[Monto]\n- Servicio y renta de equipo: $[Monto]\n- **Subtotal: $[Monto]**\n- Impuestos y cargo por servicio: $[Monto]\n- **Total: $[Monto]**\n\n## Próximos pasos\n- Agenda una degustación (incluida con la reserva)\n- 25% de anticipo para asegurar la fecha\n- Menú final confirmado 30 días antes del evento\n\n[Tu nombre]"
       }
+    }
+  },
+  "outside": {
+    "title": "Registrar un pago",
+    "description": "¿Te pagaron fuera de Vendora, en efectivo, por Zelle o con cheque? Regístralo aquí para que tus ingresos estén completos. Solo tú puedes verlos.",
+    "amount": "Monto ($)",
+    "amount_invalid": "Ingresa un monto, como 250 o 1,250.50.",
+    "date": "Fecha de pago",
+    "method": "Cómo te pagaron",
+    "client": "Cliente (opcional)",
+    "client_placeholder": "Quién te pagó",
+    "note": "Nota (opcional)",
+    "note_placeholder": "Por qué fue el pago",
+    "save": "Guardar pago",
+    "saved": "Se registró {{amount}}.",
+    "save_failed": "No se pudo guardar el pago. Inténtalo de nuevo.",
+    "recorded": "Pagos registrados",
+    "none": "Todavía no registraste nada.",
+    "delete": "Eliminar pago",
+    "delete_failed": "No se pudo eliminar el pago. Inténtalo de nuevo.",
+    "methods": {
+      "cash": "Efectivo",
+      "zelle": "Zelle",
+      "check": "Cheque",
+      "venmo": "Venmo",
+      "bank_transfer": "Transferencia bancaria",
+      "card": "Tarjeta (fuera de Vendora)",
+      "other": "Otro"
     }
   }
 }
