@@ -26,3 +26,5 @@
 20261015120000_outside_payments_and_yearly_revenue.sql
 # Vendor Overview: any date range (presets or custom) grouped by day / week / month.
 20261015180000_vendor_overview_range.sql
+# Blocked-date titles private: anon/authenticated can't select vendor_unavailable_dates.reason (read via get_vendor_block_reasons).
+20261014120000_private_block_titles.sql
