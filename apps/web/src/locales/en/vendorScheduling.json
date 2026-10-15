@@ -1,13 +1,34 @@
 {
-  "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  "days": [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ],
   "time": {
     "am": "AM",
-    "pm": "PM"
+    "pm": "PM",
+    "start": "Start time",
+    "end": "End time",
+    "custom": "Custom time…",
+    "list": "Use the list"
   },
   "duration": {
     "minutes": "{{minutes}} min",
     "hours_one": "{{count}} hr",
-    "hours_other": "{{count}} hrs"
+    "hours_other": "{{count}} hrs",
+    "allDay": "All day",
+    "custom": "Custom length…",
+    "label": "Length",
+    "hoursField": "Hours",
+    "minutesField": "Minutes",
+    "hrShort": "hr",
+    "minShort": "min",
+    "hm": "{{h}} hr {{m}} min",
+    "invalid": "Enter a length between 5 minutes and 24 hours."
   },
   "buffers": {
     "none": "None",
@@ -56,7 +77,8 @@
   "hours": {
     "title": "Your working hours",
     "body": "When can appointments happen?",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "endBeforeStart": "Ends before it starts"
   },
   "rules": {
     "title": "Booking rules",

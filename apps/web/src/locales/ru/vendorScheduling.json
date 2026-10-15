@@ -10,14 +10,27 @@
   ],
   "time": {
     "am": "AM",
-    "pm": "PM"
+    "pm": "PM",
+    "start": "Начало",
+    "end": "Конец",
+    "custom": "Своё время…",
+    "list": "Список"
   },
   "duration": {
     "minutes": "{{minutes}} мин",
     "hours_one": "{{count}} ч",
     "hours_few": "{{count}} ч",
     "hours_many": "{{count}} ч",
-    "hours_other": "{{count}} ч"
+    "hours_other": "{{count}} ч",
+    "allDay": "Весь день",
+    "custom": "Своя длительность…",
+    "label": "Длительность",
+    "hoursField": "Часы",
+    "minutesField": "Минуты",
+    "hrShort": "ч",
+    "minShort": "мин",
+    "hm": "{{h}} ч {{m}} мин",
+    "invalid": "Укажите длительность от 5 минут до 24 часов."
   },
   "buffers": {
     "none": "Без перерыва",
@@ -66,7 +79,8 @@
   "hours": {
     "title": "Ваши часы работы",
     "body": "Когда возможны встречи?",
-    "unavailable": "Выходной"
+    "unavailable": "Выходной",
+    "endBeforeStart": "Конец раньше начала"
   },
   "rules": {
     "title": "Правила бронирования",

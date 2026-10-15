@@ -72,7 +72,26 @@ const SERIF_ITALIC = "LibreBaskerville-Italic";
 function dayLabel(dow: number, locale: string): string {
   return new Date(2023, 0, 1 + dow).toLocaleDateString(locale, { weekday: "short" });
 }
-const DURATIONS = [15, 30, 45, 60, 90, 120];
+const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 480];
+// "All day" is stored as 24 hours. Anything else between 5 minutes and
+// 24 hours can be typed in (owner's call, Oct 2026: some appointments
+// take all day).
+const ALL_DAY = 1440;
+const MIN_DURATION = 5;
+
+// "45 min", "2 hrs", "1 hr 30 min", "All day" (typeForm strings).
+function durationText(
+  minutes: number,
+  t: ReturnType<typeof useT>["t"],
+  locale: string,
+): string {
+  if (minutes >= ALL_DAY) return t("typeForm.allDay");
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return t("typeForm.durMin", { n: m });
+  if (m === 0) return t("typeForm.durHr", { count: h, n: new Intl.NumberFormat(locale).format(h) });
+  return t("typeForm.durHM", { h, m });
+}
 // Labels: scheduling.rules.buffers.<key> / notices.<key>.
 const BUFFERS: { key: string; v: number }[] = [
   { key: "none", v: 0 },
@@ -104,6 +123,35 @@ function timeLabel(hhmm: string, locale: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// Moves an "HH:MM" by `delta` minutes, wrapping around midnight.
+function stepTime(hhmm: string, delta: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const mins = (((h * 60 + m + delta) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+}
+
+function StepButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={a11y}
+      hitSlop={6}
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: BORDER,
+        backgroundColor: CARD,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ fontFamily: SERIF_BOLD, fontSize: 18, color: INK }}>{label}</Text>
+    </Pressable>
+  );
 }
 
 interface DayHours {
@@ -191,6 +239,14 @@ export default function SchedulingScreen() {
 
   // time picker modal target: [dow, "start" | "end"]
   const [timeTarget, setTimeTarget] = useState<[string, "start" | "end"] | null>(null);
+  // The custom-time stepper starts at the field's current time.
+  const [customTime, setCustomTime] = useState("09:00");
+  useEffect(() => {
+    if (!timeTarget) return;
+    const [key, which] = timeTarget;
+    setCustomTime(hours[key]?.[which] ?? (which === "start" ? "09:00" : "17:00"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeTarget]);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -394,7 +450,7 @@ export default function SchedulingScreen() {
                   {!type.active ? <Text style={{ fontFamily: SERIF, fontSize: 12, color: INK_DIM }}>{t("types.off")}</Text> : null}
                 </Text>
                 <Text style={{ fontFamily: SERIF, marginTop: 1, fontSize: 13, color: INK_DIM }}>
-                  {t("types.minutes", { count: type.duration_minutes })}
+                  {durationText(type.duration_minutes, t, locale)}
                 </Text>
               </View>
               <Feather name="edit-2" size={15} color={INK_DIM} />
@@ -782,6 +838,50 @@ export default function SchedulingScreen() {
               {timeTarget?.[1] === "start" ? t("timePicker.start") : t("timePicker.end")}
             </Text>
             <ScrollView contentContainerStyle={{ padding: 24 }}>
+              {/* Custom time (owner's call, Oct 2026): any exact time in
+                  5-minute steps, for hours the half-hour list doesn't have. */}
+              {timeTarget ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 16,
+                    paddingBottom: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: BORDER,
+                  }}
+                >
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: INK, flex: 1 }}>
+                    {t("timePicker.custom")}
+                  </Text>
+                  <StepButton label="−" a11y={t("timePicker.earlier")} onPress={() => setCustomTime((v) => stepTime(v, -5))} />
+                  <Text style={{ fontFamily: SERIF_BOLD, fontSize: 15, color: INK, minWidth: 84, textAlign: "center" }}>
+                    {timeLabel(customTime, locale)}
+                  </Text>
+                  <StepButton label="+" a11y={t("timePicker.later")} onPress={() => setCustomTime((v) => stepTime(v, 5))} />
+                  <Pressable
+                    onPress={() => {
+                      const [key, which] = timeTarget;
+                      setHours((h) => ({
+                        ...h,
+                        [key]: { ...(h[key] ?? { on: true, start: "09:00", end: "17:00" }), [which]: customTime },
+                      }));
+                      setTimeTarget(null);
+                    }}
+                    style={{
+                      height: 36,
+                      paddingHorizontal: 14,
+                      borderRadius: 18,
+                      backgroundColor: GOLD,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: ON_GOLD }}>{t("timePicker.use")}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {TIME_OPTIONS.map((opt) => (
                   <Pressable
@@ -1080,6 +1180,17 @@ function TypeForm({
   const { t, locale } = useT("scheduling");
   const [name, setName] = useState(type?.name ?? "");
   const [duration, setDuration] = useState(type?.duration_minutes ?? 60);
+  // Custom length: typed hours and minutes.
+  const [custom, setCustom] = useState(
+    () => !!type && !DURATIONS.includes(type.duration_minutes) && type.duration_minutes !== ALL_DAY,
+  );
+  const [hrs, setHrs] = useState(String(Math.floor((type?.duration_minutes ?? 60) / 60)));
+  const [mins, setMins] = useState(String((type?.duration_minutes ?? 60) % 60));
+  const typed = (h: string, m: string) => {
+    setHrs(h);
+    setMins(m);
+    setDuration((parseInt(h, 10) || 0) * 60 + (parseInt(m, 10) || 0));
+  };
   const [active, setActive] = useState(type?.active ?? true);
   const [saving, setSaving] = useState(false);
 
@@ -1087,6 +1198,10 @@ function TypeForm({
     if (saving) return;
     if (!name.trim()) {
       dialog.show({ icon: "list", title: t("typeForm.nameFirstTitle"), message: t("typeForm.nameFirstBody") });
+      return;
+    }
+    if (!(duration >= MIN_DURATION && duration <= ALL_DAY)) {
+      dialog.show({ icon: "clock", title: t("typeForm.lengthTitle"), message: t("typeForm.lengthBody") });
       return;
     }
     setSaving(true);
@@ -1150,12 +1265,15 @@ function TypeForm({
           </Field>
           <Field label={t("typeForm.length")}>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {DURATIONS.map((d) => {
-                const on = duration === d;
+              {[...DURATIONS, ALL_DAY].map((d) => {
+                const on = !custom && duration === d;
                 return (
                   <Pressable
                     key={d}
-                    onPress={() => setDuration(d)}
+                    onPress={() => {
+                      setCustom(false);
+                      setDuration(d);
+                    }}
                     style={{
                       paddingHorizontal: 16,
                       paddingVertical: 10,
@@ -1166,14 +1284,54 @@ function TypeForm({
                     }}
                   >
                     <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: on ? ON_SELECTED : INK }}>
-                      {d >= 60
-                        ? t("typeForm.durHr", { count: d / 60, n: new Intl.NumberFormat(locale).format(d / 60) })
-                        : t("typeForm.durMin", { n: d })}
+                      {durationText(d, t, locale)}
                     </Text>
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={() => {
+                  setCustom(true);
+                  typed(String(Math.floor(duration / 60)), String(duration % 60));
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: custom ? SELECTED : CARD,
+                  borderWidth: 1,
+                  borderColor: custom ? SELECTED : BORDER,
+                }}
+              >
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: custom ? ON_SELECTED : INK }}>
+                  {t("typeForm.custom")}
+                </Text>
+              </Pressable>
             </View>
+            {custom ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 }}>
+                <View style={{ width: 72 }}>
+                  <Input
+                    value={hrs}
+                    onChangeText={(v) => typed(v.replace(/[^0-9]/g, "").slice(0, 2), mins)}
+                    keyboardType="number-pad"
+                    accessibilityLabel={t("typeForm.hours")}
+                    style={{ textAlign: "center" }}
+                  />
+                </View>
+                <Text style={{ fontFamily: SERIF, fontSize: 14, color: INK }}>{t("typeForm.hrShort")}</Text>
+                <View style={{ width: 72 }}>
+                  <Input
+                    value={mins}
+                    onChangeText={(v) => typed(hrs, v.replace(/[^0-9]/g, "").slice(0, 2))}
+                    keyboardType="number-pad"
+                    accessibilityLabel={t("typeForm.minutes")}
+                    style={{ textAlign: "center" }}
+                  />
+                </View>
+                <Text style={{ fontFamily: SERIF, fontSize: 14, color: INK }}>{t("typeForm.minShort")}</Text>
+              </View>
+            ) : null}
           </Field>
           <View
             style={{
