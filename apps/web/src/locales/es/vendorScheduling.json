@@ -1,8 +1,20 @@
 {
-  "days": ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+  "days": [
+    "Domingo",
+    "Lunes",
+    "Martes",
+    "Miércoles",
+    "Jueves",
+    "Viernes",
+    "Sábado"
+  ],
   "time": {
     "am": "a.m.",
-    "pm": "p.m."
+    "pm": "p.m.",
+    "start": "Hora de inicio",
+    "end": "Hora de fin",
+    "custom": "Hora personalizada…",
+    "list": "Usar la lista"
   },
   "duration": {
     "minutes": "{{minutes}} min",
@@ -56,7 +68,8 @@
   "hours": {
     "title": "Tu horario de trabajo",
     "body": "¿Cuándo pueden ser las citas?",
-    "unavailable": "No disponible"
+    "unavailable": "No disponible",
+    "endBeforeStart": "Termina antes de empezar"
   },
   "rules": {
     "title": "Reglas de reserva",

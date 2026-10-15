@@ -399,34 +399,27 @@ export default function VendorSchedulingPage() {
                               {dayLabels[d]}
                             </label>
                             {day.on ? (
-                              <span className="flex items-center gap-2 text-sm">
-                                <select
+                              <span className="flex flex-wrap items-center gap-2 text-sm">
+                                <TimeField
                                   value={day.start}
-                                  onChange={(e) =>
-                                    setHours((h) => ({ ...h, [key]: { ...day, start: e.target.value } }))
+                                  label={t("time.start")}
+                                  onChange={(v) =>
+                                    setHours((h) => ({ ...h, [key]: { ...(h[key] ?? day), start: v } }))
                                   }
-                                  className="rounded-lg border border-border bg-background px-2 py-1 text-sm"
-                                >
-                                  {TIME_OPTIONS.map((hhmm) => (
-                                    <option key={hhmm} value={hhmm}>
-                                      {timeLabel(hhmm, t("time.am"), t("time.pm"))}
-                                    </option>
-                                  ))}
-                                </select>
+                                />
                                 –
-                                <select
+                                <TimeField
                                   value={day.end}
-                                  onChange={(e) =>
-                                    setHours((h) => ({ ...h, [key]: { ...day, end: e.target.value } }))
+                                  label={t("time.end")}
+                                  onChange={(v) =>
+                                    setHours((h) => ({ ...h, [key]: { ...(h[key] ?? day), end: v } }))
                                   }
-                                  className="rounded-lg border border-border bg-background px-2 py-1 text-sm"
-                                >
-                                  {TIME_OPTIONS.map((hhmm) => (
-                                    <option key={hhmm} value={hhmm}>
-                                      {timeLabel(hhmm, t("time.am"), t("time.pm"))}
-                                    </option>
-                                  ))}
-                                </select>
+                                />
+                                {day.end <= day.start ? (
+                                  <span className="w-full text-xs text-destructive sm:w-auto">
+                                    {t("hours.endBeforeStart")}
+                                  </span>
+                                ) : null}
                               </span>
                             ) : (
                               <span className="text-sm text-muted-foreground">{t("hours.unavailable")}</span>
@@ -643,6 +636,71 @@ export default function VendorSchedulingPage() {
       </main>
       <MobileNav items={navItems} />
     </div>
+  );
+}
+
+// A working-hours time: the half-hour list, plus "Custom time…" for any
+// exact minute (owner's call, Oct 2026). A saved time that isn't on the
+// list opens straight in the custom field.
+function TimeField({
+  value,
+  label,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useTranslation("vendorScheduling");
+  const [custom, setCustom] = useState(() => !TIME_OPTIONS.includes(value));
+  const cls = "h-9 rounded-lg border border-border bg-background px-2 text-sm";
+  if (custom) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <input
+          type="time"
+          step={60}
+          value={value}
+          aria-label={label}
+          autoFocus={TIME_OPTIONS.includes(value)}
+          onChange={(e) => {
+            if (/^\d{2}:\d{2}$/.test(e.target.value)) onChange(e.target.value);
+          }}
+          className={cls}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            // Back to the list: snap to the nearest half hour on it.
+            const [h, m] = value.split(":").map(Number);
+            const mins = Math.min(22 * 60, Math.max(6 * 60, Math.round((h * 60 + m) / 30) * 30));
+            onChange(`${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`);
+            setCustom(false);
+          }}
+          className="text-xs font-bold text-foreground hover:text-accent transition-colors"
+        >
+          {t("time.list")}
+        </button>
+      </span>
+    );
+  }
+  return (
+    <select
+      value={value}
+      aria-label={label}
+      onChange={(e) => {
+        if (e.target.value === "custom") setCustom(true);
+        else onChange(e.target.value);
+      }}
+      className={cls}
+    >
+      {TIME_OPTIONS.map((hhmm) => (
+        <option key={hhmm} value={hhmm}>
+          {timeLabel(hhmm, t("time.am"), t("time.pm"))}
+        </option>
+      ))}
+      <option value="custom">{t("time.custom")}</option>
+    </select>
   );
 }
 

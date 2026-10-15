@@ -105,6 +105,10 @@ export default {
   timePicker: {
     start: "Начало",
     end: "Окончание",
+    custom: "Точное время",
+    use: "Выбрать",
+    earlier: "На 5 минут раньше",
+    later: "На 5 минут позже",
   },
   typeForm: {
     nameFirstTitle: "Сначала укажите название",

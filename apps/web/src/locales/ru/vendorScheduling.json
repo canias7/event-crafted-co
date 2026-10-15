@@ -10,7 +10,11 @@
   ],
   "time": {
     "am": "AM",
-    "pm": "PM"
+    "pm": "PM",
+    "start": "Начало",
+    "end": "Конец",
+    "custom": "Своё время…",
+    "list": "Список"
   },
   "duration": {
     "minutes": "{{minutes}} мин",
@@ -66,7 +70,8 @@
   "hours": {
     "title": "Ваши часы работы",
     "body": "Когда возможны встречи?",
-    "unavailable": "Выходной"
+    "unavailable": "Выходной",
+    "endBeforeStart": "Конец раньше начала"
   },
   "rules": {
     "title": "Правила бронирования",

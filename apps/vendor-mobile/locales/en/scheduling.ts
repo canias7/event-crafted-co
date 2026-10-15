@@ -99,6 +99,10 @@ export default {
   timePicker: {
     start: "Start time",
     end: "End time",
+    custom: "Exact time",
+    use: "Use",
+    earlier: "5 minutes earlier",
+    later: "5 minutes later",
   },
   typeForm: {
     nameFirstTitle: "Name it first",
