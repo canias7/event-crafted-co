@@ -42,6 +42,23 @@ export interface NavItem {
    * Workspace, both on /vendor/my-vendora) highlight independently.
    */
   exact?: boolean;
+  /**
+   * Pro-only feature (Verification, Vendora CRM): the menus leave the
+   * row out unless the vendor is on Pro or Premium (useIsProVendor).
+   */
+  requiresPro?: boolean;
+}
+
+// The menu without the Pro-only rows, for vendors who don't have them.
+export function navForPlan(items: NavItem[], isPro: boolean): NavItem[] {
+  if (isPro) return items;
+  return items
+    .filter((item) => !item.requiresPro)
+    .map((item) =>
+      item.children
+        ? { ...item, children: item.children.filter((c) => !c.requiresPro) }
+        : item,
+    );
 }
 
 // Sidebar layout philosophy: keep the main nav at ≤10 items so the
@@ -84,9 +101,9 @@ export const vendorNavItems: NavItem[] = [
     children: [
       { labelKey: "sidebar.vendor.edit_profile", path: "/vendor/edit-profile", icon: Pencil },
       { labelKey: "sidebar.vendor.subscription", path: "/vendor/subscription", icon: Crown },
-      { labelKey: "sidebar.vendor.verification", path: "/vendor/verification", icon: BadgeCheck },
-      { labelKey: "sidebar.vendor.scheduling", path: "/vendor/scheduling", icon: Zap },
-      { labelKey: "sidebar.vendor.crm", path: "/vendor/crm", icon: Users },
+      { labelKey: "sidebar.vendor.verification", path: "/vendor/verification", icon: BadgeCheck, requiresPro: true },
+      { labelKey: "sidebar.vendor.scheduling", path: "/vendor/scheduling", icon: Zap, requiresPro: true },
+      { labelKey: "sidebar.vendor.crm", path: "/vendor/crm", icon: Users, requiresPro: true },
       { labelKey: "sidebar.vendor.templates", path: "/vendor/templates", icon: FileText },
       { labelKey: "sidebar.vendor.team", path: "/vendor/team", icon: Sparkles },
       { labelKey: "sidebar.bottom.settings", path: "/settings", icon: Settings },
