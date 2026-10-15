@@ -31,6 +31,7 @@ import en_logoCropperModal from "./en/logoCropperModal";
 import en_mediaListing from "./en/mediaListing";
 import en_more from "./en/more";
 import en_notificationsBell from "./en/notificationsBell";
+import en_overview from "./en/overview";
 import en_partnerThread from "./en/partnerThread";
 import en_password from "./en/password";
 import en_passwordMeter from "./en/passwordMeter";
@@ -80,6 +81,7 @@ import es_logoCropperModal from "./es/logoCropperModal";
 import es_mediaListing from "./es/mediaListing";
 import es_more from "./es/more";
 import es_notificationsBell from "./es/notificationsBell";
+import es_overview from "./es/overview";
 import es_partnerThread from "./es/partnerThread";
 import es_password from "./es/password";
 import es_passwordMeter from "./es/passwordMeter";
@@ -129,6 +131,7 @@ import ru_logoCropperModal from "./ru/logoCropperModal";
 import ru_mediaListing from "./ru/mediaListing";
 import ru_more from "./ru/more";
 import ru_notificationsBell from "./ru/notificationsBell";
+import ru_overview from "./ru/overview";
 import ru_partnerThread from "./ru/partnerThread";
 import ru_password from "./ru/password";
 import ru_passwordMeter from "./ru/passwordMeter";
@@ -181,6 +184,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     mediaListing: en_mediaListing as Tree,
     more: en_more as Tree,
     notificationsBell: en_notificationsBell as Tree,
+    overview: en_overview as Tree,
     partnerThread: en_partnerThread as Tree,
     password: en_password as Tree,
     passwordMeter: en_passwordMeter as Tree,
@@ -232,6 +236,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     mediaListing: es_mediaListing as Tree,
     more: es_more as Tree,
     notificationsBell: es_notificationsBell as Tree,
+    overview: es_overview as Tree,
     partnerThread: es_partnerThread as Tree,
     password: es_password as Tree,
     passwordMeter: es_passwordMeter as Tree,
@@ -283,6 +288,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     mediaListing: ru_mediaListing as Tree,
     more: ru_more as Tree,
     notificationsBell: ru_notificationsBell as Tree,
+    overview: ru_overview as Tree,
     partnerThread: ru_partnerThread as Tree,
     password: ru_password as Tree,
     passwordMeter: ru_passwordMeter as Tree,

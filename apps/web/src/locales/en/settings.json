@@ -85,5 +85,9 @@
         "subtitle": "Product news, tips, and occasional offers (opt-in)"
       }
     }
+  },
+  "language": {
+    "title": "Language",
+    "subtitle": "The language the website is shown in"
   }
 }
