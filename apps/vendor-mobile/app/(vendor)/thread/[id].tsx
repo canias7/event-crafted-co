@@ -31,6 +31,7 @@ import { SHADOW } from "@/lib/ui";
 import { C, IS_DARK } from "@/lib/theme";
 import { compressForUpload } from "@/lib/imageManipulation";
 import { i18n, intlLocale, useT } from "@/lib/i18n";
+import { TemplateSheet } from "@/components/TemplateSheet";
 
 // Cross-platform attachment shape. Mobile-originated attachments
 // carry { url, kind }; web-originated attachments carry the storage
@@ -196,6 +197,9 @@ export default function ThreadScreen() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  // The listing this chat belongs to, for its saved reply templates.
+  const [vendorId, setVendorId] = useState<string | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [muted, setMuted] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -374,11 +378,12 @@ export default function ThreadScreen() {
     const { data } = await (supabase as any)
       .from("direct_threads")
       .select(
-        "host_id, host:profiles!direct_threads_host_id_fkey(display_name)",
+        "host_id, vendor_id, host:profiles!direct_threads_host_id_fkey(display_name)",
       )
       .eq("id", threadId)
       .maybeSingle();
     if (!data) return;
+    setVendorId(data.vendor_id ?? null);
     const otherUserId: string | null = data.host_id ?? null;
     let isActive = false;
     if (otherUserId) {
@@ -560,9 +565,22 @@ export default function ThreadScreen() {
             sending={sending}
             onAttach={onAttach}
             onEmoji={() => setEmojiOpen(true)}
+            onTemplates={vendorId ? () => setTemplatesOpen(true) : undefined}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <TemplateSheet
+        visible={templatesOpen}
+        vendorId={vendorId}
+        onClose={() => setTemplatesOpen(false)}
+        onPick={(body) => {
+          // Into the message box to edit before sending; on a new line
+          // when something is already typed.
+          setDraft((v) => (v.trim() ? `${v.replace(/\s+$/, "")}\n\n${body}` : body));
+          setTemplatesOpen(false);
+        }}
+      />
 
       <EmojiPickerModal
         visible={emojiOpen}
@@ -1024,6 +1042,7 @@ function Composer({
   sending,
   onAttach,
   onEmoji,
+  onTemplates,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -1031,11 +1050,34 @@ function Composer({
   sending: boolean;
   onAttach: () => void;
   onEmoji: () => void;
+  onTemplates?: () => void;
 }) {
   const { t } = useT("thread");
+  const tt = useT("templates").t;
   const enabled = value.trim().length > 0 && !sending;
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+      {onTemplates ? (
+        <Pressable
+          onPress={onTemplates}
+          hitSlop={4}
+          style={{
+            alignSelf: "flex-start",
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: CARD,
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 999,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            marginBottom: 8,
+          }}
+        >
+          <Feather name="file-text" size={14} color={C.accentText} />
+          <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: INK, marginLeft: 6 }}>{tt("picker.button")}</Text>
+        </Pressable>
+      ) : null}
       <View
         style={{
           flexDirection: "row",

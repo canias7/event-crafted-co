@@ -46,6 +46,7 @@ import en_setupChecklist from "./en/setupChecklist";
 import en_signup from "./en/signup";
 import en_subscription from "./en/subscription";
 import en_team from "./en/team";
+import en_templates from "./en/templates";
 import en_thread from "./en/thread";
 import en_updates from "./en/updates";
 import en_vendorDetail from "./en/vendorDetail";
@@ -96,6 +97,7 @@ import es_setupChecklist from "./es/setupChecklist";
 import es_signup from "./es/signup";
 import es_subscription from "./es/subscription";
 import es_team from "./es/team";
+import es_templates from "./es/templates";
 import es_thread from "./es/thread";
 import es_updates from "./es/updates";
 import es_vendorDetail from "./es/vendorDetail";
@@ -146,6 +148,7 @@ import ru_setupChecklist from "./ru/setupChecklist";
 import ru_signup from "./ru/signup";
 import ru_subscription from "./ru/subscription";
 import ru_team from "./ru/team";
+import ru_templates from "./ru/templates";
 import ru_thread from "./ru/thread";
 import ru_updates from "./ru/updates";
 import ru_vendorDetail from "./ru/vendorDetail";
@@ -199,6 +202,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     signup: en_signup as Tree,
     subscription: en_subscription as Tree,
     team: en_team as Tree,
+    templates: en_templates as Tree,
     thread: en_thread as Tree,
     updates: en_updates as Tree,
     vendorDetail: en_vendorDetail as Tree,
@@ -251,6 +255,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     signup: es_signup as Tree,
     subscription: es_subscription as Tree,
     team: es_team as Tree,
+    templates: es_templates as Tree,
     thread: es_thread as Tree,
     updates: es_updates as Tree,
     vendorDetail: es_vendorDetail as Tree,
@@ -303,6 +308,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     signup: ru_signup as Tree,
     subscription: ru_subscription as Tree,
     team: ru_team as Tree,
+    templates: ru_templates as Tree,
     thread: ru_thread as Tree,
     updates: ru_updates as Tree,
     vendorDetail: ru_vendorDetail as Tree,

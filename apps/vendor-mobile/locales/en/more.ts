@@ -20,6 +20,7 @@ export default {
     verification: { label: "Verification", body: "Get your verified badge" },
     scheduling: { label: "Smart Scheduling", body: "Hours, services, and automations" },
     crm: { label: "Vendora CRM", body: "Clients, notes, and follow-ups" },
+    templates: { label: "Templates", body: "Saved replies for your chats" },
     subscription: { label: "Subscription", body: "Plan, billing, and usage" },
     settings: { label: "Settings", body: "Account, password, and privacy" },
     updates: { label: "Upcoming updates", body: "What's new and what's next" },
