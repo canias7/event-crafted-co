@@ -36,21 +36,18 @@
     }
   },
   "revenue": {
-    "title": "Ingresos · últimos 30 días",
     "subtitle": "Facturas pagadas y pagos que registraste",
-    "empty": "Sin ingresos en los últimos 30 días",
-    "title_year": "Ingresos · últimos 12 meses",
-    "empty_year": "Sin ingresos en los últimos 12 meses",
-    "range_label": "Periodo",
-    "range_30d": "30 días",
-    "range_12m": "12 meses",
-    "record": "+ Registrar un pago"
+    "record": "+ Registrar un pago",
+    "title_period": "Ingresos · {{period}}",
+    "empty_period": "Sin ingresos en este periodo",
+    "week_of": "Semana del {{date}}",
+    "vs_previous": "Comparado con el periodo anterior de igual duración"
   },
   "leads": {
     "title": "Consultas",
-    "subtitle": "Consultas recibidas · últimos 30 días",
+    "subtitle": "Consultas recibidas · {{period}}",
     "total": "Total",
-    "empty": "No hay consultas en los últimos 30 días. Las nuevas consultas llegan aquí.",
+    "empty": "No hay consultas en este periodo. Aquí llegan las nuevas.",
     "new": "Nuevas",
     "active": "Activas",
     "won": "Ganadas",
@@ -61,9 +58,9 @@
   },
   "cashflow": {
     "title": "Flujo de caja",
-    "subtitle": "Entradas vs. salidas · últimos 30 días",
+    "subtitle": "Entradas y salidas · {{period}}",
     "net": "Neto",
-    "empty": "Sin entradas ni salidas de dinero en los últimos 30 días.",
+    "empty": "No hubo entradas ni salidas en este periodo.",
     "money_in": "Entradas",
     "money_out": "Salidas",
     "margin": "{{pct}}% de margen neto · {{amount}} gastados",
@@ -71,9 +68,9 @@
   },
   "expenses": {
     "title": "Gastos operativos",
-    "subtitle": "Últimos 30 días · por concepto",
+    "subtitle": "{{period}} · por concepto",
     "view_all": "Ver todo →",
-    "empty": "No hay gastos registrados en los últimos 30 días.",
+    "empty": "No hay gastos en este periodo.",
     "other": "Otros",
     "expense_count_one": "{{count}} gasto",
     "expense_count_other": "{{count}} gastos",
@@ -288,6 +285,28 @@
       "meals": "Comidas",
       "insurance": "Seguros",
       "other": "Otro"
+    }
+  },
+  "range": {
+    "label": "Periodo",
+    "group_by": "Agrupar por",
+    "apply": "Aplicar",
+    "pick_start": "Elige una fecha de inicio",
+    "too_long": "Elige un rango de hasta 3 años.",
+    "presets": {
+      "today": "Hoy",
+      "this_week": "Esta semana",
+      "this_month": "Este mes",
+      "last_30": "Últimos 30 días",
+      "last_90": "Últimos 90 días",
+      "this_year": "Este año",
+      "last_12m": "Últimos 12 meses",
+      "custom": "Fechas personalizadas"
+    },
+    "buckets": {
+      "day": "Día",
+      "week": "Semana",
+      "month": "Mes"
     }
   }
 }

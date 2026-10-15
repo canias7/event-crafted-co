@@ -75,7 +75,7 @@
         },
         "bookkeeping": {
           "q": "How do I track money I got paid outside Vendora, and my expenses?",
-          "a": "In your vendor dashboard, open Web studio → Overview. On the Revenue chart, choose \"Record a payment\" to log cash, Zelle, a check or any payment that didn't go through Vendora. On the Operating expenses card, choose \"Record an expense\". Both count toward your revenue and cash flow, and only you can see them. Switch the chart between 30 days and 12 months to see the bigger picture."
+          "a": "In your vendor dashboard, open Web studio → Overview. On the Revenue chart, choose \"Record a payment\" to log cash, Zelle, a check or any payment that didn't go through Vendora. On the Operating expenses card, choose \"Record an expense\". Both count toward your revenue and cash flow, and only you can see them. Use the period picker at the top of Overview to choose any dates, and group the chart by day, week or month."
         }
       }
     },

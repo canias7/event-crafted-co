@@ -36,21 +36,18 @@
     }
   },
   "revenue": {
-    "title": "Revenue · last 30 days",
     "subtitle": "Paid invoices and payments you recorded",
-    "empty": "No revenue in the last 30 days",
-    "title_year": "Revenue · last 12 months",
-    "empty_year": "No revenue in the last 12 months",
-    "range_label": "Time range",
-    "range_30d": "30 days",
-    "range_12m": "12 months",
-    "record": "+ Record a payment"
+    "record": "+ Record a payment",
+    "title_period": "Revenue · {{period}}",
+    "empty_period": "No revenue in this period",
+    "week_of": "Week of {{date}}",
+    "vs_previous": "Compared with the same-length period before"
   },
   "leads": {
     "title": "Inquiries",
-    "subtitle": "Inbound pipeline · last 30 days",
+    "subtitle": "Inbound pipeline · {{period}}",
     "total": "Total",
-    "empty": "No leads in the last 30 days. New inquiries land here.",
+    "empty": "No inquiries in this period. New inquiries land here.",
     "new": "New",
     "active": "Active",
     "won": "Won",
@@ -61,9 +58,9 @@
   },
   "cashflow": {
     "title": "Cash flow",
-    "subtitle": "Money in vs out · last 30 days",
+    "subtitle": "Money in vs out · {{period}}",
     "net": "Net",
-    "empty": "No money in or out in the last 30 days.",
+    "empty": "No money in or out in this period.",
     "money_in": "Money in",
     "money_out": "Money out",
     "margin": "{{pct}}% net margin · {{amount}} spent",
@@ -71,9 +68,9 @@
   },
   "expenses": {
     "title": "Operating expenses",
-    "subtitle": "Last 30 days · by item",
+    "subtitle": "{{period}} · by item",
     "view_all": "View all →",
-    "empty": "No expenses logged in the last 30 days.",
+    "empty": "No expenses in this period.",
     "other": "Other",
     "expense_count_one": "{{count}} expense",
     "expense_count_other": "{{count}} expenses",
@@ -288,6 +285,28 @@
       "meals": "Meals",
       "insurance": "Insurance",
       "other": "Other"
+    }
+  },
+  "range": {
+    "label": "Period",
+    "group_by": "Group by",
+    "apply": "Apply",
+    "pick_start": "Pick a start date",
+    "too_long": "Pick a range of up to 3 years.",
+    "presets": {
+      "today": "Today",
+      "this_week": "This week",
+      "this_month": "This month",
+      "last_30": "Last 30 days",
+      "last_90": "Last 90 days",
+      "this_year": "This year",
+      "last_12m": "Last 12 months",
+      "custom": "Custom dates"
+    },
+    "buckets": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
     }
   }
 }
