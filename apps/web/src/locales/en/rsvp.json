@@ -26,10 +26,28 @@
       "not_going": "Can't make it"
     },
     "sending": "Sending…",
-    "submit": "Send RSVP"
+    "submit": "Send RSVP",
+    "plusOnes": "Are you bringing anyone?",
+    "justMe": "Just me",
+    "plusN_one": "Me + {{count}} guest",
+    "plusN_other": "Me + {{count}} guests",
+    "meal": "Meal choice",
+    "dietary": "Dietary needs or allergies",
+    "dietaryPlaceholder": "e.g. vegetarian, no nuts",
+    "song": "Song request",
+    "songPlaceholder": "A song that gets you dancing"
   },
   "errors": {
     "nameRequired": "Please add your name",
-    "submit": "{{message}}"
+    "submit": "{{message}}",
+    "full": "Sorry, this event is full.",
+    "closed": "Sorry, replies for this event are closed."
+  },
+  "replyBy": "Please reply by {{date}}",
+  "spotsLeft_one": "{{count}} spot left",
+  "spotsLeft_other": "{{count}} spots left",
+  "closed": {
+    "title": "Replies are closed",
+    "body": "The reply-by date has passed. If you still need to reply, contact the host directly."
   }
 }
