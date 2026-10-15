@@ -15,6 +15,8 @@ import { vendorNavItems } from "@/data/navItems";
 import { type ListingOpt } from "@/components/vendor/ListingPicker";
 import { useRealtime } from "@/lib/realtime";
 import { intlLocale, moneyLocale, siteIsEnglish, siteLocaleOr } from "@/lib/intlLocale";
+import { OutsidePaymentsDialog, formatReceivedOn } from "@/components/vendor/OutsidePaymentsDialog";
+import { ExpensesDialog } from "@/components/vendor/ExpensesDialog";
 
 interface Balance {
   available_cents: number;
@@ -268,9 +270,20 @@ function OverviewTab({
   const [revenue30dPrev, setRevenue30dPrev] = useState<number>(0);
   // Daily revenue series for the last 30 days — drives the line chart.
   const [revenueSeries, setRevenueSeries] = useState<number[]>([]);
+  // Last 12 calendar months (this month last) + the total for the 12
+  // months before, for the chart's "12 months" view.
+  const [revenueMonthly, setRevenueMonthly] = useState<number[]>([]);
+  const [revenue12mPrev, setRevenue12mPrev] = useState<number>(0);
+  // "Record a payment" dialog (payments received outside Vendora); a
+  // save or delete bumps reloadKey so the cards refetch.
+  const [outsideOpen, setOutsideOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   // Recent paid invoices across the whole account (replaces the
   // single-listing Stripe transactions table that used to live here).
-  const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; invoice_number: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null }>>([]);
+  // Recent activity: paid invoices plus payments recorded outside
+  // Vendora, newest first. `label` is the invoice number or how it was paid.
+  const [recentInvoices, setRecentInvoices] = useState<Array<{ id: string; label: string; total_cents: number; paid_at: string; currency: string; bill_to_name: string | null; outside: boolean }>>([]);
   // Upcoming appointments across the whole account — confirmed and
   // proposed meetings scheduled from now on, soonest first.
   const [upcomingAppts, setUpcomingAppts] = useState<Array<{ id: string; kind: string; title: string | null; location: string | null; scheduled_at: string; status: string; host_name: string | null }>>([]);
@@ -284,12 +297,16 @@ function OverviewTab({
   const accountKey = accountVendorIds.join(",");
 
   useEffect(() => {
-    if (!userId || accountVendorIds.length === 0) {
+    // Recorded payments are account-level, so the Overview loads even
+    // before the vendor has a listing.
+    if (!userId) {
       setLeads({ new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses({ total: 0, count: 0, categoryCount: 0, topCategories: [] });
       setRevenue30d(0);
       setRevenue30dPrev(0);
       setRevenueSeries([]);
+      setRevenueMonthly([]);
+      setRevenue12mPrev(0);
       setRecentInvoices([]);
       setUpcomingAppts([]);
       setLoading(false);
@@ -307,25 +324,30 @@ function OverviewTab({
       // 10k rows of inquiries/expenses/invoices into the browser to reduce
       // them client-side. Recent paid invoices + upcoming appointments stay
       // small (≤5-row) client fetches since they render row-by-row.
+      const hasListings = accountVendorIds.length > 0;
+      const none = Promise.resolve({ data: [] as unknown[] });
       const [
         { data: analytics },
         { data: recentPaid },
         { data: upcomingApptRows },
+        { data: recentOutside },
       ] = await Promise.all([
         db.rpc("vendor_overview_analytics"),
         // Recent paid invoices across the whole account — replaces
         // the Stripe transactions feed for the Recent activity table.
-        db
-          .from("invoices")
-          .select("id, invoice_number, total_cents, paid_at, currency, bill_to_name")
-          .in("vendor_id", accountVendorIds)
-          .eq("status", "paid")
-          .order("paid_at", { ascending: false })
-          .limit(5),
+        hasListings
+          ? db
+              .from("invoices")
+              .select("id, invoice_number, total_cents, paid_at, currency, bill_to_name")
+              .in("vendor_id", accountVendorIds)
+              .eq("status", "paid")
+              .order("paid_at", { ascending: false })
+              .limit(5)
+          : none,
         // Upcoming appointments — confirmed (accepted) or still-proposed
         // meetings scheduled from now on, soonest first. Mirrors the
         // calendar's "upcoming" filter so the Overview agrees with it.
-        db
+        !hasListings ? none : db
           .from("appointments")
           .select(
             "id, kind, title, location, scheduled_at, status, host:profiles!appointments_host_id_fkey(display_name)",
@@ -334,6 +356,13 @@ function OverviewTab({
           .in("status", ["accepted", "proposed"])
           .gte("scheduled_at", now.toISOString())
           .order("scheduled_at", { ascending: true })
+          .limit(5),
+        // Payments the vendor recorded themselves (cash, Zelle…).
+        db
+          .from("vendor_outside_payments")
+          .select("id, amount_cents, received_on, method, client_name")
+          .order("received_on", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(5),
       ]);
       if (cancelled) return;
@@ -355,6 +384,9 @@ function OverviewTab({
         revenue30d?: number;
         revenue30dPrev?: number;
         revenueSeries?: number[];
+        revenue12m?: number;
+        revenue12mPrev?: number;
+        revenueMonthly?: number[];
       };
       setLeads(a.leads ?? { new: 0, active: 0, won: 0, lost: 0, total: 0 });
       setExpenses(
@@ -367,16 +399,50 @@ function OverviewTab({
           ? a.revenueSeries
           : new Array<number>(30).fill(0),
       );
+      setRevenue12mPrev(a.revenue12mPrev ?? 0);
+      setRevenueMonthly(
+        Array.isArray(a.revenueMonthly) && a.revenueMonthly.length === 12
+          ? a.revenueMonthly
+          : new Array<number>(12).fill(0),
+      );
 
+      const paidRows = ((recentPaid ?? []) as Array<{
+        id: string;
+        invoice_number: string;
+        total_cents: number;
+        paid_at: string;
+        currency: string;
+        bill_to_name: string | null;
+      }>).map((inv) => ({
+        id: inv.id,
+        label: inv.invoice_number,
+        total_cents: inv.total_cents,
+        paid_at: inv.paid_at,
+        currency: inv.currency,
+        bill_to_name: inv.bill_to_name,
+        outside: false,
+      }));
+      const outsideRows = ((recentOutside ?? []) as Array<{
+        id: string;
+        amount_cents: number;
+        received_on: string;
+        method: string;
+        client_name: string | null;
+      }>).map((p) => ({
+        id: `op-${p.id}`,
+        label: t(`outside.methods.${p.method}`),
+        total_cents: p.amount_cents,
+        // Noon UTC of the day received, the same moment the revenue
+        // lookup counts it at, so it sorts among the invoices.
+        paid_at: `${p.received_on}T12:00:00Z`,
+        currency: "usd",
+        bill_to_name: p.client_name,
+        outside: true,
+      }));
       setRecentInvoices(
-        (recentPaid ?? []) as Array<{
-          id: string;
-          invoice_number: string;
-          total_cents: number;
-          paid_at: string;
-          currency: string;
-          bill_to_name: string | null;
-        }>,
+        [...paidRows, ...outsideRows]
+          .sort((x, y) => (x.paid_at < y.paid_at ? 1 : -1))
+          .slice(0, 5),
       );
 
       setUpcomingAppts(
@@ -402,7 +468,7 @@ function OverviewTab({
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountKey, userId]);
+  }, [accountKey, userId, reloadKey]);
 
   if (loading) {
     // Match the real layout (revenue + recent row, three KPI cards, then
@@ -430,7 +496,19 @@ function OverviewTab({
           desktops; they stack full width below xl. */}
       <div className="xl:flex xl:items-start xl:gap-4 mb-4">
         <div className="xl:w-1/2 mb-4 xl:mb-0">
-          <OverviewRevenueChart series={revenueSeries} currency={currency} previousTotal={revenue30dPrev} />
+          <OverviewRevenueChart
+            series={revenueSeries}
+            monthly={revenueMonthly}
+            currency={currency}
+            previousTotal={revenue30dPrev}
+            previousYearTotal={revenue12mPrev}
+            onRecord={() => setOutsideOpen(true)}
+          />
+          <OutsidePaymentsDialog
+            open={outsideOpen}
+            onOpenChange={setOutsideOpen}
+            onChanged={() => setReloadKey((k) => k + 1)}
+          />
         </div>
 
         {/* Recent activity — paid invoices across the whole account.
@@ -473,8 +551,10 @@ function OverviewTab({
                   {recentInvoices.map((inv) => (
                     <tr key={inv.id}>
                       <td className="font-medium truncate max-w-[320px]">{inv.bill_to_name ?? "—"}</td>
-                      <td className="text-muted-foreground">{inv.invoice_number}</td>
-                      <td className="text-muted-foreground">{formatDate(inv.paid_at)}</td>
+                      <td className="text-muted-foreground">{inv.label}</td>
+                      <td className="text-muted-foreground">
+                        {inv.outside ? formatReceivedOn(inv.paid_at.slice(0, 10)) : formatDate(inv.paid_at)}
+                      </td>
                       <td className="num font-semibold">{formatMoney(inv.total_cents, inv.currency || currency)}</td>
                     </tr>
                   ))}
@@ -492,7 +572,17 @@ function OverviewTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 xl:w-11/12">
         <OverviewLeadsCard leads={leads} />
         <OverviewCashflowCard moneyIn={revenue30d} moneyOut={expenses.total} currency={currency} />
-        <OverviewExpensesCard expenses={expenses} currency={currency} onViewAll={onViewExpenses} />
+        <OverviewExpensesCard
+          expenses={expenses}
+          currency={currency}
+          onViewAll={onViewExpenses}
+          onRecord={() => setExpenseOpen(true)}
+        />
+        <ExpensesDialog
+          open={expenseOpen}
+          onOpenChange={setExpenseOpen}
+          onChanged={() => setReloadKey((k) => k + 1)}
+        />
       </div>
 
       {/* Upcoming appointments — confirmed / proposed meetings across
@@ -629,21 +719,51 @@ function niceAxisCeil(n: number): number {
 }
 
 function OverviewRevenueChart({
-  series: rawSeries,
+  series: rawDaily,
+  monthly: rawMonthly,
   currency,
-  previousTotal,
+  previousTotal: prev30,
+  previousYearTotal,
+  onRecord,
 }: {
   series: number[];
+  // Last 12 calendar months, oldest first, this month last.
+  monthly: number[];
   currency: string;
   previousTotal: number;
+  previousYearTotal: number;
+  // Opens "Record a payment" (payments received outside Vendora).
+  onRecord: () => void;
 }) {
   const { t } = useTranslation("vendorPayments");
   const dateLoc = cardDateLocale();
+  // 30 days (a daily line) or 12 months (a bar per month). Remembered
+  // per browser so the vendor's choice sticks between visits.
+  const [range, setRange] = useState<"30d" | "12m">(() => {
+    try {
+      return localStorage.getItem("vendora-revenue-range") === "12m" ? "12m" : "30d";
+    } catch {
+      return "30d";
+    }
+  });
+  const pickRange = (r: "30d" | "12m") => {
+    setRange(r);
+    setHoverIdx(null);
+    try {
+      localStorage.setItem("vendora-revenue-range", r);
+    } catch {
+      /* private mode: the choice just isn't remembered */
+    }
+  };
+  const yearly = range === "12m";
+  const rawSeries = yearly ? rawMonthly : rawDaily;
+  const previousTotal = yearly ? previousYearTotal : prev30;
+  const buckets = yearly ? 12 : 30;
   // Guard against an empty series on first render (state initializes to
   // [] before the useEffect query resolves). The chart math below
   // dereferences pts[0] unconditionally, so an empty input would crash
   // — fall back to 30 zero-buckets and the ghost-wave path takes over.
-  const series = rawSeries.length > 0 ? rawSeries : new Array(30).fill(0);
+  const series = rawSeries.length > 0 ? rawSeries : new Array(buckets).fill(0);
   const max = series.reduce((m, v) => (v > m ? v : m), 0);
   const total = series.reduce((s, v) => s + v, 0);
   const hasData = max > 0;
@@ -673,6 +793,13 @@ function OverviewRevenueChart({
     }
     return labels;
   }, [dateLoc]);
+  // The 12 month names under the bars, oldest first.
+  const monthLabels = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) =>
+      new Date(now.getFullYear(), now.getMonth() - (11 - i), 1).toLocaleDateString(dateLoc, { month: "short" }),
+    );
+  }, [dateLoc]);
 
   return (
     <div
@@ -688,7 +815,7 @@ function OverviewRevenueChart({
             className="text-[22px] font-semibold leading-tight"
             style={{ fontFamily: "'Libre Baskerville', 'PT Serif', Georgia, 'Times New Roman', serif", color: "hsl(var(--foreground))" }}
           >
-            {t("revenue.title")}
+            {yearly ? t("revenue.title_year") : t("revenue.title")}
           </div>
           <div className="text-[13px] mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
             {t("revenue.subtitle")}
@@ -712,7 +839,41 @@ function OverviewRevenueChart({
         </div>
       </div>
 
-      {(() => {
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="inline-flex rounded-full border border-border p-0.5" role="group" aria-label={t("revenue.range_label")}>
+          {(["30d", "12m"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => pickRange(r)}
+              aria-pressed={range === r}
+              className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                range === r ? "bg-primary text-primary-foreground" : "text-foreground hover:text-accent"
+              }`}
+            >
+              {r === "30d" ? t("revenue.range_30d") : t("revenue.range_12m")}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onRecord}
+          className="text-xs font-bold text-accent hover:underline underline-offset-4"
+        >
+          {t("revenue.record")}
+        </button>
+      </div>
+
+      {yearly ? (
+        <OverviewMonthlyBars
+          series={series}
+          labels={monthLabels}
+          currency={currency}
+          hasData={hasData}
+          max={max}
+          emptyText={t("revenue.empty_year")}
+        />
+      ) : (() => {
         const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 620, H = 200;
         const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
         const n = series.length;
@@ -896,6 +1057,133 @@ function OverviewRevenueChart({
   );
 }
 
+// The chart's "12 months" view: a bar per calendar month, oldest on
+// the left, this month on the right. Same axes, colours and tooltip as
+// the 30-day line so switching between them doesn't jump.
+function OverviewMonthlyBars({
+  series,
+  labels,
+  currency,
+  hasData,
+  max,
+  emptyText,
+}: {
+  series: number[];
+  labels: string[];
+  currency: string;
+  hasData: boolean;
+  max: number;
+  emptyText: string;
+}) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const PAD_L = 50, PAD_R = 8, PAD_T = 8, PAD_B = 6, W = 620, H = 200;
+  const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+  const n = series.length;
+  const slot = plotW / n;
+  const barW = slot * 0.62;
+  const plotMax = hasData ? niceAxisCeil(max) : 1;
+  // Empty state: low ghost bars so the card keeps its shape.
+  const shown = hasData ? series : series.map((_, i) => 0.25 + 0.2 * Math.sin(i * 0.9));
+  const y = (v: number) => PAD_T + plotH - (v / plotMax) * plotH;
+  const cx = (i: number) => PAD_L + slot * (i + 0.5);
+  const onMove = (e: React.MouseEvent<SVGRectElement>) => {
+    if (!hasData) return;
+    const rect = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect();
+    const vbX = ((e.clientX - rect.left) / rect.width) * W;
+    const idx = Math.floor((vbX - PAD_L) / slot);
+    setHoverIdx(Math.max(0, Math.min(n - 1, idx)));
+  };
+  const showHover = hoverIdx !== null && hasData;
+  return (
+    <div className="relative">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[200px] overflow-visible" preserveAspectRatio="none" aria-hidden>
+        {[0, 0.5, 1].map((tick) => {
+          const yy = PAD_T + plotH - tick * plotH;
+          return (
+            <g key={tick}>
+              <line x1={PAD_L} y1={yy} x2={PAD_L + plotW} y2={yy} className="stroke-border" strokeWidth="1" />
+              <text x={PAD_L - 6} y={yy} textAnchor="end" dominantBaseline="middle" fontSize="11" className="fill-foreground">
+                {hasData ? (tick === 0 ? "$0" : formatMoneyCompact(plotMax * tick, currency)) : ""}
+              </text>
+            </g>
+          );
+        })}
+        {shown.map((v, i) => {
+          const top = y(v);
+          const h = Math.max(0, PAD_T + plotH - top);
+          return (
+            <rect
+              key={i}
+              x={cx(i) - barW / 2}
+              y={top}
+              width={barW}
+              height={h}
+              rx={3}
+              className="fill-accent"
+              style={{ opacity: !hasData ? 0.15 : hoverIdx === null || hoverIdx === i ? 0.9 : 0.45 }}
+            />
+          );
+        })}
+        <rect
+          x={PAD_L}
+          y={PAD_T}
+          width={plotW}
+          height={plotH}
+          fill="transparent"
+          style={{ cursor: hasData ? "crosshair" : "default" }}
+          onMouseMove={onMove}
+          onMouseLeave={() => setHoverIdx(null)}
+        />
+      </svg>
+      {showHover ? (
+        <div
+          className="absolute pointer-events-none text-xs font-semibold rounded-lg px-2.5 py-1.5 whitespace-nowrap"
+          style={{
+            left: `${(cx(hoverIdx!) / W) * 100}%`,
+            top: `${(y(series[hoverIdx!]) / H) * 100}%`,
+            transform: "translate(-50%, calc(-100% - 10px))",
+            background: "hsl(var(--foreground))",
+            color: "hsl(var(--background))",
+            boxShadow: "0 6px 18px -8px hsl(220 14% 9% / 0.18)",
+          }}
+        >
+          {formatMoney(series[hoverIdx!], currency)}
+          <span className="block font-normal text-[11px] mt-0.5" style={{ color: "hsl(var(--background) / 0.75)" }}>
+            {labels[hoverIdx!]}
+          </span>
+        </div>
+      ) : null}
+      {/* Month names under the bars; on phones every other one, so
+          they don't crowd. */}
+      <div
+        className="grid text-[11px] mt-2 text-center"
+        style={{
+          gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+          color: "hsl(var(--muted-foreground))",
+          paddingLeft: `${(PAD_L / W) * 100}%`,
+          paddingRight: `${(PAD_R / W) * 100}%`,
+        }}
+      >
+        {labels.map((label, i) => (
+          <span key={i} className={`truncate ${(n - 1 - i) % 2 === 1 ? "invisible sm:visible" : ""}`}>
+            {label}
+          </span>
+        ))}
+      </div>
+      {!hasData && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className="text-xs italic rounded-full px-3 py-1.5"
+            style={{ color: "hsl(var(--foreground))", background: "hsl(var(--muted))" }}
+          >
+            {emptyText}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // MRR breakdown card — horizontal bars showing each subscription
 // interval's contribution to monthly recurring revenue. Same visual
 // rhythm as the A/R aging card it replaced (label + colored bar +
@@ -1067,10 +1355,13 @@ function OverviewExpensesCard({
   expenses,
   currency,
   onViewAll,
+  onRecord,
 }: {
   expenses: { total: number; count: number; categoryCount: number; topCategories: Array<{ label: string; cents: number }> };
   currency: string;
   onViewAll?: () => void;
+  // Opens "Record an expense".
+  onRecord: () => void;
 }) {
   const { t } = useTranslation("vendorPayments");
   // Brand ramp (ink → bronze → champagne → sand) so a vendor scanning
@@ -1108,6 +1399,13 @@ function OverviewExpensesCard({
           </button>
         ) : null}
       </div>
+      <button
+        type="button"
+        onClick={onRecord}
+        className="mb-3 text-xs font-bold text-accent hover:underline underline-offset-4"
+      >
+        {t("expenses.record")}
+      </button>
       {expenses.count === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground">
           {t("expenses.empty")}

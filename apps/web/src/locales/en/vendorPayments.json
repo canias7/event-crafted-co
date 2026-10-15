@@ -6,11 +6,11 @@
   },
   "recent": {
     "title": "Recent activity",
-    "subtitle": "Latest paid invoices across every listing on the account",
+    "subtitle": "Latest payments across every listing on the account",
     "view_all": "View all →",
-    "empty": "No paid invoices yet. When customers pay, they'll show up here.",
+    "empty": "No payments yet. Paid invoices and payments you record show up here.",
     "customer": "Customer",
-    "invoice": "Invoice",
+    "invoice": "Invoice / method",
     "date": "Date",
     "amount": "Amount"
   },
@@ -37,8 +37,14 @@
   },
   "revenue": {
     "title": "Revenue · last 30 days",
-    "subtitle": "Daily paid-invoice totals",
-    "empty": "No paid invoices in the last 30 days"
+    "subtitle": "Paid invoices and payments you recorded",
+    "empty": "No revenue in the last 30 days",
+    "title_year": "Revenue · last 12 months",
+    "empty_year": "No revenue in the last 12 months",
+    "range_label": "Time range",
+    "range_30d": "30 days",
+    "range_12m": "12 months",
+    "record": "+ Record a payment"
   },
   "leads": {
     "title": "Inquiries",
@@ -74,7 +80,8 @@
     "item_count_one": "{{count}} item",
     "item_count_other": "{{count}} items",
     "summary": "{{expenses}} across {{items}}",
-    "grouped_other": "{{n}} grouped into Other"
+    "grouped_other": "{{n}} grouped into Other",
+    "record": "+ Record an expense"
   },
   "pay": {
     "try_again": "Try again in a moment.",
@@ -222,6 +229,65 @@
         "summary": "Cocktail hour, plated dinner, dessert station, with tasting included on booking.",
         "content": "# Catering Proposal — [Event Name]\n\nThanks for considering us for [Event Date]. Based on our conversation, here's a recommended menu for your [Guest Count]-guest [event type].\n\n## Cocktail Hour\n- Choice of 4 passed hors d'oeuvres\n- Charcuterie display\n- Open bar (beer, wine, signature cocktail)\n\n## Plated Dinner\n- Choice of seasonal salad\n- Two entrée options (one vegetarian)\n- Family-style sides\n- Wedding cake service (cake by client)\n\n## Dessert\n- Late-night dessert station\n- Coffee, tea, espresso bar\n\n## Service\n- Setup and breakdown\n- 5 service staff for 6 hours\n- 2 bartenders\n- All tableware, linens, glassware\n\n## Investment\n- Food per guest: $[Amount] × [Guest Count] = $[Subtotal]\n- Bar package: $[Amount]\n- Service & rentals: $[Amount]\n- **Subtotal: $[Amount]**\n- Tax & service charge: $[Amount]\n- **Total: $[Amount]**\n\n## Next Steps\n- Schedule a tasting (included with booking)\n- 25% deposit to secure the date\n- Final menu locked 30 days before event\n\n[Your Name]"
       }
+    }
+  },
+  "outside": {
+    "title": "Record a payment",
+    "description": "Got paid outside Vendora, in cash, by Zelle or a check? Record it here so your revenue is complete. Only you can see these.",
+    "amount": "Amount ($)",
+    "amount_invalid": "Enter an amount, like 250 or 1,250.50.",
+    "date": "Date received",
+    "method": "How you were paid",
+    "client": "Client (optional)",
+    "client_placeholder": "Who paid you",
+    "note": "Note (optional)",
+    "note_placeholder": "What it was for",
+    "save": "Save payment",
+    "saved": "Recorded {{amount}}.",
+    "save_failed": "Couldn't save the payment. Try again.",
+    "recorded": "Recorded payments",
+    "none": "Nothing recorded yet.",
+    "delete": "Delete payment",
+    "delete_failed": "Couldn't delete the payment. Try again.",
+    "methods": {
+      "cash": "Cash",
+      "zelle": "Zelle",
+      "check": "Check",
+      "venmo": "Venmo",
+      "bank_transfer": "Bank transfer",
+      "card": "Card (outside Vendora)",
+      "other": "Other"
+    }
+  },
+  "expense_form": {
+    "title": "Record an expense",
+    "description": "Log what you spend on the business (supplies, rentals, help, travel) to see your real cash flow. Only you can see these.",
+    "amount": "Amount ($)",
+    "date": "Date",
+    "what": "What it was for",
+    "what_placeholder": "e.g. Flowers for the Rivera wedding",
+    "what_required": "Say what the expense was for.",
+    "category": "Category",
+    "paid_to": "Paid to (optional)",
+    "paid_to_placeholder": "Store, person or company",
+    "save": "Save expense",
+    "saved": "Recorded {{amount}}.",
+    "save_failed": "Couldn't save the expense. Try again.",
+    "recorded": "Recorded expenses",
+    "delete": "Delete expense",
+    "delete_failed": "Couldn't delete the expense. Try again.",
+    "categories": {
+      "supplies": "Supplies",
+      "rentals": "Rentals",
+      "labor": "Staff and helpers",
+      "travel": "Travel",
+      "mileage": "Mileage",
+      "marketing": "Marketing",
+      "software": "Software",
+      "fees": "Fees",
+      "meals": "Meals",
+      "insurance": "Insurance",
+      "other": "Other"
     }
   }
 }

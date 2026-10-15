@@ -40,6 +40,7 @@ const FAQ_SECTIONS: { id: string; items: string[] }[] = [
       "pause",
       "blocked_title",
       "photos",
+      "bookkeeping",
     ],
   },
   {
