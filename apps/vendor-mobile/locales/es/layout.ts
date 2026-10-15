@@ -1,3 +1,3 @@
 export default {
-  tabs: { inbox: "Bandeja", gallery: "Galería", profile: "Perfil", calendar: "Calendario", more: "Más" },
+  tabs: { overview: "Resumen", inbox: "Bandeja", gallery: "Galería", profile: "Perfil", calendar: "Calendario", more: "Más" },
 };

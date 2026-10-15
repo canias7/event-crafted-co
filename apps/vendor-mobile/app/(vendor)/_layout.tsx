@@ -1,6 +1,6 @@
-// Vendor mobile tab layout — 5 tabs with a custom floating pill tab bar.
+// Vendor mobile tab layout — 6 tabs with a custom floating pill tab bar.
 //
-// Tabs: Inbox · Gallery · My Profile · Calendar · More. Settings opens
+// Tabs: Inbox · Overview · Gallery · My Profile · Calendar · More. Settings opens
 // from the More menu.
 //
 // Style spec: pill floats ~16px above the bottom safe area, cream bg,
@@ -36,6 +36,7 @@ import { C, IS_DARK } from "@/lib/theme";
 // route name → Feather icon name
 const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   inbox: "inbox",
+  overview: "bar-chart-2",
   gallery: "image",
   profile: "user",
   calendar: "calendar",
@@ -43,9 +44,9 @@ const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 };
 
 // Tab labels live in locales/<lang>/layout.ts → tabs.<route name>.
-const LABELLED = new Set(["inbox", "gallery", "profile", "calendar", "more"]);
+const LABELLED = new Set(["inbox", "overview", "gallery", "profile", "calendar", "more"]);
 
-const ORDER = ["inbox", "gallery", "profile", "calendar", "more"];
+const ORDER = ["inbox", "overview", "gallery", "profile", "calendar", "more"];
 
 // Count of inquiries the vendor has not answered. Re-read whenever the
 // focused tab changes and when the app returns to the foreground, which
@@ -91,7 +92,7 @@ function useNewInquiryCount(focusedRoute: string | undefined): number {
   return count;
 }
 
-function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { t } = useT("layout");
   const focusedRoute = state.routes[state.index]?.name;
@@ -133,7 +134,10 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
         right: 0,
         bottom: 0,
         paddingBottom: Math.max(insets.bottom, 12),
-        paddingHorizontal: 24,
+        // 16 rather than 24 since the Overview tab made it six: each tab
+        // gets ~3pt more, which keeps "Calendar" and its Spanish and
+        // Russian labels from crowding.
+        paddingHorizontal: 16,
         alignItems: "center",
       }}
     >
@@ -258,9 +262,14 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
               </View>
               <Text
                 numberOfLines={1}
+                // Six tabs leave ~56pt each; long labels ("Calendario",
+                // "Календарь") shrink a little instead of being cut off.
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
                 style={{
                   fontFamily: isFocused ? "LibreBaskerville-Bold" : "LibreBaskerville",
-                  fontSize: 10,
+                  fontSize: 9.5,
+                  letterSpacing: -0.1,
                   marginTop: 2,
                   color: isFocused ? C.text : C.placeholder,
                 }}
@@ -316,6 +325,7 @@ export default function VendorLayout() {
       }}
     >
       <Tabs.Screen name="inbox" options={{ title: t("tabs.inbox") }} />
+      <Tabs.Screen name="overview" options={{ title: t("tabs.overview") }} />
       <Tabs.Screen name="gallery" options={{ title: t("tabs.gallery") }} />
       <Tabs.Screen name="profile" options={{ title: t("tabs.profile") }} />
       <Tabs.Screen name="calendar" options={{ title: t("tabs.calendar") }} />
