@@ -1,6 +1,22 @@
 {
-  "weekdaysNarrow": ["S", "M", "T", "W", "T", "F", "S"],
-  "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "weekdaysNarrow": [
+    "S",
+    "M",
+    "T",
+    "W",
+    "T",
+    "F",
+    "S"
+  ],
+  "weekdaysShort": [
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
+  ],
   "inquiryStatus": {
     "won": "Confirmed",
     "new": "Awaiting reply",
@@ -131,5 +147,50 @@
     "blockFailed": "Couldn't block: {{message}}",
     "unblockFailed": "Couldn't unblock: {{message}}",
     "titleFailed": "Couldn't update title: {{message}}"
+  },
+  "select": {
+    "mode": {
+      "view": "View bookings",
+      "block": "Block dates",
+      "label": "Calendar mode"
+    },
+    "hint": "Click the dates you can't work. Click a date again to take it off.",
+    "fillGaps": "Fill gaps",
+    "note": {
+      "booked": "{{day}} is booked, so it's already unavailable.",
+      "pending": "{{day}} has a pending request. To block it anyway, switch to View bookings and block it on its own.",
+      "filled": "Filled in {{range}}.",
+      "skipped_one": "Skipped {{count}} booked or pending date.",
+      "skipped_other": "Skipped {{count}} booked or pending dates."
+    },
+    "bar": {
+      "none": "No dates selected",
+      "selected_one": "{{count}} date selected",
+      "selected_other": "{{count}} dates selected",
+      "clickDates": "Click dates on the calendar",
+      "alreadyBlocked_one": "{{count}} already blocked",
+      "alreadyBlocked_other": "{{count}} already blocked",
+      "clear": "Clear",
+      "done": "Done",
+      "block": "Block",
+      "blockN_one": "Block {{count}} date",
+      "blockN_other": "Block {{count}} dates",
+      "unblockN_one": "Unblock {{count}} date",
+      "unblockN_other": "Unblock {{count}} dates"
+    },
+    "nameDays_one": "{{count}} date",
+    "nameDays_other": "{{count}} dates",
+    "dialog": {
+      "blockQ": "Block {{days}}?",
+      "body_one": "{{count}} date will be marked unavailable. Add an optional title so you remember why (“Vacation”). Only you see it. Hosts just see the dates as unavailable.",
+      "body_other": "{{count}} dates will be marked unavailable. Add an optional title so you remember why (“Vacation”). Only you see it. Hosts just see the dates as unavailable.",
+      "reopenTitle": "Re-open these dates?",
+      "reopenBody_one": "{{count}} date becomes bookable again.",
+      "reopenBody_other": "{{count}} dates become bookable again."
+    },
+    "blocked_one": "Blocked {{count}} date",
+    "blocked_other": "Blocked {{count}} dates",
+    "unblocked_one": "Re-opened {{count}} date",
+    "unblocked_other": "Re-opened {{count}} dates"
   }
 }

@@ -1,6 +1,22 @@
 {
-  "weekdaysNarrow": ["D", "L", "M", "M", "J", "V", "S"],
-  "weekdaysShort": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+  "weekdaysNarrow": [
+    "D",
+    "L",
+    "M",
+    "M",
+    "J",
+    "V",
+    "S"
+  ],
+  "weekdaysShort": [
+    "Dom",
+    "Lun",
+    "Mar",
+    "Mié",
+    "Jue",
+    "Vie",
+    "Sáb"
+  ],
   "inquiryStatus": {
     "won": "Confirmada",
     "new": "Esperando respuesta",
@@ -131,5 +147,50 @@
     "blockFailed": "No se pudo bloquear: {{message}}",
     "unblockFailed": "No se pudo desbloquear: {{message}}",
     "titleFailed": "No se pudo actualizar el título: {{message}}"
+  },
+  "select": {
+    "mode": {
+      "view": "Ver reservas",
+      "block": "Bloquear fechas",
+      "label": "Modo del calendario"
+    },
+    "hint": "Haz clic en las fechas en las que no puedes trabajar. Haz clic otra vez para quitarla.",
+    "fillGaps": "Rellenar huecos",
+    "note": {
+      "booked": "{{day}} está reservado, así que ya no está disponible.",
+      "pending": "{{day}} tiene una solicitud pendiente. Para bloquearlo de todos modos, cambia a Ver reservas y bloquéalo por separado.",
+      "filled": "Se rellenó {{range}}.",
+      "skipped_one": "Se omitió {{count}} fecha reservada o pendiente.",
+      "skipped_other": "Se omitieron {{count}} fechas reservadas o pendientes."
+    },
+    "bar": {
+      "none": "No hay fechas seleccionadas",
+      "selected_one": "{{count}} fecha seleccionada",
+      "selected_other": "{{count}} fechas seleccionadas",
+      "clickDates": "Haz clic en las fechas del calendario",
+      "alreadyBlocked_one": "{{count}} ya bloqueada",
+      "alreadyBlocked_other": "{{count}} ya bloqueadas",
+      "clear": "Borrar",
+      "done": "Listo",
+      "block": "Bloquear",
+      "blockN_one": "Bloquear {{count}} fecha",
+      "blockN_other": "Bloquear {{count}} fechas",
+      "unblockN_one": "Desbloquear {{count}} fecha",
+      "unblockN_other": "Desbloquear {{count}} fechas"
+    },
+    "nameDays_one": "{{count}} fecha",
+    "nameDays_other": "{{count}} fechas",
+    "dialog": {
+      "blockQ": "¿Bloquear {{days}}?",
+      "body_one": "{{count}} fecha quedará como no disponible. Agrega un título opcional para recordar el motivo («Vacaciones»). Solo tú lo ves: los anfitriones solo ven las fechas como no disponibles.",
+      "body_other": "{{count}} fechas quedarán como no disponibles. Agrega un título opcional para recordar el motivo («Vacaciones»). Solo tú lo ves: los anfitriones solo ven las fechas como no disponibles.",
+      "reopenTitle": "¿Volver a abrir estas fechas?",
+      "reopenBody_one": "{{count}} fecha vuelve a estar disponible para reservar.",
+      "reopenBody_other": "{{count}} fechas vuelven a estar disponibles para reservar."
+    },
+    "blocked_one": "Se bloqueó {{count}} fecha",
+    "blocked_other": "Se bloquearon {{count}} fechas",
+    "unblocked_one": "Se volvió a abrir {{count}} fecha",
+    "unblocked_other": "Se volvieron a abrir {{count}} fechas"
   }
 }
