@@ -19,7 +19,16 @@
   "duration": {
     "minutes": "{{minutes}} min",
     "hours_one": "{{count}} hr",
-    "hours_other": "{{count}} hrs"
+    "hours_other": "{{count}} hrs",
+    "allDay": "All day",
+    "custom": "Custom length…",
+    "label": "Length",
+    "hoursField": "Hours",
+    "minutesField": "Minutes",
+    "hrShort": "hr",
+    "minShort": "min",
+    "hm": "{{h}} hr {{m}} min",
+    "invalid": "Enter a length between 5 minutes and 24 hours."
   },
   "buffers": {
     "none": "None",

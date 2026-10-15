@@ -23,7 +23,12 @@ import { PLANS_PAUSED } from "@/lib/plans";
 
 // Day names, option labels and default message texts live in
 // vendorScheduling.json; `key` points at the label.
-const DURATIONS = [15, 30, 45, 60, 90, 120];
+const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 480];
+// "All day" is stored as 24 hours. Anything else between 5 minutes and
+// 24 hours can be typed in (owner's call, Oct 2026: some appointments
+// take all day).
+const ALL_DAY = 1440;
+const MIN_DURATION = 5;
 const BUFFERS = [
   { key: "none", v: 0 },
   { key: "m30", v: 30 },
@@ -233,6 +238,10 @@ export default function VendorSchedulingPage() {
 
   async function addType() {
     if (!userId || addingType) return;
+    if (!(newTypeDuration >= MIN_DURATION && newTypeDuration <= ALL_DAY)) {
+      toast.error(t("duration.invalid"));
+      return;
+    }
     if (!newTypeName.trim()) {
       toast.error(t("toasts.typeNameRequired"));
       return;
@@ -331,7 +340,7 @@ export default function VendorSchedulingPage() {
                           ) : null}
                         </p>
                         <p className="m-0 text-[11.5px] text-muted-foreground">
-                          {t("types.minutes", { minutes: type.duration_minutes })}
+                          {durationLabel(type.duration_minutes, t)}
                         </p>
                       </div>
                       <button
@@ -351,19 +360,7 @@ export default function VendorSchedulingPage() {
                     placeholder={t("types.placeholder")}
                     className="min-w-0 flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm outline-none"
                   />
-                  <select
-                    value={newTypeDuration}
-                    onChange={(e) => setNewTypeDuration(Number(e.target.value))}
-                    className="rounded-full border border-border bg-background px-3 py-2 text-sm"
-                  >
-                    {DURATIONS.map((d) => (
-                      <option key={d} value={d}>
-                        {d >= 60
-                          ? t("duration.hours", { count: d / 60 })
-                          : t("duration.minutes", { minutes: d })}
-                      </option>
-                    ))}
-                  </select>
+                  <DurationField value={newTypeDuration} onChange={setNewTypeDuration} />
                   <button
                     onClick={() => void addType()}
                     disabled={addingType}
@@ -701,6 +698,92 @@ function TimeField({
       ))}
       <option value="custom">{t("time.custom")}</option>
     </select>
+  );
+}
+
+// "45 min", "2 hrs", "1 hr 30 min", "All day".
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function durationLabel(minutes: number, t: (k: string, o?: any) => string): string {
+  if (minutes >= ALL_DAY) return t("duration.allDay");
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return t("duration.minutes", { minutes: m });
+  if (m === 0) return t("duration.hours", { count: h });
+  return t("duration.hm", { h, m });
+}
+
+// An appointment type's length: the usual lengths, "All day", or
+// "Custom length…" with hours and minutes typed in.
+function DurationField({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const { t } = useTranslation("vendorScheduling");
+  const preset = DURATIONS.includes(value) || value === ALL_DAY;
+  const [custom, setCustom] = useState(!preset);
+  const [hrs, setHrs] = useState(String(Math.floor(value / 60)));
+  const [mins, setMins] = useState(String(value % 60));
+  const push = (h: string, m: string) => {
+    const total = (parseInt(h, 10) || 0) * 60 + (parseInt(m, 10) || 0);
+    onChange(total);
+  };
+  const box = "h-9 w-16 rounded-full border border-border bg-background px-3 text-sm text-center";
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <select
+        value={custom ? "custom" : String(value)}
+        aria-label={t("duration.label")}
+        onChange={(e) => {
+          if (e.target.value === "custom") {
+            setHrs(String(Math.floor(value / 60)));
+            setMins(String(value % 60));
+            setCustom(true);
+          } else {
+            setCustom(false);
+            onChange(Number(e.target.value));
+          }
+        }}
+        className="h-9 rounded-full border border-border bg-background px-3 text-sm"
+      >
+        {DURATIONS.map((d) => (
+          <option key={d} value={d}>
+            {durationLabel(d, t)}
+          </option>
+        ))}
+        <option value={ALL_DAY}>{t("duration.allDay")}</option>
+        <option value="custom">{t("duration.custom")}</option>
+      </select>
+      {custom ? (
+        <span className="inline-flex items-center gap-1.5 text-sm">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={24}
+            value={hrs}
+            aria-label={t("duration.hoursField")}
+            onChange={(e) => {
+              setHrs(e.target.value);
+              push(e.target.value, mins);
+            }}
+            className={box}
+          />
+          {t("duration.hrShort")}
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={59}
+            step={5}
+            value={mins}
+            aria-label={t("duration.minutesField")}
+            onChange={(e) => {
+              setMins(e.target.value);
+              push(hrs, e.target.value);
+            }}
+            className={box}
+          />
+          {t("duration.minShort")}
+        </span>
+      ) : null}
+    </span>
   );
 }
 

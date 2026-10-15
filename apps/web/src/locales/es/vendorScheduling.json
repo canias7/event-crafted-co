@@ -19,7 +19,16 @@
   "duration": {
     "minutes": "{{minutes}} min",
     "hours_one": "{{count}} h",
-    "hours_other": "{{count}} h"
+    "hours_other": "{{count}} h",
+    "allDay": "Todo el día",
+    "custom": "Duración personalizada…",
+    "label": "Duración",
+    "hoursField": "Horas",
+    "minutesField": "Minutos",
+    "hrShort": "h",
+    "minShort": "min",
+    "hm": "{{h}} h {{m}} min",
+    "invalid": "Escribe una duración entre 5 minutos y 24 horas."
   },
   "buffers": {
     "none": "Ninguno",
