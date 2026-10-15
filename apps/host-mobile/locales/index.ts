@@ -12,6 +12,7 @@ import en_forgotPassword from "./en/forgotPassword";
 import en_hostTabs from "./en/hostTabs";
 import en_inbox from "./en/inbox";
 import en_inquiryComposer from "./en/inquiryComposer";
+import en_invites from "./en/invites";
 import en_listingAttributes from "./en/listingAttributes";
 import en_login from "./en/login";
 import en_notificationsBell from "./en/notificationsBell";
@@ -34,6 +35,7 @@ import es_forgotPassword from "./es/forgotPassword";
 import es_hostTabs from "./es/hostTabs";
 import es_inbox from "./es/inbox";
 import es_inquiryComposer from "./es/inquiryComposer";
+import es_invites from "./es/invites";
 import es_listingAttributes from "./es/listingAttributes";
 import es_login from "./es/login";
 import es_notificationsBell from "./es/notificationsBell";
@@ -56,6 +58,7 @@ import ru_forgotPassword from "./ru/forgotPassword";
 import ru_hostTabs from "./ru/hostTabs";
 import ru_inbox from "./ru/inbox";
 import ru_inquiryComposer from "./ru/inquiryComposer";
+import ru_invites from "./ru/invites";
 import ru_listingAttributes from "./ru/listingAttributes";
 import ru_login from "./ru/login";
 import ru_notificationsBell from "./ru/notificationsBell";
@@ -81,6 +84,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     hostTabs: en_hostTabs as Tree,
     inbox: en_inbox as Tree,
     inquiryComposer: en_inquiryComposer as Tree,
+    invites: en_invites as Tree,
     listingAttributes: en_listingAttributes as Tree,
     login: en_login as Tree,
     notificationsBell: en_notificationsBell as Tree,
@@ -105,6 +109,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     hostTabs: es_hostTabs as Tree,
     inbox: es_inbox as Tree,
     inquiryComposer: es_inquiryComposer as Tree,
+    invites: es_invites as Tree,
     listingAttributes: es_listingAttributes as Tree,
     login: es_login as Tree,
     notificationsBell: es_notificationsBell as Tree,
@@ -129,6 +134,7 @@ export const RESOURCES: Record<"en" | "es" | "ru", Record<string, Tree>> = {
     hostTabs: ru_hostTabs as Tree,
     inbox: ru_inbox as Tree,
     inquiryComposer: ru_inquiryComposer as Tree,
+    invites: ru_invites as Tree,
     listingAttributes: ru_listingAttributes as Tree,
     login: ru_login as Tree,
     notificationsBell: ru_notificationsBell as Tree,
