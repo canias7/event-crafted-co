@@ -52,6 +52,7 @@ import {
   type ReviewWithResponse,
 } from "@/components/inquiries/InquiryReviewCard";
 import { ChatSendPicker } from "@/components/proposals/ChatSendPicker";
+import { TemplatePicker } from "@/components/inquiries/TemplatePicker";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import {
   uploadAttachments,
@@ -1293,6 +1294,15 @@ export default function InquiryDetailPage() {
             {/* Unified send menu — Invoice / Pay link / Proposal / Contract
                 from the vendor's saved Files items, dropped into the thread. */}
             <ChatSendPicker vendorId={inquiry.vendor_id} inquiryId={inquiry.id} onSend={sendBody} />
+            <TemplatePicker
+              vendorId={inquiry.vendor_id}
+              onPick={(body) => {
+                // Into the message box to edit before sending; added on a
+                // new line when something is already typed.
+                setComposer((v) => (v.trim() ? `${v.replace(/\s+$/, "")}\n\n${body}` : body));
+                requestAnimationFrame(() => composerRef.current?.focus());
+              }}
+            />
             <button
               type="button"
               onClick={() => setPinLocationOpen(true)}

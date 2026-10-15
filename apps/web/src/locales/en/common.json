@@ -195,7 +195,8 @@
       "scheduling": "Smart Scheduling",
       "crm": "Vendora CRM",
       "team": "Meet the Team",
-      "web_studio": "Web studio"
+      "web_studio": "Web studio",
+      "templates": "Templates"
     },
     "bottom": {
       "payments": "Payments",

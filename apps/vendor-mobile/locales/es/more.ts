@@ -20,6 +20,7 @@ export default {
     verification: { label: "Verificación", body: "Obtén tu insignia de verificado" },
     scheduling: { label: "Agenda inteligente", body: "Horarios, servicios y automatizaciones" },
     crm: { label: "CRM de Vendora", body: "Clientes, notas y seguimientos" },
+    templates: { label: "Plantillas", body: "Respuestas guardadas para tus chats" },
     subscription: { label: "Suscripción", body: "Plan, facturación y uso" },
     settings: { label: "Configuración", body: "Cuenta, contraseña y privacidad" },
     updates: { label: "Próximas novedades", body: "Lo nuevo y lo que viene" },

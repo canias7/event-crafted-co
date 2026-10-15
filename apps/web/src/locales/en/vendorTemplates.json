@@ -51,5 +51,10 @@
       "name": "Date unavailable",
       "body": "Unfortunately I'm already booked on that date. If you have any flexibility, I'd be happy to share what's still open nearby. Either way — thanks for thinking of me!"
     }
+  },
+  "picker": {
+    "button": "Templates",
+    "empty": "No templates yet. Save replies you send often and they'll show up here.",
+    "manage": "Manage templates"
   }
 }

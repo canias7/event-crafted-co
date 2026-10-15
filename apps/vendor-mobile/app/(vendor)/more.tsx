@@ -173,6 +173,13 @@ export default function MoreScreen() {
             badge="Pro"
             onPress={() => router.push("/(vendor)/crm" as never)}
           />
+          <GroupRow
+            divider
+            icon={<Feather name="file-text" size={18} color={INK} />}
+            label={t("rows.templates.label")}
+            body={t("rows.templates.body")}
+            onPress={() => router.push("/(vendor)/templates" as never)}
+          />
         </MenuSection>
 
         <MenuSection title={t("sections.account")}>

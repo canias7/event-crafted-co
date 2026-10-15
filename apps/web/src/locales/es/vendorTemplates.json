@@ -51,5 +51,10 @@
       "name": "Fecha no disponible",
       "body": "Lamentablemente ya tengo un compromiso en esa fecha. Si tienes algo de flexibilidad, con gusto te comparto las fechas que tengo libres cerca de esa. De cualquier forma, ¡gracias por pensar en mí!"
     }
+  },
+  "picker": {
+    "button": "Plantillas",
+    "empty": "Aún no tienes plantillas. Guarda las respuestas que envías seguido y aparecerán aquí.",
+    "manage": "Administrar plantillas"
   }
 }

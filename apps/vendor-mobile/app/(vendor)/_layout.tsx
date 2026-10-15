@@ -356,6 +356,7 @@ export default function VendorLayout() {
       <Tabs.Screen name="scheduling" options={{ href: null }} />
       {/* Vendora CRM (Clients) — Pro+ perk, pushed from More. */}
       <Tabs.Screen name="crm" options={{ href: null }} />
+      <Tabs.Screen name="templates" options={{ href: null }} />
       {/* Verification — Pro+ verified-badge application, pushed from More. */}
       <Tabs.Screen name="verification" options={{ href: null }} />
       {/* Category-specific listing wizards — listing.tsx redirects each
