@@ -25,6 +25,7 @@ import { eventTypeLabel } from "@vendora/core";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
+import { InvitationsSection } from "@/components/InvitationsSection";
 import { supabase } from "@/lib/supabase";
 import { C, IS_DARK } from "@/lib/theme";
 
@@ -554,6 +555,8 @@ export default function EventsScreen() {
                   </Text>
                 </View>
               ) : null}
+
+              <InvitationsSection />
             </>
           )}
         </ScrollView>

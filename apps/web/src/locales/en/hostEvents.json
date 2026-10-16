@@ -14,7 +14,15 @@
     "holiday_dinner": "Holiday dinner",
     "other": "Other"
   },
-  "weekdays": ["S", "M", "T", "W", "T", "F", "S"],
+  "weekdays": [
+    "S",
+    "M",
+    "T",
+    "W",
+    "T",
+    "F",
+    "S"
+  ],
   "calendar": {
     "previousMonth": "Previous month",
     "nextMonth": "Next month"
@@ -37,7 +45,9 @@
     "going_one": "{{count}} going",
     "going_other": "{{count}} going",
     "copied": "Copied",
-    "shareInvite": "Share invite link"
+    "shareInvite": "Share invite link",
+    "customizeInvite": "Invitation",
+    "replies": "Replies"
   },
   "deleteDialog": {
     "title": "Delete event?",
@@ -76,5 +86,90 @@
     "dateRange": "Pick a date between today and the end of next year.",
     "updated": "Event updated",
     "created": "Event created"
+  },
+  "invite": {
+    "title": "Customize invitation",
+    "description": "How {{title}} looks to guests, what you ask them and when replies close.",
+    "tabs": {
+      "look": "Look",
+      "questions": "Questions",
+      "rules": "Rules"
+    },
+    "style": "Style",
+    "styles": {
+      "classic": "Classic",
+      "evening": "Evening",
+      "photo": "Photo"
+    },
+    "styleHints": {
+      "classic": "Ivory and gold",
+      "evening": "Dark and gold",
+      "photo": "Your photo, full width"
+    },
+    "cover": "Cover photo",
+    "addCover": "Add a cover photo",
+    "removeCover": "Remove",
+    "photoNeedsCover": "The Photo style needs a cover photo.",
+    "uploadFailed": "Couldn't upload the photo. Try another one.",
+    "message": "Welcome message",
+    "messagePlaceholder": "We can't wait to celebrate with you…",
+    "alwaysAsked": "Guests always give their name and whether they're coming. Add anything else you need to know.",
+    "plusOnes": "Plus-ones",
+    "plusOff": "No plus-ones",
+    "plusUpTo_one": "Up to {{count}} guest each",
+    "plusUpTo_other": "Up to {{count}} guests each",
+    "meals": "Meal choices",
+    "mealsHint": "Leave empty if you're not offering a choice.",
+    "mealPlaceholder": "e.g. Chicken",
+    "add": "Add",
+    "removeOption": "Remove {{name}}",
+    "askDietary": "Ask about dietary needs and allergies",
+    "askSong": "Ask for a song request",
+    "ownQuestions": "Your own questions",
+    "ownQuestionsHint": "Up to {{count}}. Guests answer in their own words.",
+    "questionPlaceholder": "e.g. Will you need a ride from the hotel?",
+    "questionN": "Question {{n}}",
+    "removeQuestion": "Remove question",
+    "addQuestion": "Add a question",
+    "deadline": "Reply by",
+    "deadlineHint": "After this date the invitation stops taking replies.",
+    "clear": "Clear",
+    "limit": "Guest limit",
+    "limitPlaceholder": "No limit",
+    "limitHint": "Counts everyone coming, plus-ones included. Once it's reached, guests can't reply “Going”.",
+    "limitInvalid": "Enter a guest limit between 1 and 5,000.",
+    "showCounts": "Show how many are coming",
+    "showCountsHint": "Guests see the number going and maybe.",
+    "preview": "Preview invitation",
+    "save": "Save invitation",
+    "saved": "Invitation saved",
+    "saveFailed": "Couldn't save the invitation."
+  },
+  "replies": {
+    "title": "Replies",
+    "coming_one": "coming",
+    "coming_other": "coming",
+    "maybe_one": "maybe",
+    "maybe_other": "maybe",
+    "no_one": "can't make it",
+    "no_other": "can't make it",
+    "meals": "Meals",
+    "none": "No replies yet. Share the invitation to start collecting them.",
+    "download": "Download as spreadsheet (CSV)",
+    "status": {
+      "going": "Going",
+      "maybe": "Maybe",
+      "not_going": "Can't make it"
+    },
+    "csv": {
+      "name": "Name",
+      "email": "Email",
+      "status": "Reply",
+      "plusOnes": "Plus-ones",
+      "meal": "Meal",
+      "dietary": "Dietary needs",
+      "song": "Song request",
+      "replied": "Replied"
+    }
   }
 }

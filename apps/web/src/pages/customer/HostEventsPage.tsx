@@ -17,6 +17,8 @@ import {
   Plus,
   Radio,
   Share2,
+  Palette,
+  ListChecks,
   Sparkles,
   Trash2,
   Users,
@@ -67,6 +69,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveBroadcastModal } from "@/components/host/LiveBroadcastModal";
 import { LiveArchiveDialog } from "@/components/host/LiveArchiveDialog";
+import {
+  defaultInvitation,
+  InvitationDialog,
+  INVITATION_COLUMNS,
+  type InvitationSettings,
+} from "@/components/host/InvitationDialog";
+import { RsvpRepliesDialog } from "@/components/host/RsvpRepliesDialog";
 import { intlLocale } from "@/lib/intlLocale";
 
 interface HostEvent {
@@ -82,6 +91,8 @@ interface HostEvent {
   share_token: string;
   going_count?: number;
 }
+
+type HostEventWithInvite = HostEvent & Partial<InvitationSettings>;
 
 // Per-event live stream snapshot, fetched alongside events. Used to
 // flip the LIVE badge on the EventCard and gate the "Past lives"
@@ -185,7 +196,7 @@ export default function HostEventsPage() {
     if (!user?.id) return;
     const { data, error } = await eventsTable()
       .select(
-        "id, title, event_type, event_date, start_time, end_time, location, guest_count, notes, share_token",
+        `id, title, event_type, event_date, start_time, end_time, location, guest_count, notes, share_token, ${INVITATION_COLUMNS}`,
       )
       .eq("host_id", user.id)
       .order("event_date", { ascending: true });
@@ -802,6 +813,7 @@ function UpNextHero({
         </span>
       ) : null}
       <div className="mt-5 flex flex-wrap gap-2">
+        <InviteActions event={event} />
         <button
           type="button"
           onClick={() => setLiveOpen(true)}
@@ -837,6 +849,65 @@ function UpNextHero({
   );
 }
 
+// Share the invitation, customize it, and see who replied (owner's call,
+// Oct 2026). Shown on the Up next card and on every event card.
+function InviteActions({ event }: { event: HostEvent }) {
+  const { t } = useTranslation("hostEvents");
+  const [copied, setCopied] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [repliesOpen, setRepliesOpen] = useState(false);
+  // Invitation settings, kept here so a save shows without a reload.
+  const [invite, setInvite] = useState<InvitationSettings>(() => ({
+    ...defaultInvitation(),
+    ...pickInvite(event as HostEventWithInvite),
+  }));
+  async function copyShareLink() {
+    const url = `${window.location.origin}/rsvp/${event.share_token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success(t("toasts.inviteCopied"));
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error(t("toasts.copyFailed"));
+    }
+  }
+  const chip =
+    "inline-flex items-center gap-1.5 rounded-full border border-border bg-card hover:text-accent px-3 h-9 text-xs font-bold transition-colors";
+  return (
+    <>
+      <button type="button" onClick={copyShareLink} className={chip}>
+        {copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Share2 className="w-3.5 h-3.5" />}
+        {copied ? t("card.copied") : t("card.shareInvite")}
+      </button>
+      <button type="button" onClick={() => setInviteOpen(true)} className={chip}>
+        <Palette className="w-3.5 h-3.5" />
+        {t("card.customizeInvite")}
+      </button>
+      <button type="button" onClick={() => setRepliesOpen(true)} className={chip}>
+        <ListChecks className="w-3.5 h-3.5" />
+        {t("card.replies")}
+      </button>
+      <InvitationDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+        shareToken={event.share_token}
+        initial={invite}
+        onSaved={setInvite}
+      />
+      <RsvpRepliesDialog
+        open={repliesOpen}
+        onOpenChange={setRepliesOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+        questions={invite.rsvp_questions}
+      />
+    </>
+  );
+}
+
 function EventCard({
   event,
   liveData,
@@ -849,24 +920,12 @@ function EventCard({
   onDelete: () => void;
 }) {
   const { t } = useTranslation("hostEvents");
-  const [copied, setCopied] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const isLive =
     liveData?.status === "active" || liveData?.status === "recording";
   const hasRecordings = (liveData?.recordingsCount ?? 0) > 0;
   const time = fmtTimeRange(event.start_time, event.end_time);
-  async function copyShareLink() {
-    const url = `${window.location.origin}/rsvp/${event.share_token}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast.success(t("toasts.inviteCopied"));
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      toast.error(t("toasts.copyFailed"));
-    }
-  }
   return (
     <div
       className="rounded-2xl p-4 md:p-5"
@@ -921,23 +980,7 @@ function EventCard({
             </p>
           ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={copyShareLink}
-              className="inline-flex items-center gap-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 px-3 py-1.5 text-xs font-medium transition"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-accent" />
-                  {t("card.copied")}
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5" />
-                  {t("card.shareInvite")}
-                </>
-              )}
-            </button>
+            <InviteActions event={event} />
             <button
               type="button"
               onClick={() => setLiveOpen(true)}
@@ -997,6 +1040,15 @@ function EventCard({
       </div>
     </div>
   );
+}
+
+// The invitation columns of an event row, defaults for any not loaded.
+function pickInvite(e: HostEventWithInvite): Partial<InvitationSettings> {
+  const out: Partial<InvitationSettings> = {};
+  for (const k of Object.keys(defaultInvitation()) as (keyof InvitationSettings)[]) {
+    if (e[k] !== undefined && e[k] !== null) (out as Record<string, unknown>)[k] = e[k];
+  }
+  return out;
 }
 
 interface FormState {

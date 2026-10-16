@@ -158,6 +158,8 @@ export default function HostLayout() {
       <Tabs.Screen name="thread/[id]" options={{ href: null }} />
       {/* Account settings — reached from Profile's "Account settings" card. */}
       <Tabs.Screen name="settings" options={{ href: null }} />
+      {/* One invitation — opened from Events → Your invitations; not a tab. */}
+      <Tabs.Screen name="invite/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

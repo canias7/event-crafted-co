@@ -28,3 +28,5 @@
 20261015180000_vendor_overview_range.sql
 # Blocked-date titles private: anon/authenticated can't select vendor_unavailable_dates.reason (read via get_vendor_block_reasons).
 20261014120000_private_block_titles.sql
+# Customizable invitations and RSVPs: invite look, guest questions, reply-by date, guest limit; event-invites bucket.
+20261016120000_custom_invitations.sql

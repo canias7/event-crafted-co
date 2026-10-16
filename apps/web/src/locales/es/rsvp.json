@@ -26,10 +26,28 @@
       "not_going": "No podré ir"
     },
     "sending": "Enviando…",
-    "submit": "Enviar respuesta"
+    "submit": "Enviar respuesta",
+    "plusOnes": "¿Vienes con alguien?",
+    "justMe": "Solo yo",
+    "plusN_one": "Yo + {{count}} invitado",
+    "plusN_other": "Yo + {{count}} invitados",
+    "meal": "Elección de menú",
+    "dietary": "Restricciones alimentarias o alergias",
+    "dietaryPlaceholder": "p. ej., vegetariano, sin nueces",
+    "song": "Canción que te gustaría escuchar",
+    "songPlaceholder": "Una canción que te haga bailar"
   },
   "errors": {
     "nameRequired": "Agrega tu nombre",
-    "submit": "No pudimos enviar tu respuesta. Inténtalo de nuevo."
+    "submit": "No pudimos enviar tu respuesta. Inténtalo de nuevo.",
+    "full": "Lo sentimos, este evento está lleno.",
+    "closed": "Lo sentimos, ya no se aceptan respuestas para este evento."
+  },
+  "replyBy": "Confirma antes del {{date}}",
+  "spotsLeft_one": "Queda {{count}} lugar",
+  "spotsLeft_other": "Quedan {{count}} lugares",
+  "closed": {
+    "title": "Las respuestas están cerradas",
+    "body": "Ya pasó la fecha límite para confirmar. Si aún necesitas responder, contacta directamente al anfitrión."
   }
 }
