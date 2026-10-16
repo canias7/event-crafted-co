@@ -91,7 +91,8 @@
     "title": "Customize invitation",
     "description": "How {{title}} looks to guests, what you ask them and when replies close.",
     "tabs": {
-      "look": "Look",
+      "design": "Design",
+      "look": "Photo",
       "questions": "Questions",
       "rules": "Rules"
     },
@@ -143,7 +144,70 @@
     "preview": "Preview invitation",
     "save": "Save invitation",
     "saved": "Invitation saved",
-    "saveFailed": "Couldn't save the invitation."
+    "saveFailed": "Couldn't save the invitation.",
+    "previewInvited": "You're invited",
+    "occasion": "Start from a design",
+    "occasionHint": "Pick one for your occasion, then change anything below.",
+    "occasions": {
+      "wedding": "Wedding",
+      "evening": "Black tie",
+      "birthday": "Birthday",
+      "babyShower": "Baby shower",
+      "bridalShower": "Bridal shower",
+      "corporate": "Business",
+      "holiday": "Holiday party",
+      "graduation": "Graduation"
+    },
+    "colours": "Colours",
+    "palettes": {
+      "ivory": "Ivory",
+      "midnight": "Midnight",
+      "blush": "Blush",
+      "sage": "Sage",
+      "lavender": "Lavender",
+      "sky": "Sky",
+      "terracotta": "Terracotta",
+      "navy": "Navy",
+      "emerald": "Emerald",
+      "burgundy": "Burgundy",
+      "noir": "Black & white",
+      "custom": "Your own"
+    },
+    "custom": {
+      "bg": "Background",
+      "accent": "Accent"
+    },
+    "lettering": "Lettering",
+    "fonts": {
+      "classic": "Classic",
+      "script": "Script",
+      "elegant": "Elegant",
+      "deco": "Art deco",
+      "modern": "Modern",
+      "playful": "Playful",
+      "handwritten": "Handwritten"
+    },
+    "decoration": "Decoration",
+    "ornaments": {
+      "diamond": "Diamond",
+      "floral": "Floral",
+      "hearts": "Hearts",
+      "stars": "Stars",
+      "confetti": "Confetti",
+      "deco": "Art deco",
+      "none": "None"
+    },
+    "frame": "Frame",
+    "frameHint": "A thin double border around the title.",
+    "layout": "Layout",
+    "layouts": {
+      "card": "Card",
+      "photo": "Photo banner"
+    },
+    "layoutHints": {
+      "card": "Your colours, cover photo above the title",
+      "photo": "Your cover photo across the top"
+    }
   },
   "replies": {
     "title": "Replies",

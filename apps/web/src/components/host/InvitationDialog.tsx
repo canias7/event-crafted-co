@@ -1,5 +1,7 @@
-// Host's invitation editor (owner's call, Oct 2026). Three tabs:
-//   Look      — classic / evening / photo, a cover photo, a welcome message
+// Host's invitation editor (owner's call, Oct 2026). Four tabs:
+//   Design    — a ready-made design for the occasion, or colours, lettering,
+//               decoration and a frame one by one, with a live preview
+//   Look      — card or photo layout, a cover photo, a welcome message
 //   Questions — plus-ones, meal options, dietary needs, a song request and
 //               up to 5 questions of the host's own
 //   Rules     — reply-by date, guest limit, whether guests see the counts
@@ -8,18 +10,36 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ExternalLink, ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { compressImageIfNeeded } from "@/lib/imageCompress";
 import {
-  INVITE_STYLES,
   MAX_MEAL_OPTIONS,
   MAX_PLUS_ONES,
   MAX_QUESTIONS,
   type InviteQuestion,
   type InviteStyle,
 } from "@/lib/invitations";
+import {
+  FONT_KEYS,
+  FONTS,
+  OCCASION_KEYS,
+  OCCASIONS,
+  ORNAMENT_KEYS,
+  PALETTE_KEYS,
+  PALETTES,
+  bodyStyle,
+  designVars,
+  isDarkDesign,
+  loadInviteFonts,
+  readDesign,
+  resolvePalette,
+  type InviteDesign,
+  type PaletteKey,
+} from "@/lib/inviteDesign";
+import { InviteHeader } from "@/components/invite/InviteHeader";
+import { InviteOrnament } from "@/components/invite/InviteOrnament";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +57,7 @@ export interface InvitationSettings {
   invite_style: InviteStyle;
   invite_cover_url: string | null;
   invite_message: string | null;
+  invite_design: InviteDesign;
   rsvp_deadline: string | null;
   rsvp_guest_limit: number | null;
   rsvp_show_counts: boolean;
@@ -48,13 +69,14 @@ export interface InvitationSettings {
 }
 
 export const INVITATION_COLUMNS =
-  "invite_style, invite_cover_url, invite_message, rsvp_deadline, rsvp_guest_limit, rsvp_show_counts, rsvp_plus_ones_max, rsvp_meal_options, rsvp_ask_dietary, rsvp_ask_song, rsvp_questions";
+  "invite_style, invite_cover_url, invite_message, invite_design, rsvp_deadline, rsvp_guest_limit, rsvp_show_counts, rsvp_plus_ones_max, rsvp_meal_options, rsvp_ask_dietary, rsvp_ask_song, rsvp_questions";
 
 export function defaultInvitation(): InvitationSettings {
   return {
     invite_style: "classic",
     invite_cover_url: null,
     invite_message: null,
+    invite_design: readDesign(null),
     rsvp_deadline: null,
     rsvp_guest_limit: null,
     rsvp_show_counts: true,
@@ -97,7 +119,9 @@ export function InvitationDialog({
 
   useEffect(() => {
     if (!open) return;
-    setS(initial);
+    // Older invitations have no design yet: "evening" becomes the midnight colours.
+    setS({ ...initial, invite_design: readDesign(initial.invite_design, initial.invite_style) });
+    loadInviteFonts(FONT_KEYS);
     setLimitText(initial.rsvp_guest_limit ? String(initial.rsvp_guest_limit) : "");
     setNewMeal("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,6 +129,8 @@ export function InvitationDialog({
 
   const set = <K extends keyof InvitationSettings>(k: K, v: InvitationSettings[K]) =>
     setS((p) => ({ ...p, [k]: v }));
+  const setDesign = (patch: Partial<InviteDesign>) =>
+    setS((p) => ({ ...p, invite_design: { ...p.invite_design, ...patch } }));
 
   async function uploadCover(file: File) {
     if (!user) return;
@@ -147,8 +173,14 @@ export function InvitationDialog({
       invite_message: s.invite_message?.trim() ? s.invite_message.trim().slice(0, 1000) : null,
       rsvp_guest_limit: limit,
       rsvp_questions: questions,
-      // A photo look without a photo falls back to classic.
-      invite_style: s.invite_style === "photo" && !s.invite_cover_url ? "classic" : s.invite_style,
+      // invite_style keeps the layout (and, for the apps' older screens, light
+      // or dark): a photo layout without a photo falls back to the card.
+      invite_style:
+        s.invite_style === "photo" && s.invite_cover_url
+          ? "photo"
+          : isDarkDesign(s.invite_design)
+            ? "evening"
+            : "classic",
     };
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -163,6 +195,8 @@ export function InvitationDialog({
     onOpenChange(false);
   }
 
+  // Four tabs share a phone's width: a smaller label there.
+  const tabCls = "px-1 text-xs sm:text-sm";
   const tile = (on: boolean) =>
     `rounded-xl border p-3 text-left transition-colors ${on ? "border-foreground" : "border-border hover:border-foreground/40"}`;
 
@@ -174,38 +208,164 @@ export function InvitationDialog({
           <DialogDescription>{t("invite.description", { title: eventTitle })}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="look">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="look">{t("invite.tabs.look")}</TabsTrigger>
-            <TabsTrigger value="questions">{t("invite.tabs.questions")}</TabsTrigger>
-            <TabsTrigger value="rules">{t("invite.tabs.rules")}</TabsTrigger>
+        <Tabs defaultValue="design">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="design" className={tabCls}>{t("invite.tabs.design")}</TabsTrigger>
+            <TabsTrigger value="look" className={tabCls}>{t("invite.tabs.look")}</TabsTrigger>
+            <TabsTrigger value="questions" className={tabCls}>{t("invite.tabs.questions")}</TabsTrigger>
+            <TabsTrigger value="rules" className={tabCls}>{t("invite.tabs.rules")}</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="design" className="space-y-6 pt-4">
+            <DesignPreview s={s} title={eventTitle} invitedLabel={t("invite.previewInvited")} />
+
+            <div>
+              <p className="text-sm font-bold">{t("invite.occasion")}</p>
+              <p className="text-xs mb-2">{t("invite.occasionHint")}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {OCCASION_KEYS.map((k) => {
+                  const o = OCCASIONS[k];
+                  const p = PALETTES[o.palette as Exclude<PaletteKey, "custom">];
+                  const d = s.invite_design;
+                  const on = d.palette === o.palette && d.font === o.font && d.ornament === o.ornament && d.frame === o.frame;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setDesign({ ...o, bg: undefined, accent: undefined })}
+                      className={tile(on)}
+                    >
+                      <span
+                        aria-hidden
+                        className="flex h-10 items-center justify-center rounded-lg mb-2 border border-border"
+                        style={{ background: p.bg, color: p.accent }}
+                      >
+                        <InviteOrnament kind={o.ornament === "none" ? "diamond" : o.ornament} className="w-20 h-auto" />
+                      </span>
+                      <span className="block text-xs font-bold">{t(`invite.occasions.${k}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-bold mb-2">{t("invite.colours")}</p>
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {PALETTE_KEYS.map((k) => {
+                  const on = s.invite_design.palette === k;
+                  const p = k === "custom" ? resolvePalette({ ...s.invite_design, palette: "custom" }) : PALETTES[k];
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setDesign({ palette: k })}
+                      className="flex flex-col items-center gap-1 rounded-xl p-1.5 hover:text-accent"
+                    >
+                      <span
+                        aria-hidden
+                        className={`relative flex h-11 w-11 items-center justify-center rounded-full border ${on ? "border-foreground ring-2 ring-foreground ring-offset-2 ring-offset-card" : "border-border"}`}
+                        style={k === "custom" && !s.invite_design.bg ? { background: "conic-gradient(#d9a19a, #c9a86a, #9fb592, #93bfdb, #b9a6d9, #d9a19a)" } : { background: p.bg }}
+                      >
+                        <span className="h-4 w-4 rounded-full" style={{ background: p.accent }} />
+                        {on ? <Check className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-foreground p-0.5 text-background" /> : null}
+                      </span>
+                      <span className="text-[11px] font-bold leading-tight text-center">{t(`invite.palettes.${k}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {s.invite_design.palette === "custom" ? (
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  {(["bg", "accent"] as const).map((k) => (
+                    <label key={k} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 h-12 cursor-pointer">
+                      <input
+                        type="color"
+                        value={resolvePalette(s.invite_design)[k]}
+                        onChange={(e) => setDesign({ [k]: e.target.value })}
+                        className="h-7 w-9 cursor-pointer rounded border-0 bg-transparent p-0"
+                      />
+                      <span className="text-sm font-bold">{t(`invite.custom.${k}`)}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div>
+              <p className="text-sm font-bold mb-2">{t("invite.lettering")}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {FONT_KEYS.map((k) => {
+                  const f = FONTS[k];
+                  const on = s.invite_design.font === k;
+                  return (
+                    <button key={k} type="button" aria-pressed={on} onClick={() => setDesign({ font: k })} className={tile(on)}>
+                      <span
+                        aria-hidden
+                        className="block truncate text-xl leading-snug"
+                        style={{
+                          fontFamily: f.title,
+                          fontWeight: f.titleWeight,
+                          fontSize: `${1.25 * f.titleScale}rem`,
+                          textTransform: f.titleUpper ? "uppercase" : undefined,
+                          letterSpacing: f.titleUpper ? "0.06em" : undefined,
+                        }}
+                      >
+                        {eventTitle || "Aa"}
+                      </span>
+                      <span className="block text-xs font-bold mt-1">{t(`invite.fonts.${k}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-bold mb-2">{t("invite.decoration")}</p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {ORNAMENT_KEYS.map((k) => {
+                  const on = s.invite_design.ornament === k;
+                  return (
+                    <button key={k} type="button" aria-pressed={on} onClick={() => setDesign({ ornament: k })} className={tile(on)}>
+                      <span aria-hidden className="flex h-8 items-center justify-center text-accent">
+                        {k === "none" ? <span className="text-xs">—</span> : <InviteOrnament kind={k} className="w-24 h-auto" />}
+                      </span>
+                      <span className="block text-xs font-bold text-center mt-1">{t(`invite.ornaments.${k}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <ToggleRow
+              label={t("invite.frame")}
+              hint={t("invite.frameHint")}
+              checked={s.invite_design.frame}
+              onChange={(v) => setDesign({ frame: v })}
+            />
+          </TabsContent>
 
           <TabsContent value="look" className="space-y-5 pt-4">
             <div>
-              <p className="text-sm font-bold mb-2">{t("invite.style")}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {INVITE_STYLES.map((st) => (
-                  <button key={st} type="button" onClick={() => set("invite_style", st)} className={tile(s.invite_style === st)} aria-pressed={s.invite_style === st}>
-                    <span
-                      aria-hidden
-                      className={`block h-14 rounded-lg mb-2 border border-border ${
-                        st === "classic" ? "surface-light bg-background" : st === "evening" ? "dark bg-background" : "bg-muted"
-                      }`}
-                      style={
-                        st === "photo" && s.invite_cover_url
-                          ? { backgroundImage: `url(${s.invite_cover_url})`, backgroundSize: "cover", backgroundPosition: "center" }
-                          : undefined
-                      }
+              <p className="text-sm font-bold mb-2">{t("invite.layout")}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(["card", "photo"] as const).map((l) => {
+                  const on = l === "photo" ? s.invite_style === "photo" : s.invite_style !== "photo";
+                  return (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => set("invite_style", l === "photo" ? "photo" : "classic")}
+                      className={tile(on)}
+                      aria-pressed={on}
                     >
-                      <span className="flex h-full items-center justify-center">
-                        <span className="h-1.5 w-1.5 rotate-45 bg-gold" />
-                      </span>
-                    </span>
-                    <span className="block text-sm font-bold">{t(`invite.styles.${st}`)}</span>
-                    <span className="block text-xs">{t(`invite.styleHints.${st}`)}</span>
-                  </button>
-                ))}
+                      <span className="block text-sm font-bold">{t(`invite.layouts.${l}`)}</span>
+                      <span className="block text-xs">{t(`invite.layoutHints.${l}`)}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -411,6 +571,31 @@ export function InvitationDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// A small live copy of the top of the invitation, drawn with the same
+// header as the guest page. Pinned while the host scrolls the choices
+// (from tablet width up; on phones it scrolls away to leave room).
+function DesignPreview({ s, title, invitedLabel }: { s: InvitationSettings; title: string; invitedLabel: string }) {
+  const d = s.invite_design;
+  return (
+    <div className="sm:sticky sm:-top-6 z-10 -mx-6 px-6 pb-3 pt-1 bg-card">
+      <div
+        className="rounded-2xl border border-border p-4 max-h-72 overflow-hidden"
+        style={{ ...designVars(d), ...bodyStyle(d) }}
+      >
+        <InviteHeader
+          design={d}
+          title={title}
+          invitedLabel={invitedLabel}
+          coverUrl={s.invite_cover_url}
+          photo={s.invite_style === "photo"}
+          message={s.invite_message}
+          compact
+        />
+      </div>
+    </div>
   );
 }
 

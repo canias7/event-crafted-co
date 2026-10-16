@@ -1,6 +1,9 @@
 // One invitation (owner's call, Oct 2026), the app twin of the website's
-// Invitation and Replies windows. Four tabs:
-//   Look      — event name, date and place; classic / evening / photo;
+// Invitation and Replies windows. Five tabs:
+//   Design    — a ready-made design for the occasion, or colours, lettering,
+//               decoration and a frame (lib/inviteDesign.ts); "Save and
+//               preview" opens the real guest page
+//   Look      — event name, date and place; card or photo layout;
 //               welcome message (cover photos are added on the website:
 //               the app has no photo picker yet)
 //   Questions — plus-ones, meal choices, dietary needs, song request,
@@ -15,6 +18,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -30,6 +34,18 @@ import { useT } from "@/lib/i18n";
 import { C } from "@/lib/theme";
 import { Chip, DateSheet, Field, Label, SERIF, SERIF_BOLD, SwitchRow, parseYmd } from "@/components/InviteParts";
 import { StepBtn } from "@/components/InvitationsSection";
+import {
+  FONT_KEYS,
+  OCCASION_KEYS,
+  OCCASIONS,
+  ORNAMENT_KEYS,
+  PALETTE_KEYS,
+  PALETTES,
+  isDarkDesign,
+  readDesign,
+  swatch,
+  type InviteDesign,
+} from "@/lib/inviteDesign";
 
 type Style = "classic" | "evening" | "photo";
 interface Question {
@@ -45,6 +61,7 @@ interface EventRow {
   invite_style: Style;
   invite_cover_url: string | null;
   invite_message: string | null;
+  invite_design: InviteDesign;
   rsvp_deadline: string | null;
   rsvp_guest_limit: number | null;
   rsvp_show_counts: boolean;
@@ -67,8 +84,8 @@ interface Reply {
 }
 
 const COLUMNS =
-  "id, title, event_date, location, share_token, invite_style, invite_cover_url, invite_message, rsvp_deadline, rsvp_guest_limit, rsvp_show_counts, rsvp_plus_ones_max, rsvp_meal_options, rsvp_ask_dietary, rsvp_ask_song, rsvp_questions";
-const TABS = ["look", "questions", "rules", "replies"] as const;
+  "id, title, event_date, location, share_token, invite_style, invite_cover_url, invite_message, invite_design, rsvp_deadline, rsvp_guest_limit, rsvp_show_counts, rsvp_plus_ones_max, rsvp_meal_options, rsvp_ask_dietary, rsvp_ask_song, rsvp_questions";
+const TABS = ["design", "look", "questions", "rules", "replies"] as const;
 type Tab = (typeof TABS)[number];
 
 function newId(): string {
@@ -83,7 +100,7 @@ export default function InviteScreen() {
   // Sits just above the floating tab bar (64 tall, max(inset, 12) up).
   const saveBottom = Math.max(insets.bottom, 12) + 64 + 12;
   const [ev, setEv] = useState<EventRow | null>(null);
-  const [tab, setTab] = useState<Tab>("look");
+  const [tab, setTab] = useState<Tab>("design");
   const [limitText, setLimitText] = useState("");
   const [newMeal, setNewMeal] = useState("");
   const [dateOpen, setDateOpen] = useState<null | "event" | "deadline">(null);
@@ -96,7 +113,12 @@ export default function InviteScreen() {
     const { data } = await (supabase as any).from("host_events").select(COLUMNS).eq("id", id).maybeSingle();
     if (data) {
       const row = data as EventRow;
-      setEv({ ...row, rsvp_meal_options: row.rsvp_meal_options ?? [], rsvp_questions: row.rsvp_questions ?? [] });
+      setEv({
+        ...row,
+        invite_design: readDesign(row.invite_design, row.invite_style),
+        rsvp_meal_options: row.rsvp_meal_options ?? [],
+        rsvp_questions: row.rsvp_questions ?? [],
+      });
       setLimitText(row.rsvp_guest_limit ? String(row.rsvp_guest_limit) : "");
     }
   }, [id]);
@@ -119,23 +141,27 @@ export default function InviteScreen() {
 
   const set = <K extends keyof EventRow>(k: K, v: EventRow[K]) => setEv((p) => (p ? { ...p, [k]: v } : p));
 
-  async function save() {
-    if (!ev || saving) return;
+  // Returns whether it saved; "Save and preview" opens the page after.
+  async function save(quiet = false): Promise<boolean> {
+    if (!ev || saving) return false;
     const limit = limitText.trim() ? parseInt(limitText, 10) : null;
     if (limit !== null && (!Number.isFinite(limit) || limit < 1 || limit > 5000)) {
       Alert.alert(t("invite.limitInvalid"));
-      return;
+      return false;
     }
     if (!ev.title.trim()) {
       Alert.alert(t("nameDateRequired"));
-      return;
+      return false;
     }
     setSaving(true);
     const patch = {
       title: ev.title.trim().slice(0, 120),
       event_date: ev.event_date,
       location: ev.location?.trim() || null,
-      invite_style: ev.invite_style === "photo" && !ev.invite_cover_url ? "classic" : ev.invite_style,
+      // invite_style keeps the layout, plus light or dark for older screens.
+      invite_style:
+        ev.invite_style === "photo" && ev.invite_cover_url ? "photo" : isDarkDesign(ev.invite_design) ? "evening" : "classic",
+      invite_design: ev.invite_design,
       invite_message: ev.invite_message?.trim() ? ev.invite_message.trim().slice(0, 1000) : null,
       rsvp_deadline: ev.rsvp_deadline,
       rsvp_guest_limit: limit,
@@ -153,10 +179,19 @@ export default function InviteScreen() {
     setSaving(false);
     if (error) {
       Alert.alert(t("invite.saveFailed"), error.message);
-      return;
+      return false;
     }
-    Alert.alert(t("invite.saved"));
+    if (!quiet) Alert.alert(t("invite.saved"));
+    return true;
   }
+
+  async function saveAndPreview() {
+    if (!ev) return;
+    if (await save(true)) void Linking.openURL(`https://eventvendora.com/rsvp/${ev.share_token}`);
+  }
+
+  const setDesign = (patch: Partial<InviteDesign>) =>
+    setEv((p) => (p ? { ...p, invite_design: { ...p.invite_design, ...patch } } : p));
 
   async function share() {
     if (!ev) return;
@@ -214,6 +249,117 @@ export default function InviteScreen() {
         </ScrollView>
 
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: saveBottom + 72, gap: 20 }} keyboardShouldPersistTaps="handled">
+          {tab === "design" ? (
+            <>
+              <View>
+                <Label text={t("invite.occasion")} hint={t("invite.occasionHint")} />
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {OCCASION_KEYS.map((k) => {
+                    const o = OCCASIONS[k];
+                    const d = ev.invite_design;
+                    const on = d.palette === o.palette && d.font === o.font && d.ornament === o.ornament && d.frame === o.frame;
+                    const sw = PALETTES[o.palette as keyof typeof PALETTES];
+                    return (
+                      <Pressable
+                        key={k}
+                        onPress={() => setDesign({ ...o, bg: undefined, accent: undefined })}
+                        style={{ width: "48%", flexGrow: 1, borderRadius: 12, borderWidth: 1, borderColor: on ? C.text : C.border, backgroundColor: C.card, padding: 8 }}
+                      >
+                        <View style={{ height: 36, borderRadius: 8, backgroundColor: sw.bg, borderWidth: 1, borderColor: C.border, alignItems: "center", justifyContent: "center" }}>
+                          <View style={{ width: 8, height: 8, backgroundColor: sw.accent, transform: [{ rotate: "45deg" }] }} />
+                        </View>
+                        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 12, color: C.text, marginTop: 6 }}>{t(`invite.occasions.${k}`)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View>
+                <Label text={t("invite.colours")} hint={ev.invite_design.palette === "custom" ? t("customOnWeb") : undefined} />
+                <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 12 }}>
+                  {[...PALETTE_KEYS, ...(ev.invite_design.palette === "custom" ? (["custom"] as const) : [])].map((k) => {
+                    const on = ev.invite_design.palette === k;
+                    const sw = k === "custom" ? swatch(ev.invite_design) : PALETTES[k];
+                    return (
+                      <Pressable key={k} onPress={() => setDesign({ palette: k })} style={{ width: "25%", alignItems: "center" }}>
+                        <View
+                          style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 22,
+                            backgroundColor: sw.bg,
+                            borderWidth: on ? 2 : 1,
+                            borderColor: on ? C.text : C.border,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: sw.accent }} />
+                        </View>
+                        <Text
+                          numberOfLines={2}
+                          style={{ fontFamily: on ? SERIF_BOLD : SERIF, fontSize: 11, color: C.text, marginTop: 4, textAlign: "center" }}
+                        >
+                          {t(`invite.palettes.${k}`)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View>
+                <Label text={t("invite.lettering")} />
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {FONT_KEYS.map((k) => (
+                    <Chip key={k} label={t(`invite.fonts.${k}`)} on={ev.invite_design.font === k} onPress={() => setDesign({ font: k })} />
+                  ))}
+                </View>
+              </View>
+
+              <View>
+                <Label text={t("invite.decoration")} />
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {ORNAMENT_KEYS.map((k) => (
+                    <Chip
+                      key={k}
+                      label={t(`invite.ornaments.${k}`)}
+                      on={ev.invite_design.ornament === k}
+                      onPress={() => setDesign({ ornament: k })}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <SwitchRow
+                label={t("invite.frame")}
+                hint={t("invite.frameHint")}
+                value={ev.invite_design.frame}
+                onChange={(v) => setDesign({ frame: v })}
+              />
+
+              <Pressable
+                onPress={() => void saveAndPreview()}
+                disabled={saving}
+                style={{
+                  height: 44,
+                  borderRadius: 22,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  backgroundColor: C.card,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <Feather name="external-link" size={15} color={C.text} />
+                <Text style={{ fontFamily: SERIF_BOLD, fontSize: 14, color: C.text }}>{t("savePreview")}</Text>
+              </Pressable>
+            </>
+          ) : null}
+
           {tab === "look" ? (
             <>
               <View>
@@ -230,35 +376,18 @@ export default function InviteScreen() {
                 </View>
               </View>
               <View>
-                <Label text={t("invite.style")} />
+                <Label text={t("invite.layout")} />
                 <View style={{ flexDirection: "row", gap: 8 }}>
-                  {(["classic", "evening", "photo"] as Style[]).map((st) => {
-                    const on = ev.invite_style === st;
+                  {(["card", "photo"] as const).map((l) => {
+                    const on = l === "photo" ? ev.invite_style === "photo" : ev.invite_style !== "photo";
                     return (
                       <Pressable
-                        key={st}
-                        onPress={() => set("invite_style", st)}
-                        style={{ flex: 1, borderRadius: 12, borderWidth: 1, borderColor: on ? C.text : C.border, backgroundColor: C.card, padding: 8 }}
+                        key={l}
+                        onPress={() => set("invite_style", l === "photo" ? "photo" : "classic")}
+                        style={{ flex: 1, borderRadius: 12, borderWidth: 1, borderColor: on ? C.text : C.border, backgroundColor: C.card, padding: 12 }}
                       >
-                        <View
-                          style={{
-                            height: 52,
-                            borderRadius: 8,
-                            overflow: "hidden",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: st === "classic" ? "#f4f1ea" : st === "evening" ? "#14161a" : C.surface,
-                            borderWidth: 1,
-                            borderColor: C.border,
-                          }}
-                        >
-                          {st === "photo" && ev.invite_cover_url ? (
-                            <Image source={{ uri: ev.invite_cover_url }} style={{ position: "absolute", width: "100%", height: "100%" }} />
-                          ) : null}
-                          <View style={{ width: 7, height: 7, backgroundColor: C.gold, transform: [{ rotate: "45deg" }] }} />
-                        </View>
-                        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: C.text, marginTop: 6 }}>{t(`invite.styles.${st}`)}</Text>
-                        <Text style={{ fontFamily: SERIF, fontSize: 11, color: C.textDim }} numberOfLines={2}>{t(`invite.styleHints.${st}`)}</Text>
+                        <Text style={{ fontFamily: SERIF_BOLD, fontSize: 13, color: C.text }}>{t(`invite.layouts.${l}`)}</Text>
+                        <Text style={{ fontFamily: SERIF, fontSize: 11, color: C.textDim, marginTop: 2 }}>{t(`invite.layoutHints.${l}`)}</Text>
                       </Pressable>
                     );
                   })}
@@ -503,7 +632,7 @@ export default function InviteScreen() {
         {tab !== "replies" ? (
           <View style={{ position: "absolute", left: 20, right: 20, bottom: saveBottom }}>
             <Pressable
-              onPress={save}
+              onPress={() => void save()}
               disabled={saving}
               style={{ height: 52, borderRadius: 26, backgroundColor: saving ? C.goldMuted : C.gold, alignItems: "center", justifyContent: "center" }}
             >

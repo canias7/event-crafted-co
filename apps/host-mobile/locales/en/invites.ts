@@ -52,7 +52,65 @@ export default {
     "preview": "Preview invitation",
     "save": "Save invitation",
     "saved": "Invitation saved",
-    "saveFailed": "Couldn't save the invitation."
+    "saveFailed": "Couldn't save the invitation.",
+    "occasion": "Start from a design",
+    "occasionHint": "Pick one for your occasion, then change anything below.",
+    "occasions": {
+      "wedding": "Wedding",
+      "evening": "Black tie",
+      "birthday": "Birthday",
+      "babyShower": "Baby shower",
+      "bridalShower": "Bridal shower",
+      "corporate": "Business",
+      "holiday": "Holiday party",
+      "graduation": "Graduation"
+    },
+    "colours": "Colours",
+    "palettes": {
+      "ivory": "Ivory",
+      "midnight": "Midnight",
+      "blush": "Blush",
+      "sage": "Sage",
+      "lavender": "Lavender",
+      "sky": "Sky",
+      "terracotta": "Terracotta",
+      "navy": "Navy",
+      "emerald": "Emerald",
+      "burgundy": "Burgundy",
+      "noir": "Black & white",
+      "custom": "Your own"
+    },
+    "lettering": "Lettering",
+    "fonts": {
+      "classic": "Classic",
+      "script": "Script",
+      "elegant": "Elegant",
+      "deco": "Art deco",
+      "modern": "Modern",
+      "playful": "Playful",
+      "handwritten": "Handwritten"
+    },
+    "decoration": "Decoration",
+    "ornaments": {
+      "diamond": "Diamond",
+      "floral": "Floral",
+      "hearts": "Hearts",
+      "stars": "Stars",
+      "confetti": "Confetti",
+      "deco": "Art deco",
+      "none": "None"
+    },
+    "frame": "Frame",
+    "frameHint": "A thin double border around the title.",
+    "layout": "Layout",
+    "layouts": {
+      "card": "Card",
+      "photo": "Photo banner"
+    },
+    "layoutHints": {
+      "card": "Your colours, cover photo above the title",
+      "photo": "Your cover photo across the top"
+    }
   },
   "replies": {
     "title": "Replies",
@@ -102,6 +160,7 @@ export default {
   "share": "Share invite",
   "shareMessage": "You're invited to {{title}}! RSVP here: {{url}}",
   "tabs": {
+    "design": "Design",
     "look": "Look",
     "questions": "Questions",
     "rules": "Rules",
@@ -112,5 +171,7 @@ export default {
   "cancel": "Cancel",
   "done": "Done",
   "noDeadline": "No reply-by date",
-  "details": "Event details"
+  "details": "Event details",
+  "savePreview": "Save and preview",
+  "customOnWeb": "Your own colours are set on eventvendora.com."
 };
