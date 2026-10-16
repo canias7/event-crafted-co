@@ -30,3 +30,5 @@
 20261014120000_private_block_titles.sql
 # Customizable invitations and RSVPs: invite look, guest questions, reply-by date, guest limit; event-invites bucket.
 20261016120000_custom_invitations.sql
+# Invitation design: colours, lettering, decoration, frame (host_events.invite_design) returned by get_event_by_share_token.
+20261017120000_invitation_design.sql

@@ -27,6 +27,9 @@ export interface PublicInvite {
   invite_style: InviteStyle;
   invite_cover_url: string | null;
   invite_message: string | null;
+  // Colours, lettering and decoration (lib/inviteDesign.ts reads it).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  invite_design: any;
   rsvp_deadline: string | null;
   closed: boolean;
   plus_ones_max: number;
@@ -50,6 +53,7 @@ export function readInvitePayload(data: any): PublicInvite | null {
     invite_style: "classic",
     invite_cover_url: null,
     invite_message: null,
+    invite_design: null,
     rsvp_deadline: null,
     closed: false,
     plus_ones_max: 0,
