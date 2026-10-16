@@ -54,7 +54,65 @@ export default {
     "preview": "Посмотреть приглашение",
     "save": "Сохранить приглашение",
     "saved": "Приглашение сохранено",
-    "saveFailed": "Не удалось сохранить приглашение."
+    "saveFailed": "Не удалось сохранить приглашение.",
+    "occasion": "Начните с готового дизайна",
+    "occasionHint": "Выберите дизайн под ваш повод, а ниже измените что угодно.",
+    "occasions": {
+      "wedding": "Свадьба",
+      "evening": "Вечерний приём",
+      "birthday": "День рождения",
+      "babyShower": "Бэби-шауэр",
+      "bridalShower": "Девичник",
+      "corporate": "Деловое мероприятие",
+      "holiday": "Праздничная вечеринка",
+      "graduation": "Выпускной"
+    },
+    "colours": "Цвета",
+    "palettes": {
+      "ivory": "Слоновая кость",
+      "midnight": "Полночь",
+      "blush": "Пудровый",
+      "sage": "Шалфей",
+      "lavender": "Лаванда",
+      "sky": "Небо",
+      "terracotta": "Терракота",
+      "navy": "Тёмно-синий",
+      "emerald": "Изумруд",
+      "burgundy": "Бордо",
+      "noir": "Чёрно-белый",
+      "custom": "Свои цвета"
+    },
+    "lettering": "Шрифт",
+    "fonts": {
+      "classic": "Классика",
+      "script": "Каллиграфия",
+      "elegant": "Изящный",
+      "deco": "Ар-деко",
+      "modern": "Современный",
+      "playful": "Весёлый",
+      "handwritten": "Рукописный"
+    },
+    "decoration": "Украшение",
+    "ornaments": {
+      "diamond": "Ромб",
+      "floral": "Цветы",
+      "hearts": "Сердца",
+      "stars": "Звёзды",
+      "confetti": "Конфетти",
+      "deco": "Ар-деко",
+      "none": "Без украшения"
+    },
+    "frame": "Рамка",
+    "frameHint": "Тонкая двойная рамка вокруг названия.",
+    "layout": "Макет",
+    "layouts": {
+      "card": "Карточка",
+      "photo": "Фото сверху"
+    },
+    "layoutHints": {
+      "card": "Ваши цвета, фото над названием",
+      "photo": "Ваше фото во всю ширину"
+    }
   },
   "replies": {
     "title": "Ответы",
@@ -112,6 +170,7 @@ export default {
   "share": "Поделиться",
   "shareMessage": "Приглашаем вас на «{{title}}»! Ответьте здесь: {{url}}",
   "tabs": {
+    "design": "Дизайн",
     "look": "Вид",
     "questions": "Вопросы",
     "rules": "Правила",
@@ -122,5 +181,7 @@ export default {
   "cancel": "Отмена",
   "done": "Готово",
   "noDeadline": "Без срока ответа",
-  "details": "О мероприятии"
+  "details": "О мероприятии",
+  "savePreview": "Сохранить и посмотреть",
+  "customOnWeb": "Свои цвета задаются на eventvendora.com."
 };

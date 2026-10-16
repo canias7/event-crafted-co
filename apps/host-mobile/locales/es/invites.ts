@@ -52,7 +52,65 @@ export default {
     "preview": "Ver la invitación",
     "save": "Guardar invitación",
     "saved": "Invitación guardada",
-    "saveFailed": "No se pudo guardar la invitación."
+    "saveFailed": "No se pudo guardar la invitación.",
+    "occasion": "Empieza con un diseño",
+    "occasionHint": "Elige uno para tu ocasión y luego cambia lo que quieras abajo.",
+    "occasions": {
+      "wedding": "Boda",
+      "evening": "Etiqueta",
+      "birthday": "Cumpleaños",
+      "babyShower": "Baby shower",
+      "bridalShower": "Despedida de soltera",
+      "corporate": "Empresa",
+      "holiday": "Fiesta de temporada",
+      "graduation": "Graduación"
+    },
+    "colours": "Colores",
+    "palettes": {
+      "ivory": "Marfil",
+      "midnight": "Medianoche",
+      "blush": "Rosa empolvado",
+      "sage": "Salvia",
+      "lavender": "Lavanda",
+      "sky": "Cielo",
+      "terracotta": "Terracota",
+      "navy": "Azul marino",
+      "emerald": "Esmeralda",
+      "burgundy": "Borgoña",
+      "noir": "Blanco y negro",
+      "custom": "Personalizado"
+    },
+    "lettering": "Letra",
+    "fonts": {
+      "classic": "Clásica",
+      "script": "Caligráfica",
+      "elegant": "Elegante",
+      "deco": "Art déco",
+      "modern": "Moderna",
+      "playful": "Divertida",
+      "handwritten": "Manuscrita"
+    },
+    "decoration": "Adorno",
+    "ornaments": {
+      "diamond": "Rombo",
+      "floral": "Floral",
+      "hearts": "Corazones",
+      "stars": "Estrellas",
+      "confetti": "Confeti",
+      "deco": "Art déco",
+      "none": "Ninguno"
+    },
+    "frame": "Marco",
+    "frameHint": "Un borde doble y fino alrededor del título.",
+    "layout": "Diseño de página",
+    "layouts": {
+      "card": "Tarjeta",
+      "photo": "Foto de portada"
+    },
+    "layoutHints": {
+      "card": "Tus colores, la foto arriba del título",
+      "photo": "Tu foto de portada a todo lo ancho"
+    }
   },
   "replies": {
     "title": "Respuestas",
@@ -102,6 +160,7 @@ export default {
   "share": "Compartir",
   "shareMessage": "¡Estás invitado a {{title}}! Confirma aquí: {{url}}",
   "tabs": {
+    "design": "Diseño",
     "look": "Diseño",
     "questions": "Preguntas",
     "rules": "Reglas",
@@ -112,5 +171,7 @@ export default {
   "cancel": "Cancelar",
   "done": "Listo",
   "noDeadline": "Sin fecha límite",
-  "details": "Detalles del evento"
+  "details": "Detalles del evento",
+  "savePreview": "Guardar y ver",
+  "customOnWeb": "Los colores personalizados se eligen en eventvendora.com."
 };
